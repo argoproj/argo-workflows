@@ -35,6 +35,10 @@ We're always looking for contributors.
 
 To run Argo Workflows locally for development: [running locally](running-locally.md).
 
+### Committing
+
+See the [Committing Guidelines](running-locally.md#committing).
+
 ### Dependencies
 
 Dependencies increase the risk of security issues and have on-going maintenance costs.
