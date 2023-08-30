@@ -37,7 +37,7 @@ To run Argo Workflows locally for development: [running locally](running-locally
 
 ### Committing
 
-To commit Argo Workflows for PR: [Committing](running-locally.md#committing).
+See the [Committing Guidelines](running-locally.md#committing).
 
 ### Dependencies
 
