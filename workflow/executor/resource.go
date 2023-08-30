@@ -372,9 +372,14 @@ func runKubectl(args ...string) ([]byte, error) {
 	}()
 	var buf bytes.Buffer
 	if err := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
-		Arguments:   args,
-		ConfigFlags: genericclioptions.NewConfigFlags(true),
-		IOStreams:   genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
+		Arguments: args,
+		// TODO(vadasambar): use `DefaultConfigFlags` variable from upstream
+		// as value for `ConfigFlags` once https://github.com/kubernetes/kubernetes/pull/120024 is merged
+		ConfigFlags: genericclioptions.NewConfigFlags(true).
+			WithDeprecatedPasswordFlag().
+			WithDiscoveryBurst(300).
+			WithDiscoveryQPS(50.0),
+		IOStreams: genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
 	}).Execute(); err != nil {
 		return nil, err
 	}
