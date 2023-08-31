@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -217,7 +216,7 @@ func TestGetUserInfoGroups(t *testing.T) {
 	t.Run("UserInfoGroupsReturn", func(t *testing.T) {
 		userInfo := UserInfo{Groups: []string{"Everyone"}}
 		userInfoBytes, _ := json.Marshal(userInfo)
-		body := ioutil.NopCloser(bytes.NewReader(userInfoBytes))
+		body := io.NopCloser(bytes.NewReader(userInfoBytes))
 
 		httpClient = &HttpClientMock{StatusCode: 200, Body: body}
 

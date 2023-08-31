@@ -43,4 +43,17 @@ describe('process URL', () => {
 
         expect(ProcessURL('https://logging?from=${status.startedAtEpoch}&to=${status.finishedAtEpoch}', object)).toBe(`https://logging?from=null&to=null`);
     });
+
+    test('ignore missing workflow var', () => {
+        const object = {
+            status: {},
+            workflow: {
+                annotations: {
+                    logQuery: 'query=env:qa'
+                }
+            }
+        };
+
+        expect(ProcessURL('https://logging?${workflow.annotations.logQuery}${workflow.annotations.additionalLogParams}', object)).toBe('https://logging?query=env:qa');
+    });
 });

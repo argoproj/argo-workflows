@@ -2,24 +2,24 @@
 
 You have two options:
 
-1. If you're using VSCode, you use the [Dev-Container](#development-container). This takes about 7 minutes.
+1. Use the [Dev Container](#development-container). This takes about 7 minutes. This can be used with VSCode or with the `devcontainer` CLI.
 1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
-
-## Git Clone
-
-Clone the Git repo into: `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
-generation does not work.
 
 ## Development Container
 
-A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites.
-[The Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers)  extension lets you use a Docker container as a full-featured development environment.
+The development container should be able to do everything you need to do to develop Argo Workflows without installing tools on your local machine. It takes quite a long time to build the container. It runs `k3d` inside the container so you have a cluster to test against. To communicate with services running either in other development containers or directly on the local machine (e.g. a database), the following URL can be used in the workflow spec: `host.docker.internal:<PORT>`. This facilitates the implementation of workflows which need to connect to a database or an API server.
 
-System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements)
+You can use the development container in a few different ways:
+
+1. [Visual Studio Code](https://code.visualstudio.com/) with [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). Open your `argo-workflows` folder in VSCode and it should offer to use the development container automatically. VSCode will allow you to forward ports to allow your external browser to access the running components.
+1. [`devcontainer` CLI](https://github.com/devcontainers/cli). Once installed, go to your `argo-workflows` folder and run `devcontainer up --workspace-folder .` followed by `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Due to a limitation of the CLI, only port 8080 (the Web UI) will be exposed for you to access if you run this way. Other services are usable from the shell inside.
+
+Once you have entered the container, continue to [Developing Locally](#developing-locally).
+
+`Github Codespaces` is known not to work at this time.
 
 Note:
 
-* `GOPATH` must be `$HOME/go`.
 * for **Apple Silicon**
     * This platform can spend 3 times the indicated time
     * Configure Docker Desktop to use BuildKit:
@@ -34,16 +34,29 @@ Note:
     * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
 
 * For **Linux**
-    * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d
+    * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d.
 
 ## Requirements
 
-* [Go 1.18](https://golang.org/dl/)
+Clone the Git repo into: `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will break the code generation.
+
+Add the following to your `/etc/hosts`:
+
+```text
+127.0.0.1 dex
+127.0.0.1 minio
+127.0.0.1 postgres
+127.0.0.1 mysql
+127.0.0.1 azurite
+```
+
+To build on your own machine without using the Dev Container you will need:
+
+* [Go](https://golang.org/dl/)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
-* [`jq`](https://stedolan.github.io/jq/download/)
-* [`node` >= 16.15.0](https://nodejs.org/download/release/latest-v16.x/) for running the UI
+* [`node`](https://nodejs.org/download/release/latest-v16.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
@@ -57,25 +70,15 @@ Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to
 Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context
 automatically.
 
-⚠️ Do not use Docker for Desktop with its embedded Kubernetes, it does not support Kubernetes RBAC (i.e. `kubectl auth can-i` always
-returns `allowed`).
+!!! Warning
+    Do not use Docker Desktop's embedded Kubernetes, it does not support Kubernetes RBAC (i.e. `kubectl auth can-i` always returns `allowed`).
 
 ## Developing locally
-
-Add the following to your `/etc/hosts`:
-
-```text
-127.0.0.1 dex
-127.0.0.1 minio
-127.0.0.1 postgres
-127.0.0.1 mysql
-127.0.0.1 azurite
-```
 
 To start:
 
 * The controller, so you can run workflows.
-* MinIO (<http://localhost:9000>, use admin/password) so you can use artifacts:
+* MinIO (<http://localhost:9000>, use admin/password) so you can use artifacts.
 
 Run:
 
@@ -203,7 +206,7 @@ make pre-commit -B
 
 Please do the following when creating your PR:
 
-* Sign-off your commits.
+* [Sign-off](https://probot.github.io/apps/dco) your commits.
 * Use [Conventional Commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
 * Suffix the issue number.
 
@@ -224,6 +227,14 @@ git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
   have checked out your code into `$GOPATH/src/github.com/argoproj/argo-workflows`.
 * If you encounter "out of heap" issues when building UI through Docker, please validate resources allocated to Docker.
   Compilation may fail if allocated RAM is less than 4Gi.
+* To start profiling with [`pprof`](https://go.dev/blog/pprof), pass `ARGO_PPROF=true` when starting the controller locally.
+  Then run the following:
+
+```bash
+go tool pprof http://localhost:6060/debug/pprof/profile   # 30-second CPU profile
+go tool pprof http://localhost:6060/debug/pprof/heap      # heap profile
+go tool pprof http://localhost:6060/debug/pprof/block     # goroutine blocking profile
+```
 
 ## Using Multiple Terminals
 

@@ -109,7 +109,7 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
 
         Args:
             name (str): The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"
-            scope (str): \"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"
+            scope (str): \"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"
             url (str): The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"
 
         Keyword Args:
@@ -198,7 +198,7 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
 
         Args:
             name (str): The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"
-            scope (str): \"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"
+            scope (str): \"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"
             url (str): The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"
 
         Keyword Args:

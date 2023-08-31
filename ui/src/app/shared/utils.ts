@@ -1,5 +1,5 @@
 import * as models from '../../models';
-import {NODE_PHASE} from '../../models';
+import {NODE_PHASE, Parameter} from '../../models';
 import {Pagination} from './pagination';
 
 const managedNamespaceKey = 'managedNamespace';
@@ -190,5 +190,13 @@ export const Utils = {
             labelSelector += labels.join(',');
         }
         return labelSelector;
+    },
+
+    getValueFromParameter(p: Parameter) {
+        if (p.value === undefined) {
+            return p.default;
+        } else {
+            return p.value;
+        }
     }
 };

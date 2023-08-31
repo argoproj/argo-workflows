@@ -134,7 +134,7 @@ class IoArgoprojWorkflowV1alpha1VolumeClaimGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". Defaults to \"OnWorkflowSuccess\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -216,7 +216,7 @@ class IoArgoprojWorkflowV1alpha1VolumeClaimGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". Defaults to \"OnWorkflowSuccess\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

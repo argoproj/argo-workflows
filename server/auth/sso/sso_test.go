@@ -126,6 +126,27 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
 }
 
+func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+
+	ctx := context.Background()
+	_, err := fakeClient.Create(ctx, &apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: secretName},
+		Data:       map[string][]byte{},
+	}, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	config := Config{
+		Issuer:       "https://test-issuer",
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+		RedirectURL:  "https://dummy",
+	}
+	_, err = newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	assert.Error(t, err)
+	assert.Regexp(t, "If you have already defined a Secret named sso, delete it and retry", err.Error())
+}
+
 func TestGetSessionExpiry(t *testing.T) {
 	config := Config{
 		SessionExpiry: metav1.Duration{Duration: 5 * time.Hour},

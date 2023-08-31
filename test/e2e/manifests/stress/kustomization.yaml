@@ -9,11 +9,13 @@ resources:
   - argo-server-podpriorityclass.yaml
   - minio-podpriorityclass.yaml
 
-patchesStrategicMerge:
-  - workflow-controller-configmap.yaml
-  - workflow-controller-deployment.yaml
-  - argo-server-deployment.yaml
-  - minio-deployment.yaml
+patches:
+  - path: workflow-controller-configmap.yaml
+  - path: workflow-controller-deployment.yaml
+  - path: argo-server-deployment.yaml
+  - path: minio-deployment.yaml
 
-commonLabels:
-  "app.kubernetes.io/part-of": "argo"
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/part-of: argo

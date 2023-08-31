@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -280,6 +279,7 @@ func TestUntar(t *testing.T) {
 	destPath := "testdata/untarredDir"
 	filePath := "testdata/untarredDir/file"
 	linkPath := "testdata/untarredDir/link"
+	emptyDirPath := "testdata/untarredDir/empty-dir"
 
 	// test
 	err := untar(tarPath, destPath)
@@ -295,11 +295,16 @@ func TestUntar(t *testing.T) {
 	fileInfo, err = os.Stat(linkPath)
 	assert.NoError(t, err)
 	assert.True(t, fileInfo.Mode().IsRegular())
+	fileInfo, err = os.Stat(emptyDirPath)
+	assert.NoError(t, err)
+	assert.True(t, fileInfo.Mode().IsDir())
 
 	// cleanup
 	err = os.Remove(linkPath)
 	assert.NoError(t, err)
 	err = os.Remove(filePath)
+	assert.NoError(t, err)
+	err = os.Remove(emptyDirPath)
 	assert.NoError(t, err)
 	err = os.Remove(destPath)
 	assert.NoError(t, err)
@@ -338,7 +343,7 @@ func TestChmod(t *testing.T) {
 		// Setup directory and file for testing
 		tempDir := t.TempDir()
 
-		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
+		tempFile, err := os.CreateTemp(tempDir, "chmod-file-test")
 		assert.NoError(t, err)
 
 		// Run chmod function

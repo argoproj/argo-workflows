@@ -27,10 +27,16 @@ spec:
         containers:
           - name: a
             image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ["echo 'a: hello world' >> /workspace/message"]
           - name: b
             image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ["echo 'b: hello world' >> /workspace/message"]
           - name: main
             image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ["echo 'main: hello world' >> /workspace/message"]
             dependencies:
               - a
               - b

@@ -3,7 +3,6 @@ package s3
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -409,7 +408,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	tempDir := t.TempDir()
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
-	if err := ioutil.WriteFile(tempFile, []byte("temporary file's content"), 0o600); err != nil {
+	if err := os.WriteFile(tempFile, []byte("temporary file's content"), 0o600); err != nil {
 		panic(err)
 	}
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -44,7 +43,7 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 
 			defer func() {
-				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
+				err := os.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
 				if err != nil {
 					logger.Error(fmt.Errorf("failed to write exit code: %w", err))
 				}
@@ -62,7 +61,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			name, args := args[0], args[1:]
 
-			data, err := ioutil.ReadFile(varRunArgo + "/template")
+			data, err := os.ReadFile(varRunArgo + "/template")
 			if err != nil {
 				return fmt.Errorf("failed to read template: %w", err)
 			}
@@ -71,24 +70,42 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
+			// setup signal handlers
+			signals := make(chan os.Signal, 1)
+			defer close(signals)
+			signal.Notify(signals)
+			defer signal.Reset()
+
 			for _, x := range template.ContainerSet.GetGraph() {
 				if x.Name == containerName {
 					for _, y := range x.Dependencies {
 						logger.Infof("waiting for dependency %q", y)
+					WaitForDependency:
 						for {
-							data, err := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
-							if os.IsNotExist(err) {
-								time.Sleep(time.Second)
-								continue
+							select {
+							// If we receive a terminated or killed signal, we should exit immediately.
+							case s := <-signals:
+								switch s {
+								case osspecific.Term:
+									// exit with 128 + 15 (SIGTERM)
+									return errors.NewExitErr(143)
+								case os.Kill:
+									// exit with 128 + 9 (SIGKILL)
+									return errors.NewExitErr(137)
+								}
+							default:
+								data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
+								exitCode, err := strconv.Atoi(string(data))
+								if err != nil {
+									time.Sleep(time.Second)
+									continue
+								}
+								if exitCode != 0 {
+									return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
+								}
+
+								break WaitForDependency
 							}
-							exitCode, err := strconv.Atoi(string(data))
-							if err != nil {
-								return fmt.Errorf("failed to read exit-code of dependency %q: %w", y, err)
-							}
-							if exitCode != 0 {
-								return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
-							}
-							break
 						}
 					}
 				}
@@ -99,7 +116,7 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
 
-			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE"); ok {
+			if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
 					// in order to break out of the sleep and release the container from
@@ -111,17 +128,13 @@ func NewEmissaryCommand() *cobra.Command {
 					break
 				}
 			}
+
 			backoff, err := template.GetRetryStrategy()
 			if err != nil {
 				return fmt.Errorf("failed to get retry strategy: %w", err)
 			}
 
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-				// setup signal handlers
-				signals := make(chan os.Signal, 1)
-				defer close(signals)
-				signal.Notify(signals)
-				defer signal.Reset()
 
 				command, closer, err := startCommand(name, args, template)
 				if err != nil {
@@ -149,7 +162,7 @@ func NewEmissaryCommand() *cobra.Command {
 						case <-ctx.Done():
 							return
 						default:
-							data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
+							data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
 							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 							s, _ := strconv.Atoi(string(data))
 							if s > 0 {
@@ -164,7 +177,7 @@ func NewEmissaryCommand() *cobra.Command {
 			})
 			logger.WithError(err).Info("sub-process exited")
 
-			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
+			if os.Getenv("ARGO_DEBUG_PAUSE_AFTER") == "true" {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
 					// in order to break out of the sleep and release the container from
@@ -263,7 +276,7 @@ func saveArtifact(srcPath string) error {
 		return nil
 	}
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithError(err).Errorf("cannot save artifact %s", srcPath)
+		logger.WithError(err).Warnf("cannot save artifact %s", srcPath)
 		return nil
 	}
 	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")

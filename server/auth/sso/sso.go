@@ -141,8 +141,12 @@ func newSso(
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
 	}, metav1.CreateOptions{})
-	if err != nil && !apierr.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("failed to create secret: %w", err)
+	isSecretAlreadyExists := false
+	if err != nil {
+		isSecretAlreadyExists = apierr.IsAlreadyExists(err)
+		if !isSecretAlreadyExists {
+			return nil, fmt.Errorf("failed to create secret: %w", err)
+		}
 	}
 	secret, err := secretsIf.Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
@@ -150,7 +154,11 @@ func newSso(
 	}
 	privateKey, err := x509.ParsePKCS1PrivateKey(secret.Data[cookieEncryptionPrivateKeySecretKey])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse private key: %w", err)
+		if isSecretAlreadyExists {
+			return nil, fmt.Errorf("failed to parse private key. If you have already defined a Secret named %s, delete it and retry: %w", secretName, err)
+		} else {
+			return nil, fmt.Errorf("failed to parse private key: %w", err)
+		}
 	}
 
 	clientID := clientIDObj.Data[c.ClientID.Key]
@@ -222,6 +230,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(state)
 	http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
 	if err != nil {
+		log.WithError(err).Error("failed to get cookie")
 		w.WriteHeader(400)
 		return
 	}
@@ -230,46 +239,47 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
 	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
+		log.WithError(err).Error("failed to get oauth2Token by using code from the oauth2 server")
 		w.WriteHeader(401)
 		return
 	}
 	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 	if !ok {
+		log.Error("failed to extract id_token from the response")
 		w.WriteHeader(401)
 		return
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
+		log.WithError(err).Error("failed to verify the id token issued")
 		w.WriteHeader(401)
 		return
 	}
 	c := &types.Claims{}
 	if err := idToken.Claims(c); err != nil {
+		log.WithError(err).Error("failed to get claims from the id token")
 		w.WriteHeader(401)
 		return
 	}
-
 	// Default to groups claim but if customClaimName is set
 	// extract groups based on that claim key
 	groups := c.Groups
 	if s.customClaimName != "" {
 		groups, err = c.GetCustomGroup(s.customClaimName)
 		if err != nil {
-			w.WriteHeader(401)
-			return
+			log.Warn(err)
 		}
 	}
-
 	// Some SSO implementations (Okta) require a call to
 	// the OIDC user info path to get attributes like groups
 	if s.userInfoPath != "" {
 		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath)
 		if err != nil {
+			log.WithError(err).Errorf("failed to get groups claim from the given userInfoPath(%s)", s.userInfoPath)
 			w.WriteHeader(401)
 			return
 		}
 	}
-
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,
@@ -277,16 +287,16 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
 		},
 		Groups:                  groups,
-		RawClaim:                c.RawClaim,
 		Email:                   c.Email,
 		EmailVerified:           c.EmailVerified,
+		Name:                    c.Name,
 		ServiceAccountName:      c.ServiceAccountName,
 		PreferredUsername:       c.PreferredUsername,
 		ServiceAccountNamespace: c.ServiceAccountNamespace,
 	}
-
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
+		log.WithError(err).Errorf("failed to encrypt and serialize the jwt token")
 		w.WriteHeader(401)
 		return
 	}

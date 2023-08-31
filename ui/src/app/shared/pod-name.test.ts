@@ -28,9 +28,12 @@ describe('pod names', () => {
     });
 
     test('getPodName', () => {
-        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, POD_NAME_V2)).toEqual('wfname-templatename-1454367246');
-        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, POD_NAME_V1)).toEqual(nodeID);
-        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, '')).toEqual(nodeID);
+        const v1podName = nodeID;
+        const v2podName = `${shortWfName}-${shortTemplateName}-${createFNVHash(nodeName)}`;
+        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, POD_NAME_V2)).toEqual(v2podName);
+        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, POD_NAME_V1)).toEqual(v1podName);
+        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, '')).toEqual(v2podName);
+        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, undefined)).toEqual(v2podName);
 
         const name = getPodName(longWfName, nodeName, longTemplateName, nodeID, POD_NAME_V2);
         expect(name.length).toEqual(maxK8sResourceNameLength);

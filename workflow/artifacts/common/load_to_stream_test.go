@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -79,7 +78,7 @@ func TestLoadToStream(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 
 			// need to verify that a new file doesn't get written so check the /tmp directory ahead of time
-			filesBefore, err := ioutil.ReadDir("/tmp/")
+			filesBefore, err := os.ReadDir("/tmp/")
 			if err != nil {
 				panic(err)
 			}
@@ -91,7 +90,7 @@ func TestLoadToStream(t *testing.T) {
 				stream.Close()
 
 				// make sure the new file got deleted when we called stream.Close() above
-				filesAfter, err := ioutil.ReadDir("/tmp/")
+				filesAfter, err := os.ReadDir("/tmp/")
 				if err != nil {
 					panic(err)
 				}

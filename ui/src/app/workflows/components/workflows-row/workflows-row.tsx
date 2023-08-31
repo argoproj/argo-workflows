@@ -1,7 +1,8 @@
 import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
 import {Link} from 'react-router-dom';
-import {Workflow} from '../../../../models';
+import * as models from '../../../../models';
+import {isArchivedWorkflow, Workflow} from '../../../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {DurationPanel} from '../../../shared/components/duration-panel';
@@ -15,6 +16,7 @@ interface WorkflowsRowProps {
     onChange: (key: string) => void;
     select: (wf: Workflow) => void;
     checked: boolean;
+    columns: models.Column[];
 }
 
 interface WorkflowRowState {
@@ -48,8 +50,13 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         />
                         <PhaseIcon value={wf.status.phase} />
                     </div>
-                    <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='small-11 row'>
-                        <div className='columns small-3'>
+                    <Link
+                        to={{
+                            pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`),
+                            search: `?uid=${wf.metadata.uid}`
+                        }}
+                        className='small-11 row'>
+                        <div className='columns small-2'>
                             {(wf.metadata.annotations && wf.metadata.annotations[ANNOTATION_TITLE]) || wf.metadata.name}
                             {wf.metadata.annotations && wf.metadata.annotations[ANNOTATION_DESCRIPTION] ? <p>{wf.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
                         </div>
@@ -85,6 +92,16 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 </div>
                             </div>
                         </div>
+                        <div className='columns small-1'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>
+                        {(this.props.columns || []).map(column => {
+                            // best not to make any assumptions and wait until this data is filled
+                            const value = wf?.metadata?.labels?.[column.key] ?? 'unknown';
+                            return (
+                                <div key={column.name} className='columns small-1'>
+                                    {value}
+                                </div>
+                            );
+                        })}
                         {this.state.hideDrawer ? (
                             <span />
                         ) : (

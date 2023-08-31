@@ -1,8 +1,8 @@
 import {NotificationType} from 'argo-ui';
-import * as PropTypes from 'prop-types';
 import * as React from 'react';
-import {Workflow} from '../../../../models';
-import {AppContext, Consumer} from '../../../shared/context';
+import {isArchivedWorkflow, isWorkflowInCluster, Workflow} from '../../../../models';
+import {Consumer} from '../../../shared/context';
+import {services} from '../../../shared/services';
 import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowOperation, WorkflowOperationAction} from '../../../shared/workflow-operations-map';
 
@@ -22,11 +22,6 @@ interface WorkflowGroupAction extends WorkflowOperation {
 }
 
 export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}> {
-    public static contextTypes = {
-        router: PropTypes.object,
-        apis: PropTypes.object
-    };
-
     constructor(props: WorkflowsToolbarProps) {
         super(props);
     }
@@ -52,20 +47,55 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
     }
 
     private performActionOnSelectedWorkflows(ctx: any, title: string, action: WorkflowOperationAction): Promise<any> {
-        if (!confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`)) {
+        let deleteArchived = false;
+        const confirmed = confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`);
+        if (confirmed) {
+            if (title === 'DELETE') {
+                for (const entry of this.props.selectedWorkflows) {
+                    if (isArchivedWorkflow(entry[1])) {
+                        deleteArchived = confirm('Do you also want to delete them from the Archived Workflows database?');
+                        break;
+                    }
+                }
+            }
+        } else {
             return Promise.resolve(false);
         }
         const promises: Promise<any>[] = [];
         this.props.selectedWorkflows.forEach((wf: Workflow) => {
-            promises.push(
-                action(wf).catch(() => {
-                    this.props.loadWorkflows();
-                    this.appContext.apis.notifications.show({
-                        content: `Unable to ${title} workflow`,
-                        type: NotificationType.Error
-                    });
-                })
-            );
+            if (title === 'DELETE') {
+                // The ones without archivalStatus label or with 'Archived' labels are the live workflows.
+                if (isWorkflowInCluster(wf)) {
+                    promises.push(
+                        services.workflows.delete(wf.metadata.name, wf.metadata.namespace).catch(reason =>
+                            ctx.notifications.show({
+                                content: `Unable to delete workflow ${wf.metadata.name} in the cluster: ${reason.toString()}`,
+                                type: NotificationType.Error
+                            })
+                        )
+                    );
+                }
+                if (deleteArchived && isArchivedWorkflow(wf)) {
+                    promises.push(
+                        services.workflows.deleteArchived(wf.metadata.uid, wf.metadata.namespace).catch(reason =>
+                            ctx.notifications.show({
+                                content: `Unable to delete workflow ${wf.metadata.name} in database: ${reason.toString()}`,
+                                type: NotificationType.Error
+                            })
+                        )
+                    );
+                }
+            } else {
+                promises.push(
+                    action(wf).catch(reason => {
+                        this.props.loadWorkflows();
+                        ctx.notifications.show({
+                            content: `Unable to ${title} workflow: ${reason.content.toString()}`,
+                            type: NotificationType.Error
+                        });
+                    })
+                );
+            }
         });
         return Promise.all(promises);
     }
@@ -85,7 +115,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                     return this.performActionOnSelectedWorkflows(ctx, action.title, action.action).then(confirmed => {
                         if (confirmed) {
                             this.props.clearSelection();
-                            this.appContext.apis.notifications.show({
+                            ctx.notifications.show({
                                 content: `Performed '${action.title}' on selected workflows.`,
                                 type: NotificationType.Success
                             });
@@ -112,9 +142,5 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
             );
         }
         return actionButtons;
-    }
-
-    private get appContext(): AppContext {
-        return this.context as AppContext;
     }
 }

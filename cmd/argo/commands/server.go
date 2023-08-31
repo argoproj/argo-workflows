@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -18,7 +19,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"golang.org/x/net/context"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -197,6 +196,12 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 		if err != nil {
 			return nil, err
 		}
+		// skip "folder" path like objects
+		// note that we still download content (including "subfolders")
+		// this is just a consequence of how objects are stored in GCS (no real hierarchy)
+		if strings.HasSuffix(attrs.Name, "/") {
+			continue
+		}
 		results = append(results, attrs.Name)
 	}
 	return results, nil
@@ -232,7 +237,7 @@ func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 // relPath is a given relative path to be inserted in front
 func listFileRelPaths(path string, relPath string) ([]string, error) {
 	results := []string{}
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}

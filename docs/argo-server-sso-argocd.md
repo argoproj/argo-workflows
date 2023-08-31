@@ -61,6 +61,8 @@ data:
         secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
 ```
 
+Note that the `id` field of `staticClients` must match the `client-id`.
+
 In Argo Workflows add `--auth-mode=sso` argument to argo-server deployment.
 
 ```yaml

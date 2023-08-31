@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/go-jose/go-jose/v3/jwt"
@@ -338,8 +339,18 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 				},
 			},
 		},
+		{
+			ObjectMeta: metav1.ObjectMeta{GenerateName: "my-wfeb-10", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta:          metav1.ObjectMeta{GenerateName: `"my-wft-pr-"+sprig.toString(payload.foo.pr)+"-"`},
+				},
+			},
+		},
 	}, "my-ns", "my-discriminator",
-		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true}, "list": ["one", "two"]}`)})
+		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true, "pr": 112}, "list": ["one", "two"]}`)})
 
 	assert.NoError(t, err)
 	err = operation.Dispatch(ctx)
@@ -348,16 +359,24 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 
 	assert.NoError(t, err)
-	assert.Len(t, list.Items, 3)
+	assert.Len(t, list.Items, 4)
 
 	expectedNames := []string{
 		"my-wfeb-2",
 		"my-wfeb-baz",
 	}
 	actualNames := []string{}
+	var hasExpectGenerateName bool
 	for _, item := range list.Items {
 		actualNames = append(actualNames, item.Name)
+
+		// find the generateName
+		if strings.HasPrefix(item.Name, "my-wft-pr-112-") {
+			hasExpectGenerateName = true
+		}
 	}
+
+	assert.True(t, hasExpectGenerateName)
 
 	// ordering not guaranteed
 	assert.Subset(t, actualNames, expectedNames)

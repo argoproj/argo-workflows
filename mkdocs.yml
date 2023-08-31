@@ -42,27 +42,36 @@ nav:
           - walk-through/index.md
           - walk-through/argo-cli.md
           - walk-through/hello-world.md
+          # basics
           - walk-through/parameters.md
           - walk-through/steps.md
           - walk-through/dag.md
-          - walk-through/artifacts.md
           - walk-through/the-structure-of-workflow-specs.md
-          - walk-through/secrets.md
+          # artifacts
+          - walk-through/artifacts.md
+          - walk-through/hardwired-artifacts.md
+          # outputs
           - walk-through/scripts-and-results.md
           - walk-through/output-parameters.md
+          # mounts
+          - walk-through/secrets.md
+          - walk-through/volumes.md
+          # control flow
           - walk-through/loops.md
           - walk-through/conditionals.md
-          - walk-through/retrying-failed-or-errored-steps.md
           - walk-through/recursion.md
+          # exit conditions
+          - walk-through/retrying-failed-or-errored-steps.md
           - walk-through/exit-handlers.md
           - walk-through/timeouts.md
-          - walk-through/volumes.md
+          # template types
           - walk-through/suspending.md
+          - walk-through/kubernetes-resources.md
+          # container configuration
           - walk-through/daemon-containers.md
           - walk-through/sidecars.md
-          - walk-through/hardwired-artifacts.md
-          - walk-through/kubernetes-resources.md
           - walk-through/docker-in-docker-using-sidecars.md
+          # misc
           - walk-through/custom-template-variable-reference.md
           - walk-through/continuous-integration-examples.md
   - User Guide:
@@ -75,6 +84,8 @@ nav:
           - http-template.md
           - container-set-template.md
           - data-sourcing-and-transformation.md
+          - resource-template.md
+          - suspend-template.md
           - inline-templates.md
       - Artifacts:
           - workflow-inputs.md
@@ -136,9 +147,9 @@ nav:
           - use-cases/data-processing.md
           - use-cases/infrastructure-automation.md
           - use-cases/machine-learning.md
-          - use-cases/other.md
           - use-cases/stream-processing.md
           - use-cases/webhdfs.md
+          - use-cases/other.md # other should always be last
       - FAQ: faq.md
       - kubectl.md
       - ide-setup.md
@@ -230,6 +241,7 @@ nav:
       - windows.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - running-nix.md
       - architecture.md
       - running-locally.md
       - doc-changes.md

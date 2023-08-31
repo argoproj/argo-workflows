@@ -8,8 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/argoproj/pkg/file"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/credentials-go/credentials"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
@@ -28,6 +31,7 @@ type ArtifactDriver struct {
 	AccessKey     string
 	SecretKey     string
 	SecurityToken string
+	UseSDKCreds   bool
 }
 
 var (
@@ -39,11 +43,64 @@ var (
 	bucketLogFilePrefix    = "bucket-log-"
 )
 
+type ossCredentials struct {
+	teaCred credentials.Credential
+}
+
+func (cred *ossCredentials) GetAccessKeyID() string {
+	value, err := cred.teaCred.GetAccessKeyId()
+	if err != nil {
+		log.Infof("get access key id failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+func (cred *ossCredentials) GetAccessKeySecret() string {
+	value, err := cred.teaCred.GetAccessKeySecret()
+	if err != nil {
+		log.Infof("get access key secret failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+func (cred *ossCredentials) GetSecurityToken() string {
+	value, err := cred.teaCred.GetSecurityToken()
+	if err != nil {
+		log.Infof("get access security token failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+type ossCredentialsProvider struct {
+	cred credentials.Credential
+}
+
+func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
+	return &ossCredentials{teaCred: p.cred}
+}
+
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	var options []oss.ClientOption
 	if token := ossDriver.SecurityToken; token != "" {
 		options = append(options, oss.SecurityToken(token))
 	}
+	if ossDriver.UseSDKCreds {
+		// using default provider chains in sdk to get credential
+		log.Infof("Using default sdk provider chains for OSS driver")
+		// need install ack-pod-identity-webhook in your cluster when using oidc provider for OSS drirver
+		// the mutating webhook will help to inject the required OIDC env variables and toke volume mount configuration
+		// please refer to https://www.alibabacloud.com/help/en/ack/product-overview/ack-pod-identity-webhook
+		cred, err := credentials.NewCredential(nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create new OSS client: %w", err)
+		}
+		provider := &ossCredentialsProvider{cred: cred}
+		return oss.New(ossDriver.Endpoint, "", "", oss.SetCredentialsProvider(provider))
+	}
+	log.Infof("Using AK provider")
 	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new OSS client: %w", err)
@@ -313,7 +370,7 @@ func IsOssErrCode(err error, code string) bool {
 	return false
 }
 
-// IsDirectory tests if the key is acting like a OSS directory. This just means it has at least one
+// IsOssDirectory tests if the key is acting like a OSS directory. This just means it has at least one
 // object which is prefixed with the given key
 func IsOssDirectory(bucket *oss.Bucket, objectName string) (bool, error) {
 	if objectName == "" {

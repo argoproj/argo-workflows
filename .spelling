@@ -39,6 +39,7 @@ Couler
 ClusterRoleBinding
 CRD
 CRDs
+CloudSQL
 DataDog
 Dataflow
 DeleteObject
@@ -61,11 +62,13 @@ Homebrew
 InitContainer
 InsideBoard
 Invocators
+IAM-based
 Istio
 J.P.
 Jemison
 JetBrains
 KNative
+Kaniko
 Katacoda
 Kerberos
 Killercoda
@@ -128,12 +131,14 @@ blkperl
 boolean
 booleans
 buildkit
+changelog
 config
 cpu
 cron
 daemoned
 dev-container
 dinever
+dockershim
 dropdown
 e.g.
 e2e
@@ -146,6 +151,7 @@ fibonacci
 finalizer
 govaluate
 gzipped
+Generator
 i.e.
 instantiator
 instantiators
@@ -168,8 +174,10 @@ mutex
 namespace
 namespaces
 natively
+OpenAPI
 p.m.
 params
+pprof
 pre-commit
 rc2
 repo
@@ -193,6 +201,8 @@ v1.2
 v1.3
 v1.24
 v2
+v2.0
+v2.1
 v2.10
 v2.11
 v2.12
@@ -225,3 +235,12 @@ idempotence
 kube-scheduler
 kube-apiserver
 kubectl
+Makefile
+Devenv
+devenv
+vendored
+nix.conf
+LDFlags
+dev
+vendorSha256
+dependabot

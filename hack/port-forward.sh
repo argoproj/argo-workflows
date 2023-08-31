@@ -18,9 +18,6 @@ wait-for() {
   kubectl -n argo wait --timeout 2m --for=condition=Available deploy/$1
 }
 
-wait-for minio
-pf minio 9000
-pf minio 9001
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
@@ -63,3 +60,8 @@ if [[ "$azurite" != "" ]]; then
   wait-for azurite
   pf azurite 10000
 fi
+
+# forward MinIO last, so we can just wait for port 9000, and know that all ports are ready
+wait-for minio
+pf minio 9000
+pf minio 9001

@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -251,7 +251,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	}
 	defer response.Body.Close()
 
-	bodyBytes, err := ioutil.ReadAll(response.Body)
+	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		return 0, err
 	}
@@ -368,6 +368,9 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Te
 			return 0, err
 		} else if reply.Node != nil {
 			*result = *reply.Node
+			if reply.Node.Phase == wfv1.NodeSucceeded {
+				return 0, nil
+			}
 			return reply.GetRequeue(), nil
 		}
 	}

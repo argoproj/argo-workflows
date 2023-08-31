@@ -1,5 +1,5 @@
 import {Checkbox} from 'argo-ui';
-import * as classNames from 'classnames';
+import classNames from 'classnames';
 import * as React from 'react';
 import {DropDown} from './dropdown/dropdown';
 
@@ -36,8 +36,8 @@ export const FilterDropDown = (props: FilterDropDownProps) => {
                                 .map(([label, checked]) => (
                                     <li key={label} className={classNames('top-bar__filter-item')}>
                                         <React.Fragment>
-                                            <Checkbox id={`filter__${label}`} checked={checked} onChange={v => item.onChange(label, v)} />
-                                            <label htmlFor={`filter__${label}`}>{label}</label>
+                                            <Checkbox id={`filter__${i}_${label}`} checked={checked} onChange={v => item.onChange(label, v)} />
+                                            <label htmlFor={`filter__${i}_${label}`}>{label}</label>
                                         </React.Fragment>
                                     </li>
                                 ))}

@@ -1,7 +1,6 @@
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -174,7 +173,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 const path = "/tmp/repo"
 
 func assertOnlyFile(t *testing.T, dir string, file string) {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	assert.NoError(t, err)
 
 	for _, f := range files {

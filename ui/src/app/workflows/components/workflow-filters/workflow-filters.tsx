@@ -1,5 +1,6 @@
 import * as React from 'react';
 import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import * as models from '../../../../models';
 import {WorkflowPhase} from '../../../../models';
 import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbox-filter';
@@ -96,7 +97,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                     </div>
                     <div className='columns small-5 xlarge-12'>
                         <p className='wf-filters-container__title'>Started Time</p>
-                        <div>
+                        <div className='wf-filters-container__content'>
                             <DatePicker
                                 selected={this.props.minStartedAt}
                                 onChange={date => {
@@ -114,7 +115,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                                 <i className='fa fa-times-circle' />
                             </a>
                         </div>
-                        <div>
+                        <div className='wf-filters-container__content'>
                             <DatePicker
                                 selected={this.props.maxStartedAt}
                                 onChange={date => {

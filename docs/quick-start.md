@@ -11,7 +11,8 @@ Before you start you need a Kubernetes cluster and `kubectl` set up to be able t
 
 Alternatively, if you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, try the [Killercoda course](training.md#hands-on).
 
-⚠️ These instructions are intended to help you get started quickly. They are not suitable in production. For production installs, please refer to [the installation documentation](installation.md) ⚠️
+!!! Warning "Development vs. Production"
+    These instructions are intended to help you get started quickly. They are not suitable in production. For production installs, please refer to [the installation documentation](installation.md).
 
 ## Install Argo Workflows
 
@@ -51,6 +52,8 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 ```
 
 This will serve the UI on <https://localhost:2746>. Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.
+
+> Pay close attention to the URI. It uses `https` and not `http`. Navigating to `http://localhost:2746` result in server-side error that breaks the port-forwarding.
 
 ## Install the Argo Workflows CLI
 

@@ -24,12 +24,11 @@ const addEpochTimestamp = (jsonObject: {metadata: ObjectMeta; workflow?: Workflo
 export const ProcessURL = (url: string, jsonObject: any) => {
     addEpochTimestamp(jsonObject);
     /* replace ${} from input url with corresponding elements from object
-    return null if element is not found*/
+    only return null for known variables, otherwise empty string*/
     return url.replace(/\${[^}]*}/g, x => {
-        const res = x
-            .replace(/(\$%7B|%7D|\${|})/g, '')
-            .split('.')
-            .reduce((p: any, c: string) => (p && p[c]) || null, jsonObject);
+        const parts = x.replace(/(\$%7B|%7D|\${|})/g, '').split('.');
+        const emptyVal = parts[0] === 'workflow' ? '' : null;
+        const res = parts.reduce((p: any, c: string) => (p && p[c]) || emptyVal, jsonObject);
         return res;
     });
 };

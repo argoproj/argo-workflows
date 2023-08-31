@@ -140,7 +140,7 @@ class IoArgoprojWorkflowV1alpha1Backoff(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             duration (str): Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\"). [optional]  # noqa: E501
             factor (str): [optional]  # noqa: E501
-            max_duration (str): MaxDuration is the maximum amount of time allowed for the backoff strategy. [optional]  # noqa: E501
+            max_duration (str): MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -224,7 +224,7 @@ class IoArgoprojWorkflowV1alpha1Backoff(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             duration (str): Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\"). [optional]  # noqa: E501
             factor (str): [optional]  # noqa: E501
-            max_duration (str): MaxDuration is the maximum amount of time allowed for the backoff strategy. [optional]  # noqa: E501
+            max_duration (str): MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

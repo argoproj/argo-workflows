@@ -134,6 +134,9 @@ spec:
           secret:
             secretName: docker-config
       container:
+        readinessProbe:
+          exec:
+            command: [ sh, -c, "buildctl debug workers" ]
         image: moby/buildkit:v0.9.3-rootless
         volumeMounts:
           - name: work

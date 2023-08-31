@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 )
 
@@ -23,6 +24,9 @@ var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:            "whalesay-cache",
 		ResourceVersion: "1630732",
+		Labels: map[string]string{
+			common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+		},
 	},
 }
 
@@ -34,6 +38,9 @@ var sampleConfigMapEmptyCacheEntry = apiv1.ConfigMap{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:            "whalesay-cache",
 		ResourceVersion: "1630732",
+		Labels: map[string]string{
+			common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+		},
 	},
 }
 
@@ -46,9 +53,8 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	assert.NoError(t, err)
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
 
-	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, sampleConfigMapCacheEntry.Name, metav1.GetOptions{})
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, sampleConfigMapCacheEntry.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Nil(t, cm.Labels)
 
 	entry, err := c.Load(ctx, "hi-there-world")
 	assert.NoError(t, err)

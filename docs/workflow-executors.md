@@ -25,7 +25,7 @@ This is the most fully featured executor.
 * Artifacts:
     * Output artifacts can be located on the base layer (e.g. `/tmp`).
 * Configuration:
-    * `command` must be specified for containers.
+    * `command` should be specified for containers.
 
 You can determine values as follows:
 
@@ -35,11 +35,12 @@ docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' argoproj/argosa
 
 [Learn more about command and args](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes)
 
-### Image Index
+### Image Index/Cache
 
-If the emissary cannot determine which command to run, because you did not specify it in your workflow spec, then it
-will look it up in the **image index**. This is nothing more fancy than
+If you don't provide command to run, the emissary will grab it from container image. You can also specify it using the workflow spec or emissary will look it up in the **image index**. This is nothing more fancy than
 a [configuration item](workflow-controller-configmap.yaml).
+
+Emissary will create a cache entry, using image with version as key and command as value, and it will reuse it for specific image/version.
 
 ### Exit Code 64
 

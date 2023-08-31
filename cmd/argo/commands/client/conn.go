@@ -25,6 +25,7 @@ var overrides = clientcmd.ConfigOverrides{}
 var (
 	explicitPath string
 	Offline      bool
+	OfflineFiles []string
 )
 
 func AddKubectlFlagsToCmd(cmd *cobra.Command) {
@@ -63,6 +64,7 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client) {
 			},
 			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
 			Offline:              Offline,
+			OfflineFiles:         OfflineFiles,
 			Context:              ctx,
 		})
 	if err != nil {

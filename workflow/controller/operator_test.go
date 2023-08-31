@@ -18,11 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -30,6 +32,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
@@ -128,7 +131,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -162,7 +165,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -195,7 +198,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(`
@@ -240,7 +243,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -274,7 +277,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -364,6 +367,7 @@ func TestGlobalParams(t *testing.T) {
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
+	assert.Contains(t, woc.globalParams, "workflow.mainEntrypoint")
 	assert.Contains(t, woc.globalParams, "workflow.parameters")
 	assert.Contains(t, woc.globalParams, "workflow.annotations")
 	assert.Contains(t, woc.globalParams, "workflow.labels")
@@ -508,8 +512,8 @@ func TestVolumeGCStrategy(t *testing.T) {
 	}
 }
 
-// TestProcessNodesWithRetries tests the processNodesWithRetries() method.
-func TestProcessNodesWithRetries(t *testing.T) {
+// TestProcessNodeRetries tests the processNodeRetries() method.
+func TestProcessNodeRetries(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	assert.NotNil(t, controller)
@@ -541,13 +545,14 @@ func TestProcessNodesWithRetries(t *testing.T) {
 		woc.addChildNode(nodeName, childNode)
 	}
 
-	n := woc.wf.GetNodeByName(nodeName)
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
@@ -563,21 +568,23 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Add a third node that has failed.
 	childNode := "child-node-3"
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
 }
 
-// TestProcessNodesWithRetries tests retrying when RetryOn.Error is enabled
-func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
+// TestProcessNodeRetries tests retrying when RetryOn.Error is enabled
+func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	assert.NotNil(t, controller)
@@ -610,14 +617,15 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 		woc.addChildNode(nodeName, childNode)
 	}
 
-	n := woc.wf.GetNodeByName(nodeName)
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
@@ -632,21 +640,23 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Add a third node that has errored.
 	childNode := "child-node-3"
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, childNode)
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeError)
 }
 
-// TestProcessNodesWithRetries tests retrying when RetryOnTransientError is enabled
-func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
+// TestProcessNodeRetries tests retrying when RetryOnTransientError is enabled
+func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	assert.NotNil(t, controller)
@@ -679,14 +689,15 @@ func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
 		woc.addChildNode(nodeName, childNode)
 	}
 
-	n := woc.wf.GetNodeByName(nodeName)
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
@@ -705,7 +716,8 @@ func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
 	_ = os.Setenv(transientEnvVarKey, transientErrMsg)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 	_ = os.Unsetenv(transientEnvVarKey)
 
@@ -713,13 +725,14 @@ func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
 	childNode := "child-node-3"
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, childNode)
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeError)
 }
 
-func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
+func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
@@ -754,14 +767,15 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	woc.addChildNode(nodeName, "child-node-1")
 
-	n := woc.wf.GetNodeByName(nodeName)
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
@@ -772,7 +786,7 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
 }
 
-func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
+func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require := require.New(t)
 
 	cancel, controller := newController()
@@ -808,10 +822,10 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, "child-node-1")
 
-	n := woc.wf.GetNodeByName(nodeName)
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 
 	// Last child has failed. processNodesWithRetries() should return false due to the default backoff.
-	var err error
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	require.NoError(err)
 	require.Equal(wfv1.NodeRunning, n.Phase)
@@ -824,7 +838,8 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 
 	woc.initializeNode("child-node-2", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, "child-node-2")
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	require.NoError(err)
@@ -867,7 +882,7 @@ func parseRetryMessage(message string) (int, error) {
 	return totalSeconds, nil
 }
 
-// TestProcessNodesWithRetries tests retrying when RetryOn.Error is disabled
+// TestProcessNodeRetries tests retrying when RetryOn.Error is disabled
 func TestProcessNodesNoRetryWithError(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
@@ -901,14 +916,15 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 		woc.addChildNode(nodeName, childNode)
 	}
 
-	n := woc.wf.GetNodeByName(nodeName)
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
@@ -924,7 +940,8 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
 
@@ -944,10 +961,10 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/retry-backoff-s69z6
   uid: 110dbef4-c54b-4963-9739-03e9878810d9
 spec:
-  
+
   entrypoint: retry-backoff
   templates:
-  - 
+  -
     container:
       args:
       - import random; import sys; exit_code = random.choice([1, 1]); sys.exit(exit_code)
@@ -1058,7 +1075,8 @@ func TestBackoffMessage(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-	retryNode := woc.wf.GetNodeByName("retry-backoff-s69z6")
+	retryNode, err := woc.wf.GetNodeByName("retry-backoff-s69z6")
+	assert.NoError(t, err)
 
 	// Simulate backoff of 4 secods
 	firstNode := getChildNodeIndex(retryNode, woc.wf.Status.Nodes, 0)
@@ -1349,6 +1367,62 @@ func TestAssessNodeStatus(t *testing.T) {
 					{
 						Name:  common.MainContainerName,
 						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+					},
+				},
+				Message: "failed since init container failed",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
+		want: wfv1.NodeFailed,
+	}, {
+		name: "pod failed - init container failed but neither wait nor main containers are finished",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				InitContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+					},
+				},
+				ContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.WaitContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+					{
+						Name:  common.MainContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+				},
+				Message: "failed since init container failed",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
+		want: wfv1.NodeFailed,
+	}, {
+		name: "pod failed - init container with non-standard init container name failed but neither wait nor main containers are finished",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				InitContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+					},
+					{
+						Name:  "random-init-container",
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+					},
+				},
+				ContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.WaitContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+					{
+						Name:  common.MainContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
 					},
 				},
 				Message: "failed since init container failed",
@@ -2844,9 +2918,11 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+	assert.Equal(t, []string{
+		"/var/run/argo/argoexec", "emissary",
 		"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
-		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
+		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\"",
+	}, pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -3669,12 +3745,18 @@ spec:
 	woc.operate(ctx)
 	time.Sleep(time.Second)
 	// Parent dag node has no pod
-	parentNode := woc.wf.GetNodeByName("dag-events")
+	parentNode, err := woc.wf.GetNodeByName("dag-events")
+	if err != nil {
+		assert.NoError(t, err)
+	}
 	pod, err := woc.getPodByNode(parentNode)
 	assert.Nil(t, pod)
 	assert.Error(t, err, "Expected node type Pod, got DAG")
 	// Pod node should return a pod
-	podNode := woc.wf.GetNodeByName("dag-events.a")
+	podNode, err := woc.wf.GetNodeByName("dag-events.a")
+	if err != nil {
+		assert.NoError(t, err)
+	}
 	pod, err = woc.getPodByNode(podNode)
 	assert.NoError(t, err)
 	assert.NotNil(t, pod)
@@ -3704,15 +3786,36 @@ func TestPDBCreation(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(pdbwf)
 	cancel, controller := newController(wf)
 	defer cancel()
-
 	ctx := context.Background()
+
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
+	pdb, _ := controller.kubeclientset.PolicyV1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
 	assert.Equal(t, pdb.Name, wf.Name)
 	woc.markWorkflowSuccess(ctx)
-	_, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
+	_, err := controller.kubeclientset.PolicyV1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
 	assert.EqualError(t, err, "poddisruptionbudgets.policy \"my-pdb-wf\" not found")
+
+	// Test when PDB already exists
+	newPDB := policyv1.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   wf.Name,
+			Labels: map[string]string{common.LabelKeyWorkflow: wf.Name},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+			},
+		},
+		Spec: policyv1.PodDisruptionBudgetSpec{
+			MinAvailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 3, StrVal: "3"},
+		},
+	}
+	_, err = controller.kubeclientset.PolicyV1().PodDisruptionBudgets(wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pdb, _ = controller.kubeclientset.PolicyV1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
+	assert.Equal(t, pdb.Name, wf.Name)
 }
 
 func TestPDBCreationRaceDelete(t *testing.T) {
@@ -3724,7 +3827,7 @@ func TestPDBCreationRaceDelete(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-	err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
+	err := controller.kubeclientset.PolicyV1().PodDisruptionBudgets("").Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
 	assert.NoError(t, err)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
@@ -3852,19 +3955,19 @@ kind: Workflow
 metadata:
   name: daemon-step-dvbnn
 spec:
-  
+
   entrypoint: daemon-example
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: daemon-example
     outputs: {}
     steps:
-    - - 
+    - -
         name: influx
         template: influxdb
-  - 
+  -
     container:
       image: influxdb:1.2
       name: ""
@@ -3921,6 +4024,7 @@ status:
         cpu: 10
         memory: 0
       startedAt: "2020-04-02T16:29:18Z"
+      hostNodeName: ip-127-0-1-1
       templateName: influxdb
       type: Pod
     daemon-step-dvbnn-3639466923:
@@ -3953,7 +4057,8 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	retryNode := woc.wf.GetNodeByName("daemon-step-dvbnn[0].influx")
+	retryNode, err := woc.wf.GetNodeByName("daemon-step-dvbnn[0].influx")
+	assert.NoError(t, err)
 	assert.NotNil(t, retryNode)
 	fmt.Println(retryNode)
 	scope := &wfScope{
@@ -3964,6 +4069,7 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.Contains(t, scope.scope, "steps.influx.id")
 	assert.Contains(t, scope.scope, "steps.influx.startedAt")
 	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
+	assert.Contains(t, scope.scope, "steps.influx.hostNodeName")
 }
 
 var workflowWithPVCAndFailingStep = `
@@ -4038,8 +4144,10 @@ func TestDeletePVCDoesNotDeletePVCOnFailedWorkflow(t *testing.T) {
 	ctx := context.Background()
 	woc.operate(ctx)
 
-	node1 := woc.wf.GetNodeByName("wf-with-pvc(0)[0].succeed")
-	node2 := woc.wf.GetNodeByName("wf-with-pvc(0)[1].failure")
+	node1, err := woc.wf.GetNodeByName("wf-with-pvc(0)[0].succeed")
+	assert.NoError(err)
+	node2, err := woc.wf.GetNodeByName("wf-with-pvc(0)[1].failure")
+	assert.NoError(err)
 
 	// Node 1 Succeeded
 	assert.Equal(node1.Phase, wfv1.NodeSucceeded)
@@ -4110,19 +4218,19 @@ kind: Workflow
 metadata:
   name: global-outputs-bg7gl
 spec:
-  
+
   entrypoint: generate-globals
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: generate-globals
     outputs: {}
     steps:
-    - - 
+    - -
         name: generate
         template: nested-global-output-generation
-  - 
+  -
     container:
       args:
       - sleep 1; echo -n hello world > /tmp/hello_world.txt
@@ -4140,7 +4248,7 @@ spec:
       - name: hello-param
         valueFrom:
           path: /tmp/hello_world.txt
-  - 
+  -
     inputs: {}
     metadata: {}
     name: nested-global-output-generation
@@ -4151,7 +4259,7 @@ spec:
         valueFrom:
           parameter: '{{steps.generate-output.outputs.parameters.hello-param}}'
     steps:
-    - - 
+    - -
         name: generate-output
         template: output-generation
 status:
@@ -4304,7 +4412,7 @@ spec:
     - name: missing
   entrypoint: whalesay
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -4380,10 +4488,10 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/echo-wngc4
   uid: bed2749b-2971-4172-a61e-455ef02c4379
 spec:
-  
+
   entrypoint: echo
   templates:
-  - 
+  -
     container:
       args:
       - sleep 10 && exit 1
@@ -4456,10 +4564,10 @@ kind: Workflow
 metadata:
   name: echo-r6v49
 spec:
-  
+
   entrypoint: echo
   templates:
-  - 
+  -
     container:
       args:
       - exit 1
@@ -4554,10 +4662,10 @@ kind: Workflow
 metadata:
   name: dag-primay-branch-sd6rg
 spec:
-  
+
   entrypoint: statis
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -4570,7 +4678,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit
@@ -4583,20 +4691,20 @@ spec:
     metadata: {}
     name: exit
     outputs: {}
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         template: pass
-      - 
+      -
         dependencies:
         - A
         name: B
         onExit: exit
         template: pass
         when: '{{tasks.A.status}} != Succeeded'
-      - 
+      -
         dependencies:
         - A
         name: C
@@ -4711,7 +4819,8 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 	ctx := context.Background()
 	woc := newWoc(*wf)
 	woc.operate(ctx)
-	assert.Nil(t, woc.wf.GetNodeByName("B.onExit"))
+	_, err := woc.wf.GetNodeByName("B.onExit")
+	assert.Error(t, err)
 }
 
 func TestGenerateNodeName(t *testing.T) {
@@ -4821,7 +4930,7 @@ var workflowStatusMetric = `
 metadata:
   name: retry-to-completion-rngcr
 spec:
-  
+
   entrypoint: retry-to-completion
   metrics:
     prometheus:
@@ -4838,7 +4947,7 @@ spec:
       name: result_counter
       when: ""
   templates:
-  - 
+  -
     container:
       args:
       - import random; import sys; exit_code = random.choice(range(0, 5)); sys.exit(exit_code)
@@ -5017,6 +5126,9 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "whalesay-cache",
 			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
@@ -5037,6 +5149,77 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 			assert.NotNil(t, node.Outputs)
 			assert.Equal(t, "hello", node.Outputs.Parameters[0].Name)
 			assert.Equal(t, "foobar", node.Outputs.Parameters[0].Value.String())
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+}
+
+var workflowCachedNoOutputs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: memoized-workflow-test
+  namespace: default
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hi-there-world
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    memoize:
+      key: "{{inputs.parameters.message}}"
+      cache:
+        configMap:
+          name: whalesay-cache
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestConfigMapCacheLoadOperateNoOutputs(t *testing.T) {
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"hi-there-world": `{"nodeID":"memoized-simple-workflow-5wj2p","outputs":null,"creationTimestamp":"2020-09-21T18:12:56Z"}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "whalesay-cache",
+			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+	}
+	wf := wfv1.MustUnmarshalWorkflow(workflowCachedNoOutputs)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Nil(t, node.Outputs)
 			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 		}
 	}
@@ -5089,6 +5272,9 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "whalesay-cache",
 				ResourceVersion: "1630732",
+				Labels: map[string]string{
+					common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+				},
 			},
 		}
 	}
@@ -5134,6 +5320,45 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 }
 
+func TestConfigMapCacheLoadNoLabels(t *testing.T) {
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "whalesay-cache",
+			ResourceVersion: "1630732",
+		},
+	}
+	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	fn := func() {
+		woc.operate(ctx)
+	}
+	assert.NotPanics(t, fn)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Nil(t, node.Outputs)
+			assert.Equal(t, wfv1.NodeError, node.Phase)
+		}
+	}
+}
+
 func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 	sampleConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
@@ -5146,6 +5371,9 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "whalesay-cache",
 			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
@@ -5258,7 +5486,8 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	woc.addChildNode(nodeName, childNode)
 
 	var opts executeTemplateOpts
-	n := woc.wf.GetNodeByName(nodeName)
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	_, _, err = woc.processNodeRetries(n, retries, &opts)
 	if assert.NoError(t, err) {
 		assert.Equal(t, n.StartedAt.Add(20*time.Second).Round(time.Second).String(), opts.executionDeadline.Round(time.Second).String())
@@ -5272,10 +5501,10 @@ metadata:
   name: resubmit-pending-wf
   namespace: argo
 spec:
-  
+
   entrypoint: resubmit-pending
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: resubmit-pending
@@ -5347,12 +5576,12 @@ status:
       name: my-wf
       phase: Failed
 `)
-	wf, err := util.FormulateResubmitWorkflow(wf, true, nil)
+	ctx := context.Background()
+	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, nil)
 	if assert.NoError(t, err) {
 		cancel, controller := newController(wf)
 		defer cancel()
 
-		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -5396,12 +5625,12 @@ status:
       name: my-wf
       phase: Failed
 `)
-	wf, err := util.FormulateResubmitWorkflow(wf, true, []string{"message=modified"})
+	ctx := context.Background()
+	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, []string{"message=modified"})
 	if assert.NoError(t, err) {
 		cancel, controller := newController(wf)
 		defer cancel()
 
-		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -5464,7 +5693,7 @@ spec:
     outputs:
       parameters:
       - name: my-param
-        valueFrom: 
+        valueFrom:
           path: /my-path
 `)
 	cancel, controller := newController(wf)
@@ -5488,106 +5717,106 @@ spec:
 var globalVarsOnExit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
-metadata: 
+metadata:
   name: hello-world-6gphm-8n22g
   namespace: default
-spec: 
-  arguments: 
-    parameters: 
-      - 
+spec:
+  arguments:
+    parameters:
+      -
         name: message
         value: nononono
-  workflowTemplateRef: 
+  workflowTemplateRef:
     name: hello-world-6gphm
-status: 
-  nodes: 
-    hello-world-6gphm-8n22g: 
+status:
+  nodes:
+    hello-world-6gphm-8n22g:
       displayName: hello-world-6gphm-8n22g
       finishedAt: "2020-07-14T20:45:28Z"
       hostNodeName: minikube
       id: hello-world-6gphm-8n22g
-      inputs: 
-        parameters: 
-          - 
+      inputs:
+        parameters:
+          -
             name: message
             value: nononono
       name: hello-world-6gphm-8n22g
-      outputs: 
-        artifacts: 
-          - 
+      outputs:
+        artifacts:
+          -
             archiveLogs: true
             name: main-logs
-            s3: 
-              accessKeySecret: 
+            s3:
+              accessKeySecret:
                 key: accesskey
                 name: my-minio-cred
               bucket: my-bucket
               endpoint: "minio:9000"
               insecure: true
               key: hello-world-6gphm-8n22g/hello-world-6gphm-8n22g/main.log
-              secretKeySecret: 
+              secretKeySecret:
                 key: secretkey
                 name: my-minio-cred
         exitCode: "0"
       phase: Succeeded
-      resourcesDuration: 
+      resourcesDuration:
         cpu: 2
         memory: 1
       startedAt: "2020-07-14T20:45:25Z"
-      templateRef: 
+      templateRef:
         name: hello-world-6gphm
         template: whalesay
       templateScope: local/hello-world-6gphm-8n22g
       type: Pod
   phase: Running
-  resourcesDuration: 
+  resourcesDuration:
     cpu: 5
     memory: 2
   startedAt: "2020-07-14T20:45:25Z"
-  storedTemplates: 
-    namespaced/hello-world-6gphm/whalesay: 
-      
-      container: 
-        args: 
+  storedTemplates:
+    namespaced/hello-world-6gphm/whalesay:
+
+      container:
+        args:
           - "hello {{inputs.parameters.message}}"
-        command: 
+        command:
           - cowsay
         image: "docker/whalesay:latest"
-      inputs: 
-        parameters: 
-          - 
+      inputs:
+        parameters:
+          -
             name: message
       metadata: {}
       name: whalesay
       outputs: {}
-  storedWorkflowTemplateSpec: 
-    arguments: 
-      parameters: 
-        - 
+  storedWorkflowTemplateSpec:
+    arguments:
+      parameters:
+        -
           name: message
           value: nononono
     entrypoint: whalesay
     onExit: exitContainer
-    templates: 
+    templates:
       - name: whalesay
         container:
           image: "docker/whalesay:latest"
-          args: 
+          args:
             - "hello {{inputs.parameters.message}}"
-          command: 
+          command:
             - cowsay
-        inputs: 
-          parameters: 
+        inputs:
+          parameters:
             - name: message
       - name: exitContainer
         container:
           image: docker/whalesay
-          args: 
+          args:
             - "goodbye {{inputs.parameters.message}}"
-          command: 
+          command:
             - cowsay
-        inputs: 
-          parameters: 
+        inputs:
+          parameters:
             - name: message
 `
 
@@ -5775,8 +6004,8 @@ metadata:
 spec:
   entrypoint: main
   templates:
-  - name: main 
-    steps: 
+  - name: main
+    steps:
     - - name: step1
         template: whalesay
 
@@ -5796,7 +6025,7 @@ metadata:
 spec:
   entrypoint: main
   templates:
-  - name: main 
+  - name: main
     dag:
       tasks:
       - name: dag1
@@ -5942,7 +6171,7 @@ apiVersion: v1
 kind: Pod
 status:
   conditions:
-  - lastProbeTime: 
+  - lastProbeTime:
     lastTransitionTime: '2020-08-27T18:14:19Z'
     status: 'True'
     type: PodScheduled
@@ -5957,7 +6186,9 @@ status:
     restartCount: 0
     started: false
     state:
-      waiting: {}
+      waiting:
+        reason: ContainerCreating
+        message: 'Container is creating'
   - containerID: docker://d31f0d56f29b6962ef1493b2df6b7cdb54d48d8b8fa95d7e9c98ddc56f857b35
     image: argoproj/argoexec:v2.9.5
     imageID: docker-pullable://argoproj/argoexec@sha256:989114232892e051c25be323af626149452578d3ebbdc3e9ec7205bba3918d48
@@ -5984,7 +6215,7 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	assert.NotNil(t, pod)
 	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
-	assert.Contains(t, msg, "Pod failed before")
+	assert.Equal(t, msg, "Pod failed before main container starts due to ContainerCreating: Container is creating")
 }
 
 var podWithWaitContainerOOM = `
@@ -6177,9 +6408,9 @@ spec:
 
   # divide-by-2 divides a number in half
   - name: divide-by-2
-    retryStrategy: 
+    retryStrategy:
         limit: 2
-        backoff: 
+        backoff:
             duration: "1"
             factor: 2
     inputs:
@@ -6193,9 +6424,9 @@ spec:
         echo $(({{inputs.parameters.num}}/2))
   # whalesay prints a number using whalesay
   - name: whalesay
-    retryStrategy: 
+    retryStrategy:
         limit: 2
-        backoff: 
+        backoff:
             duration: "1"
             factor: 2
     inputs:
@@ -6235,10 +6466,10 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-dag-h8b82
 spec:
-  
+
   entrypoint: parameter-aggregation
   templates:
-  - 
+  -
     dag:
       tasks:
       - arguments:
@@ -6270,7 +6501,7 @@ spec:
     metadata: {}
     name: parameter-aggregation
     outputs: {}
-  - 
+  -
     container:
       args:
       - |
@@ -6300,7 +6531,7 @@ spec:
       - name: evenness
         valueFrom:
           path: /tmp/even
-  - 
+  -
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -6446,7 +6677,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
-			}}}
+			},
+		},
+	}
 	tmpl := wfv1.Template{}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 
@@ -6461,7 +6694,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
-			}}}
+			},
+		},
+	}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -6475,7 +6710,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 				},
-			}}}
+			},
+		},
+	}
 	assert.False(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -6485,7 +6722,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 				},
-			}}}
+			},
+		},
+	}
 	assert.False(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -6495,7 +6734,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
-			}}}
+			},
+		},
+	}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 }
 
@@ -6531,21 +6772,24 @@ func TestRetryOnDiffHost(t *testing.T) {
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning)
 	woc.addChildNode(nodeName, childNode)
 
-	n := woc.wf.GetNodeByName(nodeName)
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
-	_, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Ensure related fields are not set
 	assert.Equal(t, lastChild.HostNodeName, "")
 
 	// Set host name
-	n = woc.wf.GetNodeByName(nodeName)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	lastChild.HostNodeName = "test-fail-hostname"
 	woc.wf.Status.Nodes[lastChild.ID] = *lastChild
@@ -6563,8 +6807,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 	assert.NotNil(t, pod.Spec.Affinity)
 
 	// Verify if template's Affinity has the right value
-	targetNodeSelectorRequirement :=
-		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	targetNodeSelectorRequirement := pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
 		Key:      hostSelector,
 		Operator: apiv1.NodeSelectorOpNotIn,
@@ -6620,7 +6863,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["{{workflows.scheduledTime}}"]
+      args: ["{{workflow.scheduledTime}}"]
 `
 
 func TestWorkflowScheduledTimeVariable(t *testing.T) {
@@ -6632,6 +6875,33 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
+}
+
+var wfMainEntrypointVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  shutdown: "Stop"
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.mainEntrypoint}}"]
+`
+
+func TestWorkflowMainEntrypointVariable(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfMainEntrypointVariable)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, "whalesay", woc.globalParams[common.GlobalVarWorkflowMainEntrypoint])
 }
 
 var wfNodeNameField = `
@@ -6683,7 +6953,6 @@ func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
 	}
 
 	assert.True(t, foundPod)
-
 }
 
 func TestWorkflowShutdownStrategy(t *testing.T) {
@@ -7133,7 +7402,6 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 // - Workflow spec.workflowMetadata
 // - WorkflowTemplate spec.workflowMetadata
 func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
-
 	tests := []struct {
 		name                  string
 		workflow              string
@@ -7196,7 +7464,6 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
 			wftmpl := wfv1.MustUnmarshalWorkflowTemplate(tt.workflowTemplate)
 			cancel, controller := newController(wf, wftmpl)
@@ -7269,7 +7536,6 @@ func TestWfPendingWithNoPod(t *testing.T) {
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(pods.Items))
-
 }
 
 var wfPendingWithSync = `apiVersion: argoproj.io/v1alpha1
@@ -7535,7 +7801,7 @@ func TestDagTwoChildrenWithNonExpectedNodeType(t *testing.T) {
 
 	sentNode := woc.wf.Status.Nodes.FindByDisplayName("sent")
 
-	//Ensure that both child tasks are labeled as children of the "sent" node
+	// Ensure that both child tasks are labeled as children of the "sent" node
 	assert.Len(t, sentNode.Children, 2)
 }
 
@@ -7765,7 +8031,8 @@ func TestOperatorRetryExpression(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
-	retryNode := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	retryNode, err := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
 	assert.Equal(t, 2, len(retryNode.Children))
 	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
@@ -7773,15 +8040,359 @@ func TestOperatorRetryExpression(t *testing.T) {
 
 func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
-	retryNode := wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	retryNode, err := wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	assert.NoError(t, err)
 
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
 
-	assert.Len(t, localScope, 4)
+	assert.Len(t, localScope, 5)
 	assert.Equal(t, "1", localScope[common.LocalVarRetries])
 	assert.Equal(t, "1", localScope[common.LocalVarRetriesLastExitCode])
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
 	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
+	assert.Equal(t, "Error (exit code 1)", localScope[common.LocalVarRetriesLastMessage])
+}
+
+const operatorRetryExpressionError = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-script-9z9pv
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: safe-to-retry
+        template: safe-to-retry
+    - - arguments:
+          parameters:
+          - name: safe-to-retry
+            value: '{{steps.safe-to-retry.outputs.result}}'
+        name: retry
+        template: retry-script
+  - name: safe-to-retry
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        print("true")
+  - inputs:
+      parameters:
+      - name: safe-to-retry
+    name: retry-script
+    retryStrategy:
+      expression: "true"
+      limit: "3"
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        import random;
+        import sys;
+        exit_code = random.choice([1, 2]);
+        sys.exit(exit_code)
+status:
+  nodes:
+    retry-script-9z9pv:
+      children:
+      - retry-script-9z9pv-1740877928
+      displayName: retry-script-9z9pv
+      id: retry-script-9z9pv
+      name: retry-script-9z9pv
+      outboundNodes:
+      - retry-script-9z9pv-2327053777
+      phase: Running
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: main
+      templateScope: local/retry-script-9z9pv
+      type: Steps
+    retry-script-9z9pv-734073693:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2346402485
+      displayName: '[1]'
+      id: retry-script-9z9pv-734073693
+      name: retry-script-9z9pv[1]
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-1740877928:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-3940097040
+      displayName: '[0]'
+      finishedAt: "2021-06-10T22:28:56Z"
+      id: retry-script-9z9pv-1740877928
+      name: retry-script-9z9pv[0]
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-2327053777:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(1)
+      finishedAt: "2021-06-10T22:29:10Z"
+      id: retry-script-9z9pv-2327053777
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 1)
+      name: retry-script-9z9pv[1].retry(1)
+      outputs:
+        exitCode: "1"
+      phase: Error
+      startedAt: "2021-06-10T22:29:04Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-2346402485:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2931195156
+      - retry-script-9z9pv-2327053777
+      displayName: retry
+      id: retry-script-9z9pv-2346402485
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      name: retry-script-9z9pv[1].retry
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Retry
+    retry-script-9z9pv-2931195156:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(0)
+      finishedAt: "2021-06-10T22:29:02Z"
+      id: retry-script-9z9pv-2931195156
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 2)
+      name: retry-script-9z9pv[1].retry(0)
+      outputs:
+        exitCode: "1"
+      phase: Error
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-3940097040:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-734073693
+      displayName: safe-to-retry
+      finishedAt: "2021-06-10T22:28:55Z"
+      id: retry-script-9z9pv-3940097040
+      name: retry-script-9z9pv[0].safe-to-retry
+      outputs:
+        exitCode: "0"
+        result: "true"
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: safe-to-retry
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+  phase: Running
+  startedAt: "2021-06-10T22:28:49Z"
+`
+
+// TestOperatorRetryExpressionError tests that retryStrategy.expression works when the last node Errored.
+// The expression says retry "true" and as the policy is not specified
+// we are proving that the policy applied was Always not OnFailure
+func TestOperatorRetryExpressionError(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionError)
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	retryNode, err := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	assert.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	assert.Equal(t, 3, len(retryNode.Children))
+}
+
+const operatorRetryExpressionErrorNoExpr = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-script-9z9pv
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: safe-to-retry
+        template: safe-to-retry
+    - - arguments:
+          parameters:
+          - name: safe-to-retry
+            value: '{{steps.safe-to-retry.outputs.result}}'
+        name: retry
+        template: retry-script
+  - name: safe-to-retry
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        print("true")
+  - inputs:
+      parameters:
+      - name: safe-to-retry
+    name: retry-script
+    retryStrategy:
+      limit: "3"
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        import random;
+        import sys;
+        exit_code = random.choice([1, 2]);
+        sys.exit(exit_code)
+status:
+  nodes:
+    retry-script-9z9pv:
+      children:
+      - retry-script-9z9pv-1740877928
+      displayName: retry-script-9z9pv
+      id: retry-script-9z9pv
+      name: retry-script-9z9pv
+      outboundNodes:
+      - retry-script-9z9pv-2327053777
+      phase: Running
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: main
+      templateScope: local/retry-script-9z9pv
+      type: Steps
+    retry-script-9z9pv-734073693:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2346402485
+      displayName: '[1]'
+      id: retry-script-9z9pv-734073693
+      name: retry-script-9z9pv[1]
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-1740877928:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-3940097040
+      displayName: '[0]'
+      finishedAt: "2021-06-10T22:28:56Z"
+      id: retry-script-9z9pv-1740877928
+      name: retry-script-9z9pv[0]
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-2327053777:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(1)
+      finishedAt: "2021-06-10T22:29:10Z"
+      id: retry-script-9z9pv-2327053777
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 1)
+      name: retry-script-9z9pv[1].retry(1)
+      outputs:
+        exitCode: "1"
+      phase: Error
+      startedAt: "2021-06-10T22:29:04Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-2346402485:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2931195156
+      - retry-script-9z9pv-2327053777
+      displayName: retry
+      id: retry-script-9z9pv-2346402485
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      name: retry-script-9z9pv[1].retry
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Retry
+    retry-script-9z9pv-2931195156:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(0)
+      finishedAt: "2021-06-10T22:29:02Z"
+      id: retry-script-9z9pv-2931195156
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 2)
+      name: retry-script-9z9pv[1].retry(0)
+      outputs:
+        exitCode: "1"
+      phase: Error
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-3940097040:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-734073693
+      displayName: safe-to-retry
+      finishedAt: "2021-06-10T22:28:55Z"
+      id: retry-script-9z9pv-3940097040
+      name: retry-script-9z9pv[0].safe-to-retry
+      outputs:
+        exitCode: "0"
+        result: "true"
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: safe-to-retry
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+  phase: Running
+  startedAt: "2021-06-10T22:28:49Z"
+`
+
+// TestOperatorRetryExpressionErrorNoExpr tests that the default policy becomes
+// OnFailure by having no expression and no explicit retryPolicy
+func TestOperatorRetryExpressionErrorNoExpr(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionErrorNoExpr)
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	retryNode, err := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	assert.NoError(t, err)
+
+	assert.Equal(t, wfv1.NodeError, retryNode.Phase)
+	assert.Equal(t, 2, len(retryNode.Children))
+	assert.Equal(t, "Error (exit code 1)", retryNode.Message)
 }
 
 var exitHandlerWithRetryNodeParam = `
@@ -7951,10 +8562,12 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	retryStepNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1")
+	retryStepNode, err := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1")
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(retryStepNode.Outputs.Parameters))
 	assert.Equal(t, "hello world", retryStepNode.Outputs.Parameters[0].Value.String())
-	onExitNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
+	onExitNode, err := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
+	assert.NoError(t, err)
 	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
 }
 
@@ -7972,7 +8585,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	wf.Status.Phase = wfv1.WorkflowError
@@ -8628,4 +9241,279 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
+}
+
+func TestWorkflowTemplateOnExitValidation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-invalid-onexit-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-onexit
+`)
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml")
+	cancel, controller := newController(wf, wft)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	t.Log(woc.wf)
+	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
+}
+
+func TestWorkflowTemplateEntryPointValidation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-invalid-entrypoint-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-entrypoint
+`)
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml")
+	cancel, controller := newController(wf, wft)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	t.Log(woc.wf)
+	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
+}
+
+var workflowWithTemplateLevelMemoizationAndChildStep = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  namespace: default
+  generateName: memoized-entrypoint-
+spec:
+  entrypoint: entrypoint
+  templates:
+  - name: entrypoint
+    memoize:
+      key: "entrypoint-key-1"
+      cache:
+        configMap:
+          name: cache-top-entrypoint
+    outputs:
+        parameters:
+          - name: url
+            valueFrom:
+              expression: |
+                'https://argo-workflows.company.com/workflows/namepace/' + '{{workflow.name}}' + '?tab=workflow'
+    steps:
+      - - name: whalesay
+          template: whalesay
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello_world $(date) > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestMemoizationTemplateLevelCacheWithStepWithoutCache(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	// Expect both workflowTemplate and the step to be executed
+	for _, node := range woc.wf.Status.Nodes {
+		if node.TemplateName == "entrypoint" {
+			assert.True(t, true, "Entrypoint node does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			assert.False(t, node.MemoizationStatus.Hit)
+		}
+		if node.Name == "whalesay" {
+			assert.True(t, true, "Whalesay step does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+}
+
+func TestMemoizationTemplateLevelCacheWithStepWithCache(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+
+	// Assume cache is already set
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"entrypoint-key-1": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "cache-top-entrypoint",
+			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+	}
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	// Only parent node should exist and it should be a memoization cache hit
+	for _, node := range woc.wf.Status.Nodes {
+		t.Log(node)
+		if node.TemplateName == "entrypoint" {
+			assert.True(t, true, "Entrypoint node does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			assert.True(t, node.MemoizationStatus.Hit)
+		}
+		if node.Name == "whalesay" {
+			assert.False(t, true, "Whalesay step should not have been executed")
+		}
+	}
+}
+
+var workflowWithTemplateLevelMemoizationAndChildDag = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  namespace: default
+  generateName: memoized-entrypoint-
+spec:
+  entrypoint: entrypoint
+  templates:
+  - name: entrypoint
+    dag:
+      tasks:
+      - name: whalesay-task
+        template: whalesay
+    memoize:
+      key: "entrypoint-key-1"
+      cache:
+        configMap:
+          name: cache-top-entrypoint
+    outputs:
+      parameters:
+      - name: url
+        valueFrom:
+          expression: |
+            'https://argo-workflows.company.com/workflows/namepace/' + '{{workflow.name}}' + '?tab=workflow'
+            
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello_world $(date) > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestMemoizationTemplateLevelCacheWithDagWithoutCache(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildDag)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	// Expect both workflowTemplate and the dag to be executed
+	for _, node := range woc.wf.Status.Nodes {
+		if node.TemplateName == "entrypoint" {
+			assert.True(t, true, "Entrypoint node does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			assert.False(t, node.MemoizationStatus.Hit)
+		}
+		if node.Name == "whalesay" {
+			assert.True(t, true, "Whalesay dag does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+}
+
+func TestMemoizationTemplateLevelCacheWithDagWithCache(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildDag)
+
+	// Assume cache is already set
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"entrypoint-key-1": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "cache-top-entrypoint",
+			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+	}
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	// Only parent node should exist and it should be a memoization cache hit
+	for _, node := range woc.wf.Status.Nodes {
+		t.Log(node)
+		if node.TemplateName == "entrypoint" {
+			assert.True(t, true, "Entrypoint node does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			assert.True(t, node.MemoizationStatus.Hit)
+		}
+		if node.Name == "whalesay" {
+			assert.False(t, true, "Whalesay dag should not have been executed")
+		}
+	}
 }

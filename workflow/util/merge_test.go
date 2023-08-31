@@ -271,3 +271,76 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 		assert.Equal("wf", wf2.Annotations["testAnnotation"])
 	})
 }
+
+var baseNilHookWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+spec:
+`
+
+var baseHookWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+spec:
+  hooks:
+    foo:
+      template: a
+      expression: workflow.status == "Pending"
+`
+
+var patchNilHookWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+`
+
+var patchHookWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  hooks:
+    foo:
+      template: c
+      expression: workflow.status == "Pending"
+    bar:
+      template: b
+      expression: workflow.status == "Pending"
+`
+
+func TestMergeHooks(t *testing.T) {
+	t.Run("NilBaseAndNilPatch", func(t *testing.T) {
+		patchHookWf := wfv1.MustUnmarshalWorkflow(patchNilHookWF)
+		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
+
+		err := MergeTo(patchHookWf, targetHookWf)
+		assert.NoError(t, err)
+		assert.Nil(t, targetHookWf.Spec.Hooks)
+	})
+
+	t.Run("NilBaseAndNotNilPatch", func(t *testing.T) {
+		patchHookWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
+		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
+
+		err := MergeTo(patchHookWf, targetHookWf)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		assert.Equal(t, "c", targetHookWf.Spec.Hooks[`foo`].Template)
+		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
+	})
+
+	// Ensure hook bar ends up in result, but foo is unchanged
+	t.Run("NotNilBaseAndPatch", func(t *testing.T) {
+		patchHookWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
+		targetHookWf := wfv1.MustUnmarshalWorkflow(baseHookWF)
+
+		err := MergeTo(patchHookWf, targetHookWf)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		assert.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
+		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
+	})
+}

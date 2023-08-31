@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	slices2 "k8s.io/utils/strings/slices"
+	"github.com/upper/db/v4"
 
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
@@ -34,7 +34,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -109,7 +108,7 @@ type WorkflowController struct {
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session               sqlbuilder.Database
+	session               db.Session
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
@@ -190,7 +189,6 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	}
 
 	wfc.UpdateConfig(ctx)
-
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
@@ -221,10 +219,10 @@ func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLW
 	}
 }
 
-func (wfc *WorkflowController) runCronController(ctx context.Context) {
+func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer)
 	cronController.Run(ctx)
 }
 
@@ -239,7 +237,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -299,9 +297,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
-	// Start the metrics server
-	go wfc.metrics.RunServer(ctx)
-
 	for i := 0; i < podCleanupWorkers; i++ {
 		go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
 	}
@@ -309,7 +304,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
-	go wfc.runCronController(ctx)
+	go wfc.runCronController(ctx, cronWorkflowWorkers)
 	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
@@ -322,6 +317,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) RunMetricsServer(ctx context.Context, isDummy bool) {
+	go wfc.metrics.RunServer(ctx, isDummy)
 }
 
 // Create and the Synchronization Manager
@@ -367,7 +366,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		labelSelector = labelSelector.Add(*req)
 	}
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
-	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.namespace).List(ctx, listOpts)
+	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(ctx, listOpts)
 	if err != nil {
 		return err
 	}
@@ -406,13 +405,7 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
 			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
 				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
-				err := wfc.updateConfig()
-				if err != nil {
-					log.Errorf("Failed update the Workflow Controller config map. error: %v", err)
-					continue
-				}
-				log.Infof("Successfully Workflow Controller config map %s/%s updated", cm.Namespace, cm.Name)
-				continue
+				wfc.UpdateConfig(ctx)
 			}
 			wfc.notifySemaphoreConfigUpdate(cm)
 		case <-stopCh:
@@ -666,7 +659,10 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 	case 0:
 		log.WithField("uid", uid).Info("Workflow missing, probably deleted")
 	case 1:
-		un := workflows[0].(*unstructured.Unstructured)
+		un, ok := workflows[0].(*unstructured.Unstructured)
+		if !ok {
+			return fmt.Errorf("object %+v is not an unstructured", workflows[0])
+		}
 		wf, err = util.FromUnstructured(un)
 		if err != nil {
 			return err
@@ -856,6 +852,9 @@ func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
 	labelSelector := labels.NewSelector().
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
+	// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
+	// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
+	options.ResourceVersion = ""
 }
 
 func getWfPriority(obj interface{}) (int32, time.Time) {
@@ -878,7 +877,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return reconciliationNeeded(obj.(*unstructured.Unstructured))
+				un, ok := obj.(*unstructured.Unstructured)
+				if !ok {
+					log.Warnf("Workflow FilterFunc: '%v' is not an unstructured", obj)
+					return false
+				}
+				return reconciliationNeeded(un)
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {

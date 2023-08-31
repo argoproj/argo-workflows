@@ -228,7 +228,7 @@ set when loading input artifacts. |  |
 ### <span id="artifact-g-c"></span> ArtifactGC
 
 
-> ArtifactGC describes how to delete artifacts from completed Workflows
+> ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
   
 
 
@@ -463,7 +463,7 @@ the ReadOnly setting in VolumeMounts.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | duration | string| `string` |  | | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") |  |
 | factor | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
-| maxDuration | string| `string` |  | | MaxDuration is the maximum amount of time allowed for the backoff strategy |  |
+| maxDuration | string| `string` |  | | MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy |  |
 
 
 
@@ -1661,8 +1661,21 @@ If this is not specified, the default behavior is defined by gRPC.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| operation | [GaugeOperation](#gauge-operation)| `GaugeOperation` |  | |  |  |
 | realtime | boolean| `bool` |  | | Realtime emits this metric in real time if applicable |  |
-| value | string| `string` |  | | Value is the value of the metric |  |
+| value | string| `string` |  | | Value is the value to be used in the operation with the metric's current value. If no operation is set,
+value is the value of the metric |  |
+
+
+
+### <span id="gauge-operation"></span> GaugeOperation
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| GaugeOperation | string| string | |  |  |
 
 
 
@@ -2455,6 +2468,7 @@ than the MaxAge, it will be ignored. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | name | string| `string` |  | | name of the mutex |  |
+| namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
 
 
@@ -2701,6 +2715,7 @@ save/load the directory appropriately.
 | lifecycleRule | [OSSLifecycleRule](#o-s-s-lifecycle-rule)| `OSSLifecycleRule` |  | |  |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | securityToken | string| `string` |  | | SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm |  |
+| useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
 
 
 
@@ -3771,6 +3786,7 @@ be retried and the retry strategy will be ignored |  |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
+| caSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | createBucketIfNotPresent | [CreateS3BucketOptions](#create-s3-bucket-options)| `CreateS3BucketOptions` |  | |  |  |
 | encryptionOptions | [S3EncryptionOptions](#s3-encryption-options)| `S3EncryptionOptions` |  | |  |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
@@ -4216,6 +4232,7 @@ Note that this field cannot be set when spec.os.name is windows.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
+| namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
 
 
@@ -4338,7 +4355,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
-Could also be a Duration, e.g.: "2m", "6h", "1d" |  |
+Could also be a Duration, e.g.: "2m", "6h" |  |
 
 
 

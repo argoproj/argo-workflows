@@ -16,7 +16,7 @@ const workflow = (name: string, namespace: string, uid: string): Workflow => {
 };
 
 describe('workflow service', () => {
-    const service = new WorkflowsService();
+    const service = WorkflowsService;
     test('getArtifactLogsUrl', () => {
         expect(service.getArtifactLogsPath(workflow('hello-world', 'argo', 'test-uid'), 'test-node', 'test-container', false)).toBe(
             'artifact-files/argo/workflows/hello-world/test-node/outputs/test-container-logs'

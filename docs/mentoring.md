@@ -46,7 +46,7 @@ Mentors:
 
 ## How to Participate Google Summer of Code
 
-We are participating [Google Summer of Code (GSoC)](https://summerofcode.withgoogle.com/) as part of the [CNCF mentoring program](https://github.com/cncf/mentoring)! Please check out the list of project ideas [here](https://github.com/cncf/mentoring/blob/main/summerofcode/2022.md#argo).
+We are participating [Google Summer of Code (GSoC)](https://summerofcode.withgoogle.com/) as part of the [CNCF mentoring program](https://github.com/cncf/mentoring)! Please check out the list of project ideas [here](https://github.com/cncf/mentoring/blob//0c209dd666702b42d853a28434984772946d4c5f/programs/summerofcode/2022.md#argo).
 
 If you are interested in applying and working on a particular project, please take a look at the timeline [here](https://developers.google.com/open-source/gsoc/timeline) and submit your proposal only to the GSoC program website. Proposals submitted outside of the Google Summer of Code program site **will not be considered** for Google Summer of Code.
 
@@ -56,5 +56,5 @@ For program specific questions, please refer to [GSoC FAQ](https://developers.go
 
 If you have any problems with your relationship, please contact us:
 
-* alex_collins@intuit.com
-* terrytangyuan@gmail.com
+* <alex_collins@intuit.com>
+* <terrytangyuan@gmail.com>

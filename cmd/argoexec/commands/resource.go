@@ -21,7 +21,7 @@ func NewResourceCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			ctx := context.Background()
+			ctx := cmd.Context()
 			err := execResource(ctx, args[0])
 			if err != nil {
 				log.Fatalf("%+v", err)

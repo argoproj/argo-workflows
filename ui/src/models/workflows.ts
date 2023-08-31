@@ -539,6 +539,22 @@ export interface Workflow {
 
 export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
 
+export const archivalStatus = 'workflows.argoproj.io/workflow-archiving-status';
+
+export function isWorkflowInCluster(wf: Workflow): boolean {
+    if (!wf) {
+        return false;
+    }
+    return !wf.metadata.labels[archivalStatus] || wf.metadata.labels[archivalStatus] === 'Pending' || wf.metadata.labels[archivalStatus] === 'Archived';
+}
+
+export function isArchivedWorkflow(wf: Workflow): boolean {
+    if (!wf) {
+        return false;
+    }
+    return wf.metadata.labels && (wf.metadata.labels[archivalStatus] === 'Archived' || wf.metadata.labels[archivalStatus] === 'Persisted');
+}
+
 export type NodeType = 'Pod' | 'Container' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
 
 export interface NodeStatus {
@@ -1013,6 +1029,6 @@ export function getColorForNodePhase(p: NodePhase) {
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';
 
 export interface LogEntry {
-    content: string;
+    content?: string;
     podName?: string;
 }

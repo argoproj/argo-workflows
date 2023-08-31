@@ -88,6 +88,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
         lazy_import()
         return {
             'config_map_key_ref': (ConfigMapKeySelector,),  # noqa: E501
+            'namespace': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -97,6 +98,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
 
     attribute_map = {
         'config_map_key_ref': 'configMapKeyRef',  # noqa: E501
+        'namespace': 'namespace',  # noqa: E501
     }
 
     read_only_vars = {
@@ -141,6 +143,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             config_map_key_ref (ConfigMapKeySelector): [optional]  # noqa: E501
+            namespace (str): Namespace is the namespace of the configmap, default: [namespace of workflow]. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -223,6 +226,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreRef(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             config_map_key_ref (ConfigMapKeySelector): [optional]  # noqa: E501
+            namespace (str): Namespace is the namespace of the configmap, default: [namespace of workflow]. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

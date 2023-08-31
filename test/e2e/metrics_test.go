@@ -7,8 +7,11 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
@@ -55,6 +58,23 @@ func (s *MetricsSuite) TestMetricsEndpoint() {
 			Contains(`log_messages{level="warning"}`).
 			Contains(`log_messages{level="error"}`)
 	})
+}
+
+func (s *MetricsSuite) TestRetryMetrics() {
+	s.Given().
+		Workflow(`@testdata/workflow-retry-metrics.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`runs_exit_status_counter{exit_code="1",status="Failed"} 3`)
+		})
 }
 
 func TestMetricsSuite(t *testing.T) {

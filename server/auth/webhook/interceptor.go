@@ -3,7 +3,7 @@ package webhook
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -68,11 +68,11 @@ func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 	}
 	// we need to read the request body to check the signature, but we still need it for the GRPC request,
 	// so read it all now, and then reinstate when we are done
-	buf, _ := ioutil.ReadAll(r.Body)
-	defer func() { r.Body = ioutil.NopCloser(bytes.NewBuffer(buf)) }()
+	buf, _ := io.ReadAll(r.Body)
+	defer func() { r.Body = io.NopCloser(bytes.NewBuffer(buf)) }()
 	serviceAccountInterface := kube.CoreV1().ServiceAccounts(namespace)
 	for serviceAccountName, data := range webhookClients.Data {
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+		r.Body = io.NopCloser(bytes.NewBuffer(buf))
 		client := &webhookClient{}
 		err := yaml.Unmarshal(data, client)
 		if err != nil {

@@ -53,7 +53,7 @@ To allow service accounts to manage resources in other namespaces create a role 
 
 RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.
 
-Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You almost certainly want to be able to configure RBAC using groups, so add `scopes:` to the SSO settings:
+Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You likely want to configure RBAC using groups, so add `scopes:` to the SSO settings:
 
 ```yaml
 sso:
@@ -65,7 +65,7 @@ sso:
 ```
 
 !!! Note
-    Not all OIDC provider support the groups scope. Please speak to your provider about their options.
+    Not all OIDC providers support the `groups` scope. Please speak to your provider about their options.
 
 To configure a service account to be used, annotate it:
 
@@ -96,7 +96,7 @@ metadata:
 
 If no rule matches, we deny the user access.
 
-TIp: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
+Tip: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
 
 ```yaml
 metadata:
@@ -107,6 +107,10 @@ metadata:
 ```
 
 The precedence must be the lowest of all your service accounts.
+
+As of Kubernetes v1.24, secrets for a service account token are no longer automatically created.
+Therefore, service account secrets for SSO RBAC must be created manually.
+See [Manually create secrets](manually-create-secrets.md) for detailed instructions.
 
 ## SSO RBAC Namespace Delegation
 
@@ -120,7 +124,7 @@ To enable the feature, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true` in
 
 ### Recommended usage
 
-Configure a default account in the installation namespace which would allow all users of your organization. We will use this service account to allow a user to login to the cluster. You could optionally add workflow read-only role and role-binding if you wish to.
+Configure a default account in the installation namespace that allows access to all users of your organization. This service account allows a user to login to the cluster. You could optionally add a workflow read-only role and role-binding.
 
 ```yaml
 apiVersion: v1
@@ -132,8 +136,11 @@ metadata:
     workflows.argoproj.io/rbac-rule-precedence: "0"
 ```
 
-Now, for the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
-Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this service account and bind it with a role-binding.
+!!! Note
+    All users MUST map to a cluster service account (such as the one above) before a namespace service account can apply.
+
+Now, for the namespace that you own, configure a service account that allows members of your team to perform operations in your namespace.
+Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create an appropriate role for this service account and bind it with a role-binding.
 
 ```yaml
 apiVersion: v1
@@ -146,7 +153,7 @@ metadata:
     workflows.argoproj.io/rbac-rule-precedence: "1"
 ```
 
-Using this, whenever a user is logged in via SSO and makes a request in 'my-namespace', and the `rbac-rule`matches, we will use this service account to allow the user to perform that operation in the namespace. If no service account matches in the namespace, the first service account(`user-default-login`) and its associated role will be used to perform the operation in the namespace.
+With this configuration, when a user is logged in via SSO, makes a request in `my-namespace`, and the `rbac-rule` matches, this service account allows the user to perform that operation. If no service account matches in the namespace, the first service account (`user-default-login`) and its associated role will be used to perform the operation.
 
 ## SSO Login Time
 

@@ -106,7 +106,7 @@ spec:
 ```
 
 It's also possible to declare existing volumes at the template level, instead of the workflow level.
-Workflows can generate volumes using a `resource` step.
+Workflows can generate volumes using a [`resource`](kubernetes-resources.md) step.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1

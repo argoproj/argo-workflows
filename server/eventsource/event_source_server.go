@@ -6,6 +6,7 @@ import (
 	"io"
 
 	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
+	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +14,8 @@ import (
 	eventsourcepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/eventsource"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
+
+	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 )
 
 type eventSourceServer struct{}
@@ -22,7 +25,7 @@ func (e *eventSourceServer) CreateEventSource(ctx context.Context, in *eventsour
 
 	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Create(ctx, in.EventSource, metav1.CreateOptions{})
 	if err != nil {
-		return nil, err
+		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	return es, nil
 }
@@ -32,7 +35,7 @@ func (e *eventSourceServer) GetEventSource(ctx context.Context, in *eventsourcep
 
 	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Get(ctx, in.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	return es, nil
 }
@@ -41,7 +44,7 @@ func (e *eventSourceServer) DeleteEventSource(ctx context.Context, in *eventsour
 	client := auth.GetEventSourceClient(ctx)
 	err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Delete(ctx, in.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return nil, err
+		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	return &eventsourcepkg.EventSourceDeletedResponse{}, nil
 }
@@ -50,7 +53,7 @@ func (e *eventSourceServer) UpdateEventSource(ctx context.Context, in *eventsour
 	client := auth.GetEventSourceClient(ctx)
 	es, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).Update(ctx, in.EventSource, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, err
+		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	return es, nil
 }
@@ -59,7 +62,7 @@ func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourc
 	client := auth.GetEventSourceClient(ctx)
 	list, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	return list, nil
 }
@@ -70,7 +73,7 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 		labelSelector += "=" + in.Name
 	}
 	ctx := svr.Context()
-	return logs.LogPods(
+	err := logs.LogPods(
 		ctx,
 		auth.GetKubeClient(ctx),
 		in.Namespace,
@@ -93,9 +96,10 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 			if in.EventName != "" && in.EventName != e.EventName {
 				return nil
 			}
-			return svr.Send(e)
+			return sutils.ToStatusError(svr.Send(e), codes.Internal)
 		},
 	)
+	return sutils.ToStatusError(err, codes.Internal)
 }
 
 func (e *eventSourceServer) WatchEventSources(in *eventsourcepkg.ListEventSourcesRequest, srv eventsourcepkg.EventSourceService_WatchEventSourcesServer) error {
@@ -107,7 +111,7 @@ func (e *eventSourceServer) WatchEventSources(in *eventsourcepkg.ListEventSource
 	eventSourceInterface := auth.GetEventSourceClient(ctx).ArgoprojV1alpha1().EventSources(in.Namespace)
 	watcher, err := eventSourceInterface.Watch(ctx, listOptions)
 	if err != nil {
-		return err
+		return sutils.ToStatusError(err, codes.Internal)
 	}
 	for {
 		select {
@@ -115,15 +119,15 @@ func (e *eventSourceServer) WatchEventSources(in *eventsourcepkg.ListEventSource
 			return nil
 		case event, open := <-watcher.ResultChan():
 			if !open {
-				return io.EOF
+				return sutils.ToStatusError(io.EOF, codes.ResourceExhausted)
 			}
 			es, ok := event.Object.(*esv1.EventSource)
 			if !ok {
-				return apierr.FromObject(event.Object)
+				return sutils.ToStatusError(apierr.FromObject(event.Object), codes.Internal)
 			}
 			err := srv.Send(&eventsourcepkg.EventSourceWatchEvent{Type: string(event.Type), Object: es})
 			if err != nil {
-				return err
+				return sutils.ToStatusError(err, codes.Internal)
 			}
 		}
 	}
