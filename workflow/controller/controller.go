@@ -550,13 +550,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				Path      string      `json:"path"`
 				Value     interface{} `json:"value,omitempty"`
 			}
-			patch := []Operation{
-				{
-					Operation: "replace",
-					Path:      "/metadata/labels/workflows.argoproj.io~1completed",
-					Value:     "true",
-				},
-			}
+			var patch []Operation
 			obj, _, _ := wfc.podInformer.GetIndexer().GetByKey(namespace + "/" + podName)
 			if p, ok := obj.(*apiv1.Pod); ok {
 				i := slices.Index(p.Finalizers, common.Finalizer)
@@ -1089,6 +1083,42 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 			DeleteFunc: func(obj interface{}) {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 				// key function.
+
+				// Patch the pod to remove the finalizer
+				type Operation struct {
+					Operation string      `json:"op"`
+					Path      string      `json:"path"`
+					Value     interface{} `json:"value,omitempty"`
+				}
+				var patch []Operation
+
+				p, ok := obj.(*apiv1.Pod)
+				if !ok {
+					log.Warnf("Key in index is not a pod")
+					return
+				}
+
+				i := slices.Index(p.Finalizers, common.Finalizer)
+				if i >= 0 {
+					patch = append(patch, Operation{
+						Operation: "remove",
+						Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
+					})
+				}
+
+				data, _ := json.Marshal(patch)
+
+				_, err := wfc.kubeclientset.CoreV1().Pods(p.Namespace).Patch(
+					context.Background(),
+					p.Name,
+					types.JSONPatchType,
+					data,
+					metav1.PatchOptions{},
+				)
+
+				if err != nil {
+					log.WithError(err).WithField("pod", p.Name).Error("Failed to patch pod")
+				}
 
 				// Enqueue the workflow for deleted pod
 				_ = wfc.enqueueWfFromPodLabel(obj)
