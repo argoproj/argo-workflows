@@ -524,7 +524,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 			obj, _, _ := wfc.podInformer.GetIndexer().GetByKey(namespace + "/" + podName)
 			if p, ok := obj.(*apiv1.Pod); ok {
-				i := slices2.Index(p.Finalizers, common.Finalizer)
+				i := slices.Index(p.Finalizers, common.Finalizer)
 				if i >= 0 {
 					patch = append(patch, Operation{
 						Operation: "remove",
@@ -545,19 +545,34 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case deletePod:
-			// remove the finalizer to allow the pod to be deleted
-			data, err := json.Marshal(map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"finalizers": []string{},
-				},
-			})
-			if err != nil {
-				return err
+			type Operation struct {
+				Operation string      `json:"op"`
+				Path      string      `json:"path"`
+				Value     interface{} `json:"value,omitempty"`
 			}
-			_, err = pods.Patch(
+			patch := []Operation{
+				{
+					Operation: "replace",
+					Path:      "/metadata/labels/workflows.argoproj.io~1completed",
+					Value:     "true",
+				},
+			}
+			obj, _, _ := wfc.podInformer.GetIndexer().GetByKey(namespace + "/" + podName)
+			if p, ok := obj.(*apiv1.Pod); ok {
+				i := slices.Index(p.Finalizers, common.Finalizer)
+				if i >= 0 {
+					patch = append(patch, Operation{
+						Operation: "remove",
+						Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
+					})
+				}
+			}
+			data, _ := json.Marshal(patch)
+			log.WithField("data", string(data)).Debug("patching pod")
+			_, err := pods.Patch(
 				ctx,
 				podName,
-				types.MergePatchType,
+				types.JSONPatchType,
 				data,
 				metav1.PatchOptions{},
 			)
