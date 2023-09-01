@@ -1,6 +1,6 @@
 ## argo resume
 
-resume zero or more workflows
+resume zero or more workflows (opposite of suspend)
 
 ```
 argo resume WORKFLOW1 WORKFLOW2... [flags]
@@ -9,7 +9,7 @@ argo resume WORKFLOW1 WORKFLOW2... [flags]
 ### Examples
 
 ```
-# Resume a workflow that has been stopped or suspended:
+# Resume a workflow that has been suspended:
 
   argo resume my-wf
 
