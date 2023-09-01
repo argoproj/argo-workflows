@@ -117,12 +117,12 @@ argo [flags]
 * [argo logs](argo_logs.md)	 - view logs of a pod or workflow
 * [argo node](argo_node.md)	 - perform action on a node in a workflow
 * [argo resubmit](argo_resubmit.md)	 - resubmit one or more workflows
-* [argo resume](argo_resume.md)	 - resume zero or more workflows
+* [argo resume](argo_resume.md)	 - resume zero or more workflows (opposite of suspend)
 * [argo retry](argo_retry.md)	 - retry zero or more workflows
 * [argo server](argo_server.md)	 - start the Argo Server
 * [argo stop](argo_stop.md)	 - stop zero or more workflows allowing all exit handlers to run
 * [argo submit](argo_submit.md)	 - submit a workflow
-* [argo suspend](argo_suspend.md)	 - suspend zero or more workflow
+* [argo suspend](argo_suspend.md)	 - suspend zero or more workflows (opposite of resume)
 * [argo template](argo_template.md)	 - manipulate workflow templates
 * [argo terminate](argo_terminate.md)	 - terminate zero or more workflows immediately
 * [argo version](argo_version.md)	 - print version information
