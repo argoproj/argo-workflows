@@ -41,7 +41,7 @@
     },
     "devDependencies": {
         "@babel/core": "^7.22.11",
-        "@babel/preset-env": "^7.22.10",
+        "@babel/preset-env": "^7.22.14",
         "@fortawesome/fontawesome-free": "^6.4.2",
         "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.3.1",
