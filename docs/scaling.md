@@ -13,6 +13,9 @@ As of v3.0, the controller supports having a hot-standby for [High Availability]
 ## Vertically Scaling
 
 You can scale the controller vertically in these ways:
+### Container Resource Requests
+
+If you observe the Controller using its total allocated CPU or memory, you should increase those.
 
 ### Adding Goroutines to Increase Concurrency
 
@@ -35,9 +38,6 @@ or for >= v3.5: a warning like this (could be any CR, not just WorkflowTemplate)
 then assuming your K8S API Server can handle it:
 - Increase both `--qps` and `--burst`. The `qps` value indicates the average number of queries per second allowed by the K8S Client. The `--burst` value is the number of queries/sec the Client receives before it starts enforcing `qps`, so typically `--burst` > `qps`.
 
-### Container Resource Requests
-
-If you observe the Controller using its total allocated CPU or memory, you should increase those.
 
 ## Sharding
 
