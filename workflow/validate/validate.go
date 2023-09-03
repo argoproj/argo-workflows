@@ -865,8 +865,10 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 			if len(param.Enum) == 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.enum should contain at least one value", prefix, param.Name)
 			}
-			if param.Value == nil {
+			if param.Value == nil && !allowEmptyValues {
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
+			} else if param.Value == nil {
+				return nil
 			}
 			valueSpecifiedInEnumList := false
 			for _, enum := range param.Enum {
