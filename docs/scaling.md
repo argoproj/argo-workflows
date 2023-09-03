@@ -12,7 +12,7 @@ As of v3.0, the controller supports having a hot-standby for [High Availability]
 
 ## Vertically Scaling
 
-You can scale the controller vertically:
+You can scale the controller vertically in these ways:
 
 ### Adding Goroutines to Increase Concurrency
 
@@ -24,11 +24,11 @@ You can scale the controller vertically:
 
 ### K8S API Client Side Rate Limiting
 
-The K8S client library rate limits the messages that can go out. The default values are fairly low. If you frequently see a message similar to this (issued by the library):
+The K8S client library rate limits the messages that can go out. The default values are fairly low. If you frequently see a message similar to this in the Controller log (issued by the library):
 
 `Waited for 7.090296384s due to client-side throttling, not priority and fairness, request: GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t`
 
-in the Controller log, or for >= v3.5: a warning like this (could be any CR, not just WorkflowTemplate):
+or for >= v3.5: a warning like this (could be any CR, not just WorkflowTemplate):
 
 `Waited for 7.090296384s, request:GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t`
 
