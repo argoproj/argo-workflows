@@ -30,6 +30,12 @@ Determine your base installation option.
 * A **namespace install** only executes workflows in the namespace it is installed in (typically `argo`). Look for `namespace-install.yaml` in the [release assets](https://github.com/argoproj/argo-workflows/releases/latest).
 * A **managed namespace install**: only executes workflows in a specific namespace ([learn more](managed-namespace.md)).
 
+!!! Warning "namespace install vs. managed namespace install"
+    A namespace install allows Workflows to run only in the namespace where Argo Workflows is installed. A managed namespace install allows Workflows to run only in one namespace besides the one where Argo Workflows is installed. Using a managed namespace install might make sense if you want some users/processes to be able to run Workflows without granting them any privileges in the namespace where Argo Workflows is installed.  
+
+    For example, if you only run CI/CD-related Workflows that are maintained by the same team that manages the Argo Workflows installation, it's probably reasonable to use a namespace install. But if all the Workflows are run by a separate data science team, it probably makes sense to give them a data-science-workflows namespace and run a "managed namespace install" of Argo Workflows from another namespace.
+    To configure a managed namespace install, edit the workflow-controller and argo-server Deployments to pass the --managed-namespace argument.
+
 ## Additional installation considerations
 
 Review the following:
