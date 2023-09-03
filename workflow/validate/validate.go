@@ -452,6 +452,11 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		}
 	}
 
+	if tmpl.HasArguments() {
+		scope[anyWorkflowOutputArtifactMagicValue] = true
+		scope[anyWorkflowOutputParameterMagicValue] = true
+	}
+
 	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true, "", nil)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
@@ -662,7 +667,7 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 		_, isGlobal := globalParams[tag]
 		if !ok && !isGlobal {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
-				// we are *probably* referencing a undetermined item using withParam
+				// we are *probably* referencing an undetermined item using withParam
 				// NOTE: this is far from foolproof.
 			} else if strings.HasPrefix(tag, "workflow.outputs.parameters.") && allowAllWorkflowOutputParameterRefs {
 				// Allow runtime resolution of workflow output parameter names
@@ -1374,7 +1379,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		ancestry := common.GetTaskAncestry(dagValidationCtx, task.Name)
 		for _, ancestor := range ancestry {
 			ancestorTask := dagValidationCtx.GetTask(ancestor)
-			resolvedTmpl := resolvedTemplates[ancestor]
+			resolvedTmpl = resolvedTemplates[ancestor]
 			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)
 			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != ""
 			ctx.addOutputsToScope(resolvedTmpl, ancestorPrefix, taskScope, aggregate, true)

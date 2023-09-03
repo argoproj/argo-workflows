@@ -71,10 +71,10 @@ type wfOperationCtx struct {
 	wf *wfv1.Workflow
 	// orig is the original workflow object for purposes of creating a patch
 	orig *wfv1.Workflow
-	// updated indicates whether or not the workflow object itself was updated
+	// updated indicates whether the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
-	// log is an logrus logging context to correlate logs with a workflow
+	// log is a logrus logging context to correlate logs with a workflow
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
