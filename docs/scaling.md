@@ -13,6 +13,7 @@ As of v3.0, the controller supports having a hot-standby for [High Availability]
 ## Vertically Scaling
 
 You can scale the controller vertically in these ways:
+
 ### Container Resource Requests
 
 If you observe the Controller using its total allocated CPU or memory, you should increase those.
@@ -22,10 +23,12 @@ If you observe the Controller using its total allocated CPU or memory, you shoul
 If you have sufficient CPU you can take advantage of it with more goroutines:
 
 - If you have many Workflows and you notice they're not being reconciled fast enough, increase `--workflow-workers`.
-- If you're using TTLStrategy in your Workflows and you notice they're not being deleted fast enough, increase `--workflow-ttl-workers`.
-- If you're using PodGC in your Workflows and you notice the Pods aren't being deleted fast enough, increase `--pod-cleanup-workers`.
+- If you're using `TTLStrategy` in your Workflows and you notice they're not being deleted fast enough, increase `--workflow-ttl-workers`.
+- If you're using `PodGC` in your Workflows and you notice the Pods aren't being deleted fast enough, increase `--pod-cleanup-workers`.
+
 >= v3.5
-- If you're using a lot of CronWorkflows and they don't seem to be firing on time, increase `--cron-workflow-workers`.
+
+- If you're using a lot of `CronWorkflows` and they don't seem to be firing on time, increase `--cron-workflow-workers`.
 
 ### K8S API Client Side Rate Limiting
 
@@ -33,13 +36,13 @@ The K8S client library rate limits the messages that can go out. The default val
 
 `Waited for 7.090296384s due to client-side throttling, not priority and fairness, request: GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t`
 
-or for >= v3.5: a warning like this (could be any CR, not just WorkflowTemplate):
+or for >= v3.5: a warning like this (could be any CR, not just `WorkflowTemplate`):
 
 `Waited for 7.090296384s, request:GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t`
 
 then assuming your K8S API Server can handle it:
-- Increase both `--qps` and `--burst`. The `qps` value indicates the average number of queries per second allowed by the K8S Client. The `--burst` value is the number of queries/sec the Client receives before it starts enforcing `qps`, so typically `--burst` > `qps`.
 
+- Increase both `--qps` and `--burst`. The `qps` value indicates the average number of queries per second allowed by the K8S Client. The `--burst` value is the number of queries/sec the Client receives before it starts enforcing `qps`, so typically `--burst` > `qps`.
 
 ## Sharding
 
