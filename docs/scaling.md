@@ -32,7 +32,9 @@ If you have sufficient CPU cores, you can take advantage of them with more gorou
 
 ### K8S API Client Side Rate Limiting
 
-The K8S client library rate limits the messages that can go out. The default values are fairly low. If you frequently see a message similar to this in the Controller log (issued by the library):
+The K8S client library rate limits the messages that can go out. The default values are fairly low.
+
+If you frequently see messages similar to this in the Controller log (issued by the library):
 
 `Waited for 7.090296384s due to client-side throttling, not priority and fairness, request: GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t`
 
