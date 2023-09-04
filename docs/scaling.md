@@ -42,7 +42,7 @@ Waited for 7.090296384s due to client-side throttling, not priority and fairness
 
 or for >= v3.5: a warning like this (could be any CR, not just `WorkflowTemplate`):
 
-```
+```txt
 Waited for 7.090296384s, request:GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t
 ```
 
