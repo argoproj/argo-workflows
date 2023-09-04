@@ -13,7 +13,7 @@ import (
 func NewSuspendCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "suspend WORKFLOW1 WORKFLOW2...",
-		Short: "suspend zero or more workflow",
+		Short: "suspend zero or more workflows (opposite of resume)",
 		Example: `# Suspend a workflow:
 
   argo suspend my-wf
