@@ -10,9 +10,8 @@ Use cases:
 * Visualizing end results of ML pipeline runs.
 * Debugging workflows where visual artifacts are the most helpful.
 
-> Click the image below to play a demo video
-
-[![Demo](https://img.youtube.com/vi/whoRfYY9Fhk/0.jpg)](https://youtu.be/whoRfYY9Fhk)
+[![Demo](https://img.youtube.com/vi/whoRfYY9Fhk/0.jpg)](https://youtu.be/whoRfYY9Fhk)  
+*[Click image to play demo video]*
 
 * Artifacts appear as elements in the workflow DAG that you can click on.
 * When you click on the artifact, a panel appears.
