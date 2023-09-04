@@ -20,7 +20,7 @@ If you observe the Controller using its total CPU or memory requests, you should
 
 ### Adding Goroutines to Increase Concurrency
 
-If you have sufficient CPU you can take advantage of it with more goroutines:
+If you have sufficient CPU cores, you can take advantage of them with more goroutines:
 
 - If you have many Workflows and you notice they're not being reconciled fast enough, increase `--workflow-workers`.
 - If you're using `TTLStrategy` in your Workflows and you notice they're not being deleted fast enough, increase `--workflow-ttl-workers`.
