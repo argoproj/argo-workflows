@@ -189,21 +189,27 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                         if (workflowOperation.title === 'DELETE') {
                             popup
                                 .confirm('Confirm', () => <DeleteCheck isWfInDB={isArchivedWorkflow(workflow)} isWfInCluster={isWorkflowInCluster(workflow)} />)
-                                .then(yes => {
-                                    if (yes) {
-                                        if (isWorkflowInCluster(workflow)) {
-                                            services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(setError);
-                                        }
-                                        if (isArchivedWorkflow(workflow) && (globalDeleteArchived || !isWorkflowInCluster(workflow))) {
-                                            services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(setError);
-                                        }
-                                        if (error === null) {
-                                            navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                            // TODO: This is a temporary workaround so that the list of workflows
-                                            //  is correctly displayed. Workflow list page needs to be more responsive.
-                                            window.location.reload();
-                                        }
+                                .then(async yes => {
+                                    if (!yes) {
+                                        return;
                                     }
+
+                                    const allPromises = [];
+                                    if (isWorkflowInCluster(workflow)) {
+                                        allPromises.push(services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(setError));
+                                    }
+                                    if (isArchivedWorkflow(workflow) && (globalDeleteArchived || !isWorkflowInCluster(workflow))) {
+                                        allPromises.push(services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(setError));
+                                    }
+                                    await Promise.all(allPromises);
+                                    if (error !== null) {
+                                        return;
+                                    }
+
+                                    navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                    // TODO: This is a temporary workaround so that the list of workflows
+                                    //  is correctly displayed. Workflow list page needs to be more responsive.
+                                    window.location.reload();
                                 });
                         } else if (workflowOperation.title === 'RESUBMIT') {
                             setSidePanel('resubmit');
@@ -211,14 +217,16 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                             setSidePanel('retry');
                         } else {
                             popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
-                                if (yes) {
-                                    workflowOperation
-                                        .action(workflow)
-                                        .then((wf: Workflow) => {
-                                            setName(wf.metadata.name);
-                                        })
-                                        .catch(setError);
+                                if (!yes) {
+                                    return;
                                 }
+
+                                workflowOperation
+                                    .action(workflow)
+                                    .then((wf: Workflow) => {
+                                        setName(wf.metadata.name);
+                                    })
+                                    .catch(setError);
                             });
                         }
                     }
@@ -476,11 +484,13 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const renderResumePopup = () => {
         return popup.confirm('Confirm', renderSuspendNodeOptions).then(yes => {
-            if (yes) {
-                updateOutputParametersForNodeIfRequired()
-                    .then(resumeNode)
-                    .catch(setError);
+            if (!yes) {
+                return;
             }
+
+            updateOutputParametersForNodeIfRequired()
+                .then(resumeNode)
+                .catch(setError);
         });
     };
 
