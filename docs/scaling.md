@@ -26,7 +26,7 @@ If you have sufficient CPU cores, you can take advantage of them with more gorou
 - If you're using `TTLStrategy` in your Workflows and you notice they're not being deleted fast enough, increase `--workflow-ttl-workers`.
 - If you're using `PodGC` in your Workflows and you notice the Pods aren't being deleted fast enough, increase `--pod-cleanup-workers`.
 
->= v3.5
+> v3.5 and after
 
 - If you're using a lot of `CronWorkflows` and they don't seem to be firing on time, increase `--cron-workflow-workers`.
 
