@@ -16,7 +16,7 @@ You can scale the controller vertically in these ways:
 
 ### Container Resource Requests
 
-If you observe the Controller using its total request CPU or memory, you should increase those.
+If you observe the Controller using its total CPU or memory requests, you should increase those.
 
 ### Adding Goroutines to Increase Concurrency
 
