@@ -153,8 +153,8 @@ github.com/argoproj-labs/go-git/v5 v5.4.7 h1:BXrXK/anGnbdj0MoKJyn++h6HZ7Wa0UhW2m
 github.com/argoproj-labs/go-git/v5 v5.4.7/go.mod h1:hA0dcdz5GgO4KXyDY90CCfJaw4PIGMecmq5YwHdTBi0=
 github.com/argoproj/argo-events v1.7.3 h1:XiGnKCzRRQCI7sFCKw3RoeFUOR6IupfAJI9uUK7pnG8=
 github.com/argoproj/argo-events v1.7.3/go.mod h1:YxDOXrveW52SDAeeTI93Wagkr4jt5DK0dA0juIdWDRw=
-github.com/argoproj/pkg v0.13.7-0.20230823171258-a672276e3bd6 h1:J10R2lk+6uWYKrlOGE31OqLUQnR3ZvPfc+0LCtAfsVY=
-github.com/argoproj/pkg v0.13.7-0.20230823171258-a672276e3bd6/go.mod h1:a68mgn6EiEXeX/W0Maxdaj9z0thUEhBr87F9y2OfRsI=
+github.com/argoproj/pkg v0.13.7-0.20230901113346-235a5432ec98 h1:Y1wJVJePMad3LwH+OIX4cl9ND3251XUNxjgpxFRWmZs=
+github.com/argoproj/pkg v0.13.7-0.20230901113346-235a5432ec98/go.mod h1:2NWmOLTf7x7egzrvRhJrqfVI6QM9eq/ONYgHcuNju9s=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
@@ -163,8 +163,8 @@ github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkY
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/awalterschulze/gographviz v0.0.0-20200901124122-0eecad45bd71 h1:m3N1Fv5vE5IcxuTOGFGGV0grrVFHV8UY2SV0wSBXAC8=
 github.com/awalterschulze/gographviz v0.0.0-20200901124122-0eecad45bd71/go.mod h1:/ynarkO/43wP/JM2Okn61e8WFMtdbtA8he7GJxW+SFM=
-github.com/aws/aws-sdk-go v1.44.329 h1:Rqy+wYI8h+iq+FphR59KKTsHR1Lz7YiwRqFzWa7xoYU=
-github.com/aws/aws-sdk-go v1.44.329/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
+github.com/aws/aws-sdk-go v1.45.1 h1:PXuxDZIo/Y9Bvtg2t055+dY4hRwNAEcq6bUMv9fXcjk=
+github.com/aws/aws-sdk-go v1.45.1/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go-v2 v1.16.7 h1:zfBwXus3u14OszRxGcqCDS4MfMCv10e8SMJ2r8Xm0Ns=
 github.com/aws/aws-sdk-go-v2 v1.16.7/go.mod h1:6CpKuLXg2w7If3ABZCl/qZ6rEgwtjZTn4eAf4RcEyuw=
 github.com/aws/aws-sdk-go-v2/config v1.15.13/go.mod h1:AcMu50uhV6wMBUlURnEXhr9b3fX6FLSTlEV89krTEGk=
@@ -752,8 +752,8 @@ github.com/matttproud/golang_protobuf_extensions v1.0.4/go.mod h1:BSXmuO+STAnVfr
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/minio/md5-simd v1.1.2 h1:Gdi1DZK69+ZVMoNHRXJyNcxrMA4dSxoYHZSQbirFg34=
 github.com/minio/md5-simd v1.1.2/go.mod h1:MzdKDxYpY2BT9XQFocsiZf/NKVtR7nkE4RoEpN+20RM=
-github.com/minio/minio-go/v7 v7.0.62 h1:qNYsFZHEzl+NfH8UxW4jpmlKav1qUAgfY30YNRneVhc=
-github.com/minio/minio-go/v7 v7.0.62/go.mod h1:Q6X7Qjb7WMhvG65qKf4gUgA5XaiSox74kR1uAEjxRS4=
+github.com/minio/minio-go/v7 v7.0.63 h1:GbZ2oCvaUdgT5640WJOpyDhhDxvknAJU2/T3yurwcbQ=
+github.com/minio/minio-go/v7 v7.0.63/go.mod h1:Q6X7Qjb7WMhvG65qKf4gUgA5XaiSox74kR1uAEjxRS4=
 github.com/minio/sha256-simd v1.0.1 h1:6kaan5IFmwTNynnKKpDHe6FWHohJOHhCPchzK49dzMM=
 github.com/minio/sha256-simd v1.0.1/go.mod h1:Pz6AKMiUdngCLpeTL/RJY1M9rUuPMYujV5xJjtbRSN8=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
