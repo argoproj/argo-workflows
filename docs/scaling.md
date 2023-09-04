@@ -44,7 +44,7 @@ or for >= v3.5: a warning like this (could be any CR, not just `WorkflowTemplate
 
 Then, if your K8S API Server can handle more requests:
 
-- Increase both `--qps` and `--burst`. The `qps` value indicates the average number of queries per second allowed by the K8S Client. The `--burst` value is the number of queries/sec the Client receives before it starts enforcing `qps`, so typically `--burst` > `qps`.
+- Increase both `--qps` and `--burst`. The `qps` value indicates the average number of queries per second allowed by the K8S Client. The `burst` value is the number of queries/sec the Client receives before it starts enforcing `qps`, so typically `burst` > `qps`.
 
 ## Sharding
 
