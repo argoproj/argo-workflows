@@ -32,7 +32,7 @@ If you have sufficient CPU cores, you can take advantage of them with more gorou
 
 ### K8S API Client Side Rate Limiting
 
-The K8S client library rate limits the messages that can go out. The default values are fairly low.
+The K8S client library rate limits the messages that can go out. 
 
 If you frequently see messages similar to this in the Controller log (issued by the library):
 
@@ -48,7 +48,7 @@ Waited for 7.090296384s, request:GET:https://10.100.0.1:443/apis/argoproj.io/v1a
 
 Then, if your K8S API Server can handle more requests:
 
-- Increase both `--qps` and `--burst`. The `qps` value indicates the average number of queries per second allowed by the K8S Client. The `burst` value is the number of queries/sec the Client receives before it starts enforcing `qps`, so typically `burst` > `qps`.
+- Increase both `--qps` and `--burst` arguments for the Controller. The `qps` value indicates the average number of queries per second allowed by the K8S Client. The `burst` value is the number of queries/sec the Client receives before it starts enforcing `qps`, so typically `burst` > `qps`.  If not set, the default values are `qps=20` and `burst=30` (as of v3.5 (refer to `cmd/workflow-controller/main.go` in case the values change)).
 
 ## Sharding
 
