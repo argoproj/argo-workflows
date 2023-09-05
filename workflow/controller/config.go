@@ -78,6 +78,7 @@ func (wfc *WorkflowController) updateConfig() error {
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory()
 	wfc.rateLimiter = wfc.newRateLimiter()
+	wfc.maxStackDepth = wfc.getMaxStackDepth()
 
 	log.WithField("executorImage", wfc.executorImage()).
 		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).

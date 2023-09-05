@@ -67,6 +67,8 @@ import (
 	plugin "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
 )
 
+const maxAllowedStackDepth = 100
+
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
@@ -97,6 +99,10 @@ type WorkflowController struct {
 	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
 	wfclientset      wfclientset.Interface
+
+	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
+	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
+	maxStackDepth int
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -189,6 +195,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	}
 
 	wfc.UpdateConfig(ctx)
+	wfc.maxStackDepth = wfc.getMaxStackDepth()
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
@@ -1127,6 +1134,10 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 		return wfc.managedNamespace
 	}
 	return wfc.Config.Namespace
+}
+
+func (wfc *WorkflowController) getMaxStackDepth() int {
+	return maxAllowedStackDepth
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
