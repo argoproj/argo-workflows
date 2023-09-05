@@ -3562,6 +3562,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#maximum-recursion-depth" class="md-nav__link">
+    Maximum Recursion Depth
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3976,6 +3983,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#maximum-recursion-depth" class="md-nav__link">
+    Maximum Recursion Depth
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4049,7 +4063,7 @@
 <h3 id="instance-id">Instance ID<a class="headerlink" href="#instance-id" title="Permanent link">&para;</a></h3>
 <p>Within a cluster can use instance ID to run N Argo instances within a cluster.</p>
 <p>Create one namespace for each Argo, e.g. <code>argo-i1</code>, <code>argo-i2</code>:.</p>
-<p>Edit <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> for each namespace to set an instance ID.</p>
+<p>Edit <a href="../workflow-controller-configmap.yaml"><code>workflow-controller-configmap.yaml</code></a> for each namespace to set an instance ID.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -4064,6 +4078,9 @@
 <div class="highlight"><pre><span></span><code>argo<span class="w"> </span>--instanceid<span class="w"> </span>i1<span class="w"> </span>submit<span class="w"> </span>my-wf.yaml
 </code></pre></div>
 <p>You do not need to have one instance ID per namespace, you could have many or few.</p>
+<h3 id="maximum-recursion-depth">Maximum Recursion Depth<a class="headerlink" href="#maximum-recursion-depth" title="Permanent link">&para;</a></h3>
+<p>In order to protect users against infinite recursion, the controller has a default maximum recursion depth of 100 calls to templates.</p>
+<p>This protection can be disabled with the <a href="../environment-variables/#controller">environment variable</a> <code>DISABLE_MAX_RECURSION=true</code></p>
 <h2 id="miscellaneous">Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permanent link">&para;</a></h2>
 <p>See also <a href="../running-at-massive-scale/">Running At Massive Scale</a>.</p>
 

@@ -4017,6 +4017,12 @@ most users. Environment variables may be removed at any time.</p>
 <td>The re-queue time for the rate limiter of the workflow queue.</td>
 </tr>
 <tr>
+<td><code>DISABLE_MAX_RECURSION</code></td>
+<td><code>bool</code></td>
+<td><code>false</code></td>
+<td>Set to true to disable the recursion preventer, which will stop a workflow running which has called into a child template 100 times</td>
+</tr>
+<tr>
 <td><code>EXPRESSION_TEMPLATES</code></td>
 <td><code>bool</code></td>
 <td><code>true</code></td>
