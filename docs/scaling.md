@@ -32,7 +32,7 @@ If you have sufficient CPU cores, you can take advantage of them with more gorou
 
 ### K8S API Client Side Rate Limiting
 
-The K8S client library rate limits the messages that can go out. 
+The K8S client library rate limits the messages that can go out.
 
 If you frequently see messages similar to this in the Controller log (issued by the library):
 
