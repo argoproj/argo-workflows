@@ -56,7 +56,6 @@ spec:
 // TestResubmitWorkflowWithOnExit ensures we do not carry over the onExit node even if successful
 func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	wfName := "test-wf"
-	onExitName := wfName + ".onExit"
 	wf := wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: wfName,
@@ -65,11 +64,6 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 			Phase: wfv1.WorkflowFailed,
 			Nodes: map[string]wfv1.NodeStatus{},
 		},
-	}
-	onExitID := wf.NodeID(onExitName)
-	onExitNode := wfv1.NodeStatus{
-		Name:  onExitName,
-		Phase: wfv1.NodeSucceeded,
 	}
 	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
 	assert.NoError(t, err)
