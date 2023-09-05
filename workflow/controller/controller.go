@@ -247,6 +247,11 @@ var indexers = cache.Indexers{
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
+	// init DB after leader election (if enabled)
+	if err := wfc.initDB(); err != nil {
+		log.Fatalf("Failed to init db: %v", err)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
