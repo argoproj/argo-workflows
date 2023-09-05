@@ -3511,6 +3511,33 @@
     Vertically Scaling
   </a>
   
+    <nav class="md-nav" aria-label="Vertically Scaling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#container-resource-requests" class="md-nav__link">
+    Container Resource Requests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-goroutines-to-increase-concurrency" class="md-nav__link">
+    Adding Goroutines to Increase Concurrency
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#k8s-api-client-side-rate-limiting" class="md-nav__link">
+    K8S API Client Side Rate Limiting
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3898,6 +3925,33 @@
     Vertically Scaling
   </a>
   
+    <nav class="md-nav" aria-label="Vertically Scaling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#container-resource-requests" class="md-nav__link">
+    Container Resource Requests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-goroutines-to-increase-concurrency" class="md-nav__link">
+    Adding Goroutines to Increase Concurrency
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#k8s-api-client-side-rate-limiting" class="md-nav__link">
+    K8S API Client Side Rate Limiting
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3961,12 +4015,34 @@
 </blockquote>
 <p>As of v3.0, the controller supports having a hot-standby for <a href="../high-availability/#workflow-controller">High Availability</a>.</p>
 <h2 id="vertically-scaling">Vertically Scaling<a class="headerlink" href="#vertically-scaling" title="Permanent link">&para;</a></h2>
-<p>You can scale the controller vertically:</p>
+<p>You can scale the controller vertically in these ways:</p>
+<h3 id="container-resource-requests">Container Resource Requests<a class="headerlink" href="#container-resource-requests" title="Permanent link">&para;</a></h3>
+<p>If you observe the Controller using its total CPU or memory requests, you should increase those.</p>
+<h3 id="adding-goroutines-to-increase-concurrency">Adding Goroutines to Increase Concurrency<a class="headerlink" href="#adding-goroutines-to-increase-concurrency" title="Permanent link">&para;</a></h3>
+<p>If you have sufficient CPU cores, you can take advantage of them with more goroutines:</p>
 <ul>
-<li>If you have many workflows, increase <code>--workflow-workers</code> and <code>--workflow-ttl-workers</code>.</li>
-<li>Increase both <code>--qps</code> and <code>--burst</code>.</li>
+<li>If you have many Workflows and you notice they're not being reconciled fast enough, increase <code>--workflow-workers</code>.</li>
+<li>If you're using <code>TTLStrategy</code> in your Workflows and you notice they're not being deleted fast enough, increase <code>--workflow-ttl-workers</code>.</li>
+<li>If you're using <code>PodGC</code> in your Workflows and you notice the Pods aren't being deleted fast enough, increase <code>--pod-cleanup-workers</code>.</li>
 </ul>
-<p>You will need to increase the controller's memory and CPU.</p>
+<blockquote>
+<p>v3.5 and after</p>
+</blockquote>
+<ul>
+<li>If you're using a lot of <code>CronWorkflows</code> and they don't seem to be firing on time, increase <code>--cron-workflow-workers</code>.</li>
+</ul>
+<h3 id="k8s-api-client-side-rate-limiting">K8S API Client Side Rate Limiting<a class="headerlink" href="#k8s-api-client-side-rate-limiting" title="Permanent link">&para;</a></h3>
+<p>The K8S client library rate limits the messages that can go out.</p>
+<p>If you frequently see messages similar to this in the Controller log (issued by the library):</p>
+<div class="highlight"><pre><span></span><code>Waited for 7.090296384s due to client-side throttling, not priority and fairness, request: GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t
+</code></pre></div>
+<p>Or, in &gt;= v3.5, if you see warnings similar to this (could be any CR, not just <code>WorkflowTemplate</code>):</p>
+<div class="highlight"><pre><span></span><code>Waited for 7.090296384s, request:GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t
+</code></pre></div>
+<p>Then, if your K8S API Server can handle more requests:</p>
+<ul>
+<li>Increase both <code>--qps</code> and <code>--burst</code> arguments for the Controller. The <code>qps</code> value indicates the average number of queries per second allowed by the K8S Client. The <code>burst</code> value is the number of queries/sec the Client receives before it starts enforcing <code>qps</code>, so typically <code>burst</code> &gt; <code>qps</code>.  If not set, the default values are <code>qps=20</code> and <code>burst=30</code> (as of v3.5 (refer to <code>cmd/workflow-controller/main.go</code> in case the values change)).</li>
+</ul>
 <h2 id="sharding">Sharding<a class="headerlink" href="#sharding" title="Permanent link">&para;</a></h2>
 <h3 id="one-install-per-namespace">One Install Per Namespace<a class="headerlink" href="#one-install-per-namespace" title="Permanent link">&para;</a></h3>
 <p>Rather than running a single installation in your cluster, run one per namespace using the <code>--namespaced</code> flag.</p>
