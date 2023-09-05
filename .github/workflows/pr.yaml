@@ -1,4 +1,4 @@
-name: PR Title Check
+name: PR
 
 on:
   pull_request_target:
@@ -10,9 +10,9 @@ on:
 
 jobs:
   title-check:
-    name: Check PR Title's semantic conformance
     runs-on: ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
+      - name: Check PR Title's semantic conformance
+        uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

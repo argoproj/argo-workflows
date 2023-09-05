@@ -1,4 +1,4 @@
-name: Snyk Dependency Scan
+name: Snyk
 on:
   schedule:
     - cron: "30 2 * * *"

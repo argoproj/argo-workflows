@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   tests:
-    name: Unit Tests
+    name: Go Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -29,11 +29,11 @@ jobs:
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
-      - run: bash <(curl -s https://codecov.io/bash)
-        if: github.ref == 'refs/heads/master'
+      - if: github.ref == 'refs/heads/master'
+        run: bash <(curl -s https://codecov.io/bash)
 
   argoexec-image:
-    name: Create argoexec image
+    name: argoexec image
     # needs: [ lint ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
