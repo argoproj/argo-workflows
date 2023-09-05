@@ -42,7 +42,7 @@ jobs:
           name: docs
           path: site
           if-no-files-found: error
-      - name: Publish on master
+      - name: Publish to GH Pages (when on master)
         if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v3
         with:
