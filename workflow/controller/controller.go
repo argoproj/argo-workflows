@@ -67,7 +67,7 @@ import (
 	plugin "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
 )
 
-const defaultMaxStackDepth = 150
+const maxAllowedStackDepth = 100
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
@@ -1137,7 +1137,7 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 }
 
 func (wfc *WorkflowController) getMaxStackDepth() int {
-	return defaultMaxStackDepth
+	return maxAllowedStackDepth
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
