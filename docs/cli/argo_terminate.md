@@ -2,6 +2,10 @@
 
 terminate zero or more workflows immediately
 
+### Synopsis
+
+Immediately stop a workflow and do not run any exit handlers.
+
 ```
 argo terminate WORKFLOW WORKFLOW2... [flags]
 ```

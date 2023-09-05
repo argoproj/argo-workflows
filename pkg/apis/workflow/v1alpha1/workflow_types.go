@@ -1041,8 +1041,12 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 type WorkflowLevelArtifactGC struct {
 	// ArtifactGC is an embedded struct
 	ArtifactGC `json:",inline" protobuf:"bytes,1,opt,name=artifactGC"`
+
 	// ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails
 	ForceFinalizerRemoval bool `json:"forceFinalizerRemoval,omitempty" protobuf:"bytes,2,opt,name=forceFinalizerRemoval"`
+
+	// PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.
+	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,3,opt,name=podSpecPatch"`
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed

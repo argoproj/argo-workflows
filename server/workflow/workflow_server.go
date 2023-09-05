@@ -640,14 +640,17 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 		log.Debugf("Resolved alias %s to workflow %s.\n", latestAlias, latest.Name)
 		return latest, nil
 	}
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
-	if wf == nil || err != nil {
+	var err error
+	wf, origErr := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
+	if wf == nil || origErr != nil {
 		wf, err = s.wfArchiveServer.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{
 			Namespace: namespace,
 			Name:      name,
 		})
 		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+			log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
+			// We only return the original error to preserve the original status code.
+			return nil, sutils.ToStatusError(origErr, codes.Internal)
 		}
 	}
 	return wf, nil

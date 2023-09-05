@@ -190,25 +190,26 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorSha256 = "sha256-KRg9ibAxKm3t+8skxlMjomWUry335BZ576db2nANpj8=";
+              vendorSha256 = "sha256-Ytl+++KUrFveoKRoSccwjCgozw4tFhjHxk8yDPQFRqo=";
               doCheck = false;
             };
 
             mockery = pkgs.buildGoModule rec { 
               pname = "mockery";
-              version = "2.10.0"; # upgrade this in the Makefile if upgraded here
+              version = "2.26.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
                 repo = "mockery";
-                rev = "v${version}"; # Look 4 lines below this one!!!
-                sha256 = "sha256-udzBhCkESd/5GEJf9oVz0nAQDmsk4tenvDP6tbkBIao=";
+                rev = "v${version}";
+                sha256 = "sha256-3wJ7XY/wfVXB4nEHLqEtNRscow/KrAo79sr2OgJisSY=";
               };
-              ldflags = [
-                "-X github.com/vektra/mockery/v2/pkg/config.SemVer=v${version}"  # IMPERATIVE TO LOOK AT SOURCE CODE WHEN UPDATING VERSION!!!
-              ];
               doCheck = false;
-              vendorHash = "sha256-iuQx2znOh/zsglnJma7Y4YccVArSFul/IOaNh449SpA=";
+              vendorHash = "sha256-J7eL2AQ6v5nG2lZOSSZQOTKBhfk7GtDtqZ7Felo0l54=";
+
+              ldflags = [
+                "-X 'github.com/vektra/mockery/v2/pkg/logging.SemVer=v${version}'" # IMPERATIVE TO ENSURE PATH STAYS THE SAME WHEN VERSION CHANGES
+              ];
             };
 
             protoc-gen-gogo-all = pkgs.buildGoModule rec {

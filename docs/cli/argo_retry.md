@@ -2,6 +2,10 @@
 
 retry zero or more workflows
 
+### Synopsis
+
+Rerun a failed Workflow. Specifically, rerun all failed steps. The same Workflow object is used and no new Workflows are created.
+
 ```
 argo retry [WORKFLOW...] [flags]
 ```
@@ -13,7 +17,7 @@ argo retry [WORKFLOW...] [flags]
 
   argo retry my-wf
 
-# Retry multiple workflows: 
+# Retry multiple workflows:
 
   argo retry my-wf my-other-wf my-third-wf
 
