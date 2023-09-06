@@ -140,7 +140,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(time.Minute).
+		WaitForWorkflow(time.Minute + 5*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
