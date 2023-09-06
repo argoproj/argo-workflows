@@ -25,12 +25,7 @@ The actual repository used by a workflow is chosen by the following rules:
 
 ## Configuring MinIO
 
-```bash
-brew install helm # mac, helm 3.x
-helm repo add minio https://helm.min.io/ # official minio Helm charts
-helm repo update
-helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
-```
+You have to [install helm first.](https://helm.sh/docs/intro/install/)
 
 Login to the MinIO UI using a web browser (port 9000) after obtaining the
 external IP using `kubectl`.
