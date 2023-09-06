@@ -149,6 +149,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		})
 	}
 
+	// Add Environment Vars from Executor Config
+	if woc.controller.Config.Executor != nil {
+		envVars = append(envVars, woc.controller.Config.Executor.Env...)
+	}
+
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
 	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {

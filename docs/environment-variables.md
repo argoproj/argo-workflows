@@ -129,6 +129,10 @@ spec:
 | `REMOVE_LOCAL_ART_PATH`                | `bool`          | `false` | Whether to remove local artifacts.                                                                     |
 | `RESOURCE_STATE_CHECK_INTERVAL`        | `time.Duration` | `5s`    | The time interval between resource status checks against the specified success and failure conditions. |
 | `WAIT_CONTAINER_STATUS_CHECK_INTERVAL` | `time.Duration` | `5s`    | The time interval for wait container to check whether the containers have completed.                   |
+| `PLUGIN_RETRY_BACKOFF_DURATION`        | `time.Duration` | `1s`    | The retry back-off duration when the plugin agent pod performs retries.                                |
+| `PLUGIN_RETRY_BACKOFF_FACTOR`          | `float`         | `2`     | The retry back-off factor when the plugin agent pod performs retries.                                  |
+| `PLUGIN_RETRY_BACKOFF_JITTER`          | `float`         | `0.2`   | The retry back-off jitter when the plugin agent pod performs retries.                                  |
+| `PLUGIN_RETRY_BACKOFF_STEPS`           | `int`           | `5`     | The retry back-off steps when the plugin agent pod  performs retries.                                  |
 
 You can set the environment variables for executor by customizing executor container's environment variables in your
 controller's config-map like the following:

@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -14,10 +15,10 @@ type plugin struct{ rpc.Client }
 
 func New(address, token string) *plugin {
 	return &plugin{Client: rpc.New(address, token, 30*time.Second, wait.Backoff{
-		Duration: time.Second,
-		Jitter:   0.2,
-		Factor:   2,
-		Steps:    5,
+		Duration: env.LookupEnvDurationOr("PLUGIN_RETRY_BACKOFF_DURATION", time.Second),
+		Jitter:   env.LookupEnvFloatOr("PLUGIN_RETRY_BACKOFF_JITTER", 0.2),
+		Factor:   env.LookupEnvFloatOr("PLUGIN_RETRY_BACKOFF_FACTOR", 2),
+		Steps:    env.LookupEnvIntOr("PLUGIN_RETRY_BACKOFF_STEPS", 5),
 	})}
 }
 
