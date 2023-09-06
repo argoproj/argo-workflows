@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   tests:
-    name: Go Unit Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -34,7 +34,7 @@ jobs:
         run: bash <(curl -s https://codecov.io/bash)
 
   argoexec-image:
-    name: argoexec image
+    name: argoexec-image
     # needs: [ lint ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
