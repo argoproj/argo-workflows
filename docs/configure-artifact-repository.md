@@ -25,7 +25,7 @@ The actual repository used by a workflow is chosen by the following rules:
 
 ## Configuring MinIO
 
-You have to [install helm first.](https://helm.sh/docs/intro/install/)
+You can install MinIO into your cluster via Helm.
 
 First, [install `helm`](https://helm.sh/docs/intro/install/). Then, install MinIO with the below commands:
 
