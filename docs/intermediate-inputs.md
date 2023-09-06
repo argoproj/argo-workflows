@@ -24,7 +24,7 @@ The workflow will pause at a `Suspend` node, and user will be able to update par
 - The [below example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/intermediate-parameters.yaml) shows static enum values `approval` step.
 - The user will be able to choose between `[YES, NO]` which will be used in subsequent steps.
 
-[![Approval Example Demo](https://img.youtube.com/vi/eyeZ2oddwWE/0.jpg)](https://youtu.be/eyeZ2oddwWE)
+[![Approval Example Demo](assets/intermediate-inputs.png)](https://youtu.be/eyeZ2oddwWE)
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -77,7 +77,7 @@ spec:
 - Since this `json` has a `key` called `enum`, with an array of options, the UI will parse this and display it as a dropdown.
 - The output can be any string also, in which case the UI will display it as a text field. Which the user can later edit.
 
-[![DB Schema Update Example Demo](https://img.youtube.com/vi/QgE-1782YJc/0.jpg)](https://youtu.be/QgE-1782YJc)
+[![DB Schema Update Example Demo](assets/intermediate-inputs.png)](https://youtu.be/QgE-1782YJc)
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
