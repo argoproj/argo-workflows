@@ -9428,7 +9428,7 @@ spec:
         valueFrom:
           expression: |
             'https://argo-workflows.company.com/workflows/namepace/' + '{{workflow.name}}' + '?tab=workflow'
-            
+
   - name: whalesay
     container:
       image: docker/whalesay:latest
@@ -9516,4 +9516,115 @@ func TestMemoizationTemplateLevelCacheWithDagWithCache(t *testing.T) {
 			assert.False(t, true, "Whalesay dag should not have been executed")
 		}
 	}
+}
+
+var maxDepth = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: diamond
+  templates:
+  - name: diamond
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: B}]
+      - name: C
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: C}]
+      - name: D
+        dependencies: [B, C]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: D}]
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+
+`
+
+func TestMaxDepth(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(maxDepth)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	// Max depth is too small, error expected
+	controller.maxStackDepth = 2
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	node := woc.wf.Status.Nodes["hello-world-713168755"]
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeError, node.Phase)
+		assert.Contains(t, node.Message, "Maximum recursion depth exceeded")
+	}
+
+	// Max depth is enabled, but not too small, no error expected
+	controller.maxStackDepth = 3
+	woc = newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	node = woc.wf.Status.Nodes["hello-world-713168755"]
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+	}
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestMaxDepthEnvVariable(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(maxDepth)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	// Max depth is disabled, no error expected
+	controller.maxStackDepth = 2
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	_ = os.Setenv("DISABLE_MAX_RECURSION", "true")
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	node := woc.wf.Status.Nodes["hello-world-713168755"]
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+	}
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	_ = os.Unsetenv("DISABLE_MAX_RECURSION")
 }
