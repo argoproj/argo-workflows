@@ -27,6 +27,7 @@ func (wfc *WorkflowController) updateConfig() error {
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
+
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
@@ -40,14 +41,7 @@ func (wfc *WorkflowController) updateConfig() error {
 				return err
 			}
 			log.Info("Persistence Session created successfully")
-			if !persistence.SkipMigration {
-				err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
-				if err != nil {
-					return err
-				}
-			} else {
-				log.Info("DB migration is disabled")
-			}
+
 			wfc.session = session
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
@@ -75,14 +69,37 @@ func (wfc *WorkflowController) updateConfig() error {
 	} else {
 		log.Info("Persistence configuration disabled")
 	}
+
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory()
 	wfc.rateLimiter = wfc.newRateLimiter()
+	wfc.maxStackDepth = wfc.getMaxStackDepth()
 
 	log.WithField("executorImage", wfc.executorImage()).
 		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).
 		WithField("managedNamespace", wfc.GetManagedNamespace()).
 		Info()
+	return nil
+}
+
+// initDB inits argo DB tables
+func (wfc *WorkflowController) initDB() error {
+	persistence := wfc.Config.Persistence
+	if persistence != nil {
+		tableName, err := sqldb.GetTableName(persistence)
+		if err != nil {
+			return err
+		}
+		if !persistence.SkipMigration {
+			err = sqldb.NewMigrate(wfc.session, persistence.GetClusterName(), tableName).Exec(context.Background())
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Info("DB migration is disabled")
+		}
+	}
+
 	return nil
 }
 
