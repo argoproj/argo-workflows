@@ -9,7 +9,7 @@ export const k8sNamingHashLength = 10;
 // getPodName returns a deterministic pod name
 // In case templateName is not defined or that version is explicitly set to  POD_NAME_V1, it will return the nodeID (v1)
 // In other cases it will return a combination of workflow name, template name, and a hash (v2)
-// note: this is inteded to be equivalent to the server-side Go code in workflow/util/pod_name.go
+// note: this is intended to be equivalent to the server-side Go code in workflow/util/pod_name.go
 export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string, version: string): string => {
     if (version !== POD_NAME_V1 && templateName !== '') {
         if (workflowName === nodeName) {
