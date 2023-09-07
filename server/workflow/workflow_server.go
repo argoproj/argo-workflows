@@ -172,7 +172,7 @@ func cursorPaginationByResourceVersion(items []v1alpha1.Workflow, resourceVersio
 	}
 }
 
-func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList, resourceVersion string, limit int64) *v1alpha1.WorkflowList {
+func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList) *v1alpha1.WorkflowList {
 	var mergedWfs []v1alpha1.Workflow
 	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
 	for _, item := range liveWfs.Items {
@@ -234,7 +234,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		log.Warnf("unable to list archived workflows:%v", err)
 	} else {
 		if archivedWfList != nil {
-			wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList, resourceVersion, limit)
+			wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList)
 		}
 	}
 	cursorPaginationByResourceVersion(wfList.Items, resourceVersion, limit, wfList)
