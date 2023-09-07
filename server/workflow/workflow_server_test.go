@@ -667,6 +667,39 @@ func TestMergeWithArchivedWorkflows(t *testing.T) {
 	assert.Equal(t, expectedWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList).Items)
 }
 
+func TestCursorPaginationByResourceVersion(t *testing.T) {
+	wf1 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1", Name: "wf1"}}
+	wf2 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "2", Name: "wf2"}}
+	wf3 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "3", Name: "wf3"}}
+	wf4 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "4", Name: "wf4"}}
+	wf5 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "5", Name: "wf5"}}
+	wf6 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "6", Name: "wf6"}}
+	wf7 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "7", Name: "wf7"}}
+	wf8 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "8", Name: "wf8"}}
+	wf9 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "9", Name: "wf9"}}
+	wf10 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "10", Name: "wf10"}}
+
+	items := []v1alpha1.Workflow{wf2, wf1, wf4, wf3, wf6, wf5, wf8, wf7, wf10, wf9}
+	wfList := &v1alpha1.WorkflowList{}
+
+	cursorPaginationByResourceVersion(items, "8", 5, wfList)
+	expectedWfList := &v1alpha1.WorkflowList{}
+	expectedWfList.Items = []v1alpha1.Workflow{wf7, wf6, wf5, wf4, wf3}
+	expectedWfList.ListMeta.Continue = "3"
+
+	assert.Equal(t, expectedWfList, wfList)
+}
+
 func TestWatchWorkflows(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf := &v1alpha1.Workflow{
