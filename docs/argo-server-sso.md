@@ -62,7 +62,16 @@ sso:
    - groups
   rbac:
     enabled: true
+  filterGroupsRegex: ".*argo-wf.*"
 ```
+- `filterGroupsRegex` would filter out groups that do not match the regex. 
+  In this example, only groups that contain `argo-wf` would be allowed. 
+  This is useful if you have multiple applications using the same OIDC provider and you want to restrict access to only 
+  those groups that are relevant to Argo Workflows. The value will be empty by default. 
+  Motivation for this was 
+  [#10153](https://github.com/argoproj/argo-workflows/issues/10153) 
+  [#9530](https://github.com/argoproj/argo-workflows/issues/9530).
+  Available from `v3.5` onwards.
 
 !!! Note
     Not all OIDC providers support the `groups` scope. Please speak to your provider about their options.
