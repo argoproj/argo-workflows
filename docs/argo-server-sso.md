@@ -64,6 +64,7 @@ sso:
     enabled: true
   filterGroupsRegex: ".*argo-wf.*"
 ```
+
 - `filterGroupsRegex` (Available from v3.5) would filter out groups that do not match the regex. 
   In this example, only groups that contain `argo-wf` would be allowed. 
   This is useful if you have multiple applications using the same OIDC provider, and you want to restrict access to only 
