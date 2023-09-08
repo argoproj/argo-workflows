@@ -62,7 +62,7 @@ type sso struct {
 	expiry            time.Duration
 	customClaimName   string
 	userInfoPath      string
-	filterGroupsRegex *regexp.Regexp
+	filterGroupsRegex []*regexp.Regexp
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -187,11 +187,14 @@ func newSso(
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
-	var filterGroupRegex *regexp.Regexp = nil
-	if c.FilterGroupsRegex != "" {
-		filterGroupRegex, err = regexp.Compile(c.FilterGroupsRegex)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile sso.filterGroupRegex: %s %w", c.FilterGroupsRegex, err)
+	var filterGroupRegex []*regexp.Regexp
+	if c.FilterGroupsRegex != nil && len(c.FilterGroupsRegex) > 0 {
+		for _, regex := range c.FilterGroupsRegex {
+			compiledRegex, err := regexp.Compile(regex)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile sso.filterGroupRegex: %s %w", regex, err)
+			}
+			filterGroupRegex = append(filterGroupRegex, compiledRegex)
 		}
 	}
 	log.WithFields(lf).Info("SSO configuration")
@@ -290,11 +293,14 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if s.filterGroupsRegex != nil {
+	if s.filterGroupsRegex != nil && len(s.filterGroupsRegex) > 0 {
 		var filteredGroups []string
 		for _, group := range groups {
-			if s.filterGroupsRegex.Match([]byte(group)) {
-				filteredGroups = append(filteredGroups, group)
+			for _, regex := range s.filterGroupsRegex {
+				if regex.MatchString(group) {
+					filteredGroups = append(filteredGroups, group)
+					break
+				}
 			}
 		}
 		groups = filteredGroups
