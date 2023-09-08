@@ -50,19 +50,19 @@ var _ Interface = &sso{}
 type Config = config.SSOConfig
 
 type sso struct {
-	config               *oauth2.Config
-	issuer               string
-	idTokenVerifier      *oidc.IDTokenVerifier
-	httpClient           *http.Client
-	baseHRef             string
-	secure               bool
-	privateKey           crypto.PrivateKey
-	encrypter            jose.Encrypter
-	rbacConfig           *config.RBACConfig
-	expiry               time.Duration
-	customClaimName      string
-	userInfoPath         string
-	filterSsoGroupsRegex string
+	config            *oauth2.Config
+	issuer            string
+	idTokenVerifier   *oidc.IDTokenVerifier
+	httpClient        *http.Client
+	baseHRef          string
+	secure            bool
+	privateKey        crypto.PrivateKey
+	encrypter         jose.Encrypter
+	rbacConfig        *config.RBACConfig
+	expiry            time.Duration
+	customClaimName   string
+	userInfoPath      string
+	filterGroupsRegex *regexp.Regexp
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -187,22 +187,29 @@ func newSso(
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
+	var filterGroupRegex *regexp.Regexp = nil
+	if c.FilterGroupsRegex != "" {
+		filterGroupRegex, err = regexp.Compile(c.FilterGroupsRegex)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compile sso.filterGroupRegex: %s %w", c.FilterGroupsRegex, err)
+		}
+	}
 	log.WithFields(lf).Info("SSO configuration")
 
 	return &sso{
-		config:               config,
-		idTokenVerifier:      idTokenVerifier,
-		baseHRef:             baseHRef,
-		httpClient:           httpClient,
-		secure:               secure,
-		privateKey:           privateKey,
-		encrypter:            encrypter,
-		rbacConfig:           c.RBAC,
-		expiry:               c.GetSessionExpiry(),
-		customClaimName:      c.CustomGroupClaimName,
-		userInfoPath:         c.UserInfoPath,
-		issuer:               c.Issuer,
-		filterSsoGroupsRegex: c.FilterSSOGroupsRegex,
+		config:            config,
+		idTokenVerifier:   idTokenVerifier,
+		baseHRef:          baseHRef,
+		httpClient:        httpClient,
+		secure:            secure,
+		privateKey:        privateKey,
+		encrypter:         encrypter,
+		rbacConfig:        c.RBAC,
+		expiry:            c.GetSessionExpiry(),
+		customClaimName:   c.CustomGroupClaimName,
+		userInfoPath:      c.UserInfoPath,
+		issuer:            c.Issuer,
+		filterGroupsRegex: filterGroupRegex,
 	}, nil
 }
 
@@ -283,19 +290,14 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if s.filterSsoGroupsRegex != "" {
+	if s.filterGroupsRegex != nil {
 		var filteredGroups []string
-		regex, err := regexp.Compile(s.filterSsoGroupsRegex)
-		if err != nil {
-			log.WithError(err).Errorf("failed to compile filterSsoGroupsRegex: %s", s.filterSsoGroupsRegex)
-		} else {
-			for _, group := range groups {
-				if regex.Match([]byte(group)) {
-					filteredGroups = append(filteredGroups, group)
-				}
+		for _, group := range groups {
+			if s.filterGroupsRegex.Match([]byte(group)) {
+				filteredGroups = append(filteredGroups, group)
 			}
-			groups = filteredGroups
 		}
+		groups = filteredGroups
 	}
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
