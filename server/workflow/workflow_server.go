@@ -20,7 +20,6 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -129,9 +128,9 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
-func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList, numWfsToKeep int) *v1alpha1.WorkflowList {
-	var mergedWfs []v1alpha1.Workflow
-	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
+func mergeWithArchivedWorkflows(liveWfs wfv1.WorkflowList, archivedWfs wfv1.WorkflowList, numWfsToKeep int) *wfv1.WorkflowList {
+	var mergedWfs []wfv1.Workflow
+	var uidToWfs = map[types.UID][]wfv1.Workflow{}
 	for _, item := range liveWfs.Items {
 		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
 	}
@@ -152,17 +151,17 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 			}
 		}
 	}
-	mergedWfsList := v1alpha1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
+	mergedWfsList := wfv1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
 	sort.Sort(mergedWfsList.Items)
 	numWfs := 0
-	var finalWfs []v1alpha1.Workflow
+	var finalWfs []wfv1.Workflow
 	for _, item := range mergedWfsList.Items {
 		if numWfsToKeep == 0 || numWfs < numWfsToKeep {
 			finalWfs = append(finalWfs, item)
 			numWfs += 1
 		}
 	}
-	return &v1alpha1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
+	return &wfv1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
