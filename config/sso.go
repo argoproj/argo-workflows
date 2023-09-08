@@ -21,6 +21,7 @@ type SSOConfig struct {
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 	UserInfoPath         string `json:"userInfoPath,omitempty"`
 	InsecureSkipVerify   bool   `json:"insecureSkipVerify,omitempty"`
+	FilterSSOGroupsRegex string `json:"filterSSOGroupsRegex,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {

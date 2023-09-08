@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -49,18 +50,19 @@ var _ Interface = &sso{}
 type Config = config.SSOConfig
 
 type sso struct {
-	config          *oauth2.Config
-	issuer          string
-	idTokenVerifier *oidc.IDTokenVerifier
-	httpClient      *http.Client
-	baseHRef        string
-	secure          bool
-	privateKey      crypto.PrivateKey
-	encrypter       jose.Encrypter
-	rbacConfig      *config.RBACConfig
-	expiry          time.Duration
-	customClaimName string
-	userInfoPath    string
+	config               *oauth2.Config
+	issuer               string
+	idTokenVerifier      *oidc.IDTokenVerifier
+	httpClient           *http.Client
+	baseHRef             string
+	secure               bool
+	privateKey           crypto.PrivateKey
+	encrypter            jose.Encrypter
+	rbacConfig           *config.RBACConfig
+	expiry               time.Duration
+	customClaimName      string
+	userInfoPath         string
+	filterSsoGroupsRegex string
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -188,18 +190,19 @@ func newSso(
 	log.WithFields(lf).Info("SSO configuration")
 
 	return &sso{
-		config:          config,
-		idTokenVerifier: idTokenVerifier,
-		baseHRef:        baseHRef,
-		httpClient:      httpClient,
-		secure:          secure,
-		privateKey:      privateKey,
-		encrypter:       encrypter,
-		rbacConfig:      c.RBAC,
-		expiry:          c.GetSessionExpiry(),
-		customClaimName: c.CustomGroupClaimName,
-		userInfoPath:    c.UserInfoPath,
-		issuer:          c.Issuer,
+		config:               config,
+		idTokenVerifier:      idTokenVerifier,
+		baseHRef:             baseHRef,
+		httpClient:           httpClient,
+		secure:               secure,
+		privateKey:           privateKey,
+		encrypter:            encrypter,
+		rbacConfig:           c.RBAC,
+		expiry:               c.GetSessionExpiry(),
+		customClaimName:      c.CustomGroupClaimName,
+		userInfoPath:         c.UserInfoPath,
+		issuer:               c.Issuer,
+		filterSsoGroupsRegex: c.FilterSSOGroupsRegex,
 	}, nil
 }
 
@@ -278,6 +281,20 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			log.WithError(err).Errorf("failed to get groups claim from the given userInfoPath(%s)", s.userInfoPath)
 			w.WriteHeader(401)
 			return
+		}
+	}
+	if s.filterSsoGroupsRegex != "" {
+		var filteredGroups []string
+		regex, err := regexp.Compile(s.filterSsoGroupsRegex)
+		if err != nil {
+			log.WithError(err).Errorf("failed to compile filterSsoGroupsRegex: %s", s.filterSsoGroupsRegex)
+		} else {
+			for _, group := range groups {
+				if regex.Match([]byte(group)) {
+					filteredGroups = append(filteredGroups, group)
+				}
+			}
+			groups = filteredGroups
 		}
 	}
 	argoClaims := &types.Claims{
