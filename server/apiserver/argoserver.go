@@ -24,7 +24,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -56,10 +55,12 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 
@@ -68,7 +69,10 @@ import (
 	"github.com/sethvargo/go-limiter/memorystore"
 )
 
-var MaxGRPCMessageSize int
+var (
+	MaxGRPCMessageSize = envutil.LookupEnvIntOr(common.EnvVarGrpcMessageSize, 100*1024*1024)
+	EnableMetricsAuth  = envutil.LookupEnvBoolOr(common.EnvVarMetricsAuth, false)
+)
 
 type argoServer struct {
 	baseHRef string
@@ -112,14 +116,6 @@ type ArgoServerOpts struct {
 	AccessControlAllowOrigin string
 	APIRateLimit             uint64
 	AllowedLinkProtocol      []string
-}
-
-func init() {
-	var err error
-	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
-	if err != nil {
-		log.WithError(err).Fatal("GRPC_MESSAGE_SIZE environment variable must be set as an integer")
-	}
 }
 
 func getResourceCacheNamespace(opts ArgoServerOpts) string {
@@ -389,7 +385,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
+		if EnableMetricsAuth {
 			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
 			for _, c := range r.Cookies() {
 				if c.Name == "authorization" {
