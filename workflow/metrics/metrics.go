@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 )
 
 const (
@@ -18,6 +19,11 @@ const (
 	workflowsSubsystem       = "workflows"
 	DefaultMetricsServerPort = 9090
 	DefaultMetricsServerPath = "/metrics"
+)
+
+var (
+	maxOperationTimeSeconds            = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second).Seconds()
+	operationDurationMetricBucketCount = envutil.LookupEnvIntOr("OPERATION_DURATION_METRIC_BUCKET_COUNT", 6)
 )
 
 type ServerConfig struct {
@@ -79,7 +85,10 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		podsByPhase:        getPodPhaseGauges(),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
 		workflows:          make(map[string][]string),
-		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
+		operationDurations: newHistogram("operation_duration_seconds",
+			"Histogram of durations of operations",
+			nil,
+			prometheus.LinearBuckets(0, maxOperationTimeSeconds/float64(operationDurationMetricBucketCount), operationDurationMetricBucketCount)),
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		workqueueMetrics:   make(map[string]prometheus.Metric),
