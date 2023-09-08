@@ -187,14 +187,14 @@ func newSso(
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
-	var filterGroupRegex []*regexp.Regexp
+	var filterGroupsRegex []*regexp.Regexp
 	if c.FilterGroupsRegex != nil && len(c.FilterGroupsRegex) > 0 {
 		for _, regex := range c.FilterGroupsRegex {
 			compiledRegex, err := regexp.Compile(regex)
 			if err != nil {
 				return nil, fmt.Errorf("failed to compile sso.filterGroupRegex: %s %w", regex, err)
 			}
-			filterGroupRegex = append(filterGroupRegex, compiledRegex)
+			filterGroupsRegex = append(filterGroupsRegex, compiledRegex)
 		}
 	}
 	log.WithFields(lf).Info("SSO configuration")
@@ -212,7 +212,7 @@ func newSso(
 		customClaimName:   c.CustomGroupClaimName,
 		userInfoPath:      c.UserInfoPath,
 		issuer:            c.Issuer,
-		filterGroupsRegex: filterGroupRegex,
+		filterGroupsRegex: filterGroupsRegex,
 	}, nil
 }
 
