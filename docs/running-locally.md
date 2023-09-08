@@ -206,7 +206,7 @@ make pre-commit -B
 
 Please do the following when creating your PR:
 
-* Sign-off your commits.
+* [Sign-off](https://probot.github.io/apps/dco) your commits.
 * Use [Conventional Commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
 * Suffix the issue number.
 
@@ -227,6 +227,14 @@ git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
   have checked out your code into `$GOPATH/src/github.com/argoproj/argo-workflows`.
 * If you encounter "out of heap" issues when building UI through Docker, please validate resources allocated to Docker.
   Compilation may fail if allocated RAM is less than 4Gi.
+* To start profiling with [`pprof`](https://go.dev/blog/pprof), pass `ARGO_PPROF=true` when starting the controller locally.
+  Then run the following:
+
+```bash
+go tool pprof http://localhost:6060/debug/pprof/profile   # 30-second CPU profile
+go tool pprof http://localhost:6060/debug/pprof/heap      # heap profile
+go tool pprof http://localhost:6060/debug/pprof/block     # goroutine blocking profile
+```
 
 ## Using Multiple Terminals
 

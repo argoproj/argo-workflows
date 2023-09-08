@@ -1,6 +1,6 @@
 "use strict;";
 
-const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
@@ -12,7 +12,7 @@ const proxyConf = {
   secure: false
 };
 
-console.log(`Bundling for ${isProd ? 'production' : 'development'}...`);
+console.log(`Bundling for ${isProd ? "production" : "development"}...`);
 
 const config = {
   mode: isProd ? "production" : "development",
@@ -61,11 +61,11 @@ const config = {
   },
   plugins: [
     new webpack.DefinePlugin({
+      "process.env.DEFAULT_TZ": JSON.stringify("UTC"),
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
-      SYSTEM_INFO: JSON.stringify({
+      "SYSTEM_INFO": JSON.stringify({
         version: process.env.VERSION || "latest"
       }),
-      "process.env.DEFAULT_TZ": JSON.stringify("UTC"),
     }),
     new HtmlWebpackPlugin({ template: "src/app/index.html" }),
     new CopyWebpackPlugin({
@@ -88,6 +88,7 @@ const config = {
     }),
     new MonacoWebpackPlugin({ languages: ["json", "yaml"] })
   ],
+
   devServer: {
     // this needs to be disable to allow EventSource to work
     compress: false,
@@ -95,7 +96,7 @@ const config = {
       disableDotRule: true
     },
     headers: {
-      'X-Frame-Options': 'SAMEORIGIN'
+      "X-Frame-Options": "SAMEORIGIN"
     },
     proxy: {
       "/api/v1": proxyConf,

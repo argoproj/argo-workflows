@@ -21,8 +21,8 @@ func NewResumeCommand() *cobra.Command {
 
 	command := &cobra.Command{
 		Use:   "resume WORKFLOW1 WORKFLOW2...",
-		Short: "resume zero or more workflows",
-		Example: `# Resume a workflow that has been stopped or suspended:
+		Short: "resume zero or more workflows (opposite of suspend)",
+		Example: `# Resume a workflow that has been suspended:
 
   argo resume my-wf
 
