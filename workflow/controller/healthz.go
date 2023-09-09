@@ -33,6 +33,11 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
+		// the wfc.wfInformer is nil if it is not the leader
+		if wfc.wfInformer == nil {
+			log.Info("healthz: current pod is not the leader")
+			return nil
+		}
 		lister := v1alpha1.NewWorkflowLister(wfc.wfInformer.GetIndexer())
 		list, err := lister.Workflows(wfc.managedNamespace).List(seletor)
 		if err != nil {

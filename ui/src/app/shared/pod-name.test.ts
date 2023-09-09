@@ -8,6 +8,7 @@ describe('pod names', () => {
         expect(createFNVHash('You cannot alter your fate. However, you can rise to meet it.')).toEqual(827171719);
     });
 
+    // note: the below is intended to be equivalent to the server-side Go code in workflow/util/pod_name_test.go
     const nodeName = 'nodename';
     const nodeID = '1';
 

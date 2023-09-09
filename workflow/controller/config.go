@@ -41,7 +41,6 @@ func (wfc *WorkflowController) updateConfig() error {
 				return err
 			}
 			log.Info("Persistence Session created successfully")
-
 			wfc.session = session
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
@@ -85,22 +84,16 @@ func (wfc *WorkflowController) updateConfig() error {
 // initDB inits argo DB tables
 func (wfc *WorkflowController) initDB() error {
 	persistence := wfc.Config.Persistence
-	if persistence != nil {
-		tableName, err := sqldb.GetTableName(persistence)
-		if err != nil {
-			return err
-		}
-		if !persistence.SkipMigration {
-			err = sqldb.NewMigrate(wfc.session, persistence.GetClusterName(), tableName).Exec(context.Background())
-			if err != nil {
-				return err
-			}
-		} else {
-			log.Info("DB migration is disabled")
-		}
+	if persistence == nil || persistence.SkipMigration {
+		log.Info("DB migration is disabled")
+		return nil
+	}
+	tableName, err := sqldb.GetTableName(persistence)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return sqldb.NewMigrate(wfc.session, persistence.GetClusterName(), tableName).Exec(context.Background())
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {
