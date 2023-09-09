@@ -4,6 +4,7 @@ about: Request a mentor to help contribute to this project
 labels: ['mentoring', 'triage']
 ---
 
+<!-- markdownlint-disable-next-line MD041 -->
 **Question: Have you read the [mentoring guide](https://argoproj.github.io/argo-workflows/mentoring/)? Please only submit this request for general mentoring (not GSoC).**
 
 Answer: **Yes I have read the mentoring guide.**

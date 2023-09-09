@@ -56,9 +56,9 @@ Example, should we add `fasttemplate`
 | Test                                    | Outcome                             |
 |-----------------------------------------|-------------------------------------|
 | A strong use case.                      | ❌ Fail. We can use `text/template`. |
-| It has an acceptable license (e.g. MIT) | ✅ Pass. MIT license.                |
+| It has an acceptable license (e.g. MIT) | ✅ Pass. MIT license.               |
 | It is actively maintained.              | ❌ Fail. Project is inactive.        |
-| It has no security issues.              | ✅ Pass. No known security issues.   |
+| It has no security issues.              | ✅ Pass. No known security issues.  |
 
 No, we should not add that dependency.
 
