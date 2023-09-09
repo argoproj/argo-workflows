@@ -5,10 +5,7 @@ import {WarningIcon} from './fa-icons';
 export function PaginationPanel(props: {pagination: Pagination; onChange: (pagination: Pagination) => void; numRecords: number}) {
     return (
         <p style={{paddingBottom: '45px'}}>
-            <button
-                disabled={!props.pagination.offset}
-                className='argo-button argo-button--base-o'
-                onClick={() => props.onChange({limit: props.pagination.limit})}>
+            <button disabled={!props.pagination.offset} className='argo-button argo-button--base-o' onClick={() => props.onChange({limit: props.pagination.limit})}>
                 First page
             </button>
             <button

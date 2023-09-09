@@ -48,7 +48,7 @@ function getConditionIcon(condition: ConditionType): JSX.Element {
     }
 }
 
-export function ConditionsPanel (props: Props) {
+export function ConditionsPanel(props: Props) {
     return (
         <>
             {props.conditions &&
