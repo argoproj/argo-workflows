@@ -2,16 +2,21 @@ import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {CronWorkflow, Link} from '../../../../models';
+import * as models from '../../../../models';
+import {CronWorkflow, Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
+import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
+import * as Actions from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
+import {allBatchActionsEnabled, WorkflowListRenderOptions} from '../../../workflows/components/workflows-list/workflows-list';
+import {WorkflowsRow} from '../../../workflows/components/workflows-row/workflows-row';
 import {CronWorkflowEditor} from '../cron-workflow-editor';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
@@ -25,6 +30,12 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
     const [name] = useState(match.params.name);
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState(queryParams.get('tab'));
+    const [workflows, setWorkflows] = useState<Workflow[]>([]);
+    const [{selectedPhases, selectedLabels, paginationLimit}, setSelectedData] = useState<WorkflowListRenderOptions>(JSON.parse(localStorage.getItem('ListOptions/options')));
+    const [, setBatchActionDisabled] = useState<Actions.OperationDisabled>();
+    const [selectedWorkflows, setSelectedWorkflows] = useState(new Map<string, models.Workflow>());
+    const [columns, setColumns] = useState<models.Column[]>([]);
+    const [pagination] = useState<Pagination>({offset: queryParams.get('offset'), limit: parseLimit(queryParams.get('limit') || `${paginationLimit}` || '50')});
 
     const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>();
     const [edited, setEdited] = useState(false);
@@ -61,6 +72,16 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
     }, [namespace, name]);
 
     useEffect(() => setEdited(true), [cronWorkflow]);
+
+    useEffect(() => {
+        services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(res => {
+            setWorkflows(res.items.filter(el => el.metadata.name.substring(0, el.metadata.name.lastIndexOf('-')) === name));
+        });
+
+        services.info.getInfo().then(info => {
+            setColumns(info.columns);
+        });
+    }, []);
 
     useCollectEvent('openedCronWorkflowDetails');
 
@@ -183,6 +204,17 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
 
         return items;
     };
+    const updateCurrentlySelectedAndBatchActions = (newSelectedWorkflows: Map<string, Workflow>): void => {
+        const actions: any = Actions.WorkflowOperationsMap;
+        const nowDisabled: any = {...allBatchActionsEnabled};
+        for (const action of Object.keys(nowDisabled)) {
+            for (const wf of Array.from(newSelectedWorkflows.values())) {
+                nowDisabled[action] = nowDisabled[action] || actions[action].disabled(wf);
+            }
+        }
+        setBatchActionDisabled(nowDisabled);
+        setSelectedWorkflows(new Map<string, models.Workflow>(newSelectedWorkflows));
+    };
 
     return (
         <Page
@@ -207,6 +239,84 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/cron-workflow=' + name} />}
                 </SlidingPanel>
+                <div className='argo-table-list'>
+                    <div className='row argo-table-list__head'>
+                        <div className='columns small-1 workflows-list__status'>
+                            <input
+                                type='checkbox'
+                                className='workflows-list__status--checkbox'
+                                checked={workflows.length === selectedWorkflows.size}
+                                onClick={e => {
+                                    e.stopPropagation();
+                                }}
+                                onChange={e => {
+                                    if (workflows.length === selectedWorkflows.size) {
+                                        // All workflows are selected, deselect them all
+                                        updateCurrentlySelectedAndBatchActions(new Map<string, models.Workflow>());
+                                    } else {
+                                        // Not all workflows are selected, select them all
+                                        const currentlySelected: Map<string, Workflow> = selectedWorkflows;
+                                        workflows.forEach(wf => {
+                                            if (!currentlySelected.has(wf.metadata.uid)) {
+                                                currentlySelected.set(wf.metadata.uid, wf);
+                                            }
+                                        });
+                                        updateCurrentlySelectedAndBatchActions(currentlySelected);
+                                    }
+                                }}
+                            />
+                        </div>
+                        <div className='row small-11'>
+                            <div className='columns small-2'>NAME</div>
+                            <div className='columns small-1'>NAMESPACE</div>
+                            <div className='columns small-1'>STARTED</div>
+                            <div className='columns small-1'>FINISHED</div>
+                            <div className='columns small-1'>DURATION</div>
+                            <div className='columns small-1'>PROGRESS</div>
+                            <div className='columns small-2'>MESSAGE</div>
+                            <div className='columns small-1'>DETAILS</div>
+                            <div className='columns small-1'>ARCHIVED</div>
+                            {(columns || []).map(col => {
+                                return (
+                                    <div className='columns small-1' key={col.key}>
+                                        {col.name}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    {workflows.map(wf => {
+                        return (
+                            <WorkflowsRow
+                                workflow={wf}
+                                key={wf.metadata.uid}
+                                checked={selectedWorkflows.has(wf.metadata.uid)}
+                                columns={columns}
+                                onChange={key => {
+                                    const value = `${key}=${wf.metadata?.labels[key]}`;
+                                    let newTags: string[] = [];
+                                    if (selectedLabels.indexOf(value) === -1) {
+                                        newTags = selectedLabels.concat(value);
+                                        setSelectedData(prev => ({...prev, selectedLabels: newTags}));
+                                    }
+                                }}
+                                select={subWf => {
+                                    const wfUID = subWf.metadata.uid;
+                                    if (!wfUID) {
+                                        return;
+                                    }
+                                    const currentlySelected: Map<string, Workflow> = selectedWorkflows;
+                                    if (!currentlySelected.has(wfUID)) {
+                                        currentlySelected.set(wfUID, subWf);
+                                    } else {
+                                        currentlySelected.delete(wfUID);
+                                    }
+                                    updateCurrentlySelectedAndBatchActions(currentlySelected);
+                                }}
+                            />
+                        );
+                    })}
+                </div>
             </>
         </Page>
     );
