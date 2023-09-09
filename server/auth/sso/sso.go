@@ -195,9 +195,12 @@ func newSso(
 		}
 	}
 
-	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex}
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
+	}
+	if c.FilterGroupsRegex != nil && len(c.FilterGroupsRegex) > 0 {
+		lf["filterGroupsRegex"] = c.FilterGroupsRegex
 	}
 	log.WithFields(lf).Info("SSO configuration")
 
@@ -309,7 +312,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 		groups = filteredGroups
 	}
-	
+
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,
