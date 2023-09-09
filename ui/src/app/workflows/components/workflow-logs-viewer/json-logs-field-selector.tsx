@@ -5,7 +5,7 @@ export interface SelectedJsonFields {
     values: string[];
 }
 
-export const JsonLogsFieldSelector = ({fields, onChange}: {fields: SelectedJsonFields; onChange: (v: string[]) => void}) => {
+export function JsonLogsFieldSelector ({fields, onChange}: {fields: SelectedJsonFields; onChange: (v: string[]) => void}) {
     const [inputFields, setInputFields] = React.useState(fields);
     const [key, setKey] = React.useState('');
     const deleteItem = (k: string) => {

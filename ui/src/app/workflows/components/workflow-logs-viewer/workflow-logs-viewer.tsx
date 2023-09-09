@@ -48,7 +48,7 @@ interface ParsedTime {
     fullstring: string;
 }
 // extract the time field from a string
-const parseTime = (formattedString: string): undefined | ParsedTime => {
+function parseTime (formattedString: string): undefined | ParsedTime {
     const re = new RegExp('time="(.*?)"');
     const table = re.exec(formattedString);
     if (table === null || table.length !== 2) {
@@ -57,7 +57,7 @@ const parseTime = (formattedString: string): undefined | ParsedTime => {
     return {quoted: table[1], fullstring: table[0]};
 };
 
-const parseAndTransform = (formattedString: string, timezone: string) => {
+function parseAndTransform (formattedString: string, timezone: string) {
     const maybeTime = parseTime(formattedString);
     if (maybeTime === undefined) {
         return formattedString;
@@ -73,7 +73,7 @@ const parseAndTransform = (formattedString: string, timezone: string) => {
     }
 };
 
-export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
+export function WorkflowLogsViewer ({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
     const storage = new ScopedLocalStorage('workflow-logs-viewer');
     const storedJsonFields = storage.getItem('jsonFields', {
         values: []
@@ -202,7 +202,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     const [candidateContainer, setCandidateContainer] = useState(container);
     const filteredTimezones = timezones.filter(tz => tz.startsWith(uiTimezone) || uiTimezone === '');
 
-    const popupJsonFieldSelector = async () => {
+    async function popupJsonFieldSelector () {
         const fields = {...selectedJsonFields};
         const updated = await popup.confirm('Select Json Fields', () => (
             <JsonLogsFieldSelector
