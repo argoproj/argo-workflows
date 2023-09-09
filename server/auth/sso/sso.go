@@ -183,10 +183,7 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify}
-	if c.IssuerAlias != "" {
-		lf["issuerAlias"] = c.IssuerAlias
-	}
+
 	var filterGroupsRegex []*regexp.Regexp
 	if c.FilterGroupsRegex != nil && len(c.FilterGroupsRegex) > 0 {
 		for _, regex := range c.FilterGroupsRegex {
@@ -196,6 +193,11 @@ func newSso(
 			}
 			filterGroupsRegex = append(filterGroupsRegex, compiledRegex)
 		}
+	}
+
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex}
+	if c.IssuerAlias != "" {
+		lf["issuerAlias"] = c.IssuerAlias
 	}
 	log.WithFields(lf).Info("SSO configuration")
 
@@ -293,6 +295,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// only return groups that match at least one of the regexes
 	if s.filterGroupsRegex != nil && len(s.filterGroupsRegex) > 0 {
 		var filteredGroups []string
 		for _, group := range groups {
@@ -305,6 +309,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 		groups = filteredGroups
 	}
+	
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,
