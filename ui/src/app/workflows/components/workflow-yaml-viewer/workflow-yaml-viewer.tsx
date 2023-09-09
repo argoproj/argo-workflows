@@ -15,7 +15,7 @@ function normalizeNodeName(name: string) {
     return parts[parts.length - 1];
 }
 
-export function WorkflowYamlViewer (props: WorkflowYamlViewerProps) {
+export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
     const contents: JSX.Element[] = [];
     contents.push(<h3 key='title'>Node</h3>);
 

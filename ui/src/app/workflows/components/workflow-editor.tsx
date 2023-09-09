@@ -6,7 +6,7 @@ import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
 import {WorkflowParametersEditor} from '../../shared/components/editors/workflow-parameters-editor';
 import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
 
-export function WorkflowEditor ({
+export function WorkflowEditor({
     selectedTabKey,
     onTabSelected,
     onError,
@@ -44,4 +44,4 @@ export function WorkflowEditor ({
             ]}
         />
     );
-};
+}

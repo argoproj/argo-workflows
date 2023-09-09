@@ -8,7 +8,7 @@ interface WorkflowLabelsProps {
     onChange: (key: string, value: string) => void;
 }
 
-export function WorkflowLabels (props: WorkflowLabelsProps) {
+export function WorkflowLabels(props: WorkflowLabelsProps) {
     const labels = [];
     const w = props.workflow;
     if (w.metadata.labels) {

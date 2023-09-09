@@ -20,7 +20,7 @@ interface WorkflowsRowProps {
     columns: models.Column[];
 }
 
-export function WorkflowsRow (props: WorkflowsRowProps) {
+export function WorkflowsRow(props: WorkflowsRowProps) {
     const [hideDrawer, setHideDrawer] = useState(true);
     const wf = props.workflow;
 

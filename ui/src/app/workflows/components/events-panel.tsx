@@ -10,7 +10,7 @@ import debounce from '../../shared/debounce';
 import {ListWatch} from '../../shared/list-watch';
 import {services} from '../../shared/services';
 
-export function EventsPanel ({namespace, name, kind}: {namespace: string; name: string; kind: string}) {
+export function EventsPanel({namespace, name, kind}: {namespace: string; name: string; kind: string}) {
     const [showAll, setShowAll] = useState(false);
     const [hideNormal, setHideNormal] = useState(false);
     const [events, setEvents] = useState<Event[]>();
@@ -53,7 +53,7 @@ export function EventsPanel ({namespace, name, kind}: {namespace: string; name: 
     const tableRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        function calculateTooltips () {
+        function calculateTooltips() {
             const table = tableRef.current;
 
             if (table) {
@@ -75,7 +75,7 @@ export function EventsPanel ({namespace, name, kind}: {namespace: string; name: 
                     }
                 }
             }
-        };
+        }
 
         const [debouncedCalculateTooltips, cleanup] = debounce(calculateTooltips, 1000);
 
@@ -134,4 +134,4 @@ export function EventsPanel ({namespace, name, kind}: {namespace: string; name: 
             )}
         </>
     );
-};
+}

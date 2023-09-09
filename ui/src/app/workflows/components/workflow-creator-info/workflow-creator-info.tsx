@@ -9,7 +9,7 @@ interface WorkflowCreatorInfoProps {
     onChange: (key: string, value: string) => void;
 }
 
-export function WorkflowCreatorInfo (props: WorkflowCreatorInfoProps) {
+export function WorkflowCreatorInfo(props: WorkflowCreatorInfoProps) {
     const w = props.workflow;
     const creatorLabels = [];
     if (w.metadata.labels) {

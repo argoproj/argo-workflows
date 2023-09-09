@@ -12,7 +12,7 @@ interface Props {
     nodeClicked: (nodeId: string) => void;
 }
 
-export function WorkflowPanel (props: Props) {
+export function WorkflowPanel(props: Props) {
     if (!props.workflowStatus.nodes && props.workflowStatus.phase) {
         return (
             <div className='argo-container'>
