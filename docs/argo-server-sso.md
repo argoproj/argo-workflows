@@ -62,16 +62,7 @@ sso:
    - groups
   rbac:
     enabled: true
-  filterGroupsRegex: ".*argo-wf.*"
 ```
-
-- `filterGroupsRegex` (Available from v3.5) would filter out groups that do not match the regex.
-  In this example, only groups that contain `argo-wf` would be allowed.
-  This is useful if you have multiple applications using the same OIDC provider, and you want to restrict access to only
-  those groups that are relevant to Argo Workflows. The value will be empty by default.
-  Motivation for this was
-  [#10153](https://github.com/argoproj/argo-workflows/issues/10153)
-  [#9530](https://github.com/argoproj/argo-workflows/issues/9530).
 
 !!! Note
     Not all OIDC providers support the `groups` scope. Please speak to your provider about their options.
@@ -196,6 +187,25 @@ If your OIDC provider provides groups information only using the user-info endpo
 sso:
   userInfoPath: /oauth2/v1/userinfo
 ```
+
+## Filter groups
+
+> v3.5 and after
+
+```yaml
+sso:
+    # Specify a list of regular expressions to filter the groups returned by the OIDC provider.
+    filterGroupsRegex:
+    - ".*argo-wf.*"
+    - ".*argo-workflow.*"
+```
+
+- `filterGroups` is a list of regular expressions that will be used to filter the groups returned by the OIDC provider.
+- This is an optional field. If not specified, no filtering will be done.
+- The regular expressions are case-sensitive.
+- If the list is not empty, only groups that match at least one of the regular expressions will be used in SSO RBAC.
+- Argo workflows uses cookies to store the groups' information. If the number of groups returned by OIDC provider is too large, the cookie size will exceed the  **4KB** limit and the login will fail. To avoid this, you can use `filterGroups` to filter out the groups that are not relevant to SSO RBAC.
+- Also, useful if you have multiple applications using the same OIDC provider, and you want to restrict access to only those groups that are relevant to Argo Workflows.
 
 ### Example Expression
 
