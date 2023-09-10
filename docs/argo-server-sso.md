@@ -188,28 +188,26 @@ sso:
   userInfoPath: /oauth2/v1/userinfo
 ```
 
-## Filter groups
-
-> v3.5 and after
-
-```yaml
-sso:
-    # Specify a list of regular expressions to filter the groups returned by the OIDC provider.
-    filterGroupsRegex:
-    - ".*argo-wf.*"
-    - ".*argo-workflow.*"
-```
-
-- `filterGroups` is a list of regular expressions that will be used to filter the groups returned by the OIDC provider.
-- This is an optional field. If not specified, no filtering will be done.
-- The regular expressions are case-sensitive.
-- If the list is not empty, only groups that match at least one of the regular expressions will be used in SSO RBAC.
-- Argo workflows uses cookies to store the groups' information. If the number of groups returned by OIDC provider is too large, the cookie size will exceed the  **4KB** limit and the login will fail. To avoid this, you can use `filterGroups` to filter out the groups that are not relevant to SSO RBAC.
-- Also, useful if you have multiple applications using the same OIDC provider, and you want to restrict access to only those groups that are relevant to Argo Workflows.
-
 ### Example Expression
 
 ```bash
 # assuming customClaimGroupName: argo_groups
 workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
+```
+
+## Filtering groups
+
+> v3.5 and above
+
+Configure the `filterGroupsRegex` field to filter the groups returned by the OIDC provider. Some use-cases for this include:
+- You have multiple applications using the same OIDC provider, and you only want to use groups that are relevant to Argo Workflows.
+- Argo Workflows uses cookies to store the groups' information. If the number of groups returned by the OIDC provider is too large, the cookie size will exceed the [4kb size limit](https://chromestatus.com/feature/4946713618939904) and the login will fail. To avoid this, use `filterGroupsRegex` to filter out the groups that are not relevant to SSO RBAC.
+
+```yaml
+sso:
+    # Specify a list of regular expressions to filter the groups returned by the OIDC provider.
+    # A logical "OR" is used between each regex in the list
+    filterGroupsRegex:
+    - ".*argo-wf.*"
+    - ".*argo-workflow.*"
 ```
