@@ -26,7 +26,7 @@ export function UserInfo() {
 
     return (
         <Page title='User Info' toolbar={{breadcrumbs: [{title: 'User Info'}]}}>
-            {<ErrorNotice error={error} />}
+            <ErrorNotice error={error} />
             <Notice>
                 <h3>
                     <i className='fa fa-user-alt' /> User Info
