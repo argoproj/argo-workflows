@@ -262,8 +262,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             // else false
             return isPending;
         }
-        const started = new Date(startedStr);
+        const started: Date = new Date(startedStr);
 
+        // check for undefined date filters as well
         if (minStartedAt && maxStartedAt) {
             return started > minStartedAt && started < maxStartedAt;
         } else if (minStartedAt && !maxStartedAt) {
