@@ -24,7 +24,7 @@ export function WorkflowDrawer(props: WorkflowDrawerProps) {
 
     useEffect(() => {
         (async () => {
-            const newWf = await services.workflows.get(props.namespace, props.name)
+            const newWf = await services.workflows.get(props.namespace, props.name);
             setWorkflow(newWf);
         })();
     }, [props.namespace, props.name]);

@@ -32,9 +32,7 @@ export function TagsInput(props: TagsInputProps) {
     }, [props.onChange, tags, autoCompleteRef]);
 
     return (
-        <div
-            className={classNames('tags-input argo-field', {'tags-input--focused': focused || !!input})}
-            onClick={() => inputRef.current?.focus()}>
+        <div className={classNames('tags-input argo-field', {'tags-input--focused': focused || !!input})} onClick={() => inputRef.current?.focus()}>
             {props.tags ? (
                 props.tags.map((tag, i) => (
                     <span className='tags-input__tag' key={tag}>
