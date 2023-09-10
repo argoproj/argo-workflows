@@ -26,13 +26,12 @@ require('./cron-workflow-list.scss');
 
 const learnMore = <a href='https://argoproj.github.io/argo-workflows/cron-workflows/'>Learn more</a>;
 
-export const CronWorkflowList = ({match, location, history}: RouteComponentProps<any>) => {
-    // boiler-plate
+export function CronWorkflowList ({match, location, history}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
-    // state for URL, query and label parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    // state for URL, query, and label parameters
+    const [namespace, setNamespace] = useState<string>(Utils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [labels, setLabels] = useState([]);
     const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
@@ -44,6 +43,7 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
         [history]
     );
 
+    // save history
     useEffect(
         () =>
             history.push(
@@ -176,4 +176,4 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
             </SlidingPanel>
         </Page>
     );
-};
+}
