@@ -79,7 +79,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
             toolbar={{
                 breadcrumbs: [
                     {title: 'Reports', path: uiUrl('reports')},
-                    {title: this.state.namespace, path: uiUrl('reports/' + this.state.namespace)}
+                    {title: namespace, path: uiUrl('reports/' + namespace)}
                 ]
             }}>
             <div className='row'>
