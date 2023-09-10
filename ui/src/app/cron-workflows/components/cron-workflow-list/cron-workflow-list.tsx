@@ -26,7 +26,7 @@ require('./cron-workflow-list.scss');
 
 const learnMore = <a href='https://argoproj.github.io/argo-workflows/cron-workflows/'>Learn more</a>;
 
-export function CronWorkflowList ({match, location, history}: RouteComponentProps<any>) {
+export function CronWorkflowList({match, location, history}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
@@ -60,21 +60,23 @@ export function CronWorkflowList ({match, location, history}: RouteComponentProp
     const [cronWorkflows, setCronWorkflows] = useState<CronWorkflow[]>();
 
     useEffect(() => {
-        services.cronWorkflows
-            .list(namespace, labels)
-            .then(l => {
+        (async () => {
+            try {
+                const list = await services.cronWorkflows.list(namespace, labels);
                 if (states.length === 1) {
                     if (states.includes('Suspended')) {
-                        return l.filter(el => el.spec.suspend === true);
+                        setCronWorkflows(list.filter(el => el.spec.suspend === true));
                     } else {
-                        return l.filter(el => el.spec.suspend !== true);
+                        setCronWorkflows(list.filter(el => el.spec.suspend !== true));
                     }
+                } else {
+                    setCronWorkflows(list);
                 }
-                return l;
-            })
-            .then(setCronWorkflows)
-            .then(() => setError(null))
-            .catch(setError);
+                setError(null);
+            } catch (newError) {
+                setError(newError);
+            }
+        })();
     }, [namespace, labels, states]);
 
     useCollectEvent('openedCronWorkflowList');
