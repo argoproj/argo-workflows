@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import * as React from 'react';
-import {useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 
 import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui';
 
@@ -24,12 +24,12 @@ export function TagsInput(props: TagsInputProps) {
     const [subTags, setSubTags] = useState<string[]>([]);
     const [subTagsActive, setSubTagsActive] = useState(false);
 
-    function onTagsChange(tags: string[]) {
+    useEffect(() => {
         if (props.onChange) {
             props.onChange(tags);
             setTimeout(() => autoCompleteRef.current?.refresh());
         }
-    }
+    }, [props.onChange, tags, autoCompleteRef]);
 
     return (
         <div
@@ -44,7 +44,6 @@ export function TagsInput(props: TagsInputProps) {
                             onClick={e => {
                                 const newTags = [...tags.slice(0, i), ...tags.slice(i + 1)];
                                 setTags(newTags);
-                                onTagsChange(newTags);
                                 e.stopPropagation();
                             }}
                         />
@@ -70,7 +69,6 @@ export function TagsInput(props: TagsInputProps) {
                             setTags(newTags);
                             setInput('');
                             setSubTags([]);
-                            onTagsChange(newTags);
                         }
                         setSubTagsActive(false);
                     }
@@ -92,7 +90,6 @@ export function TagsInput(props: TagsInputProps) {
                             if (e.keyCode === 8 && tags.length > 0 && input === '') {
                                 const newTags = tags.slice(0, tags.length - 1);
                                 setTags(newTags);
-                                onTagsChange(newTags);
                             }
                             inputProps.onKeyDown?.(e);
                         }}
@@ -101,7 +98,6 @@ export function TagsInput(props: TagsInputProps) {
                                 const newTags = tags.concat(input);
                                 setTags(newTags);
                                 setInput('');
-                                onTagsChange(newTags);
                             }
                             inputProps.onKeyUp?.(e);
                         }}
