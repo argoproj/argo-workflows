@@ -199,7 +199,7 @@ workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
 
 > v3.5 and above
 
-Configure the `filterGroupsRegex` field to filter the groups returned by the OIDC provider. Some use-cases for this include:
+You can configure `filterGroupsRegex` to filter the groups returned by the OIDC provider. Some use-cases for this include:
 
 - You have multiple applications using the same OIDC provider, and you only want to use groups that are relevant to Argo Workflows.
 - Argo Workflows uses cookies to store the groups' information. If the number of groups returned by the OIDC provider is too large, the cookie size will exceed the [4KB size limit](https://chromestatus.com/feature/4946713618939904) and the login will fail. To avoid this, use `filterGroupsRegex` to filter out the groups that are not relevant to SSO RBAC.
