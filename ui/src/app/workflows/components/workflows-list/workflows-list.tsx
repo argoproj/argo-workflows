@@ -262,9 +262,17 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             // else false
             return isPending;
         }
-        const started: Date = new Date(startedStr);
+        const started = new Date(startedStr);
 
-        return started > minStartedAt && started < maxStartedAt;
+        if (minStartedAt && maxStartedAt) {
+            return started > minStartedAt && started < maxStartedAt;
+        } else if (minStartedAt && !maxStartedAt) {
+            return started > minStartedAt;
+        } else if (!minStartedAt && maxStartedAt) {
+            return started < maxStartedAt;
+        } else {
+            return true;
+        }
     }
 
     private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
