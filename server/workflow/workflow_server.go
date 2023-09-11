@@ -137,8 +137,10 @@ func cursorPaginationByResourceVersion(items []v1alpha1.Workflow, resourceVersio
 		return itemIRV > itemJRV
 	})
 
-	// Due to the descending sorting above, the items are filtered to have a resourceVersion smaller than the received value.
-	// The data with values smaller than the received resourceVersion on the current page will be used for the next page.
+	// resourceVersion: unique value to identify the version of the object by Kubernetes. It is used for pagination in workflows.
+	// receivedRV: resourceVersion value used for previous pagination
+	// Due to the descending sorting above, the items are filtered to have a resourceVersion smaller than receivedRV.
+	// The data with values smaller than the receivedRV on the current page will be used for the next page.
 	if resourceVersion != "" {
 		var newItems []v1alpha1.Workflow
 		for _, item := range items {
