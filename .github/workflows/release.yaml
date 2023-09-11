@@ -296,16 +296,6 @@ jobs:
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
-      - name: Restore go build cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/.cache/go-build
-          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - name: Restore go packages cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/pkg/mod
-          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
       - name: Install cosign
         uses: sigstore/cosign-installer@main
         with:
