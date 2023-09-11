@@ -164,7 +164,7 @@ func cursorPaginationByResourceVersion(items []v1alpha1.Workflow, resourceVersio
 		wfList.Items = items
 	}
 
-	// Calculate new offset for next batch
+	// Calculate new offset for next page
 	// For the next pagination, the resourceVersion of the last item is set in the Continue field.
 	if limit != 0 && len(wfList.Items) == int(limit) {
 		lastIndex := len(wfList.Items) - 1
