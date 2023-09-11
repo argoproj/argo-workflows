@@ -10,4 +10,4 @@
 
 ## Books
 
-* [Distributed Machine Learning Patterns](https://github.com/terrytangyuan/distributed-ml-patterns)
+* [Distributed Machine Learning Patterns](https://github.com/terrytangyuan/distributed-ml-patterns) (see Chapter 2 on data processing/ingestion patterns)
