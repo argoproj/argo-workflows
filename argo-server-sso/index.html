@@ -3478,6 +3478,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#filtering-groups" class="md-nav__link">
+    Filtering groups
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3974,6 +3981,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#filtering-groups" class="md-nav__link">
+    Filtering groups
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4138,6 +4152,22 @@ Make sure that the precedence of the namespace service account is higher than th
 <h3 id="example-expression">Example Expression<a class="headerlink" href="#example-expression" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># assuming customClaimGroupName: argo_groups</span>
 workflows.argoproj.io/rbac-rule:<span class="w"> </span><span class="s2">&quot;&#39;argo_admins&#39; in groups&quot;</span>
+</code></pre></div>
+<h2 id="filtering-groups">Filtering groups<a class="headerlink" href="#filtering-groups" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>v3.5 and above</p>
+</blockquote>
+<p>You can configure <code>filterGroupsRegex</code> to filter the groups returned by the OIDC provider. Some use-cases for this include:</p>
+<ul>
+<li>You have multiple applications using the same OIDC provider, and you only want to use groups that are relevant to Argo Workflows.</li>
+<li>You have many groups and exceed the <a href="https://chromestatus.com/feature/4946713618939904">4KB cookie size limit</a> (cookies are used to store authentication tokens). If this occurs, login will fail.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Specify a list of regular expressions to filter the groups returned by the OIDC provider.</span>
+<span class="w">    </span><span class="c1"># A logical &quot;OR&quot; is used between each regex in the list</span>
+<span class="w">    </span><span class="nt">filterGroupsRegex</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;.*argo-wf.*&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;.*argo-workflow.*&quot;</span>
 </code></pre></div>
 
               
