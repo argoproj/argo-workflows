@@ -130,9 +130,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 }
 
 func cursorPaginationByResourceVersion(items []v1alpha1.Workflow, resourceVersion string, limit int64, wfList *v1alpha1.WorkflowList) {
-	// Use Kubernetes resourceVersion for cursor pagination.
-	// Sort the Kubernetes results in descending order by resourceVersion.
-	// To implement cursor pagination with filtering based on resourceVersion, start by sorting in descending order according to the resourceVersion.
+	// Sort the workflow list in descending order by resourceVersion.
 	sort.Slice(items, func(i, j int) bool {
 		itemIRV, _ := strconv.Atoi(items[i].ResourceVersion)
 		itemJRV, _ := strconv.Atoi(items[j].ResourceVersion)
