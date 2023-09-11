@@ -29,7 +29,7 @@ export function TagsInput(props: TagsInputProps) {
             props.onChange(tags);
             setTimeout(() => autoCompleteRef.current?.refresh());
         }
-    }, [props.onChange, tags, autoCompleteRef]);
+    }, [tags]);
 
     return (
         <div className={classNames('tags-input argo-field', {'tags-input--focused': focused || !!input})} onClick={() => inputRef.current?.focus()}>
@@ -75,7 +75,12 @@ export function TagsInput(props: TagsInputProps) {
                     <input
                         {...inputProps}
                         placeholder={props.placeholder}
-                        ref={inputRef}
+                        ref={ref => {
+                            inputRef.current = ref;
+                            if (typeof inputProps.ref === 'function') {
+                                inputProps.ref(ref);
+                            }
+                        }}
                         onFocus={e => {
                             inputProps.onFocus?.(e);
                             setFocused(true);
