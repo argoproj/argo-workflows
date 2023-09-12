@@ -28,7 +28,6 @@ export function SubmitWorkflowPanel(props: Props) {
     };
 
     const [entrypoint, setEntrypoint] = useState<string>(workflowEntrypoint);
-    const [selectedTemplate, setSelectedTemplate] = useState<Template>(defaultTemplate);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
     const [templates] = useState<Template[]>([defaultTemplate].concat(props.templates));
@@ -77,7 +76,6 @@ export function SubmitWorkflowPanel(props: Props) {
                         onChange={selected => {
                             const selectedTemp = getSelectedTemplate(selected.value);
                             setEntrypoint(selected.value);
-                            setSelectedTemplate(selectedTemp || defaultTemplate);
                             setParameters((selectedTemp && selectedTemp.inputs.parameters) || []);
                         }}
                     />
