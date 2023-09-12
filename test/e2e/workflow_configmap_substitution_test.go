@@ -128,7 +128,7 @@ spec:
       - name: message
         valueFrom:
           configMapKeyRef:
-            name: '{{ workflow.parameters.cm-name}'
+            name: '{{ workflow.parameters.cm-name }}'
             key: msg
     container:
       image: argoproj/argosay:v2
