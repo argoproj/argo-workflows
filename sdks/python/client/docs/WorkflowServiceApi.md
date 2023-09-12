@@ -10749,6 +10749,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     artifact_repository=IoArgoprojWorkflowV1alpha1ArtifactRepository(
                         archive_logs=True,
                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(
+                            key_format="key_format_example",
                             password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -38295,6 +38296,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     artifact_repository=IoArgoprojWorkflowV1alpha1ArtifactRepository(
                         archive_logs=True,
                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(
+                            key_format="key_format_example",
                             password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",

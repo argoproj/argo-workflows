@@ -175,7 +175,7 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
             encryption_options (IoArgoprojWorkflowV1alpha1S3EncryptionOptions): [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             key_prefix (str): KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead. [optional]  # noqa: E501
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
@@ -269,7 +269,7 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
             encryption_options (IoArgoprojWorkflowV1alpha1S3EncryptionOptions): [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             key_prefix (str): KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead. [optional]  # noqa: E501
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501

@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/klauspost/pgzip"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/utils/env"
 )
@@ -153,7 +152,7 @@ func WalkManifests(root string, fn func(path string, data []byte) error) error {
 		case info.IsDir():
 			return nil // skip
 		default:
-			logrus.Debugf("ignoring file with unknown extension: %s", path)
+			log.Debugf("ignoring file with unknown extension: %s", path)
 			return nil
 		}
 

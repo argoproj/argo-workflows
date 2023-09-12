@@ -3910,6 +3910,10 @@
     "io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository": {
       "description": "ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository",
       "properties": {
+        "keyFormat": {
+          "description": "KeyFormat defines the format of how to store keys and can reference workflow variables.",
+          "type": "string"
+        },
         "passwordSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "PasswordSecret is the secret selector to the repository password"
@@ -4766,7 +4770,7 @@
           "type": "string"
         },
         "keyFormat": {
-          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "description": "KeyFormat defines the format of how to store keys and can reference workflow variables.",
           "type": "string"
         },
         "serviceAccountKeySecret": {
@@ -5717,7 +5721,7 @@
           "type": "string"
         },
         "keyFormat": {
-          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "description": "KeyFormat defines the format of how to store keys and can reference workflow variables.",
           "type": "string"
         },
         "lifecycleRule": {
@@ -6123,7 +6127,7 @@
           "type": "boolean"
         },
         "keyFormat": {
-          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "description": "KeyFormat defines the format of how to store keys and can reference workflow variables.",
           "type": "string"
         },
         "keyPrefix": {
