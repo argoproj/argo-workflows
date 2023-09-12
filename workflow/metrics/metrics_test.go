@@ -62,8 +62,9 @@ func TestMetrics(t *testing.T) {
 	}
 	m := New(config, config)
 
-	m.OperationCompleted(0.05)
-	assert.Equal(t, uint64(1), *write(m.operationDurations).Histogram.Bucket[0].CumulativeCount)
+	// Default buckets: {5, 10, 15, 20, 25, 30}
+	m.OperationCompleted(5)
+	assert.Equal(t, 1, int(*write(m.operationDurations).Histogram.Bucket[1].CumulativeCount))
 
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
