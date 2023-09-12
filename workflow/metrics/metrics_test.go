@@ -62,7 +62,7 @@ func TestMetrics(t *testing.T) {
 	}
 	m := New(config, config)
 
-	// Default buckets: {0, 5, 10, 15, 20, 25}
+	// Default buckets: {5, 10, 15, 20, 25, 30}
 	m.OperationCompleted(5)
 	assert.Equal(t, 1, int(*write(m.operationDurations).Histogram.Bucket[1].CumulativeCount))
 

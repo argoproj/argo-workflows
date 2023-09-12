@@ -78,6 +78,7 @@ func (m *Metrics) Fire(entry *log.Entry) error {
 var _ prometheus.Collector = &Metrics{}
 
 func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
+	bucketWidth := maxOperationTimeSeconds / float64(operationDurationMetricBucketCount)
 	metrics := &Metrics{
 		metricsConfig:      metricsConfig,
 		telemetryConfig:    telemetryConfig,
@@ -88,7 +89,8 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		operationDurations: newHistogram("operation_duration_seconds",
 			"Histogram of durations of operations",
 			nil,
-			prometheus.LinearBuckets(0, maxOperationTimeSeconds/float64(operationDurationMetricBucketCount), operationDurationMetricBucketCount)),
+			// We start the bucket with `bucketWidth` since lowest bucket has an upper bound of 'start'.
+			prometheus.LinearBuckets(bucketWidth, bucketWidth, operationDurationMetricBucketCount)),
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		workqueueMetrics:   make(map[string]prometheus.Metric),
