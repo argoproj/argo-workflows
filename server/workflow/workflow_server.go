@@ -194,6 +194,10 @@ func mergeWithArchivedWorkflows(liveWfs wfv1.WorkflowList, archivedWfs wfv1.Work
 			}
 		}
 	}
+	// The ListMeta of type WorkflowList requires a resourceVersion for the List object.
+	// While archivedWfs does not have a resourceVersion corresponding to the List object,
+	// liveWfs does have a resourceVersion corresponding to the List object.
+	// Therefore, the ListMetadata should contain the ListMetadata value of liveWfs.
 	return &wfv1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
 }
 
