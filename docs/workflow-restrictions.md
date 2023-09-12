@@ -5,7 +5,7 @@
 ## Introduction
 
 As the administrator of the controller, you may want to limit which types of Workflows your users can run.
-Workflow Restrictions allow you set requirements for all Workflows.
+Workflow Restrictions allow you to set requirements for all Workflows.
 
 ## Available Restrictions
 
