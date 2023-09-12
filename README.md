@@ -1,3 +1,4 @@
+<!-- markdownlint-disable-next-line MD041 -->
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
 [![CI](https://github.com/argoproj/argo-workflows/workflows/CI/badge.svg)](https://github.com/argoproj/argo-workflows/actions?query=event%3Apush+branch%3Amaster)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
@@ -67,7 +68,7 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 
 Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
-## Quickstart 
+## Quickstart
 
 * [Get started here](docs/quick-start.md)
 * [Walk-through examples](https://argoproj.github.io/argo-workflows/walk-through/)

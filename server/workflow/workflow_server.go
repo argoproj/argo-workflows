@@ -13,7 +13,6 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -129,7 +128,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
-func cursorPaginationByResourceVersion(items []v1alpha1.Workflow, resourceVersion string, limit int64, wfList *v1alpha1.WorkflowList) {
+func cursorPaginationByResourceVersion(items []wfv1.Workflow, resourceVersion string, limit int64, wfList *wfv1.WorkflowList) {
 	// Sort the workflow list in descending order by resourceVersion.
 	sort.Slice(items, func(i, j int) bool {
 		itemIRV, _ := strconv.Atoi(items[i].ResourceVersion)
@@ -142,7 +141,7 @@ func cursorPaginationByResourceVersion(items []v1alpha1.Workflow, resourceVersio
 	// Due to the descending sorting above, the items are filtered to have a resourceVersion smaller than receivedRV.
 	// The data with values smaller than the receivedRV on the current page will be used for the next page.
 	if resourceVersion != "" {
-		var newItems []v1alpha1.Workflow
+		var newItems []wfv1.Workflow
 		for _, item := range items {
 			targetRV, _ := strconv.Atoi(item.ResourceVersion)
 			receivedRV, _ := strconv.Atoi(resourceVersion)
@@ -172,9 +171,9 @@ func cursorPaginationByResourceVersion(items []v1alpha1.Workflow, resourceVersio
 	}
 }
 
-func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList) *v1alpha1.WorkflowList {
-	var mergedWfs []v1alpha1.Workflow
-	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
+func mergeWithArchivedWorkflows(liveWfs wfv1.WorkflowList, archivedWfs wfv1.WorkflowList) *wfv1.WorkflowList {
+	var mergedWfs []wfv1.Workflow
+	var uidToWfs = map[types.UID][]wfv1.Workflow{}
 	for _, item := range liveWfs.Items {
 		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
 	}
@@ -195,7 +194,7 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 			}
 		}
 	}
-	return &v1alpha1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
+	return &wfv1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {

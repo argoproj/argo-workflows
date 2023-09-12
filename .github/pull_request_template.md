@@ -1,11 +1,12 @@
+<!-- markdownlint-disable MD041 -->
+
 <!--
 
-### Before you open your PR 
+### Before you open your PR
 
 - Run `make pre-commit -B` to fix codegen and lint problems (build will fail).
 - [Signed-off your commits](https://github.com/apps/dco/) (otherwise the DCO check will fail).
 - Used [a conventional commit message](https://www.conventionalcommits.org/en/v1.0.0/).
-
 
 ### When you open your PR
 
@@ -17,7 +18,6 @@
 When changes are requested, please address them and then dismiss the review to get it reviewed again.
 
 -->
-
 
 <!-- Does this PR fix an issue -->
 
