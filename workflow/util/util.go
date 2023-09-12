@@ -379,8 +379,13 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
 func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
+	uiMsg := ""
+	uim := creator.UserInfoMap(ctx)
+	if uim != nil {
+		uiMsg = fmt.Sprintf("Resumed by: %v", uim)
+	}
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
+		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded, Message: uiMsg})
 	} else {
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
@@ -415,6 +420,10 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 						}
 					}
 					node.Phase = wfv1.NodeSucceeded
+					if node.Message != "" {
+						uiMsg = node.Message + "; " + uiMsg
+					}
+					node.Message = uiMsg
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 					wf.Status.Nodes.Set(nodeID, node)
 					workflowUpdated = true
