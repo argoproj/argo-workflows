@@ -19181,6 +19181,8 @@ spec:
                         type: boolean
                       artifactory:
                         properties:
+                          keyFormat:
+                            type: string
                           passwordSecret:
                             properties:
                               key:
