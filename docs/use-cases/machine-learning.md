@@ -19,3 +19,7 @@
 * [Making Complex R Forecast Applications Into Production Using Argo Workflows](https://www.youtube.com/watch?v=fPjztsUXHcg)
 * [MLOps at TripAdvisor: ML Models CI/CD Automation with Argo - Ang Gao (Principal Software Engineer, TripAdvisor)](https://www.youtube.com/watch?v=BochC4GKxbo&list=PLGHfqDpnXFXK4E8XzasScagiJk-8BPgva&index=2&utm_source=argo-docs)
 * [Towards Cloud-Native Distributed Machine Learning Pipelines at Scale](https://github.com/terrytangyuan/public-talks/tree/main/talks/towards-cloud-native-distributed-machine-learning-pipelines-at-scale-pydata-global-2021)
+
+## Books
+
+* [Distributed Machine Learning Patterns](https://github.com/terrytangyuan/distributed-ml-patterns)

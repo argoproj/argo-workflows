@@ -162,7 +162,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifactRepository(ModelNormal):
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
             create_bucket_if_not_present (bool): CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist. [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
             security_token (str): SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm. [optional]  # noqa: E501
@@ -252,7 +252,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifactRepository(ModelNormal):
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
             create_bucket_if_not_present (bool): CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist. [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
             security_token (str): SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm. [optional]  # noqa: E501
