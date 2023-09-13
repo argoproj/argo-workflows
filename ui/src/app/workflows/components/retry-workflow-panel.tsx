@@ -13,12 +13,12 @@ interface Props {
 }
 
 export function RetryWorkflowPanel(props: Props) {
-    const [overrideParameters, setOverrideParameters] = useState<boolean>(false);
-    const [restartSuccessful, setRestartSuccessful] = useState<boolean>(false);
+    const [overrideParameters, setOverrideParameters] = useState(false);
+    const [restartSuccessful, setRestartSuccessful] = useState(false);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflow.spec.arguments.parameters || [])));
-    const [nodeFieldSelector, setNodeFieldSelector] = useState<string>('');
+    const [nodeFieldSelector, setNodeFieldSelector] = useState('');
     const [error, setError] = useState<Error>();
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     function submit() {
         setIsSubmitting(true);

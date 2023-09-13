@@ -27,13 +27,13 @@ export function SubmitWorkflowPanel(props: Props) {
         }
     };
 
-    const [entrypoint, setEntrypoint] = useState<string>(workflowEntrypoint);
+    const [entrypoint, setEntrypoint] = useState(workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
     const [templates] = useState<Template[]>([defaultTemplate].concat(props.templates));
-    const [labels, setLabels] = useState<string[]>(['submit-from-ui=true']);
+    const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     function getSelectedTemplate(name: string): Template | null {
         return templates.find(t => t.name === name) || null;
