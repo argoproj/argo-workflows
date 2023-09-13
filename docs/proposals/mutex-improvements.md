@@ -56,7 +56,7 @@ I may be wrong here but I don't see why it wouldn't be possible to store this in
 This seems to be the most simple way of ensuring that there is only a single source of truth. I didn't go with this solution in my existing PR because this would require changing the information MutexStatus/SemaphoreStatus held. But given this
 discussion is being opened in a proposal, it seems plausible to go with this solution instead.
 
-##### Advantages of solution #1
+##### Advantages
 
 * More sensible approach than including a new dependency (ConfigMap).
 * Relatively simple change.
