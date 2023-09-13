@@ -10,8 +10,10 @@ import {Loading} from '../../../shared/components/loading';
 import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
+import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
+import * as Actions from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {WorkflowsRow} from '../../../workflows/components/workflows-row/workflows-row';
 import {CronWorkflowEditor} from '../cron-workflow-editor';
@@ -30,6 +32,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
     const [tab, setTab] = useState(queryParams.get('tab'));
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
+
 
     const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>();
     const [edited, setEdited] = useState(false);
@@ -200,6 +203,17 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
 
         return items;
     };
+    const updateCurrentlySelectedAndBatchActions = (newSelectedWorkflows: Map<string, Workflow>): void => {
+        const actions: any = Actions.WorkflowOperationsMap;
+        const nowDisabled: any = {...allBatchActionsEnabled};
+        for (const action of Object.keys(nowDisabled)) {
+            for (const wf of Array.from(newSelectedWorkflows.values())) {
+                nowDisabled[action] = nowDisabled[action] || actions[action].disabled(wf);
+            }
+        }
+        setBatchActionDisabled(nowDisabled);
+        setSelectedWorkflows(new Map<string, models.Workflow>(newSelectedWorkflows));
+    };
 
     return (
         <Page
@@ -268,7 +282,6 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                         </div>
                     )}
                 </>
-                
             </>
         </Page>
     );

@@ -45,13 +45,13 @@ interface State {
     columns: models.Column[];
 }
 
-interface WorkflowListRenderOptions {
+export interface WorkflowListRenderOptions {
     paginationLimit: number;
     selectedPhases: WorkflowPhase[];
     selectedLabels: string[];
 }
 
-const allBatchActionsEnabled: Actions.OperationDisabled = {
+export const allBatchActionsEnabled: Actions.OperationDisabled = {
     RETRY: false,
     RESUBMIT: false,
     SUSPEND: false,
