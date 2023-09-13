@@ -76,7 +76,7 @@ export function SubmitWorkflowPanel(props: Props) {
                         onChange={selected => {
                             const selectedTemp = getSelectedTemplate(selected.value);
                             setEntrypoint(selected.value);
-                            setParameters((selectedTemp && selectedTemp.inputs.parameters) || []);
+                            setParameters(selectedTemp?.inputs?.parameters || []);
                         }}
                     />
                 </div>
