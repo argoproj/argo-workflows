@@ -35,9 +35,9 @@ export function SubmitWorkflowPanel(props: Props) {
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const getSelectedTemplate = (name: string): Template | null => {
+    function getSelectedTemplate(name: string): Template | null {
         return templates.find(t => t.name === name) || null;
-    };
+    }
 
     function submit() {
         setIsSubmitting(true);
