@@ -24,16 +24,16 @@ getResourceKey("argo", "example", "node") = "argo/example/node"
 
 This works fine but let's examine another case where this breaks. This is the bug from issue <https://github.com/argoproj/argo-workflows/issues/8684>
 
-`
+\```go
 getHolderKey({"Namespace": "argo", Name: "deadlock-test-sn8p5"}, "deadlock-test-sn8p5") = "argo/deadlock-test-sn8p5/deadlock-test-sn8p5"
 
--- "MutexStatus" After LockAcquired Call --
+// -- "MutexStatus" After LockAcquired Call --
 items = ["argo", "deadlock-test-sn8p5", "deadlock-test-sn8p5"]
 holdingName = "deadlock-test-sn8p5"
 ms.Holding = [MutexHolding{Mutex: lockKey, Holder: holdingName}]
 
 getResourceKey("argo", "deadlock-test-sn8p5", "deadlock-test-sn8p5") = "argo/deadlock-test-sn8p5"
-`
+\```
 
 ### A criticism of the current approach
 
