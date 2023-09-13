@@ -508,9 +508,47 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Argo CLI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Argo CLI
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -3794,6 +3832,28 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -3811,6 +3871,9 @@
 
 
 <h1 id="argo-cli">Argo CLI<a class="headerlink" href="#argo-cli" title="Permanent link">&para;</a></h1>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<p>To install the Argo CLI, follow the instructions on the <a href="https://github.com/argoproj/argo-workflows/releases/">GitHub Releases page</a>.</p>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>In case you want to follow along with this walk-through, here's a quick overview of the most useful argo command line interface (CLI) commands.</p>
 <div class="highlight"><pre><span></span><code>argo<span class="w"> </span>submit<span class="w"> </span>hello-world.yaml<span class="w">    </span><span class="c1"># submit a workflow spec to Kubernetes</span>
 argo<span class="w"> </span>list<span class="w">                       </span><span class="c1"># list current workflows</span>

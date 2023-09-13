@@ -4003,7 +4003,7 @@
 <p>Pay close attention to the URI. It uses <code>https</code> and not <code>http</code>. Navigating to <code>http://localhost:2746</code> result in server-side error that breaks the port-forwarding.</p>
 </blockquote>
 <h2 id="install-the-argo-workflows-cli">Install the Argo Workflows CLI<a class="headerlink" href="#install-the-argo-workflows-cli" title="Permanent link">&para;</a></h2>
-<p>Next, Download the latest Argo CLI from the same <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a>.</p>
+<p>You can more easily interact with Argo Workflows with the <a href="../walk-through/argo-cli/">Argo CLI</a>.</p>
 <h2 id="submitting-an-example-workflow">Submitting an example workflow<a class="headerlink" href="#submitting-an-example-workflow" title="Permanent link">&para;</a></h2>
 <h3 id="submit-an-example-workflow-cli">Submit an example workflow (CLI)<a class="headerlink" href="#submit-an-example-workflow-cli" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>argo<span class="w"> </span>submit<span class="w"> </span>-n<span class="w"> </span>argo<span class="w"> </span>--watch<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
