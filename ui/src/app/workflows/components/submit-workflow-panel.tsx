@@ -1,5 +1,5 @@
 import {Select} from 'argo-ui';
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {Parameter, Template} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -30,14 +30,17 @@ export function SubmitWorkflowPanel(props: Props) {
     const [entrypoint, setEntrypoint] = useState(workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
-    const [templates] = useState<Template[]>([defaultTemplate].concat(props.templates));
     const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function getSelectedTemplate(name: string): Template | null {
-        return templates.find(t => t.name === name) || null;
-    }
+    const templates = [defaultTemplate].concat(props.templates);
+    const templateOptions = useMemo(() => {
+        return templates.map(t => ({
+            value: t.name,
+            title: t.name
+        }));
+    }, [templates]);
 
     async function submit() {
         setIsSubmitting(true);
@@ -69,12 +72,9 @@ export function SubmitWorkflowPanel(props: Props) {
                     <label>Entrypoint</label>
                     <Select
                         value={entrypoint}
-                        options={templates.map(t => ({
-                            value: t.name,
-                            title: t.name
-                        }))}
+                        options={templateOptions}
                         onChange={selected => {
-                            const selectedTemp = getSelectedTemplate(selected.value);
+                            const selectedTemp = templates.find(t => t.name === selected.value);
                             setEntrypoint(selected.value);
                             setParameters(selectedTemp?.inputs?.parameters || []);
                         }}
