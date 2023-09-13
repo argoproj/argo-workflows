@@ -1,0 +1,13 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflows-list {
+  &__status {
+    max-width: 80px;
+    display: flex;
+    align-items: center;
+
+    &--checkbox {
+      appearance: none;
+    }
+  }
+}
