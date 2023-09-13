@@ -72,9 +72,44 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	return err
 }
 
-func (h *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
-	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(a, h)
+func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	var req *http.Request
+	var url string
+	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
+		url = inputArtifact.Artifactory.URL
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.SetBasicAuth(h.Username, h.Password)
+	} else {
+		url = inputArtifact.HTTP.URL
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		for _, h := range inputArtifact.HTTP.Headers {
+			req.Header.Add(h.Name, h.Value)
+		}
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
+	}
+
+	res, err := h.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = res.Body.Close()
+	}()
+	if res.StatusCode == 404 {
+		return nil, errors.New(errors.CodeNotFound, res.Status)
+	}
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return nil, errors.InternalErrorf("loading file from %s failed with reason: %s", url, res.Status)
+	}
+	return res.Body, nil
 }
 
 // Save writes the artifact to the URL
