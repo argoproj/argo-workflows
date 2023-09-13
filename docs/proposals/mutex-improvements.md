@@ -11,16 +11,16 @@ Nearly all of the code regarding how mutexes work reside in `sync_manager.go`.
 Here is an example run of how locks are acquired and released. Some parts have been omitted for brevity, I recommend opening up the file and following through the
 examples below.
 
-`
+\```go
 getHolderKey({"Namespace": "argo", Name: "example"}, "node") = "argo/example/node"
 
--- MutexStatus After LockAcquired Call --
+// -- MutexStatus After LockAcquired Call --
 items = ["argo", "example", "node"]
 holdingName = "node"
 ms.Holding = [MutexHolding{Mutex: lockKey, Holder: holdingName}]
 
 getResourceKey("argo", "example", "node") = "argo/example/node"
-`
+\```
 
 This works fine but let's examine another case where this breaks. This is the bug from issue <https://github.com/argoproj/argo-workflows/issues/8684>
 
