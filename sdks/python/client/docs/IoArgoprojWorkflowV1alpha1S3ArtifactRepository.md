@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **encryption_options** | [**IoArgoprojWorkflowV1alpha1S3EncryptionOptions**](IoArgoprojWorkflowV1alpha1S3EncryptionOptions.md) |  | [optional] 
 **endpoint** | **str** | Endpoint is the hostname of the bucket endpoint | [optional] 
 **insecure** | **bool** | Insecure will connect to the service with TLS | [optional] 
-**key_format** | **str** | KeyFormat is defines the format of how to store keys. Can reference workflow variables | [optional] 
+**key_format** | **str** | KeyFormat defines the format of how to store keys and can reference workflow variables. | [optional] 
 **key_prefix** | **str** | KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead | [optional] 
 **region** | **str** | Region contains the optional bucket region | [optional] 
 **role_arn** | **str** | RoleARN is the Amazon Resource Name (ARN) of the role to assume. | [optional] 

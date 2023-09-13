@@ -29,7 +29,7 @@ jobs:
         platform: [ linux/amd64, linux/arm64 ]
         target: [ workflow-controller, argocli, argoexec ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -97,7 +97,7 @@ jobs:
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Docker Login
         uses: Azure/docker-login@v1
         with:
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build-linux, build-windows ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Docker Login
         uses: Azure/docker-login@v1
         with:
@@ -284,7 +284,7 @@ jobs:
       COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
       COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           node-version: "20" # change in all GH Workflows
@@ -296,16 +296,6 @@ jobs:
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
-      - name: Restore go build cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/.cache/go-build
-          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - name: Restore go packages cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/pkg/mod
-          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
       - name: Install cosign
         uses: sigstore/cosign-installer@main
         with:
