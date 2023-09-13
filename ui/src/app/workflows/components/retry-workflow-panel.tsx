@@ -20,7 +20,7 @@ export function RetryWorkflowPanel(props: Props) {
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const submit = () => {
+    function submit() {
         setIsSubmitting(true);
         const parameters: RetryOpts['parameters'] = overrideParameters
             ? [...workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p))]
@@ -44,7 +44,7 @@ export function RetryWorkflowPanel(props: Props) {
                 setError(err);
                 setIsSubmitting(false);
             });
-    };
+    }
 
     return (
         <>

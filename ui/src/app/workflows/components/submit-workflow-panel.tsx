@@ -39,7 +39,7 @@ export function SubmitWorkflowPanel(props: Props) {
         return templates.find(t => t.name === name) || null;
     };
 
-    const submit = () => {
+    function submit() {
         setIsSubmitting(true);
         services.workflows
             .submit(props.kind, props.name, props.namespace, {
@@ -55,7 +55,7 @@ export function SubmitWorkflowPanel(props: Props) {
                 setError(err);
                 setIsSubmitting(false);
             });
-    };
+    }
 
     return (
         <>

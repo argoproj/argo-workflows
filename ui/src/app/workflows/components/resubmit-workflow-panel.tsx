@@ -19,7 +19,7 @@ export function ResubmitWorkflowPanel(props: Props) {
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const submit = () => {
+    function submit() {
         setIsSubmitting(true);
         const parameters: ResubmitOpts['parameters'] = overrideParameters
             ? [...workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p))]
@@ -29,14 +29,14 @@ export function ResubmitWorkflowPanel(props: Props) {
             memoized
         };
 
-        const handleSuccess = (submitted: Workflow) => {
+        function handleSuccess(submitted: Workflow) {
             document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
-        };
+        }
 
-        const handleError = (err: Error) => {
+        function handleError(err: Error) {
             setError(err);
             setIsSubmitting(false);
-        };
+        }
 
         if (!props.isArchived) {
             services.workflows
@@ -49,7 +49,7 @@ export function ResubmitWorkflowPanel(props: Props) {
                 .then(handleSuccess)
                 .catch(handleError);
         }
-    };
+    }
 
     return (
         <>
