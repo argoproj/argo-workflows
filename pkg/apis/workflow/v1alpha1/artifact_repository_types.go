@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"path"
+	"strings"
 )
 
 var (
@@ -131,9 +132,9 @@ type ArtifactoryArtifactRepository struct {
 }
 
 func (r *ArtifactoryArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
-	url := ""
-	if r.RepoURL != "" {
-		url = r.RepoURL + "/"
+	url := r.RepoURL
+	if !strings.HasSuffix(url, "/") {
+		url = url + "/"
 	}
 	k := r.KeyFormat
 	if k == "" {
