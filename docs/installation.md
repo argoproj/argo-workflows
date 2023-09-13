@@ -28,7 +28,7 @@ Determine your base installation option.
 
 * A **cluster install** will watch and execute workflows in all namespaces. This is the default installation option when installing using the official release manifests.
 * A **namespace install** only executes workflows in the namespace it is installed in (typically `argo`). Look for `namespace-install.yaml` in the [release assets](https://github.com/argoproj/argo-workflows/releases/latest).
-* A **managed namespace install**: only executes workflows in a specific namespace ([learn more](managed-namespace.md)).
+* A **managed namespace install**: only executes workflows in a separate namespace from the one it is installed in. See [Managed Namespace](managed-namespace.md) for more details.
 
 ## Additional installation considerations
 
