@@ -77,7 +77,7 @@ There is a possibility that it might be possible to use a single config map here
 * The change in behavior is transparent to users.
 * Existing PR should allow for us to be quite quick in pushing a fix.
 
-##### Disadvantages of solution #2
+##### Disadvantages
 
 * Fairly large change.
 * Introduces error paths, that being said these error paths being encountered is a bigger problem than the mutex issue itself. The error path here is encountered if the Kubernetes API is down.
