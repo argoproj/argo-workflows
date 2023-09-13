@@ -62,7 +62,7 @@ discussion is being opened in a proposal, it seems plausible to go with this sol
 * Relatively simple change.
 * Single source of truth
 
-##### Disadvantages of solution #1
+##### Disadvantages
 
 * Changing a field could be major change and might break projects in the ecosystem that rely on this behavior. This has been the behavior of mutexes ever since they have been implemented, it is high risk to change this in my opinion.
 
