@@ -72,7 +72,7 @@ We can store the holder keys inside a config map, on release, we refer to the ho
 It requires handling pending workflows. If we are going with this solution, a small amendment to deal with pending items will have to be made, we may have to introduce two config maps. One will be used for storing information regarding acquired locks, the other for storing information regarding pending lock acquisitions.
 There is a possibility that it might be possible to use a single config map here, but that solution needs to be explored in order to confirm this.
 
-##### Advantages of solution #2
+##### Advantages
 
 * The change in behavior is transparent to users.
 * Existing PR should allow for us to be quite quick in pushing a fix.
