@@ -20,7 +20,7 @@ export function RetryWorkflowPanel(props: Props) {
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    function submit() {
+    async function submit() {
         setIsSubmitting(true);
         const parameters: RetryOpts['parameters'] = overrideParameters
             ? [...workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p))]
@@ -31,19 +31,15 @@ export function RetryWorkflowPanel(props: Props) {
             nodeFieldSelector
         };
 
-        const process = props.isArchived
-            ? services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
-            : services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
-
-        process
-            .then((submitted: Workflow) => {
-                document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
-                setIsSubmitting(false);
-            })
-            .catch(err => {
-                setError(err);
-                setIsSubmitting(false);
-            });
+        try {
+            const submitted = props.isArchived
+                ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
+                : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
+            document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
+        } catch (err) {
+            setError(err);
+            setIsSubmitting(false);
+        }
     }
 
     return (

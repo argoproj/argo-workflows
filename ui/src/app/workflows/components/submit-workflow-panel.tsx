@@ -1,6 +1,6 @@
 import {Select} from 'argo-ui';
 import React, {useState} from 'react';
-import {Parameter, Template, Workflow} from '../../../models';
+import {Parameter, Template} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {ParametersInput} from '../../shared/components/parameters-input/parameters-input';
@@ -39,22 +39,22 @@ export function SubmitWorkflowPanel(props: Props) {
         return templates.find(t => t.name === name) || null;
     }
 
-    function submit() {
+    async function submit() {
         setIsSubmitting(true);
-        services.workflows
-            .submit(props.kind, props.name, props.namespace, {
+        try {
+            const submitted = await services.workflows.submit(props.kind, props.name, props.namespace, {
                 entryPoint: entrypoint === workflowEntrypoint ? null : entrypoint,
                 parameters: [
                     ...workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p)),
                     ...parameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p))
                 ],
                 labels: labels.join(',')
-            })
-            .then((submitted: Workflow) => (document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`)))
-            .catch(err => {
-                setError(err);
-                setIsSubmitting(false);
             });
+            document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
+        } catch (err) {
+            setError(err);
+            setIsSubmitting(false);
+        }
     }
 
     return (
