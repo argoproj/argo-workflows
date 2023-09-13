@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"path"
+	"strings"
 )
 
 var (
@@ -129,12 +130,12 @@ type ArtifactoryArtifactRepository struct {
 }
 
 func (r *ArtifactoryArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
-	u := ""
-	if r.RepoURL != "" {
-		u = r.RepoURL + "/"
+	url := r.RepoURL
+	if !strings.HasSuffix(url, "/") {
+		url = url + "/"
 	}
-	u = fmt.Sprintf("%s%s", u, DefaultArchivePattern)
-	l.Artifactory = &ArtifactoryArtifact{ArtifactoryAuth: r.ArtifactoryAuth, URL: u}
+	url = fmt.Sprintf("%s%s", url, DefaultArchivePattern)
+	l.Artifactory = &ArtifactoryArtifact{ArtifactoryAuth: r.ArtifactoryAuth, URL: url}
 }
 
 // AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
