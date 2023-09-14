@@ -327,7 +327,7 @@ spec:
   - port: metrics
   selector:
     matchLabels:
-      app.kubernetes.io/instance: argo-workflows
+      app: workflow-controller
 EOF
 ```
 
