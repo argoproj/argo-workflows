@@ -1,6 +1,7 @@
 # Argo Workflows User Community Surveys & Feedback
 
-Please find [here](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results and the 2021 results [here](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee?gi=857daaa1faa9).
+User community survey results are available: [2023](https://blog.argoproj.io/argo-workflows-events-2023-user-survey-results-82c53bc30543), [2021](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee?gi=857daaa1faa9), and [2020](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf).
+
 
 ## Who uses Argo Workflows?
 

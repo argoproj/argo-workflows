@@ -34,7 +34,7 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
   environments.
 * Cloud agnostic and can run on any Kubernetes cluster.
 
-[Read what people said in our latest survey](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee)
+[Read what people said in our latest survey](https://blog.argoproj.io/argo-workflows-events-2023-user-survey-results-82c53bc30543)
 
 ## Try Argo Workflows
 
