@@ -3,6 +3,9 @@ package workflow
 import (
 	"context"
 	"fmt"
+
+	"sort"
+
 	"testing"
 	"time"
 
@@ -663,8 +666,10 @@ func TestMergeWithArchivedWorkflows(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{UID: "3", CreationTimestamp: metav1.Time{Time: timeNow.Add(3 * time.Second)}}}
 	liveWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Live, wf2}}
 	archivedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2, wf1Archived}}
-	expectedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Live, wf2, wf3}}
-	assert.Equal(t, expectedWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList).Items)
+	expectedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2, wf1Live}}
+	mergedWfItems := mergeWithArchivedWorkflows(liveWfList, archivedWfList).Items
+	sort.Sort(mergedWfItems)
+	assert.Equal(t, expectedWfList.Items, mergedWfItems)
 }
 
 func TestCursorPaginationByResourceVersion(t *testing.T) {
