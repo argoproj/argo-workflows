@@ -2,8 +2,10 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,6 +24,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
 )
 
@@ -266,30 +269,64 @@ status:
 `
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+	t.Run("Withought user info", func(t *testing.T) {
+		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
-	ctx := context.Background()
-	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	assert.NoError(t, err)
+		ctx := context.Background()
+		_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
+		assert.NoError(t, err)
 
-	// will return error as displayName does not match any nodes
-	err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
-	assert.Error(t, err)
+		// will return error as displayName does not match any nodes
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
+		assert.Error(t, err)
 
-	// displayName didn't match suspend node so should still be running
-	wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+		// displayName didn't match suspend node so should still be running
+		wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
+		assert.NoError(t, err)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
-	assert.NoError(t, err)
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
+		assert.NoError(t, err)
 
-	// displayName matched node so has succeeded
-	wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-	if assert.NoError(t, err) {
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-	}
+		// displayName matched node so has succeeded
+		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
+		if assert.NoError(t, err) {
+			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+			assert.Equal(t, "", wf.Status.Nodes.FindByDisplayName("approve").Message)
+		}
+	})
+
+	t.Run("With user info", func(t *testing.T) {
+		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+
+		ctx := context.WithValue(context.TODO(), auth.ClaimsKey,
+			&types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"})
+		uim := creator.UserInfoMap(ctx)
+
+		_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+
+		// will return error as displayName does not match any nodes
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
+		assert.Error(t, err)
+
+		// displayName didn't match suspend node so should still be running
+		wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
+		assert.NoError(t, err)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
+		assert.NoError(t, err)
+
+		// displayName matched node so has succeeded
+		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
+		if assert.NoError(t, err) {
+			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+			assert.Equal(t, fmt.Sprintf("Resumed by: %v", uim), wf.Status.Nodes.FindByDisplayName("approve").Message)
+		}
+	})
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {

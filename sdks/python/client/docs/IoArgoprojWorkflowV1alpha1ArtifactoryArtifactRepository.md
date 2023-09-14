@@ -5,6 +5,7 @@ ArtifactoryArtifactRepository defines the controller configuration for an artifa
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**key_format** | **str** | KeyFormat defines the format of how to store keys and can reference workflow variables. | [optional] 
 **password_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **repo_url** | **str** | RepoURL is the url for artifactory repo. | [optional] 
 **username_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 

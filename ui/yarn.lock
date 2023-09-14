@@ -3007,10 +3007,10 @@ cron-parser@^4.9.0:
   dependencies:
     luxon "^3.2.1"
 
-cronstrue@^2.31.0:
-  version "2.31.0"
-  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.31.0.tgz#73205a6753a245aac08b4f1f2e925f8c2989d711"
-  integrity sha512-A1cyfGyLSRdvT9MNn/pggoCTlvxnJyiCUItU9XHSXk89ZyK2YY9q9q7Rf4j8NhV9YwN1BjB0wimZlvKYb/9Bwg==
+cronstrue@^2.32.0:
+  version "2.32.0"
+  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.32.0.tgz#cb705bdd9ba76d5fd64be4e1df1f2eee7165dad9"
+  integrity sha512-dmNflOCNJL6lZEj0dp2YhGIPY83VTjFue6d9feFhnNtrER6mAjBrUvSgK95j3IB/xNGpLjaZDIDG6ACKTZr9Yw==
 
 cross-fetch@^3.1.5:
   version "3.1.5"
@@ -5534,10 +5534,10 @@ monaco-editor-webpack-plugin@^7.1.0:
   dependencies:
     loader-utils "^2.0.2"
 
-monaco-editor@^0.41.0:
-  version "0.41.0"
-  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.41.0.tgz#2ba31e5af7e3ae93ac5d7467ec2772ef9b3d967f"
-  integrity sha512-1o4olnZJsiLmv5pwLEAmzHTE/5geLKQ07BrGxlF4Ri/AXAc2yyDGZwHjiTqD8D/ROKUZmwMA28A+yEowLNOEcA==
+monaco-editor@^0.43.0:
+  version "0.43.0"
+  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.43.0.tgz#cb02a8d23d1249ad00b7cffe8bbecc2ac09d4baf"
+  integrity sha512-cnoqwQi/9fml2Szamv1XbSJieGJ1Dc8tENVMD26Kcfl7xGQWp7OBKMjlwKVGYFJ3/AXJjSOGvcqK7Ry/j9BM1Q==
 
 ms@2.0.0:
   version "2.0.0"
