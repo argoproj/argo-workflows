@@ -2,8 +2,8 @@
 
 > v3.1 and after
 
-The Conditional Artifacts and Parameters feature enables to assign the Step/DAG level artifacts or parameters based on an [expression](variables.md#expression).
-This introduces a new field `fromExpression` under Step/DAG level output artifact and `expression` under step/DAG level output parameter.
+You can set Step/DAG level artifacts or parameters based on an [expression](variables.md#expression).
+Use `fromExpression` under a Step/DAG level output artifact and `expression` under a Step/DAG level output parameter.
 
 ## Conditional Artifacts
 
