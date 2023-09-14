@@ -34,7 +34,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
     public render() {
         const wf = this.props.workflow;
         return (
-            <div className='workflows-list__row-container'>
+            <div className='workflows-list__row-container workflows-cron-list__row-container'>
                 <div className='row argo-table-list__row'>
                     <div className='columns small-1 workflows-list__status'>
                         <input

@@ -69,15 +69,13 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
     useEffect(() => setEdited(true), [cronWorkflow]);
 
     useEffect(() => {
-        const getWorkflowsList = async () => {
+        (async () => {
             const workflowList = await services.workflows.list(namespace, null, [`${models.labels.cronWorkflow}=${name}`], null);
             const workflowsInfo = await services.info.getInfo();
 
             setWorkflows(workflowList.items);
             setColumns(workflowsInfo.columns);
-        };
-
-        getWorkflowsList();
+        })();
     }, []);
 
     useCollectEvent('openedCronWorkflowDetails');
@@ -228,13 +226,13 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                 <>
                     <ErrorNotice error={error} />
                     {!workflows ? (
-                        <ZeroState title='No completed cron-workflows'>
-                            <p> You can submit or resume cron workflow to run a cron-workflow. </p>
+                        <ZeroState title='No completed cron workflows'>
+                            <p> You can create new cron workflows here or using the CLI. </p>
                         </ZeroState>
                     ) : (
                         <div className='argo-table-list'>
                             <div className='row argo-table-list__head'>
-                                <div className='columns small-1 workflows-list__status'></div>
+                                <div className='columns small-1 workflows-list__status' />
                                 <div className='row small-11'>
                                     <div className='columns small-2'>NAME</div>
                                     <div className='columns small-1'>NAMESPACE</div>
@@ -254,6 +252,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                                     })}
                                 </div>
                             </div>
+                            {/* checkboxes are not visible and are unused on this page */}
                             {workflows.map(wf => {
                                 return <WorkflowsRow workflow={wf} key={wf.metadata.uid} checked={false} columns={columns} onChange={null} select={null} />;
                             })}
