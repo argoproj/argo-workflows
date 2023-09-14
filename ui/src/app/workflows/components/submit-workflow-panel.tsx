@@ -18,15 +18,14 @@ interface Props {
 }
 
 const workflowEntrypoint = '<default>';
+const defaultTemplate: Template = {
+    name: workflowEntrypoint,
+    inputs: {
+        parameters: []
+    }
+};
 
 export function SubmitWorkflowPanel(props: Props) {
-    const defaultTemplate: Template = {
-        name: workflowEntrypoint,
-        inputs: {
-            parameters: []
-        }
-    };
-
     const [entrypoint, setEntrypoint] = useState(workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
