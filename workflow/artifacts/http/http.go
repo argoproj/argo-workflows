@@ -75,16 +75,17 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	var req *http.Request
 	var url string
+	var err error
 	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
 		url = inputArtifact.Artifactory.URL
-		req, err := http.NewRequest(http.MethodGet, url, nil)
+		req, err = http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			return nil, err
 		}
 		req.SetBasicAuth(h.Username, h.Password)
 	} else {
 		url = inputArtifact.HTTP.URL
-		req, err := http.NewRequest(http.MethodGet, url, nil)
+		req, err = http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -95,14 +96,10 @@ func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser
 			req.SetBasicAuth(h.Username, h.Password)
 		}
 	}
-
 	res, err := h.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
 	if res.StatusCode == 404 {
 		return nil, errors.New(errors.CodeNotFound, res.Status)
 	}
