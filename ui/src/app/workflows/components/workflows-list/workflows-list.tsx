@@ -10,7 +10,6 @@ import {BasePage} from '../../../shared/components/base-page';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
-import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-panel';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {ZeroState} from '../../../shared/components/zero-state';
@@ -179,62 +178,45 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 ]
                             }
                         }}>
-                        <FirstTimeUserPanel
-                            id='WorkflowListPanel'
-                            explanation={
-                                'This page shows a list of your workflows. You can filter by namespace, label and now date and time. ' +
-                                'By default, only the last months workflows are shown.'
-                            }
-                            style={{margin: 20}}>
-                            <>
-                                <WorkflowsToolbar
-                                    selectedWorkflows={this.state.selectedWorkflows}
-                                    clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
-                                    loadWorkflows={() => {
-                                        this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
-                                        this.changeFilters(
-                                            this.state.namespace,
-                                            this.state.selectedPhases,
-                                            this.state.selectedLabels,
-                                            this.state.minStartedAt,
-                                            this.state.maxStartedAt,
-                                            {
-                                                limit: this.state.pagination.limit
-                                            }
-                                        );
-                                    }}
-                                    isDisabled={this.state.batchActionDisabled}
-                                />
-                                <div className={`row ${this.state.selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
-                                    <div className='columns small-12 xlarge-2'>
-                                        <WorkflowsSummaryContainer workflows={this.state.workflows} />
-                                        <div>
-                                            <WorkflowFilters
-                                                workflows={this.state.workflows || []}
-                                                namespace={this.state.namespace}
-                                                phaseItems={WorkflowPhases}
-                                                selectedPhases={this.state.selectedPhases}
-                                                selectedLabels={this.state.selectedLabels}
-                                                minStartedAt={this.state.minStartedAt}
-                                                maxStartedAt={this.state.maxStartedAt}
-                                                onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
-                                                    this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
+                        <WorkflowsToolbar
+                            selectedWorkflows={this.state.selectedWorkflows}
+                            clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
+                            loadWorkflows={() => {
+                                this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
+                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, {
+                                    limit: this.state.pagination.limit
+                                });
+                            }}
+                            isDisabled={this.state.batchActionDisabled}
+                        />
+                        <div className={`row ${this.state.selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
+                            <div className='columns small-12 xlarge-2'>
+                                <WorkflowsSummaryContainer workflows={this.state.workflows} />
+                                <div>
+                                    <WorkflowFilters
+                                        workflows={this.state.workflows || []}
+                                        namespace={this.state.namespace}
+                                        phaseItems={WorkflowPhases}
+                                        selectedPhases={this.state.selectedPhases}
+                                        selectedLabels={this.state.selectedLabels}
+                                        minStartedAt={this.state.minStartedAt}
+                                        maxStartedAt={this.state.maxStartedAt}
+                                        onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
+                                            this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
+                                        }
+                                    />
                                 </div>
-                                <SlidingPanel isShown={!!this.sidePanel} onClose={() => ctx.navigation.goto('.', {sidePanel: null})}>
-                                    {this.sidePanel === 'submit-new-workflow' && (
-                                        <WorkflowCreator
-                                            namespace={Utils.getNamespaceWithDefault(this.state.namespace)}
-                                            onCreate={wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
-                                        />
-                                    )}
-                                </SlidingPanel>
-                            </>
-                        </FirstTimeUserPanel>
+                            </div>
+                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
+                        </div>
+                        <SlidingPanel isShown={!!this.sidePanel} onClose={() => ctx.navigation.goto('.', {sidePanel: null})}>
+                            {this.sidePanel === 'submit-new-workflow' && (
+                                <WorkflowCreator
+                                    namespace={Utils.getNamespaceWithDefault(this.state.namespace)}
+                                    onCreate={wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
+                                />
+                            )}
+                        </SlidingPanel>
                     </Page>
                 )}
             </Consumer>
@@ -283,7 +265,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.listWatch = new ListWatch(
             () =>
                 services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(x => {
-                    x.items = x.items && x.items.filter(w => this.nullSafeTimeFilter(minStartedAt, maxStartedAt, w.status.startedAt, w.status.phase === NODE_PHASE.PENDING));
+                    x.items = x.items?.filter(w => this.nullSafeTimeFilter(minStartedAt, maxStartedAt, w.status.startedAt, w.status.phase === NODE_PHASE.PENDING));
                     return x;
                 }),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
