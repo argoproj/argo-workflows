@@ -230,7 +230,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                             <p> You can create new cron workflows here or using the CLI. </p>
                         </ZeroState>
                     ) : (
-                        <div className='argo-table-list'>
+                        <div className='argo-table-list workflows-cron-list'>
                             <div className='row argo-table-list__head'>
                                 <div className='columns small-1 workflows-list__status' />
                                 <div className='row small-11'>
