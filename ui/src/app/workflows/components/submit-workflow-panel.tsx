@@ -33,7 +33,10 @@ export function SubmitWorkflowPanel(props: Props) {
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const templates = [defaultTemplate].concat(props.templates);
+    const templates = useMemo(() => {
+        return [defaultTemplate].concat(props.templates);
+    }, [props.templates]);
+
     const templateOptions = useMemo(() => {
         return templates.map(t => ({
             value: t.name,
