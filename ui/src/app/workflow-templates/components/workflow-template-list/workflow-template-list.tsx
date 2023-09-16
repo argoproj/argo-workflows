@@ -27,7 +27,7 @@ require('./workflow-template-list.scss');
 
 const learnMore = <a href='https://argoproj.github.io/argo-workflows/workflow-templates/'>Learn more</a>;
 
-export const WorkflowTemplateList = ({match, location, history}: RouteComponentProps<any>) => {
+export function WorkflowTemplateList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
@@ -163,4 +163,4 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
             </SlidingPanel>
         </Page>
     );
-};
+}

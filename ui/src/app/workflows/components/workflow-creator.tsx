@@ -14,7 +14,7 @@ import {WorkflowEditor} from './workflow-editor';
 
 type Stage = 'choose-method' | 'submit-workflow' | 'full-editor';
 
-export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) => {
+export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) {
     const [workflowTemplates, setWorkflowTemplates] = useState<WorkflowTemplate[]>();
     const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplate>();
     const [stage, setStage] = useState<Stage>('choose-method');
@@ -123,4 +123,4 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
             )}
         </>
     );
-};
+}
