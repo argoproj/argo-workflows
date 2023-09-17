@@ -69,56 +69,20 @@ func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, n
 	return wfTmpl, nil
 }
 
-func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
-	wfClient := auth.GetWfClient(ctx)
-	k8sOptions := &v1.ListOptions{}
-
-	if req.ListOptions != nil {
-		k8sOptions = req.ListOptions
-	}
-
-	// Save the original Continue and Limit for custom filtering.
-	resourceVersion := k8sOptions.Continue
-	limit := k8sOptions.Limit
-
-	// Search whole with Limit 0.
-	// Reset the Continue "" to prevent Kubernetes native pagination.
-	// Kubernetes api will search for all results without limit and pagination.
-	k8sOptions.Continue = ""
-	k8sOptions.Limit = 0
-
-	wts.instanceIDService.With(k8sOptions)
-	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(ctx, *k8sOptions)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-
-	// Enables name-based searching.
-	// Do name pattern filtering if NamePattern request exist.
-	var items []v1alpha1.WorkflowTemplate
-	if req.NamePattern != "" {
-		for _, item := range wfList.Items {
-			if strings.Contains(item.ObjectMeta.Name, req.NamePattern) {
-				items = append(items, item)
-			}
-		}
-	} else {
-		items = wfList.Items
-	}
-
-	// Use Kubernetes resourceVersion for cursor pagination.
-	// Sort the Kubernetes results in descending order by resourceVersion.
-	// To implement cursor pagination with filtering based on resourceVersion, start by sorting in descending order according to the resourceVersion.
+func cursorPaginationByResourceVersion(items []v1alpha1.WorkflowTemplate, resourceVersion string, limit int64, wfList *v1alpha1.WorkflowTemplateList) {
+	// Sort the workflow list in descending order by resourceVersion.
 	sort.Slice(items, func(i, j int) bool {
 		itemIRV, _ := strconv.Atoi(items[i].ResourceVersion)
 		itemJRV, _ := strconv.Atoi(items[j].ResourceVersion)
 		return itemIRV > itemJRV
 	})
 
-	// Due to the descending sorting above, the items are filtered to have a resourceVersion smaller than the received value.
-	// The data with values smaller than the received resourceVersion on the current page will be used for the next page.
+	// resourceVersion: unique value to identify the version of the object by Kubernetes. It is used for pagination in workflows.
+	// receivedRV: resourceVersion value used for previous pagination
+	// Due to the descending sorting above, the items are filtered to have a resourceVersion smaller than receivedRV.
+	// The data with values smaller than the receivedRV on the current page will be used for the next page.
 	if resourceVersion != "" {
-		newItems := []v1alpha1.WorkflowTemplate{}
+		var newItems []v1alpha1.WorkflowTemplate
 		for _, item := range items {
 			targetRV, _ := strconv.Atoi(item.ResourceVersion)
 			receivedRV, _ := strconv.Atoi(resourceVersion)
@@ -140,11 +104,50 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 		wfList.Items = items
 	}
 
-	// Calculate new offset for next batch
+	// Calculate new offset for next page
 	// For the next pagination, the resourceVersion of the last item is set in the Continue field.
 	if limit != 0 && len(wfList.Items) == int(limit) {
 		lastIndex := len(wfList.Items) - 1
 		wfList.ListMeta.Continue = wfList.Items[lastIndex].ResourceVersion
+	}
+}
+
+func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
+	wfClient := auth.GetWfClient(ctx)
+	k8sOptions := &v1.ListOptions{}
+
+	if req.ListOptions != nil {
+		k8sOptions = req.ListOptions
+	}
+
+	// Save the original Continue and Limit for custom filtering.
+	resourceVersion := k8sOptions.Continue
+	limit := k8sOptions.Limit
+
+	if req.NamePattern != "" {
+		// Search whole with Limit 0.
+		// Reset the Continue "" to prevent Kubernetes native pagination.
+		// Kubernetes api will search for all results without limit and pagination.
+		k8sOptions.Continue = ""
+		k8sOptions.Limit = 0
+	}
+
+	wts.instanceIDService.With(k8sOptions)
+	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(ctx, *k8sOptions)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	// Enables name-based searching.
+	// Do name pattern filtering if NamePattern request exist.
+	var items []v1alpha1.WorkflowTemplate
+	if req.NamePattern != "" {
+		for _, item := range wfList.Items {
+			if strings.Contains(item.ObjectMeta.Name, req.NamePattern) {
+				items = append(items, item)
+			}
+		}
+		cursorPaginationByResourceVersion(items, resourceVersion, limit, wfList)
 	}
 
 	sort.Sort(wfList.Items)
