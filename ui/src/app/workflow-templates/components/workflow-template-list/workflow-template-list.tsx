@@ -38,7 +38,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
-
+    const [namePattern, setNamePattern] = useState('');
     const [labels, setLabels] = useState([]);
     const [pagination, setPagination] = useState<Pagination>({
         offset: queryParams.get('offset'),
@@ -68,14 +68,14 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     const [templates, setTemplates] = useState<WorkflowTemplate[]>();
     useEffect(() => {
         services.workflowTemplate
-            .list(namespace, labels, pagination)
+            .list(namespace, labels, namePattern, pagination)
             .then(list => {
                 setPagination({...pagination, nextOffset: list.metadata.continue});
                 setTemplates(list.items || []);
             })
             .then(() => setError(null))
             .catch(setError);
-    }, [namespace, labels, pagination.offset, pagination.limit]);
+    }, [namespace, namePattern, labels, pagination.offset, pagination.limit]);
     useEffect(() => {
         storage.setItem('paginationLimit', pagination.limit, 0);
     }, [pagination.limit, labels]);
@@ -106,10 +106,13 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                         <WorkflowTemplateFilters
                             templates={templates || []}
                             namespace={namespace}
+                            namePattern={namePattern}
                             labels={labels}
-                            onChange={(namespaceValue: string, labelsValue: string[]) => {
+                            onChange={(namespaceValue: string, namePatternValue: string, labelsValue: string[]) => {
                                 setNamespace(namespaceValue);
+                                setNamePattern(namePatternValue);
                                 setLabels(labelsValue);
+                                setPagination({...pagination, offset: ''});
                             }}
                         />
                     </div>
