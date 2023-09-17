@@ -15,7 +15,7 @@ interface WorkflowFilterProps {
     onChange: (namespace: string, namePattern: string, labels: string[]) => void;
 }
 
-export const WorkflowTemplateFilters = ({templates, namespace, namePattern, labels, onChange}: WorkflowFilterProps) => {
+export function WorkflowTemplateFilters({templates, namespace, namePattern, labels, onChange}: WorkflowFilterProps) {
     const [labelSuggestion, setLabelSuggestion] = useState([]);
 
     useEffect(() => {
@@ -70,4 +70,4 @@ export const WorkflowTemplateFilters = ({templates, namespace, namePattern, labe
             </div>
         </div>
     );
-};
+}

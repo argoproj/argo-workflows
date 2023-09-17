@@ -2,13 +2,13 @@ owners:
 - sarabala1979
 - terrytangyuan
 
-reviewers:
-- isubasinghe
-- tczhao
-
 approvers:
 - alexec
 - alexmt
 - edlee2121
 - jessesuen
 - juliev0
+
+reviewers:
+- isubasinghe
+- tczhao

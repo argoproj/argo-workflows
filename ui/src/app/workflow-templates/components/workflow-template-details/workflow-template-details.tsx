@@ -16,7 +16,7 @@ import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
 import {WorkflowTemplateEditor} from '../workflow-template-editor';
 
-export const WorkflowTemplateDetails = ({history, location, match}: RouteComponentProps<any>) => {
+export function WorkflowTemplateDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {notifications, navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -139,4 +139,4 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
             )}
         </Page>
     );
-};
+}

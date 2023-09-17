@@ -275,6 +275,9 @@ message ArtifactoryArtifactRepository {
 
   // RepoURL is the url for artifactory repo.
   optional string repoURL = 2;
+
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
+  optional string keyFormat = 3;
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
@@ -615,7 +618,7 @@ message GCSArtifact {
 message GCSArtifactRepository {
   optional GCSBucket gCSBucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 }
 
@@ -1120,7 +1123,7 @@ message OSSArtifact {
 message OSSArtifactRepository {
   optional OSSBucket oSSBucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 }
 
@@ -1338,7 +1341,7 @@ message S3Artifact {
 message S3ArtifactRepository {
   optional S3Bucket s3Bucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 
   // KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.

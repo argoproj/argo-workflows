@@ -199,6 +199,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		maxStackDepth:             maxAllowedStackDepth,
 	}
 
 	for _, opt := range options {

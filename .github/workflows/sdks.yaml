@@ -21,7 +21,7 @@ jobs:
         - java
         - python
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: make --directory sdks/${{matrix.name}} publish -B
         env:
           JAVA_SDK_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

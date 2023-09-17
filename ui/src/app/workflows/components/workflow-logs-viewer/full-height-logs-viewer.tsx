@@ -5,7 +5,7 @@ import {LogsViewerProps} from 'argo-ui/src/components/logs-viewer/logs-viewer';
 
 require('./workflow-logs-viewer.scss');
 
-export const FullHeightLogsViewer = (props: LogsViewerProps) => {
+export function FullHeightLogsViewer(props: LogsViewerProps) {
     const ref = React.useRef(null);
     const [height, setHeight] = React.useState<number>(null);
     const {source} = props;
@@ -20,4 +20,4 @@ export const FullHeightLogsViewer = (props: LogsViewerProps) => {
             {height && <LogsViewer source={source} />}
         </div>
     );
-};
+}
