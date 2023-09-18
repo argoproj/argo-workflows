@@ -25,8 +25,11 @@ The actual repository used by a workflow is chosen by the following rules:
 
 ## Configuring MinIO
 
+You can install MinIO into your cluster via Helm.
+
+First, [install `helm`](https://helm.sh/docs/intro/install/). Then, install MinIO with the below commands:
+
 ```bash
-brew install helm # mac, helm 3.x
 helm repo add minio https://helm.min.io/ # official minio Helm charts
 helm repo update
 helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts

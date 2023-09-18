@@ -130,3 +130,20 @@ func TestLabel(t *testing.T) {
 		}
 	})
 }
+
+func TestUserInfoMap(t *testing.T) {
+	t.Run("NotEmpty", func(t *testing.T) {
+		ctx := context.WithValue(context.TODO(), auth.ClaimsKey,
+			&types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"})
+		uim := UserInfoMap(ctx)
+		assert.Equal(t, map[string]string{
+			"User":              strings.Repeat("x", 63) + "y",
+			"Email":             "my@email",
+			"PreferredUsername": "username",
+		}, uim)
+	})
+	t.Run("Empty", func(t *testing.T) {
+		uim := UserInfoMap(context.TODO())
+		assert.Nil(t, uim)
+	})
+}

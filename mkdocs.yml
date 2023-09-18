@@ -245,7 +245,6 @@ nav:
       - architecture.md
       - running-locally.md
       - doc-changes.md
-      - mentoring.md
       - public-api.md
       - static-code-analysis.md
       - stress-testing.md

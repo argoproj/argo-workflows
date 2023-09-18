@@ -125,6 +125,7 @@ export const Utils = {
         namespace?: string;
         name?: string;
         namePrefix?: string;
+        namePattern?: string;
         phases?: Array<string>;
         labels?: Array<string>;
         minStartedAt?: Date;
@@ -151,6 +152,9 @@ export const Utils = {
         }
         if (filter.namePrefix) {
             queryParams.push(`namePrefix=${filter.namePrefix}`);
+        }
+        if (filter.namePattern) {
+            queryParams.push(`namePattern=${filter.namePattern}`);
         }
         if (filter.resourceVersion) {
             queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);
