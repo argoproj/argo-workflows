@@ -74,10 +74,10 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(lf, res.Body)
 	defer func() {
 		_ = res.Body.Close()
 	}()
+	_, err = io.Copy(lf, res.Body)
 	return err
 }
 
