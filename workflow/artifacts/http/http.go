@@ -21,7 +21,7 @@ type ArtifactDriver struct {
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
-func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact, closeResBody bool) (http.Response, error) {
+func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Response, error) {
 	var req *http.Request
 	var url string
 	var err error
@@ -52,11 +52,6 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact, closeResB
 	if err != nil {
 		return http.Response{}, err
 	}
-	if closeResBody {
-		defer func() {
-			_ = res.Body.Close()
-		}()
-	}
 	if res.StatusCode == 404 {
 		return http.Response{}, errors.New(errors.CodeNotFound, res.Status)
 	}
@@ -75,17 +70,19 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer func() {
 		_ = lf.Close()
 	}()
-	res, err := h.retrieveContent(inputArtifact, true)
+	res, err := h.retrieveContent(inputArtifact)
 	if err != nil {
 		return err
 	}
 	_, err = io.Copy(lf, res.Body)
-
+	defer func() {
+		_ = res.Body.Close()
+	}()
 	return err
 }
 
 func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	res, err := h.retrieveContent(inputArtifact, false)
+	res, err := h.retrieveContent(inputArtifact)
 	if err != nil {
 		return nil, err
 	}
