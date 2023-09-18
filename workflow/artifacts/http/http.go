@@ -21,7 +21,7 @@ type ArtifactDriver struct {
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
-func (h *ArtifactDriver) constructRequest(inputArtifact *wfv1.Artifact, closeResBody bool) (http.Response, error) {
+func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact, closeResBody bool) (http.Response, error) {
 	var req *http.Request
 	var url string
 	var err error
@@ -75,7 +75,7 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer func() {
 		_ = lf.Close()
 	}()
-	res, err := h.constructRequest(inputArtifact, true)
+	res, err := h.retrieveContent(inputArtifact, true)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 }
 
 func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	res, err := h.constructRequest(inputArtifact, false)
+	res, err := h.retrieveContent(inputArtifact, false)
 	if err != nil {
 		return nil, err
 	}
