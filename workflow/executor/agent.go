@@ -12,6 +12,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -261,29 +263,31 @@ func (ae *AgentExecutor) executeMongoTemplate(ctx context.Context, tmpl wfv1.Tem
 	switch tmpl.MongoDB.Operation {
 	case "insertOne":
 		_, err = collection.InsertOne(ctx, body)
-
-	case "insertMany":
-		_, err = collection.InsertMany(ctx, body.([]interface{}))
 		if err != nil {
 			return 0, err
 		}
 	case "deleteOne":
-		_, err = collection.DeleteOne(ctx, body)
+		ID, err := primitive.ObjectIDFromHex(tmpl.MongoDB.ID)
 		if err != nil {
 			return 0, err
 		}
-	case "deleteMany":
-		_, err = collection.DeleteMany(ctx, body)
+		_, err = collection.DeleteOne(ctx, bson.M{"_id": ID})
+		if err != nil {
+			return 0, err
+		}
 	case "updateOne":
-		_, err = collection.UpdateOne(ctx, body, body)
-	case "updateMany":
-		_, err = collection.UpdateMany(ctx, body, body)
+		ID, err := primitive.ObjectIDFromHex(tmpl.MongoDB.ID)
+		if err != nil {
+			return 0, err
+		}
+		_, err = collection.UpdateOne(ctx, bson.M{"_id": ID}, bson.M{"$set": body})
+		if err != nil {
+			return 0, err
+		}
 	default:
 		return 0, fmt.Errorf("unknown operation: %s", tmpl.MongoDB.Operation)
 	}
-	if err != nil {
-		return 0, err
-	}
+
 	result.Outputs = &wfv1.Outputs{Result: pointer.StringPtr("success")}
 	result.Phase = wfv1.NodeSucceeded
 	result.Message = "success"
