@@ -4493,7 +4493,7 @@ and ending when it completes. Real-time metrics are only available on Gauge type
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
 <span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">app.kubernetes.io/instance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller</span>
 <span class="l l-Scalar l-Scalar-Plain">EOF</span>
 </code></pre></div>
 <p>If you have more than one controller pod, using one as a <a href="../high-availability/">hot-standby</a>, you should use <a href="https://kubernetes.io/docs/concepts/services-networking/service/#headless-services">a headless service</a> to ensure that each pod is being scraped so that no metrics are missed.</p>
