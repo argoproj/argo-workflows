@@ -54,6 +54,21 @@ type HTTP struct {
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty" protobuf:"bytes,7,opt,name=insecureSkipVerify"`
 }
 
+type MongoDB struct {
+	// URL of the MongoDB
+	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
+	// Database is the name of the MongoDB database
+	Database string `json:"database" protobuf:"bytes,2,opt,name=database"`
+	// Collection is the name of the MongoDB collection
+	Collection string `json:"collection" protobuf:"bytes,3,opt,name=collection"`
+	// Operation is the MongoDB operation to perform - insertOne,insertMany,deleteOne,deleteMany,updateOne,updateMany
+	Operation string `json:"operation" protobuf:"bytes,4,opt,name=operation"`
+	// SuccessCondition is an expression if evaluated to true is considered successful
+	SuccessCondition string `json:"successCondition,omitempty" protobuf:"bytes,5,opt,name=successCondition"`
+	// Body is content of the MongoDB document
+	Document string `json:"body,omitempty" protobuf:"bytes,6,opt,name=document"`
+}
+
 func (h *HTTP) GetBodyBytes() []byte {
 	if h.BodyFrom != nil {
 		return h.BodyFrom.Bytes

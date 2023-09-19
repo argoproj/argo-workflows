@@ -1481,6 +1481,8 @@ func TestTemplateIsLeaf(t *testing.T) {
 func TestTemplateGetType(t *testing.T) {
 	tmpl := Template{HTTP: &HTTP{}}
 	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
+	tmpl = Template{MongoDB: &MongoDB{}}
+	assert.Equal(t, TemplateTypeMongo, tmpl.GetType())
 }
 
 func TestWfSpecGetExitHook(t *testing.T) {

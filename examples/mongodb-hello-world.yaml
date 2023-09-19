@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: mongodb-template-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      mongodb template will demostrate the mongodb template functionality
+    workflows.argoproj.io/version: '>= 3.2.0'
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: good
+            template: mongodb
+            arguments:
+              parameters: [
+                {
+                  name: url, 
+                  value: "mongodb://test:test@localhost:27017"
+                },
+                {
+                  name: database, 
+                  value: "test"
+                },
+                {
+                  name: collection, 
+                  value: "test"
+                },
+                {
+                  name: operation, 
+                  value: 'insertOne'
+                },
+                {
+                  name: document, 
+                  value: '{"name": "test"}'
+                }
+              ]
+  
+    - name: mongodb
+      inputs:
+        parameters:
+          - name: url
+      mongodb:
+        url: "{{inputs.parameters.url}}"
+        database: "{{inputs.parameters.database}}"
+        collection: "{{inputs.parameters.collection}}"
+        operation: "{{inputs.parameters.operation}}"
+        document: "{{inputs.parameters.document}}"
+
+      

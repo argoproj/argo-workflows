@@ -12,6 +12,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -226,6 +228,8 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 	switch {
 	case tmpl.HTTP != nil:
 		executeTemplate = ae.executeHTTPTemplate
+	case tmpl.MongoDB != nil:
+		executeTemplate = ae.executeMongoTemplate
 	case tmpl.Plugin != nil:
 		executeTemplate = ae.executePluginTemplate
 	default:
@@ -238,6 +242,52 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 		result.Message = err.Error()
 	}
 	return result, requeue, nil
+}
+
+func (ae *AgentExecutor) executeMongoTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(tmpl.MongoDB.URL))
+	if err != nil {
+		return 0, err
+	}
+	defer client.Disconnect(ctx)
+	mongoDB := client.Database(tmpl.MongoDB.Database)
+	collection := mongoDB.Collection(tmpl.MongoDB.Collection)
+
+	var body interface{}
+	if err := json.Unmarshal([]byte(tmpl.MongoDB.Document), &body); err != nil {
+		return 0, err
+	}
+
+	switch tmpl.MongoDB.Operation {
+	case "insertOne":
+		_, err = collection.InsertOne(ctx, body)
+
+	case "insertMany":
+		_, err = collection.InsertMany(ctx, body.([]interface{}))
+		if err != nil {
+			return 0, err
+		}
+	case "deleteOne":
+		_, err = collection.DeleteOne(ctx, body)
+		if err != nil {
+			return 0, err
+		}
+	case "deleteMany":
+		_, err = collection.DeleteMany(ctx, body)
+	case "updateOne":
+		_, err = collection.UpdateOne(ctx, body, body)
+	case "updateMany":
+		_, err = collection.UpdateMany(ctx, body, body)
+	default:
+		return 0, fmt.Errorf("unknown operation: %s", tmpl.MongoDB.Operation)
+	}
+	if err != nil {
+		return 0, err
+	}
+	result.Outputs = &wfv1.Outputs{Result: pointer.StringPtr("success")}
+	result.Phase = wfv1.NodeSucceeded
+	result.Message = "success"
+	return 0, nil
 }
 
 func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {

@@ -2069,6 +2069,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeData(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeHTTP:
 		node = woc.executeHTTPTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeMongo:
+		node = woc.executeMongoTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypePlugin:
 		node = woc.executePluginTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:

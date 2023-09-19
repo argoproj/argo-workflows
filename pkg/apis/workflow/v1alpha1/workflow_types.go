@@ -42,6 +42,7 @@ const (
 	TemplateTypeSuspend      TemplateType = "Suspend"
 	TemplateTypeData         TemplateType = "Data"
 	TemplateTypeHTTP         TemplateType = "HTTP"
+	TemplateTypeMongo        TemplateType = "MongoDB"
 	TemplateTypePlugin       TemplateType = "Plugin"
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
@@ -655,6 +656,9 @@ type Template struct {
 
 	// HTTP makes a HTTP request
 	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
+
+	//Mongo create mongodb record
+	MongoDB *MongoDB `json:"mongodb,omitempty" protobuf:"bytes,44,opt,name=mongodb"`
 
 	// Plugin is a plugin template
 	Plugin *Plugin `json:"plugin,omitempty" protobuf:"bytes,43,opt,name=plugin"`
@@ -2971,6 +2975,9 @@ func (tmpl *Template) GetType() TemplateType {
 	}
 	if tmpl.Plugin != nil {
 		return TemplateTypePlugin
+	}
+	if tmpl.MongoDB != nil {
+		return TemplateTypeMongo
 	}
 	return TemplateTypeUnknown
 }
