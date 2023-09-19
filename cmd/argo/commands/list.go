@@ -22,19 +22,19 @@ import (
 )
 
 type listFlags struct {
-	namespace     string
-	status        []string
-	completed     bool
-	running       bool
-	resubmitted   bool
-	prefix        string
-	output        string
-	createdSince  string
+	namespace      string
+	status         []string
+	completed      bool
+	running        bool
+	resubmitted    bool
+	prefix         string
+	output         string
+	createdSince   string
 	finishedBefore string
-	chunkSize     int64
-	noHeaders     bool
-	labels        string
-	fields        string
+	chunkSize      int64
+	noHeaders      bool
+	labels         string
+	fields         string
 }
 
 var (
