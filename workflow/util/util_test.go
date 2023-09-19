@@ -356,10 +356,11 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 
 	origWf.Status = wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded}
 	origWf.Name = "succeeded-wf"
+	origWf.Namespace = "test-namespace"
 	_, err = wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "succeeded-wf", "", "")
-	assert.EqualError(t, err, "cannot shutdown a completed workflow")
+	assert.EqualError(t, err, "cannot shutdown a completed workflow: workflow: \"succeeded-wf\", namespace: \"test-namespace\"")
 }
 
 // Regression test for #6478
