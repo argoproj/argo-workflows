@@ -33,7 +33,7 @@ func TestUpdater(t *testing.T) {
 	assert.Equal(t, wfv1.Progress("0/1"), nodes["http"].Progress, "failed http is unchanged")
 	assert.Equal(t, wfv1.Progress("1/1"), nodes["plug"].Progress, "succeeded plug is completed")
 	assert.Equal(t, wfv1.Progress("101/202"), nodes["dag"].Progress, "dag is summed up")
-	assert.Equal(t, wfv1.Progress("101/202"), wf.Status.Progress, "wf is sum total")
+	assert.Equal(t, wfv1.Progress("101/203"), wf.Status.Progress, "wf is sum total")
 }
 
 func Test_executes(t *testing.T) {
