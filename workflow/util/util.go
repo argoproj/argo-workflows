@@ -1110,6 +1110,15 @@ func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydr
 	return patchShutdownStrategy(ctx, wfClient, name, wfv1.ShutdownStrategyStop)
 }
 
+type AlreadyShutdownError struct {
+	workflowName string
+	namespace    string
+}
+
+func (e AlreadyShutdownError) Error() string {
+	return fmt.Sprintf("cannot shutdown a completed workflow: workflow: %q, namespace: %q", e.workflowName, e.namespace)
+}
+
 // patchShutdownStrategy patches the shutdown strategy to a workflow.
 func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string, strategy wfv1.ShutdownStrategy) error {
 	patchObj := map[string]interface{}{
@@ -1128,7 +1137,7 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 			return !errorsutil.IsTransientErr(err), err
 		}
 		if wf.Status.Fulfilled() {
-			return true, fmt.Errorf("cannot shutdown a completed workflow")
+			return true, AlreadyShutdownError{wf.Name, wf.Namespace}
 		}
 		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 		if apierr.IsConflict(err) {
