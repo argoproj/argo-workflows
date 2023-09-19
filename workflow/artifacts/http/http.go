@@ -48,7 +48,9 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 		return http.Response{}, errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
 	}
 
-	res, err := h.Client.Do(req)
+	// Note that we will close the response body in either `Load()`
+	// or `ArtifactServer.returnArtifact()`, which is the caller of `OpenStream()`.
+	res, err := h.Client.Do(req) //nolint:bodyclose
 	if err != nil {
 		return http.Response{}, err
 	}
