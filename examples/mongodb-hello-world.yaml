@@ -43,6 +43,10 @@ spec:
       inputs:
         parameters:
           - name: url
+          - name: database
+          - name: collection
+          - name: operation
+          - name: document
       mongodb:
         url: "{{inputs.parameters.url}}"
         database: "{{inputs.parameters.database}}"
