@@ -15,11 +15,12 @@ func TestUpdater(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: "wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: wfv1.Nodes{
-				"pod-1": wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, Progress: wfv1.Progress("25/50")},
-				"pod-2": wfv1.NodeStatus{Phase: wfv1.NodeRunning, Type: wfv1.NodeTypePod, Progress: wfv1.Progress("50/150")},
-				"http":  wfv1.NodeStatus{Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeHTTP},
-				"plug":  wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePlugin},
-				"dag":   wfv1.NodeStatus{Children: []string{"pod-1", "pod-2", "http", "plug"}},
+				"pod-1":   wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, Progress: wfv1.Progress("25/50")},
+				"pod-2":   wfv1.NodeStatus{Phase: wfv1.NodeRunning, Type: wfv1.NodeTypePod, Progress: wfv1.Progress("50/150")},
+				"http":    wfv1.NodeStatus{Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeHTTP},
+				"mongodb": wfv1.NodeStatus{Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeMongoDB},
+				"plug":    wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePlugin},
+				"dag":     wfv1.NodeStatus{Children: []string{"pod-1", "pod-2", "http", "plug"}},
 			},
 		},
 	}
@@ -45,5 +46,6 @@ func Test_executes(t *testing.T) {
 	assert.False(t, executable(wfv1.NodeTypeTaskGroup))
 	assert.True(t, executable(wfv1.NodeTypeSuspend))
 	assert.True(t, executable(wfv1.NodeTypeHTTP))
+	assert.True(t, executable(wfv1.NodeTypeMongoDB))
 	assert.True(t, executable(wfv1.NodeTypePlugin))
 }

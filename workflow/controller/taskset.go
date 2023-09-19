@@ -34,7 +34,7 @@ func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, 
 func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 	deletedNode := make(map[string]interface{})
 	for _, node := range woc.wf.Status.Nodes {
-		if (node.Type == wfv1.NodeTypeHTTP || node.Type == wfv1.NodeTypePlugin) && node.Fulfilled() {
+		if (node.Type == wfv1.NodeTypeHTTP || node.Type == wfv1.NodeTypeMongoDB || node.Type == wfv1.NodeTypePlugin) && node.Fulfilled() {
 			deletedNode[node.ID] = nil
 		}
 	}
@@ -51,7 +51,7 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 	return patch
 }
 func taskSetNode(n wfv1.NodeStatus) bool {
-	return n.Type == wfv1.NodeTypeHTTP || n.Type == wfv1.NodeTypePlugin
+	return n.Type == wfv1.NodeTypeHTTP || n.Type == wfv1.NodeTypePlugin || n.Type == wfv1.NodeTypeMongoDB
 }
 
 func (woc *wfOperationCtx) hasTaskSetNodes() bool {

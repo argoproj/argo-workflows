@@ -83,6 +83,7 @@ const (
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
 	NodeTypeHTTP      NodeType = "HTTP"
+	NodeTypeMongoDB   NodeType = "MongoDB"
 	NodeTypePlugin    NodeType = "Plugin"
 )
 

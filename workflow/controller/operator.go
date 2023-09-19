@@ -2707,7 +2707,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 		panic(fmt.Sprintf("Expected node for %s", nodeID))
 	}
 	switch node.Type {
-	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypeMongoDB, wfv1.NodeTypePlugin:
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 
