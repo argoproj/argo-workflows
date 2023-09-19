@@ -16,28 +16,18 @@ spec:
         - - name: good
             template: mongodb
             arguments:
-              parameters: [
-                {
-                  name: url, 
-                  value: "mongodb://test:test@localhost:27017"
-                },
-                {
-                  name: database, 
-                  value: "test"
-                },
-                {
-                  name: collection, 
-                  value: "test"
-                },
-                {
-                  name: operation, 
-                  value: 'insertOne'
-                },
-                {
-                  name: document, 
-                  value: '{"name": "test"}'
-                }
-              ]
+              parameters:
+              - name: url 
+                value: mongodb://test:test@localhost:27017
+              - name: database
+                value: test
+              - name: collection, 
+                value: test
+              - name: operation 
+                value: insertOne
+              - name: document
+                value: |
+                  {"name": "test"}
   
     - name: mongodb
       inputs:
