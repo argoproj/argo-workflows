@@ -262,10 +262,11 @@ func (ae *AgentExecutor) executeMongoTemplate(ctx context.Context, tmpl wfv1.Tem
 
 	switch tmpl.MongoDB.Operation {
 	case "insertOne":
-		_, err = collection.InsertOne(ctx, body)
+		insertResult, err := collection.InsertOne(ctx, body)
 		if err != nil {
 			return 0, err
 		}
+		result.Outputs = &wfv1.Outputs{Result: pointer.StringPtr(insertResult.InsertedID.(primitive.ObjectID).Hex())}
 	case "deleteOne":
 		ID, err := primitive.ObjectIDFromHex(tmpl.MongoDB.ID)
 		if err != nil {
@@ -275,6 +276,7 @@ func (ae *AgentExecutor) executeMongoTemplate(ctx context.Context, tmpl wfv1.Tem
 		if err != nil {
 			return 0, err
 		}
+		result.Outputs = &wfv1.Outputs{Result: pointer.StringPtr("success")}
 	case "updateOne":
 		ID, err := primitive.ObjectIDFromHex(tmpl.MongoDB.ID)
 		if err != nil {
@@ -284,11 +286,11 @@ func (ae *AgentExecutor) executeMongoTemplate(ctx context.Context, tmpl wfv1.Tem
 		if err != nil {
 			return 0, err
 		}
+		result.Outputs = &wfv1.Outputs{Result: pointer.StringPtr("success")}
 	default:
 		return 0, fmt.Errorf("unknown operation: %s", tmpl.MongoDB.Operation)
 	}
 
-	result.Outputs = &wfv1.Outputs{Result: pointer.StringPtr("success")}
 	result.Phase = wfv1.NodeSucceeded
 	result.Message = "success"
 	return 0, nil
