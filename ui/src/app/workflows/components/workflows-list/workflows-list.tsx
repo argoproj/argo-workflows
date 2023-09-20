@@ -2,7 +2,7 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {labels, NODE_PHASE, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
+import {labels, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 
 import {BasePage} from '../../../shared/components/base-page';
@@ -33,8 +33,8 @@ interface State {
     pagination: Pagination;
     selectedPhases: WorkflowPhase[];
     selectedLabels: string[];
-    minStartedAt?: Date;
-    maxStartedAt?: Date;
+    createdAfter?: Date;
+    finishedBefore?: Date;
     selectedWorkflows: Map<string, models.Workflow>;
     workflows?: Workflow[];
     resourceVersion?: string;
@@ -118,8 +118,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             selectedPhases: phaseQueryParam.length > 0 ? (phaseQueryParam as WorkflowPhase[]) : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? (labelQueryParam as string[]) : savedOptions.selectedLabels,
-            minStartedAt: this.lastMonth(),
-            maxStartedAt: this.nextDay(),
             selectedWorkflows: new Map<string, models.Workflow>(),
             batchActionDisabled: {...allBatchActionsEnabled},
             links: [],
@@ -137,8 +135,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 this.state.namespace,
                 this.state.selectedPhases,
                 this.state.selectedLabels,
-                this.state.minStartedAt,
-                this.state.maxStartedAt,
+                this.state.createdAfter,
+                this.state.finishedBefore,
                 this.state.pagination
             );
         });
@@ -183,7 +181,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
                             loadWorkflows={() => {
                                 this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
-                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, {
+                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.createdAfter, this.state.finishedBefore, {
                                     limit: this.state.pagination.limit
                                 });
                             }}
@@ -199,10 +197,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         phaseItems={WorkflowPhases}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
-                                        minStartedAt={this.state.minStartedAt}
-                                        maxStartedAt={this.state.maxStartedAt}
-                                        onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
-                                            this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
+                                        createdAfter={this.state.createdAfter}
+                                        finishedBefore={this.state.finishedBefore}
+                                        onChange={(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore) =>
+                                            this.changeFilters(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, {limit: this.state.pagination.limit})
                                         }
                                     />
                                 </div>
@@ -223,49 +221,33 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private lastMonth() {
-        const dt = new Date();
-        dt.setMonth(dt.getMonth() - 1);
-        dt.setHours(0, 0, 0, 0);
-        return dt;
-    }
-
-    private nextDay() {
-        const dt = new Date();
-        dt.setDate(dt.getDate() + 1);
-        dt.setHours(0, 0, 0, 0);
-        return dt;
-    }
-
-    private nullSafeTimeFilter(minStartedAt: Date, maxStartedAt: Date, startedStr: string, isPending: boolean): boolean {
-        // looser check for startedStr is intentional to also check for undefined
-        if (startedStr == null) {
-            // return true if isPending
-            // else false
-            return isPending;
-        }
-        const started: Date = new Date(startedStr);
+    private nullSafeTimeFilter(createdAfter: Date, finishedBefore: Date, w: Workflow): boolean {
+        const createdAt = w.metadata.creationTimestamp; // this should always be defined
+        const finishedAt = w.status.finishedAt; // this can be undefined
+        const createdDate: Date = new Date(createdAt);
+        const finishedDate: Date = new Date(finishedAt);
 
         // check for undefined date filters as well
-        if (minStartedAt && maxStartedAt) {
-            return started > minStartedAt && started < maxStartedAt;
-        } else if (minStartedAt && !maxStartedAt) {
-            return started > minStartedAt;
-        } else if (!minStartedAt && maxStartedAt) {
-            return started < maxStartedAt;
+        // equivalent to back-end logic: https://github.com/argoproj/argo-workflows/blob/f5e31f8f36b32883087f783cb1227490bbe36bbd/pkg/apis/workflow/v1alpha1/workflow_types.go#L222
+        if (createdAfter && finishedBefore) {
+            return createdDate > createdAfter && finishedAt && finishedDate < finishedBefore;
+        } else if (createdAfter && !finishedBefore) {
+            return createdDate > createdAfter;
+        } else if (!createdAfter && finishedBefore) {
+            return finishedAt && finishedDate < finishedBefore;
         } else {
             return true;
         }
     }
 
-    private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
+    private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], createdAfter: Date, finishedBefore: Date, pagination: Pagination): void {
         if (this.listWatch) {
             this.listWatch.stop();
         }
         this.listWatch = new ListWatch(
             () =>
                 services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(x => {
-                    x.items = x.items?.filter(w => this.nullSafeTimeFilter(minStartedAt, maxStartedAt, w.status.startedAt, w.status.phase === NODE_PHASE.PENDING));
+                    x.items = x.items?.filter(w => this.nullSafeTimeFilter(createdAfter, finishedBefore, w));
                     return x;
                 }),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
@@ -277,8 +259,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue},
                         selectedPhases,
                         selectedLabels,
-                        minStartedAt,
-                        maxStartedAt,
+                        createdAfter,
+                        finishedBefore,
                         selectedWorkflows: new Map<string, models.Workflow>()
                     },
                     this.saveHistory
@@ -291,8 +273,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.listWatch.start();
     }
 
-    private changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
-        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
+    private changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], createdAfter: Date, finishedBefore: Date, pagination: Pagination) {
+        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, pagination);
     }
 
     private saveHistory() {
@@ -399,8 +381,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                                 this.state.namespace,
                                                 this.state.selectedPhases,
                                                 newTags,
-                                                this.state.minStartedAt,
-                                                this.state.maxStartedAt,
+                                                this.state.createdAfter,
+                                                this.state.finishedBefore,
                                                 this.state.pagination
                                             );
                                         }}
@@ -427,8 +409,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     this.state.namespace,
                                     this.state.selectedPhases,
                                     this.state.selectedLabels,
-                                    this.state.minStartedAt,
-                                    this.state.maxStartedAt,
+                                    this.state.createdAfter,
+                                    this.state.finishedBefore,
                                     pagination
                                 )
                             }
