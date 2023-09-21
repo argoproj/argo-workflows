@@ -15,10 +15,10 @@ type plugin struct{ rpc.Client }
 
 func New(address, token string) *plugin {
 	return &plugin{Client: rpc.New(address, token, 30*time.Second, wait.Backoff{
-		Duration: env.LookupEnvDurationOr("PLUGIN_RETRY_BACKOFF_DURATION", time.Second),
-		Jitter:   env.LookupEnvFloatOr("PLUGIN_RETRY_BACKOFF_JITTER", 0.2),
-		Factor:   env.LookupEnvFloatOr("PLUGIN_RETRY_BACKOFF_FACTOR", 2),
-		Steps:    env.LookupEnvIntOr("PLUGIN_RETRY_BACKOFF_STEPS", 5),
+		Duration: env.LookupEnvDurationOr("EXECUTOR_RETRY_BACKOFF_DURATION", time.Second),
+		Jitter:   env.LookupEnvFloatOr("EXECUTOR_RETRY_BACKOFF_JITTER", 0.2),
+		Factor:   env.LookupEnvFloatOr("EXECUTOR_RETRY_BACKOFF_FACTOR", 2),
+		Steps:    env.LookupEnvIntOr("EXECUTOR_RETRY_BACKOFF_STEPS", 5),
 	})}
 }
 
