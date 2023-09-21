@@ -1,5 +1,6 @@
 import classNames from 'classnames';
 import * as React from 'react';
+import {useEffect, useRef, useState} from 'react';
 
 import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui';
 
@@ -13,116 +14,99 @@ interface TagsInputProps {
 
 require('./tags-input.scss');
 
-export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; input: string; focused: boolean; subTags: string[]; subTagsActive: boolean}> {
-    private inputElement: HTMLInputElement;
-    private autocompleteApi: AutocompleteApi;
+export function TagsInput(props: TagsInputProps) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const autoCompleteRef = useRef<AutocompleteApi>(null);
 
-    constructor(props: TagsInputProps) {
-        super(props);
-        this.state = {tags: props.tags || [], input: '', focused: false, subTags: [], subTagsActive: false};
-    }
+    const [tags, setTags] = useState(props.tags || []);
+    const [input, setInput] = useState('');
+    const [focused, setFocused] = useState(false);
+    const [subTags, setSubTags] = useState<string[]>([]);
+    const [subTagsActive, setSubTagsActive] = useState(false);
 
-    public render() {
-        return (
-            <div
-                className={classNames('tags-input argo-field', {'tags-input--focused': this.state.focused || !!this.state.input})}
-                onClick={() => this.inputElement && this.inputElement.focus()}>
-                {this.props.tags ? (
-                    this.props.tags.map((tag, i) => (
-                        <span className='tags-input__tag' key={tag}>
-                            {tag}{' '}
-                            <i
-                                className='fa fa-times'
-                                onClick={e => {
-                                    const newTags = [...this.state.tags.slice(0, i), ...this.state.tags.slice(i + 1)];
-                                    this.setState({tags: newTags});
-                                    this.onTagsChange(newTags);
-                                    e.stopPropagation();
-                                }}
-                            />
-                        </span>
-                    ))
-                ) : (
-                    <span />
-                )}
-                <Autocomplete
-                    filterSuggestions={true}
-                    autoCompleteRef={api => (this.autocompleteApi = api)}
-                    value={this.state.input}
-                    items={this.state.subTagsActive ? this.state.subTags : this.props.autocomplete}
-                    onChange={e => this.setState({input: e.target.value})}
-                    onSelect={value => {
-                        if (this.props.sublistQuery != null && !this.state.subTagsActive) {
-                            this.setState({subTagsActive: true});
-                            this.props.sublistQuery(value).then(list => {
-                                this.setState({
-                                    subTags: list || []
-                                });
-                            });
-                        } else {
-                            if (this.state.tags.indexOf(value) === -1) {
-                                const newTags = this.state.tags.concat(value);
-                                this.setState({input: '', tags: newTags, subTags: []});
-                                this.onTagsChange(newTags);
-                            }
-                            this.setState({subTagsActive: false});
-                        }
-                    }}
-                    renderInput={props => (
-                        <input
-                            {...props}
-                            placeholder={this.props.placeholder}
-                            ref={inputEl => {
-                                this.inputElement = inputEl;
-                                if (props.ref) {
-                                    (props.ref as any)(inputEl);
-                                }
-                            }}
-                            onFocus={e => {
-                                if (props.onFocus) {
-                                    props.onFocus(e);
-                                }
-                                this.setState({focused: true});
-                            }}
-                            onBlur={e => {
-                                if (props.onBlur) {
-                                    props.onBlur(e);
-                                }
-                                this.setState({focused: false});
-                            }}
-                            onKeyDown={e => {
-                                if (e.keyCode === 8 && this.state.tags.length > 0 && this.state.input === '') {
-                                    const newTags = this.state.tags.slice(0, this.state.tags.length - 1);
-                                    this.setState({tags: newTags});
-                                    this.onTagsChange(newTags);
-                                }
-                                if (props.onKeyDown) {
-                                    props.onKeyDown(e);
-                                }
-                            }}
-                            onKeyUp={e => {
-                                if (e.keyCode === 13 && this.state.input && this.state.tags.indexOf(this.state.input) === -1) {
-                                    const newTags = this.state.tags.concat(this.state.input);
-                                    this.setState({input: '', tags: newTags});
-                                    this.onTagsChange(newTags);
-                                }
-                                if (props.onKeyUp) {
-                                    props.onKeyUp(e);
-                                }
+    useEffect(() => {
+        if (props.onChange) {
+            props.onChange(tags);
+            setTimeout(() => autoCompleteRef.current?.refresh());
+        }
+    }, [tags]);
+
+    return (
+        <div className={classNames('tags-input argo-field', {'tags-input--focused': focused || !!input})} onClick={() => inputRef.current?.focus()}>
+            {props.tags ? (
+                props.tags.map((tag, i) => (
+                    <span className='tags-input__tag' key={tag}>
+                        {tag}{' '}
+                        <i
+                            className='fa fa-times'
+                            onClick={e => {
+                                const newTags = [...tags.slice(0, i), ...tags.slice(i + 1)];
+                                setTags(newTags);
+                                e.stopPropagation();
                             }}
                         />
-                    )}
-                />
-            </div>
-        );
-    }
-
-    private onTagsChange(tags: string[]) {
-        if (this.props.onChange) {
-            this.props.onChange(tags);
-            if (this.autocompleteApi) {
-                setTimeout(() => this.autocompleteApi.refresh());
-            }
-        }
-    }
+                    </span>
+                ))
+            ) : (
+                <span />
+            )}
+            <Autocomplete
+                filterSuggestions={true}
+                autoCompleteRef={ref => (autoCompleteRef.current = ref)}
+                value={input}
+                items={subTagsActive ? subTags : props.autocomplete}
+                onChange={e => setInput(e.target.value)}
+                onSelect={async value => {
+                    if (props.sublistQuery != null && !subTagsActive) {
+                        setSubTagsActive(true);
+                        const newSubTags = await props.sublistQuery(value);
+                        setSubTags(newSubTags || []);
+                    } else {
+                        if (tags.indexOf(value) === -1) {
+                            const newTags = tags.concat(value);
+                            setTags(newTags);
+                            setInput('');
+                            setSubTags([]);
+                        }
+                        setSubTagsActive(false);
+                    }
+                }}
+                renderInput={inputProps => (
+                    <input
+                        {...inputProps}
+                        placeholder={props.placeholder}
+                        ref={ref => {
+                            inputRef.current = ref;
+                            if (typeof inputProps.ref === 'function') {
+                                inputProps.ref(ref);
+                            }
+                        }}
+                        onFocus={e => {
+                            inputProps.onFocus?.(e);
+                            setFocused(true);
+                        }}
+                        onBlur={e => {
+                            inputProps.onBlur?.(e);
+                            setFocused(false);
+                        }}
+                        onKeyDown={e => {
+                            if (e.keyCode === 8 && tags.length > 0 && input === '') {
+                                const newTags = tags.slice(0, tags.length - 1);
+                                setTags(newTags);
+                            }
+                            inputProps.onKeyDown?.(e);
+                        }}
+                        onKeyUp={e => {
+                            if (e.keyCode === 13 && input && tags.indexOf(input) === -1) {
+                                const newTags = tags.concat(input);
+                                setTags(newTags);
+                                setInput('');
+                            }
+                            inputProps.onKeyUp?.(e);
+                        }}
+                    />
+                )}
+            />
+        </div>
+    );
 }
