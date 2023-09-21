@@ -32,7 +32,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -109,6 +108,7 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
+	configMapCtrlInformer cache.SharedIndexInformer
 	configMapInformer     cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
@@ -278,6 +278,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.configMapInformer = wfc.newConfigMapInformer()
 
+	wfc.configMapCtrlInformer = wfc.newConfigMapCtrlInformer()
+
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
@@ -285,7 +287,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal(err)
 	}
 
-	go wfc.runConfigMapWatcher(ctx.Done())
+	go wfc.configMapCtrlInformer.Run(ctx.Done())
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -300,6 +302,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		ctx.Done(),
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
+		wfc.configMapCtrlInformer.HasSynced,
 		wfc.podInformer.HasSynced,
 		wfc.configMapInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
@@ -392,38 +395,34 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	return nil
 }
 
-func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
+func (wfc *WorkflowController) newConfigMapCtrlInformer() cache.SharedIndexInformer {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	ctx := context.Background()
-	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	defer retryWatcher.Stop()
 
-	for {
-		select {
-		case event := <-retryWatcher.ResultChan():
-			cm, ok := event.Object.(*apiv1.ConfigMap)
-			if !ok {
-				log.Errorf("invalid config map object received in config watcher. Ignored processing")
-				continue
+	informer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
+	})
+
+	informer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			cm, err := meta.Accessor(obj)
+			if err != nil {
+				return false
 			}
-			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
-			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
+			return cm.GetName() == wfc.configController.GetName()
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(_, obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
 				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
 				wfc.UpdateConfig(ctx)
-			}
-			wfc.notifySemaphoreConfigUpdate(cm)
-		case <-stopCh:
-			return
-		}
-	}
+				wfc.notifySemaphoreConfigUpdate(cm)
+			},
+		},
+	})
+
+	return informer
 }
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
