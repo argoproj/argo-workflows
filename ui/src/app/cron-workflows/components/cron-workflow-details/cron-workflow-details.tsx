@@ -8,6 +8,7 @@ import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {useCollectEvent} from '../../../shared/components/use-collect-event';
+import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -15,7 +16,6 @@ import {useQueryParams} from '../../../shared/use-query-params';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {WorkflowsRow} from '../../../workflows/components/workflows-row/workflows-row';
 import {CronWorkflowEditor} from '../cron-workflow-editor';
-import {ZeroState} from '../../../shared/components/zero-state';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 require('./cron-workflow-details.scss');
