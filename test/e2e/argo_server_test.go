@@ -1181,6 +1181,7 @@ func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (
 	}()
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
+	assert.Equal(t, "no", resp.Header.Get("X-Accel-Buffering"))
 	if t.Failed() {
 		t.FailNow()
 	}

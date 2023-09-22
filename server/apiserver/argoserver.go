@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/runtime/protoiface"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
@@ -364,13 +365,23 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	)
 	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(sensorpkg.RegisterSensorServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+
+	gwmuxWithoutProxy := runtime.NewServeMux(gwMuxOpts,
+		runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) { return key, true }),
+		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
+		runtime.WithForwardResponseOption(func(ctx context.Context, w http.ResponseWriter, p protoiface.MessageV1) error {
+			//http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering
+			w.Header().Set("X-Accel-Buffering", "no")
+			return nil
+		}),
+	)
+	mustRegisterGWHandler(eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, ctx, gwmuxWithoutProxy, endpoint, dialOpts)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		// we must delete this header for API request to prevent "stream terminated by RST_STREAM with error code: PROTOCOL_ERROR" error
