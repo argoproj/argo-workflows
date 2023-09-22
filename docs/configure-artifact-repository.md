@@ -554,3 +554,12 @@ configuring the default artifact repository described previously.
       command: [sh, -c]
       args: ["cp -r /my-input-artifact /my-output-artifact"]
 ```
+
+## Artifact Streaming
+
+With artifact streaming, artifacts don’t need to be saved to disk first. Artifact streaming support has been added for
+S3 artifacts in v3.4 and for HTTP/Artifactory artifacts in v3.5.
+
+Previously, when a user clicks the download artifact button in the UI, the artifact needs to be written to the
+Argo server’s disk first before downloading. If many users are trying to download at the same time, they will take up
+disk space and fail the download.
