@@ -558,8 +558,8 @@ configuring the default artifact repository described previously.
 ## Artifact Streaming
 
 With artifact streaming, artifacts don’t need to be saved to disk first. Artifact streaming is only supported in the following
-artifact drivers: S3 (v3.4+), HTTP (v3.5+), and Artifactory (v3.5+).
+artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), and Artifactory (v3.5+).
 
-Previously, when a user clicks the download artifact button in the UI, the artifact needs to be written to the
-Argo server’s disk first before downloading. If many users are trying to download at the same time, they will take up
+Previously, when a user would click the button to download an artifact in the UI, the artifact would need to be written to the
+Argo Server’s disk first before downloading. If many users try to download simultaneously, they will take up
 disk space and fail the download.
