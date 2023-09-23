@@ -3289,6 +3289,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#artifact-streaming" class="md-nav__link">
+    Artifact Streaming
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4068,6 +4075,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#artifact-streaming" class="md-nav__link">
+    Artifact Streaming
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4621,6 +4635,12 @@ configuring the default artifact repository described previously.</p>
 <span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cp</span><span class="nv"> </span><span class="s">-r</span><span class="nv"> </span><span class="s">/my-input-artifact</span><span class="nv"> </span><span class="s">/my-output-artifact&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
+<h2 id="artifact-streaming">Artifact Streaming<a class="headerlink" href="#artifact-streaming" title="Permanent link">&para;</a></h2>
+<p>With artifact streaming, artifacts don’t need to be saved to disk first. Artifact streaming is only supported in the following
+artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), and Artifactory (v3.5+).</p>
+<p>Previously, when a user would click the button to download an artifact in the UI, the artifact would need to be written to the
+Argo Server’s disk first before downloading. If many users tried to download simultaneously, they would take up
+disk space and fail the download.</p>
 
               
 
