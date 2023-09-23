@@ -1524,10 +1524,10 @@
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@types/cookiejar/-/cookiejar-2.1.0.tgz#4b7daf2c51696cfc70b942c11690528229d1a1ce"
 
-"@types/dagre@^0.7.49":
-  version "0.7.49"
-  resolved "https://registry.yarnpkg.com/@types/dagre/-/dagre-0.7.49.tgz#b6d3caecf4c1c090606b79f0cfd2df6da539a6c0"
-  integrity sha512-dlqM5cavmHC0FeBlVl1HPKE/12K3TcIsTeBpRwhkS2FYOmuk36ndI7AuGQjPJ/fJQTz8LjeaetSV/+dsJwB6Ow==
+"@types/dagre@^0.7.50":
+  version "0.7.50"
+  resolved "https://registry.yarnpkg.com/@types/dagre/-/dagre-0.7.50.tgz#0c49746a0b3c63b75c4d1f5031fad522cf852a62"
+  integrity sha512-3HxPUil6GwbcO+q3WxZhM6XMSXYaiXjjzKUDYsGk2tqP5Ko2WpN71I8g1kXLgX5nUkKg00+LlCTuaverWVADGA==
 
 "@types/eslint-scope@^3.7.3":
   version "3.7.4"
