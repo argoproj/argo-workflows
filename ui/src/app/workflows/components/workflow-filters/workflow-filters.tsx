@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {useMemo} from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import * as models from '../../../../models';
@@ -22,166 +23,162 @@ interface WorkflowFilterProps {
     onChange: (namespace: string, selectedPhases: WorkflowPhase[], labels: string[], createdAfter: Date, finishedBefore: Date) => void;
 }
 
-export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
-    private set workflowTemplate(value: string) {
-        this.setLabel(models.labels.workflowTemplate, value);
+export function WorkflowFilters(props: WorkflowFilterProps) {
+    function setLabel(name: string, value: string) {
+        props.onChange(props.namespace, props.selectedPhases, [name.concat('=' + value)], props.createdAfter, props.finishedBefore);
     }
 
-    private set cronWorkflow(value: string) {
-        this.setLabel(models.labels.cronWorkflow, value);
+    function setWorkflowTemplate(value: string) {
+        setLabel(models.labels.workflowTemplate, value);
     }
 
-    private get labelSuggestion() {
-        return this.getLabelSuggestions(this.props.workflows);
+    function setCronWorkflow(value: string) {
+        setLabel(models.labels.cronWorkflow, value);
     }
 
-    public render() {
-        return (
-            <div className='wf-filters-container'>
-                <div className='row'>
-                    <div className='columns small-2 xlarge-12'>
-                        <p className='wf-filters-container__title'>Namespace</p>
-                        <NamespaceFilter
-                            value={this.props.namespace}
-                            onChange={ns => {
-                                this.props.onChange(ns, this.props.selectedPhases, this.props.selectedLabels, this.props.createdAfter, this.props.finishedBefore);
-                            }}
-                        />
-                    </div>
-                    <div className='columns small-2 xlarge-12'>
-                        <p className='wf-filters-container__title'>Labels</p>
-                        <TagsInput
-                            placeholder=''
-                            autocomplete={this.labelSuggestion}
-                            tags={this.props.selectedLabels}
-                            onChange={tags => {
-                                this.props.onChange(this.props.namespace, this.props.selectedPhases, tags, this.props.createdAfter, this.props.finishedBefore);
-                            }}
-                        />
-                    </div>
-                    <div className='columns small-2 xlarge-12'>
-                        <p className='wf-filters-container__title'>Workflow Template</p>
-                        <DataLoaderDropdown
-                            load={() =>
-                                services.workflowTemplate
-                                    .list(this.props.namespace, [])
-                                    .then(list => list.items || [])
-                                    .then(list => list.map(x => x.metadata.name))
-                            }
-                            onChange={value => (this.workflowTemplate = value)}
-                        />
-                    </div>
-                    <div className='columns small-2 xlarge-12'>
-                        <p className='wf-filters-container__title'>Cron Workflow</p>
-                        <DataLoaderDropdown
-                            load={() => services.cronWorkflows.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
-                            onChange={value => (this.cronWorkflow = value)}
-                        />
-                    </div>
-                    <div className='columns small-4 xlarge-12'>
-                        <p className='wf-filters-container__title'>Phases</p>
-                        <CheckboxFilter
-                            selected={this.props.selectedPhases}
-                            onChange={selected => {
-                                this.props.onChange(
-                                    this.props.namespace,
-                                    selected.map(x => x as WorkflowPhase),
-                                    this.props.selectedLabels,
-                                    this.props.createdAfter,
-                                    this.props.finishedBefore
-                                );
-                            }}
-                            items={this.getPhaseItems(this.props.workflows)}
-                            type='phase'
-                        />
-                    </div>
-                    <div className='columns small-5 xlarge-12'>
-                        <p className='wf-filters-container__title'>Created Since</p>
-                        <div className='wf-filters-container__content'>
-                            <DatePicker
-                                selected={this.props.createdAfter}
-                                onChange={date => {
-                                    this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, date, this.props.finishedBefore);
-                                }}
-                                placeholderText='From'
-                                dateFormat='dd MMM yyyy'
-                                todayButton='Today'
-                                className='argo-field argo-textarea'
-                            />
-                            <a
-                                onClick={() => {
-                                    this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, undefined, this.props.finishedBefore);
-                                }}>
-                                <i className='fa fa-times-circle' />
-                            </a>
-                        </div>
-                        <p className='wf-filters-container__title'>Finished Before</p>
-                        <div className='wf-filters-container__content'>
-                            <DatePicker
-                                selected={this.props.finishedBefore}
-                                onChange={date => {
-                                    this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, this.props.createdAfter, date);
-                                }}
-                                placeholderText='To'
-                                dateFormat='dd MMM yyyy'
-                                todayButton='Today'
-                                className='argo-field argo-textarea'
-                            />
-                            <a
-                                onClick={() => {
-                                    this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, this.props.createdAfter, undefined);
-                                }}>
-                                <i className='fa fa-times-circle' />
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    const labelSuggestion = useMemo(() => {
+        return getLabelSuggestions(props.workflows);
+    }, [props.workflows]);
 
-    private setLabel(name: string, value: string) {
-        this.props.onChange(this.props.namespace, this.props.selectedPhases, [name.concat('=' + value)], this.props.createdAfter, this.props.finishedBefore);
-    }
-
-    private getPhaseItems(workflows: models.Workflow[]) {
+    const phaseItems = useMemo(() => {
         const phasesMap = new Map<string, number>();
-        this.props.phaseItems.forEach(value => phasesMap.set(value, 0));
-        workflows.filter(wf => wf.status.phase).forEach(wf => phasesMap.set(wf.status.phase, (phasesMap.get(wf.status.phase) || 0) + 1));
+        props.phaseItems.forEach(value => phasesMap.set(value, 0));
+        props.workflows.filter(wf => wf.status.phase).forEach(wf => phasesMap.set(wf.status.phase, (phasesMap.get(wf.status.phase) || 0) + 1));
+
         const results = new Array<{name: string; count: number}>();
         phasesMap.forEach((val, key) => {
             results.push({name: key, count: val});
         });
         return results;
-    }
+    }, [props.workflows, props.phaseItems]);
 
-    private addCommonLabel(suggestions: string[]) {
-        const commonLabel = new Array<string>();
-        const commonLabelPool = [models.labels.cronWorkflow, models.labels.workflowTemplate, models.labels.clusterWorkflowTemplate];
-        commonLabelPool.forEach(labelPrefix => {
-            for (const label of suggestions) {
-                if (label.startsWith(labelPrefix)) {
-                    commonLabel.push(`${labelPrefix}`);
-                    break;
-                }
+    return (
+        <div className='wf-filters-container'>
+            <div className='row'>
+                <div className='columns small-2 xlarge-12'>
+                    <p className='wf-filters-container__title'>Namespace</p>
+                    <NamespaceFilter
+                        value={props.namespace}
+                        onChange={ns => {
+                            props.onChange(ns, props.selectedPhases, props.selectedLabels, props.createdAfter, props.finishedBefore);
+                        }}
+                    />
+                </div>
+                <div className='columns small-2 xlarge-12'>
+                    <p className='wf-filters-container__title'>Labels</p>
+                    <TagsInput
+                        placeholder=''
+                        autocomplete={labelSuggestion}
+                        tags={props.selectedLabels}
+                        onChange={tags => {
+                            props.onChange(props.namespace, props.selectedPhases, tags, props.createdAfter, props.finishedBefore);
+                        }}
+                    />
+                </div>
+                <div className='columns small-2 xlarge-12'>
+                    <p className='wf-filters-container__title'>Workflow Template</p>
+                    <DataLoaderDropdown
+                        load={() =>
+                            services.workflowTemplate
+                                .list(props.namespace, [])
+                                .then(list => list.items || [])
+                                .then(list => list.map(x => x.metadata.name))
+                        }
+                        onChange={setWorkflowTemplate}
+                    />
+                </div>
+                <div className='columns small-2 xlarge-12'>
+                    <p className='wf-filters-container__title'>Cron Workflow</p>
+                    <DataLoaderDropdown load={() => services.cronWorkflows.list(props.namespace).then(list => list.map(x => x.metadata.name))} onChange={setCronWorkflow} />
+                </div>
+                <div className='columns small-4 xlarge-12'>
+                    <p className='wf-filters-container__title'>Phases</p>
+                    <CheckboxFilter
+                        selected={props.selectedPhases}
+                        onChange={selected => {
+                            props.onChange(
+                                props.namespace,
+                                selected.map(x => x as WorkflowPhase),
+                                props.selectedLabels,
+                                props.createdAfter,
+                                props.finishedBefore
+                            );
+                        }}
+                        items={phaseItems}
+                        type='phase'
+                    />
+                </div>
+                <div className='columns small-5 xlarge-12'>
+                    <p className='wf-filters-container__title'>Created Since</p>
+                    <div className='wf-filters-container__content'>
+                        <DatePicker
+                            selected={props.createdAfter}
+                            onChange={date => {
+                                props.onChange(props.namespace, props.selectedPhases, props.selectedLabels, date, props.finishedBefore);
+                            }}
+                            placeholderText='From'
+                            dateFormat='dd MMM yyyy'
+                            todayButton='Today'
+                            className='argo-field argo-textarea'
+                        />
+                        <a
+                            onClick={() => {
+                                props.onChange(props.namespace, props.selectedPhases, props.selectedLabels, undefined, props.finishedBefore);
+                            }}>
+                            <i className='fa fa-times-circle' />
+                        </a>
+                    </div>
+                    <p className='wf-filters-container__title'>Finished Before</p>
+                    <div className='wf-filters-container__content'>
+                        <DatePicker
+                            selected={props.finishedBefore}
+                            onChange={date => {
+                                props.onChange(props.namespace, props.selectedPhases, props.selectedLabels, props.createdAfter, date);
+                            }}
+                            placeholderText='To'
+                            dateFormat='dd MMM yyyy'
+                            todayButton='Today'
+                            className='argo-field argo-textarea'
+                        />
+                        <a
+                            onClick={() => {
+                                props.onChange(props.namespace, props.selectedPhases, props.selectedLabels, props.createdAfter, undefined);
+                            }}>
+                            <i className='fa fa-times-circle' />
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function addCommonLabel(suggestions: string[]) {
+    const commonLabel = new Array<string>();
+    const commonLabelPool = [models.labels.cronWorkflow, models.labels.workflowTemplate, models.labels.clusterWorkflowTemplate];
+    commonLabelPool.forEach(labelPrefix => {
+        for (const label of suggestions) {
+            if (label.startsWith(labelPrefix)) {
+                commonLabel.push(`${labelPrefix}`);
+                break;
             }
-        });
-        return commonLabel.concat(suggestions);
-    }
+        }
+    });
+    return commonLabel.concat(suggestions);
+}
 
-    private getLabelSuggestions(workflows: models.Workflow[]) {
-        const suggestions = new Array<string>();
-        workflows
-            .filter(wf => wf.metadata.labels)
-            .forEach(wf => {
-                Object.keys(wf.metadata.labels).forEach(label => {
-                    const value = wf.metadata.labels[label];
-                    const suggestedLabel = `${label}=${value}`;
-                    if (!suggestions.some(v => v === suggestedLabel)) {
-                        suggestions.push(`${label}=${value}`);
-                    }
-                });
+function getLabelSuggestions(workflows: models.Workflow[]) {
+    const suggestions = new Array<string>();
+    workflows
+        .filter(wf => wf.metadata.labels)
+        .forEach(wf => {
+            Object.keys(wf.metadata.labels).forEach(label => {
+                const value = wf.metadata.labels[label];
+                const suggestedLabel = `${label}=${value}`;
+                if (!suggestions.some(v => v === suggestedLabel)) {
+                    suggestions.push(`${label}=${value}`);
+                }
             });
-        return this.addCommonLabel(suggestions.sort((a, b) => a.localeCompare(b)));
-    }
+        });
+    return addCommonLabel(suggestions.sort((a, b) => a.localeCompare(b)));
 }
