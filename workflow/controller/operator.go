@@ -921,9 +921,16 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
-	lastChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+	childNodeIds := getChildNodeIdsRetried(node, woc.wf.Status.Nodes)
+	if len(childNodeIds) == 0 {
+		return node, true, nil
+	}
+	lastChildNode, err := woc.wf.Status.Nodes.Get(childNodeIds[len(childNodeIds)-1])
+	if err != nil {
+		return node, true, nil
+	}
 
-	if retryStrategy.Expression != "" && len(node.Children) > 0 {
+	if retryStrategy.Expression != "" && len(childNodeIds) > 0 {
 		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
 		scope := env.GetFuncMap(localScope)
 		shouldContinue, err := argoexpr.EvalBool(retryStrategy.Expression, scope)
@@ -964,12 +971,15 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if retryStrategy.Backoff != nil {
 		maxDurationDeadline := time.Time{}
 		// Process max duration limit
-		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
+		if retryStrategy.Backoff.MaxDuration != "" && len(childNodeIds) > 0 {
 			maxDuration, err := parseStringToDuration(retryStrategy.Backoff.MaxDuration)
 			if err != nil {
 				return nil, false, err
 			}
-			firstChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, 0)
+			firstChildNode, err := woc.wf.Status.Nodes.Get(childNodeIds[0])
+			if err != nil {
+				return nil, false, err
+			}
 			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
 				woc.log.Infoln("Max duration limit exceeded. Failing...")
@@ -995,7 +1005,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		if retryStrategyBackoffFactor != nil && *retryStrategyBackoffFactor > 0 {
 			// Formula: timeToWait = duration * factor^retry_number
 			// Note that timeToWait should equal to duration for the first retry attempt.
-			timeToWait = baseDuration * time.Duration(math.Pow(float64(*retryStrategyBackoffFactor), float64(len(node.Children)-1)))
+			timeToWait = baseDuration * time.Duration(math.Pow(float64(*retryStrategyBackoffFactor), float64(len(childNodeIds)-1)))
 		}
 		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
 
@@ -1006,7 +1016,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		// See if we have waited past the deadline
-		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= int32(retryStrategy.Limit.IntValue()) {
+		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(childNodeIds)) <= int32(retryStrategy.Limit.IntValue()) {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
@@ -1054,12 +1064,12 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if err != nil {
 		return nil, false, err
 	}
-	if retryStrategy.Limit != nil && limit != nil && int32(len(node.Children)) > *limit {
+	if retryStrategy.Limit != nil && limit != nil && int32(len(childNodeIds)) > *limit {
 		woc.log.Infoln("No more retries left. Failing...")
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), true, nil
 	}
 
-	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(node.Children), node.Name)
+	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(childNodeIds), node.Name)
 	return node, true, nil
 }
 
@@ -1719,6 +1729,21 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	return &lastChildNode
 }
 
+func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
+	childrenIds := []string{}
+	r := regexp.MustCompile(`^` + regexp.QuoteMeta(node.Name) + `\(\d+\)`)
+	for i := 0; i < len(node.Children); i++ {
+		n := getChildNodeIndex(node, nodes, i)
+		if node == nil {
+			continue
+		}
+		if r.MatchString(n.Name) {
+			childrenIds = append(childrenIds, n.ID)
+		}
+	}
+	return childrenIds
+}
+
 func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
 	// To resume the traversal, we look at the children of the last child node and of any on exit nodes.
@@ -1741,9 +1766,16 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope := make(map[string]interface{})
 
 	// `retries` variable
-	localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
+	childNodeIds := getChildNodeIdsRetried(node, nodes)
+	if len(childNodeIds) == 0 {
+		return localScope
+	}
+	localScope[common.LocalVarRetries] = strconv.Itoa(len(childNodeIds) - 1)
 
-	lastChildNode := getChildNodeIndex(node, nodes, -1)
+	lastChildNode, err := nodes.Get(childNodeIds[len(childNodeIds)-1])
+	if err != nil {
+		return localScope
+	}
 
 	exitCode := "-1"
 	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
@@ -2028,8 +2060,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			nodeName = lastChildNode.Name
 			node = lastChildNode
 		} else {
+			retryNum := len(getChildNodeIdsRetried(retryParentNode, woc.wf.Status.Nodes))
 			// Create a new child node and append it to the retry node.
-			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
+			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
 
@@ -2039,7 +2072,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
 			}
 			// Inject the retryAttempt number
-			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
+			localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
 
 			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
 			if errorsutil.IsTransientErr(err) {
