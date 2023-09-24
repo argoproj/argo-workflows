@@ -78,18 +78,22 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Workflow Template</p>
                     <DataLoaderDropdown
-                        load={() =>
-                            services.workflowTemplate
-                                .list(props.namespace, [])
-                                .then(list => list.items || [])
-                                .then(list => list.map(x => x.metadata.name))
-                        }
+                        load={async () => {
+                            const list = await services.workflowTemplate.list(props.namespace, []);
+                            return (list.items || []).map(x => x.metadata.name);
+                        }}
                         onChange={setWorkflowTemplate}
                     />
                 </div>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Cron Workflow</p>
-                    <DataLoaderDropdown load={() => services.cronWorkflows.list(props.namespace).then(list => list.map(x => x.metadata.name))} onChange={setCronWorkflow} />
+                    <DataLoaderDropdown
+                        load={async () => {
+                            const list = await services.cronWorkflows.list(props.namespace);
+                            return list.map(x => x.metadata.name);
+                        }}
+                        onChange={setCronWorkflow}
+                    />
                 </div>
                 <div className='columns small-4 xlarge-12'>
                     <p className='wf-filters-container__title'>Phases</p>
