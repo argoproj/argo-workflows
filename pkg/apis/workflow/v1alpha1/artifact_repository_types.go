@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"path"
+	"strings"
 )
 
 var (
@@ -73,7 +74,7 @@ func (a *ArtifactRepository) ToArtifactLocation() *ArtifactLocation {
 type S3ArtifactRepository struct {
 	S3Bucket `json:",inline" protobuf:"bytes,1,opt,name=s3Bucket"`
 
-	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	// KeyFormat defines the format of how to store keys and can reference workflow variables.
 	KeyFormat string `json:"keyFormat,omitempty" protobuf:"bytes,2,opt,name=keyFormat"`
 
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
@@ -93,7 +94,7 @@ func (r *S3ArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
 type OSSArtifactRepository struct {
 	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
 
-	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	// KeyFormat defines the format of how to store keys and can reference workflow variables.
 	KeyFormat string `json:"keyFormat,omitempty" protobuf:"bytes,2,opt,name=keyFormat"`
 }
 
@@ -109,7 +110,7 @@ func (r *OSSArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
 type GCSArtifactRepository struct {
 	GCSBucket `json:",inline" protobuf:"bytes,1,opt,name=gCSBucket"`
 
-	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	// KeyFormat defines the format of how to store keys and can reference workflow variables.
 	KeyFormat string `json:"keyFormat,omitempty" protobuf:"bytes,2,opt,name=keyFormat"`
 }
 
@@ -126,15 +127,20 @@ type ArtifactoryArtifactRepository struct {
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,1,opt,name=artifactoryAuth"`
 	// RepoURL is the url for artifactory repo.
 	RepoURL string `json:"repoURL,omitempty" protobuf:"bytes,2,opt,name=repoURL"`
+	// KeyFormat defines the format of how to store keys and can reference workflow variables.
+	KeyFormat string `json:"keyFormat,omitempty" protobuf:"bytes,3,opt,name=keyFormat"`
 }
 
 func (r *ArtifactoryArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
-	u := ""
-	if r.RepoURL != "" {
-		u = r.RepoURL + "/"
+	url := r.RepoURL
+	if !strings.HasSuffix(url, "/") {
+		url = url + "/"
 	}
-	u = fmt.Sprintf("%s%s", u, DefaultArchivePattern)
-	l.Artifactory = &ArtifactoryArtifact{ArtifactoryAuth: r.ArtifactoryAuth, URL: u}
+	k := r.KeyFormat
+	if k == "" {
+		k = DefaultArchivePattern
+	}
+	l.Artifactory = &ArtifactoryArtifact{ArtifactoryAuth: r.ArtifactoryAuth, URL: fmt.Sprintf("%s%s", url, k)}
 }
 
 // AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository

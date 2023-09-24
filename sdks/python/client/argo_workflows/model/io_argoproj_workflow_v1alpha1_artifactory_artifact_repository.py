@@ -87,6 +87,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
         """
         lazy_import()
         return {
+            'key_format': (str,),  # noqa: E501
             'password_secret': (SecretKeySelector,),  # noqa: E501
             'repo_url': (str,),  # noqa: E501
             'username_secret': (SecretKeySelector,),  # noqa: E501
@@ -98,6 +99,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
 
 
     attribute_map = {
+        'key_format': 'keyFormat',  # noqa: E501
         'password_secret': 'passwordSecret',  # noqa: E501
         'repo_url': 'repoURL',  # noqa: E501
         'username_secret': 'usernameSecret',  # noqa: E501
@@ -144,6 +146,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
             repo_url (str): RepoURL is the url for artifactory repo.. [optional]  # noqa: E501
             username_secret (SecretKeySelector): [optional]  # noqa: E501
@@ -228,6 +231,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
             repo_url (str): RepoURL is the url for artifactory repo.. [optional]  # noqa: E501
             username_secret (SecretKeySelector): [optional]  # noqa: E501

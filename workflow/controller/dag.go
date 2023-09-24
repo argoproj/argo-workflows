@@ -157,7 +157,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 
 		node, err := nodes.Get(curr.nodeId)
 		if err != nil {
-			return "", err
+			// this is okay, this means that
+			// we are still running
+			return wfv1.NodeRunning, nil
 		}
 		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes
 		branchPhase := curr.phase
@@ -586,6 +588,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			case ErrDeadlineExceeded:
 				return
 			case ErrParallelismReached:
+			case ErrMaxDepthExceeded:
 			case ErrTimeout:
 				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
 				return

@@ -4128,6 +4128,7 @@ ArtifactoryArtifactRepository defines the controller configuration for an artifa
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
 |`repoURL`|`string`|RepoURL is the url for artifactory repo.|
 |`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
@@ -4171,7 +4172,7 @@ GCSArtifactRepository defines the controller configuration for a GCS artifact re
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`bucket`|`string`|Bucket is the name of the bucket|
-|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |`serviceAccountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServiceAccountKeySecret is the secret selector to the bucket's service account key|
 
 ## HDFSArtifactRepository
@@ -4217,7 +4218,7 @@ OSSArtifactRepository defines the controller configuration for an OSS artifact r
 |`bucket`|`string`|Bucket is the name of the bucket|
 |`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
-|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
@@ -4237,7 +4238,7 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |`encryptionOptions`|[`S3EncryptionOptions`](#s3encryptionoptions)|_No description available_|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
-|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |~~`keyPrefix`~~|~~`string`~~|~~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~~ DEPRECATED. Use KeyFormat instead|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|

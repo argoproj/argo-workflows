@@ -7,4 +7,7 @@ const (
 
 	WorkflowTemplates                          = root + "/workflow-templates/"
 	WorkflowTemplatesReferencingOtherTemplates = WorkflowTemplates + "#referencing-other-workflowtemplates"
+
+	Scaling                        = root + "/scaling.md"
+	ConfigureMaximumRecursionDepth = Scaling + "#maximum-recursion-depth"
 )
