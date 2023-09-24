@@ -12,6 +12,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -57,7 +58,7 @@ const ANIMATION_BUFFER_MS = 20;
 // component to render with the updated state.
 let globalDeleteArchived = false;
 
-const DeleteCheck = (props: {isWfInDB: boolean; isWfInCluster: boolean}) => {
+function DeleteCheck(props: {isWfInDB: boolean; isWfInCluster: boolean}) {
     // The local states are created intentionally so that the checkbox works as expected
     const [da, sda] = useState(false);
     if (props.isWfInDB && props.isWfInCluster) {
@@ -86,9 +87,9 @@ const DeleteCheck = (props: {isWfInDB: boolean; isWfInCluster: boolean}) => {
             </>
         );
     }
-};
+}
 
-export const WorkflowDetails = ({history, location, match}: RouteComponentProps<any>) => {
+export function WorkflowDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -129,7 +130,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         [history]
     );
 
-    const getInputParametersForNode = (selectedWorkflowNodeId: string): Parameter[] => {
+    function getInputParametersForNode(selectedWorkflowNodeId: string): Parameter[] {
         const selectedWorkflowNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[selectedWorkflowNodeId];
         return (
             selectedWorkflowNode?.inputs?.parameters?.map(param => {
@@ -140,7 +141,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 return paramClone;
             }) || []
         );
-    };
+    }
 
     useEffect(() => {
         // update the default Artifact Repository for the Template that corresponds to the selectedArtifact
@@ -163,12 +164,17 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
     useEffect(() => {
-        services.info
-            .getInfo()
-            .then(info => setLinks(info.links))
-            .catch(setError);
-        services.info.collectEvent('openedWorkflowDetails').then();
+        (async () => {
+            try {
+                const info = await services.info.getInfo();
+                setLinks(info.links);
+            } catch (err) {
+                setError(err);
+            }
+        })();
     }, []);
+
+    useCollectEvent('openedWorkflowDetails');
 
     useEffect(() => {
         setParameters(getInputParametersForNode(nodeId));
@@ -176,7 +182,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const parsedSidePanel = parseSidePanelParam(sidePanel);
 
-    const getItems = () => {
+    function getItems() {
         const workflowOperationsMap: WorkflowOperations = Operations.WorkflowOperationsMap;
         const items = Object.keys(workflowOperationsMap)
             .filter(actionName => !workflowOperationsMap[actionName].disabled(workflow))
@@ -297,15 +303,15 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }
 
         return items;
-    };
+    }
 
-    const renderSecurityNudge = () => {
+    function renderSecurityNudge() {
         if (!execSpec(workflow).securityContext) {
             return <SecurityNudge>This workflow does not have security context set. It maybe possible to set this to run it more securely.</SecurityNudge>;
         }
-    };
+    }
 
-    const renderCostOptimisations = () => {
+    function renderCostOptimisations() {
         const recommendations: string[] = [];
         if (!execSpec(workflow).activeDeadlineSeconds) {
             recommendations.push('activeDeadlineSeconds');
@@ -324,9 +330,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 You do not have {recommendations.join('/')} enabled for this workflow. Enabling these will reduce your costs.
             </CostOptimisationNudge>
         );
-    };
+    }
 
-    const renderSummaryTab = () => {
+    function renderSummaryTab() {
         return (
             <>
                 {!workflow ? (
@@ -353,7 +359,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 )}
             </>
         );
-    };
+    }
+
     useEffect(() => {
         if (!isWorkflowInCluster(workflow)) {
             return;
@@ -388,45 +395,40 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     // Get workflow
     useEffect(() => {
-        const getWf = async () => {
+        (async () => {
             let archivedWf: Workflow;
             if (uid !== '') {
-                await services.workflows
-                    .getArchived(namespace, uid)
-                    .then(wf => {
-                        setError(null);
-                        archivedWf = wf;
-                    })
-                    .catch(err => {
-                        if (err.status !== 404) {
-                            setError(err);
-                        }
-                    });
-            }
-            await services.workflows
-                .get(namespace, name)
-                .then(wf => {
+                try {
+                    archivedWf = await services.workflows.getArchived(namespace, uid);
                     setError(null);
-                    // If we find live workflow which has same uid, we use live workflow.
-                    if (!archivedWf || archivedWf.metadata.uid === wf.metadata.uid) {
-                        setWorkflow(wf);
-                        setUid(wf.metadata.uid);
-                    } else {
-                        setWorkflow(archivedWf);
-                    }
-                })
-                .catch(err => {
-                    if (archivedWf) {
-                        setWorkflow(archivedWf);
-                    } else {
+                } catch (err) {
+                    if (err.status !== 404) {
                         setError(err);
                     }
-                });
-        };
-        getWf();
+                }
+            }
+
+            try {
+                const wf = await services.workflows.get(namespace, name);
+                setError(null);
+                // If we find live workflow which has same uid, we use live workflow.
+                if (!archivedWf || archivedWf.metadata.uid === wf.metadata.uid) {
+                    setWorkflow(wf);
+                    setUid(wf.metadata.uid);
+                } else {
+                    setWorkflow(archivedWf);
+                }
+            } catch (err) {
+                if (archivedWf) {
+                    setWorkflow(archivedWf);
+                } else {
+                    setError(err);
+                }
+            }
+        })();
     }, [namespace, name, uid]);
 
-    const openLink = (link: Link) => {
+    function openLink(link: Link) {
         const object = {
             metadata: {
                 namespace: workflow.metadata.namespace,
@@ -445,9 +447,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         } else {
             document.location.href = url;
         }
-    };
+    }
 
-    const setParameter = (key: string, value: string) => {
+    function setParameter(key: string, value: string) {
         setParameters(previous => {
             return previous?.map(parameter => {
                 if (parameter.name === key) {
@@ -456,33 +458,33 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 return parameter;
             });
         });
-    };
+    }
 
-    const renderSuspendNodeOptions = () => {
+    function renderSuspendNodeOptions() {
         return <SuspendInputs parameters={parameters} nodeId={nodeId} setParameter={setParameter} />;
-    };
+    }
 
-    const getParametersAsJsonString = () => {
+    function getParametersAsJsonString() {
         const outputVariables: {[x: string]: string} = {};
         parameters.forEach(param => {
             outputVariables[param.name] = param.value;
         });
         return JSON.stringify(outputVariables);
-    };
+    }
 
-    const updateOutputParametersForNodeIfRequired = () => {
+    function updateOutputParametersForNodeIfRequired() {
         // No need to set outputs on node if there are no parameters
         if (parameters.length > 0) {
             return services.workflows.set(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId, getParametersAsJsonString());
         }
         return Promise.resolve(null);
-    };
+    }
 
-    const resumeNode = () => {
+    function resumeNode() {
         return services.workflows.resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId);
-    };
+    }
 
-    const renderResumePopup = () => {
+    function renderResumePopup() {
         return popup.confirm('Confirm', renderSuspendNodeOptions).then(yes => {
             if (!yes) {
                 return;
@@ -492,9 +494,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 .then(resumeNode)
                 .catch(setError);
         });
-    };
+    }
 
-    const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
+    function ensurePodName(wf: Workflow, node: NodeStatus, nodeID: string): string {
         if (workflow && node) {
             const annotations = workflow.metadata.annotations || {};
             const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
@@ -503,7 +505,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }
 
         return nodeID;
-    };
+    }
 
     const podName = ensurePodName(workflow, selectedNode, nodeId);
 
@@ -602,4 +604,4 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             )}
         </Page>
     );
-};
+}
