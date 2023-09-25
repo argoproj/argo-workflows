@@ -1,19 +1,20 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {labels, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
-
-import {BasePage} from '../../../shared/components/base-page';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
-import {Consumer} from '../../../shared/context';
+import {Context} from '../../../shared/context';
+import {historyUrl} from '../../../shared/history';
 import {ListWatch, sortByYouth} from '../../../shared/list-watch';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
@@ -27,22 +28,6 @@ import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflow
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
 require('./workflows-list.scss');
-
-interface State {
-    namespace: string;
-    pagination: Pagination;
-    selectedPhases: WorkflowPhase[];
-    selectedLabels: string[];
-    createdAfter?: Date;
-    finishedBefore?: Date;
-    selectedWorkflows: Map<string, models.Workflow>;
-    workflows?: Workflow[];
-    resourceVersion?: string;
-    error?: Error;
-    batchActionDisabled: Actions.OperationDisabled;
-    links: models.Link[];
-    columns: models.Column[];
-}
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
@@ -60,250 +45,137 @@ const allBatchActionsEnabled: Actions.OperationDisabled = {
     DELETE: false
 };
 
-export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
-    private storage: ScopedLocalStorage;
+const storage = new ScopedLocalStorage('ListOptions');
 
-    private get sidePanel() {
-        return this.queryParam('sidePanel');
-    }
+export function WorkflowsList({match, location, history}: RouteComponentProps<any>) {
+    const queryParams = new URLSearchParams(location.search);
+    const {navigation} = useContext(Context);
 
-    private get filterParams() {
-        const params = new URLSearchParams();
-        if (this.state.selectedPhases) {
-            this.state.selectedPhases.forEach(phase => {
-                params.append('phase', phase);
-            });
-        }
-        if (this.state.selectedLabels) {
-            this.state?.selectedLabels.forEach(label => {
-                params.append('label', label);
-            });
-        }
-        if (this.state.pagination.offset) {
-            params.append('offset', this.state.pagination.offset);
-        }
-        if (this.state.pagination.limit) {
-            params.append('limit', this.state.pagination.limit.toString());
-        }
-        return params;
-    }
-
-    private get options() {
-        const options: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
-        options.selectedPhases = this.state.selectedPhases;
-        options.selectedLabels = this.state.selectedLabels;
-        if (this.state.pagination.limit) {
-            options.paginationLimit = this.state.pagination.limit;
-        }
-        return options;
-    }
-
-    private listWatch: ListWatch<Workflow>;
-
-    constructor(props: RouteComponentProps<State>, context: any) {
-        super(props, context);
-        this.storage = new ScopedLocalStorage('ListOptions');
-        const savedOptions = this.storage.getItem('options', {
-            paginationLimit: 0,
-            selectedPhases: [],
-            selectedLabels: []
-        } as WorkflowListRenderOptions);
-        const phaseQueryParam = this.queryParams('phase');
-        const labelQueryParam = this.queryParams('label');
-        this.state = {
-            pagination: {
-                offset: this.queryParam('offset'),
-                limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 50
-            },
-            namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
-            selectedPhases: phaseQueryParam.length > 0 ? (phaseQueryParam as WorkflowPhase[]) : savedOptions.selectedPhases,
-            selectedLabels: labelQueryParam.length > 0 ? (labelQueryParam as string[]) : savedOptions.selectedLabels,
-            selectedWorkflows: new Map<string, models.Workflow>(),
-            batchActionDisabled: {...allBatchActionsEnabled},
-            links: [],
-            columns: []
+    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [pagination, setPagination] = useState<Pagination>(() => {
+        const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || 0;
+        return {
+            offset: queryParams.get('name'),
+            limit: parseLimit(queryParams.get('limit')) || savedPaginationLimit || 50
         };
+    });
+    const [selectedPhases, setSelectedPhases] = useState<WorkflowPhase[]>(() => {
+        const savedPhases = storage.getItem('options', {}).selectedPhases || [];
+        const phaseQueryParam = queryParams.getAll('phase') as WorkflowPhase[];
+        return phaseQueryParam.length > 0 ? phaseQueryParam : savedPhases;
+    });
+    const [selectedLabels, setSelectedLabels] = useState<string[]>(() => {
+        const savedLabels = storage.getItem('options', {}).selectedLabels || [];
+        const labelQueryParam = queryParams.getAll('label');
+        return labelQueryParam.length > 0 ? labelQueryParam : savedLabels;
+    });
+    const [createdAfter, setCreatedAfter] = useState<Date>();
+    const [finishedBefore, setFinishedBefore] = useState<Date>();
+    const [selectedWorkflows, setSelectedWorkflows] = useState(new Map<string, models.Workflow>());
+    const [batchActionDisabled, setBatchActionDisabled] = useState({...allBatchActionsEnabled});
+    const [workflows, setWorkflows] = useState<Workflow[]>();
+    const [links, setLinks] = useState<models.Link[]>([]);
+    const [columns, setColumns] = useState<models.Column[]>([]);
+    const [error, setError] = useState<Error>();
+
+    const listWatch = useRef<ListWatch<Workflow>>(null);
+
+    function getSidePanel() {
+        return queryParams.get('sidePanel');
     }
 
-    public componentDidMount(): void {
-        services.info.getInfo().then(info => {
-            const links = (info.links || []).filter(link => link.scope === 'workflow-list');
-            this.setState({links, columns: info.columns});
-        });
-        this.setState({selectedWorkflows: new Map<string, models.Workflow>()}, () => {
-            this.fetchWorkflows(
-                this.state.namespace,
-                this.state.selectedPhases,
-                this.state.selectedLabels,
-                this.state.createdAfter,
-                this.state.finishedBefore,
-                this.state.pagination
-            );
-        });
-        services.info.collectEvent('openedWorkflowList').then();
-    }
-
-    public componentWillUnmount(): void {
-        this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
-        if (this.listWatch) {
-            this.listWatch.stop();
+    function updateCurrentlySelectedAndBatchActions(newSelectedWorkflows: Map<string, Workflow>): void {
+        const actions: any = Actions.WorkflowOperationsMap;
+        const nowDisabled: any = {...allBatchActionsEnabled};
+        for (const action of Object.keys(nowDisabled)) {
+            for (const wf of Array.from(newSelectedWorkflows.values())) {
+                nowDisabled[action] = nowDisabled[action] || actions[action].disabled(wf);
+            }
         }
+        setBatchActionDisabled(nowDisabled);
+        setSelectedWorkflows(new Map<string, models.Workflow>(newSelectedWorkflows));
     }
 
-    public render() {
-        return (
-            <Consumer>
-                {ctx => (
-                    <Page
-                        title='Workflows'
-                        toolbar={{
-                            breadcrumbs: [
-                                {title: 'Workflows', path: uiUrl('workflows')},
-                                {title: this.state.namespace, path: uiUrl('workflows/' + this.state.namespace)}
-                            ],
-                            actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Submit New Workflow',
-                                        iconClassName: 'fa fa-plus',
-                                        action: () => ctx.navigation.goto('.', {sidePanel: 'submit-new-workflow'})
-                                    },
-                                    ...this.state.links.map(link => ({
-                                        title: link.name,
-                                        iconClassName: 'fa fa-external-link',
-                                        action: () => (window.location.href = link.url)
-                                    }))
-                                ]
-                            }
-                        }}>
-                        <WorkflowsToolbar
-                            selectedWorkflows={this.state.selectedWorkflows}
-                            clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
-                            loadWorkflows={() => {
-                                this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
-                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.createdAfter, this.state.finishedBefore, {
-                                    limit: this.state.pagination.limit
-                                });
-                            }}
-                            isDisabled={this.state.batchActionDisabled}
-                        />
-                        <div className={`row ${this.state.selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
-                            <div className='columns small-12 xlarge-2'>
-                                <WorkflowsSummaryContainer workflows={this.state.workflows} />
-                                <div>
-                                    <WorkflowFilters
-                                        workflows={this.state.workflows || []}
-                                        namespace={this.state.namespace}
-                                        phaseItems={WorkflowPhases}
-                                        selectedPhases={this.state.selectedPhases}
-                                        selectedLabels={this.state.selectedLabels}
-                                        createdAfter={this.state.createdAfter}
-                                        finishedBefore={this.state.finishedBefore}
-                                        onChange={(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore) =>
-                                            this.changeFilters(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, {limit: this.state.pagination.limit})
-                                        }
-                                    />
-                                </div>
-                            </div>
-                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
-                        </div>
-                        <SlidingPanel isShown={!!this.sidePanel} onClose={() => ctx.navigation.goto('.', {sidePanel: null})}>
-                            {this.sidePanel === 'submit-new-workflow' && (
-                                <WorkflowCreator
-                                    namespace={Utils.getNamespaceWithDefault(this.state.namespace)}
-                                    onCreate={wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
-                                />
-                            )}
-                        </SlidingPanel>
-                    </Page>
-                )}
-            </Consumer>
-        );
-    }
-
-    private nullSafeTimeFilter(createdAfter: Date, finishedBefore: Date, w: Workflow): boolean {
-        const createdAt = w.metadata.creationTimestamp; // this should always be defined
-        const finishedAt = w.status.finishedAt; // this can be undefined
-        const createdDate: Date = new Date(createdAt);
-        const finishedDate: Date = new Date(finishedAt);
-
-        // check for undefined date filters as well
-        // equivalent to back-end logic: https://github.com/argoproj/argo-workflows/blob/f5e31f8f36b32883087f783cb1227490bbe36bbd/pkg/apis/workflow/v1alpha1/workflow_types.go#L222
-        if (createdAfter && finishedBefore) {
-            return createdDate > createdAfter && finishedAt && finishedDate < finishedBefore;
-        } else if (createdAfter && !finishedBefore) {
-            return createdDate > createdAfter;
-        } else if (!createdAfter && finishedBefore) {
-            return finishedAt && finishedDate < finishedBefore;
-        } else {
-            return true;
+    function saveHistory(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], pagination: Pagination) {
+        const options: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
+        options.selectedPhases = selectedPhases;
+        options.selectedLabels = selectedLabels;
+        if (pagination.limit) {
+            options.paginationLimit = pagination.limit;
         }
+        storage.setItem('options', options, {} as WorkflowListRenderOptions);
+
+        const params = new URLSearchParams();
+        selectedPhases?.forEach(phase => params.append('phase', phase));
+        selectedLabels?.forEach(label => params.append('label', label));
+        if (pagination.offset) {
+            params.append('offset', pagination.offset);
+        }
+        if (pagination.limit) {
+            params.append('limit', pagination.limit.toString());
+        }
+        history.push(historyUrl('workflows' + (Utils.managedNamespace ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
     }
 
-    private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], createdAfter: Date, finishedBefore: Date, pagination: Pagination): void {
-        if (this.listWatch) {
-            this.listWatch.stop();
-        }
-        this.listWatch = new ListWatch(
+    function fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], createdAfter: Date, finishedBefore: Date, pagination: Pagination): void {
+        listWatch.current?.stop();
+        listWatch.current = new ListWatch(
             () =>
                 services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(x => {
-                    x.items = x.items?.filter(w => this.nullSafeTimeFilter(createdAfter, finishedBefore, w));
+                    x.items = x.items?.filter(w => nullSafeTimeFilter(createdAfter, finishedBefore, w));
                     return x;
                 }),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
-            metadata =>
-                this.setState(
-                    {
-                        error: null,
-                        namespace,
-                        pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue},
-                        selectedPhases,
-                        selectedLabels,
-                        createdAfter,
-                        finishedBefore,
-                        selectedWorkflows: new Map<string, models.Workflow>()
-                    },
-                    this.saveHistory
-                ),
-            () => this.setState({error: null}),
-            workflows => this.setState({workflows: workflows.slice(0, this.state.pagination.limit || 999999)}),
-            error => this.setState({error}),
+            metadata => {
+                setError(null);
+                setNamespace(namespace);
+                setPagination({offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue});
+                setSelectedPhases(selectedPhases);
+                setSelectedLabels(selectedLabels);
+                setCreatedAfter(createdAfter);
+                setFinishedBefore(finishedBefore);
+                setSelectedWorkflows(new Map<string, models.Workflow>());
+                saveHistory(namespace, selectedPhases, selectedLabels, pagination);
+            },
+            () => setError(null),
+            workflows => setWorkflows(workflows.slice(0, pagination.limit || 999999)),
+            err => setError(err),
             sortByYouth
         );
-        this.listWatch.start();
+        listWatch.current.start();
     }
 
-    private changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], createdAfter: Date, finishedBefore: Date, pagination: Pagination) {
-        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, pagination);
+    function changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], createdAfter: Date, finishedBefore: Date, pagination: Pagination) {
+        fetchWorkflows(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, pagination);
     }
 
-    private saveHistory() {
-        this.storage.setItem('options', this.options, {} as WorkflowListRenderOptions);
-        const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
-        this.url = uiUrl('workflows' + (newNamespace ? '/' + newNamespace : '') + '?' + this.filterParams.toString());
-        Utils.currentNamespace = this.state.namespace;
-    }
+    useEffect(() => {
+        (async () => {
+            const info = await services.info.getInfo();
+            setLinks((info.links || []).filter(link => link.scope === 'workflow-list'));
+            setColumns(info.columns);
+        })();
+    }, []);
 
-    private countsByCompleted() {
-        const counts = {complete: 0, incomplete: 0};
-        (this.state.workflows || []).forEach(wf => {
-            if (wf.metadata?.labels && wf.metadata?.labels[labels.completed] === 'true') {
-                counts.complete++;
-            } else {
-                counts.incomplete++;
-            }
-        });
-        return counts;
-    }
+    useEffect(() => {
+        fetchWorkflows(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, pagination);
 
-    private renderWorkflows() {
-        const counts = this.countsByCompleted();
+        return () => {
+            setSelectedWorkflows(new Map<string, models.Workflow>());
+            listWatch.current?.stop();
+        };
+    }, []);
+
+    useCollectEvent('openedWorkflowList');
+
+    function renderWorkflows() {
+        const counts = countsByCompleted(workflows);
         return (
             <>
-                <ErrorNotice error={this.state.error} />
-                {!this.state.workflows ? (
+                <ErrorNotice error={error} />
+                {!workflows ? (
                     <Loading />
-                ) : this.state.workflows.length === 0 ? (
+                ) : workflows.length === 0 ? (
                     <ZeroState title='No workflows'>
                         <p>To create a new workflow, use the button above.</p>
                         <p>
@@ -323,23 +195,23 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <input
                                         type='checkbox'
                                         className='workflows-list__status--checkbox'
-                                        checked={this.state.workflows.length === this.state.selectedWorkflows.size}
+                                        checked={workflows.length === selectedWorkflows.size}
                                         onClick={e => {
                                             e.stopPropagation();
                                         }}
                                         onChange={e => {
-                                            if (this.state.workflows.length === this.state.selectedWorkflows.size) {
+                                            if (workflows.length === selectedWorkflows.size) {
                                                 // All workflows are selected, deselect them all
-                                                this.updateCurrentlySelectedAndBatchActions(new Map<string, models.Workflow>());
+                                                updateCurrentlySelectedAndBatchActions(new Map<string, models.Workflow>());
                                             } else {
                                                 // Not all workflows are selected, select them all
-                                                const currentlySelected: Map<string, Workflow> = this.state.selectedWorkflows;
-                                                this.state.workflows.forEach(wf => {
+                                                const currentlySelected: Map<string, Workflow> = selectedWorkflows;
+                                                workflows.forEach(wf => {
                                                     if (!currentlySelected.has(wf.metadata.uid)) {
                                                         currentlySelected.set(wf.metadata.uid, wf);
                                                     }
                                                 });
-                                                this.updateCurrentlySelectedAndBatchActions(currentlySelected);
+                                                updateCurrentlySelectedAndBatchActions(currentlySelected);
                                             }
                                         }}
                                     />
@@ -354,7 +226,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <div className='columns small-2'>MESSAGE</div>
                                     <div className='columns small-1'>DETAILS</div>
                                     <div className='columns small-1'>ARCHIVED</div>
-                                    {(this.state.columns || []).map(col => {
+                                    {(columns || []).map(col => {
                                         return (
                                             <div className='columns small-1' key={col.key}>
                                                 {col.name}
@@ -363,59 +235,43 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     })}
                                 </div>
                             </div>
-                            {this.state.workflows.map(wf => {
+                            {workflows.map(wf => {
                                 return (
                                     <WorkflowsRow
                                         workflow={wf}
                                         key={wf.metadata.uid}
-                                        checked={this.state.selectedWorkflows.has(wf.metadata.uid)}
-                                        columns={this.state.columns}
+                                        checked={selectedWorkflows.has(wf.metadata.uid)}
+                                        columns={columns}
                                         onChange={key => {
                                             const value = `${key}=${wf.metadata?.labels[key]}`;
                                             let newTags: string[] = [];
-                                            if (this.state.selectedLabels.indexOf(value) === -1) {
-                                                newTags = this.state.selectedLabels.concat(value);
-                                                this.setState({selectedLabels: newTags});
+                                            if (selectedLabels.indexOf(value) === -1) {
+                                                newTags = selectedLabels.concat(value);
+                                                setSelectedLabels(newTags);
                                             }
-                                            this.changeFilters(
-                                                this.state.namespace,
-                                                this.state.selectedPhases,
-                                                newTags,
-                                                this.state.createdAfter,
-                                                this.state.finishedBefore,
-                                                this.state.pagination
-                                            );
+                                            changeFilters(namespace, selectedPhases, newTags, createdAfter, finishedBefore, pagination);
                                         }}
                                         select={subWf => {
                                             const wfUID = subWf.metadata.uid;
                                             if (!wfUID) {
                                                 return;
                                             }
-                                            const currentlySelected: Map<string, Workflow> = this.state.selectedWorkflows;
+                                            const currentlySelected: Map<string, Workflow> = selectedWorkflows;
                                             if (!currentlySelected.has(wfUID)) {
                                                 currentlySelected.set(wfUID, subWf);
                                             } else {
                                                 currentlySelected.delete(wfUID);
                                             }
-                                            this.updateCurrentlySelectedAndBatchActions(currentlySelected);
+                                            updateCurrentlySelectedAndBatchActions(currentlySelected);
                                         }}
                                     />
                                 );
                             })}
                         </div>
                         <PaginationPanel
-                            onChange={pagination =>
-                                this.changeFilters(
-                                    this.state.namespace,
-                                    this.state.selectedPhases,
-                                    this.state.selectedLabels,
-                                    this.state.createdAfter,
-                                    this.state.finishedBefore,
-                                    pagination
-                                )
-                            }
-                            pagination={this.state.pagination}
-                            numRecords={(this.state.workflows || []).length}
+                            onChange={pagination => changeFilters(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, pagination)}
+                            pagination={pagination}
+                            numRecords={(workflows || []).length}
                         />
                     </>
                 )}
@@ -423,14 +279,99 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private updateCurrentlySelectedAndBatchActions(newSelectedWorkflows: Map<string, Workflow>): void {
-        const actions: any = Actions.WorkflowOperationsMap;
-        const nowDisabled: any = {...allBatchActionsEnabled};
-        for (const action of Object.keys(nowDisabled)) {
-            for (const wf of Array.from(newSelectedWorkflows.values())) {
-                nowDisabled[action] = nowDisabled[action] || actions[action].disabled(wf);
-            }
-        }
-        this.setState({batchActionDisabled: nowDisabled, selectedWorkflows: new Map<string, models.Workflow>(newSelectedWorkflows)});
+    return (
+        <Page
+            title='Workflows'
+            toolbar={{
+                breadcrumbs: [
+                    {title: 'Workflows', path: uiUrl('workflows')},
+                    {title: namespace, path: uiUrl('workflows/' + namespace)}
+                ],
+                actionMenu: {
+                    items: [
+                        {
+                            title: 'Submit New Workflow',
+                            iconClassName: 'fa fa-plus',
+                            action: () => navigation.goto('.', {sidePanel: 'submit-new-workflow'})
+                        },
+                        ...links.map(link => ({
+                            title: link.name,
+                            iconClassName: 'fa fa-external-link',
+                            action: () => (window.location.href = link.url)
+                        }))
+                    ]
+                }
+            }}>
+            <WorkflowsToolbar
+                selectedWorkflows={selectedWorkflows}
+                clearSelection={() => setSelectedWorkflows(new Map<string, models.Workflow>())}
+                loadWorkflows={() => {
+                    setSelectedWorkflows(new Map<string, models.Workflow>());
+                    changeFilters(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, {
+                        limit: pagination.limit
+                    });
+                }}
+                isDisabled={batchActionDisabled}
+            />
+            <div className={`row ${selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
+                <div className='columns small-12 xlarge-2'>
+                    <WorkflowsSummaryContainer workflows={workflows} />
+                    <div>
+                        <WorkflowFilters
+                            workflows={workflows || []}
+                            namespace={namespace}
+                            phaseItems={WorkflowPhases}
+                            selectedPhases={selectedPhases}
+                            selectedLabels={selectedLabels}
+                            createdAfter={createdAfter}
+                            finishedBefore={finishedBefore}
+                            onChange={(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore) =>
+                                changeFilters(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, {limit: pagination.limit})
+                            }
+                        />
+                    </div>
+                </div>
+                <div className='columns small-12 xlarge-10'>{renderWorkflows()}</div>
+            </div>
+            <SlidingPanel isShown={!!getSidePanel()} onClose={() => navigation.goto('.', {sidePanel: null})}>
+                {getSidePanel() === 'submit-new-workflow' && (
+                    <WorkflowCreator
+                        namespace={Utils.getNamespaceWithDefault(namespace)}
+                        onCreate={wf => navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
+                    />
+                )}
+            </SlidingPanel>
+        </Page>
+    );
+}
+
+function nullSafeTimeFilter(createdAfter: Date, finishedBefore: Date, w: Workflow): boolean {
+    const createdAt = w.metadata.creationTimestamp; // this should always be defined
+    const finishedAt = w.status.finishedAt; // this can be undefined
+    const createdDate: Date = new Date(createdAt);
+    const finishedDate: Date = new Date(finishedAt);
+
+    // check for undefined date filters as well
+    // equivalent to back-end logic: https://github.com/argoproj/argo-workflows/blob/f5e31f8f36b32883087f783cb1227490bbe36bbd/pkg/apis/workflow/v1alpha1/workflow_types.go#L222
+    if (createdAfter && finishedBefore) {
+        return createdDate > createdAfter && finishedAt && finishedDate < finishedBefore;
+    } else if (createdAfter && !finishedBefore) {
+        return createdDate > createdAfter;
+    } else if (!createdAfter && finishedBefore) {
+        return finishedAt && finishedDate < finishedBefore;
+    } else {
+        return true;
     }
+}
+
+function countsByCompleted(workflows?: Workflow[]) {
+    const counts = {complete: 0, incomplete: 0};
+    (workflows || []).forEach(wf => {
+        if (wf.metadata?.labels && wf.metadata?.labels[labels.completed] === 'true') {
+            counts.complete++;
+        } else {
+            counts.incomplete++;
+        }
+    });
+    return counts;
 }
