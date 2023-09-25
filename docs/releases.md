@@ -20,7 +20,7 @@ We maintain release branches for the most recent two minor releases.
 
 Fixes may be back-ported to release branches, depending on severity, risk, and, feasibility.
 
-If a release contains breaking changes, or CVE fixes, this will documented in [upgrading guide](upgrading.md).
+Breaking changes will be documented in [upgrading guide](upgrading.md).
 
 ## Supported Version Skew
 
