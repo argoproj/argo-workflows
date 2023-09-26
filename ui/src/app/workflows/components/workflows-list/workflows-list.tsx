@@ -244,14 +244,16 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             }
                                             changeFilters(namespace, selectedPhases, newTags, createdAfter, finishedBefore, pagination);
                                         }}
-                                        select={subWf => {
-                                            const wfUID = subWf.metadata.uid;
+                                        select={wf => {
+                                            const wfUID = wf.metadata.uid;
                                             if (!wfUID) {
                                                 return;
                                             }
-                                            const currentlySelected: Map<string, Workflow> = selectedWorkflows;
+                                            const currentlySelected = new Map<string, models.Workflow>();
+                                            selectedWorkflows.forEach((v, k) => currentlySelected.set(k, v)); // cloning the Map
+                                            // add or delete it in the new Map
                                             if (!currentlySelected.has(wfUID)) {
-                                                currentlySelected.set(wfUID, subWf);
+                                                currentlySelected.set(wfUID, wf);
                                             } else {
                                                 currentlySelected.delete(wfUID);
                                             }
