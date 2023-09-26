@@ -92,6 +92,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         return nowDisabled;
     }, [selectedWorkflows]);
 
+    const counts = countsByCompleted(workflows);
+
     function getSidePanel() {
         return queryParams.get('sidePanel');
     }
@@ -155,110 +157,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     useCollectEvent('openedWorkflowList');
 
-    function renderWorkflows() {
-        const counts = countsByCompleted(workflows);
-        return (
-            <>
-                <ErrorNotice error={error} />
-                {!workflows ? (
-                    <Loading />
-                ) : workflows.length === 0 ? (
-                    <ZeroState title='No workflows'>
-                        <p>To create a new workflow, use the button above.</p>
-                        <p>
-                            <ExampleManifests />.
-                        </p>
-                    </ZeroState>
-                ) : (
-                    <>
-                        {(counts.complete > 100 || counts.incomplete > 100) && (
-                            <CostOptimisationNudge name='workflow-list'>
-                                You have at least {counts.incomplete} incomplete, and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
-                            </CostOptimisationNudge>
-                        )}
-                        <div className='argo-table-list'>
-                            <div className='row argo-table-list__head'>
-                                <div className='columns small-1 workflows-list__status'>
-                                    <input
-                                        type='checkbox'
-                                        className='workflows-list__status--checkbox'
-                                        checked={workflows.length === selectedWorkflows.size}
-                                        onClick={e => {
-                                            e.stopPropagation();
-                                        }}
-                                        onChange={e => {
-                                            const newSelections = new Map<string, models.Workflow>();
-                                            // Not all workflows are selected, select them all
-                                            if (workflows.length !== selectedWorkflows.size) {
-                                                workflows.forEach(wf => newSelections.set(wf.metadata.uid, wf));
-                                            }
-                                            setSelectedWorkflows(newSelections);
-                                        }}
-                                    />
-                                </div>
-                                <div className='row small-11'>
-                                    <div className='columns small-2'>NAME</div>
-                                    <div className='columns small-1'>NAMESPACE</div>
-                                    <div className='columns small-1'>STARTED</div>
-                                    <div className='columns small-1'>FINISHED</div>
-                                    <div className='columns small-1'>DURATION</div>
-                                    <div className='columns small-1'>PROGRESS</div>
-                                    <div className='columns small-2'>MESSAGE</div>
-                                    <div className='columns small-1'>DETAILS</div>
-                                    <div className='columns small-1'>ARCHIVED</div>
-                                    {(columns || []).map(col => {
-                                        return (
-                                            <div className='columns small-1' key={col.key}>
-                                                {col.name}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            {workflows.map(wf => {
-                                return (
-                                    <WorkflowsRow
-                                        workflow={wf}
-                                        key={wf.metadata.uid}
-                                        checked={selectedWorkflows.has(wf.metadata.uid)}
-                                        columns={columns}
-                                        onChange={key => {
-                                            const value = `${key}=${wf.metadata?.labels[key]}`;
-                                            let newLabels: string[];
-                                            // add or remove the label if it is selected
-                                            if (!labels.includes(value)) {
-                                                newLabels = labels.concat(value);
-                                            } else {
-                                                newLabels = labels.filter(tag => tag !== value);
-                                            }
-                                            setLabels(newLabels);
-                                        }}
-                                        select={() => {
-                                            const wfUID = wf.metadata.uid;
-                                            if (!wfUID) {
-                                                return;
-                                            }
-                                            const newSelections = new Map<string, models.Workflow>();
-                                            selectedWorkflows.forEach((v, k) => newSelections.set(k, v)); // cloning the Map
-                                            // add or delete it in the new Map
-                                            if (!newSelections.has(wfUID)) {
-                                                newSelections.set(wfUID, wf);
-                                            } else {
-                                                newSelections.delete(wfUID);
-                                            }
-                                            setSelectedWorkflows(newSelections);
-                                        }}
-                                    />
-                                );
-                            })}
-                        </div>
-                        <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={(workflows || []).length} />
-                    </>
-                )}
-            </>
-        );
-    }
-
     return (
         <Page
             title='Workflows'
@@ -312,7 +210,104 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                         />
                     </div>
                 </div>
-                <div className='columns small-12 xlarge-10'>{renderWorkflows()}</div>
+                <div className='columns small-12 xlarge-10'>
+                    <ErrorNotice error={error} />
+                    {!workflows ? (
+                        <Loading />
+                    ) : workflows.length === 0 ? (
+                        <ZeroState title='No workflows'>
+                            <p>To create a new workflow, use the button above.</p>
+                            <p>
+                                <ExampleManifests />.
+                            </p>
+                        </ZeroState>
+                    ) : (
+                        <>
+                            {(counts.complete > 100 || counts.incomplete > 100) && (
+                                <CostOptimisationNudge name='workflow-list'>
+                                    You have at least {counts.incomplete} incomplete, and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
+                                </CostOptimisationNudge>
+                            )}
+                            <div className='argo-table-list'>
+                                <div className='row argo-table-list__head'>
+                                    <div className='columns small-1 workflows-list__status'>
+                                        <input
+                                            type='checkbox'
+                                            className='workflows-list__status--checkbox'
+                                            checked={workflows.length === selectedWorkflows.size}
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                            }}
+                                            onChange={e => {
+                                                const newSelections = new Map<string, models.Workflow>();
+                                                // Not all workflows are selected, select them all
+                                                if (workflows.length !== selectedWorkflows.size) {
+                                                    workflows.forEach(wf => newSelections.set(wf.metadata.uid, wf));
+                                                }
+                                                setSelectedWorkflows(newSelections);
+                                            }}
+                                        />
+                                    </div>
+                                    <div className='row small-11'>
+                                        <div className='columns small-2'>NAME</div>
+                                        <div className='columns small-1'>NAMESPACE</div>
+                                        <div className='columns small-1'>STARTED</div>
+                                        <div className='columns small-1'>FINISHED</div>
+                                        <div className='columns small-1'>DURATION</div>
+                                        <div className='columns small-1'>PROGRESS</div>
+                                        <div className='columns small-2'>MESSAGE</div>
+                                        <div className='columns small-1'>DETAILS</div>
+                                        <div className='columns small-1'>ARCHIVED</div>
+                                        {(columns || []).map(col => {
+                                            return (
+                                                <div className='columns small-1' key={col.key}>
+                                                    {col.name}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                {workflows.map(wf => {
+                                    return (
+                                        <WorkflowsRow
+                                            workflow={wf}
+                                            key={wf.metadata.uid}
+                                            checked={selectedWorkflows.has(wf.metadata.uid)}
+                                            columns={columns}
+                                            onChange={key => {
+                                                const value = `${key}=${wf.metadata?.labels[key]}`;
+                                                let newLabels: string[];
+                                                // add or remove the label if it is selected
+                                                if (!labels.includes(value)) {
+                                                    newLabels = labels.concat(value);
+                                                } else {
+                                                    newLabels = labels.filter(tag => tag !== value);
+                                                }
+                                                setLabels(newLabels);
+                                            }}
+                                            select={() => {
+                                                const wfUID = wf.metadata.uid;
+                                                if (!wfUID) {
+                                                    return;
+                                                }
+                                                const newSelections = new Map<string, models.Workflow>();
+                                                selectedWorkflows.forEach((v, k) => newSelections.set(k, v)); // cloning the Map
+                                                // add or delete it in the new Map
+                                                if (!newSelections.has(wfUID)) {
+                                                    newSelections.set(wfUID, wf);
+                                                } else {
+                                                    newSelections.delete(wfUID);
+                                                }
+                                                setSelectedWorkflows(newSelections);
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </div>
+                            <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={(workflows || []).length} />
+                        </>
+                    )}
+                </div>
             </div>
             <SlidingPanel isShown={!!getSidePanel()} onClose={() => navigation.goto('.', {sidePanel: null})}>
                 {getSidePanel() === 'submit-new-workflow' && (
