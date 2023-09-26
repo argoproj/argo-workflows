@@ -29,7 +29,7 @@ export function TagsInput(props: TagsInputProps) {
             props.onChange(tags);
             setTimeout(() => autoCompleteRef.current?.refresh());
         }
-    }, [tags]);
+    }, [tags.toString()]); // referential equality, so use values, not refs
 
     return (
         <div className={classNames('tags-input argo-field', {'tags-input--focused': focused || !!input})} onClick={() => inputRef.current?.focus()}>

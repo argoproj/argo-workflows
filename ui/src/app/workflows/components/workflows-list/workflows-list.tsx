@@ -1,9 +1,9 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
-import {useContext, useEffect, useRef, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {labels, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
+import {Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -31,8 +31,8 @@ require('./workflows-list.scss');
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
-    selectedPhases: WorkflowPhase[];
-    selectedLabels: string[];
+    phases: WorkflowPhase[];
+    labels: string[];
 }
 
 const allBatchActionsEnabled: Actions.OperationDisabled = {
@@ -59,13 +59,17 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             limit: parseLimit(queryParams.get('limit')) || savedPaginationLimit || 50
         };
     });
-    const [selectedPhases, setSelectedPhases] = useState<WorkflowPhase[]>(() => {
-        const savedPhases = storage.getItem('options', {}).selectedPhases || [];
+    const [phases, setPhases] = useState<WorkflowPhase[]>(() => {
+        const savedOptions = storage.getItem('options', {});
+        // selectedPhases is a legacy name, used here for backward-compat with old storage
+        const savedPhases = savedOptions.phases || savedOptions.selectedPhases || [];
         const phaseQueryParam = queryParams.getAll('phase') as WorkflowPhase[];
         return phaseQueryParam.length > 0 ? phaseQueryParam : savedPhases;
     });
-    const [selectedLabels, setSelectedLabels] = useState<string[]>(() => {
-        const savedLabels = storage.getItem('options', {}).selectedLabels || [];
+    const [labels, setLabels] = useState<string[]>(() => {
+        const savedOptions = storage.getItem('options', {});
+        // selectedLabels is a legacy name, used here for backward-compat with old storage
+        const savedLabels = savedOptions.labels || savedOptions.selectedLabels || [];
         const labelQueryParam = queryParams.getAll('label');
         return labelQueryParam.length > 0 ? labelQueryParam : savedLabels;
     });
@@ -77,8 +81,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
     const [error, setError] = useState<Error>();
-
-    const listWatch = useRef<ListWatch<Workflow>>(null);
 
     function getSidePanel() {
         return queryParams.get('sidePanel');
@@ -96,59 +98,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         setSelectedWorkflows(new Map<string, models.Workflow>(newSelectedWorkflows));
     }
 
-    function saveHistory(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], pagination: Pagination) {
-        const options: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
-        options.selectedPhases = selectedPhases;
-        options.selectedLabels = selectedLabels;
-        if (pagination.limit) {
-            options.paginationLimit = pagination.limit;
-        }
-        storage.setItem('options', options, {} as WorkflowListRenderOptions);
-
-        const params = new URLSearchParams();
-        selectedPhases?.forEach(phase => params.append('phase', phase));
-        selectedLabels?.forEach(label => params.append('label', label));
-        if (pagination.offset) {
-            params.append('offset', pagination.offset);
-        }
-        if (pagination.limit) {
-            params.append('limit', pagination.limit.toString());
-        }
-        history.push(historyUrl('workflows' + (Utils.managedNamespace ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
-    }
-
-    function fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], createdAfter: Date, finishedBefore: Date, pagination: Pagination): void {
-        listWatch.current?.stop();
-        listWatch.current = new ListWatch(
-            () =>
-                services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(x => {
-                    x.items = x.items?.filter(w => nullSafeTimeFilter(createdAfter, finishedBefore, w));
-                    return x;
-                }),
-            (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
-            metadata => {
-                setError(null);
-                setNamespace(namespace);
-                setPagination({offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue});
-                setSelectedPhases(selectedPhases);
-                setSelectedLabels(selectedLabels);
-                setCreatedAfter(createdAfter);
-                setFinishedBefore(finishedBefore);
-                setSelectedWorkflows(new Map<string, models.Workflow>());
-                saveHistory(namespace, selectedPhases, selectedLabels, pagination);
-            },
-            () => setError(null),
-            workflows => setWorkflows(workflows.slice(0, pagination.limit || 999999)),
-            err => setError(err),
-            sortByYouth
-        );
-        listWatch.current.start();
-    }
-
-    function changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], createdAfter: Date, finishedBefore: Date, pagination: Pagination) {
-        fetchWorkflows(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, pagination);
-    }
-
+    // run once on first render
     useEffect(() => {
         (async () => {
             const info = await services.info.getInfo();
@@ -157,14 +107,53 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         })();
     }, []);
 
+    // save history and localStorage
     useEffect(() => {
-        fetchWorkflows(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, pagination);
+        const options: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
+        options.phases = phases;
+        options.labels = labels;
+        if (pagination.limit) {
+            options.paginationLimit = pagination.limit;
+        }
+        storage.setItem('options', options, {} as WorkflowListRenderOptions);
+
+        const params = new URLSearchParams();
+        phases?.forEach(phase => params.append('phase', phase));
+        labels?.forEach(label => params.append('label', label));
+        if (pagination.offset) {
+            params.append('offset', pagination.offset);
+        }
+        if (pagination.limit) {
+            params.append('limit', pagination.limit.toString());
+        }
+        history.push(historyUrl('workflows' + (Utils.managedNamespace ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
+
+    useEffect(() => {
+        const listWatch = new ListWatch(
+            () =>
+                services.workflows.list(namespace, phases, labels, pagination).then(x => {
+                    x.items = x.items?.filter(w => nullSafeTimeFilter(createdAfter, finishedBefore, w));
+                    return x;
+                }),
+            (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
+            metadata => {
+                setError(null);
+                setPagination({...pagination, nextOffset: metadata.continue});
+                setSelectedWorkflows(new Map<string, models.Workflow>());
+            },
+            () => setError(null),
+            newWorkflows => setWorkflows(newWorkflows.slice(0, pagination.limit || 999999)),
+            err => setError(err),
+            sortByYouth
+        );
+        listWatch.start();
 
         return () => {
             setSelectedWorkflows(new Map<string, models.Workflow>());
-            listWatch.current?.stop();
+            listWatch.stop();
         };
-    }, []);
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, pagination.nextOffset]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
@@ -239,14 +228,14 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             const value = `${key}=${wf.metadata?.labels[key]}`;
                                             let newLabels: string[];
                                             // add or remove the label if it is selected
-                                            if (selectedLabels.indexOf(value) === -1) {
-                                                newLabels = selectedLabels.concat(value);
+                                            if (!labels.includes(value)) {
+                                                newLabels = labels.concat(value);
                                             } else {
-                                                newLabels = selectedLabels.filter(tag => tag !== value);
+                                                newLabels = labels.filter(tag => tag !== value);
                                             }
-                                            changeFilters(namespace, selectedPhases, newLabels, createdAfter, finishedBefore, pagination);
+                                            setLabels(newLabels);
                                         }}
-                                        select={wf => {
+                                        select={() => {
                                             const wfUID = wf.metadata.uid;
                                             if (!wfUID) {
                                                 return;
@@ -265,11 +254,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                 );
                             })}
                         </div>
-                        <PaginationPanel
-                            onChange={pagination => changeFilters(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, pagination)}
-                            pagination={pagination}
-                            numRecords={(workflows || []).length}
-                        />
+                        <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={(workflows || []).length} />
                     </>
                 )}
             </>
@@ -304,9 +289,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                 clearSelection={() => setSelectedWorkflows(new Map<string, models.Workflow>())}
                 loadWorkflows={() => {
                     setSelectedWorkflows(new Map<string, models.Workflow>());
-                    changeFilters(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, {
-                        limit: pagination.limit
-                    });
                 }}
                 isDisabled={batchActionDisabled}
             />
@@ -318,13 +300,17 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                             workflows={workflows || []}
                             namespace={namespace}
                             phaseItems={WorkflowPhases}
-                            selectedPhases={selectedPhases}
-                            selectedLabels={selectedLabels}
+                            selectedPhases={phases}
+                            selectedLabels={labels}
                             createdAfter={createdAfter}
                             finishedBefore={finishedBefore}
-                            onChange={(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore) =>
-                                changeFilters(namespace, selectedPhases, selectedLabels, createdAfter, finishedBefore, {limit: pagination.limit})
-                            }
+                            onChange={(newNamespace, newPhases, newLabels, newCreatedAfter, newFinishedBefore) => {
+                                setNamespace(newNamespace);
+                                setPhases(newPhases);
+                                setLabels(newLabels);
+                                setCreatedAfter(newCreatedAfter);
+                                setFinishedBefore(newFinishedBefore);
+                            }}
                         />
                     </div>
                 </div>
@@ -364,7 +350,7 @@ function nullSafeTimeFilter(createdAfter: Date, finishedBefore: Date, w: Workflo
 function countsByCompleted(workflows?: Workflow[]) {
     const counts = {complete: 0, incomplete: 0};
     (workflows || []).forEach(wf => {
-        if (wf.metadata?.labels && wf.metadata?.labels[labels.completed] === 'true') {
+        if (wf.metadata?.labels && wf.metadata?.labels[models.labels.completed] === 'true') {
             counts.complete++;
         } else {
             counts.incomplete++;
