@@ -92,7 +92,12 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         return nowDisabled;
     }, [selectedWorkflows]);
 
-    const counts = countsByCompleted(workflows);
+    const filteredWorkflows = workflows?.filter(w => nullSafeTimeFilter(createdAfter, finishedBefore, w)).slice(0, pagination.limit || 999999);
+    const counts = countsByCompleted(filteredWorkflows);
+
+    function clearSelectedWorkflows() {
+        setSelectedWorkflows(new Map<string, models.Workflow>());
+    }
 
     function getSidePanel() {
         return queryParams.get('sidePanel');
@@ -131,26 +136,22 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     useEffect(() => {
         const listWatch = new ListWatch(
-            () =>
-                services.workflows.list(namespace, phases, labels, pagination).then(x => {
-                    x.items = x.items?.filter(w => nullSafeTimeFilter(createdAfter, finishedBefore, w));
-                    return x;
-                }),
+            () => services.workflows.list(namespace, phases, labels, pagination),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
             metadata => {
                 setError(null);
                 setPagination({...pagination, nextOffset: metadata.continue});
-                setSelectedWorkflows(new Map<string, models.Workflow>());
+                clearSelectedWorkflows();
             },
             () => setError(null),
-            newWorkflows => setWorkflows(newWorkflows.slice(0, pagination.limit || 999999)),
+            newWorkflows => setWorkflows(newWorkflows),
             err => setError(err),
             sortByYouth
         );
         listWatch.start();
 
         return () => {
-            setSelectedWorkflows(new Map<string, models.Workflow>());
+            clearSelectedWorkflows();
             listWatch.stop();
         };
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, pagination.nextOffset]); // referential equality, so use values, not refs
@@ -182,18 +183,16 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             }}>
             <WorkflowsToolbar
                 selectedWorkflows={selectedWorkflows}
-                clearSelection={() => setSelectedWorkflows(new Map<string, models.Workflow>())}
-                loadWorkflows={() => {
-                    setSelectedWorkflows(new Map<string, models.Workflow>());
-                }}
+                clearSelection={clearSelectedWorkflows}
+                loadWorkflows={clearSelectedWorkflows}
                 isDisabled={batchActionDisabled}
             />
             <div className={`row ${selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
                 <div className='columns small-12 xlarge-2'>
-                    <WorkflowsSummaryContainer workflows={workflows} />
+                    <WorkflowsSummaryContainer workflows={filteredWorkflows} />
                     <div>
                         <WorkflowFilters
-                            workflows={workflows || []}
+                            workflows={filteredWorkflows || []}
                             namespace={namespace}
                             phaseItems={WorkflowPhases}
                             selectedPhases={phases}
@@ -206,6 +205,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                 setLabels(newLabels);
                                 setCreatedAfter(newCreatedAfter);
                                 setFinishedBefore(newFinishedBefore);
+                                clearSelectedWorkflows();
                             }}
                         />
                     </div>
@@ -214,7 +214,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                     <ErrorNotice error={error} />
                     {!workflows ? (
                         <Loading />
-                    ) : workflows.length === 0 ? (
+                    ) : filteredWorkflows.length === 0 ? (
                         <ZeroState title='No workflows'>
                             <p>To create a new workflow, use the button above.</p>
                             <p>
@@ -234,15 +234,15 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                         <input
                                             type='checkbox'
                                             className='workflows-list__status--checkbox'
-                                            checked={workflows.length === selectedWorkflows.size}
+                                            checked={filteredWorkflows.length === selectedWorkflows.size}
                                             onClick={e => {
                                                 e.stopPropagation();
                                             }}
                                             onChange={e => {
                                                 const newSelections = new Map<string, models.Workflow>();
                                                 // Not all workflows are selected, select them all
-                                                if (workflows.length !== selectedWorkflows.size) {
-                                                    workflows.forEach(wf => newSelections.set(wf.metadata.uid, wf));
+                                                if (filteredWorkflows.length !== selectedWorkflows.size) {
+                                                    filteredWorkflows.forEach(wf => newSelections.set(wf.metadata.uid, wf));
                                                 }
                                                 setSelectedWorkflows(newSelections);
                                             }}
@@ -267,7 +267,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                         })}
                                     </div>
                                 </div>
-                                {workflows.map(wf => {
+                                {filteredWorkflows.map(wf => {
                                     return (
                                         <WorkflowsRow
                                             workflow={wf}
@@ -291,7 +291,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                                     return;
                                                 }
                                                 const newSelections = new Map<string, models.Workflow>();
-                                                selectedWorkflows.forEach((v, k) => newSelections.set(k, v)); // cloning the Map
+                                                selectedWorkflows.forEach((v, k) => newSelections.set(k, v)); // clone the Map
                                                 // add or delete it in the new Map
                                                 if (!newSelections.has(wfUID)) {
                                                     newSelections.set(wfUID, wf);
@@ -304,7 +304,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                     );
                                 })}
                             </div>
-                            <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={(workflows || []).length} />
+                            <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={(filteredWorkflows || []).length} />
                         </>
                     )}
                 </div>
