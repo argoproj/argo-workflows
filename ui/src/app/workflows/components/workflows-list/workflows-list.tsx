@@ -237,12 +237,14 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                         columns={columns}
                                         onChange={key => {
                                             const value = `${key}=${wf.metadata?.labels[key]}`;
-                                            let newTags: string[] = [];
+                                            let newLabels: string[];
+                                            // add or remove the label if it is selected
                                             if (selectedLabels.indexOf(value) === -1) {
-                                                newTags = selectedLabels.concat(value);
-                                                setSelectedLabels(newTags);
+                                                newLabels = selectedLabels.concat(value);
+                                            } else {
+                                                newLabels = selectedLabels.filter(tag => tag !== value);
                                             }
-                                            changeFilters(namespace, selectedPhases, newTags, createdAfter, finishedBefore, pagination);
+                                            changeFilters(namespace, selectedPhases, newLabels, createdAfter, finishedBefore, pagination);
                                         }}
                                         select={wf => {
                                             const wfUID = wf.metadata.uid;
