@@ -1,6 +1,6 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
@@ -35,6 +35,7 @@ interface WorkflowListRenderOptions {
     labels: string[];
 }
 
+const actions = Actions.WorkflowOperationsMap;
 const allBatchActionsEnabled: Actions.OperationDisabled = {
     RETRY: false,
     RESUBMIT: false,
@@ -76,26 +77,23 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [createdAfter, setCreatedAfter] = useState<Date>();
     const [finishedBefore, setFinishedBefore] = useState<Date>();
     const [selectedWorkflows, setSelectedWorkflows] = useState(new Map<string, models.Workflow>());
-    const [batchActionDisabled, setBatchActionDisabled] = useState({...allBatchActionsEnabled});
     const [workflows, setWorkflows] = useState<Workflow[]>();
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
     const [error, setError] = useState<Error>();
 
-    function getSidePanel() {
-        return queryParams.get('sidePanel');
-    }
-
-    function updateCurrentlySelectedAndBatchActions(newSelectedWorkflows: Map<string, Workflow>): void {
-        const actions: any = Actions.WorkflowOperationsMap;
+    const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
         const nowDisabled: any = {...allBatchActionsEnabled};
         for (const action of Object.keys(nowDisabled)) {
-            for (const wf of Array.from(newSelectedWorkflows.values())) {
+            for (const wf of Array.from(selectedWorkflows.values())) {
                 nowDisabled[action] = nowDisabled[action] || actions[action].disabled(wf);
             }
         }
-        setBatchActionDisabled(nowDisabled);
-        setSelectedWorkflows(new Map<string, models.Workflow>(newSelectedWorkflows));
+        return nowDisabled;
+    }, [selectedWorkflows]);
+
+    function getSidePanel() {
+        return queryParams.get('sidePanel');
     }
 
     // run once on first render
@@ -189,12 +187,12 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             e.stopPropagation();
                                         }}
                                         onChange={e => {
-                                            const currentlySelected = new Map<string, models.Workflow>();
+                                            const newSelections = new Map<string, models.Workflow>();
                                             // Not all workflows are selected, select them all
                                             if (workflows.length !== selectedWorkflows.size) {
-                                                workflows.forEach(wf => currentlySelected.set(wf.metadata.uid, wf));
+                                                workflows.forEach(wf => newSelections.set(wf.metadata.uid, wf));
                                             }
-                                            updateCurrentlySelectedAndBatchActions(currentlySelected);
+                                            setSelectedWorkflows(newSelections);
                                         }}
                                     />
                                 </div>
@@ -240,15 +238,15 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             if (!wfUID) {
                                                 return;
                                             }
-                                            const currentlySelected = new Map<string, models.Workflow>();
-                                            selectedWorkflows.forEach((v, k) => currentlySelected.set(k, v)); // cloning the Map
+                                            const newSelections = new Map<string, models.Workflow>();
+                                            selectedWorkflows.forEach((v, k) => newSelections.set(k, v)); // cloning the Map
                                             // add or delete it in the new Map
-                                            if (!currentlySelected.has(wfUID)) {
-                                                currentlySelected.set(wfUID, wf);
+                                            if (!newSelections.has(wfUID)) {
+                                                newSelections.set(wfUID, wf);
                                             } else {
-                                                currentlySelected.delete(wfUID);
+                                                newSelections.delete(wfUID);
                                             }
-                                            updateCurrentlySelectedAndBatchActions(currentlySelected);
+                                            setSelectedWorkflows(newSelections);
                                         }}
                                     />
                                 );
