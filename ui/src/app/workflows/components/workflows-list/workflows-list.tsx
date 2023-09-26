@@ -200,19 +200,12 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             e.stopPropagation();
                                         }}
                                         onChange={e => {
-                                            if (workflows.length === selectedWorkflows.size) {
-                                                // All workflows are selected, deselect them all
-                                                updateCurrentlySelectedAndBatchActions(new Map<string, models.Workflow>());
-                                            } else {
-                                                // Not all workflows are selected, select them all
-                                                const currentlySelected: Map<string, Workflow> = selectedWorkflows;
-                                                workflows.forEach(wf => {
-                                                    if (!currentlySelected.has(wf.metadata.uid)) {
-                                                        currentlySelected.set(wf.metadata.uid, wf);
-                                                    }
-                                                });
-                                                updateCurrentlySelectedAndBatchActions(currentlySelected);
+                                            const currentlySelected = new Map<string, models.Workflow>();
+                                            // Not all workflows are selected, select them all
+                                            if (workflows.length !== selectedWorkflows.size) {
+                                                workflows.forEach(wf => currentlySelected.set(wf.metadata.uid, wf));
                                             }
+                                            updateCurrentlySelectedAndBatchActions(currentlySelected);
                                         }}
                                     />
                                 </div>
