@@ -1,5 +1,5 @@
 import {Select, Tooltip} from 'argo-ui';
-import * as React from 'react';
+import React, {useState} from 'react';
 import {Parameter} from '../../../../models';
 import {Utils} from '../../utils';
 
@@ -8,31 +8,10 @@ interface ParametersInputProps {
     onChange?: (parameters: Parameter[]) => void;
 }
 
-export class ParametersInput extends React.Component<ParametersInputProps, {parameters: Parameter[]}> {
-    constructor(props: ParametersInputProps) {
-        super(props);
-        this.state = {parameters: props.parameters || []};
-    }
+export function ParametersInput(props: ParametersInputProps) {
+    const [parameters, setParameters] = useState<Parameter[]>(props.parameters || []);
 
-    public render() {
-        return (
-            <>
-                {this.props.parameters.map((parameter, index) => (
-                    <div key={parameter.name + '_' + index} style={{marginBottom: 14}}>
-                        <label>{parameter.name}</label>
-                        {parameter.description && (
-                            <Tooltip content={parameter.description}>
-                                <i className='fa fa-question-circle' style={{marginLeft: 4}} />
-                            </Tooltip>
-                        )}
-                        {(parameter.enum && this.displaySelectFieldForEnumValues(parameter)) || this.displayInputFieldForSingleValue(parameter)}
-                    </div>
-                ))}
-            </>
-        );
-    }
-
-    private displaySelectFieldForEnumValues(parameter: Parameter) {
+    function displaySelectFieldForEnumValues(parameter: Parameter) {
         return (
             <Select
                 key={parameter.name}
@@ -42,39 +21,55 @@ export class ParametersInput extends React.Component<ParametersInputProps, {para
                     title: value
                 }))}
                 onChange={e => {
-                    const newParameters: Parameter[] = this.state.parameters.map(p => ({
+                    const newParameters: Parameter[] = parameters.map(p => ({
                         name: p.name,
                         value: p.name === parameter.name ? e.value : Utils.getValueFromParameter(p),
                         enum: p.enum
                     }));
-                    this.setState({parameters: newParameters});
-                    this.onParametersChange(newParameters);
+                    setParameters(newParameters);
+                    onParametersChange(newParameters);
                 }}
             />
         );
     }
 
-    private displayInputFieldForSingleValue(parameter: Parameter) {
+    function displayInputFieldForSingleValue(parameter: Parameter) {
         return (
             <textarea
                 className='argo-field'
                 value={Utils.getValueFromParameter(parameter)}
                 onChange={e => {
-                    const newParameters: Parameter[] = this.state.parameters.map(p => ({
+                    const newParameters: Parameter[] = parameters.map(p => ({
                         name: p.name,
                         value: p.name === parameter.name ? e.target.value : Utils.getValueFromParameter(p),
                         enum: p.enum
                     }));
-                    this.setState({parameters: newParameters});
-                    this.onParametersChange(newParameters);
+                    setParameters(newParameters);
+                    onParametersChange(newParameters);
                 }}
             />
         );
     }
 
-    private onParametersChange(parameters: Parameter[]) {
-        if (this.props.onChange) {
-            this.props.onChange(parameters);
+    function onParametersChange(parameters: Parameter[]) {
+        if (props.onChange) {
+            props.onChange(parameters);
         }
     }
+
+    return (
+        <>
+            {props.parameters.map((parameter, index) => (
+                <div key={parameter.name + '_' + index} style={{marginBottom: 14}}>
+                    <label>{parameter.name}</label>
+                    {parameter.description && (
+                        <Tooltip content={parameter.description}>
+                            <i className='fa fa-question-circle' style={{marginLeft: 4}} />
+                        </Tooltip>
+                    )}
+                    {(parameter.enum && displaySelectFieldForEnumValues(parameter)) || displayInputFieldForSingleValue(parameter)}
+                </div>
+            ))}
+        </>
+    );
 }
