@@ -20,12 +20,16 @@ interface WorkflowFilterProps {
     selectedLabels: string[];
     createdAfter?: Date;
     finishedBefore?: Date;
-    onChange: (namespace: string, selectedPhases: WorkflowPhase[], labels: string[], createdAfter: Date, finishedBefore: Date) => void;
+    setNamespace: (namespace: string) => void;
+    setPhases: (phases: WorkflowPhase[]) => void;
+    setLabels: (labels: string[]) => void;
+    setCreatedAfter: (createdAfter: Date) => void;
+    setFinishedBefore: (finishedBefore: Date) => void;
 }
 
 export function WorkflowFilters(props: WorkflowFilterProps) {
     function setLabel(name: string, value: string) {
-        props.onChange(props.namespace, props.selectedPhases, [name.concat('=' + value)], props.createdAfter, props.finishedBefore);
+        props.setLabels([name.concat('=' + value)]);
     }
 
     function setWorkflowTemplate(value: string) {
@@ -59,9 +63,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     <p className='wf-filters-container__title'>Namespace</p>
                     <NamespaceFilter
                         value={props.namespace}
-                        onChange={ns => {
-                            props.onChange(ns, props.selectedPhases, props.selectedLabels, props.createdAfter, props.finishedBefore);
-                        }}
+                        onChange={props.setNamespace}
                     />
                 </div>
                 <div className='columns small-2 xlarge-12'>
@@ -70,9 +72,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                         placeholder=''
                         autocomplete={labelSuggestion}
                         tags={props.selectedLabels}
-                        onChange={tags => {
-                            props.onChange(props.namespace, props.selectedPhases, tags, props.createdAfter, props.finishedBefore);
-                        }}
+                        onChange={props.setLabels}
                     />
                 </div>
                 <div className='columns small-2 xlarge-12'>
@@ -99,15 +99,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     <p className='wf-filters-container__title'>Phases</p>
                     <CheckboxFilter
                         selected={props.selectedPhases}
-                        onChange={selected => {
-                            props.onChange(
-                                props.namespace,
-                                selected.map(x => x as WorkflowPhase),
-                                props.selectedLabels,
-                                props.createdAfter,
-                                props.finishedBefore
-                            );
-                        }}
+                        onChange={props.setPhases}
                         items={phaseItems}
                         type='phase'
                     />
@@ -117,18 +109,13 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     <div className='wf-filters-container__content'>
                         <DatePicker
                             selected={props.createdAfter}
-                            onChange={date => {
-                                props.onChange(props.namespace, props.selectedPhases, props.selectedLabels, date, props.finishedBefore);
-                            }}
+                            onChange={props.setCreatedAfter}
                             placeholderText='From'
                             dateFormat='dd MMM yyyy'
                             todayButton='Today'
                             className='argo-field argo-textarea'
                         />
-                        <a
-                            onClick={() => {
-                                props.onChange(props.namespace, props.selectedPhases, props.selectedLabels, undefined, props.finishedBefore);
-                            }}>
+                        <a onClick={() => props.setCreatedAfter(undefined)}>
                             <i className='fa fa-times-circle' />
                         </a>
                     </div>
@@ -136,18 +123,13 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     <div className='wf-filters-container__content'>
                         <DatePicker
                             selected={props.finishedBefore}
-                            onChange={date => {
-                                props.onChange(props.namespace, props.selectedPhases, props.selectedLabels, props.createdAfter, date);
-                            }}
+                            onChange={props.setFinishedBefore}
                             placeholderText='To'
                             dateFormat='dd MMM yyyy'
                             todayButton='Today'
                             className='argo-field argo-textarea'
                         />
-                        <a
-                            onClick={() => {
-                                props.onChange(props.namespace, props.selectedPhases, props.selectedLabels, props.createdAfter, undefined);
-                            }}>
+                        <a onClick={() => props.setFinishedBefore(undefined)}>
                             <i className='fa fa-times-circle' />
                         </a>
                     </div>

@@ -199,13 +199,16 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                             selectedLabels={labels}
                             createdAfter={createdAfter}
                             finishedBefore={finishedBefore}
-                            onChange={(newNamespace, newPhases, newLabels, newCreatedAfter, newFinishedBefore) => {
-                                setNamespace(newNamespace);
-                                setPhases(newPhases);
-                                setLabels(newLabels);
-                                setCreatedAfter(newCreatedAfter);
-                                setFinishedBefore(newFinishedBefore);
-                                clearSelectedWorkflows();
+                            setNamespace={setNamespace}
+                            setPhases={setPhases}
+                            setLabels={setLabels}
+                            setCreatedAfter={(date: Date) => {
+                                setCreatedAfter(date);
+                                clearSelectedWorkflows(); // date filters are client-side, but clear similar to the server-side ones for consistency
+                            }}
+                            setFinishedBefore={(date: Date) => {
+                                setFinishedBefore(date);
+                                clearSelectedWorkflows(); // date filters are client-side, but clear similar to the server-side ones for consistency
                             }}
                         />
                     </div>
