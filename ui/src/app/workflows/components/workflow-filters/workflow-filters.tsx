@@ -61,19 +61,11 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
             <div className='row'>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Namespace</p>
-                    <NamespaceFilter
-                        value={props.namespace}
-                        onChange={props.setNamespace}
-                    />
+                    <NamespaceFilter value={props.namespace} onChange={props.setNamespace} />
                 </div>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Labels</p>
-                    <TagsInput
-                        placeholder=''
-                        autocomplete={labelSuggestion}
-                        tags={props.labels}
-                        onChange={props.setLabels}
-                    />
+                    <TagsInput placeholder='' autocomplete={labelSuggestion} tags={props.labels} onChange={props.setLabels} />
                 </div>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Workflow Template</p>
@@ -97,12 +89,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                 </div>
                 <div className='columns small-4 xlarge-12'>
                     <p className='wf-filters-container__title'>Phases</p>
-                    <CheckboxFilter
-                        selected={props.phases}
-                        onChange={props.setPhases}
-                        items={phaseItems}
-                        type='phase'
-                    />
+                    <CheckboxFilter selected={props.phases} onChange={props.setPhases} items={phaseItems} type='phase' />
                 </div>
                 <div className='columns small-5 xlarge-12'>
                     <p className='wf-filters-container__title'>Created Since</p>

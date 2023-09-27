@@ -114,8 +114,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     // save history and localStorage
     useEffect(() => {
-        // add empty selectedPhases and selectedLabels for forward-compat w/ old version (previous code relies on them existing, so if you move up a version and back down, it breaks)
-        const options = {selectedPhases: [], selectedLabels: []} as unknown as WorkflowListRenderOptions;
+        // add empty selectedPhases + selectedLabels for forward-compat w/ old version: previous code relies on them existing, so if you move up a version and back down, it breaks
+        const options = ({selectedPhases: [], selectedLabels: []} as unknown) as WorkflowListRenderOptions;
         options.phases = phases;
         options.labels = labels;
         if (pagination.limit) {
