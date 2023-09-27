@@ -16,8 +16,8 @@ interface WorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
     phaseItems: WorkflowPhase[];
-    selectedPhases: WorkflowPhase[];
-    selectedLabels: string[];
+    phases: WorkflowPhase[];
+    labels: string[];
     createdAfter?: Date;
     finishedBefore?: Date;
     setNamespace: (namespace: string) => void;
@@ -71,7 +71,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     <TagsInput
                         placeholder=''
                         autocomplete={labelSuggestion}
-                        tags={props.selectedLabels}
+                        tags={props.labels}
                         onChange={props.setLabels}
                     />
                 </div>
@@ -98,7 +98,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                 <div className='columns small-4 xlarge-12'>
                     <p className='wf-filters-container__title'>Phases</p>
                     <CheckboxFilter
-                        selected={props.selectedPhases}
+                        selected={props.phases}
                         onChange={props.setPhases}
                         items={phaseItems}
                         type='phase'
