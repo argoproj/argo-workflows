@@ -51,9 +51,9 @@ export function ParametersInput(props: ParametersInputProps) {
         );
     }
 
-    function onParametersChange(parameters: Parameter[]) {
+    function onParametersChange(params: Parameter[]) {
         if (props.onChange) {
-            props.onChange(parameters);
+            props.onChange(params);
         }
     }
 
