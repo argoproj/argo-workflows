@@ -23,5 +23,6 @@ export function historyUrl(path: string, params: {[key: string]: any}) {
                 Utils.currentNamespace = v;
             }
         });
-    return uiUrl(path.replace(/{[^}]*}/g, '')) + '?' + queryParams.join('&') + '&' + (extraSearchParams?.toString() || '');
+    const extraString = extraSearchParams ? '&' + extraSearchParams.toString() : '';
+    return uiUrl(path.replace(/{[^}]*}/g, '')) + '?' + queryParams.join('&') + extraString;
 }
