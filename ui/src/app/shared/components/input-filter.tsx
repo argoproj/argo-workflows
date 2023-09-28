@@ -13,8 +13,8 @@ export function InputFilter(props: InputProps) {
     const [localCache, setLocalCache] = useState((localStorage.getItem(props.name + '_inputs') || '').split(',').filter(item => item !== ''));
 
     function setValueAndCache(newValue: string) {
-        setLocalCache(state => {
-            const updatedCache = [...state];
+        setLocalCache(currentCache => {
+            const updatedCache = [...currentCache];
             if (!updatedCache.includes(newValue)) {
                 updatedCache.unshift(newValue);
             }
