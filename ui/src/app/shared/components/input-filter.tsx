@@ -9,8 +9,8 @@ interface InputProps {
 }
 
 export function InputFilter(props: InputProps) {
-    const [value, setValue] = useState<string>(props.value);
-    const [localCache, setLocalCache] = useState<string[]>((localStorage.getItem(props.name + '_inputs') || '').split(',').filter(item => item !== ''));
+    const [value, setValue] = useState(props.value);
+    const [localCache, setLocalCache] = useState((localStorage.getItem(props.name + '_inputs') || '').split(',').filter(item => item !== ''));
 
     function setValueAndCache(newValue: string) {
         setLocalCache(state => {
@@ -24,6 +24,7 @@ export function InputFilter(props: InputProps) {
             localStorage.setItem(props.name + '_inputs', updatedCache.join(','));
             return updatedCache;
         });
+        setValue(newValue);
     }
 
     function renderInput(inputProps: React.HTMLProps<HTMLInputElement>) {
@@ -32,7 +33,6 @@ export function InputFilter(props: InputProps) {
                 {...inputProps}
                 onKeyUp={event => {
                     if (event.keyCode === 13) {
-                        setValue(event.currentTarget.value);
                         setValueAndCache(event.currentTarget.value);
                         props.onChange(value);
                     }
