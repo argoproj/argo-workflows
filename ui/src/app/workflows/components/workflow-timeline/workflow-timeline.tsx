@@ -11,6 +11,7 @@ require('./workflow-timeline.scss');
 const ROUND_START_DIFF_MS = 1000;
 const NODE_NAME_WIDTH = 250;
 const MIN_WIDTH = 800;
+const COMPLETED_PHASES = [models.NODE_PHASE.ERROR, models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.SKIPPED, models.NODE_PHASE.OMITTED, models.NODE_PHASE.FAILED];
 
 interface WorkflowTimelineProps {
     workflow: models.Workflow;
@@ -19,48 +20,38 @@ interface WorkflowTimelineProps {
 }
 
 export function WorkflowTimeline(props: WorkflowTimelineProps) {
-    let resizeSubscription: Subscription;
-    let refreshSubscription: Subscription;
-
     const [parentWidth, setParentWidth] = useState(0);
     const [now, setNow] = useState(moment());
 
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const resizeSubscription = useRef<Subscription>(null);
+    const refreshSubscription = useRef<Subscription>(null);
 
     useEffect(() => {
-        resizeSubscription = fromEvent(window, 'resize').subscribe(updateWidth);
+        resizeSubscription.current = fromEvent(window, 'resize').subscribe(updateWidth);
         updateWidth();
 
         return () => {
-            if (resizeSubscription) {
-                resizeSubscription.unsubscribe();
-            }
-            if (refreshSubscription) {
-                refreshSubscription.unsubscribe();
-            }
+            resizeSubscription.current?.unsubscribe();
+            refreshSubscription.current?.unsubscribe();
         };
     }, []);
 
     useEffect(() => {
-        ensureRunningWorkflowRefreshing(props.workflow);
+        const isCompleted = props.workflow?.status && COMPLETED_PHASES.includes(props.workflow.status.phase);
+        if (!refreshSubscription.current && !isCompleted) {
+            refreshSubscription.current = interval(1000).subscribe(() => {
+                setNow(moment());
+            });
+        } else if (refreshSubscription.current && isCompleted) {
+            refreshSubscription.current.unsubscribe();
+            refreshSubscription.current = null;
+        }
     }, [props.workflow]);
 
     function updateWidth() {
         if (containerRef.current) {
             setParentWidth((containerRef.current.offsetParent || window.document.body).clientWidth - NODE_NAME_WIDTH);
-        }
-    }
-
-    function ensureRunningWorkflowRefreshing(workflow: models.Workflow) {
-        const completedPhases = [models.NODE_PHASE.ERROR, models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.SKIPPED, models.NODE_PHASE.OMITTED, models.NODE_PHASE.FAILED];
-        const isCompleted = workflow && workflow.status && completedPhases.indexOf(workflow.status.phase) > -1;
-        if (!refreshSubscription && !isCompleted) {
-            refreshSubscription = interval(1000).subscribe(() => {
-                setNow(moment());
-            });
-        } else if (refreshSubscription && isCompleted) {
-            refreshSubscription.unsubscribe();
-            refreshSubscription = null;
         }
     }
 
