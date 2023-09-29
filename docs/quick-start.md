@@ -57,7 +57,7 @@ This will serve the UI on <https://localhost:2746>. Due to the self-signed certi
 
 ## Install the Argo Workflows CLI
 
-Next, Download the latest Argo CLI from the same [releases page](https://github.com/argoproj/argo-workflows/releases/latest).
+You can more easily interact with Argo Workflows with the [Argo CLI](walk-through/argo-cli.md).
 
 ## Submitting an example workflow
 

@@ -1,6 +1,7 @@
-## Argo Workflows User Community Surveys & Feedback
+# Argo Workflows User Community Surveys & Feedback
 
-Please find [here](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results and the 2021 results [here](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee?gi=857daaa1faa9).
+User community survey results are available: [2023](https://blog.argoproj.io/argo-workflows-events-2023-user-survey-results-82c53bc30543), [2021](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee?gi=857daaa1faa9), and [2020](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf).
+
 
 ## Who uses Argo Workflows?
 
@@ -27,7 +28,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [AppDirect](https://www.appdirect.com/)
 1. [Arabesque](https://www.arabesque.com/)
 1. [Argonaut](https://www.argonaut.dev/)
-1. [ArthurAI](https://arthur.ai/) 
+1. [ArthurAI](https://arthur.ai/)
 1. [Astraea](https://astraea.earth/)
 1. [Atlan](https://atlan.com/)
 1. [BasisAI](https://basis-ai.com/)
@@ -83,7 +84,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Fynd Trak](https://trak.fynd.com/)
 1. [Galixir](https://www.galixir.com/)
 1. [Gardener](https://gardener.cloud/)
-2. [Gepardec](https://gepardec.com/)
+1. [Gepardec](https://gepardec.com/)
 1. [GitHub](https://github.com/)
 1. [Gitpod](https://www.gitpod.io/)
 1. [Gladly](https://gladly.com/)

@@ -4,7 +4,7 @@ import {ClusterWorkflowTemplateLink} from '../../cluster-workflow-templates/comp
 import {CronWorkflowLink} from '../../cron-workflows/components/cron-workflow-link';
 import {WorkflowTemplateLink} from '../../workflow-templates/components/workflow-template-link';
 
-export const WorkflowFrom = (props: {namespace: string; labels: {[name: string]: string}}) => {
+export function WorkflowFrom(props: {namespace: string; labels: {[name: string]: string}}) {
     const workflowTemplate = props.labels[labels.workflowTemplate];
     const clusterWorkflowTemplate = props.labels[labels.clusterWorkflowTemplate];
     const cronWorkflow = props.labels[labels.cronWorkflow];
@@ -16,4 +16,4 @@ export const WorkflowFrom = (props: {namespace: string; labels: {[name: string]:
             {!workflowTemplate && !clusterWorkflowTemplate && !cronWorkflow && '-'}
         </>
     );
-};
+}

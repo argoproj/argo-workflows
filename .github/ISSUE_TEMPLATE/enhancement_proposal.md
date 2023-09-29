@@ -7,7 +7,7 @@ labels: 'enhancement'
 
 What change needs making?
 
-# Use Cases
+## Use Cases
 
 When would you use this?
 

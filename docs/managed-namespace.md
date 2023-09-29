@@ -24,3 +24,8 @@ For example:
 ```
 
 Please mind that both cluster scoped and namespace scoped configurations require "admin" role because some custom resource (CRD) must be created (and CRD is always a cluster level object)
+
+!!! Info "Example Use Case"
+    You can use a managed namespace install if you want some users or services to run Workflows without granting them privileges in the namespace where Argo Workflows is installed.
+    For example, if you only run CI/CD Workflows that are maintained by the same team that manages the Argo Workflows installation, you may want a namespace install.
+    But if all the Workflows are run by a separate data science team, you may want to give them a "data-science-workflows" namespace and use a managed namespace install of Argo Workflows in another namespace.
