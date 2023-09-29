@@ -66,6 +66,45 @@ type artifactState struct {
 	deletedAtWFDeletion   bool
 }
 
+func (s *ArtifactsSuite) TestStoppedWorkflow() {
+
+	when := s.Given().
+		Workflow("@testdata/artifactgc/artgc-dag-wf-stopped.yaml").
+		When().
+		SubmitWorkflow()
+
+	when.
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
+		ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+		})
+
+	then := when.Then()
+
+	// Check that artifact exists
+	then.ExpectArtifactByKey("on-deletion-wf-stopped", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
+		assert.NoError(t, err)
+	})
+
+	when.
+		DeleteWorkflow().
+		WaitForWorkflowDeletion()
+
+	// wait for all GC pods to have been recouped
+	when.
+		WaitForWorkflow(
+			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+				return len(wf.Status.ArtifactGCStatus.PodsRecouped) >= 1,
+					fmt.Sprintf("for all %d pods to have been recouped", 1)
+			}))
+
+	// Check that artifact doesn't exist.
+	then.ExpectArtifactByKey("on-deletion-wf-stopped", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
+		assert.NotNil(t, err)
+	})
+}
+
 func (s *ArtifactsSuite) TestArtifactGC() {
 
 	s.Given().
@@ -231,7 +270,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			} else {
 				fmt.Printf("verifying artifact %s is not deleted\n", expectedArtifact.key)
 				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.Nil(t, err)
+					assert.NoError(t, err)
 				})
 			}
 		}
@@ -270,7 +309,7 @@ spec:
 
 // create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
 // Want to verify that this causes the ArtifactGCError Condition in the Workflow
-func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
+func (s *ArtifactsSuite) TestInsufficientRole() {
 	ctx := context.Background()
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
 	assert.NoError(s.T(), err)

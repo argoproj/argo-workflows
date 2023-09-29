@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artgc-dag-wf-stopped-
+spec:
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+  artifactGC:
+    strategy: OnWorkflowDeletion
+  serviceAccountName: argo
+  executor:
+    serviceAccountName: argo
+  entrypoint: artgc-dag-wf-stopped-main
+  templates:
+    - name: artgc-dag-wf-stopped-main
+      dag:
+        tasks:
+          - name: create-artifact
+            template: artgc-dag-artifact-creator
+          - name: delay-stop-workflow
+            template: artgc-dag-delay-stop
+          - name: stop-workflow
+            template: artgc-dag-workflow-stopper
+            # dependencies: [create-artifact]
+            dependencies: [delay-stop-workflow]
+    - name: artgc-dag-delay-stop
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - sleep
+          - 5
+    - name: artgc-dag-workflow-stopper
+      container:
+        image: argoproj/argocli:latest
+        args: 
+          - stop
+          - -l
+          - workflows.argoproj.io/test=true
+          - --namespace=argo
+          - --loglevel=debug
+    - name: artgc-dag-artifact-creator
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - '-c'
+        args:
+          - |
+            echo 'testing' > /tmp/test.txt
+            while true
+            do
+              sleep 1
+            done
+      outputs:
+        artifacts:
+          - name: on-deletion-wf-stopped
+            path: /tmp/test.txt
+            s3:
+              key: on-deletion-wf-stopped
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: OnWorkflowDeletion
