@@ -10,6 +10,7 @@ import {Utils} from '../../shared/utils';
 interface Props {
     workflow: Workflow;
     isArchived: boolean;
+    isWorkflowInCluster: boolean;
 }
 
 export function RetryWorkflowPanel(props: Props) {
@@ -32,9 +33,10 @@ export function RetryWorkflowPanel(props: Props) {
         };
 
         try {
-            const submitted = props.isArchived
-                ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
-                : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
+            const submitted =
+                props.isArchived && !props.isWorkflowInCluster
+                    ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
+                    : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
             document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
         } catch (err) {
             setError(err);
