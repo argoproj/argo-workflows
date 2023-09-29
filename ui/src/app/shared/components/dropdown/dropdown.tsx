@@ -1,13 +1,14 @@
 import classNames from 'classnames';
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+import React, {ComponentType, ReactNode, useEffect, useRef} from 'react';
+import {useState} from 'react';
+import {createPortal} from 'react-dom';
 import {BehaviorSubject, fromEvent, merge, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 
 export interface DropDownProps {
     isMenu?: boolean;
-    anchor: React.ComponentType;
-    children: React.ReactNode | (() => React.ReactNode);
+    anchor: ComponentType;
+    children: ReactNode;
     qeId?: string;
 }
 
@@ -19,112 +20,107 @@ export interface DropDownState {
 
 require('./dropdown.scss');
 
-const dropDownOpened = new BehaviorSubject<DropDown>(null);
+const dropDownOpened = new BehaviorSubject<typeof DropDown>(null);
 
-export class DropDown extends React.Component<DropDownProps, DropDownState> {
-    private el: HTMLDivElement;
-    private content: HTMLDivElement;
-    private subscriptions: Subscription[];
+export function DropDown({isMenu, anchor: Anchnor, children, qeId}: DropDownProps) {
+    const anchorRef = useRef<null | HTMLDivElement>(null);
+    const contentRef = useRef<null | HTMLDivElement>(null);
+    const subscriptionsRef = useRef<null | Subscription[]>(null);
+    const [opened, setOpened] = useState(false);
+    const [left, setLeft] = useState(0);
+    const [top, setTop] = useState(0);
 
-    constructor(props: DropDownProps) {
-        super(props);
-        this.state = {opened: false, left: 0, top: 0};
-    }
+    useEffect(() => {
+        const content = contentRef.current;
+        const el = anchorRef.current;
 
-    public render() {
-        let children: React.ReactNode = null;
-        if (typeof this.props.children === 'function') {
-            if (this.state.opened) {
-                const fun = this.props.children as () => React.ReactNode;
-                children = fun();
-            }
-        } else {
-            children = this.props.children as React.ReactNode;
-        }
-
-        return (
-            <div className='argo-dropdown' ref={el => (this.el = el)}>
-                <div
-                    qe-id={this.props.qeId}
-                    className='argo-dropdown__anchor'
-                    onClick={event => {
-                        this.open();
-                        event.stopPropagation();
-                    }}>
-                    <this.props.anchor />
-                </div>
-                {ReactDOM.createPortal(
-                    <div
-                        className={classNames('argo-dropdown__content', {'opened': this.state.opened, 'is-menu': this.props.isMenu})}
-                        style={{top: this.state.top, left: this.state.left}}
-                        ref={el => (this.content = el)}>
-                        {children}
-                    </div>,
-                    document.body
-                )}
-            </div>
-        );
-    }
-
-    public componentWillMount() {
-        this.subscriptions = [
+        subscriptionsRef.current = [
             merge(
-                dropDownOpened.pipe(filter(dropdown => dropdown !== this)),
+                dropDownOpened.pipe(filter(dropdown => dropdown !== DropDown)),
                 fromEvent(document, 'click').pipe(
                     filter((event: Event) => {
-                        return this.content && this.state.opened && !this.content.contains(event.target as Node) && !this.el.contains(event.target as Node);
+                        return content && opened && !content.contains(event.target as Node) && !el.contains(event.target as Node);
                     })
                 )
             ).subscribe(() => {
-                this.close();
+                close();
             }),
             fromEvent(document, 'scroll', {capture: true}).subscribe(() => {
-                if (this.state.opened && this.content && this.el) {
-                    this.setState(this.refreshState());
+                if (opened && content && el) {
+                    const newState = refreshState();
+
+                    setOpened(newState.opened);
+                    setLeft(newState.left);
+                    setTop(newState.top);
                 }
             })
         ];
-    }
 
-    public componentWillUnmount() {
-        (this.subscriptions || []).forEach(s => s.unsubscribe());
-        this.subscriptions = [];
-    }
+        return () => {
+            (subscriptionsRef.current || []).forEach(s => s.unsubscribe());
+            subscriptionsRef.current = [];
+        };
+    }, []);
 
-    public close() {
-        this.setState({opened: false});
-    }
-
-    private refreshState() {
-        const anchor = this.el.querySelector('.argo-dropdown__anchor') as HTMLElement;
-        const {top, left} = anchor.getBoundingClientRect();
+    const refreshState = () => {
+        const content = contentRef.current;
+        const anchor = anchorRef.current;
         const anchorHeight = anchor.offsetHeight + 2;
+        const {top: anchorTop, left: anchorLeft} = anchor.getBoundingClientRect();
+        const newState = {top: anchorTop, left: anchorLeft, opened};
 
-        const newState = {left: this.state.left, top: this.state.top, opened: this.state.opened};
         // Set top position
-        if (this.content.offsetHeight + top + anchorHeight > window.innerHeight) {
-            newState.top = top - this.content.offsetHeight - 2;
+        if (content.offsetHeight + anchorTop + anchorHeight > window.innerHeight) {
+            newState.top = anchorTop - content.offsetHeight - 2;
         } else {
-            newState.top = top + anchorHeight;
+            newState.top = anchorTop + anchorHeight;
         }
 
         // Set left position
-        if (this.content.offsetWidth + left > window.innerWidth) {
-            newState.left = left - this.content.offsetWidth + anchor.offsetWidth;
+        if (content.offsetWidth + anchorLeft > window.innerWidth) {
+            newState.left = anchorLeft - content.offsetWidth + anchor.offsetWidth;
         } else {
-            newState.left = left;
+            newState.left = anchorLeft;
         }
-        return newState;
-    }
 
-    private open() {
-        if (!this.content || !this.el) {
+        return newState;
+    };
+
+    const open = () => {
+        if (!contentRef.current || !anchorRef.current) {
             return;
         }
 
-        const newState = this.refreshState();
+        const newState = refreshState();
+
         newState.opened = true;
-        this.setState(newState);
-        dropDownOpened.next(this);
-    }
+        setOpened(newState.opened);
+        setLeft(newState.left);
+        setTop(newState.top);
+        dropDownOpened.next(DropDown);
+    };
+
+    const close = () => {
+        setOpened(false);
+    };
+
+    return (
+        <div className='argo-dropdown' ref={anchorRef}>
+            <div
+                qe-id={qeId}
+                className='argo-dropdown__anchor'
+                onClick={event => {
+                    open();
+                    event.stopPropagation();
+                }}>
+                <Anchnor />
+            </div>
+            {createPortal(
+                <div className={classNames('argo-dropdown__content', {'opened': opened, 'is-menu': isMenu})} style={{top, left}} ref={contentRef}>
+                    {children}
+                </div>,
+                document.body
+            )}
+        </div>
+    );
 }
