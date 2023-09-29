@@ -29,14 +29,15 @@ jobs:
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
-      - run: bash <(curl -s https://codecov.io/bash)
+      - name: Upload coverage report
         if: github.ref == 'refs/heads/master'
+        run: bash <(curl -s https://codecov.io/bash)
 
   argoexec-image:
     name: argoexec-image
+    # needs: [ lint ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # needs: [ lint ]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -49,7 +50,8 @@ jobs:
           target: argoexec
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - uses: actions/upload-artifact@v3
+      - name: Upload
+        uses: actions/upload-artifact@v3
         with:
           name: argoexec
           path: /tmp/argoexec_image.tar
@@ -57,9 +59,9 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
+    needs: [ argoexec-image ]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [ argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
@@ -96,22 +98,23 @@ jobs:
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
     steps:
-      - name: Install socat
-        # needed by Kubernetes v1.25
+      - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
           go-version: "1.21"
           cache: true
-      - uses: actions/setup-java@v3
+      - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
+        uses: actions/setup-java@v3
         with:
           java-version: '8'
           distribution: adopt
           cache: maven
-      - uses: actions/setup-python@v4
+      - name: Install Python for the SDK
         if: ${{matrix.test == 'test-python-sdk'}}
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
           cache: pip
@@ -129,13 +132,13 @@ jobs:
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
-      - uses: actions/download-artifact@v3
-        name: Download argoexec image
+      - name: Download argoexec image
+        uses: actions/download-artifact@v3
         with:
           name: argoexec
           path: /tmp
-      - run: docker load < /tmp/argoexec_image.tar
-        name: Load argoexec image
+      - name: Load argoexec image
+        run: docker load < /tmp/argoexec_image.tar
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -143,58 +146,61 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
-      - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
-        name: Install manifests
-      - run: make controller kit STATIC_FILES=false
-        name: Build controller
-      - run: make cli STATIC_FILES=false
+      - name: Install manifests
+        run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
+      - name: Build controller
+        run: make controller kit STATIC_FILES=false
+      - name: Build CLI
+        run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
-        name: Build CLI
-      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
-        name: Start controller/API
-      - run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+      - name: Start controller/API
+        run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
+      - name: Wait for controller to be up
+        run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         timeout-minutes: 5
-        name: Wait for controller to be up
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
-      - if: ${{ failure() }}
-        name: MinIO/MySQL deployment
+
+      # failure debugging below
+      - name: Failure debug - describe MinIO/MySQL deployment
+        if: ${{ failure() }}
         run: |
           set -eux
           kubectl get deploy
           kubectl describe deploy
-      - if: ${{ failure() }}
-        name: MinIO/MySQL pods
+      - name: Failure debug - describe MinIO/MySQL pods
+        if: ${{ failure() }}
         run: |
           set -eux
           kubectl get pods -l '!workflows.argoproj.io/workflow'
           kubectl describe pods -l '!workflows.argoproj.io/workflow'
-      - if: ${{ failure() }}
-        name: MinIO/MySQL logs
+      - name: Failure debug - MinIO/MySQL logs
+        if: ${{ failure() }}
         run: kubectl logs -l '!workflows.argoproj.io/workflow' --prefix
-      - if: ${{ failure() }}
-        name: Controller/API logs
+      - name: Failure debug - Controller/API logs
+        if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
       - if: ${{ failure() }}
-        name: Workflows
+        name: Failure debug - describe Workflows
         run: |
           set -eux
           kubectl get wf
           kubectl describe wf
-      - if: ${{ failure() }}
-        name: Workflow pods
+      - name: Failure debug - describe Workflow pods
+        if: ${{ failure() }}
         run: |
           set -eux
           kubectl get pods -l workflows.argoproj.io/workflow
           kubectl describe pods -l workflows.argoproj.io/workflow
-      - if: ${{ failure() }}
-        name: Wait container logs
+      - name: Failure debug - Wait container logs
+        if: ${{ failure() }}
         run: kubectl logs -c wait -l workflows.argoproj.io/workflow --prefix
+
   codegen:
     name: Codegen
-    runs-on: ubuntu-latest
     needs: [ tests ]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       GOPATH: /home/runner/go
@@ -214,21 +220,24 @@ jobs:
           sudo find /usr/local/include -type f | xargs sudo chmod a+r
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           ls /usr/local/include/google/protobuf/
-      - run: |
+      - name: Pull OpenAPI Generator CLI Docker image
+        run: |
           docker pull openapitools/openapi-generator-cli:v5.4.0 &
           docker pull openapitools/openapi-generator-cli:v5.2.1 &
-      - name: Create links
+      - name: Create symlinks
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
       - run: make codegen -B STATIC_FILES=false
-      - run: git diff --exit-code
+      # if codegen makes changes that are not in the PR, fail the build
+      - name: Check if codegen made changes not present in the PR
+        run: git diff --exit-code
 
   lint:
     name: Lint
-    runs-on: ubuntu-latest
     needs: [ tests, codegen ]
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    timeout-minutes: 15 # must be strictly greater than the timeout in .golancgi.yml
     env:
       GOPATH: /home/runner/go
     steps:
@@ -238,7 +247,9 @@ jobs:
           go-version: "1.21"
           cache: true
       - run: make lint STATIC_FILES=false
-      - run: git diff --exit-code
+      # if lint makes changes that are not in the PR, fail the build
+      - name: Check if lint made changes not present in the PR
+        run: git diff --exit-code
 
   ui:
     name: UI
