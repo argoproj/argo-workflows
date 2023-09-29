@@ -1,15 +1,22 @@
 import {Select, Tooltip} from 'argo-ui';
-import React, {useState} from 'react';
+import React from 'react';
 import {Parameter} from '../../../../models';
 import {Utils} from '../../utils';
 
 interface ParametersInputProps {
     parameters: Parameter[];
-    onChange?: (parameters: Parameter[]) => void;
+    onChange: (parameters: Parameter[]) => void;
 }
 
 export function ParametersInput(props: ParametersInputProps) {
-    const [parameters, setParameters] = useState<Parameter[]>(props.parameters || []);
+    function onParameterChange(parameter: Parameter, value: string) {
+        const newParameters: Parameter[] = props.parameters.map(p => ({
+            name: p.name,
+            value: p.name === parameter.name ? value : Utils.getValueFromParameter(p),
+            enum: p.enum
+        }));
+        props.onChange(newParameters);
+    }
 
     function displaySelectFieldForEnumValues(parameter: Parameter) {
         return (
@@ -20,41 +27,13 @@ export function ParametersInput(props: ParametersInputProps) {
                     value,
                     title: value
                 }))}
-                onChange={e => {
-                    const newParameters: Parameter[] = parameters.map(p => ({
-                        name: p.name,
-                        value: p.name === parameter.name ? e.value : Utils.getValueFromParameter(p),
-                        enum: p.enum
-                    }));
-                    setParameters(newParameters);
-                    onParametersChange(newParameters);
-                }}
+                onChange={e => onParameterChange(parameter, e.value)}
             />
         );
     }
 
     function displayInputFieldForSingleValue(parameter: Parameter) {
-        return (
-            <textarea
-                className='argo-field'
-                value={Utils.getValueFromParameter(parameter)}
-                onChange={e => {
-                    const newParameters: Parameter[] = parameters.map(p => ({
-                        name: p.name,
-                        value: p.name === parameter.name ? e.target.value : Utils.getValueFromParameter(p),
-                        enum: p.enum
-                    }));
-                    setParameters(newParameters);
-                    onParametersChange(newParameters);
-                }}
-            />
-        );
-    }
-
-    function onParametersChange(params: Parameter[]) {
-        if (props.onChange) {
-            props.onChange(params);
-        }
+        return <textarea className='argo-field' value={Utils.getValueFromParameter(parameter)} onChange={e => onParameterChange(parameter, e.target.value)} />;
     }
 
     return (
