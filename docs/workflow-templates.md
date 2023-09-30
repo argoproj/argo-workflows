@@ -353,7 +353,9 @@ Using `kubectl apply -f` and `kubectl get wftmpl`
 
 ### GitOps via Argo CD
 
-`WorkflowTemplate` resources can be managed with GitOps by using [Argo CD](https://github.com/argoproj/argo-cd)
+`WorkflowTemplate` resources can be managed with GitOps by using [Argo CD](https://github.com/argoproj/argo-cd).
+Store the `WorkflowTemplates` in a directory in a git repository, which you then monitor as a new application in Argo CD.
+When changes are made to the `WorkflowTemplates`, Argo CD will automatically update their definitions such that they become available in the Argo Workflows UI.
 
 ### UI
 
