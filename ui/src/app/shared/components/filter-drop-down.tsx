@@ -17,12 +17,12 @@ export const FilterDropDown = (props: FilterDropDownProps) => {
     return (
         <DropDown
             isMenu={true}
-            anchor={() => (
+            anchor={
                 <div className={classNames('top-bar__filter')} title='Filter'>
                     <i className='argo-icon-filter' aria-hidden='true' />
                     <i className='fa fa-angle-down' aria-hidden='true' />
                 </div>
-            )}>
+            }>
             <ul>
                 {props.sections
                     .filter(item => item.values)
