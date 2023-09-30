@@ -1685,10 +1685,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-datepicker@^4.11.2":
-  version "4.11.2"
-  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-4.11.2.tgz#44abfc6379faa58d28eb5730a058d6a389d40eac"
-  integrity sha512-ELYyX3lb3K1WltqdlF1hbnaDGgzlF6PIR5T4W38cSEcfrQDIrPE+Ioq5pwRe/KEJ+ihHMjvTVZQkwJx0pWMNHQ==
+"@types/react-datepicker@^4.15.1":
+  version "4.15.1"
+  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-4.15.1.tgz#a66fee520f2a31f83b45f4ed7f28af7296e11d0c"
+  integrity sha512-6/LthK0pTDBKjjVJqA2ygY3jJsHH7uZXIk8WPQcGHUiFOQLOKIv3krOxFZ2mt3BB3guMB6jVTc6ansQAd0r7xQ==
   dependencies:
     "@popperjs/core" "^2.9.2"
     "@types/react" "*"
@@ -6527,16 +6527,16 @@ react-copy-to-clipboard@5.0.4:
     copy-to-clipboard "^3"
     prop-types "^15.5.8"
 
-react-datepicker@^4.16.0:
-  version "4.16.0"
-  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-4.16.0.tgz#b9dd389bb5611a1acc514bba1dd944be21dd877f"
-  integrity sha512-hNQ0PAg/LQoVbDUO/RWAdm/RYmPhN3cz7LuQ3hqbs24OSp69QCiKOJRrQ4jk1gv1jNR5oYu8SjjgfDh8q6Q1yw==
+react-datepicker@^4.18.0:
+  version "4.18.0"
+  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-4.18.0.tgz#d66301acc47833d31fa6f46f98781b084106da0e"
+  integrity sha512-0MYt3HmLbHVk1sw4v+RCbLAVg5TA3jWP7RyjZbo53PC+SEi+pjdgc92lB53ai/ENZaTOhbXmgni9GzvMrorMAw==
   dependencies:
     "@popperjs/core" "^2.11.8"
     classnames "^2.2.6"
     date-fns "^2.30.0"
     prop-types "^15.7.2"
-    react-onclickoutside "^6.12.2"
+    react-onclickoutside "^6.13.0"
     react-popper "^2.3.0"
 
 react-debounce-input@=3.2.4:
@@ -6643,10 +6643,10 @@ react-monaco-editor@^0.50.1:
   dependencies:
     prop-types "^15.8.1"
 
-react-onclickoutside@^6.12.2:
-  version "6.12.2"
-  resolved "https://registry.yarnpkg.com/react-onclickoutside/-/react-onclickoutside-6.12.2.tgz#8e6cf80c7d17a79f2c908399918158a7b02dda01"
-  integrity sha512-NMXGa223OnsrGVp5dJHkuKxQ4czdLmXSp5jSV9OqiCky9LOpPATn3vLldc+q5fK3gKbEHvr7J1u0yhBh/xYkpA==
+react-onclickoutside@^6.13.0:
+  version "6.13.0"
+  resolved "https://registry.yarnpkg.com/react-onclickoutside/-/react-onclickoutside-6.13.0.tgz#e165ea4e5157f3da94f4376a3ab3e22a565f4ffc"
+  integrity sha512-ty8So6tcUpIb+ZE+1HAhbLROvAIJYyJe/1vRrrcmW+jLsaM+/powDRqxzo6hSh9CuRZGSL1Q8mvcF5WRD93a0A==
 
 react-popper@^2.2.5, react-popper@^2.3.0:
   version "2.3.0"
