@@ -6,6 +6,7 @@ package e2e
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -129,30 +130,36 @@ spec:
             hooks:
               running:
                 expression: steps["step-1"].status == "Running"
-                template: argosay
+                template: hook
               succeed:
                 expression: steps["step-1"].status == "Succeeded"
-                template: argosay
+                template: hook
             template: argosay
         - - name: step-2
             hooks:
               running:
                 expression: steps["step-2"].status == "Running"
-                template: argosay
+                template: hook
               succeed:
                 expression: steps["step-2"].status == "Succeeded"
-                template: argosay
+                template: hook
             template: argosay
     - name: argosay
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
+        args: ["/bin/sleep 5; /argosay"]
+    - name: hook
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/argosay"]
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Progress, v1alpha1.Progress("6/6"))
 			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 		return strings.Contains(status.Name, "step-1.hooks.succeed")
@@ -166,15 +173,11 @@ spec:
 		return strings.Contains(status.Name, "step-2.hooks.succeed")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+	}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+		return strings.Contains(status.Name, "step-2.hooks.running")
+	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
-	// TODO: Temporarily comment out this assertion since it's flaky:
-	// 	  The running hook is occasionally not triggered. Possibly because the step finishes too quickly
-	//	  while the controller did not get a chance to trigger this hook.
-	//.ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-	//	return strings.Contains(status.Name, "step-2.hooks.running")
-	//}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-	//	assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
-	//})
 }
 
 func (s *HooksSuite) TestTemplateLevelHooksStepFailVersion() {
@@ -201,12 +204,12 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay; exit 1"]
+        args: ["/bin/sleep 5; /argosay; exit 1"]
     - name: hook
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
+        args: ["/argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
@@ -240,31 +243,37 @@ spec:
             hooks:
               running:
                 expression: tasks["step-1"].status == "Running"
-                template: argosay
+                template: hook
               succeed:
                 expression: tasks["step-1"].status == "Succeeded"
-                template: argosay
+                template: hook
             template: argosay
           - name: step-2
             hooks:
               running:
                 expression: tasks["step-2"].status == "Running"
-                template: argosay
+                template: hook
               succeed:
                 expression: tasks["step-2"].status == "Succeeded"
-                template: argosay
+                template: hook
             template: argosay
             dependencies: [step-1]
     - name: argosay
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
+        args: ["/bin/sleep 5; /argosay"]
+    - name: hook
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/argosay"]
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Progress, v1alpha1.Progress("6/6"))
 			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 		return strings.Contains(status.Name, "step-1.hooks.succeed")
@@ -310,12 +319,12 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay; exit 1"]
+        args: ["/bin/sleep 5; /argosay; exit 1"]
     - name: hook
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
+        args: ["/argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
@@ -372,7 +381,7 @@ spec:
           - /bin/sh
           - '-c'
         args:
-          - /bin/sleep 1; /argosay; exit 0
+          - /bin/sleep 5; /argosay; exit 0
     - name: fail
       container:
         name: ''
@@ -381,7 +390,7 @@ spec:
           - /bin/sh
           - '-c'
         args:
-          - /bin/sleep 1; /argosay; exit 1
+          - /bin/sleep 5; /argosay; exit 1
     - name: hook
       container:
         name: ''
@@ -390,7 +399,7 @@ spec:
           - /bin/sh
           - '-c'
         args:
-          - /bin/sleep 1; /argosay
+          - /argosay
   entrypoint: main
 `).When().
 		SubmitWorkflow().
