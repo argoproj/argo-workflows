@@ -9,7 +9,7 @@ import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
-import {ProcessURL} from '../../../shared/components/links';
+import {openLinkWithKey, processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {useCollectEvent} from '../../../shared/components/use-collect-event';
@@ -440,13 +440,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 finishedAt: workflow.status.finishedAt
             }
         };
-        const url = ProcessURL(link.url, object);
-
-        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
-            window.open(url, '_blank');
-        } else {
-            document.location.href = url;
-        }
+        openLinkWithKey(processURL(link.url, object));
     }
 
     function setParameter(key: string, value: string) {
