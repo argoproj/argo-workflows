@@ -113,9 +113,9 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                 groupIsDisabled: disabled[actionName],
                 action,
                 groupAction: async () => {
-                    const confirmed = await this.performActionOnSelectedWorkflows(ctx, action.title, action.action)
+                    const confirmed = await this.performActionOnSelectedWorkflows(ctx, action.title, action.action);
                     if (!confirmed) {
-                        return
+                        return;
                     }
 
                     this.props.clearSelection();
