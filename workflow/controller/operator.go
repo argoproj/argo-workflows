@@ -1729,12 +1729,14 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	return &lastChildNode
 }
 
+// Get child node IDs of retry node by nodeName.
+// We can't distinguish straightforwardly between retried nodes from other nodes  because both have same node type.
 func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	childrenIds := []string{}
 	r := regexp.MustCompile(`^` + regexp.QuoteMeta(node.Name) + `\(\d+\)`)
 	for i := 0; i < len(node.Children); i++ {
 		n := getChildNodeIndex(node, nodes, i)
-		if node == nil {
+		if n == nil {
 			continue
 		}
 		if r.MatchString(n.Name) {
