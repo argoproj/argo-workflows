@@ -147,12 +147,13 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 1; /argosay"]
+        args: ["/bin/sleep 2; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Progress, v1alpha1.Progress("6/6"))
 			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 		return strings.Contains(status.Name, "step-1.hooks.succeed")
