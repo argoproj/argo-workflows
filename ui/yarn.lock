@@ -1663,10 +1663,10 @@
   resolved "https://registry.yarnpkg.com/@types/prettier/-/prettier-2.1.5.tgz#b6ab3bba29e16b821d84e09ecfaded462b816b00"
   integrity sha512-UEyp8LwZ4Dg30kVU2Q3amHHyTn1jEdhCIE59ANed76GaT1Vp76DD3ZWSAxgCrw6wJ0TqeoBpqmfUHiUDPs//HQ==
 
-"@types/prop-types@*", "@types/prop-types@^15.7.5":
-  version "15.7.5"
-  resolved "https://registry.yarnpkg.com/@types/prop-types/-/prop-types-15.7.5.tgz#5f19d2b85a98e9558036f6a3cacc8819420f05cf"
-  integrity sha512-JCB8C6SnDoQf0cNycqd/35A7MjcnK+ZTqE7judS6o7utxUCg6imJg3QK2qzHKszlTjcj2cn+NwMB2i96ubpj7w==
+"@types/prop-types@*", "@types/prop-types@^15.7.7":
+  version "15.7.7"
+  resolved "https://registry.yarnpkg.com/@types/prop-types/-/prop-types-15.7.7.tgz#f9361f7b87fd5d8188b2c998db0a1f47e9fb391a"
+  integrity sha512-FbtmBWCcSa2J4zL781Zf1p5YUBXQomPEcep9QZCfRfQgTxz3pJWiDFLebohZ9fFntX5ibzOkSsrJ0TEew8cAog==
 
 "@types/qs@*":
   version "6.9.7"
@@ -1678,10 +1678,10 @@
   resolved "https://registry.yarnpkg.com/@types/range-parser/-/range-parser-1.2.4.tgz#cd667bcfdd025213aafb7ca5915a932590acdcdc"
   integrity sha512-EEhsLsD6UsDM1yFhAvy0Cjr6VwmpMWqFBCb9w07wVugF7w9nfajxLuVmngTIpgS6svCnm6Vaw+MZhoDCKnOfsw==
 
-"@types/react-autocomplete@^1.8.5":
-  version "1.8.6"
-  resolved "https://registry.yarnpkg.com/@types/react-autocomplete/-/react-autocomplete-1.8.6.tgz#999d0cd10ac4164ea605da04d263e5fb3fd5745f"
-  integrity sha512-v3MOyT7gfMfu0K1Y6n9inGVO325evf96YY3Aw4i4WJs5f9+7Y/TVMPbNXoXRnbhlubgkqel19VnrCdBSodwOEg==
+"@types/react-autocomplete@^1.8.7":
+  version "1.8.7"
+  resolved "https://registry.yarnpkg.com/@types/react-autocomplete/-/react-autocomplete-1.8.7.tgz#e776c557301de8683025d431ba50cf6397b38fdd"
+  integrity sha512-U5xl8pnfR/FUlvLNegnVHO5X+2pGDjqtZs5PHu79Pkcrwq0L26F3CMItc4YglxtELqz1K5O754ntZAsu4USX6A==
   dependencies:
     "@types/react" "*"
 
