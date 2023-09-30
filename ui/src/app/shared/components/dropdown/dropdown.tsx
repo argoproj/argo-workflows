@@ -4,15 +4,9 @@ import {createPortal} from 'react-dom';
 
 export interface DropDownProps {
     isMenu?: boolean;
-    anchor: () => JSX.Element;
+    anchor: JSX.Element;
     children: ReactNode;
     qeId?: string;
-}
-
-export interface DropDownState {
-    opened: boolean;
-    left: number;
-    top: number;
 }
 
 require('./dropdown.scss');
@@ -49,7 +43,7 @@ export function DropDown({isMenu, anchor, children, qeId}: DropDownProps) {
     }
 
     function open() {
-        if (!contentRef || !anchorRef) {
+        if (!contentEl || !anchorEl) {
             return;
         }
 
@@ -62,21 +56,37 @@ export function DropDown({isMenu, anchor, children, qeId}: DropDownProps) {
     }
 
     function close(event: MouseEvent) {
-        if (opened) {
-            // Doesn't close when clicked inside the portal area
-            if (contentEl.contains(event.target as Node) || anchorEl.contains(event.target as Node)) {
-                return;
-            }
+        // Doesn't close when clicked inside the portal area
+        if (contentEl.contains(event.target as Node) || anchorEl.contains(event.target as Node)) {
+            return;
+        }
 
-            setOpened(false);
+        setOpened(false);
+    }
+
+    function scroll() {
+        if (contentEl && anchorEl) {
+            const newState = refreshState();
+
+            setOpened(newState.opened);
+            setTop(newState.top);
+            setLeft(newState.left);
         }
     }
 
     useEffect(() => {
-        document.body.addEventListener('click', close);
+        if (!opened) {
+            return;
+        }
 
-        return () => document.body.removeEventListener('click', close);
-    });
+        document.addEventListener('click', close);
+        document.addEventListener('scroll', scroll, {capture: true});
+
+        return () => {
+            document.removeEventListener('click', close);
+            document.removeEventListener('scroll', scroll, {capture: true});
+        };
+    }, [opened]);
 
     return (
         <div className='argo-dropdown' ref={anchorRef}>
@@ -87,7 +97,7 @@ export function DropDown({isMenu, anchor, children, qeId}: DropDownProps) {
                     open();
                     event.stopPropagation();
                 }}>
-                {anchor()}
+                {anchor}
             </div>
             {createPortal(
                 <div className={classNames('argo-dropdown__content', {opened, 'is-menu': isMenu})} style={{top, left}} ref={contentRef}>
