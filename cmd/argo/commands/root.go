@@ -1,9 +1,13 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/archive"
@@ -128,10 +132,35 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 		cli.SetLogLevel(logLevel)
 		cmdutil.SetGLogLevel(glogLevel)
 		log.WithField("version", argo.GetVersion()).Debug("CLI version")
+		printVersionMismatchWarning(command)
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
 
 	return command
+}
+
+// printVersionMismatchWarning logs a warning if the CLI version does not match the server version
+func printVersionMismatchWarning(command *cobra.Command) {
+	// if ARGO_SERVER isn't set there's no need to compare server and cli version
+	if _, ok := os.LookupEnv("ARGO_SERVER"); !ok {
+		return
+	}
+	ctx, apiClient := client.NewAPIClient(command.Context())
+	serviceClient, err := apiClient.NewInfoServiceClient()
+	// fail with warning because check for version mismatch should not prevent other commands from running
+
+	if err != nil {
+		log.Warnf("Failed create service client: %v", err)
+		return
+	}
+	serverVersion, err := serviceClient.GetVersion(ctx, &infopkg.GetVersionRequest{})
+	if err != nil {
+		log.Warnf("Failed to connect to Argo Server: %v", err)
+		return
+	}
+	if serverVersion.GitTag != argo.GetVersion().GitTag {
+		log.Warnf("CLI version (%s) does not match server version (%s). This can lead to unexpected behavior.", argo.GetVersion().GitTag, serverVersion.GitTag)
+	}
 }
