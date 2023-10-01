@@ -1705,7 +1705,7 @@ spec:
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("approve")
 			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, "Test message", nodeStatus.Message)
+				assert.Equal(t, "Test message; Resumed by: map[User:system:serviceaccount:argo:argo-server]", nodeStatus.Message)
 			}
 		})
 }

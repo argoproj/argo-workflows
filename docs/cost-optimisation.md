@@ -52,6 +52,7 @@ Limit the total number of workflows using:
 * Active Deadline Seconds - terminate running workflows that do not complete in a set time. This will make sure workflows do not run forever.
 * [Workflow TTL Strategy](fields.md#ttlstrategy) - delete completed workflows after a set time.
 * [Pod GC](fields.md#podgc) - delete completed pods. By default, Pods are not deleted.
+* [`CronWorkflow` history limits](cron-workflows.md#cronworkflow-options) - delete successful or failed workflows which exceed the limit.
 
 Example
 

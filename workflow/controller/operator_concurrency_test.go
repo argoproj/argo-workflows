@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -165,7 +164,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	var cm v1.ConfigMap
+	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -204,7 +203,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		}
 
 		// Updating Pod state
-		makePodsPhase(ctx, woc, v1.PodFailed)
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -226,7 +225,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	var cm v1.ConfigMap
+	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -264,7 +263,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 		// Updating Pod state
-		makePodsPhase(ctx, woc, v1.PodFailed)
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -286,7 +285,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	var cm v1.ConfigMap
+	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("other").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -326,7 +325,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 		// Updating Pod state
-		makePodsPhase(ctx, woc, v1.PodFailed)
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -348,7 +347,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	var cm v1.ConfigMap
+	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -387,7 +386,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		}
 
 		// Updating Pod state
-		makePodsPhase(ctx, woc, v1.PodFailed)
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -478,7 +477,7 @@ func TestMutexInDAG(t *testing.T) {
 			}
 		}
 		assert.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
-		makePodsPhase(ctx, woc, v1.PodSucceeded)
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 		woc1 := newWorkflowOperationCtx(woc.wf, controller)
 		woc1.operate(ctx)
@@ -550,7 +549,7 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 			}
 		}
 		assert.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
-		makePodsPhase(ctx, woc, v1.PodSucceeded)
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 		woc1 := newWorkflowOperationCtx(woc.wf, controller)
 		woc1.operate(ctx)
@@ -603,7 +602,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	var cm v1.ConfigMap
+	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
@@ -620,7 +619,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		}
 
 		// Updating Pod state
-		makePodsPhase(ctx, woc, v1.PodSucceeded)
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 		// Release the lock from hello1
 		woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -634,7 +633,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 			}
 		}
 		// Updating Pod state
-		makePodsPhase(ctx, woc, v1.PodSucceeded)
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 		// Release the lock  from hello2
 		woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -811,7 +810,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	var cm v1.ConfigMap
+	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
@@ -888,7 +887,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	var cm v1.ConfigMap
+	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
@@ -906,7 +905,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 			}
 		}
 		// Updating Pod state
-		makePodsPhase(ctx, woc, v1.PodRunning)
+		makePodsPhase(ctx, woc, apiv1.PodRunning)
 
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
@@ -914,7 +913,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 				assert.Equal(n.Phase, wfv1.NodeRunning)
 			}
 		}
-		makePodsPhase(ctx, woc, v1.PodFailed)
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
 			if n.Name == "[0].step1(0)" {

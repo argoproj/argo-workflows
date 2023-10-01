@@ -3319,3 +3319,26 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 		})
 	}
 }
+
+var spacedParameterWorkflowTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+    generateName: hello-world-
+spec:
+  entrypoint: helloworld
+
+  templates:
+  - name: helloworld
+    container:
+      image: "alpine:3.18"
+      command: ["echo", "{{  workflow.thisdoesnotexist  }}"]
+`
+
+func TestShouldCheckValidationToSpacedParameters(t *testing.T) {
+	err := validate(spacedParameterWorkflowTemplate)
+	// Do not allow leading or trailing spaces in parameters
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{  workflow.thisdoesnotexist  }}")
+	}
+}

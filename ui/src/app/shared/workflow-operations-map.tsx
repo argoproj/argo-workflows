@@ -7,7 +7,7 @@ export type OperationDisabled = {
     [action in WorkflowOperationName]: boolean;
 };
 
-type WorkflowOperationName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
+export type WorkflowOperationName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
 
 export interface WorkflowOperation {
     title: WorkflowOperationName;
