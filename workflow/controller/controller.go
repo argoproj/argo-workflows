@@ -522,7 +522,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case labelPodCompleted:
-			patch := []common.Operation{
+			patch := []common.DeleteFinalizerPatch{
 				{
 					Operation: "replace",
 					Path:      "/metadata/labels/workflows.argoproj.io~1completed",
@@ -533,7 +533,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			if p, ok := obj.(*apiv1.Pod); ok {
 				i := slices.Index(p.Finalizers, common.Finalizer)
 				if i >= 0 {
-					patch = append(patch, common.Operation{
+					patch = append(patch, common.DeleteFinalizerPatch{
 						Operation: "remove",
 						Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
 					})
@@ -552,12 +552,12 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case deletePod:
-			var patch []common.Operation
+			var patch []common.DeleteFinalizerPatch
 			obj, _, _ := wfc.podInformer.GetIndexer().GetByKey(namespace + "/" + podName)
 			if p, ok := obj.(*apiv1.Pod); ok {
 				i := slices.Index(p.Finalizers, common.Finalizer)
 				if i >= 0 {
-					patch = append(patch, common.Operation{
+					patch = append(patch, common.DeleteFinalizerPatch{
 						Operation: "remove",
 						Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
 					})
@@ -931,7 +931,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					for _, p := range podList.Items {
 						i := slices.Index(p.Finalizers, common.Finalizer)
 						if i >= 0 {
-							patch := []common.Operation{
+							patch := []common.DeleteFinalizerPatch{
 								{
 									Operation: "remove",
 									Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
