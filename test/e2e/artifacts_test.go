@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
@@ -80,29 +81,74 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 			assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
 		})
 
+	// Wait for artifact
+	when.
+		WaitForWorkflow(
+			fixtures.WorkflowCompletionOkay(true),
+			fixtures.ToBeCompleted,
+			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+				c, err := minio.New("localhost:9000", &minio.Options{
+					Creds: credentials.NewStaticV4("admin", "password", ""),
+				})
+
+				condition := "for artifact to exist"
+
+				if err != nil {
+					return false, condition
+				}
+
+				_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped", minio.StatObjectOptions{})
+
+				if err == nil {
+					return true, condition
+				}
+
+				return false, condition
+			}))
+
 	then := when.Then()
 
-	// Check that artifact exists
+	// Verify artifact exists
 	then.ExpectArtifactByKey("on-deletion-wf-stopped", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
 		assert.NoError(t, err)
 	})
 
+	when = then.When()
+
 	when.
 		DeleteWorkflow().
-		WaitForWorkflowDeletion()
-
-	// wait for all GC pods to have been recouped
-	when.
 		WaitForWorkflow(
+			fixtures.WorkflowCompletionOkay(true),
+			fixtures.ToBeCompleted,
 			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-				return len(wf.Status.ArtifactGCStatus.PodsRecouped) >= 1,
-					fmt.Sprintf("for all %d pods to have been recouped", 1)
+				c, err := minio.New("localhost:9000", &minio.Options{
+					Creds: credentials.NewStaticV4("admin", "password", ""),
+				})
+
+				condition := "for artifact to not exist"
+
+				if err != nil {
+					return false, condition
+				}
+
+				_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped", minio.StatObjectOptions{})
+
+				if err != nil {
+					return true, condition
+				}
+
+				return false, condition
 			}))
 
-	// Check that artifact doesn't exist.
+	then = when.Then()
+
 	then.ExpectArtifactByKey("on-deletion-wf-stopped", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
 		assert.NotNil(t, err)
 	})
+
+	when = then.When()
+
+	when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
 }
 
 func (s *ArtifactsSuite) TestArtifactGC() {

@@ -7,11 +7,29 @@ spec:
     labels:
       workflows.argoproj.io/test: "true"
   artifactGC:
+    serviceAccountName: default
     strategy: OnWorkflowDeletion
+  entrypoint: artgc-dag-wf-stopped-main
   serviceAccountName: argo
   executor:
-    serviceAccountName: argo
-  entrypoint: artgc-dag-wf-stopped-main
+    serviceAccountName: default
+  volumeClaimTemplates:
+    - metadata:
+        name: artifacts
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+  # How long to keep workflows around after they have completed https://argoproj.github.io/argo-workflows/fields/#ttlstrategy
+  # ttlStrategy:
+  #   # 30 seconds
+  #   secondsAfterCompletion: 30
+  #   secondsAfterSuccess: 30
+  #   secondsAfterFailure: 30
+  # podGC:
+  #   deleteDelayDuration: 15s
+  #   strategy: "OnWorkflowCompletion"
   templates:
     - name: artgc-dag-wf-stopped-main
       dag:
@@ -22,14 +40,28 @@ spec:
             template: artgc-dag-delay-stop
           - name: stop-workflow
             template: artgc-dag-workflow-stopper
-            # dependencies: [create-artifact]
             dependencies: [delay-stop-workflow]
     - name: artgc-dag-delay-stop
       container:
-        image: argoproj/argosay:v2
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
         args:
-          - sleep
-          - 5
+          - |
+            echo "Delaying workflow stop"
+            ls /mnt
+            x=0
+            while [ $x -le 60 ]
+            do
+              sleep 1
+              if test -f "/mnt/vol/test.txt"; then
+                echo "Artifact found in shared volume"
+                break
+              fi
+              x=$(( $x + 1 ))
+            done
     - name: artgc-dag-workflow-stopper
       container:
         image: argoproj/argocli:latest
@@ -41,13 +73,15 @@ spec:
           - --loglevel=debug
     - name: artgc-dag-artifact-creator
       container:
-        image: argoproj/argosay:v2
-        command:
-          - sh
-          - '-c'
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
         args:
           - |
-            echo 'testing' > /tmp/test.txt
+            echo 'testing' > /mnt/vol/test.txt
+            echo "Artifact saved to /mnt/vol/test.txt"
             while true
             do
               sleep 1
@@ -55,7 +89,7 @@ spec:
       outputs:
         artifacts:
           - name: on-deletion-wf-stopped
-            path: /tmp/test.txt
+            path: /mnt/vol/test.txt
             s3:
               key: on-deletion-wf-stopped
               bucket: my-bucket-3
