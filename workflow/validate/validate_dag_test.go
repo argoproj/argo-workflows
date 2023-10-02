@@ -1108,7 +1108,5 @@ spec:
 
 func TestDAGParamValueFromConfigMapInTask(t *testing.T) {
 	err := validate(dagParamValueFromConfigMapInTask)
-	if assert.NotNil(t, err) {
-		assert.NoError(t, err)
-	}
+	assert.NoError(t, err)
 }
