@@ -4,7 +4,6 @@ metadata:
   generateName: outputs-result-
   labels:
     workflows.argoproj.io/test: "true"
-    workflows.argoproj.io/container-runtime-executor: emissary
   annotations:
     workflows.argoproj.io/description: |
       This workflow demonstrates collecting outputs (specifically the stdout result) from a pod.

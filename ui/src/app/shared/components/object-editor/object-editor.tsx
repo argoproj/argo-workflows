@@ -110,7 +110,9 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                         readOnly: onChange === null,
                         minimap: {enabled: false},
                         lineNumbers: 'off',
-                        renderIndentGuides: false,
+                        guides: {
+                            indentation: false
+                        },
                         scrollBeyondLastLine: true
                     }}
                     onChange={v => {

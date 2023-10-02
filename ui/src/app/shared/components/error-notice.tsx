@@ -10,7 +10,12 @@ export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {respo
     if (!props.error) {
         return null;
     }
-    const [error, setError] = useState(props.error); // allow us to close the error panel - in case it does not get automatically closed
+    const [error, setError] = useState(() => props.error); // allow us to close the error panel - in case it does not get automatically closed
+
+    useEffect(() => {
+        setError(props.error);
+    }, [props.error]);
+
     // This timer code is based on https://stackoverflow.com/questions/57137094/implementing-a-countdown-timer-in-react-with-hooks
     const reloadAfterSeconds = props.reloadAfterSeconds || 120;
     const reload = props.onReload;

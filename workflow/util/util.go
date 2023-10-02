@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -34,6 +34,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -265,7 +267,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		wfAnnotations = make(map[string]string)
 	}
 	if opts.Annotations != "" {
-		fmt.Println(opts.Annotations)
 		passedAnnotations, err := cmdutil.ParseLabels(opts.Annotations)
 		if err != nil {
 			return fmt.Errorf("expected Annotations of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
@@ -312,6 +313,9 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 			newParams = append(newParams, param)
 		}
 		wf.Spec.Arguments.Parameters = newParams
+		if wf.Status.StoredWorkflowSpec != nil {
+			wf.Status.StoredWorkflowSpec.Arguments.Parameters = newParams
+		}
 	}
 	return nil
 }
@@ -325,7 +329,7 @@ func ReadParametersFile(file string, opts *wfv1.SubmitOpts) error {
 			return err
 		}
 	} else {
-		body, err = ioutil.ReadFile(file)
+		body, err = os.ReadFile(file)
 		if err != nil {
 			return err
 		}
@@ -375,8 +379,13 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
 func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
+	uiMsg := ""
+	uim := creator.UserInfoMap(ctx)
+	if uim != nil {
+		uiMsg = fmt.Sprintf("Resumed by: %v", uim)
+	}
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
+		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded, Message: uiMsg})
 	} else {
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
@@ -411,8 +420,12 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 						}
 					}
 					node.Phase = wfv1.NodeSucceeded
+					if node.Message != "" {
+						uiMsg = node.Message + "; " + uiMsg
+					}
+					node.Message = uiMsg
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					wf.Status.Nodes[nodeID] = node
+					wf.Status.Nodes.Set(nodeID, node)
 					workflowUpdated = true
 				}
 			}
@@ -558,8 +571,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 							}
 						}
 					}
-
-					wf.Status.Nodes[nodeID] = node
+					wf.Status.Nodes.Set(nodeID, node)
 				}
 			}
 		}
@@ -608,7 +620,7 @@ func RandSuffix() string {
 }
 
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
-func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
+func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
 	newWF.TypeMeta = wf.TypeMeta
 
@@ -646,12 +658,16 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []st
 	}
 	for key, val := range wf.ObjectMeta.Labels {
 		switch key {
-		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
+		case common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername,
+			common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
 			// ignore
 		default:
 			newWF.ObjectMeta.Labels[key] = val
 		}
 	}
+	// Apply creator labels based on the authentication information of the current request,
+	// regardless of the creator labels of the original Workflow.
+	creator.Label(ctx, &newWF)
 	// Append an additional label so it's easy for user to see the
 	// name of the original workflow that has been resubmitted.
 	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name
@@ -724,7 +740,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []st
 			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
 		}
-		newWF.Status.Nodes[newNode.ID] = *newNode
+		newWF.Status.Nodes.Set(newNode.ID, *newNode)
 	}
 
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
@@ -749,7 +765,12 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	var descendantNodeIDs []string
 	descendantNodeIDs = append(descendantNodeIDs, node.Children...)
 	for _, child := range node.Children {
-		descendantNodeIDs = append(descendantNodeIDs, getDescendantNodeIDs(wf, wf.Status.Nodes[child])...)
+		childStatus, err := wf.Status.Nodes.Get(child)
+		if err != nil {
+			log.Fatalf("Couldn't get child, panicking")
+			panic("Was not able to obtain child")
+		}
+		descendantNodeIDs = append(descendantNodeIDs, getDescendantNodeIDs(wf, *childStatus)...)
 	}
 	return descendantNodeIDs
 }
@@ -757,7 +778,7 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
 	templateName := GetTemplateFromNode(node)
 	version := GetWorkflowPodNameVersion(wf)
-	podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
+	podName := GeneratePodName(wf.Name, node.Name, templateName, node.ID, version)
 	if _, ok := deletedPods[podName]; !ok {
 		deletedPods[podName] = true
 		podsToDelete = append(podsToDelete, podName)
@@ -781,15 +802,23 @@ func isGroupNode(node wfv1.NodeStatus) bool {
 func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, currentNode wfv1.NodeStatus, resetParentGroupNodes []string) (*wfv1.Workflow, []string) {
 	currentNodeID := currentNode.ID
 	for {
-		currentNode := oldWF.Status.Nodes[currentNodeID]
+		currentNode, err := oldWF.Status.Nodes.Get(currentNodeID)
+		if err != nil {
+			log.Fatalf("dying due to inability to obtain node for %s", currentNodeID)
+			panic("was not able to get node, panicking")
+		}
 		if !containsNode(resetParentGroupNodes, currentNodeID) {
-			newWF.Status.Nodes[currentNodeID] = resetNode(*currentNode.DeepCopy())
+			newWF.Status.Nodes.Set(currentNodeID, resetNode(*currentNode.DeepCopy()))
 			resetParentGroupNodes = append(resetParentGroupNodes, currentNodeID)
 			log.Debugf("Reset connected group node %s", currentNode.Name)
 		}
 		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
-			parentNode := oldWF.Status.Nodes[currentNode.BoundaryID]
-			if isGroupNode(parentNode) {
+			parentNode, err := oldWF.Status.Nodes.Get(currentNode.BoundaryID)
+			if err != nil {
+				log.Fatalf("panicking unable to obtain node for %s", currentNode.BoundaryID)
+				panic("was not able to get node")
+			}
+			if isGroupNode(*parentNode) {
 				currentNodeID = parentNode.ID
 			} else {
 				break
@@ -803,11 +832,14 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
-
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
+	case wfv1.WorkflowSucceeded:
+		if !(restartSuccessful && len(nodeFieldSelector) > 0) {
+			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
+		}
 	default:
-		return nil, nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
+		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
 	}
 
 	newWF := wf.DeepCopy()
@@ -822,7 +854,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	newWF.Status.Message = ""
 	newWF.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
 	newWF.Status.FinishedAt = metav1.Time{}
+	if newWF.Status.StoredWorkflowSpec != nil {
+		newWF.Status.StoredWorkflowSpec.Shutdown = ""
+	}
 	newWF.Spec.Shutdown = ""
+	newWF.Status.PersistentVolumeClaims = []apiv1.Volume{}
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
 		// if it was terminated, unset the deadline
 		newWF.Spec.ActiveDeadlineSeconds = nil
@@ -858,7 +894,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if doForceResetNode {
+			if strings.HasPrefix(node.Name, onExitNodeName) || doForceResetNode {
 				log.Debugf("Force reset for node: %s", node.Name)
 				// Reset parent node if this node is a step/task group or DAG.
 				if isGroupNode(node) && node.BoundaryID != "" {
@@ -867,7 +903,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						var nodeGroupNeedsReset bool
 						// Only reset DAG that's in the same branch as the nodeIDsToReset
 						for _, child := range descendantNodeIDs {
-							childNode := wf.Status.Nodes[child]
+							childNode, err := wf.Status.Nodes.Get(child)
+							if err != nil {
+								log.Fatalf("was unable to obtain node for %s due to %s", child, err)
+								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", child, err)
+							}
 							if _, present := nodeIDsToReset[child]; present {
 								log.Debugf("Group node %s needs to reset since its child %s is in the force reset path", node.Name, childNode.Name)
 								nodeGroupNeedsReset = true
@@ -893,29 +933,33 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						descendantNodeIDs := getDescendantNodeIDs(wf, node)
 						for _, descendantNodeID := range descendantNodeIDs {
 							deletedNodes[descendantNodeID] = true
-							descendantNode := wf.Status.Nodes[descendantNodeID]
+							descendantNode, err := wf.Status.Nodes.Get(descendantNodeID)
+							if err != nil {
+								log.Fatalf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+							}
 							if descendantNode.Type == wfv1.NodeTypePod {
 								newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
-								deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
+								deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, *descendantNode, deletedPods, podsToDelete)
 								log.Debugf("Deleted pod node %s since it belongs to node %s", descendantNode.Name, node.Name)
 							}
 						}
 					} else {
 						log.Debugf("Reset non-pod/suspend node %s", node.Name)
 						newNode := node.DeepCopy()
-						newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
+						newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
 					}
 				}
 			} else {
 				if !containsNode(resetParentGroupNodes, node.ID) {
 					log.Debugf("Node %s remains as is", node.Name)
-					newWF.Status.Nodes[node.ID] = node
+					newWF.Status.Nodes.Set(node.ID, node)
 				}
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
-			if !strings.HasPrefix(node.Name, onExitNodeName) && isGroupNode(node) {
+			if isGroupNode(node) {
 				newNode := node.DeepCopy()
-				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
+				newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
@@ -933,7 +977,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		if node.Name == wf.ObjectMeta.Name {
 			log.Debugf("Reset root node: %s", node.Name)
 			newNode := node.DeepCopy()
-			newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
+			newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
 			continue
 		}
 	}
@@ -942,7 +986,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		for _, node := range newWF.Status.Nodes {
 			if deletedNodes[node.ID] {
 				log.Debugf("Removed node: %s", node.Name)
-				delete(newWF.Status.Nodes, node.ID)
+				newWF.Status.Nodes.Delete(node.ID)
 				continue
 			}
 
@@ -962,7 +1006,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			}
 			node.OutboundNodes = outboundNodes
 
-			newWF.Status.Nodes[node.ID] = node
+			newWF.Status.Nodes.Set(node.ID, node)
 		}
 	}
 
@@ -1066,6 +1110,15 @@ func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydr
 	return patchShutdownStrategy(ctx, wfClient, name, wfv1.ShutdownStrategyStop)
 }
 
+type AlreadyShutdownError struct {
+	workflowName string
+	namespace    string
+}
+
+func (e AlreadyShutdownError) Error() string {
+	return fmt.Sprintf("cannot shutdown a completed workflow: workflow: %q, namespace: %q", e.workflowName, e.namespace)
+}
+
 // patchShutdownStrategy patches the shutdown strategy to a workflow.
 func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string, strategy wfv1.ShutdownStrategy) error {
 	patchObj := map[string]interface{}{
@@ -1079,7 +1132,14 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 		return errors.InternalWrapError(err)
 	}
 	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		_, err := wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
+		wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return !errorsutil.IsTransientErr(err), err
+		}
+		if wf.Status.Fulfilled() {
+			return true, AlreadyShutdownError{wf.Name, wf.Namespace}
+		}
+		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 		if apierr.IsConflict(err) {
 			return false, nil
 		}
@@ -1098,7 +1158,7 @@ func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydra
 // Reads from stdin
 func ReadFromStdin() ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
-	body, err := ioutil.ReadAll(reader)
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -1111,7 +1171,7 @@ func ReadFromUrl(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if err != nil {
 		return nil, err
@@ -1131,7 +1191,7 @@ func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 				return [][]byte{}, err
 			}
 		} else {
-			body, err = ioutil.ReadFile(filepath.Clean(filePathOrUrl))
+			body, err = os.ReadFile(filepath.Clean(filePathOrUrl))
 			if err != nil {
 				return [][]byte{}, err
 			}
@@ -1188,6 +1248,36 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 	}
 	data, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
 	return string(data), err
+}
+
+func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYaml string) (*apiv1.PodSpec, error) {
+	podSpecJson, err := json.Marshal(podSpec)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
+	}
+
+	// must convert to json because PodSpec has only json tags
+	podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
+	}
+
+	// validate the patch to be a PodSpec
+	if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
+		return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
+	}
+
+	modJson, err := strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+	}
+
+	var newPodSpec apiv1.PodSpec
+	err = json.Unmarshal(modJson, &newPodSpec)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
+	}
+	return &newPodSpec, nil
 }
 
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {

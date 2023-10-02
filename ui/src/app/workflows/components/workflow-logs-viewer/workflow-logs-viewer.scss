@@ -11,3 +11,11 @@
   margin: 10px;
   background-color: white;
 }
+
+.log-menu {
+  display: flex;
+  column-gap: 12px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}

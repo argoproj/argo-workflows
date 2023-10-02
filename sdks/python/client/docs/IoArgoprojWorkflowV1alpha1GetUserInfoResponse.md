@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **email_verified** | **bool** |  | [optional] 
 **groups** | **[str]** |  | [optional] 
 **issuer** | **str** |  | [optional] 
+**name** | **str** |  | [optional] 
 **service_account_name** | **str** |  | [optional] 
 **service_account_namespace** | **str** |  | [optional] 
 **subject** | **str** |  | [optional] 

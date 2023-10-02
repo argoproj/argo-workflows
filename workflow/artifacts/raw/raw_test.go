@@ -3,7 +3,6 @@ package raw_test
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -20,7 +19,7 @@ const (
 
 func TestLoad(t *testing.T) {
 	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
-	lf, err := ioutil.TempFile("", LoadFileName)
+	lf, err := os.CreateTemp("", LoadFileName)
 	assert.NoError(t, err)
 	defer os.Remove(lf.Name())
 
@@ -32,7 +31,7 @@ func TestLoad(t *testing.T) {
 	err = driver.Load(art, lf.Name())
 	assert.NoError(t, err)
 
-	dat, err := ioutil.ReadFile(lf.Name())
+	dat, err := os.ReadFile(lf.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, content, string(dat))
 }

@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -93,6 +93,7 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
         return {
             'access_key_secret': (SecretKeySelector,),  # noqa: E501
             'bucket': (str,),  # noqa: E501
+            'ca_secret': (SecretKeySelector,),  # noqa: E501
             'create_bucket_if_not_present': (IoArgoprojWorkflowV1alpha1CreateS3BucketOptions,),  # noqa: E501
             'encryption_options': (IoArgoprojWorkflowV1alpha1S3EncryptionOptions,),  # noqa: E501
             'endpoint': (str,),  # noqa: E501
@@ -113,6 +114,7 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
     attribute_map = {
         'access_key_secret': 'accessKeySecret',  # noqa: E501
         'bucket': 'bucket',  # noqa: E501
+        'ca_secret': 'caSecret',  # noqa: E501
         'create_bucket_if_not_present': 'createBucketIfNotPresent',  # noqa: E501
         'encryption_options': 'encryptionOptions',  # noqa: E501
         'endpoint': 'endpoint',  # noqa: E501
@@ -168,11 +170,12 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             access_key_secret (SecretKeySelector): [optional]  # noqa: E501
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
+            ca_secret (SecretKeySelector): [optional]  # noqa: E501
             create_bucket_if_not_present (IoArgoprojWorkflowV1alpha1CreateS3BucketOptions): [optional]  # noqa: E501
             encryption_options (IoArgoprojWorkflowV1alpha1S3EncryptionOptions): [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             key_prefix (str): KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead. [optional]  # noqa: E501
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
@@ -261,11 +264,12 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             access_key_secret (SecretKeySelector): [optional]  # noqa: E501
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
+            ca_secret (SecretKeySelector): [optional]  # noqa: E501
             create_bucket_if_not_present (IoArgoprojWorkflowV1alpha1CreateS3BucketOptions): [optional]  # noqa: E501
             encryption_options (IoArgoprojWorkflowV1alpha1S3EncryptionOptions): [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             key_prefix (str): KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead. [optional]  # noqa: E501
             region (str): Region contains the optional bucket region. [optional]  # noqa: E501
             role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501

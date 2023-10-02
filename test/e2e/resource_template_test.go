@@ -143,6 +143,25 @@ spec:
 		})
 }
 
+func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
+	s.Given().
+		Workflow("@testdata/resource-templates/outputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			outputs := status.Nodes[md.Name].Outputs
+			if assert.NotNil(t, outputs) {
+				parameters := outputs.Parameters
+				if assert.Len(t, parameters, 2) {
+					assert.Equal(t, "my-pod", parameters[0].Value.String(), "metadata.name is capture for json")
+					assert.Equal(t, "my-pod", parameters[1].Value.String(), "metadata.name is capture for jq")
+				}
+			}
+		})
+}
+
 func TestResourceTemplateSuite(t *testing.T) {
 	suite.Run(t, new(ResourceTemplateSuite))
 }

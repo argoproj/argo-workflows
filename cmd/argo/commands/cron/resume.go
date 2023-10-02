@@ -10,7 +10,7 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 )
 
-// NewSuspendCommand returns a new instance of an `argo suspend` command
+// NewResumeCommand returns a new instance of an `argo resume` command
 func NewResumeCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "resume [CRON_WORKFLOW...]",

@@ -2,6 +2,7 @@ package logs
 
 import (
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
@@ -9,15 +10,25 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/k8s"
 )
 
+var (
+	extraLongThrottleLatency = 5 * time.Second
+)
+
 type k8sLogRoundTripper struct {
 	roundTripper http.RoundTripper
 }
 
 func (m k8sLogRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	now := time.Now()
 	x, err := m.roundTripper.RoundTrip(r)
+	latency := time.Since(now)
+
 	if x != nil {
 		verb, kind := k8s.ParseRequest(r)
-		log.Infof("%s %s %d", verb, kind, x.StatusCode)
+		if latency > extraLongThrottleLatency {
+			log.Warnf("Waited for %v, request: %s:%s", latency, verb, r.URL.String())
+		}
+		log.Debugf("%s %s %d", verb, kind, x.StatusCode)
 	}
 	return x, err
 }

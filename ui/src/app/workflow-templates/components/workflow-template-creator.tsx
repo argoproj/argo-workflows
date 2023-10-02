@@ -10,7 +10,7 @@ import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
-export const WorkflowTemplateCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) => {
+export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) {
     const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
@@ -35,4 +35,4 @@ export const WorkflowTemplateCreator = ({namespace, onCreate}: {namespace: strin
             </p>
         </>
     );
-};
+}

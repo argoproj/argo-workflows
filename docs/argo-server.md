@@ -48,7 +48,7 @@ See [managed namespace](managed-namespace.md).
 ### Base HREF
 
 If the server is running behind reverse proxy with a sub-path different from `/` (for example,
-`/argo`), you can set an alternative sub-path with the `--base-href` flag or the `BASE_HREF`
+`/argo`), you can set an alternative sub-path with the `--basehref` flag or the `BASE_HREF`
 environment variable.
 
 You probably now should [read how to set-up an ingress](#ingress)

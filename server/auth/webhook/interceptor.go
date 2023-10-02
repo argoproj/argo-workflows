@@ -3,9 +3,11 @@ package webhook
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
+
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,11 +68,11 @@ func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 	}
 	// we need to read the request body to check the signature, but we still need it for the GRPC request,
 	// so read it all now, and then reinstate when we are done
-	buf, _ := ioutil.ReadAll(r.Body)
-	defer func() { r.Body = ioutil.NopCloser(bytes.NewBuffer(buf)) }()
+	buf, _ := io.ReadAll(r.Body)
+	defer func() { r.Body = io.NopCloser(bytes.NewBuffer(buf)) }()
 	serviceAccountInterface := kube.CoreV1().ServiceAccounts(namespace)
 	for serviceAccountName, data := range webhookClients.Data {
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+		r.Body = io.NopCloser(bytes.NewBuffer(buf))
 		client := &webhookClient{}
 		err := yaml.Unmarshal(data, client)
 		if err != nil {
@@ -84,10 +86,7 @@ func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 			if err != nil {
 				return fmt.Errorf("failed to get service account \"%s\": %w", serviceAccountName, err)
 			}
-			if len(serviceAccount.Secrets) == 0 {
-				return fmt.Errorf("failed to get secret for service account \"%s\": no secrets", serviceAccountName)
-			}
-			tokenSecret, err := secretsInterface.Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+			tokenSecret, err := secretsInterface.Get(ctx, secrets.TokenNameForServiceAccount(serviceAccount), metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to get token secret \"%s\": %w", tokenSecret, err)
 			}

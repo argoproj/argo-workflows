@@ -24,8 +24,9 @@ export const CronWorkflowSpecEditor = ({onChange, spec}: {spec: CronWorkflowSpec
                 </div>
                 <div className='row white-box__details-row'>
                     <div className='columns small-3'>Concurrency Policy</div>
-                    <div className='columns small-9'>
+                    <div className='columns small-9' style={{lineHeight: '30px'}}>
                         <Select
+                            placeholder='Select concurrency policy'
                             options={['Allow', 'Forbid', 'Replace']}
                             value={spec.concurrencyPolicy}
                             onChange={x =>

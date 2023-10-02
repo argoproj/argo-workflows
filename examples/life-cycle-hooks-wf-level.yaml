@@ -5,7 +5,7 @@ metadata:
 spec:
   entrypoint: main
   hooks:
-    exit:
+    exit: # Exit handler
       template: http
     running:
       expression: workflow.status == "Running"

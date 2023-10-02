@@ -37,7 +37,11 @@ class ClientTest(unittest.TestCase):
             body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest),
             _check_return_type=False)
         pprint(api_response)
-
+        api_response = api_instance.list_workflows(
+            namespace='argo',
+            _check_return_type=False
+        )
+        pprint(api_response)
 
 if __name__ == '__main__':
     unittest.main()

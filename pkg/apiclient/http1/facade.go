@@ -78,6 +78,7 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	}
 	err = errFromResponse(resp)
 	if err != nil {
+		resp.Body.Close()
 		return nil, err
 	}
 	return bufio.NewReader(resp.Body), nil

@@ -6,6 +6,7 @@ You can configure Argo Server to show custom links:
 
 * A "Get Help" button in the bottom right of the window linking to you organization help pages or chat room.
 * Deep-links to your facilities (e.g. logging facility) in the UI for both the workflow and each workflow pod.
+* Adds a button to the top of workflow view to navigate to customized views.
 
 Links can contain placeholder variables. Placeholder variables are indicated by the dollar sign and curly braces: `${variable}`.
 
@@ -34,4 +35,4 @@ In addition to the above variables, we can now access all [workflow fields](fiel
 For example, one may find it useful to define a custom label in the workflow and access it by `${workflow.metadata.labels.custom_label_name}`
 
 We can also access workflow fields in a pod link. For example, `${workflow.metadata.name}` returns
-the name of the workflow instead of the name of the pod.
+the name of the workflow instead of the name of the pod. If the field doesn't exist on the workflow then the value will be an empty string.

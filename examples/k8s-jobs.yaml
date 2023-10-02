@@ -6,11 +6,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-jobs-
+  name: k8s-jobs
 spec:
-  entrypoint: pi-tmpl
+  entrypoint: rand-num
   templates:
-  - name: pi-tmpl
+  - name: rand-num
     resource:
       action: create
       # successCondition and failureCondition are optional expressions which are
@@ -21,24 +21,26 @@ spec:
       # (not just labels). Multiple AND conditions can be represented by comma
       # delimited expressions. For more details, see:
       # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
-      successCondition: status.succeeded > 0
-      failureCondition: status.failed > 3
+      successCondition: status.succeeded > 2
+      failureCondition: status.failed > 1
+      setOwnerReference: true
       manifest: |
         apiVersion: batch/v1
         kind: Job
         metadata:
-          generateName: pi-job-
+          generateName: rand-num-
         spec:
+          completions: 3
+          parallelism: 3
           template:
             metadata:
-              name: pi
+              name: rand
             spec:
               containers:
-              - name: pi
-                image: perl
-                command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+              - name: rand
+                image: python:alpine3.6
+                command: ["python", "-c", "import random; import time; print(random.randint(1, 1000)); time.sleep(10)"]
               restartPolicy: Never
-          backoffLimit: 4
     # Resource templates can have output parameters extracted from fields of the
     # resource. Two techniques are provided: jsonpath and a jq filter.
     outputs:

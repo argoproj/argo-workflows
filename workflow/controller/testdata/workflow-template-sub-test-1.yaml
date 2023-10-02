@@ -4,9 +4,9 @@ metadata:
   name: workflow-template-submittable
   namespace: test
   labels:
-    mutex-name: myMutex
+    mutexName: myMutex
   annotations:
-    scheduler-name: myScheduler
+    schedulerName: myScheduler
 spec:
   entrypoint: whalesay-template
   templates:

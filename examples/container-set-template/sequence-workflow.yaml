@@ -4,7 +4,6 @@ metadata:
   generateName: sequence-
   labels:
     workflows.argoproj.io/test: "true"
-    workflows.argoproj.io/container-runtime-executor: emissary
   annotations:
     workflows.argoproj.io/description: |
       This workflow demonstrates running a sequence of containers within a single pod.

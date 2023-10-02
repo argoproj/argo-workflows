@@ -6,8 +6,9 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -19,7 +20,6 @@ var (
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
 // If we are in a state where there are any workflows that have not been reconciled in the last 2m, we've gone wrong.
 func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
 	instanceID := wfc.Config.InstanceID
 	instanceIDSelector := func() string {
 		if instanceID != "" {
@@ -29,25 +29,34 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 	}()
 	labelSelector := "!" + common.LabelKeyPhase + "," + instanceIDSelector
 	err := func() error {
-		// avoid problems with informers, but directly querying the API
-		list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.managedNamespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+		seletor, err := labels.Parse(labelSelector)
 		if err != nil {
 			return err
 		}
-		for _, wf := range list.Items {
+		// the wfc.wfInformer is nil if it is not the leader
+		if wfc.wfInformer == nil {
+			log.Info("healthz: current pod is not the leader")
+			return nil
+		}
+		lister := v1alpha1.NewWorkflowLister(wfc.wfInformer.GetIndexer())
+		list, err := lister.Workflows(wfc.managedNamespace).List(seletor)
+		if err != nil {
+			return err
+		}
+		for _, wf := range list {
 			if time.Since(wf.GetCreationTimestamp().Time) > age {
 				return fmt.Errorf("workflow never reconciled: %s", wf.Name)
 			}
 		}
 		return nil
 	}()
-	log.WithField("err", err).
-		WithField("managedNamespace", wfc.managedNamespace).
-		WithField("instanceID", instanceID).
-		WithField("labelSelector", labelSelector).
-		WithField("age", age).
-		Info("healthz")
 	if err != nil {
+		log.WithField("err", err).
+			WithField("managedNamespace", wfc.managedNamespace).
+			WithField("instanceID", instanceID).
+			WithField("labelSelector", labelSelector).
+			WithField("age", age).
+			Info("healthz")
 		w.WriteHeader(500)
 		_, _ = w.Write([]byte(err.Error()))
 	} else {

@@ -18,7 +18,8 @@ import (
 )
 
 // RunServer starts a metrics server
-func (m *Metrics) RunServer(ctx context.Context) {
+// If 'isDummy' is set to true, the dummy metrics server will be started. If it's false, the prometheus metrics server will be started
+func (m *Metrics) RunServer(ctx context.Context, isDummy bool) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	if !m.metricsConfig.Enabled {
@@ -36,23 +37,33 @@ func (m *Metrics) RunServer(ctx context.Context) {
 		// If the telemetry server is different -- and it's enabled -- run each on its own instance
 		telemetryRegistry := prometheus.NewRegistry()
 		telemetryRegistry.MustRegister(collectors.NewGoCollector())
-		go runServer(m.telemetryConfig, telemetryRegistry, ctx)
+		go runServer(m.telemetryConfig, telemetryRegistry, ctx, isDummy)
 	}
 
 	// Run the metrics server
-	go runServer(m.metricsConfig, metricsRegistry, ctx)
+	go runServer(m.metricsConfig, metricsRegistry, ctx, isDummy)
 
 	go m.garbageCollector(ctx)
 }
 
-func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.Context) {
+func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.Context, isDummy bool) {
 	var handlerOpts promhttp.HandlerOpts
 	if config.IgnoreErrors {
 		handlerOpts.ErrorHandling = promhttp.ContinueOnError
 	}
 
+	name := ""
 	mux := http.NewServeMux()
-	mux.Handle(config.Path, promhttp.HandlerFor(registry, handlerOpts))
+	if isDummy {
+		// dummy metrics server responds to all requests with a 200 status, but without providing any metrics data
+		name = "dummy metrics server"
+		mux.HandleFunc(config.Path, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+	} else {
+		name = "prometheus metrics server"
+		mux.Handle(config.Path, promhttp.HandlerFor(registry, handlerOpts))
+	}
 	srv := &http.Server{Addr: fmt.Sprintf(":%v", config.Port), Handler: mux}
 
 	if config.Secure {
@@ -67,15 +78,15 @@ func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.C
 		}
 		srv.TLSConfig = tlsConfig
 		go func() {
-			log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
-			if err := srv.ListenAndServeTLS("", ""); err != nil {
+			log.Infof("Starting %s at localhost:%v%s", name, config.Port, config.Path)
+			if err := srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
 				panic(err)
 			}
 		}()
 	} else {
 		go func() {
-			log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
-			if err := srv.ListenAndServe(); err != nil {
+			log.Infof("Starting %s at localhost:%v%s", name, config.Port, config.Path)
+			if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 				panic(err)
 			}
 		}()
@@ -88,7 +99,9 @@ func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.C
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Infof("Unable to shutdown metrics server at localhost:%v%s", config.Port, config.Path)
+		log.Infof("Unable to shutdown %s at localhost:%v%s", name, config.Port, config.Path)
+	} else {
+		log.Infof("Successfully shutdown %s at localhost:%v%s", name, config.Port, config.Path)
 	}
 }
 

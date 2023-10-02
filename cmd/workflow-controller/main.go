@@ -47,22 +47,22 @@ const (
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
-		clientConfig             clientcmd.ClientConfig
-		configMap                string // --configmap
-		executorImage            string // --executor-image
-		executorImagePullPolicy  string // --executor-image-pull-policy
-		containerRuntimeExecutor string
-		logLevel                 string // --loglevel
-		glogLevel                int    // --gloglevel
-		logFormat                string // --log-format
-		workflowWorkers          int    // --workflow-workers
-		workflowTTLWorkers       int    // --workflow-ttl-workers
-		podCleanupWorkers        int    // --pod-cleanup-workers
-		burst                    int
-		qps                      float32
-		namespaced               bool   // --namespaced
-		managedNamespace         string // --managed-namespace
-		executorPlugins          bool
+		clientConfig            clientcmd.ClientConfig
+		configMap               string // --configmap
+		executorImage           string // --executor-image
+		executorImagePullPolicy string // --executor-image-pull-policy
+		logLevel                string // --loglevel
+		glogLevel               int    // --gloglevel
+		logFormat               string // --log-format
+		workflowWorkers         int    // --workflow-workers
+		workflowTTLWorkers      int    // --workflow-ttl-workers
+		podCleanupWorkers       int    // --pod-cleanup-workers
+		cronWorkflowWorkers     int    // --cron-workflow-workers
+		burst                   int
+		qps                     float32
+		namespaced              bool   // --namespaced
+		managedNamespace        string // --managed-namespace
+		executorPlugins         bool
 	)
 
 	command := cobra.Command{
@@ -110,14 +110,15 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, containerRuntimeExecutor, configMap, executorPlugins)
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins)
 			errors.CheckError(err)
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {
 				log.Info("Leader election is turned off. Running in single-instance mode")
 				log.WithField("id", "single-instance").Info("starting leading")
-				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers)
+				go wfController.RunMetricsServer(ctx, false)
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
@@ -128,6 +129,11 @@ func NewRootCommand() *cobra.Command {
 				if wfController.Config.InstanceID != "" {
 					leaderName = fmt.Sprintf("%s-%s", leaderName, wfController.Config.InstanceID)
 				}
+
+				// for controlling the dummy metrics server
+				dummyCtx, dummyCancel := context.WithCancel(context.Background())
+				defer dummyCancel()
+				go wfController.RunMetricsServer(dummyCtx, true)
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -140,11 +146,14 @@ func NewRootCommand() *cobra.Command {
 					RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
-							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+							dummyCancel()
+							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers)
+							go wfController.RunMetricsServer(ctx, false)
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info("stopped leading")
 							cancel()
+							go wfController.RunMetricsServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {
 							log.WithField("leader", identity).Info("new leader")
@@ -169,13 +178,13 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&configMap, "configmap", common.ConfigMapName, "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&executorImage, "executor-image", "", "Executor image to use (overrides value in configmap)")
 	command.Flags().StringVar(&executorImagePullPolicy, "executor-image-pull-policy", "", "Executor imagePullPolicy to use (overrides value in configmap)")
-	command.Flags().StringVar(&containerRuntimeExecutor, "container-runtime-executor", "", "Container runtime executor to use (overrides value in configmap)")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
 	command.Flags().IntVar(&workflowTTLWorkers, "workflow-ttl-workers", 4, "Number of workflow TTL workers")
 	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod cleanup workers")
+	command.Flags().IntVar(&cronWorkflowWorkers, "cron-workflow-workers", 8, "Number of cron workflow workers")
 	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")

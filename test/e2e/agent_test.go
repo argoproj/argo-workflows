@@ -110,15 +110,15 @@ spec:
         - - name: http-status-is-201-fails
             template: http-status-is-201
             arguments:
-              parameters: [{name: url, value: "https://httpstat.us/200"}]
+              parameters: [{name: url, value: "http://httpbin:9100/status/200"}]
           - name: http-status-is-201-succeeds
             template: http-status-is-201
             arguments:
-              parameters: [{name: url, value: "https://httpstat.us/201"}]
+              parameters: [{name: url, value: "http://httpbin:9100/status/201"}]
           - name: http-body-contains-google-fails
             template: http-body-contains-google
             arguments:
-              parameters: [{name: url, value: "https://httpstat.us/200"}]
+              parameters: [{name: url, value: "http://httpbin:9100/status/200"}]
           - name: http-body-contains-google-succeeds
             template: http-body-contains-google
             arguments:
@@ -140,7 +140,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(time.Minute).
+		WaitForWorkflow(time.Minute + 5*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)

@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: heavy-sequence-
+spec:
+  entrypoint: generate
+  podGC:
+    strategy: OnPodSuccess
+  templates:
+  - name: sleep-600-sec
+    container:
+      image: docker/whalesay
+      command: ['sh','-c']
+      args: ["echo sleeping for 600 sec && sleep 600"]
+      resources:
+        requests:
+          memory: "3Gi"
+          cpu: "2000m"
+        limits:
+          memory: "3Gi"
+          cpu: "2000m"
+  - name: generate
+    parallelism: 7000
+    steps:
+      - - name: sleep
+          template: sleep-600-sec
+          withSequence:
+            count:  10000

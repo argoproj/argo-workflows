@@ -15,8 +15,8 @@ spec:
   - name: tf-jobtmpl
     resource:
       action: create
-      successCondition: status.succeeded = 2
-      failureCondition: status.failed > 0
+      successCondition: status.replicaStatuses.Worker.succeeded = 2
+      failureCondition: status.replicaStatuses.Worker.failed > 0
       # You can also create any other custom K8s resource here. This is an example
       # of using Kubeflow TFJob as an illustration.
       manifest: |

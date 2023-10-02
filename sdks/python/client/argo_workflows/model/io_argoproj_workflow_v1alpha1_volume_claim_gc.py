@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -134,7 +134,7 @@ class IoArgoprojWorkflowV1alpha1VolumeClaimGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". Defaults to \"OnWorkflowSuccess\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -216,7 +216,7 @@ class IoArgoprojWorkflowV1alpha1VolumeClaimGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". Defaults to \"OnWorkflowSuccess\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

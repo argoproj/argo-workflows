@@ -1,29 +1,24 @@
 import * as React from 'react';
+import {useState} from 'react';
 import {Notice} from './notice';
 
-export class Nudge extends React.Component<{key: string}, {closed: boolean}> {
-    constructor(props: Readonly<{key: string}>) {
-        super(props);
-        this.state = {closed: localStorage.getItem(props.key) !== null};
+export function Nudge(props: React.PropsWithChildren<{key: string}>) {
+    const [closed, setClosed] = useState(localStorage.getItem(props.key) !== null);
+    function close() {
+        setClosed(true);
+        localStorage.setItem(props.key, '{}');
     }
 
-    public render() {
-        return (
-            !this.state.closed && (
-                <Notice style={{marginLeft: 0, marginRight: 0}}>
-                    {this.props.children}
-                    <span className='fa-pull-right'>
-                        <a onClick={() => this.close()}>
-                            <i className='fa fa-times' />
-                        </a>{' '}
-                    </span>
-                </Notice>
-            )
-        );
-    }
-
-    private close() {
-        this.setState({closed: true});
-        localStorage.setItem(this.props.key, '{}');
-    }
+    return (
+        !closed && (
+            <Notice style={{marginLeft: 0, marginRight: 0}}>
+                {props.children}
+                <span className='fa-pull-right'>
+                    <a onClick={() => close()}>
+                        <i className='fa fa-times' />
+                    </a>{' '}
+                </span>
+            </Notice>
+        )
+    );
 }

@@ -1,3 +1,4 @@
+USE_NIX := false
 VERSION := $(shell ./sdk_version.py)
 ifndef VERSION
   $(error "Failed to obtain a valid version for the SDK")
@@ -6,7 +7,7 @@ endif
 # work dir
 WD := $(shell echo "`pwd`/client")
 
-DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
+DOCKER = docker run --rm --user $(shell id -u):$(shell id -g) -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: generate
@@ -16,6 +17,12 @@ publish: generate
 	twine upload client/dist/* -u __token__ -p ${PYPI_API_TOKEN}
 
 generate:
+ifeq ($(USE_NIX), true) 
+	chmod -R 777 client || exit 0
+	rm -rf $(WD)
+	nix build
+	cp -r result/data/client ./client
+else
 	rm -Rf $(WD)
 	mkdir -p $(WD)
 	cat ../../api/openapi-spec/swagger.json | \
@@ -23,7 +30,7 @@ generate:
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> $(WD)/swagger.json
 	cp ../../LICENSE $(WD)/LICENSE
-	$(DOCKER) openapitools/openapi-generator-cli:v5.2.1 \
+	$(DOCKER) openapitools/openapi-generator-cli:v5.4.0 \
 		generate \
 		--input-spec /wd/swagger.json \
 		--generator-name python \
@@ -41,6 +48,7 @@ generate:
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
+endif
 
 install:
 	pip3 install ./client

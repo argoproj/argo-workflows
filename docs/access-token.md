@@ -9,7 +9,7 @@ If you want to automate tasks with the Argo Server API or CLI, you will need an 
 Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:
 
 ```bash
-kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io 
+kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io
 ```
 
 Create a service account for your service:
@@ -33,11 +33,24 @@ kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 
 ## Token Creation
 
-You now need to get a token:
+You now need to create a secret to hold your token:
 
 ```bash
-SECRET=$(kubectl get sa jenkins -o=jsonpath='{.secrets[0].name}')
-ARGO_TOKEN="Bearer $(kubectl get secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)"
+    kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jenkins.service-account-token
+  annotations:
+    kubernetes.io/service-account.name: jenkins
+type: kubernetes.io/service-account-token
+EOF
+```
+
+Wait a few seconds:
+
+```bash
+ARGO_TOKEN="Bearer $(kubectl get secret jenkins.service-account-token -o=jsonpath='{.data.token}' | base64 --decode)"
 echo $ARGO_TOKEN
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
@@ -72,7 +85,7 @@ ARGO_NAMESPACE=sandbox
 
 ### Start container with settings above
 
-> Note: Example for  getting list of templates from an existing namespace
+Example for listing templates in a namespace:
 
 ```bash
 docker run --rm -it \

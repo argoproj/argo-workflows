@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-hook-parameter
+spec:
+  entrypoint: run-test
+  templates:
+    - name: run-test
+      container:
+        name: runner
+        image: 'argoproj/argosay:v2'
+        command: ['sh','-c']
+        args:
+          - exit 0
+    - name: cowsay
+      inputs:
+        parameters:
+          - name: ternary
+          - name: status
+      container:
+        image: 'argoproj/argosay:v2'
+        command: ['bash','-c']
+        args:
+          - |
+            echo "{{inputs.parameters.ternary}}"
+            echo "{{inputs.parameters.status}}"
+            [[ "{{inputs.parameters.ternary}}" = "{{inputs.parameters.status}}" ]]
+  hooks:
+    exit:
+      template: cowsay
+      arguments:
+        parameters:
+          - name: ternary
+            value: '{{= workflow.status == "Succeeded" ? "Succeeded" : "Failed" }}'
+          - name: status
+            value: '{{= workflow.status }}'

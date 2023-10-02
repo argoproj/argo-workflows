@@ -16,6 +16,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	executor "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -29,7 +31,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 			namespace := client.Namespace()
 			clientConfig := client.GetConfig()
 
-			if podName, ok := os.LookupEnv(common.EnvVarArtifactPodName); ok {
+			if podName, ok := os.LookupEnv(common.EnvVarArtifactGCPodHash); ok {
 
 				config, err := clientConfig.ClientConfig()
 				workflowInterface := workflow.NewForConfigOrDie(config)
@@ -38,7 +40,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 				}
 
 				artifactGCTaskInterface := workflowInterface.ArgoprojV1alpha1().WorkflowArtifactGCTasks(namespace)
-				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodName, podName)
+				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodHash, podName)
 
 				err = deleteArtifacts(labelSelector, cmd.Context(), artifactGCTaskInterface)
 				if err != nil {
@@ -82,13 +84,16 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 					return err
 				}
 
-				err = drv.Delete(&artifact)
-				if err != nil {
-					errString := err.Error()
-					artResultNodeStatus.ArtifactResults[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: false, Error: &errString}
-				} else {
+				err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+					err = drv.Delete(&artifact)
+					if err != nil {
+						errString := err.Error()
+						artResultNodeStatus.ArtifactResults[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: false, Error: &errString}
+						return false, err
+					}
 					artResultNodeStatus.ArtifactResults[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: true, Error: nil}
-				}
+					return true, err
+				})
 			}
 
 			task.Status.ArtifactResultsByNode[nodeName] = artResultNodeStatus

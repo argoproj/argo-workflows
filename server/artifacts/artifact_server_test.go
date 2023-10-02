@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -50,7 +50,7 @@ type fakeArtifactDriver struct {
 }
 
 func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
-	return ioutil.WriteFile(path, a.data, 0o600)
+	return os.WriteFile(path, a.data, 0o600)
 }
 
 var bucketsOfKeys = map[string][]string{
@@ -63,6 +63,7 @@ var bucketsOfKeys = map[string][]string{
 		"my-wf/my-node-1/my-gcs-artifact.tgz",
 		"my-wf/my-node-1/my-oss-artifact.zip",
 		"my-wf/my-node-1/my-s3-artifact.tgz",
+		"my-wf/my-node-inline/main.log",
 	},
 	"my-bucket-2": {
 		"my-wf/my-node-2/my-s3-artifact-bucket-2",
@@ -305,6 +306,22 @@ func newServer() *ArtifactServer {
 						},
 					},
 				},
+				"my-node-inline": wfv1.NodeStatus{
+					TemplateName: "",
+					Outputs: &wfv1.Outputs{
+						Artifacts: wfv1.Artifacts{
+							{
+								Name: "my-s3-artifact-inline",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										// S3 is a configured artifact repo, so does not need key
+										Key: "my-wf/my-node-inline/main.log",
+									},
+								},
+							},
+						},
+					},
+				},
 				// a node without input/output artifacts
 				"my-node-no-artifacts": wfv1.NodeStatus{},
 			},
@@ -329,7 +346,7 @@ func newServer() *ArtifactServer {
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
-	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
+	a.On("GetWorkflow", "my-uuid", "", "").Return(wf, nil)
 
 	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
@@ -505,6 +522,38 @@ func TestArtifactServer_GetOutputArtifactWithTemplate(t *testing.T) {
 		t.Run(tt.artifactName, func(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node-3/%s", tt.artifactName))
+			recorder := httptest.NewRecorder()
+
+			s.GetOutputArtifact(recorder, r)
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
+			}
+		})
+	}
+}
+
+func TestArtifactServer_GetOutputArtifactWithInlineTemplate(t *testing.T) {
+	s := newServer()
+
+	tests := []struct {
+		fileName     string
+		artifactName string
+	}{
+		{
+			fileName:     "main.log",
+			artifactName: "my-s3-artifact-inline",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.artifactName, func(t *testing.T) {
+			r := &http.Request{}
+			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node-inline/%s", tt.artifactName))
 			recorder := httptest.NewRecorder()
 
 			s.GetOutputArtifact(recorder, r)

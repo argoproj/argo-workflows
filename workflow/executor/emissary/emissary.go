@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -66,11 +65,11 @@ func (e emissary) writeTemplate(t wfv1.Template) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(common.VarRunArgoPath+"/template", data, 0o444) // chmod -r--r--r--
+	return os.WriteFile(common.VarRunArgoPath+"/template", data, 0o444) // chmod -r--r--r--
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
-	data, err := ioutil.ReadFile(filepath.Clean(filepath.Join(common.VarRunArgoPath, "outputs", "parameters", sourcePath)))
+	data, err := os.ReadFile(filepath.Clean(filepath.Join(common.VarRunArgoPath, "outputs", "parameters", sourcePath)))
 	return string(data), err
 }
 
@@ -138,7 +137,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
+		if err := os.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}
@@ -151,7 +150,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
+		if err := os.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}

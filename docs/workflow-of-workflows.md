@@ -50,13 +50,13 @@ spec:
     - name: main
       steps:
         - - name: workflow1
-            template: triggerWorkflowUsingResourceWithoutArgument
+            template: resource-without-argument
             arguments:
               parameters:
               - name: workflowtemplate
                 value: "workflow-template-submittable"
         - - name: workflow2
-            template: triggerWorkflowUsingResourceWithArgument
+            template: resource-with-argument
             arguments:
               parameters:
               - name: workflowtemplate
@@ -64,7 +64,7 @@ spec:
               - name: message
                 value: "Welcome Argo"
 
-    - name: triggerWorkflowUsingResourceWithoutArgument
+    - name: resource-without-argument
       inputs:
         parameters:
           - name: workflowtemplate
@@ -80,8 +80,8 @@ spec:
               name: {{inputs.parameters.workflowtemplate}}
         successCondition: status.phase == Succeeded
         failureCondition: status.phase in (Failed, Error)
-
-    - name: triggerWorkflowUsingResourceWithArgument
+        
+    - name: resource-with-argument
       inputs:
         parameters:
           - name: workflowtemplate
@@ -102,4 +102,5 @@ spec:
               name: {{inputs.parameters.workflowtemplate}}
         successCondition: status.phase == Succeeded
         failureCondition: status.phase in (Failed, Error)
+
 ```

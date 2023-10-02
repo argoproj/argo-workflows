@@ -758,6 +758,109 @@ func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 	}
 }
 
+var testWorkflowOnExitStepsHttpReconciliation = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-647r7
+spec:
+  arguments: {}
+  entrypoint: whalesay
+  onExit: exit-handler
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: exit-handler
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: run-example-com
+        template: example-com
+  - http:
+      url: https://example.com
+    inputs: {}
+    metadata: {}
+    name: example-com
+    outputs: {}
+status:
+  nodes:
+    hello-world-647r7:
+      displayName: hello-world-647r7
+      finishedAt: "2021-12-09T04:11:35Z"
+      hostNodeName: dev-capact-control-plane
+      id: hello-world-647r7
+      name: hello-world-647r7
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2021-12-09T04:11:30Z"
+      templateName: whalesay
+      templateScope: local/hello-world-647r7
+      type: Pod
+    hello-world-647r7-206029318:
+      children:
+      - hello-world-647r7-1045616760
+      displayName: hello-world-647r7.onExit
+      finishedAt: null
+      id: hello-world-647r7-206029318
+      name: hello-world-647r7.onExit
+      phase: Running
+      progress: 0/1
+      startedAt: "2021-12-09T04:11:36Z"
+      templateName: exit-handler
+      templateScope: local/hello-world-647r7
+      type: Steps
+    hello-world-647r7-1045616760:
+      boundaryID: hello-world-647r7-206029318
+      children:
+      - hello-world-647r7-370991976
+      displayName: '[0]'
+      finishedAt: null
+      id: hello-world-647r7-1045616760
+      name: hello-world-647r7.onExit[0]
+      phase: Running
+      progress: 0/1
+      startedAt: "2021-12-09T04:11:36Z"
+      templateScope: local/hello-world-647r7
+      type: StepGroup
+  phase: Running
+  startedAt: "2021-12-09T04:11:30Z"
+`
+
+func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitStepsHttpReconciliation)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	if assert.NoError(t, err) {
+		assert.Len(t, taskSets.Items, 0)
+	}
+
+	woc.operate(ctx)
+
+	assert.Len(t, woc.wf.Status.Nodes, 4)
+	taskSets, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	if assert.NoError(t, err) {
+		assert.Len(t, taskSets.Items, 1)
+	}
+}
+
 func TestWorkflowOnExitWorkflowStatus(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow

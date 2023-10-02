@@ -4,13 +4,13 @@ metadata:
   generateName: workflow-template-hello-world-
   namespace: test
   labels:
-    mutex-name: myMutex
+    mutexName: myMutex
   annotations:
-    scheduler-name: myScheduler
+    schedulerName: myScheduler
 spec:
   workflowTemplateRef:
     name: workflow-template-submittable
   synchronization:
     mutex:
-      name:  "{{workflow.labels.mutex-name}}"
-  schedulerName:  "{{workflow.annotations.scheduler-name}}"
+      name:  "{{workflow.labels.mutexName}}"
+  schedulerName:  "{{workflow.annotations.schedulerName}}"

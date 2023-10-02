@@ -3,7 +3,6 @@ package common
 import (
 	"bytes"
 	"fmt"
-	"hash/fnv"
 	"testing"
 	"text/tabwriter"
 	"time"
@@ -16,9 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-var (
-	workflowName string = "testWF"
-)
+var workflowName string = "testWF"
 
 func init() {
 	// these values get used as part of determining node name and would normally be set as part of
@@ -62,34 +59,37 @@ func TestPrintNode(t *testing.T) {
 	timestamp := metav1.Time{
 		Time: time.Now(),
 	}
-	node := wfv1.NodeStatus{
-		Name:        nodeName,
-		Phase:       wfv1.NodeRunning,
-		DisplayName: nodeName,
-		Type:        wfv1.NodeTypePod,
-		ID:          nodeID,
-		StartedAt:   timestamp,
-		FinishedAt:  timestamp,
-		Message:     nodeMessage,
-	}
 
+	// Node without TemplateRef
+	node := wfv1.NodeStatus{
+		Name:         nodeName,
+		Phase:        wfv1.NodeRunning,
+		DisplayName:  nodeName,
+		Type:         wfv1.NodeTypePod,
+		ID:           nodeID,
+		StartedAt:    timestamp,
+		FinishedAt:   timestamp,
+		Message:      nodeMessage,
+		TemplateName: nodeTemplateName,
+	}
 	node.HostNodeName = kubernetesNodeName
 	// derive expected pod name:
-	h := fnv.New32a()
-	_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeRunning], nodeName)))
-	expectedPodName := fmt.Sprintf("%s-%s-%v", workflowName, node.TemplateName, h.Sum32())
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, "", expectedPodName, "0s", nodeMessage, ""), node, getArgs)
+	templateName := util.GetTemplateFromNode(node)
+	expectedPodName := util.GeneratePodName(workflowName, nodeName, templateName, nodeID, util.GetPodNameVersion())
+
+	t.Log(expectedPodName)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
 	// Compatibility test
 	getArgs.Status = "Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
 	getArgs.Status = ""
 	getArgs.NodeFieldSelectorString = "phase=Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
 	getArgs.NodeFieldSelectorString = "phase!=foobar"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
 	getArgs.NodeFieldSelectorString = "phase!=Running"
 	testPrintNodeImpl(t, "", node, getArgs)
@@ -108,18 +108,19 @@ func TestPrintNode(t *testing.T) {
 	}
 
 	node.TemplateName = nodeTemplateName
-	expectedPodName = fmt.Sprintf("%s-%s-%v", workflowName, node.TemplateName, h.Sum32())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypeSuspend
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, getArgs)
 
+	// Node with templateRef
+	node.TemplateName = ""
 	node.TemplateRef = &wfv1.TemplateRef{
 		Name:     nodeTemplateRefName,
 		Template: nodeTemplateRefName,
 	}
-	templateName := fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
-	expectedPodName = fmt.Sprintf("%s-%s-%v", workflowName, templateName, h.Sum32())
+	templateName = util.GetTemplateFromNode(node)
+	expectedPodName = util.GeneratePodName(workflowName, nodeName, templateName, nodeID, util.GetPodNameVersion())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
 
 	getArgs.Output = "wide"
@@ -397,20 +398,14 @@ status:
 		output := PrintWorkflowHelper(&wf, GetFlags{})
 
 		// derive expected pod name:
-		h := fnv.New32a()
-		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(9:nine)")))
-		expectedPodName := fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
-		assert.Contains(t, output, fmt.Sprintf("sleep(9:nine)     sleep           %s   19s", expectedPodName))
+		expectedPodName := util.GeneratePodName(wf.GetObjectMeta().GetName(), "many-items-z26lj[0].sleep(9:nine)", "sleep", "many-items-z26lj-2619926859", util.GetPodNameVersion())
+		assert.Contains(t, output, fmt.Sprintf("sleep(9:nine)     sleep           %s  19s", expectedPodName))
 
-		h.Reset()
-		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(10:ten)")))
-		expectedPodName = fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
+		expectedPodName = util.GeneratePodName(wf.GetObjectMeta().GetName(), "many-items-z26lj[0].sleep(10:ten)", "sleep", "many-items-z26lj-1052882686", util.GetPodNameVersion())
 		assert.Contains(t, output, fmt.Sprintf("sleep(10:ten)     sleep           %s  23s", expectedPodName))
 
-		h.Reset()
-		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(11:eleven)")))
-		expectedPodName = fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
-		assert.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s   22s", expectedPodName))
+		expectedPodName = util.GeneratePodName(wf.GetObjectMeta().GetName(), "many-items-z26lj[0].sleep(11:eleven)", "sleep", "many-items-z26lj-3011405271", util.GetPodNameVersion())
+		assert.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s  22s", expectedPodName))
 	})
 }
 

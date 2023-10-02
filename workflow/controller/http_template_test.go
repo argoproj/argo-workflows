@@ -24,7 +24,7 @@ func TestNodeRequiresHttpReconciliation(t *testing.T) {
 					"test-wf-3939368189": v1alpha1.NodeStatus{
 						Name:     "parent",
 						Type:     v1alpha1.NodeTypeSteps,
-						Children: []string{"child-http"},
+						Children: []string{"test-wf-1430055856"},
 					},
 					"test-wf-1430055856": v1alpha1.NodeStatus{
 						Name: "child-http",

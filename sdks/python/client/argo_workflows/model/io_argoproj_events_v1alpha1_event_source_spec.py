@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -48,6 +48,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_pub_sub_event_source import IoArgoprojEventsV1alpha1PubSubEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_pulsar_event_source import IoArgoprojEventsV1alpha1PulsarEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_redis_event_source import IoArgoprojEventsV1alpha1RedisEventSource
+    from argo_workflows.model.io_argoproj_events_v1alpha1_redis_stream_event_source import IoArgoprojEventsV1alpha1RedisStreamEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_resource_event_source import IoArgoprojEventsV1alpha1ResourceEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_s3_artifact import IoArgoprojEventsV1alpha1S3Artifact
     from argo_workflows.model.io_argoproj_events_v1alpha1_service import IoArgoprojEventsV1alpha1Service
@@ -57,7 +58,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_storage_grid_event_source import IoArgoprojEventsV1alpha1StorageGridEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_stripe_event_source import IoArgoprojEventsV1alpha1StripeEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_template import IoArgoprojEventsV1alpha1Template
-    from argo_workflows.model.io_argoproj_events_v1alpha1_webhook_context import IoArgoprojEventsV1alpha1WebhookContext
+    from argo_workflows.model.io_argoproj_events_v1alpha1_webhook_event_source import IoArgoprojEventsV1alpha1WebhookEventSource
     globals()['IoArgoprojEventsV1alpha1AMQPEventSource'] = IoArgoprojEventsV1alpha1AMQPEventSource
     globals()['IoArgoprojEventsV1alpha1AzureEventsHubEventSource'] = IoArgoprojEventsV1alpha1AzureEventsHubEventSource
     globals()['IoArgoprojEventsV1alpha1BitbucketEventSource'] = IoArgoprojEventsV1alpha1BitbucketEventSource
@@ -76,6 +77,7 @@ def lazy_import():
     globals()['IoArgoprojEventsV1alpha1PubSubEventSource'] = IoArgoprojEventsV1alpha1PubSubEventSource
     globals()['IoArgoprojEventsV1alpha1PulsarEventSource'] = IoArgoprojEventsV1alpha1PulsarEventSource
     globals()['IoArgoprojEventsV1alpha1RedisEventSource'] = IoArgoprojEventsV1alpha1RedisEventSource
+    globals()['IoArgoprojEventsV1alpha1RedisStreamEventSource'] = IoArgoprojEventsV1alpha1RedisStreamEventSource
     globals()['IoArgoprojEventsV1alpha1ResourceEventSource'] = IoArgoprojEventsV1alpha1ResourceEventSource
     globals()['IoArgoprojEventsV1alpha1S3Artifact'] = IoArgoprojEventsV1alpha1S3Artifact
     globals()['IoArgoprojEventsV1alpha1SNSEventSource'] = IoArgoprojEventsV1alpha1SNSEventSource
@@ -85,7 +87,7 @@ def lazy_import():
     globals()['IoArgoprojEventsV1alpha1StorageGridEventSource'] = IoArgoprojEventsV1alpha1StorageGridEventSource
     globals()['IoArgoprojEventsV1alpha1StripeEventSource'] = IoArgoprojEventsV1alpha1StripeEventSource
     globals()['IoArgoprojEventsV1alpha1Template'] = IoArgoprojEventsV1alpha1Template
-    globals()['IoArgoprojEventsV1alpha1WebhookContext'] = IoArgoprojEventsV1alpha1WebhookContext
+    globals()['IoArgoprojEventsV1alpha1WebhookEventSource'] = IoArgoprojEventsV1alpha1WebhookEventSource
 
 
 class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
@@ -161,6 +163,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             'pub_sub': ({str: (IoArgoprojEventsV1alpha1PubSubEventSource,)},),  # noqa: E501
             'pulsar': ({str: (IoArgoprojEventsV1alpha1PulsarEventSource,)},),  # noqa: E501
             'redis': ({str: (IoArgoprojEventsV1alpha1RedisEventSource,)},),  # noqa: E501
+            'redis_stream': ({str: (IoArgoprojEventsV1alpha1RedisStreamEventSource,)},),  # noqa: E501
             'replicas': (int,),  # noqa: E501
             'resource': ({str: (IoArgoprojEventsV1alpha1ResourceEventSource,)},),  # noqa: E501
             'service': (IoArgoprojEventsV1alpha1Service,),  # noqa: E501
@@ -170,7 +173,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             'storage_grid': ({str: (IoArgoprojEventsV1alpha1StorageGridEventSource,)},),  # noqa: E501
             'stripe': ({str: (IoArgoprojEventsV1alpha1StripeEventSource,)},),  # noqa: E501
             'template': (IoArgoprojEventsV1alpha1Template,),  # noqa: E501
-            'webhook': ({str: (IoArgoprojEventsV1alpha1WebhookContext,)},),  # noqa: E501
+            'webhook': ({str: (IoArgoprojEventsV1alpha1WebhookEventSource,)},),  # noqa: E501
         }
 
     @cached_property
@@ -199,6 +202,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
         'pub_sub': 'pubSub',  # noqa: E501
         'pulsar': 'pulsar',  # noqa: E501
         'redis': 'redis',  # noqa: E501
+        'redis_stream': 'redisStream',  # noqa: E501
         'replicas': 'replicas',  # noqa: E501
         'resource': 'resource',  # noqa: E501
         'service': 'service',  # noqa: E501
@@ -272,6 +276,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             pub_sub ({str: (IoArgoprojEventsV1alpha1PubSubEventSource,)}): [optional]  # noqa: E501
             pulsar ({str: (IoArgoprojEventsV1alpha1PulsarEventSource,)}): [optional]  # noqa: E501
             redis ({str: (IoArgoprojEventsV1alpha1RedisEventSource,)}): [optional]  # noqa: E501
+            redis_stream ({str: (IoArgoprojEventsV1alpha1RedisStreamEventSource,)}): [optional]  # noqa: E501
             replicas (int): [optional]  # noqa: E501
             resource ({str: (IoArgoprojEventsV1alpha1ResourceEventSource,)}): [optional]  # noqa: E501
             service (IoArgoprojEventsV1alpha1Service): [optional]  # noqa: E501
@@ -281,7 +286,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             storage_grid ({str: (IoArgoprojEventsV1alpha1StorageGridEventSource,)}): [optional]  # noqa: E501
             stripe ({str: (IoArgoprojEventsV1alpha1StripeEventSource,)}): [optional]  # noqa: E501
             template (IoArgoprojEventsV1alpha1Template): [optional]  # noqa: E501
-            webhook ({str: (IoArgoprojEventsV1alpha1WebhookContext,)}): [optional]  # noqa: E501
+            webhook ({str: (IoArgoprojEventsV1alpha1WebhookEventSource,)}): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -383,6 +388,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             pub_sub ({str: (IoArgoprojEventsV1alpha1PubSubEventSource,)}): [optional]  # noqa: E501
             pulsar ({str: (IoArgoprojEventsV1alpha1PulsarEventSource,)}): [optional]  # noqa: E501
             redis ({str: (IoArgoprojEventsV1alpha1RedisEventSource,)}): [optional]  # noqa: E501
+            redis_stream ({str: (IoArgoprojEventsV1alpha1RedisStreamEventSource,)}): [optional]  # noqa: E501
             replicas (int): [optional]  # noqa: E501
             resource ({str: (IoArgoprojEventsV1alpha1ResourceEventSource,)}): [optional]  # noqa: E501
             service (IoArgoprojEventsV1alpha1Service): [optional]  # noqa: E501
@@ -392,7 +398,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             storage_grid ({str: (IoArgoprojEventsV1alpha1StorageGridEventSource,)}): [optional]  # noqa: E501
             stripe ({str: (IoArgoprojEventsV1alpha1StripeEventSource,)}): [optional]  # noqa: E501
             template (IoArgoprojEventsV1alpha1Template): [optional]  # noqa: E501
-            webhook ({str: (IoArgoprojEventsV1alpha1WebhookContext,)}): [optional]  # noqa: E501
+            webhook ({str: (IoArgoprojEventsV1alpha1WebhookEventSource,)}): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

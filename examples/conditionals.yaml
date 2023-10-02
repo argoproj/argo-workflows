@@ -16,7 +16,7 @@ spec:
   arguments:
     parameters:
     - name: should-print
-      value: "false"
+      value: "true"
 
   templates:
   - name: conditional-example
@@ -24,12 +24,18 @@ spec:
       parameters:
       - name: should-print
     steps:
-    - - name: print-hello
-        template: whalesay
-        when: "{{inputs.parameters.should-print}} == true"
+    - - name: print-hello-govaluate
+        template: argosay
+        when: "{{inputs.parameters.should-print}} == true" # govaluate form
+      - name: print-hello-expr
+        template: argosay
+        when: "{{= inputs.parameters[\"should-print\"] == 'true'}}" # expr form; note: a dash in the name requires the use of brackets and quotes for expr to handle
+      - name: print-hello-expr-json
+        template: argosay
+        when: "{{=jsonpath(workflow.parameters.json, '$[0].value') == 'true'}}" # expr form
 
-  - name: whalesay
+  - name: argosay
     container:
-      image: docker/whalesay:latest
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["cowsay hello"]

@@ -8,5 +8,5 @@ spec:
     name: workflow-template-submittable
   synchronization:
     mutex:
-      name:  "{{workflow.labels.mutex-name}}"
-  schedulerName:  "{{workflow.annotations.scheduler-name}}"
+      name:  "{{workflow.labels.mutexName}}"
+  schedulerName:  "{{workflow.annotations.schedulerName}}"

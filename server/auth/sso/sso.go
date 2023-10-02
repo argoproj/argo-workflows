@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -49,18 +50,19 @@ var _ Interface = &sso{}
 type Config = config.SSOConfig
 
 type sso struct {
-	config          *oauth2.Config
-	issuer          string
-	idTokenVerifier *oidc.IDTokenVerifier
-	httpClient      *http.Client
-	baseHRef        string
-	secure          bool
-	privateKey      crypto.PrivateKey
-	encrypter       jose.Encrypter
-	rbacConfig      *config.RBACConfig
-	expiry          time.Duration
-	customClaimName string
-	userInfoPath    string
+	config            *oauth2.Config
+	issuer            string
+	idTokenVerifier   *oidc.IDTokenVerifier
+	httpClient        *http.Client
+	baseHRef          string
+	secure            bool
+	privateKey        crypto.PrivateKey
+	encrypter         jose.Encrypter
+	rbacConfig        *config.RBACConfig
+	expiry            time.Duration
+	customClaimName   string
+	userInfoPath      string
+	filterGroupsRegex []*regexp.Regexp
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -108,7 +110,7 @@ func newSso(
 		return nil, err
 	}
 	// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.
-	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}}}
+	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}, Proxy: http.ProxyFromEnvironment}}
 	oidcContext := oidc.ClientContext(ctx, httpClient)
 	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
 	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
@@ -141,8 +143,12 @@ func newSso(
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
 	}, metav1.CreateOptions{})
-	if err != nil && !apierr.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("failed to create secret: %w", err)
+	isSecretAlreadyExists := false
+	if err != nil {
+		isSecretAlreadyExists = apierr.IsAlreadyExists(err)
+		if !isSecretAlreadyExists {
+			return nil, fmt.Errorf("failed to create secret: %w", err)
+		}
 	}
 	secret, err := secretsIf.Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
@@ -150,7 +156,11 @@ func newSso(
 	}
 	privateKey, err := x509.ParsePKCS1PrivateKey(secret.Data[cookieEncryptionPrivateKeySecretKey])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse private key: %w", err)
+		if isSecretAlreadyExists {
+			return nil, fmt.Errorf("failed to parse private key. If you have already defined a Secret named %s, delete it and retry: %w", secretName, err)
+		} else {
+			return nil, fmt.Errorf("failed to parse private key: %w", err)
+		}
 	}
 
 	clientID := clientIDObj.Data[c.ClientID.Key]
@@ -173,25 +183,38 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify}
+
+	var filterGroupsRegex []*regexp.Regexp
+	if c.FilterGroupsRegex != nil && len(c.FilterGroupsRegex) > 0 {
+		for _, regex := range c.FilterGroupsRegex {
+			compiledRegex, err := regexp.Compile(regex)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile sso.filterGroupRegex: %s %w", regex, err)
+			}
+			filterGroupsRegex = append(filterGroupsRegex, compiledRegex)
+		}
+	}
+
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
 	log.WithFields(lf).Info("SSO configuration")
 
 	return &sso{
-		config:          config,
-		idTokenVerifier: idTokenVerifier,
-		baseHRef:        baseHRef,
-		httpClient:      httpClient,
-		secure:          secure,
-		privateKey:      privateKey,
-		encrypter:       encrypter,
-		rbacConfig:      c.RBAC,
-		expiry:          c.GetSessionExpiry(),
-		customClaimName: c.CustomGroupClaimName,
-		userInfoPath:    c.UserInfoPath,
-		issuer:          c.Issuer,
+		config:            config,
+		idTokenVerifier:   idTokenVerifier,
+		baseHRef:          baseHRef,
+		httpClient:        httpClient,
+		secure:            secure,
+		privateKey:        privateKey,
+		encrypter:         encrypter,
+		rbacConfig:        c.RBAC,
+		expiry:            c.GetSessionExpiry(),
+		customClaimName:   c.CustomGroupClaimName,
+		userInfoPath:      c.UserInfoPath,
+		issuer:            c.Issuer,
+		filterGroupsRegex: filterGroupsRegex,
 	}, nil
 }
 
@@ -222,6 +245,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(state)
 	http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
 	if err != nil {
+		log.WithError(err).Error("failed to get cookie")
 		w.WriteHeader(400)
 		return
 	}
@@ -230,44 +254,60 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
 	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
+		log.WithError(err).Error("failed to get oauth2Token by using code from the oauth2 server")
 		w.WriteHeader(401)
 		return
 	}
 	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 	if !ok {
+		log.Error("failed to extract id_token from the response")
 		w.WriteHeader(401)
 		return
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
+		log.WithError(err).Error("failed to verify the id token issued")
 		w.WriteHeader(401)
 		return
 	}
 	c := &types.Claims{}
 	if err := idToken.Claims(c); err != nil {
+		log.WithError(err).Error("failed to get claims from the id token")
 		w.WriteHeader(401)
 		return
 	}
-
 	// Default to groups claim but if customClaimName is set
 	// extract groups based on that claim key
 	groups := c.Groups
 	if s.customClaimName != "" {
 		groups, err = c.GetCustomGroup(s.customClaimName)
 		if err != nil {
-			w.WriteHeader(401)
-			return
+			log.Warn(err)
 		}
 	}
-
 	// Some SSO implementations (Okta) require a call to
 	// the OIDC user info path to get attributes like groups
 	if s.userInfoPath != "" {
 		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath)
 		if err != nil {
+			log.WithError(err).Errorf("failed to get groups claim from the given userInfoPath(%s)", s.userInfoPath)
 			w.WriteHeader(401)
 			return
 		}
+	}
+
+	// only return groups that match at least one of the regexes
+	if s.filterGroupsRegex != nil && len(s.filterGroupsRegex) > 0 {
+		var filteredGroups []string
+		for _, group := range groups {
+			for _, regex := range s.filterGroupsRegex {
+				if regex.MatchString(group) {
+					filteredGroups = append(filteredGroups, group)
+					break
+				}
+			}
+		}
+		groups = filteredGroups
 	}
 
 	argoClaims := &types.Claims{
@@ -277,16 +317,16 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
 		},
 		Groups:                  groups,
-		RawClaim:                c.RawClaim,
 		Email:                   c.Email,
 		EmailVerified:           c.EmailVerified,
+		Name:                    c.Name,
 		ServiceAccountName:      c.ServiceAccountName,
 		PreferredUsername:       c.PreferredUsername,
 		ServiceAccountNamespace: c.ServiceAccountNamespace,
 	}
-
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
+		log.WithError(err).Errorf("failed to encrypt and serialize the jwt token")
 		w.WriteHeader(401)
 		return
 	}

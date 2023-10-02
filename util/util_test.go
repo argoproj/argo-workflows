@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestGenerateFieldSelectorFromWorkflowName(t *testing.T) {
@@ -79,4 +81,163 @@ func TestGetDeletePropagation(t *testing.T) {
 		os.Setenv("WF_DEL_PROPAGATION_POLICY", "")
 		assert.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
 	})
+}
+
+func TestMergeArtifacts(t *testing.T) {
+	type args struct {
+		artifactSlices [][]wfv1.Artifact
+	}
+	tests := []struct {
+		name string
+		args args
+		want []wfv1.Artifact
+	}{
+		{
+			name: "test merge artifacts",
+			args: args{
+				artifactSlices: [][]wfv1.Artifact{
+					{
+						{
+							Name: "artifact1",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									S3Bucket: wfv1.S3Bucket{
+										Bucket: "bucket1",
+									},
+								},
+							},
+						},
+						{
+							Name: "artifact2",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									S3Bucket: wfv1.S3Bucket{
+										Bucket: "bucket2",
+									},
+								},
+							},
+						},
+					},
+					{
+						{
+							Name: "artifact3",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									S3Bucket: wfv1.S3Bucket{
+										Bucket: "bucket3",
+									},
+								},
+							},
+						},
+						{
+							Name: "artifact1",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+
+									S3Bucket: wfv1.S3Bucket{
+										Bucket: "bucket1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []wfv1.Artifact{
+				{
+					Name: "artifact1",
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{
+							S3Bucket: wfv1.S3Bucket{
+								Bucket: "bucket1",
+							},
+						},
+					},
+				},
+				{
+					Name: "artifact2",
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{
+							S3Bucket: wfv1.S3Bucket{
+								Bucket: "bucket2",
+							},
+						},
+					},
+				},
+				{
+					Name: "artifact3",
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{
+							S3Bucket: wfv1.S3Bucket{
+								Bucket: "bucket3",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, MergeArtifacts(tt.args.artifactSlices...), "MergeArtifacts(%v)", tt.args.artifactSlices)
+		})
+	}
+}
+
+func TestMergeParameters(t *testing.T) {
+	type args struct {
+		params [][]wfv1.Parameter
+	}
+	tests := []struct {
+		name string
+		args args
+		want []wfv1.Parameter
+	}{
+		{
+			name: "test merge parameters",
+			args: args{
+				params: [][]wfv1.Parameter{
+					{
+						{
+							Name:  "param1",
+							Value: wfv1.AnyStringPtr("value1"),
+						},
+						{
+							Name:  "param2",
+							Value: wfv1.AnyStringPtr("value2"),
+						},
+					},
+					{
+						{
+							Name:  "param3",
+							Value: wfv1.AnyStringPtr("value3"),
+						},
+						{
+							Name:  "param2",
+							Value: wfv1.AnyStringPtr("value2"),
+						},
+					},
+				},
+			},
+			want: []wfv1.Parameter{
+				{
+					Name:  "param1",
+					Value: wfv1.AnyStringPtr("value1"),
+				},
+				{
+					Name:  "param2",
+					Value: wfv1.AnyStringPtr("value2"),
+				},
+				{
+					Name:  "param3",
+					Value: wfv1.AnyStringPtr("value3"),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, MergeParameters(tt.args.params...), "MergeParameters(%v)", tt.args.params)
+		})
+	}
 }

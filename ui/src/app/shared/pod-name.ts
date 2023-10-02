@@ -6,12 +6,12 @@ export const POD_NAME_V2 = 'v2';
 export const maxK8sResourceNameLength = 253;
 export const k8sNamingHashLength = 10;
 
-// getPodName returns a deterministic pod name. It returns a combination of the
-// workflow name, template name, and a hash if the POD_NAME_V2 annotation is
-// set. If the templateName or templateRef is not defined on a given node, it
-// falls back to POD_NAME_V1
+// getPodName returns a deterministic pod name
+// In case templateName is not defined or that version is explicitly set to  POD_NAME_V1, it will return the nodeID (v1)
+// In other cases it will return a combination of workflow name, template name, and a hash (v2)
+// note: this is intended to be equivalent to the server-side Go code in workflow/util/pod_name.go
 export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string, version: string): string => {
-    if (version === POD_NAME_V2 && templateName !== '') {
+    if (version !== POD_NAME_V1 && templateName !== '') {
         if (workflowName === nodeName) {
             return workflowName;
         }
@@ -36,17 +36,17 @@ export const ensurePodNamePrefixLength = (prefix: string): string => {
 };
 
 export const createFNVHash = (input: string): number => {
-    const data = Buffer.from(input);
-
     let hashint = 2166136261;
 
-    /* tslint:disable:no-bitwise */
-    for (const character of data) {
+    for (let i = 0; i < input.length; i++) {
+        const character = input.charCodeAt(i);
+        /* tslint:disable:no-bitwise */
         hashint = hashint ^ character;
         hashint += (hashint << 1) + (hashint << 4) + (hashint << 7) + (hashint << 8) + (hashint << 24);
     }
 
     return hashint >>> 0;
+    /* tslint:enable:no-bitwise */
 };
 
 export const getTemplateNameFromNode = (node: NodeStatus): string => {

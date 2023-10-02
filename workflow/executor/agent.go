@@ -6,8 +6,9 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -36,25 +37,27 @@ import (
 type AgentExecutor struct {
 	log               *log.Entry
 	WorkflowName      string
+	workflowUID       string
 	ClientSet         kubernetes.Interface
 	WorkflowInterface workflow.Interface
 	RESTClient        rest.Interface
 	Namespace         string
-	consideredTasks   map[string]bool
+	consideredTasks   *sync.Map
 	plugins           []executorplugins.TemplateExecutor
 }
 
 type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
+func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
 	return &AgentExecutor{
 		log:               log.WithField("workflow", workflowName),
 		ClientSet:         clientSet,
 		RESTClient:        restClient,
 		Namespace:         namespace,
 		WorkflowName:      workflowName,
+		workflowUID:       workflowUID,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		consideredTasks:   make(map[string]bool),
+		consideredTasks:   &sync.Map{},
 		plugins:           plugins,
 	}
 }
@@ -126,12 +129,10 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
-		if _, ok := ae.consideredTasks[nodeID]; ok {
+		if _, ok := ae.consideredTasks.LoadOrStore(nodeID, true); ok {
 			log.Info("Task is already considered")
 			continue
 		}
-
-		ae.consideredTasks[nodeID] = true
 
 		log.Info("Processing task")
 		result, requeue, err := ae.processTask(ctx, tmpl)
@@ -155,7 +156,8 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		}
 		if requeue > 0 {
 			time.AfterFunc(requeue, func() {
-				delete(ae.consideredTasks, nodeID)
+				ae.consideredTasks.Delete(nodeID)
+
 				taskQueue <- task
 			})
 		}
@@ -249,7 +251,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	}
 	defer response.Body.Close()
 
-	bodyBytes, err := ioutil.ReadAll(response.Body)
+	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		return 0, err
 	}
@@ -352,7 +354,11 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &executorplugins.Workflow{
-			ObjectMeta: executorplugins.ObjectMeta{Name: ae.WorkflowName},
+			ObjectMeta: executorplugins.ObjectMeta{
+				Name:      ae.WorkflowName,
+				Namespace: ae.Namespace,
+				Uid:       ae.workflowUID,
+			},
 		},
 		Template: &tmpl,
 	}
@@ -362,6 +368,9 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Te
 			return 0, err
 		} else if reply.Node != nil {
 			*result = *reply.Node
+			if reply.Node.Phase == wfv1.NodeSucceeded {
+				return 0, nil
+			}
 			return reply.GetRequeue(), nil
 		}
 	}

@@ -39,10 +39,6 @@ var (
 	logFormat    string // --log-format
 )
 
-func init() {
-	cobra.OnInitialize(initConfig)
-}
-
 func initConfig() {
 	cmd.SetLogFormatter(logFormat)
 	cli.SetLogLevel(logLevel)
@@ -55,6 +51,9 @@ func NewRootCommand() *cobra.Command {
 		Short: "argoexec is the executor sidecar to workflow containers",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
+		},
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			initConfig()
 		},
 	}
 

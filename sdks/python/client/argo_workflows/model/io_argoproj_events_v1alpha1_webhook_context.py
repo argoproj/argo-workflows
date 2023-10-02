@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -89,6 +89,7 @@ class IoArgoprojEventsV1alpha1WebhookContext(ModelNormal):
         return {
             'auth_secret': (SecretKeySelector,),  # noqa: E501
             'endpoint': (str,),  # noqa: E501
+            'max_payload_size': (str,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'method': (str,),  # noqa: E501
             'port': (str,),  # noqa: E501
@@ -105,6 +106,7 @@ class IoArgoprojEventsV1alpha1WebhookContext(ModelNormal):
     attribute_map = {
         'auth_secret': 'authSecret',  # noqa: E501
         'endpoint': 'endpoint',  # noqa: E501
+        'max_payload_size': 'maxPayloadSize',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'method': 'method',  # noqa: E501
         'port': 'port',  # noqa: E501
@@ -156,6 +158,7 @@ class IoArgoprojEventsV1alpha1WebhookContext(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             auth_secret (SecretKeySelector): [optional]  # noqa: E501
             endpoint (str): [optional]  # noqa: E501
+            max_payload_size (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             method (str): [optional]  # noqa: E501
             port (str): Port on which HTTP server is listening for incoming events.. [optional]  # noqa: E501
@@ -245,6 +248,7 @@ class IoArgoprojEventsV1alpha1WebhookContext(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             auth_secret (SecretKeySelector): [optional]  # noqa: E501
             endpoint (str): [optional]  # noqa: E501
+            max_payload_size (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             method (str): [optional]  # noqa: E501
             port (str): Port on which HTTP server is listening for incoming events.. [optional]  # noqa: E501

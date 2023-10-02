@@ -1,9 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: two-artgc-
-  #finalizers:
-  #  - "blah"
+  generateName: testing-on-completion-and-on-deletion-strategies-
 spec:
   entrypoint: entrypoint
   artifactGC:

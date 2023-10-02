@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -1518,6 +1519,24 @@ func TestWorkflowTemplate(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+var templateWithGlobalParams = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-target
+spec:
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, "{{workflow.parameters.something}}"]
+`
+
+func TestWorkflowTemplateWithGlobalParams(t *testing.T) {
+	err := validateWorkflowTemplate(templateWithGlobalParams, ValidateOpts{})
+	assert.NoError(t, err)
+}
+
 var templateRefNestedTarget = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -2264,6 +2283,143 @@ func TestInvalidWfNoImageFieldScript(t *testing.T) {
 	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
 }
 
+var invalidWfNoImageScriptInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      command: [cowsay]
+  templates:
+  - name: whalesay
+    script:
+      args:
+      - hello world
+      env: []`
+
+func TestIinvalidWfNoImageScriptInTemplateDefault(t *testing.T) {
+	err := validate(invalidWfNoImageScriptInTemplateDefault)
+	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
+}
+
+var validWfImageScriptInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    script:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestValidWfImageScriptInTemplateDefault(t *testing.T) {
+	err := validate(validWfImageScriptInTemplateDefault)
+	assert.NoError(t, err)
+}
+
+var validWfImageContainerInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    container:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    container:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestValidWfImageContainerInTemplateDefault(t *testing.T) {
+	err := validate(validWfImageContainerInTemplateDefault)
+	assert.NoError(t, err)
+}
+
+var templateRefScriptImageDefaultTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-no-script-image
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    script:
+      command: [cowsay]
+      args: [hello world]
+`
+
+var wfWithWFTRefScriptImageInDefault = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-no-script-image
+`
+
+func TestValidateFieldsWithWFTRefScriptImageInDefault(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(templateRefScriptImageDefaultTarget)
+	assert.NoError(t, err)
+	err = validate(wfWithWFTRefScriptImageInDefault)
+	assert.NoError(t, err)
+}
+
+var templateRefContainerImageDefaultTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-no-container-image
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    container:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    container:
+      command: [cowsay]
+      args: [hello world]
+`
+
+var wfWithWFTRefContainerImageInDefault = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-no-container-image
+`
+
+func TestValidateFieldsWithWFTRefContainerImageInDefault(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(templateRefContainerImageDefaultTarget)
+	assert.NoError(t, err)
+	err = validate(wfWithWFTRefContainerImageInDefault)
+	assert.NoError(t, err)
+}
+
 var templateRefWithParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -2493,6 +2649,37 @@ spec:
           - echo
           - '{{inputs.parameters.message}}'
 `
+var workflowTeamplateWithEnumValuesWithoutValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        enum:
+            - one
+            - two
+            - three
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
 
 func TestWorkflowTemplateWithEnumValue(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTeamplateWithEnumValues, ValidateOpts{})
@@ -2519,6 +2706,83 @@ func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
 	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 	err = validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+}
+
+func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{})
+	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Lint: true})
+	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Submit: true})
+	assert.EqualError(t, err, "spec.arguments.message.value is required")
+}
+
+var resourceManifestWithExpressions = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+spec:
+  restartPolicy: Never
+  containers:
+  - name: 'foo'
+    image: docker/whalesay
+    command: [cowsay]
+    args: ["{{ = asInt(inputs.parameters.intParam) }}"]
+    ports:
+    - containerPort: {{=asInt(inputs.parameters.intParam)}}
+`
+
+func TestSubstituteResourceManifestExpressions(t *testing.T) {
+	replaced := SubstituteResourceManifestExpressions(resourceManifestWithExpressions)
+	assert.NotEqual(t, resourceManifestWithExpressions, replaced)
+
+	// despite spacing in the expr itself we should have only 1 placeholder here
+	patt, _ := regexp.Compile(`placeholder\-\d+`)
+	matches := patt.FindAllString(replaced, -1)
+	assert.Exactly(t, 2, len(matches))
+	assert.Equal(t, matches[0], matches[1])
+}
+
+var validWorkflowTemplateWithResourceManifest = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-with-resource-expr
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: intParam
+            value: '20'
+          - name: strParam
+            value: 'foobarbaz'
+      outputs: {}
+      metadata: {}
+      resource:
+        action: create
+        setOwnerReference: true
+        manifest: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: foo
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: 'foo'
+              image: docker/whalesay
+              command: [cowsay]
+              args: ["{{=sprig.replace("bar", "baz", inputs.parameters.strParam)}}"]
+              ports:
+              - containerPort: {{=asInt(inputs.parameters.intParam)}}
+`
+
+func TestWorkflowTemplateWithResourceManifest(t *testing.T) {
+	err := validate(validWorkflowTemplateWithResourceManifest)
+	assert.NoError(t, err)
 }
 
 var validActiveDeadlineSecondsArgoVariable = `
@@ -2960,6 +3224,39 @@ func TestInitContainerHasName(t *testing.T) {
 	assert.EqualError(t, err, "templates.main.tasks.spurious initContainers must all have container name")
 }
 
+var nodeNamePlumbsCorrectly = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+    generateName: hello-world-
+spec:
+    entrypoint: main
+    templates:
+      - name: main
+        dag:
+          tasks:
+            - name: this-is-part-1
+              template: main2
+      - name: main2
+        steps:
+          - - name: this-is-part-2
+              template: main3
+      - name: main3
+        dag:
+          tasks:
+            - name: this-is-part-3
+              template: whalesay
+      - name: whalesay
+        container:
+          image: docker/whalesay:latest
+          command: [cowsay]
+          args: ["{{ node.name }}"]`
+
+func TestNodeNameParameterInterpoliates(t *testing.T) {
+	err := validate(nodeNamePlumbsCorrectly)
+	assert.NoError(t, err)
+}
+
 func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -3020,5 +3317,28 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 
 			_ = deleteWorkflowTemplate(wftmpl.Name)
 		})
+	}
+}
+
+var spacedParameterWorkflowTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+    generateName: hello-world-
+spec:
+  entrypoint: helloworld
+
+  templates:
+  - name: helloworld
+    container:
+      image: "alpine:3.18"
+      command: ["echo", "{{  workflow.thisdoesnotexist  }}"]
+`
+
+func TestShouldCheckValidationToSpacedParameters(t *testing.T) {
+	err := validate(spacedParameterWorkflowTemplate)
+	// Do not allow leading or trailing spaces in parameters
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{  workflow.thisdoesnotexist  }}")
 	}
 }

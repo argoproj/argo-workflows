@@ -116,8 +116,20 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 			for _, art := range wf.Status.Outputs.Artifacts {
 				if art.S3 != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.S3.String())
+				} else if art.Git != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Git.String())
+				} else if art.HTTP != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.HTTP.String())
 				} else if art.Artifactory != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Artifactory.String())
+				} else if art.HDFS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.HDFS.String())
+				} else if art.Raw != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Raw.String())
+				} else if art.OSS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.OSS.String())
+				} else if art.GCS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.GCS.String())
 				} else if art.Azure != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Azure.String())
 				}
@@ -466,23 +478,25 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix string, getArgs GetFlags, podNameVersion util.PodNameVersion) {
-	nodeName := fmt.Sprintf("%s %s", JobStatusIconMap[node.Phase], node.DisplayName)
+	nodeName := node.Name
+	fmtNodeName := fmt.Sprintf("%s %s", JobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
-		nodeName = fmt.Sprintf("%s %s", NodeTypeIconMap[node.Type], node.DisplayName)
+		fmtNodeName = fmt.Sprintf("%s %s", NodeTypeIconMap[node.Type], node.DisplayName)
 	}
-	templateName := ""
+	templateName := util.GetTemplateFromNode(node)
+	fmtTemplateName := ""
 	if node.TemplateRef != nil {
-		templateName = fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
+		fmtTemplateName = fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
 	} else if node.TemplateName != "" {
-		templateName = node.TemplateName
+		fmtTemplateName = node.TemplateName
 	}
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		podName := util.PodName(wfName, nodeName, templateName, node.ID, podNameVersion)
-		args = []interface{}{nodePrefix, nodeName, templateName, podName, duration, node.Message, ""}
+		podName := util.GeneratePodName(wfName, nodeName, templateName, node.ID, podNameVersion)
+		args = []interface{}{nodePrefix, fmtNodeName, fmtTemplateName, podName, duration, node.Message, ""}
 	} else {
-		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message, ""}
+		args = []interface{}{nodePrefix, fmtNodeName, fmtTemplateName, "", "", node.Message, ""}
 	}
 	if getArgs.Output == "wide" {
 		msg := args[len(args)-2]

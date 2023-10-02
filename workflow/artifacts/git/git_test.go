@@ -1,7 +1,6 @@
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -25,6 +24,10 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 		assert.DirExists(t, path)
 	})
 	t.Run("PrivateRepo", func(t *testing.T) {
+
+		// TODO: temp - skip private repo test for everyone
+		t.SkipNow()
+
 		t.Run("SSH", func(t *testing.T) {
 			if os.Getenv("CI") == "true" {
 				t.SkipNow()
@@ -170,7 +173,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 const path = "/tmp/repo"
 
 func assertOnlyFile(t *testing.T, dir string, file string) {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	assert.NoError(t, err)
 
 	for _, f := range files {

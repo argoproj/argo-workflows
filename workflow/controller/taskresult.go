@@ -11,6 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
@@ -21,7 +22,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 		String()
 	log.WithField("labelSelector", labelSelector).
 		Info("Watching task results")
-	return wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
+	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 		wfc.wfclientset,
 		wfc.GetManagedNamespace(),
 		20*time.Minute,
@@ -30,8 +31,25 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 		},
 		func(options *metav1.ListOptions) {
 			options.LabelSelector = labelSelector
+			// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
+			// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
+			options.ResourceVersion = ""
 		},
 	)
+	informer.AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(new interface{}) {
+				result := new.(*wfv1.WorkflowTaskResult)
+				workflow := result.Labels[common.LabelKeyWorkflow]
+				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
+			},
+			UpdateFunc: func(old, new interface{}) {
+				result := new.(*wfv1.WorkflowTaskResult)
+				workflow := result.Labels[common.LabelKeyWorkflow]
+				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
+			},
+		})
+	return informer
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
@@ -40,25 +58,28 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
 		nodeID := result.Name
-		old := woc.wf.Status.Nodes[nodeID]
-		new := old.DeepCopy()
+		old, err := woc.wf.Status.Nodes.Get(nodeID)
+		if err != nil {
+			continue
+		}
+		newNode := old.DeepCopy()
 		if result.Outputs.HasOutputs() {
-			if new.Outputs == nil {
-				new.Outputs = &wfv1.Outputs{}
+			if newNode.Outputs == nil {
+				newNode.Outputs = &wfv1.Outputs{}
 			}
-			result.Outputs.DeepCopyInto(new.Outputs)               // preserve any existing values
-			if old.Outputs != nil && new.Outputs.ExitCode == nil { // prevent overwriting of ExitCode
-				new.Outputs.ExitCode = old.Outputs.ExitCode
+			result.Outputs.DeepCopyInto(newNode.Outputs)               // preserve any existing values
+			if old.Outputs != nil && newNode.Outputs.ExitCode == nil { // prevent overwriting of ExitCode
+				newNode.Outputs.ExitCode = old.Outputs.ExitCode
 			}
 		}
 		if result.Progress.IsValid() {
-			new.Progress = result.Progress
+			newNode.Progress = result.Progress
 		}
-		if !reflect.DeepEqual(&old, new) {
+		if !reflect.DeepEqual(&old, newNode) {
 			woc.log.
 				WithField("nodeID", nodeID).
 				Info("task-result changed")
-			woc.wf.Status.Nodes[nodeID] = *new
+			woc.wf.Status.Nodes.Set(nodeID, *newNode)
 			woc.updated = true
 		}
 	}

@@ -3,10 +3,16 @@ package os_specific
 import (
 	"os"
 	"syscall"
+
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
-func IsSIGCHLD(s os.Signal) bool {
-	return false // this does not exist on windows
+var (
+	Term = os.Interrupt
+)
+
+func CanIgnoreSignal(s os.Signal) bool {
+	return false
 }
 
 func Kill(pid int, s syscall.Signal) error {
@@ -25,6 +31,9 @@ func Setpgid(a *syscall.SysProcAttr) {
 }
 
 func Wait(process *os.Process) error {
-	_, err := process.Wait()
+	stat, err := process.Wait()
+	if stat.ExitCode() != 0 {
+		return errors.NewExitErr(stat.ExitCode())
+	}
 	return err
 }

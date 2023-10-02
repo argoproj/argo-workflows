@@ -1,4 +1,9 @@
-[![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack) [![CI](https://github.com/argoproj/argo-workflows/workflows/CI/badge.svg)](https://github.com/argoproj/argo-workflows/actions?query=event%3Apush+branch%3Amaster) [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830) [![Twitter Follow](https://img.shields.io/twitter/follow/argoproj?style=social)](https://twitter.com/argoproj)
+<!-- markdownlint-disable-next-line MD041 -->
+[![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows/badge)](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows)
+[![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/argo-workflows)](https://artifacthub.io/packages/helm/argo/argo-workflows)
+[![Twitter Follow](https://img.shields.io/twitter/follow/argoproj?style=social)](https://twitter.com/argoproj)
 
 ## What is Argo Workflows?
 
@@ -11,28 +16,25 @@ Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
 * Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo
   Workflows on Kubernetes.
 
-Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted project.
-
-[![Argo Workflows in 5 minutes](https://img.youtube.com/vi/TZgLkCFQ2tk/0.jpg)](https://www.youtube.com/watch?v=TZgLkCFQ2tk)
+Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated project.
 
 ## Use Cases
 
-* Machine Learning pipelines
-* Data and batch processing
-* ETL
-* Infrastructure automation
-* CI/CD
+* [Machine Learning pipelines](https://argoproj.github.io/argo-workflows/use-cases/machine-learning/)
+* [Data and batch processing](https://argoproj.github.io/argo-workflows/use-cases/data-processing/)
+* [Infrastructure automation](https://argoproj.github.io/argo-workflows/use-cases/infrastructure-automation/)
+* [CI/CD](https://argoproj.github.io/argo-workflows/use-cases/ci-cd/)
+* [Other use cases](https://argoproj.github.io/argo-workflows/use-cases/other/)
 
 ## Why Argo Workflows?
 
 * Argo Workflows is the most popular workflow execution engine for Kubernetes.
-* It can run 1000s of workflows a day, each with 1000s of concurrent tasks.
-* Our users say it is lighter-weight, faster, more powerful, and easier to use
+* Light-weight, scalable, and easier to use.
 * Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based
   environments.
 * Cloud agnostic and can run on any Kubernetes cluster.
 
-[Read what people said in our latest survey](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee)
+[Read what people said in our latest survey](https://blog.argoproj.io/argo-workflows-events-2023-user-survey-results-82c53bc30543)
 
 ## Try Argo Workflows
 
@@ -40,25 +42,27 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 
 ![Screenshot](docs/assets/screenshot.png)
 
-## Documentation
+## Who uses Argo Workflows?
 
-[View the docs](https://argoproj.github.io/argo-workflows/)
+[About 200+ organizations are officially using Argo Workflows](USERS.md)
 
 ## Ecosystem
 
-Just some of the projects that use or rely on Argo Workflows:
+Just some of the projects that use or rely on Argo Workflows (complete list [here](https://github.com/akuity/awesome-argo#ecosystem-projects)):
 
 * [Argo Events](https://github.com/argoproj/argo-events)
 * [Couler](https://github.com/couler-proj/couler)
+* [Hera](https://github.com/argoproj-labs/hera-workflows)
 * [Katib](https://github.com/kubeflow/katib)
 * [Kedro](https://kedro.readthedocs.io/en/stable/)
 * [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
 * [Netflix Metaflow](https://metaflow.org)
 * [Onepanel](https://www.onepanel.ai/)
+* [Orchest](https://github.com/orchest/orchest/)
+* [Piper](https://github.com/rookout/piper)
 * [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
-* [Orchest](https://github.com/orchest/orchest/)
 
 ## Client Libraries
 
@@ -66,26 +70,16 @@ Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Quickstart
 
-The following commands install Argo Workflows as well as some commmonly used components:
-
-```bash
-kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
-```
-
-> **These manifests are intended to help you get started quickly. They contain hard-coded passwords that are publicly available and are not suitable in production.**
-
-## Who uses Argo Workflows?
-
-[Official Argo Workflows user list](USERS.md)
+* [Get started here](docs/quick-start.md)
+* [Walk-through examples](https://argoproj.github.io/argo-workflows/walk-through/)
 
 ## Documentation
 
-* [Get started here](docs/quick-start.md)
-* [How to write Argo Workflow specs](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
-* [How to configure your artifact repository](docs/configure-artifact-repository.md)
+[View the docs](https://argoproj.github.io/argo-workflows/)
 
 ## Features
+
+An incomplete list of features Argo Workflows provide:
 
 * UI to visualize and manage Workflows
 * Artifact support (S3, Artifactory, Alibaba Cloud OSS, Azure Blob Storage, HTTP, Git, GCS, raw)
@@ -144,6 +138,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
 * [Argo Workflows vs Apache Airflow](http://bit.ly/30YNIvT)
 * [CI/CD with Argo on Kubernetes](https://medium.com/@bouwe.ceunen/ci-cd-with-argo-on-kubernetes-28c1a99616a9)
+* [Define Your CI/CD Pipeline with Argo Workflows](https://haque-zubair.medium.com/define-your-ci-cd-pipeline-with-argo-workflows-25aefb02fa63)
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
@@ -152,9 +147,9 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Project Resources
 
-* Argo GitHub:  https://github.com/argoproj
-* Argo Website: https://argoproj.github.io/
-* Argo Slack:   [click here to join](https://argoproj.github.io/community/join-slack)
+* [Argo Project GitHub organization](https://github.com/argoproj)
+* [Argo Website](https://argoproj.github.io/)
+* [Argo Slack](https://argoproj.github.io/community/join-slack)
 
 ## Security
 

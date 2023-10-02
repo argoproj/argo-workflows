@@ -215,7 +215,7 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 			return err
 		}
 	} else {
-		log.Infof("Successfully deleted '%s'", key)
+		log.Infof("Successfully request '%s' to be deleted", key)
 	}
 	return nil
 }

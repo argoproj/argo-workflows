@@ -3,7 +3,11 @@ package workflow
 import (
 	"context"
 	"fmt"
+
+	"sort"
+
 	"testing"
+	"time"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
@@ -23,6 +27,7 @@ import (
 	v1alpha "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -584,7 +589,24 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
-	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo)
+
+	archivedRepo := &mocks.WorkflowArchive{}
+
+	wfaServer := workflowarchive.NewWorkflowArchiveServer(archivedRepo)
+	archivedRepo.On("GetWorkflow", "", "test", "hello-world-9tql2-test").Return(&v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "hello-world-9tql2-test", Namespace: "test"},
+		Spec: v1alpha1.WorkflowSpec{
+			Entrypoint: "my-entrypoint",
+			Templates: []v1alpha1.Template{
+				{Name: "my-entrypoint", Container: &corev1.Container{}},
+			},
+		},
+	}, nil)
+	archivedRepo.On("GetWorkflow", "", "test", "not-found").Return(nil, nil)
+	archivedRepo.On("GetWorkflow", "", "test", "unlabelled").Return(nil, nil)
+	archivedRepo.On("GetWorkflow", "", "workflows", "latest").Return(nil, nil)
+	archivedRepo.On("GetWorkflow", "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
+	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, wfaServer)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
@@ -630,6 +652,59 @@ func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 	panic("implement me")
 }
 
+func TestMergeWithArchivedWorkflows(t *testing.T) {
+	timeNow := time.Now()
+	wf1Live := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
+			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Archived"}}}
+	wf1Archived := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
+			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Persisted"}}}
+	wf2 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "2", CreationTimestamp: metav1.Time{Time: timeNow.Add(2 * time.Second)}}}
+	wf3 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "3", CreationTimestamp: metav1.Time{Time: timeNow.Add(3 * time.Second)}}}
+	liveWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Live, wf2}}
+	archivedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2, wf1Archived}}
+	expectedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2, wf1Live}}
+	mergedWfItems := mergeWithArchivedWorkflows(liveWfList, archivedWfList).Items
+	sort.Sort(mergedWfItems)
+	assert.Equal(t, expectedWfList.Items, mergedWfItems)
+}
+
+func TestCursorPaginationByResourceVersion(t *testing.T) {
+	wf1 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1", Name: "wf1"}}
+	wf2 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "2", Name: "wf2"}}
+	wf3 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "3", Name: "wf3"}}
+	wf4 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "4", Name: "wf4"}}
+	wf5 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "5", Name: "wf5"}}
+	wf6 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "6", Name: "wf6"}}
+	wf7 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "7", Name: "wf7"}}
+	wf8 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "8", Name: "wf8"}}
+	wf9 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "9", Name: "wf9"}}
+	wf10 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "10", Name: "wf10"}}
+
+	items := []v1alpha1.Workflow{wf2, wf1, wf4, wf3, wf6, wf5, wf8, wf7, wf10, wf9}
+	wfList := &v1alpha1.WorkflowList{}
+
+	cursorPaginationByResourceVersion(items, "8", 5, wfList)
+	expectedWfList := &v1alpha1.WorkflowList{}
+	expectedWfList.Items = []v1alpha1.Workflow{wf7, wf6, wf5, wf4, wf3}
+	expectedWfList.ListMeta.Continue = "3"
+
+	assert.Equal(t, expectedWfList, wfList)
+}
+
 func TestWatchWorkflows(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf := &v1alpha1.Workflow{
@@ -665,7 +740,7 @@ func TestWatchLatestWorkflow(t *testing.T) {
 func TestGetWorkflowWithNotFound(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	t.Run("Labelled", func(t *testing.T) {
-		wf, err := getWorkflow(ctx, server, "test", "NotFound")
+		wf, err := getWorkflow(ctx, server, "test", "not-found")
 		if assert.Error(t, err) {
 			assert.Nil(t, wf)
 		}
@@ -690,6 +765,10 @@ func TestGetWorkflow(t *testing.T) {
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wf)
+	}
+	wf, err = s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
 	}
@@ -885,7 +964,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 			ResourceKind: "workflowtemplate",
 			ResourceName: "workflow-template-whalesay-template",
 		})
-		assert.EqualError(t, err, "spec.arguments.message.value is required")
+		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = spec.arguments.message.value is required")
 	})
 	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
 		opts := v1alpha1.SubmitOpts{

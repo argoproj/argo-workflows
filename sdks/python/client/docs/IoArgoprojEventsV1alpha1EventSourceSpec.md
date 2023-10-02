@@ -24,6 +24,7 @@ Name | Type | Description | Notes
 **pub_sub** | [**{str: (IoArgoprojEventsV1alpha1PubSubEventSource,)}**](IoArgoprojEventsV1alpha1PubSubEventSource.md) |  | [optional] 
 **pulsar** | [**{str: (IoArgoprojEventsV1alpha1PulsarEventSource,)}**](IoArgoprojEventsV1alpha1PulsarEventSource.md) |  | [optional] 
 **redis** | [**{str: (IoArgoprojEventsV1alpha1RedisEventSource,)}**](IoArgoprojEventsV1alpha1RedisEventSource.md) |  | [optional] 
+**redis_stream** | [**{str: (IoArgoprojEventsV1alpha1RedisStreamEventSource,)}**](IoArgoprojEventsV1alpha1RedisStreamEventSource.md) |  | [optional] 
 **replicas** | **int** |  | [optional] 
 **resource** | [**{str: (IoArgoprojEventsV1alpha1ResourceEventSource,)}**](IoArgoprojEventsV1alpha1ResourceEventSource.md) |  | [optional] 
 **service** | [**IoArgoprojEventsV1alpha1Service**](IoArgoprojEventsV1alpha1Service.md) |  | [optional] 
@@ -33,7 +34,7 @@ Name | Type | Description | Notes
 **storage_grid** | [**{str: (IoArgoprojEventsV1alpha1StorageGridEventSource,)}**](IoArgoprojEventsV1alpha1StorageGridEventSource.md) |  | [optional] 
 **stripe** | [**{str: (IoArgoprojEventsV1alpha1StripeEventSource,)}**](IoArgoprojEventsV1alpha1StripeEventSource.md) |  | [optional] 
 **template** | [**IoArgoprojEventsV1alpha1Template**](IoArgoprojEventsV1alpha1Template.md) |  | [optional] 
-**webhook** | [**{str: (IoArgoprojEventsV1alpha1WebhookContext,)}**](IoArgoprojEventsV1alpha1WebhookContext.md) |  | [optional] 
+**webhook** | [**{str: (IoArgoprojEventsV1alpha1WebhookEventSource,)}**](IoArgoprojEventsV1alpha1WebhookEventSource.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

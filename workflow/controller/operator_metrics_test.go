@@ -73,6 +73,99 @@ func TestBasicMetric(t *testing.T) {
 	assert.Contains(t, metricString, `label:<name:"name" value:"random-int" > gauge:<value:`)
 }
 
+var gaugeMetric = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: gauge-metric
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      metrics:
+        prometheus:
+          - name: custom_gauge_add
+            labels:
+              - key: name
+                value: random-int
+            help: "A custom gauge"
+            gauge:
+              operation: Add
+              value: "10"
+          - name: custom_gauge_sub
+            labels:
+              - key: name
+                value: random-int
+            help: "A custom gauge"
+            gauge:
+              operation: Sub
+              value: "5"
+          - name: custom_gauge_set
+            labels:
+              - key: name
+                value: random-int
+            help: "A custom gauge"
+            gauge:
+              operation: Set
+              value: "50"
+          - name: custom_gauge_default
+            labels:
+              - key: name
+                value: random-int
+            help: "A custom gauge"
+            gauge:
+              value: "15"
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+      
+`
+
+func TestGaugeMetric(t *testing.T) {
+	wf := v1alpha1.MustUnmarshalWorkflow(gaugeMetric)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	// Schedule first pod and mark completed
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+
+	// Process first metrics
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	metricAddDesc := woc.wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricAddDesc))
+	metricSubDesc := woc.wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricSubDesc))
+	metricSetDesc := woc.wf.Spec.Templates[0].Metrics.Prometheus[2].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricSetDesc))
+	metricDefaultDesc := woc.wf.Spec.Templates[0].Metrics.Prometheus[3].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDefaultDesc))
+
+	metricAddGauge := controller.metrics.GetCustomMetric(metricAddDesc).(prometheus.Gauge)
+	metricAddGaugeValue, err := getMetricStringValue(metricAddGauge)
+	assert.NoError(t, err)
+	assert.Contains(t, metricAddGaugeValue, `label:<name:"name" value:"random-int" > gauge:<value:10 >`)
+
+	metricSubGauge := controller.metrics.GetCustomMetric(metricSubDesc).(prometheus.Gauge)
+	metricSubGaugeValue, err := getMetricStringValue(metricSubGauge)
+	assert.NoError(t, err)
+	assert.Contains(t, metricSubGaugeValue, `label:<name:"name" value:"random-int" > gauge:<value:-5 >`)
+
+	metricSetGauge := controller.metrics.GetCustomMetric(metricSetDesc).(prometheus.Gauge)
+	metricSetGaugeValue, err := getMetricStringValue(metricSetGauge)
+	assert.NoError(t, err)
+	assert.Contains(t, metricSetGaugeValue, `label:<name:"name" value:"random-int" > gauge:<value:50 >`)
+
+	metricDefaultGauge := controller.metrics.GetCustomMetric(metricDefaultDesc).(prometheus.Gauge)
+	metricDefaultGaugeValue, err := getMetricStringValue(metricDefaultGauge)
+	assert.NoError(t, err)
+	assert.Contains(t, metricDefaultGaugeValue, `label:<name:"name" value:"random-int" > gauge:<value:15 >`)
+}
+
 var counterMetric = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

@@ -10,6 +10,6 @@ spec:
       - - name: call-template
           templateRef:                 
             name: artgc-template  
-            template: artgc-template 
+            template: artgc-template-main 
             clusterScope: false         
          

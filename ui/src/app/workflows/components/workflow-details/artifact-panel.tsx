@@ -88,8 +88,12 @@ export const ArtifactPanel = ({
                                         height='500px'
                                         options={{
                                             readOnly: true,
-                                            minimap: {enabled: false},
-                                            renderIndentGuides: true
+                                            minimap: {
+                                                enabled: false
+                                            },
+                                            guides: {
+                                                indentation: true
+                                            }
                                         }}
                                     />
                                 ) : (

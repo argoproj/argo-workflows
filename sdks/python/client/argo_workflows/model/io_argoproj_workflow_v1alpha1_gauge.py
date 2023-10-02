@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -83,6 +83,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
         return {
             'realtime': (bool,),  # noqa: E501
             'value': (str,),  # noqa: E501
+            'operation': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -93,6 +94,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
     attribute_map = {
         'realtime': 'realtime',  # noqa: E501
         'value': 'value',  # noqa: E501
+        'operation': 'operation',  # noqa: E501
     }
 
     read_only_vars = {
@@ -107,7 +109,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
 
         Args:
             realtime (bool): Realtime emits this metric in real time if applicable
-            value (str): Value is the value of the metric
+            value (str): Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -140,6 +142,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            operation (str): Operation defines the operation to apply with value and the metrics' current value. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -194,7 +197,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
 
         Args:
             realtime (bool): Realtime emits this metric in real time if applicable
-            value (str): Value is the value of the metric
+            value (str): Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -227,6 +230,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            operation (str): Operation defines the operation to apply with value and the metrics' current value. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

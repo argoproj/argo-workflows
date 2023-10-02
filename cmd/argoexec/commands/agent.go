@@ -103,6 +103,10 @@ func initAgentExecutor() *executor.AgentExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName)
 	}
+	workflowUID, ok := os.LookupEnv(common.EnvVarWorkflowUID)
+	if !ok {
+		log.Fatalf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID)
+	}
 
 	addresses := getPluginAddresses()
 	names := getPluginNames()
@@ -120,5 +124,5 @@ func initAgentExecutor() *executor.AgentExecutor {
 		plugins = append(plugins, rpc.New(address, string(data)))
 	}
 
-	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, plugins)
+	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID, plugins)
 }

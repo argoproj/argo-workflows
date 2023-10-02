@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -95,6 +95,7 @@ class IoArgoprojEventsV1alpha1KafkaEventSource(ModelNormal):
         """
         lazy_import()
         return {
+            'config': (str,),  # noqa: E501
             'connection_backoff': (IoArgoprojEventsV1alpha1Backoff,),  # noqa: E501
             'consumer_group': (IoArgoprojEventsV1alpha1KafkaConsumerGroup,),  # noqa: E501
             'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
@@ -115,6 +116,7 @@ class IoArgoprojEventsV1alpha1KafkaEventSource(ModelNormal):
 
 
     attribute_map = {
+        'config': 'config',  # noqa: E501
         'connection_backoff': 'connectionBackoff',  # noqa: E501
         'consumer_group': 'consumerGroup',  # noqa: E501
         'filter': 'filter',  # noqa: E501
@@ -170,6 +172,7 @@ class IoArgoprojEventsV1alpha1KafkaEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            config (str): Yaml format Sarama config for Kafka connection. It follows the struct of sarama.Config. See https://github.com/Shopify/sarama/blob/main/config.go e.g.  consumer:   fetch:     min: 1 net:   MaxOpenRequests: 5  +optional. [optional]  # noqa: E501
             connection_backoff (IoArgoprojEventsV1alpha1Backoff): [optional]  # noqa: E501
             consumer_group (IoArgoprojEventsV1alpha1KafkaConsumerGroup): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
@@ -263,6 +266,7 @@ class IoArgoprojEventsV1alpha1KafkaEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            config (str): Yaml format Sarama config for Kafka connection. It follows the struct of sarama.Config. See https://github.com/Shopify/sarama/blob/main/config.go e.g.  consumer:   fetch:     min: 1 net:   MaxOpenRequests: 5  +optional. [optional]  # noqa: E501
             connection_backoff (IoArgoprojEventsV1alpha1Backoff): [optional]  # noqa: E501
             consumer_group (IoArgoprojEventsV1alpha1KafkaConsumerGroup): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501

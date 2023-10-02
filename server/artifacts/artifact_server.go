@@ -124,7 +124,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		uid := id
 		log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
 
-		wf, err = a.wfArchive.GetWorkflow(uid)
+		wf, err = a.wfArchive.GetWorkflow(uid, "", "")
 		if err != nil {
 			a.serverInternalError(err, w)
 			return
@@ -287,7 +287,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	artifactName := requestPath[4]
 
 	// We need to know the namespace before we can do gate keeping
-	wf, err := a.wfArchive.GetWorkflow(uid)
+	wf, err := a.wfArchive.GetWorkflow(uid, "", "")
 	if err != nil {
 		a.httpFromError(err, w)
 		return
@@ -378,10 +378,16 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 	kubeClient := auth.GetKubeClient(ctx)
 
 	var art *wfv1.Artifact
+
+	nodeStatus, err := wf.Status.Nodes.Get(nodeId)
+	if err != nil {
+		log.Errorf("Was unable to retrieve node for %s", nodeId)
+		return nil, nil, fmt.Errorf("was not able to retrieve node")
+	}
 	if isInput {
-		art = wf.Status.Nodes[nodeId].Inputs.GetArtifactByName(artifactName)
+		art = nodeStatus.Inputs.GetArtifactByName(artifactName)
 	} else {
-		art = wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
+		art = nodeStatus.Outputs.GetArtifactByName(artifactName)
 	}
 	if art == nil {
 		return nil, nil, fmt.Errorf("artifact not found: %s, isInput=%t, Workflow Status=%+v", artifactName, isInput, wf.Status)
@@ -392,23 +398,32 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 	// 2. Defined by Controller configmap
 	// 3. Workflow spec defines artifactRepositoryRef which is a ConfigMap which defines the location
 	// 4. Template defines ArchiveLocation
+	// 5. Inline Template
 
-	templateName := util.GetTemplateFromNode(wf.Status.Nodes[nodeId])
-	template := wf.GetTemplateByName(templateName)
-	if template == nil {
-		return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
+	var archiveLocation *wfv1.ArtifactLocation
+	templateNode, err := wf.Status.Nodes.Get(nodeId)
+	if err != nil {
+		log.Errorf("was unable to retrieve node for %s", nodeId)
+		return nil, nil, fmt.Errorf("Unable to get artifact and driver due to inability to get node due for %s, err=%s", nodeId, err)
+	}
+	templateName := util.GetTemplateFromNode(*templateNode)
+	if templateName != "" {
+		template := wf.GetTemplateByName(templateName)
+		if template == nil {
+			return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
+		}
+		archiveLocation = template.ArchiveLocation // this is case 4
 	}
 
-	archiveLocation := template.ArchiveLocation // this is case 4
-	if !archiveLocation.HasLocation() {
-		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2 and 3
+	if templateName == "" || !archiveLocation.HasLocation() {
+		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
 		if err != nil {
 			return art, nil, err
 		}
 		archiveLocation = ar.ToArtifactLocation()
 	}
 
-	err := art.Relocate(archiveLocation) // if the Artifact defines the location (case 1), it will be used; otherwise whatever archiveLocation is set to
+	err = art.Relocate(archiveLocation) // if the Artifact defines the location (case 1), it will be used; otherwise whatever archiveLocation is set to
 	if err != nil {
 		return art, nil, err
 	}
@@ -437,7 +452,7 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 
 	defer func() {
 		if err := stream.Close(); err != nil {
-			log.Warningf("Error closing stream[%s]: %v", stream, err)
+			log.WithFields(log.Fields{"stream": stream}).WithError(err).Warning("Error closing stream")
 		}
 	}()
 

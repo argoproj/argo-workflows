@@ -89,6 +89,44 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestWhenExpressions() {
+	s.Given().
+		Workflow("@functional/conditionals.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-govaluate"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-expr"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-expr-json"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		})
+}
+
+func (s *FunctionalSuite) TestJSONVariables() {
+
+	s.Given().
+		Workflow("@testdata/json-variables.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			for _, c := range p.Spec.Containers {
+				if c.Name == "main" {
+					assert.Equal(t, 3, len(c.Args))
+					assert.Equal(t, "myLabelValue", c.Args[0])
+					assert.Equal(t, "myAnnotationValue", c.Args[1])
+					assert.Equal(t, "myParamValue", c.Args[2])
+				}
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().
 		Workflow(`
@@ -596,10 +634,10 @@ spec:
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeErrored).
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, status.Message, "error in exit template execution")
+			assert.Contains(t, status.Message, "invalid spec")
 		})
 }
 
@@ -650,6 +688,23 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowHookParameterTemplates() {
+	s.Given().
+		Workflow("@testdata/workflow-hook-parameter.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("workflow-hook-parameter.onExit"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+			assert.Equal(t, "Succeeded", n.Inputs.Parameters[0].Value.String())
+			assert.Equal(t, "Succeeded", n.Inputs.Parameters[1].Value.String())
+		})
+}
+
 func (s *FunctionalSuite) TestParametrizableAds() {
 	s.Given().
 		Workflow(`
@@ -675,13 +730,10 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(10 * time.Second).
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
-		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			if node := status.Nodes.FindByDisplayName(md.Name); assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
-			}
+		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.Equal(t, *p.Spec.ActiveDeadlineSeconds, int64(5))
 		})
 }
 
@@ -907,7 +959,7 @@ func (s *FunctionalSuite) TestPauseBefore() {
 		Workflow(`@functional/pause-before.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Exec("bash", []string{"-c", "sleep 5 &&  kubectl exec -i $(kubectl get pods | awk '/pause-before/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/before'"}, fixtures.NoError).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
@@ -917,7 +969,7 @@ func (s *FunctionalSuite) TestPauseAfter() {
 		Workflow(`@functional/pause-after.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Exec("bash", []string{"-c", "sleep 5 && kubectl exec -i $(kubectl get pods -n argo | awk '/pause-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/after'"}, fixtures.NoError).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
@@ -927,7 +979,7 @@ func (s *FunctionalSuite) TestPauseAfterAndBefore() {
 		Workflow(`@functional/pause-before-after.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Exec("bash", []string{"-c", "sleep 5 && kubectl exec -i $(kubectl get pods | awk '/pause-before-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/before'"}, fixtures.NoError).
 		Exec("bash", []string{"-c", "kubectl exec -i $(kubectl get pods | awk '/pause-before-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/after'"}, fixtures.NoError).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
@@ -1115,4 +1167,36 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed)
+}
+
+func (s *FunctionalSuite) TestTTY() {
+	s.Given().
+		Workflow(`@functional/tty.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestTemplateDefaultImage() {
+	s.Given().
+		Workflow(`@functional/template-default-image.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestEntrypointName() {
+	s.Given().
+		WorkflowTemplate(`@functional/entrypointName-template.yaml`).
+		Workflow(`@functional/entrypointName-workflow.yaml`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("step"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+			assert.Equal(t, "bar", n.Inputs.Parameters[0].Value.String())
+		})
+
 }

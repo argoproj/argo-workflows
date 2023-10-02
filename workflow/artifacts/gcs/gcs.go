@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,19 +45,20 @@ func isTransientGCSErr(err error) bool {
 		// Retry on 429 and 5xx, according to
 		// https://cloud.google.com/storage/docs/exponential-backoff.
 		return e.Code == 429 || (e.Code >= 500 && e.Code < 600)
-	case *url.Error:
-		// Retry socket-level errors ECONNREFUSED and ENETUNREACH (from syscall).
-		// Unfortunately the error type is unexported, so we resort to string
-		// matching.
-		retriable := []string{"connection refused", "connection reset"}
+	case interface{ Temporary() bool }:
+		if e.Temporary() {
+			return true
+		}
+	default:
+		// Retry errors that might be an unexported type
+		// Also picks up certain 500-level codes that are sent back from upstream gcp services
+		// and not caught by the googleapi.Error case (Workload Identity in particular)
+		retriable := []string{"connection refused", "connection reset", "Received 504",
+			"Received 500", "TLS handshake timeout"}
 		for _, s := range retriable {
 			if strings.Contains(e.Error(), s) {
 				return true
 			}
-		}
-	case interface{ Temporary() bool }:
-		if e.Temporary() {
-			return true
 		}
 	}
 	if e, ok := err.(interface{ Unwrap() error }); ok {
@@ -102,14 +101,15 @@ func newGCSClientDefault() (*storage.Client, error) {
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS Load path: %s, key: %s", path, inputArtifact.GCS.Key)
+			key := filepath.Clean(inputArtifact.GCS.Key)
+			log.Infof("GCS Load path: %s, key: %s", path, key)
 			gcsClient, err := g.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)
 				return !isTransientGCSErr(err), err
 			}
 			defer gcsClient.Close()
-			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, inputArtifact.GCS.Key, path)
+			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, key, path)
 			if err != nil {
 				log.Warnf("Failed to download objects from GCS: %v", err)
 				return !isTransientGCSErr(err), err
@@ -196,6 +196,12 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 		if err != nil {
 			return nil, err
 		}
+		// skip "folder" path like objects
+		// note that we still download content (including "subfolders")
+		// this is just a consequence of how objects are stored in GCS (no real hierarchy)
+		if strings.HasSuffix(attrs.Name, "/") {
+			continue
+		}
 		results = append(results, attrs.Name)
 	}
 	return results, nil
@@ -210,13 +216,14 @@ func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
 func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS Save path: %s, key: %s", path, outputArtifact.GCS.Key)
+			key := filepath.Clean(outputArtifact.GCS.Key)
+			log.Infof("GCS Save path: %s, key: %s", path, key)
 			client, err := g.newGCSClient()
 			if err != nil {
 				return !isTransientGCSErr(err), err
 			}
 			defer client.Close()
-			err = uploadObjects(client, outputArtifact.GCS.Bucket, outputArtifact.GCS.Key, path)
+			err = uploadObjects(client, outputArtifact.GCS.Bucket, key, path)
 			if err != nil {
 				return !isTransientGCSErr(err), err
 			}
@@ -230,7 +237,7 @@ func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 // relPath is a given relative path to be inserted in front
 func listFileRelPaths(path string, relPath string) ([]string, error) {
 	results := []string{}
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}

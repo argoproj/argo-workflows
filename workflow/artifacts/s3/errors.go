@@ -2,6 +2,7 @@ package s3
 
 import (
 	argos3 "github.com/argoproj/pkg/s3"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
@@ -27,6 +28,7 @@ func isTransientS3Err(err error) bool {
 	}
 	for _, transientErrCode := range s3TransientErrorCodes {
 		if argos3.IsS3ErrCode(err, transientErrCode) {
+			log.Errorf("Transient S3 error: %v", err)
 			return true
 		}
 	}
