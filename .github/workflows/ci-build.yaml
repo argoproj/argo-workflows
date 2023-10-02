@@ -149,7 +149,7 @@ jobs:
       - name: Install manifests
         run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
       - name: Build controller
-        run: make controller kit STATIC_FILES=false
+        run: make controller task STATIC_FILES=false
       - name: Build CLI
         run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}

@@ -12,8 +12,8 @@ chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin/kubectl
 kubectl cluster-info
 
-# install kit
-curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
+# install task
+sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
 
 # install protocol buffer compiler (protoc)
 sudo apt update
@@ -23,7 +23,7 @@ sudo apt install -y protobuf-compiler
 sudo chown -R vscode:vscode /home/vscode/go
 
 # download dependencies and do first-pass compile
-CI=1 kit pre-up
+CI=1 task pre-up
 
 # Patch CoreDNS to have host.docker.internal inside the cluster available
 kubectl get cm coredns -n kube-system -o yaml | sed "s/  NodeHosts: |/  NodeHosts: |\n    `grep host.docker.internal /etc/hosts`/" | kubectl apply -f -
