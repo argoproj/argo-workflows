@@ -16,22 +16,26 @@ tasks:
   go-deps:
     cmd: go mod download
     # mutex: download
+
   install:
     cmd: sh -c "make install PROFILE=$PROFILE"
-    env:
-      PROFILE: minimal
     deps: [go-deps]
     sources: [manifests]
+    env:
+      PROFILE: minimal
     # mutex: docker
+
   build-controller:
     cmd: make ./dist/workflow-controller
-    sources: [cmd/workflow-controller, config, errors, persist, pkg, util, workflow]
     deps: [go-deps]
+    sources: [cmd/workflow-controller, config, errors, persist, pkg, util, workflow]
     # mutex: build
+
   port-forward:
     cmd: ./hack/port-forward.sh
-    # ports: 9000
     deps: [install]
+    # ports: 9000
+
   controller:
     cmd: ./dist/workflow-controller
     deps: [install, build-controller, port-forward]
@@ -51,13 +55,15 @@ tasks:
       UPPERIO_DB_DEBUG: 1
       ARCHIVED_WORKFLOW_GC_PERIOD: 30s
     # ports: "9090"
+
   build-argo:
     cmd: make ./dist/argo
     deps: [go-deps]
+    sources: [cmd/argo, config, errors, persist, pkg, util, server, workflow]
     env:
       STATIC_FILES: false
-    sources: [cmd/argo, config, errors, persist, pkg, util, server, workflow]
     # mutex: build
+
   server:
     cmd: ./dist/argo server
     deps: [build-argo, port-forward]
@@ -71,26 +77,33 @@ tasks:
       ARGO_MANAGED_NAMESPACE: argo
       UPPERIO_DB_DEBUG: 1
     # ports: "2746"
+
   ui-deps:
     cmd: yarn install
     dir: ui
     # mutex: downloads
+
   ui:
     cmd: yarn start
     dir: ui
     deps: [ui-deps, server]
     # ports: "8080"
+
   executor:
     cmd: make argoexec-image
     sources: [cmd/argoexec, config, errors, pkg, util, workflow]
     # mutex: docker
+
   example:
     cmd: kubectl create -f examples/hello-world.yaml
     deps: [install]
     # mutex: docker
+
   build:
     deps: [build-controller, build-argo]
+
   pre-up:
     deps: [build, install, executor, example]
+
   up:
     deps: [pre-up, controller, server, ui]
