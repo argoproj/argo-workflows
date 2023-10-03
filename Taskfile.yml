@@ -37,7 +37,7 @@ tasks:
     # ports: 9000
 
   controller:
-    cmd: ./dist/workflow-controller
+    cmd: ./dist/workflow-controller &
     deps: [install, build-controller, port-forward]
     env:
       ARGO_EXECUTOR_PLUGINS: false
@@ -65,7 +65,7 @@ tasks:
     # mutex: build
 
   server:
-    cmd: ./dist/argo server
+    cmd: ./dist/argo server &
     deps: [build-argo, port-forward]
     env:
       ARGO_X_FRAME_OPTIONS: SAMEORIGIN
@@ -84,7 +84,7 @@ tasks:
     # mutex: downloads
 
   ui:
-    cmd: yarn start
+    cmd: yarn start &
     dir: ui
     deps: [ui-deps, server]
     # ports: "8080"
