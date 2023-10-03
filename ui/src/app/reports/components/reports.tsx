@@ -69,7 +69,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
                 setError(newError);
             }
         })();
-    }, [namespace, labels]);
+    }, [namespace, labels.toString()]); // referential equality, so use values, not refs
 
     useCollectEvent('openedReports');
 

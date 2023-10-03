@@ -22,7 +22,7 @@ export function UserInfo() {
                 setError(newError);
             }
         })();
-    });
+    }, []);
 
     return (
         <Page title='User Info' toolbar={{breadcrumbs: [{title: 'User Info'}]}}>

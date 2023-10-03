@@ -1,10 +1,10 @@
 import {NotificationType} from 'argo-ui';
 import * as React from 'react';
 import {isArchivedWorkflow, isWorkflowInCluster, Workflow} from '../../../../models';
-import {Consumer} from '../../../shared/context';
+import {Consumer, ContextApis} from '../../../shared/context';
 import {services} from '../../../shared/services';
 import * as Actions from '../../../shared/workflow-operations-map';
-import {WorkflowOperation, WorkflowOperationAction} from '../../../shared/workflow-operations-map';
+import {WorkflowOperation, WorkflowOperationAction, WorkflowOperationName} from '../../../shared/workflow-operations-map';
 
 require('./workflows-toolbar.scss');
 
@@ -46,21 +46,22 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         return this.props.selectedWorkflows.size;
     }
 
-    private performActionOnSelectedWorkflows(ctx: any, title: string, action: WorkflowOperationAction): Promise<any> {
-        let deleteArchived = false;
-        const confirmed = confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`);
-        if (confirmed) {
-            if (title === 'DELETE') {
-                for (const entry of this.props.selectedWorkflows) {
-                    if (isArchivedWorkflow(entry[1])) {
-                        deleteArchived = confirm('Do you also want to delete them from the Archived Workflows database?');
-                        break;
-                    }
-                }
-            }
-        } else {
+    private async performActionOnSelectedWorkflows(ctx: ContextApis, title: string, action: WorkflowOperationAction): Promise<any> {
+        const confirmed = await ctx.popup.confirm('Confirm', `Are you sure you want to ${title.toLowerCase()} all selected workflows?`);
+        if (!confirmed) {
             return Promise.resolve(false);
         }
+
+        let deleteArchived = false;
+        if (title === 'DELETE') {
+            for (const entry of this.props.selectedWorkflows) {
+                if (isArchivedWorkflow(entry[1])) {
+                    deleteArchived = await ctx.popup.confirm('Confirm', 'Do you also want to delete them from the Archived Workflows database?');
+                    break;
+                }
+            }
+        }
+
         const promises: Promise<any>[] = [];
         this.props.selectedWorkflows.forEach((wf: Workflow) => {
             if (title === 'DELETE') {
@@ -100,28 +101,29 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         return Promise.all(promises);
     }
 
-    private renderActions(ctx: any): JSX.Element[] {
+    private renderActions(ctx: ContextApis): JSX.Element[] {
         const actionButtons = [];
         const actions: any = Actions.WorkflowOperationsMap;
-        const disabled: any = this.props.isDisabled;
-        const groupActions: WorkflowGroupAction[] = Object.keys(actions).map(actionName => {
+        const disabled = this.props.isDisabled;
+        const groupActions: WorkflowGroupAction[] = Object.keys(actions).map((actionName: WorkflowOperationName) => {
             const action = actions[actionName];
             return {
                 title: action.title,
                 iconClassName: action.iconClassName,
                 groupIsDisabled: disabled[actionName],
                 action,
-                groupAction: () => {
-                    return this.performActionOnSelectedWorkflows(ctx, action.title, action.action).then(confirmed => {
-                        if (confirmed) {
-                            this.props.clearSelection();
-                            ctx.notifications.show({
-                                content: `Performed '${action.title}' on selected workflows.`,
-                                type: NotificationType.Success
-                            });
-                            this.props.loadWorkflows();
-                        }
+                groupAction: async () => {
+                    const confirmed = await this.performActionOnSelectedWorkflows(ctx, action.title, action.action);
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    this.props.clearSelection();
+                    ctx.notifications.show({
+                        content: `Performed '${action.title}' on selected workflows.`,
+                        type: NotificationType.Success
                     });
+                    this.props.loadWorkflows();
                 },
                 className: action.title,
                 disabled: () => false

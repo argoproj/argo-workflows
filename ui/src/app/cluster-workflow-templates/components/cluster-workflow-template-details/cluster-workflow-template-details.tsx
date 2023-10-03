@@ -7,6 +7,7 @@ import {ClusterWorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -17,7 +18,7 @@ import {ClusterWorkflowTemplateEditor} from '../cluster-workflow-template-editor
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
-export const ClusterWorkflowTemplateDetails = ({history, location, match}: RouteComponentProps<any>) => {
+export function ClusterWorkflowTemplateDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -45,22 +46,31 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
     }, [name, sidePanel, tab]);
 
     useEffect(() => {
-        services.clusterWorkflowTemplate
-            .get(name)
-            .then(setTemplate)
-            .then(() => setEdited(false)) // set back to false
-            .then(() => setError(null))
-            .catch(setError);
+        (async () => {
+            try {
+                const newTemplate = await services.clusterWorkflowTemplate.get(name);
+                setTemplate(newTemplate);
+                setEdited(false); // set back to false
+                setError(null);
+            } catch (err) {
+                setError(err);
+            }
+        })();
     }, [name]);
 
     useEffect(() => {
-        services.info
-            .getInfo()
-            .then(info => setNamespace(Utils.getNamespaceWithDefault(info.managedNamespace)))
-            .then(() => setError(null))
-            .catch(setError);
-        services.info.collectEvent('openedClusterWorkflowTemplateDetails').then();
+        (async () => {
+            try {
+                const info = await services.info.getInfo();
+                setNamespace(Utils.getNamespaceWithDefault(info.managedNamespace));
+                setError(null);
+            } catch (err) {
+                setError(err);
+            }
+        })();
     }, []);
+
+    useCollectEvent('openedClusterWorkflowTemplateDetails');
 
     return (
         <Page
@@ -137,4 +147,4 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
             )}
         </Page>
     );
-};
+}

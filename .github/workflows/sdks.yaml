@@ -8,13 +8,13 @@ permissions:
   contents: read
 
 jobs:
-  sdk:
+  sdks:
+    name: Publish SDKs
+    if: github.repository == 'argoproj/argo-workflows'
     permissions:
       packages: write # for publishing packages
       contents: write  # for creating releases
-    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
-    name: Publish SDK
     strategy:
       matrix:
         name:

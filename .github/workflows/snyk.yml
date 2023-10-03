@@ -14,18 +14,20 @@ jobs:
   # we do not scan images here, they're scanned here: https://app.snyk.io/org/argoproj/projects
 
   golang:
+    name: Scan Go deps
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Run Snyk to check for vulnerabilities
+      - name: Run Snyk to check for Go vulnerabilities
         uses: snyk/actions/golang@master
         with:
           args: --severity-threshold=high
 
   node:
+    name: Scan Node deps
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
     env:
@@ -38,7 +40,7 @@ jobs:
           cache: yarn
           cache-dependency-path: ui/yarn.lock
       - run: yarn --cwd ui install
-      - name: Run Snyk to check for vulnerabilities
+      - name: Run Snyk to check for Node vulnerabilities
         uses: snyk/actions/node@master
         with:
           args: --file=ui/package.json --severity-threshold=high

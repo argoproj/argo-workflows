@@ -75,10 +75,10 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
             })
             .then(() => setError(null))
             .catch(setError);
-    }, [namespace, namePattern, labels, pagination.offset, pagination.limit]);
+    }, [namespace, namePattern, labels.toString(), pagination.offset, pagination.limit]); // referential equality, so use values, not refs
     useEffect(() => {
         storage.setItem('paginationLimit', pagination.limit, 0);
-    }, [pagination.limit, labels]);
+    }, [pagination.limit]);
 
     useCollectEvent('openedWorkflowTemplateList');
 

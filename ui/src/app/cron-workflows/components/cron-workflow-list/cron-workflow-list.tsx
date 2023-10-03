@@ -33,7 +33,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     // state for URL, query, and label parameters
     const [namespace, setNamespace] = useState<string>(Utils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
-    const [labels, setLabels] = useState([]);
+    const [labels, setLabels] = useState<string[]>([]);
     const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
 
     useEffect(
@@ -77,7 +77,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                 setError(newError);
             }
         })();
-    }, [namespace, labels, states]);
+    }, [namespace, labels.toString(), states.toString()]); // referential equality, so use values, not refs
 
     useCollectEvent('openedCronWorkflowList');
 

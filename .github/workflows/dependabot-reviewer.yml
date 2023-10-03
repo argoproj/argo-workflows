@@ -7,11 +7,11 @@ permissions:
 
 jobs:
   review:
-    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' && github.repository == 'argoproj/argo-workflows'}}
     permissions:
       pull-requests: write
       contents: write
-    if: ${{ github.actor == 'dependabot[bot]' && github.repository == 'argoproj/argo-workflows'}}
+    runs-on: ubuntu-latest
     steps:
       - name: Dependabot metadata
         id: metadata

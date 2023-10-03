@@ -30,17 +30,21 @@ jobs:
         with:
           node-version: "19"
       # Use the same make target both locally and on CI to make it easier to debug failures.
-      - run: make docs
+      - name: Build & Lint docs
+        run: make docs
       # If markdownlint fixes issues, files will be changed. If so, fail the build.
-      - run: git diff --exit-code
+      - name: Check if markdownlint --fix made changes
+        run: git diff --exit-code
       # Upload the site so reviewers see it.
-      - uses: actions/upload-artifact@v3
+      - name: Upload Docs Site
+        uses: actions/upload-artifact@v3
         with:
           name: docs
           path: site
           if-no-files-found: error
-      - uses: peaceiris/actions-gh-pages@v3
+      - name: Publish to GH Pages (when on master)
         if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
