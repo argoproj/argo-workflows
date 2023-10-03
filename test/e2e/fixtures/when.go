@@ -258,7 +258,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case time.Duration:
-			timeout = v - 30*time.Second + defaultTimeout
+			timeout = v
 		case string:
 			workflowName = v
 		case Condition:
