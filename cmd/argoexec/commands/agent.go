@@ -35,7 +35,7 @@ func NewAgentInitCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new agent workflow",
-		Example: `# Initialize a workflow:
+		Example: `# Initialize a workflow for new agent:
 
 	argo init my-wf
 			  
