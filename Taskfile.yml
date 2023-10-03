@@ -81,6 +81,7 @@ tasks:
   ui-deps:
     cmd: yarn install
     dir: ui
+    sources: [ui/package.json, ui/yarn.lock, ui/node_modules]
     # mutex: downloads
 
   ui:
