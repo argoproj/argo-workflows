@@ -3,6 +3,8 @@ Pipfile
 .idea/
 .node-version
 .DS_Store
+# checksums etc that `task` stores for caching / memoizing
+.task/
 vendor/
 dist/
 # delve debug binaries
@@ -45,6 +47,6 @@ sdks/python/client/dist/*
 manifests/install.yaml
 manifests/namespace-install.yaml
 /logs
-node_modules 
+node_modules
 result
 .devenv
