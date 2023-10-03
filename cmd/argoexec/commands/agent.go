@@ -33,7 +33,40 @@ func NewAgentCommand() *cobra.Command {
 
 func NewAgentInitCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "init",
+		Use:   "init",
+		Short: "Initialize a new agent workflow",
+		Example: `# Initialize a workflow:
+
+	argo init my-wf
+			  
+# Init multiple workflows:
+			  
+	argo init my-wf my-other-wf my-third-wf
+			  
+# Init multiple workflows by label selector:
+			  
+	argo init -l workflows.argoproj.io/test=true
+			  
+# Init multiple workflows by field selector:
+			  
+	argo init --field-selector metadata.namespace=argo
+		  
+# Init and wait for completion:
+			  
+	argo init --wait my-wf.yaml
+			  
+# Init and watch until completion:
+			  
+	argo init --watch my-wf.yaml
+			  
+# Init and tail logs until completion:
+			  
+	argo init --log my-wf.yaml
+		  
+# Init the latest workflow:
+			  
+	argo init @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, name := range getPluginNames() {
 				filename := tokenFilename(name)
