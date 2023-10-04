@@ -7,8 +7,8 @@ import (
 func NewArtifactCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "artifact",
-		Short: "Implement a new artifact",
-		Example: `# Initialize a workflow for new artifact:
+		Short: "Create a new artifact",
+		Example: `# Initialize for new artifact:
 
 	argo artifact my-wf
 			  
