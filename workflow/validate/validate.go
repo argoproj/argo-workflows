@@ -1425,8 +1425,7 @@ func validateDAGTaskArgumentDependency(arguments wfv1.Arguments, ancestry []stri
 			if param.ValueFrom == nil || param.ValueFrom.Parameter != "" {
 				return errors.Errorf(errors.CodeBadRequest, "missing value for parameter '%s'", param.Name)
 			}
-		}
-		if param.Value != nil && strings.HasPrefix(param.Value.String(), "{{tasks.") {
+		} else if strings.HasPrefix(param.Value.String(), "{{tasks.") {
 			// All parameter values should have been validated, so
 			// index 1 should exist.
 			refTaskName := strings.Split(param.Value.String(), ".")[1]
