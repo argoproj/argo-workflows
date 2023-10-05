@@ -1420,15 +1420,11 @@ func validateDAGTaskArgumentDependency(arguments wfv1.Arguments, ancestry []stri
 	}
 
 	for _, param := range arguments.Parameters {
-		// Disallow ValueFrom.Parameter, but allow ValueFrom.ConfigMapKeyRef
 		if param.Value == nil {
-
-			if param.ValueFrom == nil {
-				return errors.Errorf(errors.CodeBadRequest, "missing value for parameter '%s'", param.Name)
-			} else if param.ValueFrom.Parameter != "" {
+			// Disallow ValueFrom.Parameter, but allow ValueFrom.ConfigMapKeyRef
+			if param.ValueFrom == nil || param.ValueFrom.Parameter != "" {
 				return errors.Errorf(errors.CodeBadRequest, "missing value for parameter '%s'", param.Name)
 			}
-
 		}
 		if param.Value != nil && strings.HasPrefix(param.Value.String(), "{{tasks.") {
 			// All parameter values should have been validated, so
