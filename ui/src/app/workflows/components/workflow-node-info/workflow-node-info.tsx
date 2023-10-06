@@ -69,7 +69,7 @@ interface Props {
 const AttributeRow = (attr: {title: string; value: any}) => (
     <React.Fragment key={attr.title}>
         <div>{attr.title}</div>
-        <div style={{overflow: 'auto hidden'}}>{attr.value}</div>
+        <div>{attr.value}</div>
     </React.Fragment>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
