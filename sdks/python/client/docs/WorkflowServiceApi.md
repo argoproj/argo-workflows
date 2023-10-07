@@ -10895,6 +10895,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         display_name="display_name_example",
                         estimated_duration=1,
                         finished_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                        hooked=True,
                         host_node_name="host_node_name_example",
                         id="id_example",
                         inputs=IoArgoprojWorkflowV1alpha1Inputs(
@@ -38442,6 +38443,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         display_name="display_name_example",
                         estimated_duration=1,
                         finished_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                        hooked=True,
                         host_node_name="host_node_name_example",
                         id="id_example",
                         inputs=IoArgoprojWorkflowV1alpha1Inputs(

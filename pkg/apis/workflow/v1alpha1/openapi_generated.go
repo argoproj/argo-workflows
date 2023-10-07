@@ -4119,6 +4119,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"hooked": {
+						SchemaProps: spec.SchemaProps{
+							Description: "hooked tracks whether or not this node was hooked",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"inputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Inputs captures input parameter values and artifact locations supplied to this template invocation",

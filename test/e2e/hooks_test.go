@@ -614,21 +614,25 @@ spec:
 			return strings.Contains(status.Name, "test-workflow-level-hooks-with-retry.hooks.running")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+			assert.Equal(t, true, status.Hooked)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, "test-workflow-level-hooks-with-retry.hooks.failed")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+			assert.Equal(t, true, status.Hooked)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, "test-workflow-level-hooks-with-retry(0)")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
+			assert.Equal(t, false, status.Hooked)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, "test-workflow-level-hooks-with-retry(1)")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
+			assert.Equal(t, false, status.Hooked)
 		})
 }
 

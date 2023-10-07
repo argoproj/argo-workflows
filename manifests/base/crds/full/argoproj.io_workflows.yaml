@@ -19474,6 +19474,8 @@ spec:
                     finishedAt:
                       format: date-time
                       type: string
+                    hooked:
+                      type: boolean
                     hostNodeName:
                       type: string
                     id:

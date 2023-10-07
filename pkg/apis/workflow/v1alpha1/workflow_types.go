@@ -2223,6 +2223,9 @@ type NodeStatus struct {
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty" protobuf:"varint,13,opt,name=daemoned"`
 
+	// hooked tracks whether or not this node was hooked
+	Hooked bool `json:"hooked,omitempty" protobuf:"varint,27,opt,name=hooked"`
+
 	// Inputs captures input parameter values and artifact locations supplied to this template invocation
 	Inputs *Inputs `json:"inputs,omitempty" protobuf:"bytes,14,opt,name=inputs"`
 

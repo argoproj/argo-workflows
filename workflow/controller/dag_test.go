@@ -1686,6 +1686,7 @@ func TestRetryStrategyNodes(t *testing.T) {
 	onExitNode, err := woc.wf.GetNodeByName("wf-retry-pol.onExit")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, onExitNode)
+		assert.True(t, onExitNode.Hooked)
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 
@@ -1853,6 +1854,7 @@ func TestOnExitDAGPhase(t *testing.T) {
 	retryNode, err = woc.wf.GetNodeByName("dag-diamond-88trp.B.onExit")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, retryNode)
+		assert.True(t, retryNode.Hooked)
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
@@ -1979,6 +1981,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 	retryNode, err := woc.wf.GetNodeByName("exit-handler-bug-example.step-2.onExit")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, retryNode)
+		assert.True(t, retryNode.Hooked)
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
@@ -2251,6 +2254,7 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 	onExitNode, err := woc.wf.GetNodeByName("dag-primay-branch-6bnnl.A.onExit")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, onExitNode)
+		assert.True(t, onExitNode.Hooked)
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 }
@@ -3587,12 +3591,14 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	onExitNode := woc.wf.Status.Nodes.FindByDisplayName("printA.onExit")
 	assert.NotNil(t, onExitNode)
 	assert.Equal(t, wfv1.NodeRunning, onExitNode.Phase)
+	assert.True(t, onExitNode.Hooked)
 
 	// exitNode succeeded
 	makePodsPhase(ctx, woc, v1.PodSucceeded)
 	woc.operate(ctx)
 	onExitNode = woc.wf.Status.Nodes.FindByDisplayName("printA.onExit")
 	assert.Equal(t, wfv1.NodeSucceeded, onExitNode.Phase)
+	assert.True(t, onExitNode.Hooked)
 
 	// run next DAGTask
 	woc.operate(ctx)

@@ -9457,6 +9457,10 @@
           "description": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         },
+        "hooked": {
+          "description": "hooked tracks whether or not this node was hooked",
+          "type": "boolean"
+        },
         "hostNodeName": {
           "description": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable",
           "type": "string"

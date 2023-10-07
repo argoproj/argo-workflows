@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **display_name** | **str** | DisplayName is a human readable representation of the node. Unique within a template boundary | [optional] 
 **estimated_duration** | **int** | EstimatedDuration in seconds. | [optional] 
 **finished_at** | **datetime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. | [optional] 
+**hooked** | **bool** | hooked tracks whether or not this node was hooked | [optional] 
 **host_node_name** | **str** | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable | [optional] 
 **inputs** | [**IoArgoprojWorkflowV1alpha1Inputs**](IoArgoprojWorkflowV1alpha1Inputs.md) |  | [optional] 
 **memoization_status** | [**IoArgoprojWorkflowV1alpha1MemoizationStatus**](IoArgoprojWorkflowV1alpha1MemoizationStatus.md) |  | [optional] 
