@@ -62,7 +62,8 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                         <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
                     </div>
                     <div className='columns small-1'>{wf.status.progress || '-'}</div>
-                    <div className='columns small-2'>{wf.status.message || '-'}</div>
+                    {/* CSS has text-overflow, but sometimes it's still too long for the column for some reason, so slice it too. 180 chars are not visible on a 4k screen */}
+                    <div className='columns small-2'>{wf.status.message?.slice(0, 180) || '-'}</div>
                     <div className='columns small-1'>
                         <div className='workflows-list__labels-container'>
                             <div
@@ -93,17 +94,7 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                             </div>
                         );
                     })}
-                    {hideDrawer ? (
-                        <span />
-                    ) : (
-                        <WorkflowDrawer
-                            name={wf.metadata.name}
-                            namespace={wf.metadata.namespace}
-                            onChange={key => {
-                                props.onChange(key);
-                            }}
-                        />
-                    )}
+                    {hideDrawer ? <span /> : <WorkflowDrawer name={wf.metadata.name} namespace={wf.metadata.namespace} onChange={props.onChange} />}
                 </Link>
             </div>
         </div>
