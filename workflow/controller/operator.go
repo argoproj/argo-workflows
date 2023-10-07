@@ -1761,16 +1761,12 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope := make(map[string]interface{})
 
 	// `retries` variable
-	childNodeIds := getChildNodeIdsRetried(node, nodes)
-	if len(childNodeIds) == 0 {
+	childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, nodes)
+
+	if lastChildNode == nil || len(childNodeIds) == 0 {
 		return localScope
 	}
 	localScope[common.LocalVarRetries] = strconv.Itoa(len(childNodeIds) - 1)
-
-	lastChildNode, err := nodes.Get(childNodeIds[len(childNodeIds)-1])
-	if err != nil {
-		return localScope
-	}
 
 	exitCode := "-1"
 	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
