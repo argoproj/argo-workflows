@@ -921,12 +921,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
-	childNodeIds := getChildNodeIdsRetried(node, woc.wf.Status.Nodes)
+	childNodeIds, lastChildNode := woc.getChildNodeIdsAndLastRetriedNode(node, woc.wf.Status.Nodes)
 	if len(childNodeIds) == 0 {
-		return node, true, nil
-	}
-	lastChildNode, err := woc.wf.Status.Nodes.Get(childNodeIds[len(childNodeIds)-1])
-	if err != nil {
 		return node, true, nil
 	}
 
@@ -2023,7 +2019,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			return retryParentNode, nil
 		}
 		retryParentNode = processedRetryParentNode
-		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
+		//lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
+		childNodeIDs, lastChildNode := woc.getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
+
 		// The retry node might have completed by now.
 		if retryParentNode.Fulfilled() {
 			// If retry node has completed, set the output of the last child node to its output.
@@ -2061,7 +2059,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			nodeName = lastChildNode.Name
 			node = lastChildNode
 		} else {
-			retryNum := len(getChildNodeIdsRetried(retryParentNode, woc.wf.Status.Nodes))
+			retryNum := len(childNodeIDs)
 			// Create a new child node and append it to the retry node.
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
 			woc.addChildNode(retryNodeName, nodeName)
@@ -3972,4 +3970,16 @@ func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
 	}
 
 	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
+}
+
+func (woc *wfOperationCtx) getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) ([]string, *wfv1.NodeStatus) {
+	childNodeIds := getChildNodeIdsRetried(node, woc.wf.Status.Nodes)
+	if len(childNodeIds) == 0 {
+		return []string{}, nil
+	}
+	lastChildNode, err := woc.wf.Status.Nodes.Get(childNodeIds[len(childNodeIds)-1])
+	if err != nil {
+		panic(fmt.Sprintf("could not find nodeId %s in Children of node %+v", childNodeIds[len(childNodeIds)-1], node))
+	}
+	return childNodeIds, lastChildNode
 }
