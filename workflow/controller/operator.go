@@ -1797,7 +1797,8 @@ type executeTemplateOpts struct {
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
 func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
+	//woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
+	woc.log.Infof("Evaluating node %s: template: %s, boundaryID: %s, recursion: %d", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID, woc.currentStackDepth)
 
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()
@@ -3969,10 +3970,17 @@ func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
 }
 
 func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) ([]string, *wfv1.NodeStatus) {
-	childNodeIds := getChildNodeIdsRetried(node, nodes)
-	if len(childNodeIds) == 0 {
+	if len(node.Children) == 0 {
 		return []string{}, nil
 	}
+
+	childNodeIds := getChildNodeIdsRetried(node, nodes)
+
+	// We could not find child nodes, we are trying to retry hooked node itself.
+	if len(childNodeIds) == 0 {
+		childNodeIds = node.Children
+	}
+
 	lastChildNode, err := nodes.Get(childNodeIds[len(childNodeIds)-1])
 	if err != nil {
 		panic(fmt.Sprintf("could not find nodeId %s in Children of node %+v", childNodeIds[len(childNodeIds)-1], node))

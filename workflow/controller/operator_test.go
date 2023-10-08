@@ -9635,3 +9635,86 @@ func TestMaxDepthEnvVariable(t *testing.T) {
 
 	_ = os.Unsetenv("DISABLE_MAX_RECURSION")
 }
+
+func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
+	nodeName := "test-node"
+	setup := func() *wfOperationCtx {
+		cancel, controller := newController()
+		defer cancel()
+		assert.NotNil(t, controller)
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		assert.NotNil(t, wf)
+		woc := newWorkflowOperationCtx(wf, controller)
+		assert.NotNil(t, woc)
+		// Verify that there are no nodes in the wf status.
+		assert.Zero(t, len(woc.wf.Status.Nodes))
+
+		// Add the parent node for retries.
+		nodeID := woc.wf.NodeID(nodeName)
+		node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+		woc.wf.Status.Nodes[nodeID] = *node
+
+		// Ensure there are no child nodes yet.
+		lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+		assert.Nil(t, lastChild)
+		return woc
+	}
+	t.Run("lastChildNode", func(t *testing.T) {
+		woc := setup()
+		childNodes := []*wfv1.NodeStatus{}
+		// Add child nodes.
+		for i := 0; i < 2; i++ {
+			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false))
+			woc.addChildNode(nodeName, childNode)
+		}
+		node, err := woc.wf.GetNodeByName(nodeName)
+		assert.NoError(t, err)
+		childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, woc.wf.Status.Nodes)
+
+		assert.Equal(t, 2, len(childNodeIds))
+		assert.Equal(t, childNodes[1].ID, lastChildNode.ID)
+	})
+
+	t.Run("Ignore hooked node", func(t *testing.T) {
+		woc := setup()
+		childNodes := []*wfv1.NodeStatus{}
+		// Add child nodes.
+		for i := 0; i < 2; i++ {
+			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false))
+			woc.addChildNode(nodeName, childNode)
+		}
+
+		// Add child hooked nodes
+		childNode := fmt.Sprintf("%s.hook.running", nodeName)
+		childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, true))
+		woc.addChildNode(nodeName, childNode)
+
+		node, err := woc.wf.GetNodeByName(nodeName)
+		assert.NoError(t, err)
+		childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, woc.wf.Status.Nodes)
+
+		assert.Equal(t, 2, len(childNodeIds))
+		// ignore the hooked node
+		assert.Equal(t, childNodes[1].ID, lastChildNode.ID)
+	})
+
+	t.Run("Retry hooked node", func(t *testing.T) {
+		woc := setup()
+		childNodes := []*wfv1.NodeStatus{}
+		// Add child hooked noes
+		for i := 0; i < 2; i++ {
+			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, true))
+			woc.addChildNode(nodeName, childNode)
+		}
+
+		node, err := woc.wf.GetNodeByName(nodeName)
+		assert.NoError(t, err)
+		childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, woc.wf.Status.Nodes)
+
+		assert.Equal(t, 2, len(childNodeIds))
+		assert.Equal(t, childNodes[1].ID, lastChildNode.ID)
+	})
+}
