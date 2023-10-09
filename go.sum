@@ -147,8 +147,6 @@ github.com/andybalholm/brotli v1.0.4/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHG
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 h1:kFOfPq6dUM1hTo4JG6LR5AXSUEsOjtdm0kw0FtQtMJA=
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/antonmedv/expr v1.15.3 h1:q3hOJZNvLvhqE8OHBs1cFRdbXFNKuA+bHmRaI+AmRmI=
-github.com/antonmedv/expr v1.15.3/go.mod h1:0E/6TxnOlRNp81GMzX9QfDPAmHo2Phg00y4JUv1ihsE=
 github.com/argoproj-labs/go-git/v5 v5.4.7 h1:BXrXK/anGnbdj0MoKJyn++h6HZ7Wa0UhW2mNOmuTcV8=
 github.com/argoproj-labs/go-git/v5 v5.4.7/go.mod h1:hA0dcdz5GgO4KXyDY90CCfJaw4PIGMecmq5YwHdTBi0=
 github.com/argoproj/argo-events v1.7.3 h1:XiGnKCzRRQCI7sFCKw3RoeFUOR6IupfAJI9uUK7pnG8=
@@ -305,6 +303,8 @@ github.com/evilmonkeyinc/jsonpath v0.8.1 h1:W8K4t8u7aipkQE0hcTICGAdAN0Xph349Ltjg
 github.com/evilmonkeyinc/jsonpath v0.8.1/go.mod h1:EQhs0ZsoD4uD56ZJbO30gMTfHLQ6DEa0/5rT5Ymy42s=
 github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d h1:105gxyaGwCFad8crR9dcMQWvV9Hvulu6hwUh4tWPJnM=
 github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d/go.mod h1:ZZMPRZwes7CROmyNKgQzC3XPs6L/G2EJLHddWejkmf4=
+github.com/expr-lang/expr v0.0.0-20230912141041-709c5dd55aa7 h1:Sg2XxaymeyqqaLG34aB2mvlX+nii916/Gv1ovWc4jMc=
+github.com/expr-lang/expr v0.0.0-20230912141041-709c5dd55aa7/go.mod h1:0E/6TxnOlRNp81GMzX9QfDPAmHo2Phg00y4JUv1ihsE=
 github.com/fasthttp/websocket v1.4.3-rc.6 h1:omHqsl8j+KXpmzRjF8bmzOSYJ8GnS0E3efi1wYT+niY=
 github.com/fasthttp/websocket v1.4.3-rc.6/go.mod h1:43W9OM2T8FeXpCWMsBd9Cb7nE2CACNqNvCqQCoty/Lc=
 github.com/fatih/camelcase v1.0.0 h1:hxNvNX/xYBp0ovncs8WyWZrOrpBNub/JfaMvbURyft8=
