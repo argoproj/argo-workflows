@@ -19474,8 +19474,6 @@ spec:
                     finishedAt:
                       format: date-time
                       type: string
-                    hooked:
-                      type: boolean
                     hostNodeName:
                       type: string
                     id:
@@ -20056,6 +20054,13 @@ spec:
                       type: string
                     name:
                       type: string
+                    nodeFlag:
+                      properties:
+                        hooked:
+                          type: boolean
+                        retried:
+                          type: boolean
+                      type: object
                     outboundNodes:
                       items:
                         type: string

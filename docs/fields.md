@@ -1806,13 +1806,13 @@ NodeStatus contains status information about an individual node in the workflow
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`estimatedDuration`|`integer`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
-|`hooked`|`boolean`|hooked tracks whether or not this node was hooked|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|
 |`inputs`|[`Inputs`](#inputs)|Inputs captures input parameter values and artifact locations supplied to this template invocation|
 |`memoizationStatus`|[`MemoizationStatus`](#memoizationstatus)|MemoizationStatus holds information about cached nodes|
 |`message`|`string`|A human readable message indicating details about why the node is in this condition.|
 |`name`|`string`|Name is unique name in the node tree used to generate the node ID|
+|`nodeFlag`|[`NodeFlag`](#nodeflag)|Retried tracks whether or not this node was retried by retryStrategy|
 |`outboundNodes`|`Array< string >`|OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step. In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded", "Skipped", "Failed", "Error", or "Omitted" as a final state.|
@@ -3202,6 +3202,16 @@ MemoizationStatus is the status of this memoized node
 |`cacheName`|`string`|Cache is the name of the cache that was used|
 |`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
 |`key`|`string`|Key is the name of the key used for this node's cache|
+
+## NodeFlag
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`hooked`|`boolean`|_No description available_|
+|`retried`|`boolean`|_No description available_|
 
 ## NodeSynchronizationStatus
 

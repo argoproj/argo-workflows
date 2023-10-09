@@ -527,7 +527,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	woc.wf.Status.Nodes[nodeID] = *node
@@ -541,7 +541,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -574,7 +574,7 @@ func TestProcessNodeRetries(t *testing.T) {
 
 	// Add a hook node that has Succeeded
 	childHookedNode := "child-node.hooks.running"
-	woc.initializeNode(childHookedNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeSucceeded, true)
+	woc.initializeNode(childHookedNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeSucceeded, &wfv1.NodeFlag{Hooked: true})
 	woc.addChildNode(nodeName, childHookedNode)
 
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -585,7 +585,7 @@ func TestProcessNodeRetries(t *testing.T) {
 
 	// Add a third node that has failed.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, false)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
 	woc.addChildNode(nodeName, childNode)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
@@ -609,7 +609,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -624,7 +624,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -657,7 +657,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 
 	// Add a third node that has errored.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, false)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{})
 	woc.addChildNode(nodeName, childNode)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
@@ -681,7 +681,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyOnTransientError
@@ -696,7 +696,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -734,7 +734,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 
 	// Add a third node that has errored.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, false)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{})
 	woc.addChildNode(nodeName, childNode)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
@@ -758,7 +758,7 @@ func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.Backoff = &wfv1.Backoff{
@@ -775,7 +775,7 @@ func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
-	woc.initializeNode(nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	woc.initializeNode(nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	woc.addChildNode(nodeName, nodeName+"(0)")
 
 	n, err := woc.wf.GetNodeByName(nodeName)
@@ -814,7 +814,7 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -830,7 +830,7 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	require.Nil(lastChild)
 
-	woc.initializeNode(nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, false)
+	woc.initializeNode(nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{})
 	woc.addChildNode(nodeName, nodeName+"(0)")
 
 	n, err := woc.wf.GetNodeByName(nodeName)
@@ -847,7 +847,7 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.LessOrEqual(backoff, 300)
 	require.Less(295, backoff)
 
-	woc.initializeNode(nodeName+"(1)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, false)
+	woc.initializeNode(nodeName+"(1)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{})
 	woc.addChildNode(nodeName, nodeName+"(1)")
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
@@ -908,7 +908,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
@@ -923,7 +923,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -3438,7 +3438,7 @@ func TestStepsOnExit(t *testing.T) {
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("leafA.onExit")
 	assert.NotNil(t, node)
-	assert.True(t, node.Hooked)
+	assert.True(t, node.NodeFlag.Hooked)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 	node = woc.wf.Status.Nodes.FindByDisplayName("leafB.onExit")
 	assert.Nil(t, node)
@@ -3482,7 +3482,7 @@ func TestStepsOnExitFailures(t *testing.T) {
 	node := woc.wf.Status.Nodes.FindByDisplayName("exit-handlers")
 	assert.NotNil(t, node)
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
-	assert.False(t, node.Hooked)
+	assert.Nil(t, node.NodeFlag)
 }
 
 var onExitTimeout = `
@@ -3523,7 +3523,7 @@ func TestStepsOnExitTimeout(t *testing.T) {
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("exit-handlers.onExit")
 	assert.NotNil(t, node)
-	assert.True(t, node.Hooked)
+	assert.True(t, node.NodeFlag.Hooked)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 }
 
@@ -5477,7 +5477,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{
 		Limit: intstrutil.ParsePtr("2"),
 		Backoff: &wfv1.Backoff{
@@ -5489,7 +5489,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	woc.wf.Status.Nodes[woc.wf.NodeID(nodeName)] = *node
 
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 0)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, false)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{})
 	woc.addChildNode(nodeName, childNode)
 
 	var opts executeTemplateOpts
@@ -6758,7 +6758,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 
 	hostSelector := "kubernetes.io/hostname"
 	retries := wfv1.RetryStrategy{}
@@ -6776,7 +6776,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	// Add child node.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 0)
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	woc.addChildNode(nodeName, childNode)
 
 	n, err := woc.wf.GetNodeByName(nodeName)
@@ -8327,6 +8327,8 @@ status:
       templateName: retry-script
       templateScope: local/retry-script-9z9pv
       type: Pod
+      nodeFlag:
+        retried: true
     retry-script-9z9pv-2346402485:
       boundaryID: retry-script-9z9pv
       children:
@@ -8362,6 +8364,8 @@ status:
       templateName: retry-script
       templateScope: local/retry-script-9z9pv
       type: Pod
+      nodeFlag:
+        retried: true
     retry-script-9z9pv-3940097040:
       boundaryID: retry-script-9z9pv
       children:
@@ -8506,6 +8510,8 @@ status:
       templateName: output
       templateScope: local/exit-handler-with-param-xbh52
       type: Pod
+      nodeFlag:
+        retried: true
     exit-handler-with-param-xbh52-2034140834:
       boundaryID: exit-handler-with-param-xbh52
       displayName: step-1(0)
@@ -8531,6 +8537,8 @@ status:
       templateName: output
       templateScope: local/exit-handler-with-param-xbh52
       type: Pod
+      nodeFlag:
+        retried: true
     exit-handler-with-param-xbh52-3203867295:
       boundaryID: exit-handler-with-param-xbh52
       children:
@@ -9651,7 +9659,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 
 		// Add the parent node for retries.
 		nodeID := woc.wf.NodeID(nodeName)
-		node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false)
+		node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 		woc.wf.Status.Nodes[nodeID] = *node
 
 		// Ensure there are no child nodes yet.
@@ -9665,7 +9673,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		// Add child nodes.
 		for i := 0; i < 2; i++ {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false))
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}))
 			woc.addChildNode(nodeName, childNode)
 		}
 		node, err := woc.wf.GetNodeByName(nodeName)
@@ -9682,13 +9690,13 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		// Add child nodes.
 		for i := 0; i < 2; i++ {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, false))
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true}))
 			woc.addChildNode(nodeName, childNode)
 		}
 
 		// Add child hooked nodes
 		childNode := fmt.Sprintf("%s.hook.running", nodeName)
-		childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, true))
+		childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Hooked: true}))
 		woc.addChildNode(nodeName, childNode)
 
 		node, err := woc.wf.GetNodeByName(nodeName)
@@ -9706,7 +9714,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		// Add child hooked noes
 		for i := 0; i < 2; i++ {
 			childNode := fmt.Sprintf("%s(%d)", nodeName, i)
-			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, true))
+			childNodes = append(childNodes, woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true, Hooked: true}))
 			woc.addChildNode(nodeName, childNode)
 		}
 
