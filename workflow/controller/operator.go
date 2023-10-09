@@ -1726,20 +1726,6 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	return &lastChildNode
 }
 
-func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
-	childrenIds := []string{}
-	for i := 0; i < len(node.Children); i++ {
-		n := getChildNodeIndex(node, nodes, i)
-		if n == nil || n.NodeFlag == nil {
-			continue
-		}
-		if n.NodeFlag.Retried {
-			childrenIds = append(childrenIds, n.ID)
-		}
-	}
-	return childrenIds
-}
-
 func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
 	// To resume the traversal, we look at the children of the last child node and of any on exit nodes.
@@ -3973,6 +3959,8 @@ func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
 	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
 }
 
+// getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node for parant noode `NodeType: Retry`.
+// This function removes some unnecessary child nodes, such as hooked nodes.
 func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) ([]string, *wfv1.NodeStatus) {
 	childNodeIds := getChildNodeIdsRetried(node, nodes)
 
@@ -3985,4 +3973,19 @@ func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) 
 		panic(fmt.Sprintf("could not find nodeId %s in Children of node %+v", childNodeIds[len(childNodeIds)-1], node))
 	}
 	return childNodeIds, lastChildNode
+}
+
+// getChildNodeIdsRetried returns child node ids which have `NodeStatus.NodeFlag.Retried` set to true.
+func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
+	childrenIds := []string{}
+	for i := 0; i < len(node.Children); i++ {
+		n := getChildNodeIndex(node, nodes, i)
+		if n == nil || n.NodeFlag == nil {
+			continue
+		}
+		if n.NodeFlag.Retried {
+			childrenIds = append(childrenIds, n.ID)
+		}
+	}
+	return childrenIds
 }

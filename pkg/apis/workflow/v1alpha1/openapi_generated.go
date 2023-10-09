@@ -3954,14 +3954,16 @@ func schema_pkg_apis_workflow_v1alpha1_NodeFlag(ref common.ReferenceCallback) co
 				Properties: map[string]spec.Schema{
 					"hooked": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
+							Description: "Hooked tracks whether or not this node was triggered by hook or onExit",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 					"retried": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
+							Description: "Retried tracks whether or not this node was retried by retryStrategy",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -4146,7 +4148,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"nodeFlag": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Retried tracks whether or not this node was retried by retryStrategy",
+							Description: "NodeFlag tracks some history of node. e.g.) hooked, retried, etc.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeFlag"),
 						},
 					},

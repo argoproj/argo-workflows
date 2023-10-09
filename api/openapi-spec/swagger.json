@@ -9408,9 +9408,11 @@
       "type": "object",
       "properties": {
         "hooked": {
+          "description": "Hooked tracks whether or not this node was triggered by hook or onExit",
           "type": "boolean"
         },
         "retried": {
+          "description": "Retried tracks whether or not this node was retried by retryStrategy",
           "type": "boolean"
         }
       }
@@ -9493,7 +9495,7 @@
           "type": "string"
         },
         "nodeFlag": {
-          "description": "Retried tracks whether or not this node was retried by retryStrategy",
+          "description": "NodeFlag tracks some history of node. e.g.) hooked, retried, etc.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeFlag"
         },
         "outboundNodes": {

@@ -136,8 +136,8 @@ class IoArgoprojWorkflowV1alpha1NodeFlag(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            hooked (bool): [optional]  # noqa: E501
-            retried (bool): [optional]  # noqa: E501
+            hooked (bool): Hooked tracks whether or not this node was triggered by hook or onExit. [optional]  # noqa: E501
+            retried (bool): Retried tracks whether or not this node was retried by retryStrategy. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -219,8 +219,8 @@ class IoArgoprojWorkflowV1alpha1NodeFlag(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            hooked (bool): [optional]  # noqa: E501
-            retried (bool): [optional]  # noqa: E501
+            hooked (bool): Hooked tracks whether or not this node was triggered by hook or onExit. [optional]  # noqa: E501
+            retried (bool): Retried tracks whether or not this node was retried by retryStrategy. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

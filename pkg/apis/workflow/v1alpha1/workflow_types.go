@@ -2223,7 +2223,7 @@ type NodeStatus struct {
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty" protobuf:"varint,13,opt,name=daemoned"`
 
-	// Retried tracks whether or not this node was retried by retryStrategy
+	// NodeFlag tracks some history of node. e.g.) hooked, retried, etc.
 	NodeFlag *NodeFlag `json:"nodeFlag,omitempty" protobuf:"bytes,27,opt,name=nodeFlag"`
 
 	// Inputs captures input parameter values and artifact locations supplied to this template invocation
@@ -3824,6 +3824,8 @@ type NodeSynchronizationStatus struct {
 }
 
 type NodeFlag struct {
-	Hooked  bool `json:"hooked,omitempty" protobuf:"varint,1,opt,name=hooked"`
+	// Hooked tracks whether or not this node was triggered by hook or onExit
+	Hooked bool `json:"hooked,omitempty" protobuf:"varint,1,opt,name=hooked"`
+	// Retried tracks whether or not this node was retried by retryStrategy
 	Retried bool `json:"retried,omitempty" protobuf:"varint,2,opt,name=retried"`
 }
