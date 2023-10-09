@@ -611,28 +611,39 @@ spec:
 			assert.Equal(t, status.Progress, v1alpha1.Progress("2/4"))
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-			return strings.Contains(status.Name, "test-workflow-level-hooks-with-retry.hooks.running")
+			return status.Name == "test-workflow-level-hooks-with-retry.hooks.running"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 			assert.Equal(t, true, status.NodeFlag.Hooked)
+			assert.Equal(t, false, status.NodeFlag.Retried)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-			return strings.Contains(status.Name, "test-workflow-level-hooks-with-retry.hooks.failed")
+			return status.Name == "test-workflow-level-hooks-with-retry.hooks.failed"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 			assert.Equal(t, true, status.NodeFlag.Hooked)
+			assert.Equal(t, false, status.NodeFlag.Retried)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-			return strings.Contains(status.Name, "test-workflow-level-hooks-with-retry(0)")
+			return status.Name == "test-workflow-level-hooks-with-retry"
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
+			assert.Equal(t, v1alpha1.NodeTypeRetry, status.Type)
+			assert.Nil(t, status.NodeFlag)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.Name == "test-workflow-level-hooks-with-retry(0)"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
 			assert.Equal(t, false, status.NodeFlag.Hooked)
+			assert.Equal(t, true, status.NodeFlag.Retried)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-			return strings.Contains(status.Name, "test-workflow-level-hooks-with-retry(1)")
+			return status.Name == "test-workflow-level-hooks-with-retry(1)"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
 			assert.Equal(t, false, status.NodeFlag.Hooked)
+			assert.Equal(t, true, status.NodeFlag.Retried)
 		})
 }
 
