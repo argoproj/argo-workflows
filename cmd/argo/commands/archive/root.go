@@ -21,7 +21,7 @@ func NewArchiveCommand() *cobra.Command {
    		archive list-label-value
    		# Resubmit a workflow archive:
    		archive resubmit [workflow ID]
-  		 # Retry a workflow archive:
+		# Retry a workflow archive:
    		archive retry [workflow ID]
    		`,
 		Run: func(cmd *cobra.Command, args []string) {
