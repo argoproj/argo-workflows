@@ -2223,8 +2223,8 @@ type NodeStatus struct {
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty" protobuf:"varint,13,opt,name=daemoned"`
 
-	// hooked tracks whether or not this node was hooked
-	Hooked bool `json:"hooked,omitempty" protobuf:"varint,27,opt,name=hooked"`
+	// Retried tracks whether or not this node was retried by retryStrategy
+	NodeFlag *NodeFlag `json:"nodeFlag,omitempty" protobuf:"bytes,27,opt,name=nodeFlag"`
 
 	// Inputs captures input parameter values and artifact locations supplied to this template invocation
 	Inputs *Inputs `json:"inputs,omitempty" protobuf:"bytes,14,opt,name=inputs"`
@@ -3821,4 +3821,9 @@ func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) Synchro
 type NodeSynchronizationStatus struct {
 	// Waiting is the name of the lock that this node is waiting for
 	Waiting string `json:"waiting,omitempty" protobuf:"bytes,1,opt,name=waiting"`
+}
+
+type NodeFlag struct {
+	Hooked  bool `json:"hooked,omitempty" protobuf:"varint,1,opt,name=hooked"`
+	Retried bool `json:"retried,omitempty" protobuf:"varint,2,opt,name=retried"`
 }
