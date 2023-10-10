@@ -10,19 +10,19 @@ func NewArchiveCommand() *cobra.Command {
 		Short: "manage the workflow archive",
 		Example: `
    		# List workflow archives:
-   		archive list
+   		argo archive list
    		# Get details of a specific workflow archive:
-   		archive get [workflow ID]
+   		argo archive get uid
    		# Delete a specific workflow archive:
-   		archive delete [workflow ID]
+   		argo archive delete uid
    		# List workflow archives by label key:
-   		archive list-label-key
+   		argo archive list-label-key
    		# List workflow archives by label value:
-   		archive list-label-value
+   		argo archive list-label-value
    		# Resubmit a workflow archive:
-   		archive resubmit [workflow ID]
+   		argo archive resubmit uid
 		# Retry a workflow archive:
-   		archive retry [workflow ID]
+   		argo archive retry uid
    		`,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
