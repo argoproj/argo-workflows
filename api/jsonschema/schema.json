@@ -144,7 +144,7 @@
           "type": "boolean"
         },
         "noWait": {
-          "title": "NowWait when true, do not wait for the server to confirm the request and immediately begin deliveries\n+optional",
+          "title": "NoWait when true, do not wait for the server to confirm the request and immediately begin deliveries\n+optional",
           "type": "boolean"
         }
       },
@@ -235,7 +235,7 @@
           "type": "boolean"
         },
         "noWait": {
-          "title": "NowWait when true does not wait for a confirmation from the server\n+optional",
+          "title": "NoWait when true does not wait for a confirmation from the server\n+optional",
           "type": "boolean"
         }
       },
@@ -245,7 +245,7 @@
     "io.argoproj.events.v1alpha1.AMQPQueueBindConfig": {
       "properties": {
         "noWait": {
-          "title": "NowWait false and the queue could not be bound, the channel will be closed with an error\n+optional",
+          "title": "NoWait false and the queue could not be bound, the channel will be closed with an error\n+optional",
           "type": "boolean"
         }
       },
@@ -275,7 +275,7 @@
           "type": "string"
         },
         "noWait": {
-          "title": "NowWait when true, the queue assumes to be declared on the server\n+optional",
+          "title": "NoWait when true, the queue assumes to be declared on the server\n+optional",
           "type": "boolean"
         }
       },
