@@ -4007,7 +4007,7 @@
 <h1 id="running-locally">Running Locally<a class="headerlink" href="#running-locally" title="Permanent link">&para;</a></h1>
 <p>You have two options:</p>
 <ol>
-<li>Use the <a href="#development-container">Dev Container</a>. This takes about 7 minutes. This can be used with VSCode or with the <code>devcontainer</code> CLI.</li>
+<li>Use the <a href="#development-container">Dev Container</a>. This takes about 7 minutes. This can be used with VSCode, the <code>devcontainer</code> CLI, or GitHub Codespaces.</li>
 <li>Install the <a href="#requirements">requirements</a> on your computer manually. This takes about 1 hour.</li>
 </ol>
 <h2 id="development-container">Development Container<a class="headerlink" href="#development-container" title="Permanent link">&para;</a></h2>
@@ -4016,9 +4016,9 @@
 <ol>
 <li><a href="https://code.visualstudio.com/">Visual Studio Code</a> with <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers">Dev Containers extension</a>. Open your <code>argo-workflows</code> folder in VSCode and it should offer to use the development container automatically. VSCode will allow you to forward ports to allow your external browser to access the running components.</li>
 <li><a href="https://github.com/devcontainers/cli"><code>devcontainer</code> CLI</a>. Once installed, go to your <code>argo-workflows</code> folder and run <code>devcontainer up --workspace-folder .</code> followed by <code>devcontainer exec --workspace-folder . /bin/bash</code> to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Due to a limitation of the CLI, only port 8080 (the Web UI) will be exposed for you to access if you run this way. Other services are usable from the shell inside.</li>
+<li><a href="https://github.com/codespaces">GitHub Codespaces</a>. You can start editing as soon as VSCode is open, though you may want to wait for <code>pre-build.sh</code> to finish installing dependencies, building binaries, and setting up the cluster before running any commands in the terminal. Once you start running services (see next steps below), you can click on the "PORTS" tab in the VSCode terminal to see all forwarded ports. You can open the Web UI in a new tab from there.</li>
 </ol>
 <p>Once you have entered the container, continue to <a href="#developing-locally">Developing Locally</a>.</p>
-<p><code>Github Codespaces</code> is known not to work at this time.</p>
 <p>Note:</p>
 <ul>
 <li>
