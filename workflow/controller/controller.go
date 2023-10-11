@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	gosync "sync"
 	"syscall"
 	"time"
 
@@ -68,6 +69,16 @@ import (
 )
 
 const maxAllowedStackDepth = 100
+
+type recentlyCompletedWorkflow struct {
+	key  string
+	when time.Time
+}
+
+type recentCompletions struct {
+	completions []recentlyCompletedWorkflow
+	mutex       gosync.Mutex
+}
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
@@ -135,6 +146,8 @@ type WorkflowController struct {
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
+
+	recentCompletions recentCompletions
 }
 
 const (
@@ -748,6 +761,11 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	if wfc.checkRecentlyCompleted(wf.ObjectMeta.Name) {
+		log.WithFields(log.Fields{"name": wf.ObjectMeta.Name}).Warn("Cache: Rejecting recently deleted")
+		return true
+	}
+
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
@@ -848,6 +866,52 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
+// 10 minutes in the past
+const maxCompletedStoreTime = time.Second * -600
+
+func (wfc *WorkflowController) cleanCompletedWorkflowsRecord() {
+	cutoff := time.Now().Add(maxCompletedStoreTime)
+	removeIndex := -1
+	wfc.recentCompletions.mutex.Lock()
+	defer wfc.recentCompletions.mutex.Unlock()
+
+	for i, val := range wfc.recentCompletions.completions {
+		if val.when.After(cutoff) {
+			removeIndex = i - 1
+			break
+		}
+	}
+	if removeIndex >= 0 {
+		wfc.recentCompletions.completions = wfc.recentCompletions.completions[removeIndex+1:]
+	}
+}
+
+func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
+	if !wfc.checkRecentlyCompleted(key) {
+		wfc.recentCompletions.mutex.Lock()
+		wfc.recentCompletions.completions = append(wfc.recentCompletions.completions,
+			recentlyCompletedWorkflow{
+				key:  key,
+				when: time.Now(),
+			})
+		wfc.recentCompletions.mutex.Unlock()
+	}
+}
+
+func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
+	wfc.cleanCompletedWorkflowsRecord()
+	recent := false
+	wfc.recentCompletions.mutex.Lock()
+	for _, val := range wfc.recentCompletions.completions {
+		if val.key == key {
+			recent = true
+			break
+		}
+	}
+	wfc.recentCompletions.mutex.Unlock()
+	return recent
+}
+
 func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) {
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
@@ -857,7 +921,13 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					log.Warnf("Workflow FilterFunc: '%v' is not an unstructured", obj)
 					return false
 				}
-				return reconciliationNeeded(un)
+				needed := reconciliationNeeded(un)
+				if !needed {
+					key, _ := cache.MetaNamespaceKeyFunc(un)
+					wfc.recordCompletedWorkflow(key)
+					wfc.throttler.Remove(key)
+				}
+				return needed
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
@@ -888,6 +958,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
+						wfc.recordCompletedWorkflow(key)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
