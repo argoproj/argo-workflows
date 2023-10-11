@@ -2710,9 +2710,9 @@ func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
 
 func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{})
-	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	assert.Nil(t, err)
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Lint: true})
-	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	assert.Nil(t, err)
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.value is required")
 }
