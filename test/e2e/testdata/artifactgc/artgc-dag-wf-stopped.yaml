@@ -21,15 +21,6 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  # How long to keep workflows around after they have completed https://argoproj.github.io/argo-workflows/fields/#ttlstrategy
-  # ttlStrategy:
-  #   # 30 seconds
-  #   secondsAfterCompletion: 30
-  #   secondsAfterSuccess: 30
-  #   secondsAfterFailure: 30
-  # podGC:
-  #   deleteDelayDuration: 15s
-  #   strategy: "OnWorkflowCompletion"
   templates:
     - name: artgc-dag-wf-stopped-main
       dag:
@@ -72,6 +63,9 @@ spec:
           - --namespace=argo
           - --loglevel=debug
     - name: artgc-dag-artifact-creator
+      metadata:
+        labels:
+          template: "artgc-dag-artifact-creator"
       container:
         image: alpine:latest
         volumeMounts:

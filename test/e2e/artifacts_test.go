@@ -120,20 +120,7 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 	when.
 		DeleteWorkflow().
-		WaitForWorkflow(
-			fixtures.WorkflowCompletionOkay(true),
-			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-
-				condition := "for artifact to not exist"
-
-				_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped", minio.StatObjectOptions{})
-
-				if err != nil {
-					return true, condition
-				}
-
-				return false, condition
-			}))
+		WaitForWorkflowDeletion()
 
 	then = when.Then()
 
