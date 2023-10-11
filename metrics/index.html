@@ -4456,7 +4456,7 @@ level Gauge metric that will report the Workflow duration time:</p>
 </code></pre></div>
 <h3 id="real-time-metrics">Real-Time Metrics<a class="headerlink" href="#real-time-metrics" title="Permanent link">&para;</a></h3>
 <p>Argo supports a limited number of real-time metrics. These metrics are emitted in real-time, beginning when the step execution starts
-and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a <a href="../variables/#realtime-metrics">limited number of variables</a>.</p>
+and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a <a href="../variables/#real-time-metrics">limited number of variables</a>.</p>
 <p>To define a real-time metric simply add <code>realtime: true</code> to a gauge metric with a valid real-time variable. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">gauge</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">realtime</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
