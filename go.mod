@@ -60,7 +60,7 @@ require (
 	golang.org/x/oauth2 v0.12.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.143.0
+	google.golang.org/api v0.146.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb
 	google.golang.org/grpc v1.58.3
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
