@@ -6,6 +6,7 @@ spec:
   workflowMetadata:
     labels:
       workflows.argoproj.io/test: "true"
+      workflows.argoproj.io/workflow: "artgc-dag-wf-stopped"
   artifactGC:
     serviceAccountName: default
     strategy: OnWorkflowDeletion
@@ -59,7 +60,7 @@ spec:
         args: 
           - stop
           - -l
-          - workflows.argoproj.io/test=true
+          - workflows.argoproj.io/workflow=artgc-dag-wf-stopped
           - --namespace=argo
           - --loglevel=debug
     - name: artgc-dag-artifact-creator
