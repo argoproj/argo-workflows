@@ -6,11 +6,13 @@ import (
     "os"
 
     "github.com/argoproj/pkg/json"
+    "github.com/spf13/cobra"
+
     "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+    "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
     wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
     "github.com/argoproj/argo-workflows/v3/workflow/common"
     "github.com/argoproj/argo-workflows/v3/workflow/util"
-    "github.com/spf13/cobra"
 )
 
 type cliCreateOpts struct {
@@ -19,7 +21,7 @@ type cliCreateOpts struct {
 }
 
 func NewCreateCommand() *cobra.Command {
-    var cliCreateOpts cliCreateOpts
+    var cliCreateOpts = cliCreateOpts{}
     command := &cobra.Command{
         Use:   "create FILE1 FILE2...",
         Short: "create a cluster workflow template",
@@ -38,9 +40,6 @@ func NewCreateCommand() *cobra.Command {
 }
 
 func createClusterWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts) {
-    if cliOpts == nil {
-        cliOpts = &cliCreateOpts{}
-    }
     ctx, apiClient := client.NewAPIClient(ctx)
     serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
     if err != nil {
@@ -67,7 +66,7 @@ func createClusterWorkflowTemplates(ctx context.Context, filePaths []string, cli
     }
 
     for _, wftmpl := range clusterWorkflowTemplates {
-        created, err := serviceClient.CreateClusterWorkflowTemplate(ctx, &wfv1.ClusterWorkflowTemplateCreateRequest{
+        created, err := serviceClient.CreateClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest{
             Template: &wftmpl,
         })
         if err != nil {
@@ -77,7 +76,6 @@ func createClusterWorkflowTemplates(ctx context.Context, filePaths []string, cli
     }
 }
 
-// unmarshalClusterWorkflowTemplates unmarshals the input bytes as either JSON or YAML
 func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
     var cwft wfv1.ClusterWorkflowTemplate
     var jsonOpts []json.JSONOpt
@@ -95,7 +93,6 @@ func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.Clus
     return nil, err
 }
 
-// printClusterWorkflowTemplate is a helper function to print the created cluster workflow template
 func printClusterWorkflowTemplate(template *wfv1.ClusterWorkflowTemplate, outputFormat string) {
     // Your printing logic here...
 }
