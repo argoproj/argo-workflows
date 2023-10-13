@@ -64,27 +64,15 @@ export function DropDown({isMenu, anchor, children, qeId}: DropDownProps) {
         setOpened(false);
     }
 
-    function scroll() {
-        if (contentEl && anchorEl) {
-            const newState = refreshState();
-
-            setOpened(newState.opened);
-            setTop(newState.top);
-            setLeft(newState.left);
-        }
-    }
-
     useEffect(() => {
         if (!opened) {
             return;
         }
 
         document.addEventListener('click', close);
-        document.addEventListener('scroll', scroll, {capture: true});
 
         return () => {
             document.removeEventListener('click', close);
-            document.removeEventListener('scroll', scroll, {capture: true});
         };
     }, [opened]);
 
