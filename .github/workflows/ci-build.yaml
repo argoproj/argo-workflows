@@ -22,6 +22,7 @@ jobs:
     outputs:
       # reference: https://github.com/tj-actions/changed-files#outputs-
       all: ${{ steps.changed-files.outputs.all_any_modified == 'true' }}
+      tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
       e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
       docs: ${{ steps.changed-files.outputs.docs_any_modified == 'true' }}
@@ -38,18 +39,30 @@ jobs:
           files: |
             all:
               - .github/workflows/ci-build.yaml
-            e2e-tests:
+            tests:
               - cmd/**
               - config/**
               - errors/**
-              - manifests/**
               - persist/**
               - pkg/**
-              - sdks/**
               - server/**
               - test/**
               - util/**
               - workflow/**
+            e2e-tests:
+              # same as tests above
+              - cmd/**
+              - config/**
+              - errors/**
+              - persist/**
+              - pkg/**
+              - server/**
+              - test/**
+              - util/**
+              - workflow/**
+              # plus manifests and SDKs that are used in E2E tests
+              - manifests/**
+              - sdks/**
             codegen:
               # generated files
               - api/**
@@ -90,6 +103,8 @@ jobs:
 
   tests:
     name: Unit Tests
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
