@@ -3959,8 +3959,8 @@ func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
 	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
 }
 
-// getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node for parant noode `NodeType: Retry`.
-// This function removes some unnecessary child nodes, such as hooked nodes.
+// getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node, which are marked as `NodeStatus.NodeFlag.Retried=true`.
+// This function aims to remove some unnecessary child nodes for `NodeType: Retry`, such as hooked nodes.
 func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) ([]string, *wfv1.NodeStatus) {
 	childNodeIds := getChildNodeIdsRetried(node, nodes)
 
@@ -3975,7 +3975,7 @@ func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) 
 	return childNodeIds, lastChildNode
 }
 
-// getChildNodeIdsRetried returns child node ids which have `NodeStatus.NodeFlag.Retried` set to true.
+// getChildNodeIdsRetried returns child node ids `NodeStatus.NodeFlag.Retried` are set to true.
 func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	childrenIds := []string{}
 	for i := 0; i < len(node.Children); i++ {
