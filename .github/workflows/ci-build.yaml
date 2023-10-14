@@ -49,6 +49,8 @@ jobs:
               - test/**
               - util/**
               - workflow/**
+              - go.mod
+              - go.sum
             e2e-tests:
               # same as tests above
               - cmd/**
@@ -60,6 +62,8 @@ jobs:
               - test/**
               - util/**
               - workflow/**
+              - go.mod
+              - go.sum
               # plus manifests and SDKs that are used in E2E tests
               - manifests/**
               - sdks/**
@@ -72,8 +76,10 @@ jobs:
               - pkg/**
               - sdks/java/**
               - sdks/python/**
-              # examples are used within the fields lists
-              - examples/**
+              # files that generation is based off
+              - pkg/**
+              - cmd/**
+              - examples/** # examples are used within the fields lists
               # generation scripts
               - hack/cli/**
               - hack/jsonschema/**
