@@ -25,7 +25,7 @@ jobs:
       tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
       e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
-      docs: ${{ steps.changed-files.outputs.docs_any_modified == 'true' }}
+      lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -91,7 +91,22 @@ jobs:
               - hack/parse_examples.go
               - hack/swaggify.sh
               - .clang-format
-            docs:
+            lint:
+              # same as tests above
+              - cmd/**
+              - config/**
+              - errors/**
+              - persist/**
+              - pkg/**
+              - server/**
+              - test/**
+              - util/**
+              - workflow/**
+              - go.mod
+              - go.sum
+              # plus lint config
+              - .golangci.yml
+              # docs files below
               - docs/**
               # generated files are covered by codegen
               - !docs/fields.md
@@ -102,8 +117,10 @@ jobs:
               # docs scripts & tools from `make docs`
               - hack/check-mkdocs.sh
               - hack/check-env-doc.sh
-              - mkdocs.yml
+              - .markdownlint.yaml
+              - .mlc_config.json
               - .spelling
+              - mkdocs.yml
             ui:
               - ui/**
 
@@ -349,9 +366,9 @@ jobs:
   lint:
     name: Lint
     needs: [ changed-files, tests, codegen ]
-    if: ${{ needs.changed-files.outputs.docs == 'true' }}
+    if: ${{ needs.changed-files.outputs.lint == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # must be strictly greater than the timeout in .golancgi.yml
+    timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
     env:
       GOPATH: /home/runner/go
     steps:
