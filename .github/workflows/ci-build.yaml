@@ -23,9 +23,9 @@ jobs:
       # reference: https://github.com/tj-actions/changed-files#outputs-
       all: ${{ steps.changed-files.outputs.all_any_modified == 'true' }}
       tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
-      e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
+      e2e-tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' || steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
-      lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
+      lint: ${{ steps.changed-files.outputs.tests_any_modified == 'true' || steps.changed-files.outputs.lint_any_modified == 'true' }}
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -52,18 +52,7 @@ jobs:
               - go.mod
               - go.sum
             e2e-tests:
-              # same as tests above
-              - cmd/**
-              - config/**
-              - errors/**
-              - persist/**
-              - pkg/**
-              - server/**
-              - test/**
-              - util/**
-              - workflow/**
-              - go.mod
-              - go.sum
+              # to include tests above in check as well
               # plus manifests and SDKs that are used in E2E tests
               - manifests/**
               - sdks/**
@@ -92,18 +81,7 @@ jobs:
               - hack/swaggify.sh
               - .clang-format
             lint:
-              # same as tests above
-              - cmd/**
-              - config/**
-              - errors/**
-              - persist/**
-              - pkg/**
-              - server/**
-              - test/**
-              - util/**
-              - workflow/**
-              - go.mod
-              - go.sum
+              # to include tests above in check as well
               # plus lint config
               - .golangci.yml
               # docs files below
