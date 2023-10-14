@@ -17,6 +17,77 @@ permissions:
   contents: read
 
 jobs:
+  changed-files:
+    name: Check changed files
+    outputs:
+      # reference: https://github.com/tj-actions/changed-files#outputs-
+      all: ${{ steps.changed-files.outputs.all_any_modified == 'true' }}
+      e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
+      codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
+      docs: ${{ steps.changed-files.outputs.docs_any_modified == 'true' }}
+      ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50 # assume PRs are less than 50 commits
+      - name: Check if relevant files were changed per group
+        id: changed-files
+        uses: tj-actions/changed-files@v39
+        with:
+          files: |
+            all:
+              - .github/workflows/ci-build.yaml
+            e2e-tests:
+              - cmd/**
+              - config/**
+              - errors/**
+              - manifests/**
+              - persist/**
+              - pkg/**
+              - sdks/**
+              - server/**
+              - test/**
+              - util/**
+              - workflow/**
+            codegen:
+              # generated files
+              - api/**
+              - docs/fields.md
+              - docs/executor_swagger.md
+              - docs/cli/**
+              - pkg/**
+              - sdks/java/**
+              - sdks/python/**
+              # examples are used within the fields lists
+              - examples/**
+              # generation scripts
+              - hack/cli/**
+              - hack/jsonschema/**
+              - hack/swagger/**
+              - hack/auto-gen-msgh.sh
+              - hack/crdgen.sh
+              - hack/crds.go
+              - hack/docgen.go
+              - hack/parse_examples.go
+              - hack/swaggify.sh
+              - .clang-format
+            docs:
+              - docs/**
+              # generated files are covered by codegen
+              - !docs/fields.md
+              - !docs/executor_swagger.md
+              - !docs/cli/**
+              # proposals live only on GH as pure markdown
+              - !docs/proposals/**
+              # docs scripts & tools from `make docs`
+              - hack/check-mkdocs.sh
+              - hack/check-env-doc.sh
+              - mkdocs.yml
+              - .spelling
+            ui:
+              - ui/**
+
   tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -59,7 +130,8 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
-    needs: [ argoexec-image ]
+    needs: [ changed-files, argoexec-image ]
+    if: needs.changed-files.outputs.e2e-tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -200,7 +272,8 @@ jobs:
 
   codegen:
     name: Codegen
-    needs: [ tests ]
+    needs: [ changed-files, tests ]
+    if: needs.changed-files.outputs.codegen
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -236,7 +309,8 @@ jobs:
 
   lint:
     name: Lint
-    needs: [ tests, codegen ]
+    needs: [ changed-files, tests, codegen ]
+    if: needs.changed-files.outputs.docs
     runs-on: ubuntu-latest
     timeout-minutes: 15 # must be strictly greater than the timeout in .golancgi.yml
     env:
@@ -254,6 +328,8 @@ jobs:
 
   ui:
     name: UI
+    needs: [ changed-files ]
+    if: needs.changed-files.outputs.ui
     runs-on: ubuntu-latest
     timeout-minutes: 6
     env:
