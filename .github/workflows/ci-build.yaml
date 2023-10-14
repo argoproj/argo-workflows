@@ -36,7 +36,7 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v39
         with:
-          files: |
+          files_yaml: |
             all:
               - .github/workflows/ci-build.yaml
             tests:
