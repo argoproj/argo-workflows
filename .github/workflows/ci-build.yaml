@@ -86,12 +86,6 @@ jobs:
               - .golangci.yml
               # docs files below
               - docs/**
-              # generated files are covered by codegen
-              - '!docs/fields.md'
-              - '!docs/executor_swagger.md'
-              - '!docs/cli/**'
-              # proposals live only on GH as pure markdown
-              - '!docs/proposals/**'
               # docs scripts & tools from `make docs`
               - hack/check-mkdocs.sh
               - hack/check-env-doc.sh
