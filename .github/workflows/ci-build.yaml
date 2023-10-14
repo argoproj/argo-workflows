@@ -306,7 +306,7 @@ jobs:
 
   codegen:
     name: Codegen
-    needs: [ changed-files, tests ]
+    needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.codegen == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -343,7 +343,7 @@ jobs:
 
   lint:
     name: Lint
-    needs: [ changed-files, tests, codegen ]
+    needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.lint == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
