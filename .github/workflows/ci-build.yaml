@@ -21,7 +21,6 @@ jobs:
     name: Get changed files
     outputs:
       # reference: https://github.com/tj-actions/changed-files#outputs-
-      all: ${{ steps.changed-files.outputs.all_any_modified == 'true' }}
       tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
       e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
@@ -37,9 +36,10 @@ jobs:
         uses: tj-actions/changed-files@v39
         with:
           files_yaml: |
-            all:
+            common: &common
               - .github/workflows/ci-build.yaml
             tests: &tests
+              - *common
               - cmd/**
               - config/**
               - errors/**
@@ -57,6 +57,7 @@ jobs:
               - manifests/**
               - sdks/**
             codegen:
+              - *common
               # generated files
               - api/**
               - docs/fields.md
@@ -100,6 +101,7 @@ jobs:
               - .spelling
               - mkdocs.yml
             ui:
+              - *common
               - ui/**
 
   tests:
