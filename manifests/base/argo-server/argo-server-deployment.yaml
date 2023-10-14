@@ -44,4 +44,3 @@ spec:
         runAsNonRoot: true
       nodeSelector:
         kubernetes.io/os: linux
-
