@@ -1702,10 +1702,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-form@^2.16.1":
-  version "2.16.8"
-  resolved "https://registry.yarnpkg.com/@types/react-form/-/react-form-2.16.8.tgz#4624567c4988c5d472e9d08e3670a623b2c1c2c1"
-  integrity sha512-+e8OEJ8iKNy+zYxzycCZIqwbmav7WBgIsiYRLjDhUl+DtGZ77YEv86u927b9TLu00oHZTG0U3LjWUbdDwQU63A==
+"@types/react-form@^4.0.3":
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/@types/react-form/-/react-form-4.0.3.tgz#2228eb4dd5f689ef2cb5c2b1992c51878bca3a9c"
+  integrity sha512-yikHqkIfwXZZe7c6R+4OKLLFbkcVtXWjJXxkTDvamBNaaEfosNB/SY8AqBSDg0e7XYWgLs4zmqB2kyJKVG5aYw==
   dependencies:
     "@types/react" "*"
 
