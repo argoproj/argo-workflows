@@ -63,3 +63,4 @@ issues:
   exclude-rules:
     - path: server/artifacts/artifact_server_test.go
       text: "response body must be closed"
+
