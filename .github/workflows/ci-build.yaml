@@ -131,7 +131,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     needs: [ changed-files, argoexec-image ]
-    if: ${{ needs.changed-files.outputs.e2e-tests== 'true' }}
+    if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -269,6 +269,24 @@ jobs:
       - name: Failure debug - Wait container logs
         if: ${{ failure() }}
         run: kubectl logs -c wait -l workflows.argoproj.io/workflow --prefix
+
+  # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
+  # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
+  # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
+  e2e-tests-composite-result:
+    name: E2E Tests - Composite result
+    needs: [ e2e-tests ]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          result="${{ needs.e2e-tests.result }}"
+          # mark as successful even if skipped
+          if [[ $result == "success" || $result == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
 
   codegen:
     name: Codegen
