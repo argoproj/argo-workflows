@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   changed-files:
-    name: Check changed files
+    name: Get changed files
     outputs:
       # reference: https://github.com/tj-actions/changed-files#outputs-
       all: ${{ steps.changed-files.outputs.all_any_modified == 'true' }}
@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 50 # assume PRs are less than 50 commits
-      - name: Check if relevant files were changed per group
+      - name: Get relevant files changed per group
         id: changed-files
         uses: tj-actions/changed-files@v39
         with:
@@ -131,7 +131,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     needs: [ changed-files, argoexec-image ]
-    if: needs.changed-files.outputs.e2e-tests
+    if: ${{ needs.changed-files.outputs.e2e-tests== 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -273,7 +273,7 @@ jobs:
   codegen:
     name: Codegen
     needs: [ changed-files, tests ]
-    if: needs.changed-files.outputs.codegen
+    if: ${{ needs.changed-files.outputs.codegen == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -310,7 +310,7 @@ jobs:
   lint:
     name: Lint
     needs: [ changed-files, tests, codegen ]
-    if: needs.changed-files.outputs.docs
+    if: ${{ needs.changed-files.outputs.docs == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15 # must be strictly greater than the timeout in .golancgi.yml
     env:
@@ -329,7 +329,7 @@ jobs:
   ui:
     name: UI
     needs: [ changed-files ]
-    if: needs.changed-files.outputs.ui
+    if: ${{ needs.changed-files.outputs.ui == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 6
     env:
