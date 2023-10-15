@@ -975,6 +975,14 @@ message MutexStatus {
   repeated MutexHolding waiting = 2;
 }
 
+message NodeFlag {
+  // Hooked tracks whether or not this node was triggered by hook or onExit
+  optional bool hooked = 1;
+
+  // Retried tracks whether or not this node was retried by retryStrategy
+  optional bool retried = 2;
+}
+
 message NodeResult {
   optional string phase = 1;
 
@@ -1043,6 +1051,9 @@ message NodeStatus {
 
   // Daemoned tracks whether or not this node was daemoned and need to be terminated
   optional bool daemoned = 13;
+
+  // NodeFlag tracks some history of node. e.g.) hooked, retried, etc.
+  optional NodeFlag nodeFlag = 27;
 
   // Inputs captures input parameter values and artifact locations supplied to this template invocation
   optional Inputs inputs = 14;
