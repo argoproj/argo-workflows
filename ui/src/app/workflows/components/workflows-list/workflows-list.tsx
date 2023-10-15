@@ -80,6 +80,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [workflows, setWorkflows] = useState<Workflow[]>();
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
+    const [performed, setPerformed] = useState(false);
     const [error, setError] = useState<Error>();
 
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
@@ -97,6 +98,10 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     function clearSelectedWorkflows() {
         setSelectedWorkflows(new Map<string, models.Workflow>());
+    }
+
+    function loadPerformedWorkflows() {
+        setPerformed(!performed);
     }
 
     function getSidePanel() {
@@ -155,7 +160,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, pagination.nextOffset]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, pagination.nextOffset, performed]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
@@ -185,7 +190,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             <WorkflowsToolbar
                 selectedWorkflows={selectedWorkflows}
                 clearSelection={clearSelectedWorkflows}
-                loadWorkflows={clearSelectedWorkflows}
+                loadWorkflows={loadPerformedWorkflows}
                 isDisabled={batchActionDisabled}
             />
             <div className={`row ${selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
