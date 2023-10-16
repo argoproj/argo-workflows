@@ -1211,13 +1211,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#built-in-functions" class="md-nav__link">
-    Built-In Functions
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3859,13 +3852,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#built-in-functions" class="md-nav__link">
-    Built-In Functions
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3888,10 +3874,8 @@
 <blockquote>
 <p>v3.1 and after</p>
 </blockquote>
-<p>The Conditional Artifacts and Parameters feature enables to assign the Step/DAG level artifacts or parameters based on
-expression. This introduces a new field <code>fromExpression: ...</code> under Step/DAG level output artifact and <code>expression: ...</code>
-under step/DAG level output parameter. Both use the
-<a href="https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md">expr</a> syntax.</p>
+<p>You can set Step/DAG level artifacts or parameters based on an <a href="../variables/#expression">expression</a>.
+Use <code>fromExpression</code> under a Step/DAG level output artifact and <code>expression</code> under a Step/DAG level output parameter.</p>
 <h2 id="conditional-artifacts">Conditional Artifacts<a class="headerlink" href="#conditional-artifacts" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coinflip</span>
 <span class="w">  </span><span class="nt">steps</span><span class="p">:</span>
@@ -3932,27 +3916,8 @@ under step/DAG level output parameter. Both use the
 <ul>
 <li><a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/conditional-parameters.yaml">Steps parameter example</a></li>
 <li><a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/dag-conditional-parameters.yaml">DAG parameter example</a></li>
+<li><a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/fibonacci-seq-conditional-param.yaml">Advanced example: fibonacci Sequence</a></li>
 </ul>
-<h2 id="built-in-functions">Built-In Functions<a class="headerlink" href="#built-in-functions" title="Permanent link">&para;</a></h2>
-<p>Convenient functions added to support more use cases:</p>
-<ol>
-<li><code>asInt</code>    - convert the string to integer (e.g: <code>asInt('1')</code>)</li>
-<li><code>asFloat</code>  - convert the string to Float (e.g: <code>asFloat('1.23')</code>)</li>
-<li><code>string</code>   - convert the int/float to string (e.g: <code>string(1)</code>)</li>
-<li><code>jsonpath</code> - Extract the element from JSON using JSON Path (
-   e.g: <code>jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" )</code> )</li>
-<li>
-<p><a href="http://masterminds.github.io/sprig/">Sprig</a> - Support all <code>sprig</code> functions</p>
-</li>
-<li>
-<p><a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/fibonacci-seq-conditional-param.yaml">Advanced example: fibonacci Sequence</a></p>
-</li>
-</ol>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Expressions will decode the <code>-</code> as operator if template name has <code>-</code>, it will fail the expression. So here solution
-for template name which has <code>-</code> in its name. <code>step['one-two-three'].outputs.artifacts</code></p>
-</div>
 
               
 
