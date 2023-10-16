@@ -38,6 +38,8 @@ jobs:
           files_yaml: |
             common: &common
               - .github/workflows/ci-build.yaml
+              - Makefile
+              - tasks.yaml
             tests: &tests
               - *common
               - cmd/**
