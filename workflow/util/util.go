@@ -919,7 +919,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						}
 					}
 				} else {
-					if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSuspend {
+					if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSuspend || node.Type == wfv1.NodeTypeSkipped {
 						newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
 						// Only remove the descendants of a suspended node but not the suspended node itself. The descendants
 						// of a suspended node need to be removed since the conditions should be re-evaluated based on
@@ -945,7 +945,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							}
 						}
 					} else {
-						log.Debugf("Reset non-pod/suspend node %s", node.Name)
+						log.Debugf("Reset non-pod/suspend/skipped node %s", node.Name)
 						newNode := node.DeepCopy()
 						newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
 					}
