@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"testing"
 	"time"
 
@@ -93,6 +94,41 @@ metadata:
   labels:
     foo: bar
 spec:
+  entrypoint: whalesay
+  serviceAccountName: whalesay
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var testDefaultVolumeClaimTemplateWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+  labels:
+    foo: bar
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Mi
+      storageClassName: local-path
   entrypoint: whalesay
   serviceAccountName: whalesay
   templates:
@@ -288,6 +324,30 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 					SecondsAfterSuccess:    pointer.Int32Ptr(10),
 					SecondsAfterFailure:    pointer.Int32Ptr(10),
 				},
+			},
+		}
+	})
+	return cancel, controller
+}
+
+func newControllerWithDefaultsVolumeClaimTemplate() (context.CancelFunc, *WorkflowController) {
+	cancel, controller := newController(func(controller *WorkflowController) {
+		controller.Config.WorkflowDefaults = &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				VolumeClaimTemplates: []apiv1.PersistentVolumeClaim{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "workdir",
+					},
+					Spec: apiv1.PersistentVolumeClaimSpec{
+						AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
+						Resources: apiv1.ResourceRequirements{
+							Requests: apiv1.ResourceList{
+								apiv1.ResourceStorage: resource.MustParse("1Mi"),
+							},
+						},
+						StorageClassName: pointer.String("local-path"),
+					},
+				}},
 			},
 		}
 	})
@@ -494,6 +554,15 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	assert.NotContains(t, workflow.Labels, "foo")
 	assert.Contains(t, workflow.Labels, "label")
 	assert.Contains(t, workflow.Annotations, "annotation")
+}
+
+func TestAddingWorkflowDefaultVolumeClaimTemplate(t *testing.T) {
+	cancel, controller := newControllerWithDefaultsVolumeClaimTemplate()
+	defer cancel()
+	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
+	err := controller.setWorkflowDefaults(workflow)
+	assert.NoError(t, err)
+	assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultVolumeClaimTemplateWf))
 }
 
 func TestNamespacedController(t *testing.T) {
