@@ -266,11 +266,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
 	}
 
-	// Reconciliation of Outputs (Artifacts). See reportOutputs() of executor.go
-	woc.taskResultReconciliation()
-
-	// check to see if we can do garbage collection of Artifacts;
-	if err := woc.garbageCollectArtifacts(ctx); err != nil {
+	// Reconciliation of Outputs (Artifacts). See reportOutputs() of executor.go.
+	artifactsWriting := woc.taskResultReconciliation()
+	// Check to see if we can do garbage collection of artifacts.
+	if err := woc.garbageCollectArtifacts(ctx, artifactsWriting); err != nil {
 		woc.log.WithError(err).Error("failed to GC artifacts")
 		return
 	}

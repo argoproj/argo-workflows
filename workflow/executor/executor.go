@@ -293,6 +293,12 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 		return argoerrs.InternalWrapError(err)
 	}
 
+	// Create an empty task result with a label to indicate that artifacts are being written. Prevents garbage collection race condition.
+	err = we.reportResult(ctx, wfv1.NodeResult{}, map[string]string{common.LabelKeyWritingArtifact: "true"})
+	if err != nil {
+		return err
+	}
+
 	for i, art := range we.Template.Outputs.Artifacts {
 		err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
@@ -584,7 +590,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 	return nil
 }
 
-func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
+func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 	var logArtifacts []wfv1.Artifact
 	tempLogsDir := "/tmp/argo/outputs/logs"
 
@@ -608,7 +614,10 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
 		}
 	}
 
-	// try to upsert TaskResult, if it fails, we will try to update the Pod's Annotations
+	return logArtifacts
+}
+
+func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) {
 	err := we.reportOutputs(ctx, logArtifacts)
 	if err != nil {
 		we.AddError(err)
@@ -784,13 +793,11 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 func (we *WorkflowExecutor) reportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
 	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
-	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
+	// Task result label to indicate that artifacts are done being written.
+	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs}, map[string]string{common.LabelKeyWritingArtifact: "false"})
 }
 
-func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
-	if !result.Outputs.HasOutputs() && !result.Progress.IsValid() {
-		return nil
-	}
+func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
 	return retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
@@ -798,7 +805,7 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 		Steps:    5,
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
-		err := we.upsertTaskResult(ctx, result)
+		err := we.upsertTaskResult(ctx, result, labels)
 		if apierr.IsForbidden(err) {
 			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 			if result.Outputs.HasOutputs() {
@@ -1107,7 +1114,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			log.WithError(ctx.Err()).Info("stopping progress monitor (context done)")
 			return
 		case <-annotationPatchTicker.C:
-			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}); err != nil {
+			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}, map[string]string{}); err != nil {
 				log.WithError(err).Info("failed to report progress")
 			} else {
 				we.progress = ""

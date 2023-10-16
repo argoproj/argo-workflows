@@ -53,6 +53,11 @@ func waitContainer(ctx context.Context) error {
 		wfExecutor.AddError(err)
 	}
 
-	wfExecutor.SaveLogs(ctx)
+	// Save log artifacts
+	logArtifacts := wfExecutor.SaveLogs(ctx)
+
+	// Try to upsert TaskResult. If it fails, we will try to update the Pod's Annotations
+	wfExecutor.ReportOutputs(ctx, logArtifacts)
+
 	return wfExecutor.HasError()
 }

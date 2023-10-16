@@ -27,7 +27,7 @@ const artifactGCComponent = "artifact-gc"
 // artifactGCEnabled is a feature flag to globally disabled artifact GC in case of emergency
 var artifactGCEnabled, _ = env.GetBool("ARGO_ARTIFACT_GC_ENABLED", true)
 
-func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
+func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context, artifactsWriting bool) error {
 
 	if !artifactGCEnabled {
 		return nil
@@ -62,6 +62,12 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if artifactsWriting {
+		// If we don't do this, a race condition can occur where only some artifacts are garbage collected and finalizers are prematurely removed.
+		woc.log.Debug("Skipping garbage collection completion due to in-progress artifact reporting.")
+		return nil
 	}
 
 	err := woc.processArtifactGCCompletion(ctx)

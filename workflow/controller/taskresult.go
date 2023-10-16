@@ -52,11 +52,18 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 	return informer
 }
 
-func (woc *wfOperationCtx) taskResultReconciliation() {
+func (woc *wfOperationCtx) taskResultReconciliation() bool {
+	artifactsWriting := false
+
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
+
+		if result.Labels[common.LabelKeyWritingArtifact] == "true" {
+			artifactsWriting = true
+		}
+
 		nodeID := result.Name
 		old, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
@@ -83,4 +90,5 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.updated = true
 		}
 	}
+	return artifactsWriting
 }

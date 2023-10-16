@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
+	"golang.org/x/exp/maps"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -14,16 +15,21 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	err := we.createTaskResult(ctx, result)
+func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
+	err := we.createTaskResult(ctx, result, labels)
 	if apierr.IsAlreadyExists(err) {
-		return we.patchTaskResult(ctx, result)
+		return we.patchTaskResult(ctx, result, labels)
 	}
 	return err
 }
 
-func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	data, err := json.Marshal(&wfv1.WorkflowTaskResult{NodeResult: result})
+func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
+	data, err := json.Marshal(&wfv1.WorkflowTaskResult{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: labels,
+		},
+		NodeResult: result,
+	})
 	if err != nil {
 		return err
 	}
@@ -36,7 +42,10 @@ func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.Nod
 	return err
 }
 
-func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult) error {
+func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
+	defaultLabels := map[string]string{common.LabelKeyWorkflow: we.workflow}
+	maps.Copy(labels, defaultLabels)
+
 	taskResult := &wfv1.WorkflowTaskResult{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: workflow.APIVersion,
@@ -44,7 +53,7 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   we.nodeId,
-			Labels: map[string]string{common.LabelKeyWorkflow: we.workflow},
+			Labels: labels,
 		},
 		NodeResult: result,
 	}
