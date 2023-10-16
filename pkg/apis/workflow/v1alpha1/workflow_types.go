@@ -290,9 +290,7 @@ type WorkflowSpec struct {
 	// VolumeClaimTemplates is a list of claims that containers are allowed to reference.
 	// The Workflow controller will create the claims at the beginning of the workflow
 	// and delete the claims upon completion of the workflow
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,6,opt,name=volumeClaimTemplates"`
+	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" protobuf:"bytes,6,opt,name=volumeClaimTemplates"`
 
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,7,opt,name=parallelism"`
