@@ -76,7 +76,7 @@ jobs:
               - hack/cli/**
               - hack/jsonschema/**
               - hack/swagger/**
-              - hack/auto-gen-msgh.sh
+              - hack/auto-gen-msg.sh
               - hack/crdgen.sh
               - hack/crds.go
               - hack/docgen.go
