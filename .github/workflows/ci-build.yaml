@@ -33,6 +33,25 @@ jobs:
         if: github.ref == 'refs/heads/master'
         run: bash <(curl -s https://codecov.io/bash)
 
+  tests-windows:
+    name: Windows Unit Tests
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+          cache: true
+      # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
+      - run: go test -p 1  -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
+        env:
+          KUBECONFIG: /dev/null
+      # engineers just ignore this in PRs, so lets not even run it
+      - name: Upload coverage report
+        if: github.ref == 'refs/heads/master'
+        run: bash <(curl -s https://codecov.io/bash)
+
   argoexec-image:
     name: argoexec-image
     # needs: [ lint ]
