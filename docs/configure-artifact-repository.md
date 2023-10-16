@@ -25,8 +25,11 @@ The actual repository used by a workflow is chosen by the following rules:
 
 ## Configuring MinIO
 
+You can install MinIO into your cluster via Helm.
+
+First, [install `helm`](https://helm.sh/docs/intro/install/). Then, install MinIO with the below commands:
+
 ```bash
-brew install helm # mac, helm 3.x
 helm repo add minio https://helm.min.io/ # official minio Helm charts
 helm repo update
 helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
@@ -551,3 +554,12 @@ configuring the default artifact repository described previously.
       command: [sh, -c]
       args: ["cp -r /my-input-artifact /my-output-artifact"]
 ```
+
+## Artifact Streaming
+
+With artifact streaming, artifacts don’t need to be saved to disk first. Artifact streaming is only supported in the following
+artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), and Artifactory (v3.5+).
+
+Previously, when a user would click the button to download an artifact in the UI, the artifact would need to be written to the
+Argo Server’s disk first before downloading. If many users tried to download simultaneously, they would take up
+disk space and fail the download.

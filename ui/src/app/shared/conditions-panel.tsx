@@ -48,21 +48,19 @@ function getConditionIcon(condition: ConditionType): JSX.Element {
     }
 }
 
-export class ConditionsPanel extends React.Component<Props> {
-    public render() {
-        return (
-            <>
-                {this.props.conditions &&
-                    Object.entries(this.props.conditions).map(([_, condition]) => {
-                        return (
-                            <div key={condition.type} style={{lineHeight: '120%', marginTop: '16px'}}>
-                                {getConditionIcon(condition.type)}
-                                <span className='condition-panel__type'>{condition.type}</span>
-                                {': ' + (condition.message || condition.status)}
-                            </div>
-                        );
-                    })}
-            </>
-        );
-    }
+export function ConditionsPanel(props: Props) {
+    return (
+        <>
+            {props.conditions &&
+                Object.entries(props.conditions).map(([_, condition]) => {
+                    return (
+                        <div key={condition.type} style={{lineHeight: '120%', marginTop: '16px'}}>
+                            {getConditionIcon(condition.type)}
+                            <span className='condition-panel__type'>{condition.type}</span>
+                            {': ' + (condition.message || condition.status)}
+                        </div>
+                    );
+                })}
+        </>
+    );
 }

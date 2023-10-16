@@ -21,39 +21,44 @@ kind: WorkflowTemplate
 metadata:
   name: external-job-template
 spec:
+  entrypoint: run-external-job
+  arguments:
+    parameters:
+      - name: "job-cmd"
   templates:
-  - name: run-external-job
-    inputs:
-      parameters:
-        - name: "job-cmd"
-    steps:
-      - - name: trigger-job
-          template: trigger-job
-          arguments:
-            parameters:
-              - name: "job-cmd"
-                value: "{{inputs.parameters.job-cmd}}"
-      - - name: wait-completion
-          template: wait-completion
-          arguments:
-            parameters:
-              - name: uuid
-                value: "{{steps.trigger-job.outputs.result}}"
+    - name: run-external-job
+      inputs:
+        parameters:
+          - name: "job-cmd"
+            value: "{{workflow.parameters.job-cmd}}"
+      steps:
+        - - name: trigger-job
+            template: trigger-job
+            arguments:
+              parameters:
+                - name: "job-cmd"
+                  value: "{{inputs.parameters.job-cmd}}"
+        - - name: wait-completion
+            template: wait-completion
+            arguments:
+              parameters:
+                - name: uuid
+                  value: "{{steps.trigger-job.outputs.result}}"
 
-  - name: trigger-job
-    inputs:
-      parameters:
-        - name: "job-cmd"
-          value: "{{inputs.parameters.job-cmd}}"
-      image: appropriate/curl:latest
-      command: ["/bin/sh", "-c"]
-      args: ["{{inputs.parameters.cmd}}"]
+    - name: trigger-job
+      inputs:
+        parameters:
+          - name: "job-cmd"
+      container:
+        image: appropriate/curl:latest
+        command: [ "/bin/sh", "-c" ]
+        args: [ "{{inputs.parameters.job-cmd}}" ]
 
-  - name: wait-completion
-    inputs:
-      parameters:
-        - name: uuid
-    suspend: {}
+    - name: wait-completion
+      inputs:
+        parameters:
+          - name: uuid
+      suspend: { }
 ```
 
 In this case the ```job-cmd``` parameter can be a command that makes an HTTP call via curl to an endpoint that returns a job UUID. More sophisticated submission and parsing of submission output could be done with something like a Python script step.

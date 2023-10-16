@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -49,18 +50,19 @@ var _ Interface = &sso{}
 type Config = config.SSOConfig
 
 type sso struct {
-	config          *oauth2.Config
-	issuer          string
-	idTokenVerifier *oidc.IDTokenVerifier
-	httpClient      *http.Client
-	baseHRef        string
-	secure          bool
-	privateKey      crypto.PrivateKey
-	encrypter       jose.Encrypter
-	rbacConfig      *config.RBACConfig
-	expiry          time.Duration
-	customClaimName string
-	userInfoPath    string
+	config            *oauth2.Config
+	issuer            string
+	idTokenVerifier   *oidc.IDTokenVerifier
+	httpClient        *http.Client
+	baseHRef          string
+	secure            bool
+	privateKey        crypto.PrivateKey
+	encrypter         jose.Encrypter
+	rbacConfig        *config.RBACConfig
+	expiry            time.Duration
+	customClaimName   string
+	userInfoPath      string
+	filterGroupsRegex []*regexp.Regexp
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -181,25 +183,38 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify}
+
+	var filterGroupsRegex []*regexp.Regexp
+	if c.FilterGroupsRegex != nil && len(c.FilterGroupsRegex) > 0 {
+		for _, regex := range c.FilterGroupsRegex {
+			compiledRegex, err := regexp.Compile(regex)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile sso.filterGroupRegex: %s %w", regex, err)
+			}
+			filterGroupsRegex = append(filterGroupsRegex, compiledRegex)
+		}
+	}
+
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
 	log.WithFields(lf).Info("SSO configuration")
 
 	return &sso{
-		config:          config,
-		idTokenVerifier: idTokenVerifier,
-		baseHRef:        baseHRef,
-		httpClient:      httpClient,
-		secure:          secure,
-		privateKey:      privateKey,
-		encrypter:       encrypter,
-		rbacConfig:      c.RBAC,
-		expiry:          c.GetSessionExpiry(),
-		customClaimName: c.CustomGroupClaimName,
-		userInfoPath:    c.UserInfoPath,
-		issuer:          c.Issuer,
+		config:            config,
+		idTokenVerifier:   idTokenVerifier,
+		baseHRef:          baseHRef,
+		httpClient:        httpClient,
+		secure:            secure,
+		privateKey:        privateKey,
+		encrypter:         encrypter,
+		rbacConfig:        c.RBAC,
+		expiry:            c.GetSessionExpiry(),
+		customClaimName:   c.CustomGroupClaimName,
+		userInfoPath:      c.UserInfoPath,
+		issuer:            c.Issuer,
+		filterGroupsRegex: filterGroupsRegex,
 	}, nil
 }
 
@@ -280,6 +295,21 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// only return groups that match at least one of the regexes
+	if s.filterGroupsRegex != nil && len(s.filterGroupsRegex) > 0 {
+		var filteredGroups []string
+		for _, group := range groups {
+			for _, regex := range s.filterGroupsRegex {
+				if regex.MatchString(group) {
+					filteredGroups = append(filteredGroups, group)
+					break
+				}
+			}
+		}
+		groups = filteredGroups
+	}
+
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,

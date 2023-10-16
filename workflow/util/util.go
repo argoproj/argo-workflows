@@ -379,8 +379,13 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
 func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
+	uiMsg := ""
+	uim := creator.UserInfoMap(ctx)
+	if uim != nil {
+		uiMsg = fmt.Sprintf("Resumed by: %v", uim)
+	}
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
+		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded, Message: uiMsg})
 	} else {
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
@@ -415,6 +420,10 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 						}
 					}
 					node.Phase = wfv1.NodeSucceeded
+					if node.Message != "" {
+						uiMsg = node.Message + "; " + uiMsg
+					}
+					node.Message = uiMsg
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 					wf.Status.Nodes.Set(nodeID, node)
 					workflowUpdated = true
@@ -1101,6 +1110,15 @@ func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydr
 	return patchShutdownStrategy(ctx, wfClient, name, wfv1.ShutdownStrategyStop)
 }
 
+type AlreadyShutdownError struct {
+	workflowName string
+	namespace    string
+}
+
+func (e AlreadyShutdownError) Error() string {
+	return fmt.Sprintf("cannot shutdown a completed workflow: workflow: %q, namespace: %q", e.workflowName, e.namespace)
+}
+
 // patchShutdownStrategy patches the shutdown strategy to a workflow.
 func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string, strategy wfv1.ShutdownStrategy) error {
 	patchObj := map[string]interface{}{
@@ -1119,7 +1137,7 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 			return !errorsutil.IsTransientErr(err), err
 		}
 		if wf.Status.Fulfilled() {
-			return true, fmt.Errorf("cannot shutdown a completed workflow")
+			return true, AlreadyShutdownError{wf.Name, wf.Namespace}
 		}
 		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 		if apierr.IsConflict(err) {

@@ -9,6 +9,7 @@ import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {useQueryParams} from '../../../shared/use-query-params';
@@ -18,20 +19,22 @@ import {services} from '../../../shared/services';
 import {ClusterWorkflowTemplateCreator} from '../cluster-workflow-template-creator';
 require('./cluster-workflow-template-list.scss');
 
-export const ClusterWorkflowTemplateList = ({history, location}: RouteComponentProps<any>) => {
+export function ClusterWorkflowTemplateList({history, location}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
     const [templates, setTemplates] = useState<models.ClusterWorkflowTemplate[]>();
     const [error, setError] = useState<Error>();
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
-    const fetchClusterWorkflowTemplates = () => {
-        services.clusterWorkflowTemplate
-            .list()
-            .then(retrievedTemplates => setTemplates(retrievedTemplates))
-            .then(() => setError(null))
-            .catch(setError);
-    };
+    async function fetchClusterWorkflowTemplates() {
+        try {
+            const retrievedTemplates = await services.clusterWorkflowTemplate.list();
+            setTemplates(retrievedTemplates);
+            setError(null);
+        } catch (err) {
+            setError(err);
+        }
+    }
 
     useEffect(
         useQueryParams(history, p => {
@@ -42,10 +45,11 @@ export const ClusterWorkflowTemplateList = ({history, location}: RouteComponentP
 
     useEffect(() => {
         fetchClusterWorkflowTemplates();
-        services.info.collectEvent('openedClusterWorkflowTemplateList').then();
     }, []);
 
-    const renderTemplates = () => {
+    useCollectEvent('openedClusterWorkflowTemplateList');
+
+    function renderTemplates() {
         if (error) {
             return <ErrorNotice error={error} />;
         }
@@ -88,7 +92,7 @@ export const ClusterWorkflowTemplateList = ({history, location}: RouteComponentP
                 </Footnote>
             </>
         );
-    };
+    }
 
     return (
         <Page
@@ -111,4 +115,4 @@ export const ClusterWorkflowTemplateList = ({history, location}: RouteComponentP
             </SlidingPanel>
         </Page>
     );
-};
+}

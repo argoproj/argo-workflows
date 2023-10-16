@@ -1,6 +1,6 @@
 ## argo suspend
 
-suspend zero or more workflow
+suspend zero or more workflows (opposite of resume)
 
 ```
 argo suspend WORKFLOW1 WORKFLOW2... [flags]

@@ -151,7 +151,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                         ))}
                     </div>
                     <Footnote>
-                        <a onClick={() => navigation.goto(uiUrl('event-flow/' + namespace))}>Show events-flow page</a>
+                        <a onClick={() => navigation.goto(uiUrl('event-flow/' + namespace))}>Show event-flow page</a>
                     </Footnote>
                 </>
             )}

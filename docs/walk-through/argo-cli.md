@@ -1,5 +1,11 @@
 # Argo CLI
 
+## Installation
+
+To install the Argo CLI, follow the instructions on the [GitHub Releases page](https://github.com/argoproj/argo-workflows/releases/).
+
+## Usage
+
 In case you want to follow along with this walk-through, here's a quick overview of the most useful argo command line interface (CLI) commands.
 
 ```bash

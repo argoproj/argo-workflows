@@ -9,7 +9,7 @@ interface Props {
     archived: boolean;
 }
 
-export const WorkflowArtifacts = (props: Props) => {
+export function WorkflowArtifacts(props: Props) {
     const workflowStatusNodes = (props.workflow.status && props.workflow.status.nodes) || {};
     const artifacts =
         Object.keys(workflowStatusNodes)
@@ -60,4 +60,4 @@ export const WorkflowArtifacts = (props: Props) => {
             </div>
         </div>
     );
-};
+}
