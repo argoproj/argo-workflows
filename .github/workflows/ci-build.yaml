@@ -64,6 +64,7 @@ jobs:
     timeout-minutes: 30
     env:
       KUBECONFIG: /home/runner/.kubeconfig
+      E2E_ENV_FACTOR: 2
     strategy:
       fail-fast: false
       matrix:

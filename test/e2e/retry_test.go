@@ -9,8 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
@@ -23,7 +25,7 @@ func (s *RetryTestSuite) TestRetryLimit() {
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: test-retry-limit-
+  name: test-retry-limit
 spec:
   entrypoint: main
   templates:
@@ -46,6 +48,20 @@ spec:
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
 			assert.Equal(t, "No more retries left", status.Message)
+			assert.Equal(t, v1alpha1.Progress("0/1"), status.Progress)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.Name == "test-retry-limit"
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
+			assert.Equal(t, v1alpha1.NodeTypeRetry, status.Type)
+			assert.Nil(t, status.NodeFlag)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.Name == "test-retry-limit(0)"
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
+			assert.Equal(t, true, status.NodeFlag.Retried)
 		})
 }
 
