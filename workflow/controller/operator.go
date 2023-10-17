@@ -3688,25 +3688,28 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 // Check if the output of this node is referenced elsewhere in the Workflow. If so, make sure to include it during
 // execution.
 func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (bool, error) {
-	if boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID); err == nil {
-		tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
-		if err != nil {
-			return false, err
-		}
-		_, parentTemplate, templateStored, err := tmplCtx.ResolveTemplate(boundaryNode)
-		if err != nil {
-			return false, err
-		}
-		// A new template was stored during resolution, persist it
-		if templateStored {
-			woc.updated = true
-		}
+	if boundaryID != "" {
+		if boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID); err == nil {
+			tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
+			if err != nil {
+				return false, err
+			}
+			_, parentTemplate, templateStored, err := tmplCtx.ResolveTemplate(boundaryNode)
+			if err != nil {
+				return false, err
+			}
+			// A new template was stored during resolution, persist it
+			if templateStored {
+				woc.updated = true
+			}
 
-		name := getStepOrDAGTaskName(nodeName)
-		return hasOutputResultRef(name, parentTemplate), nil
-	} else {
-		woc.log.Errorf("was unable to obtain node for %s", boundaryID)
+			name := getStepOrDAGTaskName(nodeName)
+			return hasOutputResultRef(name, parentTemplate), nil
+		} else {
+			woc.log.Errorf("was unable to obtain node for %s", boundaryID)
+		}
 	}
+
 	return false, nil
 }
 
