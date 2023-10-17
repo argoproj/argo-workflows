@@ -52,11 +52,11 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 			Kind:       workflow.WorkflowTaskResultKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   we.nodeId,
-			Labels: labels,
+			Name: we.nodeId,
 		},
 		NodeResult: result,
 	}
+	taskResult.SetLabels(labels)
 	taskResult.SetOwnerReferences(
 		[]metav1.OwnerReference{
 			{

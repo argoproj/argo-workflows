@@ -287,6 +287,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 		log.Infof("No output artifacts")
 		return nil
 	}
+
 	log.Infof("Saving output artifacts")
 	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
 	if err != nil {
