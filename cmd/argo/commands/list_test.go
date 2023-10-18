@@ -71,7 +71,7 @@ func Test_listWorkflows(t *testing.T) {
 		}
 	})
 	t.Run("Older", func(t *testing.T) {
-		workflows, err := list(&metav1.ListOptions{}, listFlags{finishedAfter: "1h"})
+		workflows, err := list(&metav1.ListOptions{}, listFlags{finishedBefore: "1h"})
 		if assert.NoError(t, err) {
 			assert.Len(t, workflows, 1)
 		}

@@ -15,3 +15,14 @@ func StartCommand(cmd *exec.Cmd) (func(), error) {
 	}
 	return simpleStart(cmd)
 }
+
+func simpleStart(cmd *exec.Cmd) (func(), error) {
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	closer := func() {
+	}
+
+	return closer, nil
+}

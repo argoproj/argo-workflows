@@ -22,19 +22,19 @@ import (
 )
 
 type listFlags struct {
-	namespace     string
-	status        []string
-	completed     bool
-	running       bool
-	resubmitted   bool
-	prefix        string
-	output        string
-	createdSince  string
-	finishedAfter string
-	chunkSize     int64
-	noHeaders     bool
-	labels        string
-	fields        string
+	namespace      string
+	status         []string
+	completed      bool
+	running        bool
+	resubmitted    bool
+	prefix         string
+	output         string
+	createdSince   string
+	finishedBefore string
+	chunkSize      int64
+	noHeaders      bool
+	labels         string
+	fields         string
 }
 
 var (
@@ -82,7 +82,7 @@ func NewListCommand() *cobra.Command {
 	}
 	command.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
 	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Filter workflows by prefix")
-	command.Flags().StringVar(&listArgs.finishedAfter, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringVar(&listArgs.finishedBefore, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show completed workflows. Mutually exclusive with --running.")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show running workflows. Mutually exclusive with --completed.")
@@ -146,10 +146,10 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		Filter(func(wf wfv1.Workflow) bool {
 			return strings.HasPrefix(wf.ObjectMeta.Name, flags.prefix)
 		})
-	if flags.createdSince != "" && flags.finishedAfter != "" {
+	if flags.createdSince != "" && flags.finishedBefore != "" {
 		startTime, err := argotime.ParseSince(flags.createdSince)
 		errors.CheckError(err)
-		endTime, err := argotime.ParseSince(flags.finishedAfter)
+		endTime, err := argotime.ParseSince(flags.finishedBefore)
 		errors.CheckError(err)
 		workflows = workflows.Filter(wfv1.WorkflowRanBetween(*startTime, *endTime))
 	} else {
@@ -158,8 +158,8 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			errors.CheckError(err)
 			workflows = workflows.Filter(wfv1.WorkflowCreatedAfter(*t))
 		}
-		if flags.finishedAfter != "" {
-			t, err := argotime.ParseSince(flags.finishedAfter)
+		if flags.finishedBefore != "" {
+			t, err := argotime.ParseSince(flags.finishedBefore)
 			errors.CheckError(err)
 			workflows = workflows.Filter(wfv1.WorkflowFinishedBefore(*t))
 		}

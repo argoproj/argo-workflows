@@ -35,6 +35,7 @@ ArgoLabs
 Artifactory
 BlackRock
 Breitgand
+Codespaces
 Couler
 ClusterRoleBinding
 CRD
@@ -44,6 +45,7 @@ DataDog
 Dataflow
 DevOps
 Dex
+EditorConfig
 EtcD
 EventRouter
 FailFast
@@ -99,6 +101,7 @@ s3
 SDKs
 ServiceAccount
 Sharding
+shortcodes
 Singer.io
 Snyk
 Sumit

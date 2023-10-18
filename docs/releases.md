@@ -20,7 +20,7 @@ We maintain release branches for the most recent two minor releases.
 
 Fixes may be back-ported to release branches, depending on severity, risk, and, feasibility.
 
-If a release contains breaking changes, or CVE fixes, this will documented in [upgrading guide](upgrading.md).
+Breaking changes will be documented in [upgrading guide](upgrading.md).
 
 ## Supported Version Skew
 
@@ -40,6 +40,7 @@ Otherwise, we typically release every two weeks:
 
 | Argo Workflows \ Kubernetes | 1.17 | 1.18 | 1.19 | 1.20 | 1.21 | 1.22 | 1.23 | 1.24 | 1.25 | 1.26 | 1.27 |
 |-----------------------|------|------|------|------|------|------|------|------|------|------|------|
+| **3.5**           | `x` | `x` | `x` | `?` | `?` | `?` | `?` | `?` | `✓` | `✓` | `✓` |
 | **3.4**           | `x` | `x` | `x` | `?` | `✓` | `✓` | `✓` | `✓` | `✓` | `✓` | `✓` |
 | **3.3**           | `?` | `?` | `?` | `?` | `✓` | `✓` | `✓` | `?` | `?` | `?` | `?` |
 | **3.2**           | `?` | `?` | `✓` | `✓` | `✓` | `?` | `?` | `?` | `?` | `?` | `?` |

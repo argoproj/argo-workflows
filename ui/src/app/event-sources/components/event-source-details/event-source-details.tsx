@@ -63,12 +63,16 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
     })();
 
     useEffect(() => {
-        services.eventSource
-            .get(name, namespace)
-            .then(setEventSource)
-            .then(() => setEdited(false)) // set back to false
-            .then(() => setError(null))
-            .catch(setError);
+        (async () => {
+            try {
+                const newEventSource = await services.eventSource.get(name, namespace);
+                setEventSource(newEventSource);
+                setEdited(false); // set back to false
+                setError(null);
+            } catch (err) {
+                setError(err);
+            }
+        })();
     }, [name, namespace]);
 
     useEffect(() => setEdited(true), [eventSource]);
