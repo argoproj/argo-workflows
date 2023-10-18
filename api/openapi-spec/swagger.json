@@ -11422,9 +11422,7 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaim"
-          },
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
+          }
         },
         "volumes": {
           "description": "Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.",
