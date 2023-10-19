@@ -6,7 +6,7 @@ import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
 import {WorkflowParametersEditor} from '../../shared/components/editors/workflow-parameters-editor';
 import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
 
-export const WorkflowEditor = ({
+export function WorkflowEditor({
     selectedTabKey,
     onTabSelected,
     onError,
@@ -18,7 +18,7 @@ export const WorkflowEditor = ({
     onError: (error: Error) => void;
     onTabSelected?: (tab: string) => void;
     selectedTabKey?: string;
-}) => {
+}) {
     return (
         <Tabs
             key='tabs'
@@ -44,4 +44,4 @@ export const WorkflowEditor = ({
             ]}
         />
     );
-};
+}

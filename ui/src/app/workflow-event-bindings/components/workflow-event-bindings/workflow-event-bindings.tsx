@@ -111,7 +111,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                         <code>curl '{absoluteUrl('api/v1/events/{namespace}/-')}' -H 'Content-Type: application/json' -H 'Authorization: $ARGO_TOKEN' -d '&#123;&#125;'</code>
                     </p>
                     <p>
-                        You'll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for "EventService.
+                        You'll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for "EventService".
                     </p>
                     <p>{learnMore}</p>
                 </ZeroState>

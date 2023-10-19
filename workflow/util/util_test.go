@@ -359,7 +359,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	_, err = wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "succeeded-wf", "", "")
-	assert.EqualError(t, err, "cannot shutdown a completed workflow")
+	assert.EqualError(t, err, "cannot shutdown a completed workflow: workflow: \"succeeded-wf\", namespace: \"\"")
 }
 
 // Regression test for #6478
@@ -1064,7 +1064,7 @@ func TestRetryExitHandler(t *testing.T) {
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := context.Background()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
-	createdTime := metav1.Time{Time: time.Now().UTC()}
+	createdTime := metav1.Time{Time: time.Now().Add(-1 * time.Second).UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
 	t.Run("Steps", func(t *testing.T) {
 		wf := &wfv1.Workflow{

@@ -93,6 +93,9 @@ func TestMetrics(t *testing.T) {
 func TestErrors(t *testing.T) {
 	_, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "invalid.name"}, func() float64 { return 0.0 })
 	assert.Error(t, err)
+
+	_, err = ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name", Labels: []*v1alpha1.MetricLabel{{Key: "invalid-key", Value: "value"}}}, func() float64 { return 0.0 })
+	assert.Error(t, err)
 }
 
 func TestMetricGC(t *testing.T) {

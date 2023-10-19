@@ -10,12 +10,12 @@ permissions:
 
 jobs:
   generate_changelog:
+    name: Generate changelog
+    if: github.repository == 'argoproj/argo-workflows'
     permissions:
       contents: write  # for peter-evans/create-pull-request to create branch
       pull-requests: write  # for peter-evans/create-pull-request to create a PR
-    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
-    name: Generate changelog
     steps:
       - uses: actions/checkout@v4
         with:
