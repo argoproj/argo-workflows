@@ -17,8 +17,99 @@ permissions:
   contents: read
 
 jobs:
+  changed-files:
+    name: Get changed files
+    outputs:
+      # reference: https://github.com/tj-actions/changed-files#outputs-
+      tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
+      e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
+      codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
+      lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
+      ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50 # assume PRs are less than 50 commits
+      - name: Get relevant files changed per group
+        id: changed-files
+        uses: tj-actions/changed-files@v39
+        with:
+          files_yaml: |
+            common: &common
+              - .github/workflows/ci-build.yaml
+              - Makefile
+              - tasks.yaml
+            tests: &tests
+              - *common
+              - cmd/**
+              - config/**
+              - errors/**
+              - persist/**
+              - pkg/**
+              - server/**
+              - test/**
+              - util/**
+              - workflow/**
+              - go.mod
+              - go.sum
+            e2e-tests:
+              - *tests
+              # plus manifests and SDKs that are used in E2E tests
+              - manifests/**
+              - sdks/**
+            codegen:
+              - *common
+              # generated files
+              - api/**
+              - docs/fields.md
+              - docs/executor_swagger.md
+              - docs/cli/**
+              - pkg/**
+              - sdks/java/**
+              - sdks/python/**
+              # files that generation is based off
+              - pkg/**
+              - cmd/**
+              - examples/** # examples are used within the fields lists
+              # generation scripts
+              - hack/cli/**
+              - hack/jsonschema/**
+              - hack/swagger/**
+              - hack/auto-gen-msg.sh
+              - hack/crdgen.sh
+              - hack/crds.go
+              - hack/docgen.go
+              - hack/parse_examples.go
+              - hack/swaggify.sh
+              - .clang-format
+            lint:
+              - *tests
+              # plus lint config
+              - .golangci.yml
+              # docs files below
+              - docs/**
+              # generated files are covered by codegen
+              - '!docs/fields.md'
+              - '!docs/executor_swagger.md'
+              - '!docs/cli/**'
+              # proposals live only on GH as pure markdown
+              - '!docs/proposals/**'
+              # docs scripts & tools from `make docs`
+              - hack/check-mkdocs.sh
+              - hack/check-env-doc.sh
+              - .markdownlint.yaml
+              - .mlc_config.json
+              - .spelling
+              - mkdocs.yml
+            ui:
+              - *common
+              - ui/**
+
   tests:
     name: Unit Tests
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -28,6 +119,25 @@ jobs:
           go-version: "1.21"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
+      # engineers just ignore this in PRs, so lets not even run it
+      - name: Upload coverage report
+        if: github.ref == 'refs/heads/master'
+        run: bash <(curl -s https://codecov.io/bash)
+
+  tests-windows:
+    name: Windows Unit Tests
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+          cache: true
+      # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
+      - run: go test -p 1  -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
+        env:
+          KUBECONFIG: /dev/null
       # engineers just ignore this in PRs, so lets not even run it
       - name: Upload coverage report
         if: github.ref == 'refs/heads/master'
@@ -59,7 +169,8 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
-    needs: [ argoexec-image ]
+    needs: [ changed-files, argoexec-image ]
+    if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -198,9 +309,28 @@ jobs:
         if: ${{ failure() }}
         run: kubectl logs -c wait -l workflows.argoproj.io/workflow --prefix
 
+  # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
+  # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
+  # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
+  e2e-tests-composite-result:
+    name: E2E Tests - Composite result
+    needs: [ e2e-tests ]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          result="${{ needs.e2e-tests.result }}"
+          # mark as successful even if skipped
+          if [[ $result == "success" || $result == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
+
   codegen:
     name: Codegen
-    needs: [ tests ]
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.codegen == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -236,9 +366,10 @@ jobs:
 
   lint:
     name: Lint
-    needs: [ tests, codegen ]
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.lint == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # must be strictly greater than the timeout in .golancgi.yml
+    timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
     env:
       GOPATH: /home/runner/go
     steps:
@@ -254,6 +385,8 @@ jobs:
 
   ui:
     name: UI
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.ui == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 6
     env:

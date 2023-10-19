@@ -1916,8 +1916,6 @@ message WorkflowSpec {
   // VolumeClaimTemplates is a list of claims that containers are allowed to reference.
   // The Workflow controller will create the claims at the beginning of the workflow
   // and delete the claims upon completion of the workflow
-  // +patchStrategy=merge
-  // +patchMergeKey=name
   repeated k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 6;
 
   // Parallelism limits the max total parallel pods that can execute at the same time in a workflow
