@@ -7,15 +7,15 @@
 Then get a list of commits you may want to cherry-pick:
 
 ```bash
-./hack/what-to-cherry-pick.sh release-3.3 "fix"
-./hack/what-to-cherry-pick.sh release-3.3 "chore(deps)"
-./hack/what-to-cherry-pick.sh release-3.3 "build"
-./hack/what-to-cherry-pick.sh release-3.3 "ci"
+./hack/cherry-pick.sh release-3.3 "fix" true
+./hack/cherry-pick.sh release-3.3 "chore(deps)" true
+./hack/cherry-pick.sh release-3.3 "build" true
+./hack/cherry-pick.sh release-3.3 "ci" true
 ```
 
 To automatically cherry-pick, run the following:
-```
-./hack/auto-cp.sh release-3.3 "fix"
+```bash
+./hack/cherry-pick.sh release-3.3 "fix" false
 ```
 
 Then look for "failed to cherry-pick" in the log to find commits that fail to be cherry-picked and decide if a 
