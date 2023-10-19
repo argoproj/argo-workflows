@@ -14,11 +14,12 @@ Then get a list of commits you may want to cherry-pick:
 ```
 
 To automatically cherry-pick, run the following:
+
 ```bash
 ./hack/cherry-pick.sh release-3.3 "fix" false
 ```
 
-Then look for "failed to cherry-pick" in the log to find commits that fail to be cherry-picked and decide if a 
+Then look for "failed to cherry-pick" in the log to find commits that fail to be cherry-picked and decide if a
 manual patch is necessary.
 
 Ignore:
