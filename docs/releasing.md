@@ -13,6 +13,14 @@ Then get a list of commits you may want to cherry-pick:
 ./hack/what-to-cherry-pick.sh release-3.3 "ci"
 ```
 
+To automatically cherry-pick, run the following:
+```
+./hack/auto-cp.sh release-3.3 "fix"
+```
+
+Then look for "failed to cherry-pick" in the log to find commits that fail to be cherry-picked and decide if a 
+manual patch is necessary.
+
 Ignore:
 
 * Fixes for features only on master.
