@@ -3946,7 +3946,7 @@ and replace the existing hash value.</p>
 <h3 id="changing-a-go-dependency-version">Changing a go dependency version<a class="headerlink" href="#changing-a-go-dependency-version" title="Permanent link">&para;</a></h3>
 <p>The almost exact same principles apply here, the only difference being you must change the <code>vendorHash</code> and the <code>sha256</code> fields.
 The <code>vendorHash</code> is a hash of the vendored dependencies while the <code>sha256</code> is for the sources fetched from the <code>fetchFromGithub</code> call.</p>
-<h3 id="why-am-i-getting-a-vendorsha256-mismatch">Why am I getting a vendorSha256 mismatch ?<a class="headerlink" href="#why-am-i-getting-a-vendorsha256-mismatch" title="Permanent link">&para;</a></h3>
+<h3 id="why-am-i-getting-a-vendorsha256-mismatch">Why am I getting a <code>vendorSha256</code> mismatch ?<a class="headerlink" href="#why-am-i-getting-a-vendorsha256-mismatch" title="Permanent link">&para;</a></h3>
 <p>Unfortunately, dependabot is not capable of upgrading flakes automatically, when the go modules are automatically upgraded the
 hash of the vendor dependencies changes but this change isn't automatically reflected in the nix file. The <code>vendorSha256</code> field that needs to
 be upgraded can be found by searching for <code>${package.name} = pkgs.buildGoModule</code> in the nix file.</p>
