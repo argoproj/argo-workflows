@@ -52,13 +52,11 @@ CronWorkflow
 CronWorkflows
 DataDog
 Dataflow
-DeleteObject
 DevOps
 Dex
 EditorConfig
 EtcD
 EventRouter
-GSoC
 GitOps
 Github
 Golang
@@ -74,7 +72,6 @@ InsideBoard
 Invocators
 IAM-based
 Istio
-J.P.
 Jemison
 JetBrains
 KNative
@@ -99,8 +96,6 @@ Node.JS.
 OAuth
 OAuth2
 Okta
-parameterize
-parameterized
 parameterizing
 PDBs
 PProf
@@ -119,17 +114,13 @@ Singer.io
 Snyk
 Sumit
 Tekton
-Tianchu
 Traefik
 TripAdvisor
 VSCode
 Valasek
 Webhooks
 Welch
-`CronTab`
-`OnFailure`
 a.m.
-alexec
 anded
 apis
 architecting
@@ -138,7 +129,6 @@ args
 async
 auth
 backend
-blkperl
 boolean
 booleans
 buildkit
@@ -147,8 +137,6 @@ config
 cpu
 cron
 daemoned
-dev-container
-dinever
 dockershim
 dropdown
 e.g.
@@ -178,8 +166,6 @@ localhost
 memoization
 memoized
 memoizing
-mentee
-mentees
 minikube
 mutex
 namespace
@@ -196,15 +182,9 @@ roadmap
 runtime
 runtimes
 sandboxed
-sarabala1979
-simster7
 stateful
 stderr
-tczhao
-terrytangyuan
-themself
 un-reconciled
-untracked
 v1
 v1.0
 v1.1
@@ -257,5 +237,4 @@ vendored
 nix.conf
 LDFlags
 dev
-vendorSha256
 dependabot
