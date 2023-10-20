@@ -182,12 +182,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                     ]
                 }
             }}>
-            <WorkflowsToolbar
-                selectedWorkflows={selectedWorkflows}
-                clearSelection={clearSelectedWorkflows}
-                loadWorkflows={clearSelectedWorkflows}
-                isDisabled={batchActionDisabled}
-            />
+            <WorkflowsToolbar selectedWorkflows={selectedWorkflows} clearSelection={clearSelectedWorkflows} actionsIsDisabled={batchActionDisabled} />
             <div className={`row ${selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
                 <div className='columns small-12 xlarge-2'>
                     <WorkflowsSummaryContainer workflows={filteredWorkflows} />
