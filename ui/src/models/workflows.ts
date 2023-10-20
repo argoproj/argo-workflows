@@ -712,7 +712,7 @@ export interface WorkflowStatus {
     /**
      * Phase a simple, high-level summary of where the workflow is in its lifecycle.
      */
-    phase: NodePhase;
+    phase: WorkflowPhase;
     startedAt: kubernetes.Time;
     finishedAt: kubernetes.Time;
     /**

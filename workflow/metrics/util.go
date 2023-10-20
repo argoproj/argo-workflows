@@ -45,13 +45,17 @@ func ConstructRealTimeGaugeMetric(metricSpec *wfv1.Prometheus, valueFunc func() 
 	if !IsValidMetricName(metricSpec.Name) {
 		return nil, fmt.Errorf(invalidMetricNameError)
 	}
+	labels := metricSpec.GetMetricLabels()
+	if err := ValidateMetricLabels(labels); err != nil {
+		return nil, err
+	}
 
 	gaugeOpts := prometheus.GaugeOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
 		Name:        metricSpec.Name,
 		Help:        metricSpec.Help,
-		ConstLabels: metricSpec.GetMetricLabels(),
+		ConstLabels: labels,
 	}
 
 	return prometheus.NewGaugeFunc(gaugeOpts, valueFunc), nil
