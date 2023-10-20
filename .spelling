@@ -215,6 +215,8 @@ webHDFS
 webhook
 webhooks
 workflow-controller-configmap
+WorkflowTemplate
+WorkflowTemplates
 yaml
 idempotence
 kube-scheduler
