@@ -13,7 +13,7 @@
     
     
       
-        <title>Kubernetes Secrets - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Service Account Secrets - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kubernetes-secrets" class="md-skip">
+        <a href="#service-account-secrets" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Kubernetes Secrets
+              Service Account Secrets
             
           </span>
         </div>
@@ -3298,12 +3298,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Kubernetes Secrets
+          Service Account Secrets
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Kubernetes Secrets
+        Service Account Secrets
       </a>
       
         
@@ -3870,14 +3870,13 @@
 </a>
 
 
-<h1 id="kubernetes-secrets">Kubernetes Secrets<a class="headerlink" href="#kubernetes-secrets" title="Permanent link">&para;</a></h1>
+<h1 id="service-account-secrets">Service Account Secrets<a class="headerlink" href="#service-account-secrets" title="Permanent link">&para;</a></h1>
 <p>As of Kubernetes v1.24, secrets are no longer automatically created for service accounts.</p>
-<p>You must create a secret
-manually: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-service-account-api-token">Find out how to create these yourself manually</a>
-.</p>
-<p>You must make the secret discoverable. You have two options:</p>
+<p>You must <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-long-lived-api-token-for-a-serviceaccount">create a secret manually</a>.</p>
+<p>You must also make the secret discoverable.
+You have two options:</p>
 <h2 id="option-1-discovery-by-name">Option 1 - Discovery By Name<a class="headerlink" href="#option-1-discovery-by-name" title="Permanent link">&para;</a></h2>
-<p>Name your secret <code>${serviceAccountName}.service-account-token</code>.</p>
+<p>Name your secret <code>${serviceAccountName}.service-account-token</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -3886,7 +3885,7 @@ manually: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/conf
 <span class="w">    </span><span class="nt">kubernetes.io/service-account.name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes.io/service-account-token</span>
 </code></pre></div>
-<p>This option is simpler than option 2, as you can combine creating the secret with making it discoverable by name.</p>
+<p>This option is simpler than option 2, as you can create the secret and make it discoverable by name at the same time.</p>
 <h2 id="option-2-discovery-by-annotation">Option 2 - Discovery By Annotation<a class="headerlink" href="#option-2-discovery-by-annotation" title="Permanent link">&para;</a></h2>
 <p>Annotate the service account with the secret name:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
