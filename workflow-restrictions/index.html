@@ -3889,15 +3889,16 @@
 <p>v2.9 and after</p>
 </blockquote>
 <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
-<p>As the administrator of the controller, you may want to limit which types of Workflows your users can run. Setting workflow restrictions allows you to ensure that Workflows comply with certain requirements.</p>
+<p>As the administrator of the controller, you may want to limit which types of Workflows your users can run.
+Workflow Restrictions allow you to set requirements for all Workflows.</p>
 <h2 id="available-restrictions">Available Restrictions<a class="headerlink" href="#available-restrictions" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>templateReferencing: Strict</code>: Only Workflows using <code>workflowTemplateRef</code> will be processed. This allows the administrator of the controller to set a "library" of templates that may be run by its operator, limiting arbitrary Workflow execution.</li>
-<li><code>templateReferencing: Secure</code>: Only Workflows using <code>workflowTemplateRef</code> will be processed and the controller will enforce that the workflow template that is referenced hasn't changed between operations. If you want to make sure the operator of the Workflow cannot run an arbitrary Workflow, use this option.</li>
+<li><code>templateReferencing: Strict</code>: Only process Workflows using <code>workflowTemplateRef</code>. You can use this to require usage of WorkflowTemplates, disallowing arbitrary Workflow execution.</li>
+<li><code>templateReferencing: Secure</code>: Same as <code>Strict</code> <em>plus</em> enforce that a referenced WorkflowTemplate hasn't changed between operations. If a running Workflow's underlying WorkflowTemplate changes, the Workflow will error out.</li>
 </ul>
 <h2 id="setting-workflow-restrictions">Setting Workflow Restrictions<a class="headerlink" href="#setting-workflow-restrictions" title="Permanent link">&para;</a></h2>
-<p>Workflow Restrictions can be specified by adding them under the <code>workflowRestrictions</code> key in the <a href="../workflow-controller-configmap.yaml"><code>workflow-controller-configmap</code></a>.</p>
-<p>For example, to specify that Workflows may only run with <code>workflowTemplateRef</code></p>
+<p>You can add <code>workflowRestrictions</code> in the <a href="../workflow-controller-configmap.yaml"><code>workflow-controller-configmap</code></a>.</p>
+<p>For example, to specify that Workflows may only run with <code>workflowTemplateRef</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
@@ -3905,7 +3906,7 @@
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
 <span class="nt">data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">workflowRestrictions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">    </span><span class="no">templateReferencing: Secure</span>
+<span class="w">    </span><span class="no">templateReferencing: Strict</span>
 </code></pre></div>
 
               

@@ -3886,11 +3886,16 @@
 <h2 id="cherry-picking-fixes">Cherry-Picking Fixes<a class="headerlink" href="#cherry-picking-fixes" title="Permanent link">&para;</a></h2>
 <p>✋ Before you start, make sure you have created a release branch (e.g. <code>release-3.3</code>) and it's passing CI.</p>
 <p>Then get a list of commits you may want to cherry-pick:</p>
-<div class="highlight"><pre><span></span><code>./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;fix&quot;</span>
-./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;chore(deps)&quot;</span>
-./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;build&quot;</span>
-./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;ci&quot;</span>
+<div class="highlight"><pre><span></span><code>./hack/cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="w"> </span><span class="nb">true</span>
+./hack/cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;chore(deps)&quot;</span><span class="w"> </span><span class="nb">true</span>
+./hack/cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;build&quot;</span><span class="w"> </span><span class="nb">true</span>
+./hack/cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;ci&quot;</span><span class="w"> </span><span class="nb">true</span>
 </code></pre></div>
+<p>To automatically cherry-pick, run the following:</p>
+<div class="highlight"><pre><span></span><code>./hack/cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;fix&quot;</span><span class="w"> </span><span class="nb">false</span>
+</code></pre></div>
+<p>Then look for "failed to cherry-pick" in the log to find commits that fail to be cherry-picked and decide if a
+manual patch is necessary.</p>
 <p>Ignore:</p>
 <ul>
 <li>Fixes for features only on master.</li>
