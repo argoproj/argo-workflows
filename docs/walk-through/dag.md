@@ -1,8 +1,11 @@
 # DAG
 
-As an alternative to specifying sequences of steps, you can define the workflow as a directed-acyclic graph (DAG) by specifying the dependencies of each task. This can be simpler to maintain for complex workflows and allows for maximum parallelism when running tasks.
+As an alternative to specifying sequences of [steps](steps.md), you can define a workflow as a directed-acyclic graph (DAG) by specifying the dependencies of each task.
+DAGs can be simpler to maintain for complex workflows and allow for maximum parallelism when running tasks.
 
-In the following workflow, step `A` runs first, as it has no dependencies. Once `A` has finished, steps `B` and `C` run in parallel. Finally, once `B` and `C` have completed, step `D` can run.
+In the following workflow, step `A` runs first, as it has no dependencies.
+Once `A` has finished, steps `B` and `C` run in parallel.
+Finally, once `B` and `C` have completed, step `D` runs.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
