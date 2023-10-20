@@ -975,6 +975,14 @@ message MutexStatus {
   repeated MutexHolding waiting = 2;
 }
 
+message NodeFlag {
+  // Hooked tracks whether or not this node was triggered by hook or onExit
+  optional bool hooked = 1;
+
+  // Retried tracks whether or not this node was retried by retryStrategy
+  optional bool retried = 2;
+}
+
 message NodeResult {
   optional string phase = 1;
 
@@ -1043,6 +1051,9 @@ message NodeStatus {
 
   // Daemoned tracks whether or not this node was daemoned and need to be terminated
   optional bool daemoned = 13;
+
+  // NodeFlag tracks some history of node. e.g.) hooked, retried, etc.
+  optional NodeFlag nodeFlag = 27;
 
   // Inputs captures input parameter values and artifact locations supplied to this template invocation
   optional Inputs inputs = 14;
@@ -1905,8 +1916,6 @@ message WorkflowSpec {
   // VolumeClaimTemplates is a list of claims that containers are allowed to reference.
   // The Workflow controller will create the claims at the beginning of the workflow
   // and delete the claims upon completion of the workflow
-  // +patchStrategy=merge
-  // +patchMergeKey=name
   repeated k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 6;
 
   // Parallelism limits the max total parallel pods that can execute at the same time in a workflow

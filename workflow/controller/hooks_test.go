@@ -145,6 +145,7 @@ status:
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-bgsf6.hooks.error")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 	node = woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-bgsf6.hooks.running")
 	assert.Nil(t, node)
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
@@ -264,6 +265,7 @@ status:
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("step1.hooks.error")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 	node = woc.wf.Status.Nodes.FindByDisplayName("step1.hooks.running")
 	assert.Nil(t, node)
 }
@@ -548,7 +550,9 @@ status:
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error"))
+	node := woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error")
+	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 }
 
 func TestTemplateRefWithHook(t *testing.T) {
@@ -774,8 +778,9 @@ status:
 	for _, node := range woc.wf.Status.Nodes {
 		fmt.Println(node.DisplayName, node.Phase)
 	}
-	assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error"))
-
+	node := woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error")
+	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 }
 
 func TestWfTemplateRefWithHook(t *testing.T) {
@@ -935,6 +940,7 @@ status:
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-fh7t4.hooks.Failed")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 }
 
 func TestWfHookHasFailures(t *testing.T) {
@@ -995,6 +1001,7 @@ spec:
 	assert.NoError(t, err)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }
 
@@ -1118,6 +1125,7 @@ spec:
 	node := woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
 	assert.NotNil(t, node)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
 
 	// Make all pods running
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
@@ -1125,6 +1133,7 @@ spec:
 	woc.operate(ctx)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
 	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
 
 	// Make main pod completed
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
@@ -1137,8 +1146,10 @@ spec:
 	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running")
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.Nil(t, node.NodeFlag)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
 	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	// Make all pod completed
@@ -1148,8 +1159,10 @@ spec:
 	assert.Equal(t, wfv1.Progress("2/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running")
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.Nil(t, node.NodeFlag)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
@@ -1200,6 +1213,7 @@ spec:
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 
 	// Make all pods running
@@ -1208,6 +1222,7 @@ spec:
 	woc.operate(ctx)
 	node = woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
 	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
 
 	// Make main pod completed
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
@@ -1221,8 +1236,10 @@ spec:
 	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("job")
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.Nil(t, node.NodeFlag)
 	node = woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
 	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	// Make all pod completed
@@ -1232,7 +1249,9 @@ spec:
 	assert.Equal(t, wfv1.Progress("2/2"), woc.wf.Status.Progress)
 	node = woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
 	node = woc.wf.Status.Nodes.FindByDisplayName("job")
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.Nil(t, node.NodeFlag)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

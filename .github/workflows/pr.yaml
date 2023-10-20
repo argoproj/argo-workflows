@@ -8,6 +8,9 @@ on:
       - reopened
       - synchronize
 
+permissions:
+  contents: read
+
 jobs:
   title-check:
     runs-on: ubuntu-latest
