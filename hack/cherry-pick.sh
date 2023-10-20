@@ -25,8 +25,8 @@ prs() {
   git log --format="%s" --grep "${commitGrepPattern}" "$1...$2" | prNo | sort > "/tmp/$2"
 }
 
-prs $base $br
-prs $base master
+prs "$base" "$br"
+prs "$base" master
 
 # find PRs added to master
 diff "/tmp/$br" /tmp/master | grep "^> " | cut -c 3- > /tmp/prs
@@ -37,9 +37,9 @@ git log --oneline --grep "${commitGrepPattern}" "$base...master" | while read -r
     grep -q "$(echo "$m" | prNo)" /tmp/prs && echo "$m"
   else
     commit=$(grep -q "$(echo "$m" | prNo)" /tmp/prs && echo "${m:0:9}")
-    echo cherry-picking: $commit
+    echo "cherry-picking: $commit"
     if ! git cp "$commit"; then
-      echo failed to cherry-pick "$commit"
+      echo "failed to cherry-pick $commit"
       git cp --abort
     fi
   fi
