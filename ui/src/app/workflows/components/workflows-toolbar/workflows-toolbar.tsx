@@ -36,7 +36,7 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
                 isDisabled: disabled[actionName],
                 action,
                 workflowsAction: async () => {
-                    //check for action
+                    // check for action
                     const confirmed = await popup.confirm('Confirm', `Are you sure you want to ${action.title.toLowerCase()} all selected workflows?`);
                     if (!confirmed) {
                         return;
