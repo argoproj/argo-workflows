@@ -34,7 +34,7 @@ import {ID} from './id';
 
 require('./event-flow-page.scss');
 
-export const EventFlowPage = ({history, location, match}: RouteComponentProps<any>) => {
+export function EventFlowPage({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -355,4 +355,4 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
             </SlidingPanel>
         </Page>
     );
-};
+}

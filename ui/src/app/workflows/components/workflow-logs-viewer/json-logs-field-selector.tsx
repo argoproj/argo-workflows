@@ -63,7 +63,7 @@ export function JsonLogsFieldSelector({fields, onChange}: {fields: SelectedJsonF
     );
 }
 
-export const extractJsonValue = (obj: any, jsonpath: string): string | null => {
+export function extractJsonValue(obj: any, jsonpath: string): string | null {
     const fields = jsonpath.split('.');
     try {
         let target = obj;
@@ -74,4 +74,4 @@ export const extractJsonValue = (obj: any, jsonpath: string): string | null => {
     } catch (e) {
         return null;
     }
-};
+}

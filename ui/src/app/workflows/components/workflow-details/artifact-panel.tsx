@@ -12,7 +12,7 @@ import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {services} from '../../../shared/services';
 import requests from '../../../shared/services/requests';
 
-export const ArtifactPanel = ({
+export function ArtifactPanel({
     workflow,
     artifact,
     archived,
@@ -22,7 +22,7 @@ export const ArtifactPanel = ({
     artifact: Artifact & {nodeId: string; artifactNameDiscriminator: string};
     archived?: boolean;
     artifactRepository: ArtifactRepository;
-}) => {
+}) {
     const input = artifact.artifactNameDiscriminator === 'input';
     const downloadUrl = services.workflows.getArtifactDownloadUrl(workflow, artifact.nodeId, artifact.name, archived, input);
 
@@ -123,6 +123,6 @@ export const ArtifactPanel = ({
             </FirstTimeUserPanel>
         </div>
     );
-};
+}
 
 const ViewBox = ({children}: {children: React.ReactElement}) => <div style={{border: 'solid 1px #ddd', padding: 10}}>{children}</div>;
