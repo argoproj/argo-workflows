@@ -131,3 +131,5 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
         </Page>
     );
 }
+
+export default Reports;
