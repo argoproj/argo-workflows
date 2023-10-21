@@ -87,7 +87,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
                     <ReportFilters namespace={namespace} labels={labels} onChange={onChange} />
                 </div>
                 <div className='columns small-12 xlarge-10'>
-                    <ErrorNotice error={error} />;
+                    <ErrorNotice error={error} />
                     {!charts ? (
                         <ZeroState title='Workflow Report'>
                             <p>
