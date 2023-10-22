@@ -19,7 +19,6 @@ func TestInterceptor(t *testing.T) {
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-
 	rr := httptest.NewRecorder()
 
 	handler := Interceptor(realHandler)
