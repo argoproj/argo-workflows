@@ -5,6 +5,7 @@ on:
       - "master"
       - "release-*"
       - "!release-2.8"
+      - "test-windows-build"
   pull_request:
     branches:
       - "master"
@@ -137,7 +138,7 @@ jobs:
           go-version: "1.21"
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
-      - run: go test -p 1  -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
+      - run: go test -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
         env:
           KUBECONFIG: /dev/null
 
