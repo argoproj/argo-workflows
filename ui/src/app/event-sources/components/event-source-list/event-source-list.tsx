@@ -26,7 +26,7 @@ import {EventSourceLogsViewer} from '../event-source-log-viewer';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/event_source/'>Learn more</a>;
 
-export const EventSourceList = ({match, location, history}: RouteComponentProps<any>) => {
+export function EventSourceList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
@@ -187,4 +187,4 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
             </SlidingPanel>
         </Page>
     );
-};
+}
