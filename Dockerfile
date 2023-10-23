@@ -2,10 +2,15 @@
 ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
+ARG BUILDER_IMAGE=golang:1.21-alpine3.18
+ARG UI_IMAGE=node:20-alpine
+ARG DISTROLESS_IMAGE=gcr.io/distroless/static
 
-FROM golang:1.21-alpine3.18 as builder
+FROM $BUILDER_IMAGE as builder
 
-RUN apk update && apk add --no-cache \
+RUN apk update && \
+    (command -v go >/dev/null 2>&1 || apk add --no-cache go) && \
+    apk add --no-cache \
     git \
     make \
     ca-certificates \
@@ -24,9 +29,13 @@ COPY . .
 
 ####################################################################################################
 
-FROM node:20-alpine as argo-ui
+FROM $UI_IMAGE as argo-ui
 
-RUN apk update && apk add --no-cache git
+RUN apk update && \
+    (command -v node >/dev/null 2>&1 || apk add --no-cache nodejs-current) && \
+    (command -v yarn >/dev/null 2>&1 || apk add --no-cache yarn) && \
+    apk add --no-cache \
+    git
 
 COPY ui/package.json ui/yarn.lock ui/
 
@@ -76,7 +85,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static as argoexec
+FROM $DISTROLESS_IMAGE as argoexec
 
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
@@ -87,7 +96,7 @@ ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static as workflow-controller
+FROM $DISTROLESS_IMAGE as workflow-controller
 
 USER 8737
 
@@ -99,7 +108,7 @@ ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static as argocli
+FROM $DISTROLESS_IMAGE as argocli
 
 USER 8737
 

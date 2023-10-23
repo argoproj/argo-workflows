@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: [ linux/amd64, linux/arm64 ]
+        platform: [ linux/amd64, linux/arm64, linux/riscv64 ]
         target: [ workflow-controller, argocli, argoexec ]
     steps:
       - uses: actions/checkout@v4
@@ -79,6 +79,13 @@ jobs:
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
+          extra_build_args=""
+          if [ $PLATFORM = "linux/riscv64" ]; then
+            extra_build_args="--build-arg BUILDER_IMAGE=riscv64/alpine:edge \
+              --build-arg UI_IMAGE=riscv64/alpine:edge \
+              --build-arg DISTROLESS_IMAGE=ghcr.io/go-riscv/distroless/static-unstable"
+          fi
+
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
@@ -86,6 +93,7 @@ jobs:
             --build-arg GIT_COMMIT=$GIT_COMMIT \
             --build-arg GIT_TAG=$GIT_TAG \
             --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
+            $extra_build_args \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --provenance=false \
@@ -186,11 +194,11 @@ jobs:
             image_name="${docker_org}/${target}:${tag}"
 
             if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
-              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
+              docker manifest create $image_name ${image_name}-linux-riscv64 ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
+              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-riscv64 quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
-              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
+              docker manifest create $image_name ${image_name}-linux-riscv64 ${image_name}-linux-arm64 ${image_name}-linux-amd64
+              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-riscv64 quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
             fi
 
             docker manifest push $image_name

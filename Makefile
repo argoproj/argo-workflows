@@ -184,6 +184,7 @@ dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
+dist/argo-linux-riscv64: GOARGS = GOOS=linux GOARCH=riscv64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
 dist/argo-darwin-arm64: GOARGS = GOOS=darwin GOARCH=arm64
 dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
@@ -211,7 +212,7 @@ endif
 argocli-image:
 
 .PHONY: clis
-clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-darwin-arm64.gz dist/argo-windows-amd64.gz
+clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-linux-riscv64.gz dist/argo-darwin-amd64.gz dist/argo-darwin-arm64.gz dist/argo-windows-amd64.gz
 
 # controller
 
@@ -487,7 +488,7 @@ argosay:
 ifeq ($(DOCKER_PUSH),true)
 	cd test/e2e/images/argosay/v2 && \
 		docker buildx build \
-			--platform linux/amd64,linux/arm64 \
+			--platform linux/amd64,linux/arm64,linux/riscv64 \
 			-t argoproj/argosay:v2 \
 			--push \
 			.
@@ -504,7 +505,7 @@ argosayv1:
 ifeq ($(DOCKER_PUSH),true)
 	cd test/e2e/images/argosay/v1 && \
 		docker buildx build \
-			--platform linux/amd64,linux/arm64 \
+			--platform linux/amd64,linux/arm64,linux/riscv64 \
 			-t argoproj/argosay:v1 \
 			--push \
 			.
