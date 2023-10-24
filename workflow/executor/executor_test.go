@@ -234,10 +234,6 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 }
 
 func TestIsTarball(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		// TODO: fix this test in windows
-		t.Skip("test not working in windows - temp disable")
-	}
 	tests := []struct {
 		path      string
 		isTarball bool
@@ -264,10 +260,6 @@ func TestIsTarball(t *testing.T) {
 }
 
 func TestUnzip(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		// TODO: fix this test in windows
-		t.Skip("test not working in windows - temp disable")
-	}
 	zipPath := "testdata/file.zip"
 	destPath := "testdata/unzippedFile"
 

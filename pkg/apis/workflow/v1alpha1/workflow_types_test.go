@@ -1,9 +1,9 @@
-//go:build !windows
-
 package v1alpha1
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
@@ -255,54 +255,61 @@ func TestArtifact_ValidatePath(t *testing.T) {
 		a3 := Artifact{Name: "a3", Path: "../.."}
 		err = a3.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "../..", a3.Path)
+		assert.Equal(t, filepath.Join("..", ".."), a3.Path)
 
 		a4 := Artifact{Name: "a4", Path: "../etc/passwd"}
 		err = a4.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "../etc/passwd", a4.Path)
+		assert.Equal(t, filepath.Join("..", "etc", "passwd"), a4.Path)
 	})
 
 	t.Run("directory traversal ending within safe base dir succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp/../tmp/abcd"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/abcd", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd")), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/subdir/../../tmp/subdir/abcd"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/subdir/abcd", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "subdir", "abcd")), a2.Path)
 	})
 
 	t.Run("artifact path filenames are allowed to contain double dots", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp/..artifact.txt"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/..artifact.txt", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "..artifact.txt")), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/artif..t.txt"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/artif..t.txt", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "artif..t.txt")), a2.Path)
 	})
 
 	t.Run("normal artifact path succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator("tmp"), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator("tmp"), a2.Path)
 
 		a3 := Artifact{Name: "a3", Path: "/tmp/abcd/some-artifact.txt"}
 		err = a3.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/abcd/some-artifact.txt", a3.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd", "some-artifact.txt")), a3.Path)
 	})
+}
+
+func ensureRootPathSeparator(p string) string {
+	if p[0] == os.PathSeparator {
+		return p
+	}
+	return string(os.PathSeparator) + p
 }
 
 func TestArtifactLocation_IsArchiveLogs(t *testing.T) {
