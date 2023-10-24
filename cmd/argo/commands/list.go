@@ -64,6 +64,34 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflows",
+		Example: `# List all workflows:
+  argo list
+
+# Show workflows from all namespaces:
+  argo list -A
+
+# List all completed worflows:
+  argo list --completed
+
+# List completed workflows finished before 2h:
+  argo list --older 2h
+
+# List worflows with more information (such as parameters):
+  argo list -o wide
+
+# List worflows in yaml format:
+  argo list -o yaml
+
+# List all running worflows:
+  argo list --running
+
+# List worflows with specific labels:
+  argo list -l label1=value1,label2=value2
+
+# List workflows created within last 10m:
+  argo list --since 10m
+`,
+
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
