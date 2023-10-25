@@ -18,7 +18,7 @@ import {SensorSidePanel} from '../sensor-side-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
-export const SensorDetails = ({match, location, history}: RouteComponentProps<any>) => {
+export function SensorDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -141,4 +141,4 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
             )}
         </Page>
     );
-};
+}

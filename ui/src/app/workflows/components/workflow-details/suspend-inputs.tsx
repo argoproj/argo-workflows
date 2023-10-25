@@ -8,7 +8,7 @@ interface SuspendInputProps {
     setParameter: (key: string, value: string) => void;
 }
 
-export const SuspendInputs = (props: SuspendInputProps) => {
+export function SuspendInputs(props: SuspendInputProps) {
     const [parameters, setParameters] = React.useState(props.parameters);
 
     const setParameter = (key: string, value: string) => {
@@ -82,4 +82,4 @@ export const SuspendInputs = (props: SuspendInputProps) => {
             Are you sure you want to resume node {props.nodeId} ?
         </div>
     );
-};
+}

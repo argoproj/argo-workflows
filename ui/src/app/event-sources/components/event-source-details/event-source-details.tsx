@@ -17,7 +17,7 @@ import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceEditor} from '../event-source-editor';
 import {EventSourceLogsViewer} from '../event-source-log-viewer';
 
-export const EventSourceDetails = ({history, location, match}: RouteComponentProps<any>) => {
+export function EventSourceDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {notifications, navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -172,4 +172,4 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
             </SlidingPanel>
         </Page>
     );
-};
+}

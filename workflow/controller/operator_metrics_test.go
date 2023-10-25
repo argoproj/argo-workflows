@@ -719,6 +719,8 @@ status:
       templateName: A
       templateScope: local/metrics-eg-lq4nj
       type: Pod
+      nodeFlag:
+        retried: true
     metrics-eg-lq4nj-4266717436:
       boundaryID: metrics-eg-lq4nj
       children:

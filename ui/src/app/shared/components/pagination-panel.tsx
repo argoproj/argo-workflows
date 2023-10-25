@@ -19,7 +19,8 @@ export function PaginationPanel(props: {pagination: Pagination; onChange: (pagin
                 }>
                 Next page <i className='fa fa-chevron-right' />
             </button>
-            {props.pagination.limit > 0 ? (
+            {/* if pagination is used, and we're either not on the first page, or are on the first page and have more records than the page limit */}
+            {props.pagination.limit > 0 && (props.pagination.offset || (!props.pagination.offset && props.numRecords >= props.pagination.limit)) ? (
                 <>
                     <WarningIcon /> Workflows cannot be globally sorted when paginated
                 </>
