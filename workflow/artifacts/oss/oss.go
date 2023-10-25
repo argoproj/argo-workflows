@@ -236,12 +236,23 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			if err != nil {
 				return !isTransientOSSErr(err), err
 			}
-			results, err := bucket.ListObjectsV2(oss.Prefix(artifact.OSS.Key))
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			for _, object := range results.Objects {
-				files = append(files, object.Key)
+			pre := oss.Prefix(artifact.OSS.Key)
+			continueToken := ""
+			for {
+				results, err := bucket.ListObjectsV2(pre, oss.ContinuationToken(continueToken))
+				if err != nil {
+					return !isTransientOSSErr(err), err
+				}
+				// Add to files. By default, 100 records are returned at a time. https://help.aliyun.com/zh/oss/user-guide/list-objects-18
+				for _, object := range results.Objects {
+					files = append(files, object.Key)
+				}
+				if results.IsTruncated {
+					continueToken = results.NextContinuationToken
+					pre = oss.Prefix(results.Prefix)
+				} else {
+					break
+				}
 			}
 			return true, nil
 		})
