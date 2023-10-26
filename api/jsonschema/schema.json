@@ -3475,6 +3475,13 @@
           },
           "description": "have Pods been started to perform this strategy? (enables us not to re-process what we've already done)",
           "type": "object"
+        },
+        "taskResultsCompleted": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+          "type": "object"
         }
       },
       "type": "object"

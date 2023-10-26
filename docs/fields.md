@@ -1761,6 +1761,7 @@ ArtGCStatus maintains state related to ArtifactGC
 |`notSpecified`|`boolean`|if this is true, we already checked to see if we need to do it and we don't|
 |`podsRecouped`|`Map< boolean , string >`|have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once|
 |`strategiesProcessed`|`Map< boolean , string >`|have Pods been started to perform this strategy? (enables us not to re-process what we've already done)|
+|`taskResultsCompleted`|`Map< boolean , string >`|Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.|
 
 ## ArtifactRepositoryRefStatus
 

@@ -19172,6 +19172,10 @@ spec:
                     additionalProperties:
                       type: boolean
                     type: object
+                  taskResultsCompleted:
+                    additionalProperties:
+                      type: boolean
+                    type: object
                 type: object
               artifactRepositoryRef:
                 properties:

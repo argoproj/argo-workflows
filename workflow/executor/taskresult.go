@@ -43,8 +43,13 @@ func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.Nod
 }
 
 func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
-	defaultLabels := map[string]string{common.LabelKeyWorkflow: we.workflow}
-	maps.Copy(labels, defaultLabels)
+	labelsToSet := map[string]string{
+		common.LabelKeyWorkflow:               we.workflow,
+		common.LabelKeyReportOutputsCompleted: "false",
+	}
+	if labels != nil {
+		maps.Copy(labelsToSet, labels)
+	}
 
 	taskResult := &wfv1.WorkflowTaskResult{
 		TypeMeta: metav1.TypeMeta{
@@ -56,7 +61,7 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		},
 		NodeResult: result,
 	}
-	taskResult.SetLabels(labels)
+	taskResult.SetLabels(labelsToSet)
 	taskResult.SetOwnerReferences(
 		[]metav1.OwnerReference{
 			{

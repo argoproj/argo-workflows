@@ -75,10 +75,15 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 	})
 	assert.NoError(s.T(), err)
 
-	// Ensure the artifact isn't in the bucket.
-	_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped", minio.StatObjectOptions{})
+	// Ensure the artifacts aren't in the bucket.
+	_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
 	if err == nil {
-		err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped", minio.RemoveObjectOptions{})
+		err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.RemoveObjectOptions{})
+		assert.NoError(s.T(), err)
+	}
+	_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
+	if err == nil {
+		err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.RemoveObjectOptions{})
 		assert.NoError(s.T(), err)
 	}
 
@@ -87,8 +92,11 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 		When().
 		Then()
 
-	// Assert the artifact doesn't exist.
-	then.ExpectArtifactByKey("on-deletion-wf-stopped", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
+	// Assert the artifacts don't exist.
+	then.ExpectArtifactByKey("on-deletion-wf-stopped-1", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
+		assert.NotNil(t, err)
+	})
+	then.ExpectArtifactByKey("on-deletion-wf-stopped-2", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
 		assert.NotNil(t, err)
 	})
 
@@ -98,11 +106,12 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 			fixtures.WorkflowCompletionOkay(true),
 			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 
-				condition := "for artifact to exist"
+				condition := "for artifacts to exist"
 
-				_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped", minio.StatObjectOptions{})
+				_, err1 := c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
+				_, err2 := c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
 
-				if err == nil {
+				if err1 == nil && err2 == nil {
 					return true, condition
 				}
 
@@ -112,7 +121,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 	then = when.Then()
 
 	// Assert artifact exists
-	then.ExpectArtifactByKey("on-deletion-wf-stopped", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
+	then.ExpectArtifactByKey("on-deletion-wf-stopped-1", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
+		assert.NoError(t, err)
+	})
+	then.ExpectArtifactByKey("on-deletion-wf-stopped-2", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
 		assert.NoError(t, err)
 	})
 
@@ -124,8 +136,11 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 	then = when.Then()
 
-	// Assert the artifact doesn't exist.
-	then.ExpectArtifactByKey("on-deletion-wf-stopped", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
+	// Assert the artifacts don't exist.
+	then.ExpectArtifactByKey("on-deletion-wf-stopped-1", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
+		assert.NotNil(t, err)
+	})
+	then.ExpectArtifactByKey("on-deletion-wf-stopped-2", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
 		assert.NotNil(t, err)
 	})
 

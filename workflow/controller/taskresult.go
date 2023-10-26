@@ -52,17 +52,28 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 	return informer
 }
 
-func (woc *wfOperationCtx) taskResultReconciliation() bool {
-	artifactsWriting := false
+func (woc *wfOperationCtx) taskResultReconciliation() {
 
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
+		resultName := result.GetName()
 
-		if result.Labels[common.LabelKeyWritingArtifact] == "true" {
-			artifactsWriting = true
+		woc.log.Debugf("task result:\n%+v", result)
+		woc.log.Debugf("task result name:\n%+v", resultName)
+
+		// Explicitly initialize the TaskResultsCompleted state for the given result.
+		woc.wf.Status.ArtifactGCStatus.InitializeTaskResultIncomplete(resultName)
+
+		// If the task result is completed, set the state to true.
+		if result.Labels[common.LabelKeyReportOutputsCompleted] == "true" {
+			woc.log.Debugf("Marking task result complete %s", resultName)
+			woc.wf.Status.ArtifactGCStatus.MarkTaskResultComplete(resultName)
 		}
+
+		woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.ArtifactGCStatus.GetTaskResultsCompleted())
+		woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.ArtifactGCStatus.GetTaskResultsCompleted()))
 
 		nodeID := result.Name
 		old, err := woc.wf.Status.Nodes.Get(nodeID)
@@ -90,5 +101,4 @@ func (woc *wfOperationCtx) taskResultReconciliation() bool {
 			woc.updated = true
 		}
 	}
-	return artifactsWriting
 }

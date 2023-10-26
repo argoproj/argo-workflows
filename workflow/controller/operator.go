@@ -266,12 +266,19 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
 	}
 
+	woc.addArtifactGCFinalizer()
+
 	// Reconciliation of Outputs (Artifacts). See reportOutputs() of executor.go.
-	artifactsWriting := woc.taskResultReconciliation()
-	// Check to see if we can do garbage collection of artifacts.
-	if err := woc.garbageCollectArtifacts(ctx, artifactsWriting); err != nil {
-		woc.log.WithError(err).Error("failed to GC artifacts")
-		return
+	woc.taskResultReconciliation()
+
+	// Do artifact GC if all task results are completed.
+	if woc.checkTaskResultsCompleted() {
+		if err := woc.garbageCollectArtifacts(ctx); err != nil {
+			woc.log.WithError(err).Error("failed to GC artifacts")
+			return
+		}
+	} else {
+		woc.log.Debug("Skipping artifact GC")
 	}
 
 	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
@@ -790,6 +797,19 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be be labeled multiple times.
 	woc.queuePodsForCleanup()
+}
+
+func (woc *wfOperationCtx) checkTaskResultsCompleted() bool {
+	taskResultsCompleted := woc.wf.Status.ArtifactGCStatus.GetTaskResultsCompleted()
+	if len(taskResultsCompleted) == 0 {
+		return false
+	}
+	for _, completed := range taskResultsCompleted {
+		if !completed {
+			return false
+		}
+	}
+	return true
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {

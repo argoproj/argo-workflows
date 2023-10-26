@@ -14,7 +14,7 @@ func NewWaitCommand() *cobra.Command {
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx := cmd.Context()
+			ctx := context.Background() // don't allow cancellation to impact capture of results, parameters, or artifacts
 			err := waitContainer(ctx)
 			if err != nil {
 				log.Fatalf("%+v", err)
@@ -26,7 +26,8 @@ func NewWaitCommand() *cobra.Command {
 
 func waitContainer(ctx context.Context) error {
 	wfExecutor := initExecutor()
-	defer wfExecutor.HandleError(ctx) // Must be placed at the bottom of defers stack.
+	defer wfExecutor.HandleError(ctx)            // Must be placed at the bottom of defers stack.
+	defer wfExecutor.ReportOutputsCompleted(ctx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
@@ -35,7 +36,6 @@ func waitContainer(ctx context.Context) error {
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
-	ctx = context.Background() // don't allow cancellation to impact capture of results, parameters, or artifacts
 	// Capture output script result
 	err = wfExecutor.CaptureScriptResult(ctx)
 	if err != nil {
@@ -47,6 +47,7 @@ func waitContainer(ctx context.Context) error {
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
+
 	// Saving output artifacts
 	err = wfExecutor.SaveArtifacts(ctx)
 	if err != nil {

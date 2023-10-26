@@ -94,8 +94,8 @@ const (
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
 	// LabelKeyArtifactGCPodHash is a label applied to WorkflowTaskSets used by the Artifact Garbage Collection Pod
 	LabelKeyArtifactGCPodHash = workflow.WorkflowFullName + "/artifact-gc-pod"
-	// LabelKeyWritingArtifact is a label applied to WorkflowTaskResults while artifacts are being written.
-	LabelKeyWritingArtifact = workflow.WorkflowFullName + "/writing-artifact"
+	// LabelKeyReportOutputsCompleted is a label applied to WorkflowTaskResults indicating whether all the outputs have been reported.
+	LabelKeyReportOutputsCompleted = workflow.WorkflowFullName + "/report-outputs-completed"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)

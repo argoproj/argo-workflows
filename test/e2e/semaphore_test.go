@@ -70,7 +70,7 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 			}))
 		}).
 		When().
-		WaitForWorkflow(time.Minute + time.Second*30)
+		WaitForWorkflow(time.Second * 90)
 }
 
 func (s *SemaphoreSuite) TestSynchronizationTmplLevelMutexAndSemaphore() {
