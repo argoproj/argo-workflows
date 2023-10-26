@@ -70,25 +70,25 @@ func NewListCommand() *cobra.Command {
 # Show workflows from all namespaces:
   argo list -A
 
-# List all completed worflows:
+# List all completed workflows:
   argo list --completed
 
-# List completed workflows finished before 2h:
+# List workflows that finished more than 2h ago:
   argo list --older 2h
 
-# List worflows with more information (such as parameters):
+# List workflows with more information (such as parameters):
   argo list -o wide
 
-# List worflows in yaml format:
+# List workflows in YAML format:
   argo list -o yaml
 
-# List all running worflows:
+# List all running workflows:
   argo list --running
 
-# List worflows with specific labels:
+# List workflows that have both labels:
   argo list -l label1=value1,label2=value2
 
-# List workflows created within last 10m:
+# List workflows created within the last 10m:
   argo list --since 10m
 `,
 
