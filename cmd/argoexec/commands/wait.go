@@ -14,7 +14,7 @@ func NewWaitCommand() *cobra.Command {
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx := context.Background() // don't allow cancellation to impact capture of results, parameters, or artifacts
+			ctx := cmd.Context()
 			err := waitContainer(ctx)
 			if err != nil {
 				log.Fatalf("%+v", err)
@@ -36,6 +36,10 @@ func waitContainer(ctx context.Context) error {
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
+
+	// Don't allow cancellation to impact capture of results, parameters, or artifacts
+	ctx = context.Background()
+
 	// Capture output script result
 	err = wfExecutor.CaptureScriptResult(ctx)
 	if err != nil {
