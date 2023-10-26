@@ -17,9 +17,9 @@ require (
 	github.com/argoproj/pkg v0.13.7-0.20230901113346-235a5432ec98
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs/v2 v2.4.0
-	github.com/coreos/go-oidc/v3 v3.5.0
+	github.com/coreos/go-oidc/v3 v3.7.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
-	github.com/evanphx/json-patch v5.6.0+incompatible
+	github.com/evanphx/json-patch v5.7.0+incompatible
 	github.com/gavv/httpexpect/v2 v2.10.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-jose/go-jose/v3 v3.0.0
@@ -60,7 +60,7 @@ require (
 	golang.org/x/oauth2 v0.13.0
 	golang.org/x/sync v0.4.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.147.0
+	google.golang.org/api v0.148.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231002182017-d307bd883b97
 	google.golang.org/grpc v1.58.3
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
@@ -99,7 +99,7 @@ require (
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 	google.golang.org/genproto v0.0.0-20231002182017-d307bd883b97 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231009173412-8bfb1ae86b6c // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231012201019-e917dd12ba7a // indirect
 )
 
 require (
@@ -125,7 +125,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
-	github.com/acomagu/bufpipe v1.0.3 // indirect
+	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/awalterschulze/gographviz v0.0.0-20200901124122-0eecad45bd71 // indirect
@@ -177,7 +177,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20220719135131-f79ec2192282 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
@@ -261,7 +261,7 @@ require (
 	golang.org/x/term v0.13.0
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -279,7 +279,4 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
-replace (
-	github.com/antonmedv/expr => github.com/expr-lang/expr v0.0.0-20230912141041-709c5dd55aa7
-	github.com/go-git/go-git/v5 => github.com/argoproj-labs/go-git/v5 v5.4.7
-)
+replace github.com/go-git/go-git/v5 => github.com/argoproj-labs/go-git/v5 v5.4.7

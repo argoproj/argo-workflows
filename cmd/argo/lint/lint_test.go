@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -213,6 +214,10 @@ func TestLintStdin(t *testing.T) {
 }
 
 func TestLintDeviceFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("device files not accessible in windows")
+	}
+
 	file, err := os.CreateTemp("", "*.yaml")
 	fd := file.Fd()
 	assert.NoError(t, err)
