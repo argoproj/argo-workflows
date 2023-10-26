@@ -9,7 +9,7 @@ import {ObjectEditor} from '../../shared/components/object-editor/object-editor'
 import {CronWorkflowSpecEditor} from './cron-workflow-spec-editior';
 import {CronWorkflowStatusViewer} from './cron-workflow-status-viewer';
 
-export const CronWorkflowEditor = ({
+export function CronWorkflowEditor({
     selectedTabKey,
     onTabSelected,
     onError,
@@ -21,7 +21,7 @@ export const CronWorkflowEditor = ({
     onError: (error: Error) => void;
     onTabSelected?: (tab: string) => void;
     selectedTabKey?: string;
-}) => {
+}) {
     return (
         <Tabs
             key='tabs'
@@ -82,4 +82,4 @@ export const CronWorkflowEditor = ({
             ]}
         />
     );
-};
+}

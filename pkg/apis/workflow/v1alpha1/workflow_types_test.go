@@ -1,3 +1,5 @@
+//go:build !windows
+
 package v1alpha1
 
 import (

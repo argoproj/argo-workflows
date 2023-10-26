@@ -47,9 +47,7 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
                     </a>
                     in the middle of the workflow
                 </li>
-                <li>
-                    Filter by date and time in the UI. <b>New default</b>: only show the past month's Workflows.
-                </li>
+                <li>Filter by date and time in the UI</li>
             </ul>
             <p>
                 <a href='https://blog.argoproj.io/what-to-expect-in-argo-workflows-v3-4-711702ad88e9?utm_source=argo-ui' target='_blank'>

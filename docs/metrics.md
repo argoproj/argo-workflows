@@ -281,7 +281,7 @@ Finally, an example of a `Template`-level Histogram metric that tracks an intern
 ### Real-Time Metrics
 
 Argo supports a limited number of real-time metrics. These metrics are emitted in real-time, beginning when the step execution starts
-and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#realtime-metrics).
+and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#real-time-metrics).
 
 To define a real-time metric simply add `realtime: true` to a gauge metric with a valid real-time variable. For example:
 

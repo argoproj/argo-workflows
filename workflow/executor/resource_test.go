@@ -48,7 +48,11 @@ func TestResourceFlags(t *testing.T) {
 	_, err = we.getKubectlArguments("fake", manifestPath, nil)
 	assert.NoError(t, err)
 	_, err = we.getKubectlArguments("fake", "unknown-location", fakeFlags)
-	assert.EqualError(t, err, "open unknown-location: no such file or directory")
+	if runtime.GOOS == "windows" {
+		assert.EqualError(t, err, "open unknown-location: The system cannot find the file specified.")
+	} else {
+		assert.EqualError(t, err, "open unknown-location: no such file or directory")
+	}
 
 	emptyFile, err := os.CreateTemp("/tmp", "empty-manifest")
 	assert.NoError(t, err)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os/exec"
+	"runtime"
 	"testing"
 	"time"
 
@@ -11,7 +12,11 @@ import (
 )
 
 func TestSimpleStartCloser(t *testing.T) {
-	cmd := exec.Command("sh", "-c", `echo "A123456789B123456789C123456789D123456789E123456789\c"`)
+	shell := "sh"
+	if runtime.GOOS == "windows" {
+		shell = "pwsh.exe"
+	}
+	cmd := exec.Command(shell, "-c", `echo "A123456789B123456789C123456789D123456789E123456789\c"`)
 	var stdoutWriter bytes.Buffer
 	slowWriter := SlowWriter{
 		&stdoutWriter,
@@ -22,13 +27,17 @@ func TestSimpleStartCloser(t *testing.T) {
 
 	closer, err := StartCommand(cmd)
 	assert.NoError(t, err)
-	err = cmd.Process.Release()
+	err = cmd.Wait()
 	assert.NoError(t, err)
 	// Wait for echo command to exit before calling closer
 	time.Sleep(100 * time.Millisecond)
 	closer()
 
-	assert.Equal(t, "A123456789B123456789C123456789D123456789E123456789", stdoutWriter.String())
+	expected := "A123456789B123456789C123456789D123456789E123456789"
+	if runtime.GOOS == "windows" {
+		expected = "A123456789B123456789C123456789D123456789E123456789\\c\r\n"
+	}
+	assert.Equal(t, expected, stdoutWriter.String())
 }
 
 type SlowWriter struct {

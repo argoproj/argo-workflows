@@ -2,8 +2,8 @@ import {Tooltip} from 'argo-ui';
 import * as React from 'react';
 import {useState} from 'react';
 
-export const ClipboardText = ({text}: {text: string}) => {
-    const [justClicked, setJustClicked] = useState<boolean>(false);
+export function ClipboardText({text}: {text: string}) {
+    const [justClicked, setJustClicked] = useState(false);
 
     if (!text) {
         return <></>;
@@ -20,11 +20,11 @@ export const ClipboardText = ({text}: {text: string}) => {
                         onClick={() => {
                             setJustClicked(true);
                             navigator.clipboard.writeText(text);
-                            setInterval(() => setJustClicked(false), 2000);
+                            setTimeout(() => setJustClicked(false), 2000);
                         }}
                     />
                 </a>
             </Tooltip>
         </>
     );
-};
+}

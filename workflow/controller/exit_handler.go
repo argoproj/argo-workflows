@@ -41,9 +41,9 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 
 			}
 			onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
-
 				boundaryID:     boundaryID,
 				onExitTemplate: true,
+				nodeFlag:       &wfv1.NodeFlag{Hooked: true},
 			})
 			woc.addChildNode(parentNode.Name, onExitNodeName)
 			return true, onExitNode, err

@@ -1,16 +1,15 @@
-# Kubernetes Secrets
+# Service Account Secrets
 
 As of Kubernetes v1.24, secrets are no longer automatically created for service accounts.
 
-You must create a secret
-manually: [Find out how to create these yourself manually](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-service-account-api-token)
-.
+You must [create a secret manually](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-long-lived-api-token-for-a-serviceaccount).
 
-You must make the secret discoverable. You have two options:
+You must also make the secret discoverable.
+You have two options:
 
 ## Option 1 - Discovery By Name
 
-Name your secret `${serviceAccountName}.service-account-token`.
+Name your secret `${serviceAccountName}.service-account-token`:
 
 ```yaml
 apiVersion: v1
@@ -22,7 +21,7 @@ metadata:
 type: kubernetes.io/service-account-token
 ```
 
-This option is simpler than option 2, as you can combine creating the secret with making it discoverable by name.
+This option is simpler than option 2, as you can create the secret and make it discoverable by name at the same time.
 
 ## Option 2 - Discovery By Annotation
 

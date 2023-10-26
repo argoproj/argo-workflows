@@ -10,7 +10,7 @@ import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
-export const CronWorkflowCreator = ({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) => {
+export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) {
     const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>(exampleCronWorkflow(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
@@ -35,4 +35,4 @@ export const CronWorkflowCreator = ({onCreate, namespace}: {namespace: string; o
             </p>
         </>
     );
-};
+}

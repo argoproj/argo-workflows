@@ -172,8 +172,15 @@ func TestGetTaskAncestryForValidation(t *testing.T) {
 		},
 	}
 
+	now := time.Now()
 	ctx := &testContext{
 		testTasks: testTasks,
+		status: map[string]time.Time{
+			"task1": now.Add(1 * time.Minute),
+			"task2": now.Add(2 * time.Minute),
+			"task3": now.Add(3 * time.Minute),
+			"task4": now.Add(4 * time.Minute),
+		},
 	}
 
 	tests := []struct {

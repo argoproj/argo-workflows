@@ -31,7 +31,7 @@ and replace the existing hash value.
 The almost exact same principles apply here, the only difference being you must change the `vendorHash` and the `sha256` fields.
 The `vendorHash` is a hash of the vendored dependencies while the `sha256` is for the sources fetched from the `fetchFromGithub` call.
 
-### Why am I getting a vendorSha256 mismatch ?
+### Why am I getting a `vendorSha256` mismatch ?
 
 Unfortunately, dependabot is not capable of upgrading flakes automatically, when the go modules are automatically upgraded the
 hash of the vendor dependencies changes but this change isn't automatically reflected in the nix file. The `vendorSha256` field that needs to

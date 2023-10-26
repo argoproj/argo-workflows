@@ -5,7 +5,7 @@
 You may not have configured Argo Server authentication correctly.
 
 If you want SSO, try running with `--auth-mode=sso`.
-If you're using `--auth-mode=client`, make sure you have `Bearer` in front of the token, as mentioned in [Access Token](access-token.md#token-creation).
+If you're using `--auth-mode=client`, make sure you have `Bearer` in front of the ServiceAccount Secret, as mentioned in [Access Token](access-token.md#token-creation).
 
 [Learn more about the Argo Server set-up](argo-server.md)
 

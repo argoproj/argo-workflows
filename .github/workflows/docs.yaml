@@ -13,11 +13,13 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   docs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # for publishing the docs to GH Pages
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4

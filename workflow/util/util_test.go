@@ -1064,7 +1064,7 @@ func TestRetryExitHandler(t *testing.T) {
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := context.Background()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
-	createdTime := metav1.Time{Time: time.Now().UTC()}
+	createdTime := metav1.Time{Time: time.Now().Add(-1 * time.Second).UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
 	t.Run("Steps", func(t *testing.T) {
 		wf := &wfv1.Workflow{

@@ -1,9 +1,9 @@
-import React = require('react');
+import x from 'cronstrue';
+import * as React from 'react';
+
 import {SuccessIcon, WarningIcon} from '../../shared/components/fa-icons';
 
-const x = require('cronstrue');
-
-export const ScheduleValidator = ({schedule}: {schedule: string}) => {
+export function ScheduleValidator({schedule}: {schedule: string}) {
     try {
         if (schedule.split(' ').length >= 6) {
             throw new Error('cron schedules must consist of 5 values only');
@@ -20,4 +20,4 @@ export const ScheduleValidator = ({schedule}: {schedule: string}) => {
             </span>
         );
     }
-};
+}

@@ -29,7 +29,7 @@ const introductionText = (
 );
 const learnMore = <a href={'https://argoproj.github.io/argo-workflows/events/'}>Learn more</a>;
 
-export const WorkflowEventBindings = ({match, location, history}: RouteComponentProps<any>) => {
+export function WorkflowEventBindings({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
     const ctx = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -144,4 +144,4 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
             )}
         </Page>
     );
-};
+}

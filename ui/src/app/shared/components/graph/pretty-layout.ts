@@ -2,7 +2,7 @@ import * as dagre from 'dagre';
 import {Graph, Node} from './types';
 
 const minSize = 1;
-export const layoutGraphPretty = (graph: Graph, nodeSize: number, horizontal: boolean, hidden: (id: Node) => boolean) => {
+export function layoutGraphPretty(graph: Graph, nodeSize: number, horizontal: boolean, hidden: (id: Node) => boolean) {
     const gap = nodeSize * 1.25;
     const g = new dagre.graphlib.Graph();
     g.setGraph({rankdir: horizontal ? 'LR' : 'TB', ranksep: gap, nodesep: gap, edgesep: gap});
@@ -39,4 +39,4 @@ export const layoutGraphPretty = (graph: Graph, nodeSize: number, horizontal: bo
             });
         }
     });
-};
+}

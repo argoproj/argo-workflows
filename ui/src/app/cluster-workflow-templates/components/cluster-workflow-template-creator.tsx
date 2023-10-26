@@ -9,7 +9,7 @@ import {exampleClusterWorkflowTemplate} from '../../shared/examples';
 import {services} from '../../shared/services';
 import {ClusterWorkflowTemplateEditor} from './cluster-workflow-template-editor';
 
-export const ClusterWorkflowTemplateCreator = ({onCreate}: {onCreate: (workflow: ClusterWorkflowTemplate) => void}) => {
+export function ClusterWorkflowTemplateCreator({onCreate}: {onCreate: (workflow: ClusterWorkflowTemplate) => void}) {
     const [template, setTemplate] = useState<ClusterWorkflowTemplate>(exampleClusterWorkflowTemplate());
     const [error, setError] = useState<Error>();
     return (
@@ -34,4 +34,4 @@ export const ClusterWorkflowTemplateCreator = ({onCreate}: {onCreate: (workflow:
             </div>
         </>
     );
-};
+}

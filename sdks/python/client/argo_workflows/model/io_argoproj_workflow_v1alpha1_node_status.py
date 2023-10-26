@@ -32,11 +32,13 @@ from argo_workflows.exceptions import ApiAttributeError
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_inputs import IoArgoprojWorkflowV1alpha1Inputs
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_memoization_status import IoArgoprojWorkflowV1alpha1MemoizationStatus
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_node_flag import IoArgoprojWorkflowV1alpha1NodeFlag
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_node_synchronization_status import IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_outputs import IoArgoprojWorkflowV1alpha1Outputs
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template_ref import IoArgoprojWorkflowV1alpha1TemplateRef
     globals()['IoArgoprojWorkflowV1alpha1Inputs'] = IoArgoprojWorkflowV1alpha1Inputs
     globals()['IoArgoprojWorkflowV1alpha1MemoizationStatus'] = IoArgoprojWorkflowV1alpha1MemoizationStatus
+    globals()['IoArgoprojWorkflowV1alpha1NodeFlag'] = IoArgoprojWorkflowV1alpha1NodeFlag
     globals()['IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus'] = IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus
     globals()['IoArgoprojWorkflowV1alpha1Outputs'] = IoArgoprojWorkflowV1alpha1Outputs
     globals()['IoArgoprojWorkflowV1alpha1TemplateRef'] = IoArgoprojWorkflowV1alpha1TemplateRef
@@ -108,6 +110,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             'inputs': (IoArgoprojWorkflowV1alpha1Inputs,),  # noqa: E501
             'memoization_status': (IoArgoprojWorkflowV1alpha1MemoizationStatus,),  # noqa: E501
             'message': (str,),  # noqa: E501
+            'node_flag': (IoArgoprojWorkflowV1alpha1NodeFlag,),  # noqa: E501
             'outbound_nodes': ([str],),  # noqa: E501
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'phase': (str,),  # noqa: E501
@@ -140,6 +143,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'inputs': 'inputs',  # noqa: E501
         'memoization_status': 'memoizationStatus',  # noqa: E501
         'message': 'message',  # noqa: E501
+        'node_flag': 'nodeFlag',  # noqa: E501
         'outbound_nodes': 'outboundNodes',  # noqa: E501
         'outputs': 'outputs',  # noqa: E501
         'phase': 'phase',  # noqa: E501
@@ -209,6 +213,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
             memoization_status (IoArgoprojWorkflowV1alpha1MemoizationStatus): [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the node is in this condition.. [optional]  # noqa: E501
+            node_flag (IoArgoprojWorkflowV1alpha1NodeFlag): [optional]  # noqa: E501
             outbound_nodes ([str]): OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \"Pending\", \"Running\" before the node is completed, or \"Succeeded\", \"Skipped\", \"Failed\", \"Error\", or \"Omitted\" as a final state.. [optional]  # noqa: E501
@@ -319,6 +324,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
             memoization_status (IoArgoprojWorkflowV1alpha1MemoizationStatus): [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the node is in this condition.. [optional]  # noqa: E501
+            node_flag (IoArgoprojWorkflowV1alpha1NodeFlag): [optional]  # noqa: E501
             outbound_nodes ([str]): OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \"Pending\", \"Running\" before the node is completed, or \"Succeeded\", \"Skipped\", \"Failed\", \"Error\", or \"Omitted\" as a final state.. [optional]  # noqa: E501

@@ -7,7 +7,7 @@ import {ContextApis, Provider} from './shared/context';
 
 const history = createBrowserHistory();
 
-export const App = () => {
+export function App() {
     const popupManager: PopupManager = new PopupManager();
     const notificationsManager: NotificationsManager = new NotificationsManager();
     const navigationManager: NavigationManager = new NavigationManager(history);
@@ -24,4 +24,4 @@ export const App = () => {
             <AppRouter history={history} notificationsManager={notificationsManager} popupManager={popupManager} />
         </Provider>
     );
-};
+}

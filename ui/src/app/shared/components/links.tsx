@@ -1,6 +1,6 @@
 import {ObjectMeta} from 'argo-ui/src/models/kubernetes';
 import {useEffect, useState} from 'react';
-import React = require('react');
+import * as React from 'react';
 import {Link, Workflow} from '../../../models';
 import {services} from '../services';
 import {Button} from './button';

@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/creack/pty"
 	"golang.org/x/term"
@@ -84,6 +85,19 @@ func StartCommand(cmd *exec.Cmd) (func(), error) {
 		_ = term.Restore(int(stdin.Fd()), oldState)
 		_ = ptmx.Close()
 		origCloser()
+	}
+
+	return closer, nil
+}
+
+func simpleStart(cmd *exec.Cmd) (func(), error) {
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	closer := func() {
+		cmd.WaitDelay = 100 * time.Millisecond
+		_ = cmd.Wait()
 	}
 
 	return closer, nil

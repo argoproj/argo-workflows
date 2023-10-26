@@ -23,7 +23,7 @@
     "--add-host=mysql:127.0.0.1",
     "--add-host=azurite:127.0.0.1"
   ],
-  "onCreateCommand": ".devcontainer/pre-build.sh",
+  "postCreateCommand": ".devcontainer/pre-build.sh",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/vscode/go/src/github.com/argoproj/argo-workflows,type=bind",
   "workspaceFolder": "/home/vscode/go/src/github.com/argoproj/argo-workflows",
   "remoteEnv": {

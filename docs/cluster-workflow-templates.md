@@ -140,7 +140,7 @@ argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/exa
 The submit a `ClusterWorkflowTemplate` as a `Workflow`:
 
 ```bash
-argo submit --from clusterworkflowtemplate/workflow-template-submittable
+argo submit --from clusterworkflowtemplate/cluster-workflow-template-submittable
 ```
 
 ### `kubectl`

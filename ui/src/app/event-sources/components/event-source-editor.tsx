@@ -5,7 +5,7 @@ import {EventSource} from '../../../models';
 import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
 import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
 
-export const EventSourceEditor = ({
+export function EventSourceEditor({
     onChange,
     onError,
     onTabSelected,
@@ -17,7 +17,7 @@ export const EventSourceEditor = ({
     onError: (error: Error) => void;
     onTabSelected?: (tab: string) => void;
     selectedTabKey?: string;
-}) => {
+}) {
     return (
         <Tabs
             key='tabs'
@@ -39,4 +39,4 @@ export const EventSourceEditor = ({
             ]}
         />
     );
-};
+}

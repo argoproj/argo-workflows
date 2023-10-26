@@ -374,7 +374,7 @@ func TestEnqueueWF(t *testing.T) {
 	assert.Equal(t, 0, controller.workqueue.Len())
 }
 
-func TestTTLStrategySucceded(t *testing.T) {
+func TestTTLStrategySucceeded(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
 	var ten int32 = 10

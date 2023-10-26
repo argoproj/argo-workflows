@@ -4,7 +4,7 @@ import {uiUrl} from '../../shared/base';
 import {useCollectEvent} from '../../shared/components/use-collect-event';
 require('./help.scss');
 
-export const Help = () => {
+export function Help() {
     useCollectEvent('openedHelp');
     return (
         <Page title='Help'>
@@ -42,4 +42,4 @@ export const Help = () => {
             </div>
         </Page>
     );
-};
+}

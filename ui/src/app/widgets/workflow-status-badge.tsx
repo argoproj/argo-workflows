@@ -9,7 +9,7 @@ import {services} from '../shared/services';
 
 require('./workflow-status-badge.scss');
 
-export const WorkflowStatusBadge = ({history, match}: RouteComponentProps<any>) => {
+export function WorkflowStatusBadge({history, match}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
     const namespace = match.params.namespace;
     const name = queryParams.get('name');
@@ -50,4 +50,4 @@ export const WorkflowStatusBadge = ({history, match}: RouteComponentProps<any>) 
             <span className={'status ' + phase}>{(phase || 'unknown').toLowerCase()} </span>
         </a>
     );
-};
+}

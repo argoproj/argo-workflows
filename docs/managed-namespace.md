@@ -2,13 +2,12 @@
 
 > v2.5 and after
 
-You can install Argo in either cluster scoped or namespace scope configurations.
-This dictates if you must set-up cluster roles or normal roles.
+You can install Argo in either namespace scoped or cluster scoped configurations.
+The main difference is whether you install Roles or ClusterRoles, respectively.
 
-In namespace scope configuration, you must run both the Workflow Controller and
-Argo Server using `--namespaced`. If you would like to have the workflows running in a separate
-namespace, add `--managed-namespace` as well. (In cluster scope installation, don't include `--namespaced`
-or `--managed-namespace`.)
+In namespace scoped configuration, you must run both the Workflow Controller and Argo Server using `--namespaced`.
+If you want to run workflows in a separate namespace, add `--managed-namespace` as well.
+(In cluster scoped configuration, _don't_ include `--namespaced` or `--managed-namespace`.)
 
 For example:
 
@@ -23,7 +22,7 @@ For example:
         - default
 ```
 
-Please mind that both cluster scoped and namespace scoped configurations require "admin" role because some custom resource (CRD) must be created (and CRD is always a cluster level object)
+Please note that both cluster scoped and namespace scoped configurations require "admin" roles to install because Argo's Custom Resource Definitions (CRDs) must be created (CRDs are cluster scoped objects).
 
 !!! Info "Example Use Case"
     You can use a managed namespace install if you want some users or services to run Workflows without granting them privileges in the namespace where Argo Workflows is installed.

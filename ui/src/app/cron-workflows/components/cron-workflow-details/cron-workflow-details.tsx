@@ -6,6 +6,7 @@ import * as models from '../../../../models';
 import {CronWorkflow, Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {openLinkWithKey} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
@@ -20,7 +21,7 @@ import {CronWorkflowEditor} from '../cron-workflow-editor';
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 require('./cron-workflow-details.scss');
 
-export const CronWorkflowDetails = ({match, location, history}: RouteComponentProps<any>) => {
+export function CronWorkflowDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -107,14 +108,6 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                   disabled: !cronWorkflow || !cronWorkflow.spec.suspend || edited
               };
 
-    const openLink = (link: Link) => {
-        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
-            window.open(link.url, '_blank');
-        } else {
-            document.location.href = link.url;
-        }
-    };
-
     const getItems = () => {
         const items = [
             {
@@ -193,7 +186,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
             items.push({
                 title: templateLink.name,
                 iconClassName: icon,
-                action: () => openLink(templateLink)
+                action: () => openLinkWithKey(templateLink.url)
             });
         }
 
@@ -262,4 +255,4 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
             </>
         </Page>
     );
-};
+}
