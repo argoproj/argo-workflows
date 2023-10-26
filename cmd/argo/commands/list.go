@@ -70,6 +70,9 @@ func NewListCommand() *cobra.Command {
 # Show workflows from all namespaces:
   argo list -A
 
+# List all running workflows:
+  argo list --running
+
 # List all completed workflows:
   argo list --completed
 
@@ -81,9 +84,6 @@ func NewListCommand() *cobra.Command {
 
 # List workflows in YAML format:
   argo list -o yaml
-
-# List all running workflows:
-  argo list --running
 
 # List workflows that have both labels:
   argo list -l label1=value1,label2=value2
