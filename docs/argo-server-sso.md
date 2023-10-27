@@ -12,10 +12,10 @@ Next, create the Kubernetes secrets for holding the OAuth2 `client-id` and `clie
 
 ```bash
 kubectl create secret -n argo generic client-id-secret \
-  --from-literal=client-id-key=foo
+  --from-literal=client-id=foo
 
 kubectl create secret -n argo generic client-secret-secret \
-  --from-literal=client-secret-key=bar
+  --from-literal=client-secret=bar
 ```
 
 Then, start the Argo Server using the SSO [auth mode](argo-server-auth-mode.md):
