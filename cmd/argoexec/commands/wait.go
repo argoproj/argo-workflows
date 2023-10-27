@@ -26,8 +26,8 @@ func NewWaitCommand() *cobra.Command {
 
 func waitContainer(ctx context.Context) error {
 	wfExecutor := initExecutor()
-	defer wfExecutor.HandleError(ctx)            // Must be placed at the bottom of defers stack.
-	defer wfExecutor.ReportOutputsCompleted(ctx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
+	defer wfExecutor.HandleError(ctx)    // Must be placed at the bottom of defers stack.
+	defer wfExecutor.FinalizeOutput(ctx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 

@@ -1336,9 +1336,6 @@ type ArtGCStatus struct {
 
 	// if this is true, we already checked to see if we need to do it and we don't
 	NotSpecified bool `json:"notSpecified,omitempty" protobuf:"varint,3,opt,name=notSpecified"`
-
-	// Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
-	TaskResultsCompleted map[string]bool `json:"taskResultsCompleted,omitempty" protobuf:"bytes,4,opt,name=taskResultsCompleted"`
 }
 
 func (gcStatus *ArtGCStatus) SetArtifactGCStrategyProcessed(strategy ArtifactGCStrategy, processed bool) {
@@ -1380,27 +1377,6 @@ func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
 		}
 	}
 	return true
-}
-
-func (gcStatus *ArtGCStatus) InitializeTaskResultIncomplete(resultName string) {
-	if gcStatus.TaskResultsCompleted == nil {
-		gcStatus.TaskResultsCompleted = make(map[string]bool)
-	}
-	if _, ok := gcStatus.TaskResultsCompleted[resultName]; !ok {
-		gcStatus.MarkTaskResultIncomplete(resultName)
-	}
-}
-func (gcStatus *ArtGCStatus) MarkTaskResultComplete(name string) {
-	gcStatus.TaskResultsCompleted[name] = true
-}
-func (gcStatus *ArtGCStatus) MarkTaskResultIncomplete(name string) {
-	gcStatus.TaskResultsCompleted[name] = false
-}
-func (gcStatus *ArtGCStatus) GetTaskResultCompleted(name string) bool {
-	return gcStatus.TaskResultsCompleted[name]
-}
-func (gcStatus *ArtGCStatus) GetTaskResultsCompleted() map[string]bool {
-	return gcStatus.TaskResultsCompleted
 }
 
 type ArtifactSearchResult struct {
@@ -1967,6 +1943,30 @@ type WorkflowStatus struct {
 
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
+
+	// Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
+	TaskResultsCompleted map[string]bool `json:"taskResultsCompleted,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompleted"`
+}
+
+func (ws *WorkflowStatus) InitializeTaskResultIncomplete(resultName string) {
+	if ws.TaskResultsCompleted == nil {
+		ws.TaskResultsCompleted = make(map[string]bool)
+	}
+	if _, ok := ws.TaskResultsCompleted[resultName]; !ok {
+		ws.MarkTaskResultIncomplete(resultName)
+	}
+}
+func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
+	ws.TaskResultsCompleted[name] = true
+}
+func (ws *WorkflowStatus) MarkTaskResultIncomplete(name string) {
+	ws.TaskResultsCompleted[name] = false
+}
+func (ws *WorkflowStatus) GetTaskResultCompleted(name string) bool {
+	return ws.TaskResultsCompleted[name]
+}
+func (ws *WorkflowStatus) GetTaskResultsCompleted() map[string]bool {
+	return ws.TaskResultsCompleted
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

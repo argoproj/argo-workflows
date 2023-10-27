@@ -310,22 +310,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtGCStatus(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
-					"taskResultsCompleted": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: false,
-										Type:    []string{"boolean"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
 				},
 			},
 		},
@@ -7854,6 +7838,22 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus"),
+						},
+					},
+					"taskResultsCompleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: false,
+										Type:    []string{"boolean"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 				},

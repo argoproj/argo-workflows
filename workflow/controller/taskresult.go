@@ -64,16 +64,16 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		woc.log.Debugf("task result name:\n%+v", resultName)
 
 		// Explicitly initialize the TaskResultsCompleted state for the given result.
-		woc.wf.Status.ArtifactGCStatus.InitializeTaskResultIncomplete(resultName)
+		woc.wf.Status.InitializeTaskResultIncomplete(resultName)
 
 		// If the task result is completed, set the state to true.
 		if result.Labels[common.LabelKeyReportOutputsCompleted] == "true" {
 			woc.log.Debugf("Marking task result complete %s", resultName)
-			woc.wf.Status.ArtifactGCStatus.MarkTaskResultComplete(resultName)
+			woc.wf.Status.MarkTaskResultComplete(resultName)
 		}
 
-		woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.ArtifactGCStatus.GetTaskResultsCompleted())
-		woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.ArtifactGCStatus.GetTaskResultsCompleted()))
+		woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.GetTaskResultsCompleted())
+		woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.GetTaskResultsCompleted()))
 
 		nodeID := result.Name
 		old, err := woc.wf.Status.Nodes.Get(nodeID)

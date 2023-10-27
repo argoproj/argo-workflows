@@ -19172,10 +19172,6 @@ spec:
                     additionalProperties:
                       type: boolean
                     type: object
-                  taskResultsCompleted:
-                    additionalProperties:
-                      type: boolean
-                    type: object
                 type: object
               artifactRepositoryRef:
                 properties:
@@ -49287,6 +49283,10 @@ spec:
                           type: object
                         type: array
                     type: object
+                type: object
+              taskResultsCompleted:
+                additionalProperties:
+                  type: boolean
                 type: object
             type: object
         required:
