@@ -37,7 +37,11 @@ Reporting progress works as follows:
 
 The executor will read this file every 3s and if there was an update,
 patch the pod annotations with `workflows.argoproj.io/progress: N/M`.
-The controller picks this up and writes the progress to the appropriate Status properties.
+The controller picks this up and writes the progress to the appropriate Status properties
+every 1m.
+
+These values cane be fine tuned with the `ARGO_PROGRESS_PATCH_TICK_DURATION` and `ARGO_PROGRESS_FILE_TICK_DURATION`
+environment variables.
 
 Initially the progress of a workflows' pod is always `0/1`. If you want to influence this, make sure to set an initial
 progress annotation on the pod:
@@ -56,9 +60,6 @@ spec:
           - name: progress
             template: progress
     - name: progress
-      metadata:
-        annotations:
-          workflows.argoproj.io/progress: 0/100
       container:
         image: alpine:3.14
         command: [ "/bin/sh", "-c" ]
@@ -66,3 +67,6 @@ spec:
           - |
             for i in `seq 1 10`; do sleep 10; echo "$(($i*10))"'/100' > $ARGO_PROGRESS_FILE; done
 ```
+
+Please make sure you have granted `patch` privilege on `workflowtaskresults` resources for the executor
+to be able to update progress on the workflow. See https://argoproj.github.io/argo-workflows/workflow-rbac/
