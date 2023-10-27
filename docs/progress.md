@@ -68,5 +68,4 @@ spec:
             for i in `seq 1 10`; do sleep 10; echo "$(($i*10))"'/100' > $ARGO_PROGRESS_FILE; done
 ```
 
-Please make sure you have granted `patch` privilege on `workflowtaskresults` resources for the executor
-to be able to update progress on the workflow. See https://argoproj.github.io/argo-workflows/workflow-rbac/
+You must set your [Workflow RBAC](workflow-rbac.md) properly for the executor to be able to update progress.
