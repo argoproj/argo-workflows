@@ -40,8 +40,8 @@ patch the pod annotations with `workflows.argoproj.io/progress: N/M`.
 The controller picks this up and writes the progress to the appropriate Status properties
 every 1m.
 
-These values cane be fine tuned with the `ARGO_PROGRESS_PATCH_TICK_DURATION` and `ARGO_PROGRESS_FILE_TICK_DURATION`
-environment variables.
+These values can be fine tuned with the `ARGO_PROGRESS_PATCH_TICK_DURATION` and `ARGO_PROGRESS_FILE_TICK_DURATION`
+[environment variables](environment-variables.md).
 
 Initially the progress of a workflows' pod is always `0/1`. If you want to influence this, make sure to set an initial
 progress annotation on the pod:
