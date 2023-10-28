@@ -48,7 +48,7 @@
         "@types/dagre": "^0.7.50",
         "@types/history": "^4.6.2",
         "@types/jest": "^26.0.15",
-        "@types/js-yaml": "^4.0.6",
+        "@types/js-yaml": "^4.0.8",
         "@types/prop-types": "^15.7.8",
         "@types/react": "^16.8.5",
         "@types/react-autocomplete": "^1.8.7",
