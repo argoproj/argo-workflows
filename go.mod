@@ -73,7 +73,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20220627174259-011e075b9cb8
 	k8s.io/kubectl v0.24.3
 	k8s.io/utils v0.0.0-20220713171938-56c0de1e6f5e
-	sigs.k8s.io/yaml v1.3.0
+	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
