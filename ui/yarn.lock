@@ -2017,10 +2017,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-datepicker@^4.19.0":
-  version "4.19.0"
-  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-4.19.0.tgz#712ae7d3f29bbbc8cf28287ffc80017f815c2531"
-  integrity "sha1-cSrn0/Kbu8jPKCh//IABf4FcJTE= sha512-461OQou2oHJIfqeTPY+8lBn/V4Z7usmJhcGDWO/R8wQYm+H5/Cqsrwto89J2RTbhWdiynmvh78Beh8txN5y0mA=="
+"@types/react-datepicker@^4.19.1":
+  version "4.19.1"
+  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-4.19.1.tgz#c7102c015eb0f63b0f1707e34799d289408654be"
+  integrity sha512-HV52yjxuRi49psAVuHTFXXr+RSrCbIFDn9ayei0YH8xVVAXCO+5GwHAGKeREAmNbneweN0ySGoByr90yJCAnrQ==
   dependencies:
     "@popperjs/core" "^2.9.2"
     "@types/react" "*"
@@ -6900,10 +6900,10 @@ react-copy-to-clipboard@5.1.0:
     copy-to-clipboard "^3.3.1"
     prop-types "^15.8.1"
 
-react-datepicker@^4.20.0:
-  version "4.20.0"
-  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-4.20.0.tgz#611943721ab0847bfacadc38c8760018e9859294"
-  integrity "sha1-YRlDchqwhHv6ytw4yHYAGOmFkpQ= sha512-I29yHN9SabUDSy7Xq3P8+E8E+D2vyeuYAYYWWjeMisGGtsatltV4CSHodyA7W9z0BuGycc/bhSClDbizx4gZHA=="
+react-datepicker@^4.21.0:
+  version "4.21.0"
+  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-4.21.0.tgz#09b2ba3e53654a8563b22c9f649835716c8456d3"
+  integrity sha512-z0DtuRrKMz9i7dcTusW29VacbM9pn08g1yw0cG+Y5GpodJDxSWv7zUMxl3IwKN9Ap/AMphiepvmT5P+iNCgEiA==
   dependencies:
     "@popperjs/core" "^2.11.8"
     classnames "^2.2.6"
