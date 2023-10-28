@@ -2741,6 +2741,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#options" class="md-nav__link">
     Options
   </a>
@@ -3861,6 +3868,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#options" class="md-nav__link">
     Options
   </a>
@@ -3909,6 +3923,34 @@
 <h2 id="argo-list">argo list<a class="headerlink" href="#argo-list" title="Permanent link">&para;</a></h2>
 <p>list workflows</p>
 <div class="highlight"><pre><span></span><code>argo list [flags]
+</code></pre></div>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code># List all workflows:
+  argo list
+
+# List all workflows from all namespaces:
+  argo list -A
+
+# List all running workflows:
+  argo list --running
+
+# List all completed workflows:
+  argo list --completed
+
+ # List workflows created within the last 10m:
+  argo list --since 10m
+
+# List workflows that finished more than 2h ago:
+  argo list --older 2h
+
+# List workflows with more information (such as parameters):
+  argo list -o wide
+
+# List workflows in YAML format:
+  argo list -o yaml
+
+# List workflows that have both labels:
+  argo list -l label1=value1,label2=value2
 </code></pre></div>
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>  -A, --all-namespaces          Show workflows from all namespaces
