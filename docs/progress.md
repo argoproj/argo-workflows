@@ -36,7 +36,7 @@ Reporting progress works as follows:
 * format of the progress must be `N/M`
 
 The executor will read this file every 3s and if there was an update,
-patch the pod annotations with `workflows.argoproj.io/progress: N/M`.
+patch the matching `WorkflowTaskResults` resource with the value `N/M`.
 The controller picks this up and writes the progress to the appropriate Status properties
 every 1m.
 
