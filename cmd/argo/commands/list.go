@@ -67,7 +67,7 @@ func NewListCommand() *cobra.Command {
 		Example: `# List all workflows:
   argo list
 
-# Show workflows from all namespaces:
+# List all workflows from all namespaces:
   argo list -A
 
 # List all running workflows:
@@ -75,6 +75,9 @@ func NewListCommand() *cobra.Command {
 
 # List all completed workflows:
   argo list --completed
+
+ # List workflows created within the last 10m:
+  argo list --since 10m
 
 # List workflows that finished more than 2h ago:
   argo list --older 2h
@@ -87,9 +90,6 @@ func NewListCommand() *cobra.Command {
 
 # List workflows that have both labels:
   argo list -l label1=value1,label2=value2
-
-# List workflows created within the last 10m:
-  argo list --since 10m
 `,
 
 		Run: func(cmd *cobra.Command, args []string) {
