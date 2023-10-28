@@ -6,6 +6,38 @@ list workflows
 argo list [flags]
 ```
 
+### Examples
+
+```
+# List all workflows:
+  argo list
+
+# List all workflows from all namespaces:
+  argo list -A
+
+# List all running workflows:
+  argo list --running
+
+# List all completed workflows:
+  argo list --completed
+
+ # List workflows created within the last 10m:
+  argo list --since 10m
+
+# List workflows that finished more than 2h ago:
+  argo list --older 2h
+
+# List workflows with more information (such as parameters):
+  argo list -o wide
+
+# List workflows in YAML format:
+  argo list -o yaml
+
+# List workflows that have both labels:
+  argo list -l label1=value1,label2=value2
+
+```
+
 ### Options
 
 ```
