@@ -34,6 +34,7 @@ argo cluster-template create FILE1 --strict=false
 # Create a Cluster Workflow Template and print it as JSON:
 argo cluster-template create FILE1 --output json
 `,
+
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
