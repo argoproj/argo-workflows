@@ -29,7 +29,7 @@ func NewCreateCommand() *cobra.Command {
 argo cluster-template create FILE1
 	
 # Create a Cluster Workflow Template with relaxed validation:
-argo cluster-template create FILE1 --strict=false
+  argo cluster-template create FILE1 --strict false
 	  
 # Create a Cluster Workflow Template and print it as JSON:
 argo cluster-template create FILE1 --output json
