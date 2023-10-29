@@ -34,7 +34,7 @@ func NewCreateCommand() *cobra.Command {
 		# Create a Cluster Workflow Template with Relaxed Validation (default true):
 		argo cluster-template create FILE1.yaml --strict=false
 
-		# Create a Cluster Workflow Template and Save Output to a File (One of: name|json|yaml|wide):
+		# Create a Cluster Workflow Template and save the output to a JSON file:
 		argo cluster-template create FILE1.yaml -o my-output.json
 		`,
 
