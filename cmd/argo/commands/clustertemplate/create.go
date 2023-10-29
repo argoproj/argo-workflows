@@ -36,8 +36,8 @@ func NewCreateCommand() *cobra.Command {
 
 		# Create a Cluster Workflow Template and Save Output to a File (One of: name|json|yaml|wide):
 		argo cluster-template create FILE1.yaml -o my-output.json
-
 		`,
+
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
