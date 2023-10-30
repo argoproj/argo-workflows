@@ -6,6 +6,20 @@ list cluster workflow templates
 argo cluster-template list [flags]
 ```
 
+### Examples
+
+```
+# List Cluster Workflow Templates:
+  argo cluster-template list
+	
+# List Cluster Workflow Templates in "wide" output format:
+  argo cluster-template list --output wide
+  
+# List Cluster Workflow Templates in "name" output format:
+  argo cluster-template list -o name
+
+```
+
 ### Options
 
 ```
