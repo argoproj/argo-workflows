@@ -25,7 +25,7 @@ func NewCreateCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a cluster workflow template",
-        Example: `# Create a Cluster Workflow Template:
+		Example: `# Create a Cluster Workflow Template:
   argo cluster-template create FILE1
 	
 # Create a Cluster Workflow Template and print it as YAML:
