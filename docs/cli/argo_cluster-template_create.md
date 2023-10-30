@@ -17,6 +17,7 @@ argo cluster-template create FILE1 FILE2... [flags]
   
 # Create a Cluster Workflow Template with relaxed validation:
   argo cluster-template create FILE1 --strict false
+
 ```
 
 ### Options
