@@ -831,15 +831,15 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 }
 
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
-func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
+func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, []string, error) {
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	case wfv1.WorkflowSucceeded:
 		if !(restartSuccessful && len(nodeFieldSelector) > 0) {
-			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
+			return nil, nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
 		}
 	default:
-		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
+		return nil, nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
 	}
 
 	newWF := wf.DeepCopy()
@@ -870,7 +870,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		err := overrideParameters(newWF, parameters)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
 
@@ -878,13 +878,14 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	// Get all children of nodes that match filter
 	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	deletedNodes := make(map[string]bool)
 	deletedPods := make(map[string]bool)
 	var podsToDelete []string
+	var podsToReset []string
 	var resetParentGroupNodes []string
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
@@ -906,7 +907,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							childNode, err := wf.Status.Nodes.Get(child)
 							if err != nil {
 								log.Fatalf("was unable to obtain node for %s due to %s", child, err)
-								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", child, err)
+								return nil, nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", child, err)
 							}
 							if _, present := nodeIDsToReset[child]; present {
 								log.Debugf("Group node %s needs to reset since its child %s is in the force reset path", node.Name, childNode.Name)
@@ -936,7 +937,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							descendantNode, err := wf.Status.Nodes.Get(descendantNodeID)
 							if err != nil {
 								log.Fatalf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
-								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+								return nil, nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
 							}
 							if descendantNode.Type == wfv1.NodeTypePod {
 								newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
@@ -952,6 +953,12 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 			} else {
 				if !containsNode(resetParentGroupNodes, node.ID) {
+					if node.Type == wfv1.NodeTypePod {
+						templateName := GetTemplateFromNode(node)
+						version := GetWorkflowPodNameVersion(wf)
+						podName := GeneratePodName(wf.Name, node.Name, templateName, node.ID, version)
+						podsToReset = append(podsToReset, podName)
+					}
 					log.Debugf("Node %s remains as is", node.Name)
 					newWF.Status.Nodes.Set(node.ID, node)
 				}
@@ -971,7 +978,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
-			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
+			return nil, nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 
 		if node.Name == wf.ObjectMeta.Name {
@@ -1015,7 +1022,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	return newWF, podsToDelete, nil
+	return newWF, podsToDelete, podsToReset, nil
 }
 
 func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {

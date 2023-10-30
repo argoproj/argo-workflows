@@ -389,7 +389,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
+	wf, podsToDelete, podsToReset, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -397,6 +397,20 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	for _, podName := range podsToDelete {
 		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
 		err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+	}
+
+	for _, podName := range podsToReset {
+		log.WithFields(log.Fields{"podReset": podName}).Info("Resetting pod")
+		_, err := kubeClient.CoreV1().Pods(wf.Namespace).Patch(
+			ctx,
+			podName,
+			types.MergePatchType,
+			[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "false"}}}`),
+			metav1.PatchOptions{},
+		)
 		if err != nil && !apierr.IsNotFound(err) {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}

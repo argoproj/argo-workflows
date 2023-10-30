@@ -1099,7 +1099,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		wfNodesLock.Lock()
 		defer wfNodesLock.Unlock()
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
-		if err == nil {
+		// Pods of fulfilled nodes would be relabeled completed=false when workflow manual retry.
+		if err == nil && !node.Phase.Fulfilled() {
 			if newState := woc.assessNodeStatus(pod, node); newState != nil {
 				woc.addOutputsToGlobalScope(newState.Outputs)
 				if newState.MemoizationStatus != nil {
