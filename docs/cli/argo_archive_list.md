@@ -19,7 +19,7 @@ argo archive list [flags]
   argo archive list --chunk-size <chunk_size>
 
 # List Archived Workflows with a label selector:
-  argo archive list -l "key1=value1,key2=value2"
+  argo archive list -l <label1>=<value1>,<label2>=<value2>...
 
 ```
 
