@@ -25,6 +25,18 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflows in the archive",
+		Example: `# List Archived Workflows:
+  argo archive list
+	
+# List Archived Workflows in YAML format:
+  argo archive list --output yaml
+  
+# List Archived Workflows with a specific chunk size:
+  argo archive list --chunk-size <chunk_size>
+  
+# List Archived Workflows with a label selector:
+  argo archive list -l "key1=value1,key2=value2"
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
