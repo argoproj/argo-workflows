@@ -612,20 +612,6 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 	return logArtifacts
 }
 
-func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) {
-	err := we.reportOutputs(ctx, logArtifacts)
-	if err != nil {
-		we.AddError(err)
-	}
-}
-
-func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
-	err := we.finalizeOutput(ctx)
-	if err != nil {
-		we.AddError(err)
-	}
-}
-
 // saveContainerLogs saves a single container's log into a file
 func (we *WorkflowExecutor) saveContainerLogs(ctx context.Context, tempLogsDir, containerName string) (*wfv1.Artifact, error) {
 	fileName := containerName + ".log"
@@ -791,8 +777,9 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-func (we *WorkflowExecutor) finalizeOutput(ctx context.Context) error {
-	return retryutil.OnError(wait.Backoff{
+// FinalizeOutput adds a label or annotation to denote that outputs have completed reporting.
+func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
+	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
@@ -804,14 +791,18 @@ func (we *WorkflowExecutor) finalizeOutput(ctx context.Context) error {
 		})
 		if apierr.IsForbidden(err) {
 			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
-			return we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
+			// This annotation is only added as a backup
+			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
 		}
 		return err
 	})
+	if err != nil {
+		we.AddError(err)
+	}
 }
 
-// reportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
-func (we *WorkflowExecutor) reportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
+// ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
+func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
 	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
 	// Task result label to indicate that we are done reporting outputs.

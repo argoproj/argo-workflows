@@ -268,7 +268,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.addArtifactGCFinalizer()
 
-	// Reconciliation of Outputs (Artifacts). See reportOutputs() of executor.go.
+	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
 	woc.taskResultReconciliation()
 
 	// Do artifact GC if all task results are completed.
@@ -800,7 +800,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 }
 
 func (woc *wfOperationCtx) checkTaskResultsCompleted() bool {
-	taskResultsCompleted := woc.wf.Status.ArtifactGCStatus.GetTaskResultsCompleted()
+	taskResultsCompleted := woc.wf.Status.GetTaskResultsCompleted()
 	if len(taskResultsCompleted) == 0 {
 		return false
 	}
@@ -1368,11 +1368,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.PodIP = pod.Status.PodIP
 	}
 
-	woc.wf.Status.InitializeTaskResultIncomplete(pod.GetName())
-
 	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
+		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 		if x == "true" {
-			woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 			woc.wf.Status.MarkTaskResultComplete(pod.GetName())
 		}
 	}

@@ -10744,9 +10744,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     strategies_processed={
                         "key": True,
                     },
-                    task_results_completed={
-                        "key": True,
-                    },
                 ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus(
                     artifact_repository=IoArgoprojWorkflowV1alpha1ArtifactRepository(
@@ -27350,6 +27347,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                 ),
+                task_results_completed={
+                    "key": True,
+                },
             ),
         ),
     ) # IoArgoprojWorkflowV1alpha1WorkflowCreateRequest | 
@@ -38298,9 +38298,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     strategies_processed={
                         "key": True,
                     },
-                    task_results_completed={
-                        "key": True,
-                    },
                 ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus(
                     artifact_repository=IoArgoprojWorkflowV1alpha1ArtifactRepository(
@@ -54904,6 +54901,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                 ),
+                task_results_completed={
+                    "key": True,
+                },
             ),
         ),
     ) # IoArgoprojWorkflowV1alpha1WorkflowLintRequest | 

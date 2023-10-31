@@ -84,7 +84,6 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
             'not_specified': (bool,),  # noqa: E501
             'pods_recouped': ({str: (bool,)},),  # noqa: E501
             'strategies_processed': ({str: (bool,)},),  # noqa: E501
-            'task_results_completed': ({str: (bool,)},),  # noqa: E501
         }
 
     @cached_property
@@ -96,7 +95,6 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
         'not_specified': 'notSpecified',  # noqa: E501
         'pods_recouped': 'podsRecouped',  # noqa: E501
         'strategies_processed': 'strategiesProcessed',  # noqa: E501
-        'task_results_completed': 'taskResultsCompleted',  # noqa: E501
     }
 
     read_only_vars = {
@@ -143,7 +141,6 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
             not_specified (bool): if this is true, we already checked to see if we need to do it and we don't. [optional]  # noqa: E501
             pods_recouped ({str: (bool,)}): have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once. [optional]  # noqa: E501
             strategies_processed ({str: (bool,)}): have Pods been started to perform this strategy? (enables us not to re-process what we've already done). [optional]  # noqa: E501
-            task_results_completed ({str: (bool,)}): Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,7 +225,6 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
             not_specified (bool): if this is true, we already checked to see if we need to do it and we don't. [optional]  # noqa: E501
             pods_recouped ({str: (bool,)}): have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once. [optional]  # noqa: E501
             strategies_processed ({str: (bool,)}): have Pods been started to perform this strategy? (enables us not to re-process what we've already done). [optional]  # noqa: E501
-            task_results_completed ({str: (bool,)}): Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
