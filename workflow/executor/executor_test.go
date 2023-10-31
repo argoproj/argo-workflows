@@ -580,8 +580,9 @@ func TestReportOutputs(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		we.ReportOutputs(ctx, artifacts)
+		err := we.ReportOutputs(ctx, artifacts)
 
+		assert.Equal(t, err, nil)
 		assert.Empty(t, we.errors)
 	})
 
