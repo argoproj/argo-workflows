@@ -87,6 +87,7 @@
         "yarn-deduplicate": "^6.0.2"
     },
     "resolutions": {
-        "semver": "^7.5.2"
+        "semver": "^7.5.2",
+        "axios": "1.6.0"
     }
 }
