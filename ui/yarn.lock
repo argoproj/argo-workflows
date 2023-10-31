@@ -2610,7 +2610,7 @@ autolinker@^3.11.0:
   dependencies:
     tslib "^2.3.0"
 
-axios@1.6.0, axios@^1.4.0:
+axios@^1.4.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.0.tgz#f1e5292f26b2fd5c2e66876adc5b06cdbd7d2102"
   integrity sha512-EZ1DYihju9pwVB+jg67ogm+Tmqc6JmhamRN6I4Zt8DfZu5lbcQGw3ozH9lFejSJgs/ibaef3A9PMXPLeefFGJg==
