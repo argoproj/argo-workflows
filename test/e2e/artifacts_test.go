@@ -146,7 +146,7 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 	when = then.When()
 
-	// Remove the finalizers so the workflow gets deleted incase the test failed.
+	// Remove the finalizers so the workflow gets deleted in case the test failed.
 	when.RemoveFinalizers(false)
 }
 

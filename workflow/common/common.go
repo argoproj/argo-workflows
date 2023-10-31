@@ -52,7 +52,7 @@ const (
 	AnnotationKeyProgress = workflow.WorkflowFullName + "/progress"
 
 	// AnnotationKeyReportOutputsCompleted is an annotation on a workflow pod indicating outputs have completed.
-	// Only used as a backup incase LabelKeyReportOutputsCompleted can't be added to WorkflowTaskResult.
+	// Only used as a backup in case LabelKeyReportOutputsCompleted can't be added to WorkflowTaskResult.
 	AnnotationKeyReportOutputsCompleted = workflow.WorkflowFullName + "/report-outputs-completed"
 
 	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
