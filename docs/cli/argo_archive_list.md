@@ -20,7 +20,6 @@ argo archive list [flags]
 
 # List Archived Workflows with the specified label (used to filter archived workflows):
   argo archive list -l key1=value1,key2=value2
-
 ```
 
 ### Options
