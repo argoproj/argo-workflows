@@ -9,17 +9,17 @@ argo archive list [flags]
 ### Examples
 
 ```
-# List Archived Workflows:
+# List all Archived Workflows:
   argo archive list
-	
+
 # List Archived Workflows in YAML format:
   argo archive list --output yaml
-  
+
 # List Archived Workflows with a specific chunk size:
   argo archive list --chunk-size <chunk_size>
 
-# List Archived Workflows with a label selector:
-  argo archive list -l <label_selector>
+# List Archived Workflows with the specified label (used to filter archived workflows):
+  argo archive list -l key1=value1,key2=value2
 
 ```
 
