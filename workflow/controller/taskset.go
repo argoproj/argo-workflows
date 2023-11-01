@@ -138,7 +138,7 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			if err != nil {
 				woc.log.Warnf("[SPECIAL][DEBUG] returning but assumed validity before")
 				woc.log.Errorf("[DEBUG] Was unable to obtain node for %s", nodeID)
-				return err
+				continue
 			}
 
 			node.Outputs = taskResult.Outputs.DeepCopy()
