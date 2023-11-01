@@ -25,10 +25,10 @@ func NewListCommand() *cobra.Command {
 		Example: `# List Cluster Workflow Templates:
   argo cluster-template list
 	
-# List Cluster Workflow Templates in "wide" output format:
+# List Cluster Workflow Templates with additional details such as labels, annotations, and status information for each template:
   argo cluster-template list --output wide
   
-# List Cluster Workflow Templates in "name" output format:
+# Provide a concise list of Cluster Workflow Templates, showing only their names:
   argo cluster-template list -o name
 `,
 		Run: func(cmd *cobra.Command, args []string) {
