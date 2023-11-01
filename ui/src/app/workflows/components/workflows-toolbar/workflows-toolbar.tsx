@@ -11,41 +11,38 @@ require('./workflows-toolbar.scss');
 
 interface WorkflowsToolbarProps {
     selectedWorkflows: Map<string, Workflow>;
-    actionsIsDisabled: Actions.OperationDisabled;
+    disabledActions: Actions.OperationDisabled;
     clearSelection: () => void;
+    loadWorkflows: () => void;
 }
 
 interface WorkflowsOperation extends WorkflowOperation {
     isDisabled: boolean;
-    workflowsAction: () => Promise<any>;
+    action: () => Promise<any>;
 }
 
 export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
     const {popup, notifications} = useContext(Context);
-    const numberSelected: number = props.selectedWorkflows.size;
+    const numberSelected = props.selectedWorkflows.size;
 
-    const groupAction = useMemo<WorkflowsOperation[]>(() => {
+    const operations = useMemo<WorkflowsOperation[]>(() => {
         const actions: any = Actions.WorkflowOperationsMap;
-        const disabled = props.actionsIsDisabled;
 
         return Object.keys(actions).map((actionName: WorkflowOperationName) => {
             const action = actions[actionName];
             return {
                 title: action.title,
                 iconClassName: action.iconClassName,
-                isDisabled: disabled[actionName],
-                action,
-                workflowsAction: async () => {
-                    // check for action
+                isDisabled: props.disabledActions[actionName],
+                action: async () => {
                     const confirmed = await popup.confirm('Confirm', `Are you sure you want to ${action.title.toLowerCase()} all selected workflows?`);
                     if (!confirmed) {
                         return;
                     }
 
-                    // check for delete from archived workflows
                     let deleteArchived = false;
                     if (action.title === 'DELETE') {
-                        // check for delete workflows from archived workflows
+                        // check if there are archived workflows to delete
                         for (const entry of props.selectedWorkflows) {
                             if (isArchivedWorkflow(entry[1])) {
                                 deleteArchived = await popup.confirm('Confirm', 'Do you also want to delete them from the Archived Workflows database?');
@@ -54,20 +51,21 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
                         }
                     }
 
-                    performActionOnSelectedWorkflows(action.title, action.action, deleteArchived);
+                    await performActionOnSelectedWorkflows(action.title, action.action, deleteArchived);
 
                     props.clearSelection();
                     notifications.show({
                         content: `Performed '${action.title}' on selected workflows.`,
                         type: NotificationType.Success
                     });
+                    props.loadWorkflows();
                 },
                 disabled: () => false
             } as WorkflowsOperation;
         });
     }, [props.selectedWorkflows]);
 
-    function performActionOnSelectedWorkflows(title: string, action: WorkflowOperationAction, deleteArchived: boolean): Promise<any> {
+    async function performActionOnSelectedWorkflows(title: string, action: WorkflowOperationAction, deleteArchived: boolean): Promise<any> {
         const promises: Promise<any>[] = [];
         props.selectedWorkflows.forEach((wf: Workflow) => {
             if (title === 'DELETE') {
@@ -113,17 +111,15 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
                 &nbsp;workflow{numberSelected === 1 ? '' : 's'} selected
             </div>
             <div className='workflows-toolbar__actions'>
-                {groupAction.map(action => {
+                {operations.map(operation => {
                     return (
                         <button
-                            key={action.title}
-                            onClick={() => {
-                                action.workflowsAction().catch();
-                            }}
-                            className={`workflows-toolbar__actions--${action.title} workflows-toolbar__actions--action`}
-                            disabled={numberSelected === 0 || action.isDisabled}>
-                            <i className={action.iconClassName} />
-                            &nbsp;{action.title}
+                            key={operation.title}
+                            onClick={operation.action}
+                            className={`workflows-toolbar__actions--${operation.title} workflows-toolbar__actions--action`}
+                            disabled={numberSelected === 0 || operation.isDisabled}>
+                            <i className={operation.iconClassName} />
+                            &nbsp;{operation.title}
                         </button>
                     );
                 })}
