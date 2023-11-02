@@ -234,6 +234,25 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 	woc.artifactRepository = repo
 
+	woc.addArtifactGCFinalizer()
+
+	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
+	woc.taskResultReconciliation()
+
+	// Do artifact GC if all task results are completed.
+	if woc.checkTaskResultsCompleted() {
+		if err := woc.garbageCollectArtifacts(ctx); err != nil {
+			woc.log.WithError(err).Error("failed to GC artifacts")
+			return
+		}
+	} else {
+		woc.log.Debug("Skipping artifact GC")
+	}
+
+	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
+		return
+	}
+
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
 		acquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, "", woc.execWf.Spec.Synchronization)
@@ -264,25 +283,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.execWf.Spec.Metrics != nil {
 		localScope, realTimeScope := woc.prepareDefaultMetricScope()
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
-	}
-
-	woc.addArtifactGCFinalizer()
-
-	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
-	woc.taskResultReconciliation()
-
-	// Do artifact GC if all task results are completed.
-	if woc.checkTaskResultsCompleted() {
-		if err := woc.garbageCollectArtifacts(ctx); err != nil {
-			woc.log.WithError(err).Error("failed to GC artifacts")
-			return
-		}
-	} else {
-		woc.log.Debug("Skipping artifact GC")
-	}
-
-	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
-		return
 	}
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
