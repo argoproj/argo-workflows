@@ -34,8 +34,8 @@ func NewListCommand() *cobra.Command {
 # List Archived Workflows with a specific chunk size:
   argo archive list --chunk-size <chunk_size>
   
-# List Archived Workflows with the specified labels (used to filter archived workflows):
-  argo archive list -l key1=value1,key2=value2
+# List Archived Workflows that have both labels:
+  argo archive list -l label1=value1,label2=value2
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
