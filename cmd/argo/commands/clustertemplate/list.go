@@ -28,7 +28,7 @@ func NewListCommand() *cobra.Command {
 # List Cluster Workflow Templates with additional details such as labels, annotations, and status:
   argo cluster-template list --output wide
   
-# Provide a concise list of Cluster Workflow Templates, showing only their names:
+# List Cluster Workflow Templates by name only:
   argo cluster-template list -o name
 `,
 		Run: func(cmd *cobra.Command, args []string) {
