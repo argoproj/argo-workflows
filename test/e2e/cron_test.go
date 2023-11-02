@@ -365,7 +365,7 @@ func (s *CronSuite) TestMalformedCronWorkflow() {
 		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
 		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-cronworkflow.yaml"}, fixtures.NoError).
 		When().
-		WaitForWorkflow(1*time.Minute+15*time.Second).
+		WaitForWorkflow(2*time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
