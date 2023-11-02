@@ -1370,8 +1370,10 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 
 	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
 		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+		resultName := pod.GetName()
+		woc.wf.Status.InitializeTaskResultIncomplete(resultName)
 		if x == "true" {
-			woc.wf.Status.MarkTaskResultComplete(pod.GetName())
+			woc.wf.Status.MarkTaskResultComplete(resultName)
 		}
 	}
 

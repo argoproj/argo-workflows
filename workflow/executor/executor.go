@@ -791,7 +791,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 		})
 		if apierr.IsForbidden(err) {
 			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
-			// This annotation is only added as a backup
+			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
 		}
 		return err
@@ -805,7 +805,6 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
 	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
-	// Task result label to indicate that we are done reporting outputs.
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
@@ -831,6 +830,8 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 			if result.Progress.IsValid() { // this may result in occasionally two patches
 				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
 			}
+			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
+			we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
 		}
 
 		return err
