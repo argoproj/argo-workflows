@@ -31,8 +31,8 @@ func NewListCommand() *cobra.Command {
 # List Archived Workflows in YAML format:
   argo archive list --output yaml
   
-# List Archived Workflows with a specific chunk size:
-  argo archive list --chunk-size <chunk_size>
+# List Archived Workflows in chunks of 20:
+  argo archive list --chunk-size 20
   
 # List Archived Workflows that have both labels:
   argo archive list -l label1=value1,label2=value2
