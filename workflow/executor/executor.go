@@ -831,7 +831,7 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
 			}
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
-			we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
+			return we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
 		}
 
 		return err
