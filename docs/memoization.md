@@ -57,4 +57,4 @@ spec:
     * Reduce the size of the output parameters for the nodes that are being memoized.
     * Split your cache into different memoization keys and cache names so that each cache entry is small.
 1. My step isn't getting memoized, why not?
-   Ensure that you have specified at least one output on the step.
+   If you are running workflows <3.5 ensure that you have specified at least one output on the step.
