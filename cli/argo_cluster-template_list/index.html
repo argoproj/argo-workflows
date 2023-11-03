@@ -2517,6 +2517,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#options" class="md-nav__link">
     Options
   </a>
@@ -3861,6 +3868,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#options" class="md-nav__link">
     Options
   </a>
@@ -3909,6 +3923,16 @@
 <h2 id="argo-cluster-template-list">argo cluster-template list<a class="headerlink" href="#argo-cluster-template-list" title="Permanent link">&para;</a></h2>
 <p>list cluster workflow templates</p>
 <div class="highlight"><pre><span></span><code>argo cluster-template list [flags]
+</code></pre></div>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code># List Cluster Workflow Templates:
+  argo cluster-template list
+
+# List Cluster Workflow Templates with additional details such as labels, annotations, and status:
+  argo cluster-template list --output wide
+
+# List Cluster Workflow Templates by name only:
+  argo cluster-template list -o name
 </code></pre></div>
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>  -h, --help            help for list
