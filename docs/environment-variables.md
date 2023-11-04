@@ -1,10 +1,10 @@
 # Environment Variables
 
-This document outlines the set of environment variables that can be used to customize the behavior at different
-levels.
+This document outlines environment variables that can be used to customize behavior.
 
-⚠️ Environment variables are typically added to test out experimental features and should not be used by
-most users. Environment variables may be removed at any time.
+!!! Warning
+    Environment variables are typically added to test out experimental features and should not be used by most users.
+    Environment variables may be removed at any time.
 
 ## Controller
 
