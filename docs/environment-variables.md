@@ -54,8 +54,8 @@ most users. Environment variables may be removed at any time.
 | `WORKFLOW_GC_PERIOD`                     | `time.Duration`     | `5m`                                                                                        | The periodicity for GC of workflows.                                                                                                                                                                                                                                     |
 | `SEMAPHORE_NOTIFY_DELAY`                 | `time.Duration`     | `1s`                                                                                        | Tuning Delay when notifying semaphore waiters about availability in the semaphore                                                                                                                                                                                        |
 
-CLI parameters of the `argo-server` and `workflow-controller` can be specified as environment variables with the `ARGO_`
-prefix. For example:
+CLI parameters of the Server and Controller can be specified as environment variables with the `ARGO_` prefix.
+For example:
 
 ```bash
 workflow-controller --managed-namespace=argo
@@ -67,7 +67,7 @@ Can be expressed as:
 ARGO_MANAGED_NAMESPACE=argo workflow-controller
 ```
 
-You can set environment variable for the argo-server deployment, for example:
+You can set environment variables for the Server Deployment's container spec like the following:
 
 ```yaml
 apiVersion: apps/v1
@@ -92,12 +92,10 @@ spec:
             - name: GRPC_MESSAGE_SIZE
               value: "209715200"
           ports:
-          ..
-          ...
-          ....
+          # ...
 ```
 
-You can set the environment variables for controller in controller's container spec like the following:
+You can set environment variables for the Controller Deployment's container spec like the following:
 
 ```yaml
 apiVersion: apps/v1
@@ -131,8 +129,7 @@ spec:
 | `RESOURCE_STATE_CHECK_INTERVAL`        | `time.Duration` | `5s`    | The time interval between resource status checks against the specified success and failure conditions. |
 | `WAIT_CONTAINER_STATUS_CHECK_INTERVAL` | `time.Duration` | `5s`    | The time interval for wait container to check whether the containers have completed.                   |
 
-You can set the environment variables for executor by customizing executor container's environment variables in your
-controller's config-map like the following:
+You can set environment variables for the Executor in your [`workflow-controller-configmap`](workflow-controller-configmap.md) like the following:
 
 ```yaml
 apiVersion: v1
