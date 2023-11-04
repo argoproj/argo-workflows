@@ -1,9 +1,14 @@
 package commands
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/archive"
@@ -132,6 +137,21 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
+
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("ARGO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	if err := viper.BindPFlags(command.PersistentFlags()); err != nil {
+		log.Fatal(err)
+	}
+	command.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+		if !f.Changed && viper.IsSet(f.Name) {
+			val := viper.Get(f.Name)
+			if err := command.PersistentFlags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
+				log.Fatal(err)
+			}
+		}
+	})
 
 	return command
 }
