@@ -1849,10 +1849,10 @@
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@types/cookiejar/-/cookiejar-2.1.0.tgz#4b7daf2c51696cfc70b942c11690528229d1a1ce"
 
-"@types/dagre@^0.7.50":
-  version "0.7.50"
-  resolved "https://registry.yarnpkg.com/@types/dagre/-/dagre-0.7.50.tgz#0c49746a0b3c63b75c4d1f5031fad522cf852a62"
-  integrity "sha1-DEl0ags8Y7dcTR9QMfrVIs+FKmI= sha512-3HxPUil6GwbcO+q3WxZhM6XMSXYaiXjjzKUDYsGk2tqP5Ko2WpN71I8g1kXLgX5nUkKg00+LlCTuaverWVADGA=="
+"@types/dagre@^0.7.51":
+  version "0.7.51"
+  resolved "https://registry.yarnpkg.com/@types/dagre/-/dagre-0.7.51.tgz#6ec06532d3a21ae97584979f2f129f21b693b659"
+  integrity sha512-OJtLXov4mK9wZ4/TkBqUM5OBCpIQvv+sT9FZFnM1Ais5yqHEMnDObGGPYYrQhkLVIKik/bD8o9WWn7YQfPkDlQ==
 
 "@types/eslint-scope@^3.7.3":
   version "3.7.4"
