@@ -3,10 +3,10 @@ name: Docs
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -44,8 +44,8 @@ jobs:
           name: docs
           path: site
           if-no-files-found: error
-      - name: Publish to GH Pages (when on master)
-        if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/master'
+      - name: Publish to GH Pages (when on main)
+        if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
