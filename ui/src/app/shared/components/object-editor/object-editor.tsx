@@ -53,7 +53,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                 const res = await fetch(uri);
                 const swagger = await res.json();
                 // lazy load this, otherwise all of monaco-editor gets imported into the main bundle
-                const languages = (await import('monaco-editor/esm/vs/editor/editor.api')).languages;
+                const languages = (await import(/* webpackChunkName: "monaco-editor" */ 'monaco-editor/esm/vs/editor/editor.api')).languages;
                 // adds auto-completion to JSON only
                 languages.json.jsonDefaults.setDiagnosticsOptions({
                     validate: true,
