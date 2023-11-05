@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"regexp"
 
 	"github.com/go-git/go-git/v5"
@@ -105,28 +106,33 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	}
 
 	r, err := git.PlainClone(path, false, cloneOptions)
-	switch err {
-	case transport.ErrEmptyRemoteRepository:
-		log.Info("Cloned an empty repository")
-		r, err := git.PlainInit(path, false)
-		if err != nil {
-			return fmt.Errorf("failed to plain init: %w", err)
+	if err != nil {
+		switch {
+		case err == transport.ErrEmptyRemoteRepository:
+			log.Info("Cloned an empty repository")
+			r, err := git.PlainInit(path, false)
+			if err != nil {
+				return fmt.Errorf("failed to plain init: %w", err)
+			}
+			if _, err := r.CreateRemote(&config.RemoteConfig{Name: git.DefaultRemoteName, URLs: []string{a.Repo}}); err != nil {
+				return fmt.Errorf("failed to create remote %q: %w", a.Repo, err)
+			}
+			branchName := a.Revision
+			if branchName == "" {
+				branchName = "master"
+			}
+			if err = r.CreateBranch(&config.Branch{Name: branchName, Remote: git.DefaultRemoteName, Merge: plumbing.Master}); err != nil {
+				return fmt.Errorf("failed to create branch %q: %w", branchName, err)
+			}
+			return nil
+		case errors.Is(err, exec.ErrNotFound):
+			if endpoint, endperr := transport.NewEndpoint(a.Repo); endperr == nil && endpoint.Protocol == "file" {
+				return fmt.Errorf("failed to clone %q: repo intepreted as %s, but using file:// scheme requires a git executable, which is not installed by default in argo workflows executor images: %w", a.Repo, endpoint, err)
+			}
+			fallthrough
+		default:
+			return fmt.Errorf("failed to clone %q: %w", a.Repo, err)
 		}
-		if _, err := r.CreateRemote(&config.RemoteConfig{Name: git.DefaultRemoteName, URLs: []string{a.Repo}}); err != nil {
-			return fmt.Errorf("failed to create remote %q: %w", a.Repo, err)
-		}
-		branchName := a.Revision
-		if branchName == "" {
-			branchName = "master"
-		}
-		if err = r.CreateBranch(&config.Branch{Name: branchName, Remote: git.DefaultRemoteName, Merge: plumbing.Master}); err != nil {
-			return fmt.Errorf("failed to create branch %q: %w", branchName, err)
-		}
-		return nil
-	case nil:
-		// fallthrough ...
-	default:
-		return fmt.Errorf("failed to clone %q: %w", a.Repo, err)
 	}
 	if len(a.Fetch) > 0 {
 		refSpecs := make([]config.RefSpec, len(a.Fetch))
