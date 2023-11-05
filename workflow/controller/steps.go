@@ -170,21 +170,19 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	if err != nil {
 		return node, err
 	}
+
 	if outputs != nil {
-		node, err := woc.wf.GetNodeByName(nodeName)
-		if err != nil {
-			return nil, err
-		}
 		node.Outputs = outputs
 		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes.Set(node.ID, *node)
-		if node.MemoizationStatus != nil {
-			c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-			err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-			if err != nil {
-				woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-				node.Phase = wfv1.NodeError
-			}
+	}
+
+	if node.MemoizationStatus != nil {
+		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+		if err != nil {
+			woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+			node.Phase = wfv1.NodeError
 		}
 	}
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
