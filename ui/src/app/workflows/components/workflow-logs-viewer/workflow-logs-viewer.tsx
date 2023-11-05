@@ -2,7 +2,6 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 
 import {Autocomplete} from 'argo-ui';
-import moment from 'moment-timezone';
 import {Observable} from 'rxjs';
 import {map, publishReplay, refCount} from 'rxjs/operators';
 import * as models from '../../../../models';
@@ -21,8 +20,8 @@ import {FullHeightLogsViewer} from './full-height-logs-viewer';
 import {extractJsonValue, JsonLogsFieldSelector, SelectedJsonFields} from './json-logs-field-selector';
 
 const TZ_LOCALSTORAGE_KEY = 'DEFAULT_TZ';
-
 const DEFAULT_TZ = process.env.DEFAULT_TZ || 'UTC';
+const timezones = Intl.supportedValuesOf('timeZone');
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
@@ -57,15 +56,17 @@ function parseTime(formattedString: string): undefined | ParsedTime {
     return {quoted: table[1], fullstring: table[0]};
 }
 
-function parseAndTransform(formattedString: string, timezone: string) {
+function parseAndTransform(formattedString: string, timeZone: string) {
     const maybeTime = parseTime(formattedString);
     if (maybeTime === undefined) {
         return formattedString;
     }
 
     try {
-        const newTime = moment.tz(maybeTime.quoted, timezone).format('YYYY-MM-DDTHH:mm:ss z');
-        const newFormattedTime = `time=\"${newTime}\"`;
+        // hack to get a local ISO time: en-CA locale is very close to ISO (https://en.wikipedia.org/wiki/Date_and_time_notation_in_Canada)
+        const newTime = new Date(maybeTime.quoted).toLocaleString('en-CA', {timeZone, hour12: false}).replace(', ', 'T');
+        const shortTz = new Date().toLocaleTimeString('en-US', {timeZone, timeZoneName: 'short'}).split(' ')[2];
+        const newFormattedTime = `time=\"${newTime} ${shortTz}\"`;
         const newFormattedString = formattedString.replace(maybeTime.fullstring, newFormattedTime);
         return newFormattedString;
     } catch {
@@ -90,8 +91,6 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
     const [uiTimezone, setUITimezone] = useState<string>(DEFAULT_TZ);
     // timezone used for timezone formatting
     const [timezone, setTimezone] = useLocalStorage<string>(TZ_LOCALSTORAGE_KEY, DEFAULT_TZ);
-    // list of timezones the moment-timezone library supports
-    const [timezones, setTimezones] = useState<string[]>([]);
 
     // update the UI everytime the timezone changes
     useEffect(() => {
@@ -157,16 +156,6 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
         const x = setTimeout(() => setGrep(logFilter), 1000);
         return () => clearTimeout(x);
     }, [logFilter]);
-
-    useEffect(() => {
-        const tzs = moment.tz.names();
-        const tzsSet = new Set<string>();
-        tzs.forEach(item => {
-            tzsSet.add(item);
-        });
-        const flatTzs = [...tzsSet];
-        setTimezones(flatTzs);
-    }, []);
 
     const annotations = workflow.metadata.annotations || {};
     const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];

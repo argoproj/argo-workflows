@@ -26,7 +26,6 @@
         "history": "^4.10.1",
         "js-yaml": "^4.1.0",
         "moment": "^2.29.4",
-        "moment-timezone": "^0.5.43",
         "monaco-editor": "^0.44.0",
         "prop-types": "^15.8.1",
         "react": "^16.14.0",
