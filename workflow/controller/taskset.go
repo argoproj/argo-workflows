@@ -136,8 +136,7 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 		for nodeID, taskResult := range workflowTaskSet.Status.Nodes {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
-				woc.log.Warnf("[SPECIAL][DEBUG] returning but assumed validity before")
-				woc.log.Errorf("[DEBUG] Was unable to obtain node for %s", nodeID)
+				woc.log.Info("Continuing to retry")
 				continue
 			}
 
