@@ -22,6 +22,15 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cluster workflow templates",
+		Example: `# List Cluster Workflow Templates:
+  argo cluster-template list
+	
+# List Cluster Workflow Templates with additional details such as labels, annotations, and status:
+  argo cluster-template list --output wide
+  
+# List Cluster Workflow Templates by name only:
+  argo cluster-template list -o name
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
