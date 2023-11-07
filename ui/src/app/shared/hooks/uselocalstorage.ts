@@ -38,5 +38,5 @@ export function useCustomLocalStorage<T>(key: string, initial: T, onError: (err:
 }
 
 export function useLocalStorage<T>(key: string, initial: T): [T, React.Dispatch<T>] {
-    return useCustomLocalStorage(key, initial, _ => initial);
+    return useCustomLocalStorage(key, initial, () => initial);
 }

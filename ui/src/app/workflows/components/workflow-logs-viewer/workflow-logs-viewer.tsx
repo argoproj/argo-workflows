@@ -66,7 +66,7 @@ function parseAndTransform(formattedString: string, timeZone: string) {
         // hack to get a local ISO time: en-CA locale is very close to ISO (https://en.wikipedia.org/wiki/Date_and_time_notation_in_Canada)
         const newTime = new Date(maybeTime.quoted).toLocaleString('en-CA', {timeZone, hour12: false}).replace(', ', 'T');
         const shortTz = new Date().toLocaleTimeString('en-US', {timeZone, timeZoneName: 'short'}).split(' ')[2];
-        const newFormattedTime = `time=\"${newTime} ${shortTz}\"`;
+        const newFormattedTime = `time="${newTime} ${shortTz}"`;
         const newFormattedString = formattedString.replace(maybeTime.fullstring, newFormattedTime);
         return newFormattedString;
     } catch {

@@ -2,10 +2,10 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
+
 import * as models from '../../../../models';
 import {isArchivedWorkflow, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
-
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
@@ -27,7 +27,7 @@ import {WorkflowsRow} from '../workflows-row/workflows-row';
 import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflows-summary-container';
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
-require('./workflows-list.scss');
+import './workflows-list.scss';
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
@@ -242,7 +242,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             onClick={e => {
                                                 e.stopPropagation();
                                             }}
-                                            onChange={e => {
+                                            onChange={() => {
                                                 const newSelections = new Map<string, models.Workflow>();
                                                 // Not all workflows are selected, select them all
                                                 if (filteredWorkflows.length !== selectedWorkflows.size) {

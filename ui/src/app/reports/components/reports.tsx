@@ -92,7 +92,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
                         <ZeroState title='Workflow Report'>
                             <p>
                                 Use this page to find costly or time consuming workflows. You must label workflows you want to report on. If you use <b>workflow templates</b> or{' '}
-                                <b>cron workflows</b>, your workflows will be automatically labelled. You'll probably need to enable the{' '}
+                                <b>cron workflows</b>, your workflows will be automatically labelled. You&apos;ll probably need to enable the{' '}
                                 <a href='https://argoproj.github.io/argo-workflows/workflow-archive/'>workflow archive</a> to get long term data. Only the {limit} most recent
                                 workflows are shown.
                             </p>

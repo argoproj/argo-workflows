@@ -1,13 +1,14 @@
 import {NotificationType} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useMemo} from 'react';
+
 import {isArchivedWorkflow, isWorkflowInCluster, Workflow} from '../../../../models';
 import {Context} from '../../../shared/context';
 import {services} from '../../../shared/services';
 import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowOperation, WorkflowOperationAction, WorkflowOperationName} from '../../../shared/workflow-operations-map';
 
-require('./workflows-toolbar.scss');
+import './workflows-toolbar.scss';
 
 interface WorkflowsToolbarProps {
     selectedWorkflows: Map<string, Workflow>;

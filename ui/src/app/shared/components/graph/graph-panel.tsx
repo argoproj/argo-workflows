@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
+
 import {TextInput} from '../../../shared/components/text-input';
 import {ScopedLocalStorage} from '../../scoped-local-storage';
 import {FilterDropDown} from '../filter-drop-down';
@@ -9,7 +10,7 @@ import {formatLabel} from './label';
 import {layout} from './layout';
 import {Graph, Node} from './types';
 
-require('./graph-panel.scss');
+import './graph-panel.scss';
 
 type IconShape = 'rect' | 'circle';
 
@@ -150,7 +151,7 @@ export function GraphPanel(props: Props) {
                             {
                                 title: '',
                                 values: {'Check All': checkAll},
-                                onChange: (_, checked) => {
+                                onChange: () => {
                                     onSelectAll(nodeClassNames, nodeTags, nodeGenres, setNodeClassNames, setNodeTags, setNodeGenres);
                                 }
                             },
