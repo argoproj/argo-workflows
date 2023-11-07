@@ -69,7 +69,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
                 setError(newError);
             }
         })();
-    }, [namespace, labels]);
+    }, [namespace, labels.toString()]); // referential equality, so use values, not refs
 
     useCollectEvent('openedReports');
 
@@ -87,7 +87,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
                     <ReportFilters namespace={namespace} labels={labels} onChange={onChange} />
                 </div>
                 <div className='columns small-12 xlarge-10'>
-                    <ErrorNotice error={error} />;
+                    <ErrorNotice error={error} />
                     {!charts ? (
                         <ZeroState title='Workflow Report'>
                             <p>
@@ -131,3 +131,5 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
         </Page>
     );
 }
+
+export default Reports;

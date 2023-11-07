@@ -1,4 +1,4 @@
-import parser = require('cron-parser');
+import parser from 'cron-parser';
 
 export function getNextScheduledTime(schedule: string, tz: string): Date {
     let out: Date;

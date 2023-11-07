@@ -12,7 +12,7 @@ function identity<T>(value: T) {
     return () => value;
 }
 
-export const EventSourceLogsViewer = ({
+export function EventSourceLogsViewer({
     namespace,
     selectedEvent: selectedEvent,
     eventSource,
@@ -22,7 +22,7 @@ export const EventSourceLogsViewer = ({
     selectedEvent: string;
     eventSource: EventSource;
     onClick: (selectedNode: string) => void;
-}) => {
+}) {
     const [error, setError] = useState<Error>();
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
     const [logLoaded, setLogLoaded] = useState(false);
@@ -106,4 +106,4 @@ export const EventSourceLogsViewer = ({
             </div>
         </div>
     );
-};
+}
