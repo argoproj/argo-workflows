@@ -211,7 +211,7 @@ export function WorkflowDag(props: WorkflowDagProps) {
                 }
                 consideredChildren.add(item.nodeName);
 
-                const node = props.nodes[item.nodeName];
+                const node = getNode(item.nodeName);
                 if (!node) {
                     continue;
                 }
