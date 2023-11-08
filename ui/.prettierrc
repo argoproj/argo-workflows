@@ -2,10 +2,10 @@
   "arrowParens": "avoid",
   "bracketSpacing": false,
   "jsxSingleQuote": true,
+  "jsxBracketSameLine": true,
   "printWidth": 180,
+  "quoteProps": "consistent",
   "singleQuote": true,
   "tabWidth": 4,
-  "trailingComma": "none",
-  "jsxBracketSameLine": true,
-  "quoteProps": "consistent"
+  "trailingComma": "none"
 }
