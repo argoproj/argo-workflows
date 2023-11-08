@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState, useMemo} from 'react';
 
 import {ArtifactRepositoryRefStatus, NODE_PHASE, NodeStatus} from '../../../../models';
 import {nodeArtifacts} from '../../../shared/artifacts';
@@ -62,28 +62,18 @@ const classNames = {
 };
 
 export function WorkflowDag(props: WorkflowDagProps) {
-    let graph: Graph;
     const artifactRepository = props.artifactRepositoryRef?.artifactRepository || {};
     const tags: Record<string, boolean> = Object.values(props.nodes || {}).reduce((acc, node) => ({...acc, [getNodeLabelTemplateName(node)]: true}), {});
 
     const [expandNodes, setExpandNodes] = useState(new Set(''));
     const [showArtifacts, setShowArtifacts] = useState(localStorage.getItem('showArtifacts') !== 'false');
 
-    prepareGraph();
-
-    useEffect(() => {
-        prepareGraph();
-    }, [props.nodes, expandNodes, showArtifacts]);
-
-    function getNode(nodeId: string) {
-        return props.nodes[nodeId];
-    }
-
-    function prepareGraph() {
-        const {edges, nodes} = (graph = new Graph());
+    const graph = useMemo(() => {
+        const newGraph = new Graph();
+        const {edges, nodes} = newGraph;
 
         if (!props.nodes) {
-            return;
+            return newGraph;
         }
 
         const allNodes = props.nodes;
@@ -229,6 +219,12 @@ export function WorkflowDag(props: WorkflowDagProps) {
                 pushChildren(node.id, isExpanded, queue);
             }
         }
+
+        return newGraph;
+    }, [props.nodes, expandNodes, showArtifacts]);
+
+    function getNode(nodeId: string) {
+        return props.nodes[nodeId];
     }
 
     function expandNode(nodeId: string) {
