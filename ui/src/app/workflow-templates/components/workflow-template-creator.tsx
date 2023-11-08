@@ -20,10 +20,7 @@ export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: strin
                 <Button
                     icon='plus'
                     onClick={() => {
-                        services.workflowTemplate
-                            .create(template, Utils.getNamespaceWithDefault(template.metadata.namespace))
-                            .then(onCreate)
-                            .catch(setError);
+                        services.workflowTemplate.create(template, Utils.getNamespaceWithDefault(template.metadata.namespace)).then(onCreate).catch(setError);
                     }}>
                     Create
                 </Button>

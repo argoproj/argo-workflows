@@ -19,10 +19,7 @@ export function EventSourceCreator({onCreate, namespace}: {namespace: string; on
                 <Button
                     icon='plus'
                     onClick={() => {
-                        services.eventSource
-                            .create(eventSource, Utils.getNamespaceWithDefault(eventSource.metadata.namespace))
-                            .then(onCreate)
-                            .catch(setError);
+                        services.eventSource.create(eventSource, Utils.getNamespaceWithDefault(eventSource.metadata.namespace)).then(onCreate).catch(setError);
                     }}>
                     Create
                 </Button>

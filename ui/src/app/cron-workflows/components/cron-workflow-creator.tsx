@@ -20,10 +20,7 @@ export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; o
                 <Button
                     icon='plus'
                     onClick={() => {
-                        services.cronWorkflows
-                            .create(cronWorkflow, Utils.getNamespaceWithDefault(cronWorkflow.metadata.namespace))
-                            .then(onCreate)
-                            .catch(setError);
+                        services.cronWorkflows.create(cronWorkflow, Utils.getNamespaceWithDefault(cronWorkflow.metadata.namespace)).then(onCreate).catch(setError);
                     }}>
                     Create
                 </Button>

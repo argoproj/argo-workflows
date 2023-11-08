@@ -106,10 +106,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                         <Button
                             icon='plus'
                             onClick={() => {
-                                services.workflows
-                                    .create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace))
-                                    .then(onCreate)
-                                    .catch(setError);
+                                services.workflows.create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace)).then(onCreate).catch(setError);
                             }}>
                             Create
                         </Button>

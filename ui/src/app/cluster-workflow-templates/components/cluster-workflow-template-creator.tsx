@@ -19,10 +19,7 @@ export function ClusterWorkflowTemplateCreator({onCreate}: {onCreate: (workflow:
                 <Button
                     icon='plus'
                     onClick={() => {
-                        services.clusterWorkflowTemplate
-                            .create(template)
-                            .then(onCreate)
-                            .catch(setError);
+                        services.clusterWorkflowTemplate.create(template).then(onCreate).catch(setError);
                     }}>
                     Create
                 </Button>
