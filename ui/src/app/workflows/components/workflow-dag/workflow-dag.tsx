@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from 'react';
+import React, {useMemo, useState} from 'react';
 
 import {ArtifactRepositoryRefStatus, NODE_PHASE, NodeStatus} from '../../../../models';
 import {nodeArtifacts} from '../../../shared/artifacts';
