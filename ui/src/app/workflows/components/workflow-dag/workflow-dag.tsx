@@ -65,7 +65,7 @@ export function WorkflowDag(props: WorkflowDagProps) {
     const artifactRepository = props.artifactRepositoryRef?.artifactRepository || {};
     const tags: Record<string, boolean> = Object.values(props.nodes || {}).reduce((acc, node) => ({...acc, [getNodeLabelTemplateName(node)]: true}), {});
 
-    const [expandNodes, setExpandNodes] = useState(new Set(''));
+    const [expandNodes, setExpandNodes] = useState(new Set<string>());
     const [showArtifacts, setShowArtifacts] = useState(localStorage.getItem('showArtifacts') !== 'false');
 
     const graph = useMemo(() => {
