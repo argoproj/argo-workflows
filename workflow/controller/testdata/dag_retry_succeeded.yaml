@@ -1,0 +1,99 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  clusterName: ""
+  creationTimestamp: 2018-08-01T10:22:43Z
+  generateName: dag-with-retries-
+  generation: 1
+  labels:
+    workflows.argoproj.io/phase: Failed
+  name: dag-with-retries-4wkh8
+  namespace: default
+  resourceVersion: "9926"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/dag-with-retries-4wkh8
+  uid: d37a2abe-9574-11e8-b103-025000000001
+spec:
+
+  entrypoint: dag-with-retries
+  templates:
+  - dag:
+      tasks:
+      -
+        name: step1
+        template: randomly-fail
+    inputs: {}
+    metadata: {}
+    name: dag-with-retries
+    outputs: {}
+  - container:
+      args:
+      - exit $(( ${RANDOM} % 3 ))
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: randomly-fail
+    outputs: {}
+    retryStrategy:
+      limit: 10
+status:
+  nodes:
+    dag-with-retries-4wkh8:
+      children:
+      - dag-with-retries-4wkh8-2805650605
+      displayName: dag-with-retries-4wkh8
+      id: dag-with-retries-4wkh8
+      name: dag-with-retries-4wkh8
+      startedAt: 2018-08-01T10:22:43Z
+      templateName: dag-with-retries
+      type: DAG
+    dag-with-retries-4wkh8-1501049017:
+      boundaryID: dag-with-retries-4wkh8
+      displayName: step1(1)
+      finishedAt: 2018-08-01T10:23:00Z
+      id: dag-with-retries-4wkh8-1501049017
+      message: failed with exit code 1
+      name: dag-with-retries-4wkh8.step1(1)
+      phase: Failed
+      startedAt: 2018-08-01T10:22:51Z
+      templateName: randomly-fail
+      type: Pod
+    dag-with-retries-4wkh8-2105190396:
+      boundaryID: dag-with-retries-4wkh8
+      displayName: step1(0)
+      finishedAt: 2018-08-01T10:22:50Z
+      id: dag-with-retries-4wkh8-2105190396
+      message: failed with exit code 1
+      name: dag-with-retries-4wkh8.step1(0)
+      phase: Failed
+      startedAt: 2018-08-01T10:22:43Z
+      templateName: randomly-fail
+      type: Pod
+    dag-with-retries-4wkh8-2172006682:
+      boundaryID: dag-with-retries-4wkh8
+      displayName: step1(2)
+      finishedAt: 2018-08-01T10:23:08Z
+      id: dag-with-retries-4wkh8-2172006682
+      name: dag-with-retries-4wkh8.step1(2)
+      phase: Succeeded
+      startedAt: 2018-08-01T10:23:01Z
+      templateName: randomly-fail
+      type: Pod
+    dag-with-retries-4wkh8-2805650605:
+      boundaryID: dag-with-retries-4wkh8
+      children:
+      - dag-with-retries-4wkh8-2105190396
+      - dag-with-retries-4wkh8-1501049017
+      - dag-with-retries-4wkh8-2172006682
+      displayName: step1
+      finishedAt: 2018-08-01T10:23:09Z
+      id: dag-with-retries-4wkh8-2805650605
+      name: dag-with-retries-4wkh8.step1
+      phase: Succeeded
+      startedAt: 2018-08-01T10:22:43Z
+      type: Retry
+  startedAt: 2018-08-01T10:22:43Z

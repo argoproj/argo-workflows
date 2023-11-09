@@ -1,0 +1,24 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.checkbox-filter {
+    max-height: calc(1.55em * 14);
+    transition: max-height 0.25s cubic-bezier(0, 1, 0, 1);
+    overflow-y: auto;
+    margin-left: 0.2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 120px));
+}
+
+.checkbox-filter li {
+    list-style: none;
+}
+
+.checkbox-filter__label {
+    vertical-align: bottom;
+    width: calc(100% - 50px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    white-space: nowrap;
+    margin-right: 25px;
+}

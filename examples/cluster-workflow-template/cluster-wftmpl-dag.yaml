@@ -1,0 +1,52 @@
+# The following workflow executes a diamond workflow
+#
+#   A
+#  / \
+# B   C
+#  \ /
+#   D
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-dag-diamond-
+spec:
+  entrypoint: diamond
+  templates:
+  - name: diamond
+    dag:
+      tasks:
+      - name: A
+        templateRef:
+          name: cluster-workflow-template-whalesay-template
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: A
+      - name: B
+        depends: "A"
+        templateRef:
+          name: cluster-workflow-template-whalesay-template
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: B
+      - name: C
+        depends: "A"
+        templateRef:
+          name: cluster-workflow-template-inner-dag
+          template: inner-diamond
+          clusterScope: true
+      - name: D
+        depends: "B && C"
+        templateRef:
+          name: cluster-workflow-template-whalesay-template
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: D

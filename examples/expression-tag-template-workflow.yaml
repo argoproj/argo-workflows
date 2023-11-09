@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: expression-tag-template-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    # available in v3.1.0
+    workflows.argoproj.io/version: ">= 3.1.0"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: task-0
+            template: pod-0
+            arguments:
+              parameters:
+                - name: foo
+                  value: "{{=item}}"
+            # withParam must be a JSON list encoded as a string, so you use `toJson` to perform the conversion
+            withParam: "{{=toJson(filter([1, 3], {# > 1}))}}"
+    - name: pod-0
+      inputs:
+        parameters:
+          - name: foo
+      container:
+        image: argoproj/argosay:v2
+        # in this example, we use `asInt` to cast a parameter (which are ALWAYS strings) to an int so we can
+        # multiple by 10
+        args:
+          - echo
+          - |
+            hello {{=asInt(inputs.parameters.foo) * 10}} @ {{=sprig.date('2006', workflow.creationTimestamp)}}
+          - /output
+      outputs:
+        parameters:
+          - name: output
+            valueFrom:
+              path: /output

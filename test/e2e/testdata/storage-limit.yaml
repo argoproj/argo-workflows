@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: storage-quota-limit
+spec:
+  entrypoint: wait
+  volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
+    - metadata:
+        name: workdir1                     # name of volume claim
+      spec:
+        accessModes: [ "ReadWriteMany" ]
+        resources:
+          requests:
+            storage: 20Mi
+
+  templates:
+  - name: wait
+    script:
+      image: argoproj/argosay:v2
+      args: [echo, ":) Hello Argo!"]

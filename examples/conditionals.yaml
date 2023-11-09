@@ -1,0 +1,41 @@
+# Conditionals provide a way to affect the control flow of a
+# workflow at runtime, depending on parameters. In this example
+# the 'print-hello' template may or may not be executed depending
+# on the input parameter, 'should-print'. When submitted with:
+#   argo submit examples/conditionals.yaml
+# the step will be skipped since 'should-print' will evaluate false.
+# When submitted with:
+#   argo submit examples/conditionals.yaml -p should-print=true
+# the step will be executed since 'should-print' will evaluate true.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: conditional-
+spec:
+  entrypoint: conditional-example
+  arguments:
+    parameters:
+    - name: should-print
+      value: "true"
+
+  templates:
+  - name: conditional-example
+    inputs:
+      parameters:
+      - name: should-print
+    steps:
+    - - name: print-hello-govaluate
+        template: argosay
+        when: "{{inputs.parameters.should-print}} == true" # govaluate form
+      - name: print-hello-expr
+        template: argosay
+        when: "{{= inputs.parameters[\"should-print\"] == 'true'}}" # expr form; note: a dash in the name requires the use of brackets and quotes for expr to handle
+      - name: print-hello-expr-json
+        template: argosay
+        when: "{{=jsonpath(workflow.parameters.json, '$[0].value') == 'true'}}" # expr form
+
+  - name: argosay
+    container:
+      image: argoproj/argosay:v1
+      command: [sh, -c]
+      args: ["cowsay hello"]

@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-nested-template
+spec:
+  templates:
+    - name: whalesay-inner-template
+      inputs:
+        parameters:
+          - name: message
+      steps:
+        - - name: step
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{inputs.parameters.message}}"
+            templateRef:
+              name: workflow-template-whalesay-template
+              template: whalesay-template
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      steps:
+        - - name: step
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{inputs.parameters.message}}"
+            template: whalesay-inner-template

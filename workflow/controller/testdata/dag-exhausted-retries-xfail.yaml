@@ -1,0 +1,257 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-06-02T00:26:32Z"
+  name: retry-with-dags
+spec:
+
+  entrypoint: retry-with-dags
+  templates:
+    -
+      dag:
+        tasks:
+          -
+            name: success1
+            template: success
+          -
+            dependencies:
+              - success1
+            name: sub-dag1
+            template: sub-dag
+          -
+            dependencies:
+              - sub-dag1
+            name: success2
+            template: success
+      inputs: {}
+      metadata: {}
+      name: retry-with-dags
+      outputs: {}
+    -
+      dag:
+        tasks:
+          -
+            name: fail
+            template: fail
+      inputs: {}
+      metadata: {}
+      name: sub-dag
+      outputs: {}
+    -
+      container:
+        command:
+          - sh
+          - -c
+          - exit 1
+        image: alpine
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: fail
+      outputs: {}
+      retryStrategy:
+        limit: 1
+    -
+      container:
+        command:
+          - sh
+          - -c
+          - exit 0
+        image: alpine
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: success
+      outputs: {}
+      retryStrategy:
+        limit: 1
+status:
+  nodes:
+    retry-with-dags:
+      children:
+        - retry-with-dags-2941704614
+      displayName: retry-with-dags
+      finishedAt: "2020-06-02T00:26:48Z"
+      id: retry-with-dags
+      name: retry-with-dags
+      outboundNodes:
+        - retry-with-dags-2924926995
+      phase: Running
+      startedAt: "2020-06-02T00:26:32Z"
+      templateName: retry-with-dags
+      templateScope: local/retry-with-dags
+      type: DAG
+    retry-with-dags-731586981:
+      boundaryID: retry-with-dags
+      children:
+        - retry-with-dags-1757961662
+      displayName: success1(0)
+      finishedAt: "2020-06-02T00:26:35Z"
+      hostNodeName: minikube
+      id: retry-with-dags-731586981
+      name: retry-with-dags.success1(0)
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: retry-with-dags/retry-with-dags-731586981/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-06-02T00:26:32Z"
+      templateName: success
+      templateScope: local/retry-with-dags
+      type: Pod
+    retry-with-dags-1757961662:
+      boundaryID: retry-with-dags
+      children:
+        - retry-with-dags-1890550676
+      displayName: sub-dag1
+      finishedAt: "2020-06-02T00:26:47Z"
+      id: retry-with-dags-1757961662
+      name: retry-with-dags.sub-dag1
+      outboundNodes:
+        - retry-with-dags-3153835778
+      phase: Failed
+      startedAt: "2020-06-02T00:26:37Z"
+      templateName: sub-dag
+      templateScope: local/retry-with-dags
+      type: DAG
+    retry-with-dags-1890550676:
+      boundaryID: retry-with-dags-1757961662
+      children:
+        - retry-with-dags-2549694399
+        - retry-with-dags-3153835778
+      displayName: fail
+      finishedAt: "2020-06-02T00:26:47Z"
+      id: retry-with-dags-1890550676
+      message: No more retries left
+      name: retry-with-dags.sub-dag1.fail
+      phase: Failed
+      startedAt: "2020-06-02T00:26:37Z"
+      templateName: fail
+      templateScope: local/retry-with-dags
+      type: Retry
+    retry-with-dags-2549694399:
+      boundaryID: retry-with-dags-1757961662
+      displayName: fail(0)
+      finishedAt: "2020-06-02T00:26:41Z"
+      hostNodeName: minikube
+      id: retry-with-dags-2549694399
+      message: failed with exit code 1
+      name: retry-with-dags.sub-dag1.fail(0)
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: retry-with-dags/retry-with-dags-2549694399/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      startedAt: "2020-06-02T00:26:37Z"
+      templateName: fail
+      templateScope: local/retry-with-dags
+      type: Pod
+    retry-with-dags-2924926995:
+      boundaryID: retry-with-dags
+      displayName: success2
+      finishedAt: "2020-06-02T00:26:48Z"
+      id: retry-with-dags-2924926995
+      message: 'omitted: depends condition not met'
+      name: retry-with-dags.success2
+      phase: Omitted
+      startedAt: "2020-06-02T00:26:48Z"
+      templateName: success
+      templateScope: local/retry-with-dags
+      type: Skipped
+    retry-with-dags-2941704614:
+      boundaryID: retry-with-dags
+      children:
+        - retry-with-dags-731586981
+      displayName: success1
+      finishedAt: "2020-06-02T00:26:36Z"
+      id: retry-with-dags-2941704614
+      name: retry-with-dags.success1
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: retry-with-dags/retry-with-dags-731586981/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-06-02T00:26:32Z"
+      templateName: success
+      templateScope: local/retry-with-dags
+      type: Retry
+    retry-with-dags-3153835778:
+      boundaryID: retry-with-dags-1757961662
+      children:
+        - retry-with-dags-2924926995
+      displayName: fail(1)
+      finishedAt: "2020-06-02T00:26:45Z"
+      hostNodeName: minikube
+      id: retry-with-dags-3153835778
+      message: failed with exit code 1
+      name: retry-with-dags.sub-dag1.fail(1)
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: retry-with-dags/retry-with-dags-3153835778/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-06-02T00:26:42Z"
+      templateName: fail
+      templateScope: local/retry-with-dags
+      type: Pod
+  phase: Running
+  startedAt: "2020-06-02T00:26:32Z"

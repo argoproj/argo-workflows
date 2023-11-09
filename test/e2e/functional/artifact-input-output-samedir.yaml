@@ -1,0 +1,101 @@
+# Tests ability to capture output directories and files when it overlaps with inputs
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-input-output-samedir-
+spec:
+  entrypoint: artifact-input-output-samedir
+  templates:
+  - name: artifact-input-output-samedir
+    steps:
+    - - name: generate
+        template: generate
+    - - name: collect
+        template: collect
+        arguments:
+          artifacts:
+          - name: samedir
+            from: "{{steps.generate.outputs.artifacts.dir}}"
+          - name: hello
+            from: "{{steps.generate.outputs.artifacts.hello}}"
+    - - name: verify
+        template: verify
+        arguments:
+          artifacts:
+          - name: outer
+            from: "{{steps.collect.outputs.artifacts.outer}}"
+          - name: inner
+            from: "{{steps.collect.outputs.artifacts.inner}}"
+          - name: hello
+            from: "{{steps.collect.outputs.artifacts.hello}}"
+          - name: coincidental-prefix
+            from: "{{steps.collect.outputs.artifacts.coincidental-prefix}}"
+
+  # generate a folder structure with directories
+  - name: generate
+    script:
+      image: argoproj/argosay:v1
+      command: [sh, -xe]
+      source: |
+        sleep 1
+        mkdir -p /outer/inner
+        cowsay outer | tee /outer/outer.txt
+        cowsay inner | tee /outer/inner/inner.txt
+        cowsay hello | tee /hello.txt
+    outputs:
+      artifacts:
+      - name: dir
+        path: /outer
+      - name: hello
+        path: /hello.txt
+
+  # test collection of artifacts where:
+  # 1) input and output mapped to same directory
+  # 2) collecting an output directory of a subdir
+  # 3) output happens to have same prefix of an input, but is unrelated
+  - name: collect
+    inputs:
+      artifacts:
+      - name: samedir
+        path: /outer
+      - name: hello
+        path: /hello.txt
+    container:
+      image: argoproj/argosay:v1
+      command: [sh, -c]
+      args: ["
+        sleep 1 &&
+        cowsay coincidental-prefix | tee /hello.txt-COINCIDENCAL.txt
+      "]
+    outputs:
+      artifacts:
+      - name: outer
+        path: /outer
+      - name: inner
+        path: /outer/inner
+      - name: hello
+        path: /hello.txt
+      - name: coincidental-prefix
+        path: /hello.txt-COINCIDENCAL.txt
+
+  # verifies collection was successful
+  - name: verify
+    inputs:
+      artifacts:
+      - name: outer
+        path: /outer
+      - name: inner
+        path: /inner
+      - name: hello
+        path: /hello.txt
+      - name: coincidental-prefix
+        path: /coincidental-prefix.txt
+    script:
+      image: alpine:3.8
+      command: [sh, -xe]
+      source: |
+        cat /outer/outer.txt
+        cat /outer/inner/inner.txt
+        cat /inner/inner.txt
+        cat /hello.txt
+        cat /coincidental-prefix.txt

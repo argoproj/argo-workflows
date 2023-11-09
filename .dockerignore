@@ -1,0 +1,28 @@
+# Prevent vendor directory from being copied to ensure we are not not pulling unexpected cruft from
+# a user's workspace, and are only building off of what is locked by dep.
+*.iml
+*.md
+*.yaml
+.devcontainer
+# The .git folder gets modified every time git runs preventing caching of builds. Once removed, we must pass GIT_COMMIT as Docker build-args.
+.git
+.github
+.idea
+.run
+assets
+community
+coverage.out
+dist
+docs
+examples
+logs
+manifests
+plugins
+sdks
+site
+tasks.yaml
+test/e2e
+ui/dist
+ui/node_modules
+v3
+vendor

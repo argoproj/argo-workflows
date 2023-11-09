@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sidecar-nginx-
+spec:
+  entrypoint: sidecar-nginx-example
+  templates:
+  - name: sidecar-nginx-example
+    container:
+      image: appropriate/curl
+      command: [sh, -c]
+      args: ["until `curl -G 'http://127.0.0.1/' >& /tmp/out`; do echo sleep && sleep 1; done && cat /tmp/out"]
+    sidecars:
+    - name: nginx
+      image: nginx:1.13
+      command: [nginx, -g, daemon off;]

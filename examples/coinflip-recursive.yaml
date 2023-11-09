@@ -1,0 +1,37 @@
+# coinflip-recursive is a variation of the coinflip example.
+# This is an example of a dynamic workflow which extends
+# indefinitely until it achieves a desired result. In this
+# example, the 'flip-coin' step is recursively repeated until
+# the result of the step is "heads".
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: coinflip-recursive-
+spec:
+  entrypoint: coinflip
+  templates:
+  - name: coinflip
+    steps:
+    - - name: flip-coin
+        template: flip-coin
+    - - name: heads
+        template: heads
+        when: "{{steps.flip-coin.outputs.result}} == heads"
+      - name: tails
+        template: coinflip
+        when: "{{steps.flip-coin.outputs.result}} == tails"
+
+  - name: flip-coin
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import random
+        result = "heads" if random.randint(0,1) == 0 else "tails"
+        print(result)
+
+  - name: heads
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was heads\""]

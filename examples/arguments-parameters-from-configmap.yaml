@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: arguments-parameters-from-configmap-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This example demonstrates loading parameter values from configmap.
+      Note that the "simple-parameters" ConfigMap (defined in examples/configmaps/simple-parameters-configmap.yaml)
+      needs to be created first before submitting this workflow.
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
+spec:
+  serviceAccountName: argo
+  entrypoint: whalesay
+
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      # Parameters can also be passed via configmap reference.
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: simple-parameters
+            key: msg
+    container:
+      image: argoproj/argosay:v2
+      args: ["echo", "{{inputs.parameters.message}}"]

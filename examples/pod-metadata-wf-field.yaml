@@ -1,0 +1,33 @@
+# This template demonstrates how pod annotations and labels may be set at the workflow level for all pods
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+  
+  podMetadata:
+    annotations:
+        iam.amazonaws.com/role: role-arn
+    labels:
+        app: whalesay
+        tier: demo
+
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]

@@ -1,0 +1,75 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflow-timeline {
+    position: relative;
+    background: white;
+
+    &__node-name {
+        width: 250px;
+        padding: 0 20px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__row {
+        position: relative;
+        line-height: 3em;
+        height: 3em;
+        border-bottom: 1px solid $argo-color-gray-4;
+
+        &--header {
+            background-color: $argo-color-gray-3;
+            height: 59px;
+        }
+
+        &--selected {
+            background-color: rgba($argo-color-teal-3, 0.2);
+        }
+    }
+
+    &__node {
+        z-index: 2;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        &--error, &--failed {
+            background-color: $argo-failed-color;
+        }
+
+        &--running {
+            background-color: $argo-running-color;
+        }
+   
+        &--succeeded {
+            background-color: $argo-success-color;
+        }
+
+        &--skipped {
+            background-color: $argo-color-gray-4;
+        }
+
+        &--omitted {
+            background-color: $argo-color-gray-4;
+        }
+    }
+
+    &__start-line {
+        z-index: 1;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 0;
+        border-right: 1px solid $argo-color-gray-4;
+
+        &__time {
+            left: -2.5em;
+            font-size: 0.8em;
+            position: absolute;
+            color: $argo-color-gray-5;
+        }
+    }
+    &__node, &__start-line {
+        transition: left 0.2s, top 0.2s, width 0.2s, height 0.2s;
+    }
+}

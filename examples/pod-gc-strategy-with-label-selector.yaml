@@ -1,0 +1,65 @@
+# Pod GC provides the ability to delete pods automatically without deleting the workflow.
+# This example also demonstrates the use of `podGC.labelSelector` (available since v3.0.0-rc3)
+# to only delete the pods whose labels match with the specified label selector.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-gc-strategy-with-label-selector-
+spec:
+  entrypoint: pod-gc-strategy-with-label-selector
+
+  podGC:
+    # Pod GC strategy must be one of the following:
+    # * OnPodCompletion - delete pods immediately when pod is completed (including errors/failures)
+    # * OnPodSuccess - delete pods immediately when pod is successful
+    # * OnWorkflowCompletion - delete pods when workflow is completed
+    # * OnWorkflowSuccess - delete pods when workflow is successful
+    # Default: do not delete pods
+    strategy: OnPodSuccess
+    # The duration before pods in the GC queue get deleted. Defaults to 5s
+    # Requires Argo >= 3.5
+    deleteDelayDuration: 30s
+    # Use label selector to only delete the pods whose labels match with the specified label selector (available since v3.0.0-rc3).
+    labelSelector:
+      matchLabels:
+        should-be-deleted: "true"
+
+  templates:
+    - name: pod-gc-strategy-with-label-selector
+      steps:
+        - - name: fail
+            template: fail
+          - name: succeed-deleted
+            template: succeed-deleted
+          - name: succeed-not-deleted
+            template: succeed-not-deleted
+
+    # This step will not be deleted since it's not successful even when its labels match with `podGC.labelSelector`.
+    - name: fail
+      metadata:
+        labels:
+          should-be-deleted: "true"
+      container:
+        image: alpine:3.7
+        command: [sh, -c]
+        args: ["exit 1"]
+
+    # This step will be deleted since it's successful and its labels match with `podGC.labelSelector`.
+    - name: succeed-deleted
+      metadata:
+        labels:
+          should-be-deleted: "true"
+      container:
+        image: alpine:3.7
+        command: [sh, -c]
+        args: ["exit 0"]
+
+    # This step will not be deleted even though it's successful since its labels do not match with `podGC.labelSelector`.
+    - name: succeed-not-deleted
+      metadata:
+        labels:
+          should-be-deleted: "false"
+      container:
+        image: alpine:3.7
+        command: [ sh, -c ]
+        args: [ "exit 0" ]

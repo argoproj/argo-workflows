@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: volume-claim-template-
+spec:
+  entrypoint: main
+  volumeClaimGC:
+    strategy: OnWorkflowCompletion
+  volumeClaimTemplates:
+    - metadata:
+        name: vol
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Mi
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        volumeMounts:
+          - name: vol
+            mountPath: /mnt/vol
+

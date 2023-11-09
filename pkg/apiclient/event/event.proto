@@ -1,0 +1,42 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/event";
+
+import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
+
+package event;
+
+message EventRequest {
+  // The namespace for the event. This can be empty if the client has cluster scoped permissions.
+  // If empty, then the event is "broadcast" to workflow event binding in all namespaces.
+  string namespace = 1;
+  // Optional discriminator for the event. This should almost always be empty.
+  // Used for edge-cases where the event payload alone is not provide enough information to discriminate the event.
+  // This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or
+  // to support webhooks on unsecured server. Instead, use access tokens.
+  // This is made available as `discriminator` in the event binding selector (`/spec/event/selector)`
+  string discriminator = 2;
+  // The event itself can be any data.
+  github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Item payload = 3;
+}
+
+message EventResponse {
+}
+
+message ListWorkflowEventBindingsRequest {
+  string namespace = 1;
+  k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+}
+
+service EventService {
+  rpc ReceiveEvent(EventRequest) returns (EventResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/events/{namespace}/{discriminator}"
+      body : "payload"
+    };
+  }
+  rpc ListWorkflowEventBindings(ListWorkflowEventBindingsRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowEventBindingList) {
+    option (google.api.http).get = "/api/v1/workflow-event-bindings/{namespace}";
+  }
+}

@@ -1,0 +1,44 @@
+# Only retry if the retryStrategy.expression condition is satisfied. In this example, retries will be made until a pod has
+# exit code 2 or the limit of 10 is reached, whichever happens first.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-script-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: safe-to-retry
+            template: safe-to-retry
+        - - name: retry
+            template: retry-script
+            arguments:
+              parameters:
+                - name: safe-to-retry
+                  value: "{{steps.safe-to-retry.outputs.result}}"
+
+    - name: safe-to-retry
+      script:
+        image: python:alpine3.6
+        command: ["python"]
+        source: |
+          print("true")
+
+    - name: retry-script
+      inputs:
+        parameters:
+            - name: safe-to-retry
+      retryStrategy:
+        limit: "10"
+        # Only continue retrying if the last exit code is greater than 1 and the input parameter is true
+        expression: "asInt(lastRetry.exitCode) > 1 && {{inputs.parameters.safe-to-retry}} == true"
+      script:
+        image: python:alpine3.6
+        command: ["python"]
+        # Exit 1 with 50% probability and 2 with 50%
+        source: |
+          import random;
+          import sys;
+          exit_code = random.choice([1, 2]);
+          sys.exit(exit_code)

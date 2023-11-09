@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-invalid-onexit
+spec:
+  volumeClaimTemplates:
+    - metadata:
+        name: builddir
+      spec:
+        accessModes: [ "ReadWriteMany" ]
+        resources:
+          requests:
+            storage: 1Mi
+  volumeClaimGC:
+    strategy: OnWorkflowCompletion
+  entrypoint: whalesay
+  onExit: notify
+  templates:
+    - name: whalesay
+      container:
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - 'hello world'
+    - name: notify
+      container:
+        image: 'argoproj/argosay:v2'
+        command: [sh, -c]
+        args: ["exit 0"]
+        volumeMounts:
+          - name: foo # <<< invalid since no volume `foo`

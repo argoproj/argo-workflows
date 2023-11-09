@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-windows-
+spec:
+  entrypoint: hello-win
+  templates:
+    - name: hello-win
+      nodeSelector:
+        kubernetes.io/os: windows
+      container:
+        image: mcr.microsoft.com/windows/nanoserver:1809
+        command: ["cmd", "/c"]
+        args: ["echo", "Hello from Windows Container!"]

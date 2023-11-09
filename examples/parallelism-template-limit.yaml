@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parallelism-template-limit-
+spec:
+  entrypoint: parallelism-template-limit
+  templates:
+  - name: parallelism-template-limit
+    parallelism: 2
+    steps:
+    - - name: sleep
+        template: sleep
+        withItems:
+        - this
+        - workflow
+        - should
+        - take
+        - at
+        - least
+        - 60
+        - seconds
+        - to
+        - complete
+
+  - name: sleep
+    container:
+      image: alpine:latest
+      command: [sh, -c, sleep 10]

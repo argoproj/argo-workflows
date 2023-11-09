@@ -1,0 +1,69 @@
+# The following workflow executes a diamond workflow, with each
+# node comprising of three parallel fan-in fan-out steps.
+# 
+#           *
+#         / | \
+#       A1 A2  A3
+#         \ | /
+#           *
+#         /   \ 
+#       /       \
+#      *         *
+#    / | \     / | \
+#  B1  B2 B3  C1 C2 C3
+#    \ | /     \ | /
+#      *         *
+#       \       /
+#         \   /
+#           *
+#         / | \
+#       D1 D2  D3
+#         \ | /
+#           *
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-steps-
+spec:
+  entrypoint: diamond
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+  - name: echo-thrice
+    inputs:
+      parameters:
+      - name: message
+    steps:
+    - - name: echo
+        template: echo
+        arguments:
+          parameters:
+          - {name: message, value: "{{inputs.parameters.message}}{{item}}"}
+        withItems: [1,2,3]
+  - name: diamond
+    dag:
+      tasks:
+      - name: A
+        template: echo-thrice
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        depends: "A"
+        template: echo-thrice
+        arguments:
+          parameters: [{name: message, value: B}]
+      - name: C
+        depends: "A"
+        template: echo-thrice
+        arguments:
+          parameters: [{name: message, value: C}]
+      - name: D
+        depends: "B && C"
+        template: echo-thrice
+        arguments:
+          parameters: [{name: message, value: D}]

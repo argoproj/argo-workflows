@@ -1,0 +1,70 @@
+# Workflow specifically designed for testing process namespace sharing with output parameters
+# This exercises the copy out regular files from volume mounted paths, or base image layer paths,
+# including overlaps between the two.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pns-outputs-params-
+spec:
+  entrypoint: output-parameter
+  templates:
+  - name: output-parameter
+    steps:
+    - - name: generate-parameter
+        template: whalesay
+    - - name: consume-parameter
+        template: print-message
+        arguments:
+          parameters:
+          - { name: A, value: "{{steps.generate-parameter.outputs.parameters.A}}" }
+          - { name: B, value: "{{steps.generate-parameter.outputs.parameters.B}}" }
+          - { name: C, value: "{{steps.generate-parameter.outputs.parameters.C}}" }
+          - { name: D, value: "{{steps.generate-parameter.outputs.parameters.D}}" }
+
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v1
+      command: [sh, -x, -c]
+      args: ["
+        sleep 1;
+        echo -n A > /tmp/A &&
+        echo -n B > /mnt/outer/inner/B &&
+        echo -n C > /tmp/C &&
+        echo -n D > /mnt/outer/D
+      "]
+      volumeMounts:
+      - name: outer
+        mountPath: /mnt/outer
+      - name: inner
+        mountPath: /mnt/outer/inner
+    outputs:
+      parameters:
+      - name: A
+        valueFrom:
+          path: /tmp/A
+      - name: B
+        valueFrom:
+          path: /mnt/outer/inner/B
+      - name: C
+        valueFrom:
+          path: /tmp/C
+      - name: D
+        valueFrom:
+          path: /mnt/outer/D
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: A
+      - name: B
+      - name: C
+      - name: D
+    container:
+      image: argoproj/argosay:v2
+      args: [echo, "{{inputs.parameters.A}} {{inputs.parameters.B}} {{inputs.parameters.C}} {{inputs.parameters.D}}"]
+
+  volumes:
+  - name: outer
+    emptyDir: {}
+  - name: inner
+    emptyDir: {}

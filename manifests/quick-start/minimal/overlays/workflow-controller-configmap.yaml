@@ -1,0 +1,9 @@
+apiVersion: v1
+data:
+  retentionPolicy: |
+    completed: 10
+    failed: 3
+    errored: 3
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap

@@ -1,0 +1,151 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflow-details {
+
+  overflow-y: hidden;
+
+  &,
+  &>.row {
+    height: calc(100vh - 2 * #{$top-bar-height});
+  }
+
+  &__content {
+    padding: 1em;
+  }
+
+  &__topbar-buttons {
+    display: inline-block;
+    white-space: nowrap;
+
+    a {
+      vertical-align: middle;
+      text-align: center;
+      line-height: 1em;
+      padding: 0.5em;
+      font-size: 1.1em;
+      border: 1px solid transparent;
+      display: inline-block;
+      width: 2em;
+      margin-right: 0.5em;
+      color: $argo-color-gray-8;
+
+      &.active {
+        background-color: $argo-color-gray-3;
+        border: 1px solid $argo-color-gray-4;
+        border-radius: 5px;
+        cursor: default;
+      }
+    }
+  }
+
+  &__container {
+    height: calc(100vh - 2 * #{$top-bar-height});
+    max-width: 100%;
+    overflow: auto;
+  }
+
+  &__graph-container-wrapper {
+    display: flex;
+  }
+
+  &__graph-container {
+    flex: 1;
+    position: relative;
+    height: calc(100vh - 2 * #{$top-bar-height});
+    float: left;
+    overflow: auto;
+
+    .workflow-dag {
+      margin: 0;
+    }
+
+    .workflow-timeline {
+      min-height: calc(100vh - 2 * #{$top-bar-height});
+    }
+  }
+
+  &__step-info {
+    min-height: calc(100vh - 2 * #{$top-bar-height});
+    border-left: 1px solid $argo-color-gray-4;
+    transition: width 0.2s;
+    position: relative;
+  }
+
+  &__step-info-close {
+    display: none;
+    position: absolute;
+    cursor: pointer;
+    top: 1em;
+    right: 1em;
+    z-index: 8;
+    border-radius: 50%;
+    color: $argo-color-gray-5;
+    font-size: 20px;
+    padding: 5px;
+
+    @media screen and (max-width: $argo-breakpoint-md) {
+      top: 8px;
+    }
+
+    &:hover {
+      background-color: $argo-color-gray-4;
+    }
+  }
+
+  &__step-info-drag-handle {
+    left: -6px;
+    height: 100%;
+    position: absolute;
+    width: 12px;
+    z-index: 1;
+
+    &:hover {
+      cursor: ew-resize;
+    }
+  }
+
+  &__attribute-grid {
+    color: $argo-color-gray-8;
+    display: grid;
+    grid-template-columns: auto minmax(50%, 1fr);
+
+    & > * {
+      align-items: center;
+      display: flex;
+      min-height: 50px;
+      padding: 14px 0;
+    }
+
+    & > *:nth-child(odd) {
+      padding-right: 4em;
+    }
+
+    & > *:not(:nth-last-child(-n+2)) {
+      border-bottom: 1px solid $argo-color-gray-3;
+    }
+
+    pre {
+      overflow: unset;
+    }
+  }
+
+  &--step-node-expanded &__step-info-close {
+    display: block;
+  }
+}
+
+.badge {
+  position: absolute;
+  margin-left: -.3%;
+  margin-top: -.3%;
+  font-size: 30%;
+  padding: .6em;
+  border-radius: 999px;
+  line-height: .75em;
+  color: white;
+  background: rgba(255, 0, 0, 0.85);
+  text-align: center;
+  min-width: 2em;
+  font-weight: bold;
+  min-height: 2em;
+}

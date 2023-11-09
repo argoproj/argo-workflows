@@ -1,0 +1,132 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  clusterName: ""
+  creationTimestamp: 2018-08-01T09:57:43Z
+  generateName: dag-fail-
+  generation: 1
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: dag-fail-r4gvc
+  namespace: default
+  resourceVersion: "8071"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/dag-fail-r4gvc
+  uid: 558a8d47-9571-11e8-b103-025000000001
+spec:
+
+  entrypoint: diamond
+  templates:
+  - container:
+      args:
+      - '{{inputs.parameters.cmd}}'
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: cmd
+    metadata: {}
+    name: echo
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: cmd
+            value: echo A
+        name: A
+        template: echo
+      - arguments:
+          parameters:
+          - name: cmd
+            value: echo B
+        dependencies:
+        - A
+        name: B
+        template: echo
+      - arguments:
+          parameters:
+          - name: cmd
+            value: echo C; exit 1
+        dependencies:
+        - A
+        name: C
+        template: echo
+      - arguments:
+          parameters:
+          - name: cmd
+            value: echo D
+        dependencies:
+        - B
+        - C
+        name: D
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+status:
+  finishedAt: null
+  nodes:
+    dag-fail-r4gvc:
+      children:
+      - dag-fail-r4gvc-848175806
+      displayName: dag-fail-r4gvc
+      finishedAt: null
+      id: dag-fail-r4gvc
+      name: dag-fail-r4gvc
+      phase: Running
+      startedAt: 2018-08-01T09:57:43Z
+      templateName: diamond
+      type: DAG
+    dag-fail-r4gvc-814620568:
+      boundaryID: dag-fail-r4gvc
+      displayName: C
+      finishedAt: 2018-08-01T09:58:01Z
+      id: dag-fail-r4gvc-814620568
+      inputs:
+        parameters:
+        - name: cmd
+          value: echo C; exit 1
+      message: failed with exit code 1
+      name: dag-fail-r4gvc.C
+      phase: Failed
+      startedAt: 2018-08-01T09:57:53Z
+      templateName: echo
+      type: Pod
+    dag-fail-r4gvc-831398187:
+      boundaryID: dag-fail-r4gvc
+      displayName: B
+      finishedAt: 2018-08-01T09:57:58Z
+      id: dag-fail-r4gvc-831398187
+      inputs:
+        parameters:
+        - name: cmd
+          value: echo B
+      name: dag-fail-r4gvc.B
+      phase: Succeeded
+      startedAt: 2018-08-01T09:57:53Z
+      templateName: echo
+      type: Pod
+    dag-fail-r4gvc-848175806:
+      boundaryID: dag-fail-r4gvc
+      children:
+      - dag-fail-r4gvc-831398187
+      - dag-fail-r4gvc-814620568
+      displayName: A
+      finishedAt: 2018-08-01T09:57:52Z
+      id: dag-fail-r4gvc-848175806
+      inputs:
+        parameters:
+        - name: cmd
+          value: echo A
+      name: dag-fail-r4gvc.A
+      phase: Succeeded
+      startedAt: 2018-08-01T09:57:43Z
+      templateName: echo
+      type: Pod
+  phase: Running
+  startedAt: 2018-08-01T09:57:43Z

@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifactory-artifact-http-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      artifacts:
+      - name: my-art
+        path: /my-artifact
+        artifactory:
+          url: http://httpbin:9100/basic-auth/admin/password
+          usernameSecret:
+            name: my-httpbin-cred
+            key: user
+          passwordSecret:
+            name: my-httpbin-cred
+            key: pass
+    outputs:
+      artifacts:
+      - name: my-art
+        path: /my-artifact
+        artifactory:
+          url: http://httpbin:9100/put
+          usernameSecret:
+            name: my-httpbin-cred
+            key: user
+          passwordSecret:
+            name: my-httpbin-cred
+            key: pass
+    container:
+      image: argoproj/argosay:v2
+      command: [cat, "/my-artifact"]

@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    ignore:
+    - dependency-name: k8s.io/*
+    - dependency-name: github.com/grpc-ecosystem/*
+    - dependency-name: google.golang.org/grpc
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+
+  - package-ecosystem: "npm"
+    directory: "/ui"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    ignore:
+      - dependency-name: raw-loader
+      - dependency-name: style-loader
+      - dependency-name: react-router-dom
+      - dependency-name: "@types/react-router-dom"
+    open-pull-requests-limit: 10

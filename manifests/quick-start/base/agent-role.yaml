@@ -1,0 +1,24 @@
+# https://argoproj.github.io/argo-workflows/workflow-rbac/
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use the agent, e.g. for HTTP or plugin templates.
+
+      If <= v3.2 you must replace `workflowtasksets/status` with `patch workflowtasksets`.
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets/status
+    verbs:
+      - patch

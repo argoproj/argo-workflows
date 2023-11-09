@@ -1,0 +1,31 @@
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  generateName: output-result-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: produce
+          - name: b
+            template: consume
+            dependencies:
+              - a
+            arguments:
+              parameters:
+                - name: text
+                  value: "{{tasks.a.outputs.result}}"
+
+    - name: produce
+      container:
+        image: argoproj/argosay:v2
+
+    - name: consume
+      inputs:
+        parameters:
+          - name: text
+      container:
+        image: argoproj/argosay:v2

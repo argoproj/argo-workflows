@@ -1,0 +1,14 @@
+.drop-down-button {
+  display: inline-block;
+
+  .items {
+    position: absolute; // hover at the bottom left of the containing element
+    z-index: 1; // must above other elements
+    box-shadow: 1px 1px 1px 1px; // add a small shadow to lift it off the page a tiny amount
+
+    .item {
+      border-radius: 0; // remove the 24px button radius which looks odd on a menu
+      width: 100%
+    }
+  }
+}

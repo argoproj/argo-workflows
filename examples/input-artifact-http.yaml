@@ -1,0 +1,20 @@
+# Example of using a hard-wired artifact location from a HTTP URL.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-artifact-http-
+spec:
+  entrypoint: http-artifact-example
+  templates:
+  - name: http-artifact-example
+    inputs:
+      artifacts:
+      - name: kubectl
+        path: /bin/kubectl
+        mode: 0755
+        http:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+    container:
+      image: debian:9.4
+      command: [sh, -c]
+      args: ["kubectl version"]

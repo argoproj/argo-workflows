@@ -1,0 +1,11 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sleep-3s-
+spec:
+  entrypoint: sleep-3s
+  templates:
+    - name: sleep-3s
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "3s"]

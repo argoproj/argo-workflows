@@ -1,0 +1,97 @@
+@import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/@fortawesome/fontawesome-free/scss/variables';
+@import 'node_modules/@fortawesome/fontawesome-free/scss/mixins';
+
+.workflow-dag-render-options-panel {
+  position: fixed;
+  margin: 10px;
+  padding: 10px;
+  display: inline-block;
+  background-color: white;
+  box-shadow: 1px 1px 3px $argo-color-gray-5;
+
+  a {
+    padding: 10px;
+    color: $argo-color-gray-6;
+
+    &.active {
+      background-color: $argo-color-gray-3;
+      border: 1px solid $argo-color-gray-4;
+      border-radius: 5px;
+      cursor: default;
+    }
+  }
+}
+
+.workflow-dag {
+
+  text-align: center;
+
+  .line {
+    fill: transparent;
+    stroke-width: 2;
+    stroke: $argo-color-gray-4;
+  }
+
+  .arrow {
+    fill: $argo-color-gray-4;
+  }
+
+  .label {
+    text-anchor: middle;
+    font-family: sans-serif;
+    text-rendering: optimizeLegibility;
+  }
+
+  .node {
+    cursor: pointer;
+  }
+
+  .hidden {
+    fill: $argo-color-gray-4;
+  }
+
+  &__node {
+    &.active {
+      stroke: $argo-color-teal-6;
+    }
+  }
+
+  &__node-status {
+    &--error, &--failed {
+      fill: $argo-failed-color;
+    }
+
+    &--pending {
+      fill: $argo-status-warning-color;
+    }
+
+    &--running {
+      fill: $argo-running-color;
+    }
+
+    &--succeeded {
+      fill: $argo-success-color;
+    }
+
+    &--skipped {
+      fill: $argo-color-gray-4;
+    }
+
+    &--omitted {
+      fill: $argo-color-gray-4;
+    }
+
+    &--suspended {
+      fill: $argo-color-gray-4;
+    }
+
+    &--collapsed-horizontal {
+      fill: $argo-color-gray-6;
+    }
+
+    &--collapsed-vertical {
+      fill: $argo-color-gray-6;
+    }
+  }
+}

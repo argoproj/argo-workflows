@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+spec:
+  arguments:
+    parameters:
+      - name: arg
+        value: myLabelFromArg
+  workflowTemplateRef:
+    name: workflow-template-submittable
+  workflowMetadata:
+    labels:
+      arg-name: myLabelArg
+    labelsFrom:
+      arg-name-2:
+        expression: workflow.parameters.arg
+    annotations:
+      arg-name: myAnnotationArg

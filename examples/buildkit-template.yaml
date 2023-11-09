@@ -1,0 +1,163 @@
+# SUMMARY:
+#
+# Build and push an image using Docker Buildkit.
+#
+# DESCRIPTION:
+#
+# This does not need privileged access, unlike Docker in Docker (DIND). It has three stages:
+#
+# * clone the Git repository
+# * build the binary
+# * build and push the image containing the binary
+#
+# USAGE:
+#
+# Publishing images requires an access token. For hub.docker.com you can create one at https://hub.docker.com/settings/security
+# This needs to be mounted as `$DOCKER_CONFIG/config.json`. To do this, you'll need to create a secret as follows:
+#
+#    export DOCKER_USERNAME=******
+#    export DOCKER_TOKEN=******
+#    kubectl create secret generic docker-config --from-literal="config.json={\"auths\": {\"https://index.docker.io/v1/\": {\"auth\": \"$(echo -n $DOCKER_USERNAME:$DOCKER_TOKEN|base64)\"}}}"
+#
+# REFERENCES:
+#
+# * https://github.com/moby/buildkit#expose-buildkit-as-a-tcp-service
+# * https://blog.alexellis.io/building-containers-without-docker/
+# * https://hub.docker.com/r/moby/buildkit
+#
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: buildkit
+spec:
+  arguments:
+    parameters:
+      - name: repo
+        value: https://github.com/argoproj/argo-workflows
+      - name: branch
+        value: master
+      - name: path
+        value: test/e2e/images/argosay/v2
+      - name: image
+        value: alexcollinsintuit/argosay:v2
+  entrypoint: main
+  # We use a volume claim template so that we can have a shared workspace.
+  volumeClaimTemplates:
+    - metadata:
+        name: work
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 64Mi
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: clone
+            template: clone
+            arguments:
+              parameters:
+                - name: repo
+                  value: "{{workflow.parameters.repo}}"
+                - name: branch
+                  value: "{{workflow.parameters.branch}}"
+          - name: build
+            template: build
+            arguments:
+              parameters:
+                - name: path
+                  value: "{{workflow.parameters.path}}"
+            depends: "clone"
+          - name: image
+            template: image
+            arguments:
+              parameters:
+                - name: path
+                  value: "{{workflow.parameters.path}}"
+                - name: image
+                  value: "{{workflow.parameters.image}}"
+            depends: "build"
+    - name: clone
+      inputs:
+        parameters:
+          - name: repo
+          - name: branch
+      container:
+        volumeMounts:
+          - mountPath: /work
+            name: work
+        image: alpine/git:v2.26.2
+        workingDir: /work
+        # Do a shallow clone, which is the fastest way to clone, by using the
+        # --depth, --branch, and --single-branch options
+        args:
+          - clone
+          - --depth
+          - "1"
+          - --branch
+          - "{{inputs.parameters.branch}}"
+          - --single-branch
+          - "{{inputs.parameters.repo}}"
+          - .
+    - name: build
+      inputs:
+        parameters:
+          - name: path
+      container:
+        image: golang:1.13
+        volumeMounts:
+          - mountPath: /work
+            name: work
+        workingDir: /work/{{inputs.parameters.path}}
+        env:
+          # Because this is not a Gomodule, we must turn modules off.
+          - name: GO111MODULE
+            value: "off"
+        command:
+          - go
+        args:
+          - build
+          - -v
+          - -o
+          - argosay
+          - ./...
+    - name: image
+      inputs:
+        parameters:
+          - name: path
+          - name: image
+      # Mount the configuration so we can push the image.
+      # This should create the /.docker/config.json file.
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: docker-config
+      container:
+        readinessProbe:
+          exec:
+            command: [ sh, -c, "buildctl debug workers" ]
+        image: moby/buildkit:v0.9.3-rootless
+        volumeMounts:
+          - name: work
+            mountPath: /work
+          - name: docker-config
+            mountPath: /.docker
+        workingDir: /work/{{inputs.parameters.path}}
+        env:
+          - name: BUILDKITD_FLAGS
+            value: --oci-worker-no-process-sandbox
+          - name: DOCKER_CONFIG
+            value: /.docker
+        command:
+          - buildctl-daemonless.sh
+        args:
+          - build
+          - --frontend
+          - dockerfile.v0
+          - --local
+          - context=.
+          - --local
+          - dockerfile=.
+          - --output
+          - type=image,name=docker.io/{{inputs.parameters.image}},push=true

@@ -1,0 +1,211 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: 2019-06-26T09:11:58Z
+  generateName: dag-disable-fail-fast-
+  generation: 1
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: dag-disable-fail-fast-r6xdc
+  namespace: default
+  resourceVersion: "15772210"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/dag-disable-fail-fast-r6xdc
+  uid: 734516b5-97f2-11e9-9fea-00163e00cf4e
+spec:
+
+  entrypoint: statis
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: a
+    outputs: {}
+  - container:
+      args:
+      - sleep 30; echo haha
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: b
+    outputs: {}
+    retryStrategy:
+      limit: 2
+  - container:
+      args:
+      - echo intentional failure; exit 2
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: c
+    outputs: {}
+    retryStrategy:
+      limit: 1
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: d
+    outputs: {}
+  - dag:
+      failFast: false
+      tasks:
+      -
+        name: A
+        template: a
+      -
+        dependencies:
+        - A
+        name: B
+        template: b
+      -
+        dependencies:
+        - A
+        name: C
+        template: c
+      -
+        dependencies:
+        - B
+        name: D
+        template: d
+      -
+        dependencies:
+        - D
+        name: E
+        template: d
+    inputs: {}
+    metadata: {}
+    name: statis
+    outputs: {}
+status:
+  finishedAt: 2019-06-26T09:12:46Z
+  nodes:
+    dag-disable-fail-fast-r6xdc:
+      children:
+      - dag-disable-fail-fast-r6xdc-3928436299
+      displayName: dag-disable-fail-fast-r6xdc
+      finishedAt: 2019-06-26T09:12:46Z
+      id: dag-disable-fail-fast-r6xdc
+      name: dag-disable-fail-fast-r6xdc
+      phase: Failed
+      startedAt: 2019-06-26T09:11:58Z
+      templateName: statis
+      type: DAG
+    dag-disable-fail-fast-r6xdc-3256495944:
+      boundaryID: dag-disable-fail-fast-r6xdc
+      displayName: C(0)
+      finishedAt: 2019-06-26T09:12:08Z
+      id: dag-disable-fail-fast-r6xdc-3256495944
+      message: failed with exit code 2
+      name: dag-disable-fail-fast-r6xdc.C(0)
+      phase: Failed
+      startedAt: 2019-06-26T09:12:03Z
+      templateName: c
+      type: Pod
+    dag-disable-fail-fast-r6xdc-3457680277:
+      boundaryID: dag-disable-fail-fast-r6xdc
+      displayName: C(1)
+      finishedAt: 2019-06-26T09:12:12Z
+      id: dag-disable-fail-fast-r6xdc-3457680277
+      message: failed with exit code 2
+      name: dag-disable-fail-fast-r6xdc.C(1)
+      phase: Failed
+      startedAt: 2019-06-26T09:12:09Z
+      templateName: c
+      type: Pod
+    dag-disable-fail-fast-r6xdc-3928436299:
+      boundaryID: dag-disable-fail-fast-r6xdc
+      children:
+      - dag-disable-fail-fast-r6xdc-3945213918
+      - dag-disable-fail-fast-r6xdc-3961991537
+      displayName: A
+      finishedAt: 2019-06-26T09:12:02Z
+      id: dag-disable-fail-fast-r6xdc-3928436299
+      name: dag-disable-fail-fast-r6xdc.A
+      phase: Succeeded
+      startedAt: 2019-06-26T09:11:58Z
+      templateName: a
+      type: Pod
+    dag-disable-fail-fast-r6xdc-3945213918:
+      boundaryID: dag-disable-fail-fast-r6xdc
+      children:
+      - dag-disable-fail-fast-r6xdc-4286504589
+      displayName: B
+      finishedAt: 2019-06-26T09:12:36Z
+      id: dag-disable-fail-fast-r6xdc-3945213918
+      name: dag-disable-fail-fast-r6xdc.B
+      phase: Succeeded
+      startedAt: 2019-06-26T09:12:03Z
+      type: Retry
+    dag-disable-fail-fast-r6xdc-3961991537:
+      boundaryID: dag-disable-fail-fast-r6xdc
+      children:
+      - dag-disable-fail-fast-r6xdc-3256495944
+      - dag-disable-fail-fast-r6xdc-3457680277
+      displayName: C
+      finishedAt: 2019-06-26T09:12:13Z
+      id: dag-disable-fail-fast-r6xdc-3961991537
+      message: No more retries left
+      name: dag-disable-fail-fast-r6xdc.C
+      phase: Failed
+      startedAt: 2019-06-26T09:12:03Z
+      type: Retry
+    dag-disable-fail-fast-r6xdc-3978769156:
+      boundaryID: dag-disable-fail-fast-r6xdc
+      children:
+      - dag-disable-fail-fast-r6xdc-3995546775
+      displayName: D
+      finishedAt: 2019-06-26T09:12:41Z
+      id: dag-disable-fail-fast-r6xdc-3978769156
+      name: dag-disable-fail-fast-r6xdc.D
+      phase: Succeeded
+      startedAt: 2019-06-26T09:12:37Z
+      templateName: d
+      type: Pod
+    dag-disable-fail-fast-r6xdc-3995546775:
+      boundaryID: dag-disable-fail-fast-r6xdc
+      displayName: E
+      finishedAt: 2019-06-26T09:12:45Z
+      id: dag-disable-fail-fast-r6xdc-3995546775
+      name: dag-disable-fail-fast-r6xdc.E
+      phase: Succeeded
+      startedAt: 2019-06-26T09:12:42Z
+      templateName: d
+      type: Pod
+    dag-disable-fail-fast-r6xdc-4286504589:
+      boundaryID: dag-disable-fail-fast-r6xdc
+      children:
+      - dag-disable-fail-fast-r6xdc-3978769156
+      displayName: B(0)
+      finishedAt: 2019-06-26T09:12:36Z
+      id: dag-disable-fail-fast-r6xdc-4286504589
+      name: dag-disable-fail-fast-r6xdc.B(0)
+      phase: Succeeded
+      startedAt: 2019-06-26T09:12:03Z
+      templateName: b
+      type: Pod
+  phase: Failed
+  startedAt: 2019-06-26T09:11:58Z

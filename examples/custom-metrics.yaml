@@ -1,0 +1,88 @@
+# For complete documentation please see:
+#
+#   docs/metrics.md
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: steps
+  metrics:
+    prometheus:
+      - name: duration_gauge
+        labels:
+          - key: name
+            value: workflow
+        help: "Duration gauge by name"
+        gauge:
+          realtime: true                  # This metric will be emitted in real time. For more info see: docs/metrics.md
+          value: "{{workflow.duration}}"  # Use {{workflow.duration}} in workflow-level and {{duration}} in template-level
+
+  templates:
+    - name: steps
+      metrics:
+        prometheus:
+          - name: duration_gauge
+            labels:
+              - key: name
+                value: steps
+            help: "Duration gauge by name"
+            gauge:
+              realtime: true
+              value: "{{duration}}"       # Use {{duration}} in template-level and {{workflow.duration}} in workflow-level
+      steps:
+        - - name: random-int
+            template: random-int
+        - - name: flakey
+            template: flakey
+
+    - name: random-int
+      metrics:
+        prometheus:
+          - name: random_int_step_histogram
+            help: "Value of the int emitted by random-int at step level"
+            when: "{{status}} == Succeeded"    # Only emit metric when step succeeds
+            histogram:
+              buckets:
+                - 2.01
+                - 4.01
+                - 6.01
+                - 8.01
+                - 10.01
+              value: "{{outputs.parameters.rand-int-value}}"
+          - name: duration_gauge
+            labels:
+              - key: name
+                value: random-int
+            help: "Duration gauge by name"
+            gauge:
+              realtime: true
+              value: "{{duration}}"
+      outputs:
+        parameters:
+          - name: rand-int-value
+            globalName: rand-int-value
+            valueFrom:
+              path: /tmp/rand_int.txt
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
+
+    - name: flakey
+      metrics:
+        prometheus:
+          - name: result_counter
+            help: "Count of step execution by result status"
+            labels:
+              - key: name
+                value: flakey
+              - key: status
+                value: "{{status}}"
+            counter:
+              value: "1"
+      container:
+        image: python:alpine3.6
+        command: ["python", -c]
+        # fail with a 66% probability
+        args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]

@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-whalesay-template
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.message}}"]
+        imagePullPolicy: IfNotPresent

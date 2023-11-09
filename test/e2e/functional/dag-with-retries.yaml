@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-with-retries-
+spec:
+  entrypoint: dag-with-retries
+  templates:
+  - name: dag-with-retries
+    dag:
+      tasks:
+      -
+        name: step1
+        template: randomly-fail
+    inputs: {}
+    metadata: {}
+    outputs: {}
+  - name: randomly-fail
+    retryStrategy:
+      limit: 20
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit $(( ${RANDOM} % 5 ))"]

@@ -1,0 +1,14 @@
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  generateName: pending-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        # too much to be scheduled
+        resources:
+          requests:
+            memory: 1000Gi

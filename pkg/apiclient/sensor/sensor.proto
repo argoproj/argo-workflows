@@ -1,0 +1,102 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/sensor";
+
+import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "k8s.io/api/core/v1/generated.proto";
+import "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1/generated.proto";
+
+package sensor;
+
+message ListSensorsRequest {
+  string namespace = 1;
+  k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+}
+
+message CreateSensorRequest {
+  string namespace = 1;
+  github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor sensor = 2;
+  k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 3;
+}
+
+message GetSensorRequest {
+  string name = 1;
+  string namespace = 2;
+  k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
+}
+
+message UpdateSensorRequest {
+  string namespace = 1;
+  string name = 2;
+  github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor sensor = 3;
+}
+
+message DeleteSensorRequest {
+  string name = 1;
+  string namespace = 2;
+  k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
+}
+
+message DeleteSensorResponse {
+}
+
+message SensorsLogsRequest {
+  string namespace = 1;
+  // optional - only return entries for this sensor name
+  string name = 2;
+  // optional - only return entries for this trigger
+  string triggerName = 3;
+  // option - only return entries where `msg` contains this regular expressions
+  string grep = 4;
+  k8s.io.api.core.v1.PodLogOptions podLogOptions = 5;
+}
+
+// structured log entry
+message LogEntry {
+  string namespace = 1;
+  string sensorName = 2;
+  // optional - any trigger name
+  string triggerName = 3;
+  string level = 5;
+  k8s.io.apimachinery.pkg.apis.meta.v1.Time time = 6;
+  string msg = 7;
+  // optional - trigger dependency name
+  string dependencyName = 8;
+  // optional - Cloud Event context
+  string eventContext = 9;
+}
+
+message SensorWatchEvent {
+  string type = 1;
+  github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor object = 2;
+}
+
+service SensorService {
+  rpc ListSensors(ListSensorsRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorList) {
+    option (google.api.http).get = "/api/v1/sensors/{namespace}";
+  }
+  rpc SensorsLogs(SensorsLogsRequest) returns (stream LogEntry) {
+    option (google.api.http).get = "/api/v1/stream/sensors/{namespace}/logs";
+  }
+  rpc WatchSensors(ListSensorsRequest) returns (stream SensorWatchEvent) {
+    option (google.api.http).get = "/api/v1/stream/sensors/{namespace}";
+  }
+  rpc CreateSensor(CreateSensorRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor) {
+    option (google.api.http) = {
+      post : "/api/v1/sensors/{namespace}"
+      body : "*"
+    };
+  }
+  rpc UpdateSensor(UpdateSensorRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor) {
+    option (google.api.http) = {
+      put : "/api/v1/sensors/{namespace}/{name}"
+      body : "*"
+    };
+  }
+  rpc DeleteSensor(DeleteSensorRequest) returns (DeleteSensorResponse) {
+    option (google.api.http).delete = "/api/v1/sensors/{namespace}/{name}";
+  }
+  rpc GetSensor(GetSensorRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor) {
+    option (google.api.http).get = "/api/v1/sensors/{namespace}/{name}";
+  }
+}

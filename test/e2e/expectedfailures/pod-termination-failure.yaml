@@ -1,0 +1,61 @@
+# Simulate the case of pod termination due to reasons such as node failure.
+# It should fast fail if termination is detected.
+# 
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sleeptest-
+spec:
+  entrypoint: entry
+  templates:
+    - name: entry
+      dag:
+        tasks:
+          - name: sleep
+            template: sleep-n-sec
+            arguments:
+              parameters:
+                - name: seconds
+                  value: "1200"
+          - name: check-running
+            template: check-status
+          - name: trigger-termination
+            dependencies: [check-running]
+            template: delete-sleep-pod
+            arguments:
+              parameters:
+                - name: pod
+                  value: "{{tasks.check-running.outputs.result}}"
+            when: "\"{{tasks.check-running.outputs.result}}\" != \"failed\""
+    - name: sleep-n-sec
+      inputs:
+        parameters:
+          - name: seconds
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
+    - name: check-status
+      script:
+        image: bitnami/kubectl:1.15.3-ol-7-r165
+        command: [bash]
+        source: |
+          host=`hostname`;
+          result="failed";
+          for i in $(seq 1 20); do
+            sleep 5;
+            if [[ `kubectl get po | grep sleeptest | grep -i running| grep -v $host | wc -l` -gt 0 ]]; then
+              result=`kubectl get po | grep sleeptest | grep -i running| grep -v $host | awk '{print $1}'`;
+              break;
+            fi
+          done
+          echo $result;
+    - name: delete-sleep-pod
+      inputs:
+        parameters:
+          - name: pod
+      container:
+        image: bitnami/kubectl:1.15.3-ol-7-r165
+        command: [bash, -c]
+        args: ["kubectl delete po {{inputs.parameters.pod}}"]
+

@@ -1,0 +1,21 @@
+.workflow-logs-viewer {
+  .select {
+    width: auto;
+  }
+}
+
+.log-box {
+  min-height: 500px;
+  max-height: 800px;
+  padding: 10px;
+  margin: 10px;
+  background-color: white;
+}
+
+.log-menu {
+  display: flex;
+  column-gap: 12px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}

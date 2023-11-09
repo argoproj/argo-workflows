@@ -1,0 +1,34 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+@keyframes flowing {
+  50% {
+    stroke: $argo-running-color;
+  }
+  to {
+    stroke-dashoffset: -128;
+  }
+}
+
+.graph {
+  overflow: scroll;
+}
+
+.graph.events {
+  .node {
+    &.Ready {
+      .bg {
+        fill: $argo-running-color;
+      }
+    }
+  }
+
+  .edge {
+    path {
+      stroke-dasharray: 8;
+    }
+
+    &.flow path {
+      animation: flowing 3s ease-in-out none;
+    }
+  }
+}

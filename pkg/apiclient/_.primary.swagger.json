@@ -1,0 +1,334 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "host": "localhost:2746",
+  "info": {
+    "title": "Argo Workflows API",
+    "description": "Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. For more information, please see https://argoproj.github.io/argo-workflows/",
+    "version": "VERSION"
+  },
+  "securityDefinitions": {
+    "BearerToken": {
+      "description": "Bearer Token authentication",
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "BearerToken": []
+    }
+  ],
+  "paths": {
+    "/artifact-files/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an artifact.",
+        "operationId": "ArtifactService_GetArtifactFile",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "idDiscriminator",
+            "in": "path",
+            "required": true,
+            "enum": [
+              "workflow",
+              "archived-workflows "
+            ]
+          },
+          {
+            "type": "string",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactDiscriminator",
+            "in": "path",
+            "required": true,
+            "enum": [
+              "outputs"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an output artifact.",
+        "operationId": "ArtifactService_GetOutputArtifact",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/input-artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an input artifact.",
+        "operationId": "ArtifactService_GetInputArtifact",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an output artifact by UID.",
+        "operationId": "ArtifactService_GetOutputArtifactByUID",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "uid",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an input artifact by UID.",
+        "operationId": "ArtifactService_GetInputArtifactByUID",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "uid",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "io.k8s.apimachinery.pkg.runtime.Object": {
+      "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
+    },
+    "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ParallelSteps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStep"
+      }
+    },
+    "google.protobuf.Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.Error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

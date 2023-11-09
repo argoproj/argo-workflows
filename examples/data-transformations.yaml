@@ -1,0 +1,61 @@
+# See doc docs/data-sourcing-and-transformation.md
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: data-transformations-
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflow demonstrates using a data template to list in an S3 bucket
+      and then process those log files.
+    workflows.argoproj.io/version: ">= 3.1.0"
+spec:
+  entrypoint: data-transformations
+  templates:
+    - name: data-transformations
+      steps:
+        - - name: list-log-files
+            template: list-log-files
+        - - name: process-logs
+            template: process-logs
+            withParam: "{{steps.list-log-files.outputs.result}}"
+            arguments:
+              artifacts:
+                - name: file
+                  s3:
+                    key: "{{item}}"
+
+              parameters:
+                - name: file-name
+                  value: "{{item}}"
+
+    - name: list-log-files
+      data:
+        source:
+          artifactPaths:
+            name: test-bucket
+            s3:
+              bucket: my-bucket
+
+        transformation:
+          - expression: "filter(data, {# endsWith \"main.log\"})"
+      outputs:
+        artifacts:
+          - name: file
+            path: /file
+
+    - name: process-logs
+      inputs:
+        parameters:
+          - name: file-name
+        artifacts:
+          - name: file
+            path: /file
+      container:
+        image:  argoproj/argosay:v2
+        command: [ sh, -c ]
+        args:
+          - |
+            echo {{inputs.parameters.file-name}}
+            head /file
+
+

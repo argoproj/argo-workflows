@@ -1,0 +1,34 @@
+name: Changelog
+
+on:
+  push:
+    tags:
+      - v*
+      - "!v0.0.0"
+
+permissions:
+  contents: read
+
+jobs:
+  generate_changelog:
+    name: Generate changelog
+    if: github.repository == 'argoproj/argo-workflows'
+    permissions:
+      contents: write  # for peter-evans/create-pull-request to create branch
+      pull-requests: write  # for peter-evans/create-pull-request to create a PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+      - run: git fetch --prune --prune-tags
+      - run: git tag -l 'v*'
+      # avoid invoking `make` to reduce the risk of a Makefile bug failing this workflow
+      - run: ./hack/changelog.sh > CHANGELOG.md
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          title: 'docs: updated CHANGELOG.md'
+          commit-message: 'docs: updated CHANGELOG.md'
+          branch: create-pull-request/changelog
+          signoff: true

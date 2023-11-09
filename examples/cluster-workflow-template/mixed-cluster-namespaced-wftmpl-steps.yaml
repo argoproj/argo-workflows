@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-steps-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        templateRef:
+          name: workflow-template-whalesay-template
+          template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+    - - name: hello2a
+        templateRef:
+          name: cluster-workflow-template-inner-steps
+          template: inner-steps
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2a"
+      - name: hello2b
+        templateRef:
+          name: workflow-template-whalesay-template
+          template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2b"

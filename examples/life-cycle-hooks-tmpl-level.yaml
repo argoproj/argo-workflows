@@ -1,0 +1,39 @@
+    apiVersion: argoproj.io/v1alpha1
+    kind: Workflow
+    metadata:
+      generateName: lifecycle-hook-tmpl-level-
+    spec:
+      entrypoint: main
+      templates:
+        - name: main
+          steps:
+            - - name: step-1
+                hooks:
+                  running: # Name of hook does not matter
+                    # Expr will not support `-` on variable name. Variable should wrap with `[]`
+                    expression: steps["step-1"].status == "Running"
+                    template: http
+                  success:
+                    expression: steps["step-1"].status == "Succeeded"
+                    template: http
+                template: echo
+            - - name: step2
+                hooks:
+                  running:
+                    expression: steps.step2.status == "Running"
+                    template: http
+                  success:
+                    expression: steps.step2.status == "Succeeded"
+                    template: http
+                template: echo
+
+        - name: echo
+          container:
+            image: alpine:3.6
+            command: [sh, -c]
+            args: ["echo \"it was heads\""]
+
+        - name: http
+          http:
+            # url: http://dummy.restapiexample.com/api/v1/employees
+            url: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"

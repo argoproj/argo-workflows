@@ -1,0 +1,153 @@
+metadata:
+  creationTimestamp: "2018-12-28T19:21:20Z"
+  generateName: failed-retries-
+  generation: 1
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: failed-retries-tjjsc
+  namespace: default
+  resourceVersion: "85216"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/failed-retries-tjjsc
+  uid: c18bba2a-0ad5-11e9-b44e-ea782c392741
+spec:
+
+  entrypoint: failed-retries
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: failed-retries
+    outputs: {}
+    steps:
+    - -
+        name: fail
+        template: fail
+      -
+        name: delayed-fail
+        template: delayed-fail
+  - container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+    retryStrategy:
+      limit: 1
+  - container:
+      args:
+      - sleep 1; exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: delayed-fail
+    outputs: {}
+    retryStrategy:
+      limit: 1
+status:
+  finishedAt: null
+  nodes:
+    failed-retries-tjjsc:
+      children:
+      - failed-retries-tjjsc-2095973878
+      displayName: failed-retries-tjjsc
+      finishedAt: null
+      id: failed-retries-tjjsc
+      name: failed-retries-tjjsc
+      phase: Running
+      startedAt: "2019-01-03T01:23:18Z"
+      templateName: failed-retries
+      type: Steps
+    failed-retries-tjjsc-20069324:
+      boundaryID: failed-retries-tjjsc
+      children:
+      - failed-retries-tjjsc-1229492679
+      - failed-retries-tjjsc-759866442
+      displayName: fail
+      finishedAt: "2019-01-03T01:23:32Z"
+      id: failed-retries-tjjsc-20069324
+      message: No more retries left
+      name: failed-retries-tjjsc[0].fail
+      phase: Failed
+      startedAt: "2019-01-03T01:23:18Z"
+      type: Retry
+    failed-retries-tjjsc-759866442:
+      boundaryID: failed-retries-tjjsc
+      displayName: fail(1)
+      finishedAt: "2018-12-28T19:21:32Z"
+      id: failed-retries-tjjsc-759866442
+      message: failed with exit code 1
+      name: failed-retries-tjjsc[0].fail(1)
+      phase: Failed
+      startedAt: "2019-01-03T01:23:27Z"
+      templateName: fail
+      type: Pod
+    failed-retries-tjjsc-1229492679:
+      boundaryID: failed-retries-tjjsc
+      displayName: fail(0)
+      finishedAt: "2018-12-28T19:21:26Z"
+      id: failed-retries-tjjsc-1229492679
+      message: failed with exit code 1
+      name: failed-retries-tjjsc[0].fail(0)
+      phase: Failed
+      startedAt: "2019-01-03T01:23:18Z"
+      templateName: fail
+      type: Pod
+    failed-retries-tjjsc-1375221696:
+      boundaryID: failed-retries-tjjsc
+      displayName: delayed-fail(0)
+      finishedAt: "2018-12-28T19:21:27Z"
+      id: failed-retries-tjjsc-1375221696
+      message: failed with exit code 1
+      name: failed-retries-tjjsc[0].delayed-fail(0)
+      phase: Failed
+      startedAt: "2019-01-03T01:23:18Z"
+      templateName: delayed-fail
+      type: Pod
+    failed-retries-tjjsc-1574533273:
+      boundaryID: failed-retries-tjjsc
+      children:
+      - failed-retries-tjjsc-1375221696
+      - failed-retries-tjjsc-2113289837
+      displayName: delayed-fail
+      finishedAt: null
+      id: failed-retries-tjjsc-1574533273
+      name: failed-retries-tjjsc[0].delayed-fail
+      phase: Running
+      startedAt: "2019-01-03T01:23:18Z"
+      type: Retry
+    failed-retries-tjjsc-2095973878:
+      boundaryID: failed-retries-tjjsc
+      children:
+      - failed-retries-tjjsc-20069324
+      - failed-retries-tjjsc-1574533273
+      displayName: '[0]'
+      finishedAt: null
+      id: failed-retries-tjjsc-2095973878
+      name: failed-retries-tjjsc[0]
+      phase: Running
+      startedAt: "2019-01-03T01:23:18Z"
+      type: StepGroup
+    failed-retries-tjjsc-2113289837:
+      boundaryID: failed-retries-tjjsc
+      displayName: delayed-fail(1)
+      finishedAt: "2018-12-28T19:21:33Z"
+      id: failed-retries-tjjsc-2113289837
+      message: failed with exit code 1
+      name: failed-retries-tjjsc[0].delayed-fail(1)
+      phase: Failed
+      startedAt: "2019-01-03T01:23:28Z"
+      templateName: delayed-fail
+      type: Pod
+  phase: Running
+  startedAt: "2019-01-03T01:23:18Z"

@@ -1,0 +1,80 @@
+# Conditionals
+
+We also support conditional execution. The syntax is implemented by [`govaluate`](https://github.com/Knetic/govaluate) which offers the support for complex syntax. See in the example:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: coinflip-
+spec:
+  entrypoint: coinflip
+  templates:
+  - name: coinflip
+    steps:
+    # flip a coin
+    - - name: flip-coin
+        template: flip-coin
+    # evaluate the result in parallel
+    - - name: heads
+        template: heads                       # call heads template if "heads"
+        when: "{{steps.flip-coin.outputs.result}} == heads"
+      - name: tails
+        template: tails                       # call tails template if "tails"
+        when: "{{steps.flip-coin.outputs.result}} == tails"
+    - - name: flip-again
+        template: flip-coin
+    - - name: complex-condition
+        template: heads-tails-or-twice-tails
+        # call heads template if first flip was "heads" and second was "tails" OR both were "tails"
+        when: >-
+            ( {{steps.flip-coin.outputs.result}} == heads &&
+              {{steps.flip-again.outputs.result}} == tails
+            ) ||
+            ( {{steps.flip-coin.outputs.result}} == tails &&
+              {{steps.flip-again.outputs.result}} == tails )
+      - name: heads-regex
+        template: heads                       # call heads template if ~ "hea"
+        when: "{{steps.flip-again.outputs.result}} =~ hea"
+      - name: tails-regex
+        template: tails                       # call heads template if ~ "tai"
+        when: "{{steps.flip-again.outputs.result}} =~ tai"
+
+  # Return heads or tails based on a random number
+  - name: flip-coin
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import random
+        result = "heads" if random.randint(0,1) == 0 else "tails"
+        print(result)
+
+  - name: heads
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was heads\""]
+
+  - name: tails
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was tails\""]
+
+  - name: heads-tails-or-twice-tails
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was heads the first flip and tails the second. Or it was two times tails.\""]
+```
+
+!!! Warning "Nested Quotes"
+    If the parameter value contains quotes, it may invalidate the `govaluate` expression.
+    To handle parameters with quotes, embed an [`expr` expression](../variables.md#expression) in the conditional.
+    For example:
+
+<!-- this is supposed to be inside the infobox above, but markdownlint errors when trying to do that and has no in-line ignore yet (https://github.com/markdownlint/markdownlint/issues/16) -->
+```yaml
+when: "{{=inputs.parameters['may-contain-quotes'] == 'example'}}"
+```

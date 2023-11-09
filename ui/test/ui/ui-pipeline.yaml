@@ -1,0 +1,130 @@
+apiVersion: dataflow.argoproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: ui
+spec:
+  steps:
+    - name: code
+      code:
+        runtime: golang1-16
+        source: |
+          package main
+          import "context"
+          func Handler(ctx context.Context, m []byte) ([]byte, error) {
+            return m, nil
+          }
+      sources:
+        - cron:
+            schedule: "*/3 * * * *"
+      sinks:
+        - stan:
+            subject: event-bus
+
+    - name: container
+      container:
+        image: golang:1.17
+        args:
+          - sh
+          - -c
+          - exit 0
+      sources:
+        - name: kafka
+          kafka:
+            topic: input-topic
+        - name: stan
+          stan:
+            subject: input-subject
+      sinks:
+        - stan:
+            subject: event-bus
+
+    - name: git
+      git:
+        branch: main
+        command:
+          - go
+          - run
+          - .
+        env:
+          - name: GOCACHE
+            value: /tmp/.gocache
+        image: golang:1.17
+        path: examples/git
+        url: https://github.com/argoproj-labs/argo-dataflow
+      sources:
+        - name: http
+          http:
+            serviceName: my-service
+        - name: db
+          db:
+            query: "select 1"
+      sinks:
+        - stan:
+            subject: event-bus
+
+    - name: expand
+      expand: { }
+      sources:
+        - stan:
+            subject: event-bus
+      sinks:
+        - stan:
+            subject: expanded
+    - name: flatten
+      flatten: { }
+      sources:
+        - stan:
+            subject: expanded
+      sinks:
+        - name: kafka
+          kafka:
+            topic: output-topic
+        - name: stan
+          stan:
+            subject: output-subject
+    - name: filter
+      filter:
+        expression: "true"
+      sources:
+        - stan:
+            subject: event-bus
+      sinks:
+        - name: http
+          http:
+            url: http://external-service
+        - name: log
+          log: { }
+        - name: db
+          db:
+            actions:
+              - sql: "select 1"
+    - name: map
+      map:
+        expression: "true"
+      sources:
+        - stan:
+            subject: event-bus
+      sinks:
+        - name: s3
+          s3:
+            bucket: other-bucket
+        - name: disk
+          volume:
+            emptyDir: { }
+    - name: files
+      cat: { }
+      sources:
+        - name: s3
+          s3:
+            bucket: my-bucket
+        - name: disk
+          volume:
+            emptyDir: { }
+      sinks:
+        - stan:
+            subject: event-bus
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: ui-git

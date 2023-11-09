@@ -1,0 +1,47 @@
+# This workflow produces a complex situation where logs.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: log-problems-
+spec:
+  entrypoint: plan
+  templates:
+    - name: plan
+      steps:
+        - - name: report-1
+            template: report
+            arguments:
+              parameters:
+                - name: message
+                  value: one
+        - - name: report-2
+            template: report
+            arguments:
+              parameters:
+                - name: message
+                  value: two
+        - - name: report-3
+            template: report
+            arguments:
+              parameters:
+                - name: message
+                  value: three
+        - - name: report-4
+            template: report
+            arguments:
+              parameters:
+                - name: message
+                  value: four
+        - - name: report-5
+            template: report
+            arguments:
+              parameters:
+                - name: message
+                  value: five
+    - name: report
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, "{{inputs.parameters.message}}"]

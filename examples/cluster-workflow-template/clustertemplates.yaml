@@ -1,0 +1,151 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-whalesay-template
+spec:
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-random-fail-template
+spec:
+  templates:
+  - name: random-fail-template
+    retryStrategy:
+      limit: 10
+    container:
+      image: python:alpine3.6
+      command: [python, -c]
+      # fail with a 66% probability
+      args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-inner-steps
+spec:
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+  - name: inner-steps
+    steps:
+    - - name: inner-hello1
+        templateRef:
+          name: cluster-workflow-template-whalesay-template
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: "inner-hello1"
+    - - name: inner-hello2a
+        templateRef:
+          name: cluster-workflow-template-whalesay-template
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: "inner-hello2a"
+      - name: inner-hello2b
+        templateRef:
+          name: cluster-workflow-template-whalesay-template
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: "inner-hello2b"
+---
+# The following workflow executes a diamond workflow
+#
+#   A
+#  / \
+# B   C
+#  \ /
+#   D
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-inner-dag
+spec:
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+  - name: inner-diamond
+    dag:
+      tasks:
+      - name: inner-A
+        templateRef:
+          name: cluster-workflow-template-whalesay-template
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: inner-A
+      - name: inner-B
+        depends: "inner-A"
+        template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: inner-B
+      - name: inner-C
+        depends: "inner-A"
+        template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: inner-C
+      - name: inner-D
+        depends: "inner-B && inner-C"
+        templateRef:
+          name: cluster-workflow-template-whalesay-template
+          template: whalesay-template
+          clusterScope: true
+        arguments:
+          parameters:
+          - name: message
+            value: inner-D
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-submittable
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]

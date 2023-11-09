@@ -1,0 +1,11 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-1-
+spec:
+  entrypoint: exit
+  templates:
+    - name: exit
+      container:
+        image: argoproj/argosay:v2
+        args: [exit, "1"]

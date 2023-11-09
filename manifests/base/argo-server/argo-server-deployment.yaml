@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      serviceAccountName: argo-server
+      containers:
+        - name: argo-server
+          image: quay.io/argoproj/argocli:latest
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          args: [ server ]
+          env: []
+          ports:
+            - name: web
+              containerPort: 2746
+          readinessProbe:
+            httpGet:
+              port: 2746
+              scheme: HTTPS
+              path: /
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+      volumes:
+        - name: tmp
+          emptyDir: { }
+      securityContext:
+        runAsNonRoot: true
+      nodeSelector:
+        kubernetes.io/os: linux

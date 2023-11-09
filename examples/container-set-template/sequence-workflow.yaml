@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sequence-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflow demonstrates running a sequence of containers within a single pod.
+    workflows.argoproj.io/version: ">= 3.1.0"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2
+            dependencies: ["a"]
+          - name: c
+            image: argoproj/argosay:v2
+            dependencies: ["b"]

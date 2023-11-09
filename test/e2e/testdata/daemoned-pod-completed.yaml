@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: daemoned-pod-completed-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: daemoned
+            template: daemoned
+          - name: daemon-dependent
+            dependencies: [daemoned]
+            template: daemon-dependent
+    - name: daemoned
+      daemon: true
+      container:
+        image: argoproj/argosay:v2
+        command: ["sleep"]
+        args: ["60"]
+    - name: daemon-dependent
+      container:
+        image: argoproj/argosay:v2
+

@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-primay-branch-
+spec:
+  entrypoint: statis
+  templates:
+  - name: a
+    container:
+      image:  docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+  - name: b
+    retryStrategy:
+      limit: "2"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["sleep 30; echo haha"]
+  - name: c
+    retryStrategy:
+      limit: "3"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo intentional failure; exit 2"]
+  - name: d
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+  - name: statis
+    dag:
+      failFast: false
+      tasks:
+      - name: A
+        template: a
+      - name: B
+        depends: "A"
+        template: b
+      - name: C
+        depends: "A"
+        template: c
+      - name: D
+        depends: "B"
+        template: d
+      - name: E
+        depends: "D"
+        template: d

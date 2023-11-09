@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-patch-basic-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This example shows a standard patch with the default mergeStrategy
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: patch
+      manifest: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: {{pod.name}}
+          annotations:
+            foo: bar
+

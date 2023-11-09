@@ -1,0 +1,8 @@
+# not fix for line length
+MD013: false
+# mkdocs uses 4 spaces indent
+MD007:
+  indent: 4
+MD024:
+  siblings_only: true
+MD034: false

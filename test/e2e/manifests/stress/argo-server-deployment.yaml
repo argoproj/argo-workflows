@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  template:
+    spec:
+      priorityClassName: argo-server
+      containers:
+        - name: argo-server
+          args:
+            - server
+            - --secure=false
+            - --auth-mode=server
+          readinessProbe:
+            httpGet:
+              scheme: HTTP

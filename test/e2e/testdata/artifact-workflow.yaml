@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args: 
+          - |
+            mkdir -p /out/subdirectory
+            echo ":) Hello Argo!" > /out/subdirectory/sub-file-1
+            echo ":) Hello Argo!" > /out/subdirectory/sub-file-2
+            echo ":) Hello Argo!" > /tmp/main-file
+      outputs:
+        artifacts:
+          - name: out
+            path: /out
+            s3:
+              key: out
+            archive:
+              none: { }
+          - name: main-file
+            path: /tmp/main-file
+            s3:
+              key: main-file
+            archive:
+              none: { }

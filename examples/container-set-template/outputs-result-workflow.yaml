@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: outputs-result-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflow demonstrates collecting outputs (specifically the stdout result) from a pod.
+
+      Specifially, you must have a container named "main".
+    workflows.argoproj.io/version: ">= 3.1.0"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: group
+          - name: b
+            template: verify
+            arguments:
+              parameters:
+                - name: x
+                  value: "{{tasks.a.outputs.result}}"
+            dependencies: [ "a" ]
+
+    - name: group
+      containerSet:
+        containers:
+          - name: main
+            image: python:alpine3.6
+            command:
+              - python
+              - -c
+            args:
+              - |
+                print("hi")
+
+    - name: verify
+      inputs:
+        parameters:
+          - name: x
+      script:
+        image: python:alpine3.6
+        command:
+          - python
+        source: |
+          assert "{{inputs.parameters.x}}" == "hi"

@@ -1,0 +1,119 @@
+# This is an example of back-filling day for a daily cron workflow.
+# See ../docs/cron-backfill.md
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: job
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: date
+        # use "yesterday" is a magic value to tell the script it needs to determine the day to run
+        value: yesterday
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: date
+      script:
+        image: docker/whalesay:latest
+        command:
+          - sh
+        source: |
+          date="{{inputs.parameters.date}}"
+          if [ $date = yesterday ]; then
+            date=$(date -d yesterday +%Y-%m-%d)
+          fi
+          echo "run for $date"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: daily-job
+spec:
+  # run daily at 2am
+  schedule: "0 2 * * *"
+  workflowSpec:
+    workflowTemplateRef:
+      name: job
+---
+# This version will create jobs as fast as it can - not waiting for
+# each to complete. Use this when you really need each workflow separate.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: backfill-v1
+spec:
+  entrypoint: main
+  # the backfill must use a service account which can create workflows
+  # you should not - despite this example - use "argo-server"
+  serviceAccountName: argo-server
+  templates:
+    - name: main
+      steps:
+        - - name: day
+            template: create-job
+            arguments:
+              parameters:
+                - name: date
+                  value: "{{item}}"
+            withSequence:
+              # run for the 19th to the 21st
+              start: "19"
+              end: "21"
+              format: "2020-05-%02X"
+    - # this template creates each workflow
+      name: create-job
+      inputs:
+        parameters:
+          - name: date
+      resource:
+        action: apply
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            # using a name based on the date prevents re-creating resources,
+            # making this more robust
+            name: job-{{inputs.parameters.date}}
+          spec:
+            entrypoint: main
+            templates:
+              - name: main
+                steps:
+                  - - name: start-job
+                      arguments:
+                        parameters:
+                          - name: date
+                            value: "{{inputs.parameters.date}}"
+                      templateRef:
+                        name: job
+                        template: main
+---
+# This version creates each job as part of the workflow, and limits concurrent jobs using
+# `spec.parallelism`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: backfill-v2
+spec:
+  entrypoint: main
+  # limit to one job at a time
+  parallelism: 1
+  templates:
+    - name: main
+      steps:
+        - - name: create-job
+            templateRef:
+              name: job
+              template: main
+            arguments:
+              parameters:
+                - name: date
+                  value: "{{item}}"
+            withSequence:
+              # run for the 19th to the 21st
+              start: "19"
+              end: "21"
+              format: "2020-05-%02X"

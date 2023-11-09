@@ -1,0 +1,50 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflows-toolbar {
+    width: calc(100% - 60px);
+    background: $argo-color-gray-2;
+    padding: 0.5em 20px;
+    margin-bottom: 0.5em;
+    display: flex;
+    align-items: center;
+    position: fixed;
+    right: 0px;
+    top: calc(50px * 2);
+    font-size: 15px;
+    z-index: 10;
+
+    &__actions {
+        margin-left: auto;
+        line-height: 3em;
+        &--action {
+            cursor: pointer;
+            color: white;
+            border-radius: 3px;
+            padding: 0.5em 10px;
+            margin-right: 10px;
+            background-color: $argo-color-gray-6;
+        }
+
+        button:disabled {
+            background-color: $argo-color-gray-4;
+            cursor: not-allowed;
+            color: $argo-color-gray-6;
+        }
+
+        &--suspend {
+            background-color: $argo-color-gray-6;
+        }
+
+        &--resume {
+            background-color: $argo-color-green;
+        }
+
+        &--delete {
+            background-color: $argo-color-red;
+        }
+    }
+}
+
+.workflows-toolbar.hidden {
+    display: none;
+}

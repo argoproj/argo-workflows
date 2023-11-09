@@ -1,0 +1,8 @@
+/client/.openapi-generator/
+/client/api/
+/client/src/
+/client/gradle/
+/client/.gitignore
+/client/.openapi-generator-ignore
+/client/gradlew
+/client/*.*

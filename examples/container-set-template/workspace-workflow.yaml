@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workspace-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflow demonstrates using a workspace to share files between containers. This also allows containers not
+      called "main" to create output artifacts.
+    workflows.argoproj.io/version: ">= 3.1.0"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: workspace
+          emptyDir: { }
+      containerSet:
+        volumeMounts:
+          - mountPath: /workspace
+            name: workspace
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+            args: [ echo, hi, /workspace/out ]
+          - name: main
+            image: argoproj/argosay:v2
+      outputs:
+        parameters:
+          - name: out
+            valueFrom:
+              path: /workspace/out
+        artifacts:
+          - name: out
+            path: /workspace/out

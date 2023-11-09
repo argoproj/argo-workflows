@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: label-value-from-
+  annotations:
+    workflows.argoproj.io/version: ">= v3.3.0"
+    workflows.argoproj.io/description: |
+      This examples show you how to add labels based on an expression.
+      You can then query workflows based on the parameters they were invoked with.
+      In this specific case, the value of foo will set as a label on the workflow.
+spec:
+  arguments:
+    parameters:
+      - name: foo
+        value: bar
+  workflowMetadata:
+    labelsFrom:
+      foo:
+        expression: workflow.parameters.foo
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2

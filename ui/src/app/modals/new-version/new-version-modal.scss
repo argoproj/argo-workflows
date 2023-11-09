@@ -1,0 +1,28 @@
+
+.new-version-modal-banner {
+  color: gold;
+  text-align: center;
+  font-size: 60px;
+}
+
+.new-version-modal-title {
+  text-align: center;
+}
+
+.new-version-modal-bullets {
+  list-style: none;
+}
+
+.new-version-modal-bullets li:before {
+  content: "✴";
+  color: gold;
+  font-weight: bold;
+  display: inline-block; /* Needed to add space between the bullet and the text */
+  width: 1em; /* Also needed for space (tweak if needed) */
+  margin-left: -1em; /* Also needed for space (tweak if needed) */
+}
+
+
+.new-version-modal-footer {
+  text-align: center;
+}

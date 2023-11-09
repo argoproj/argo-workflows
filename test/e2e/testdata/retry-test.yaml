@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-test-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: steps-outer-step1
+            template: whalesay
+        - - name: steps-outer-step2
+            template: steps-inner
+
+    - name: steps-inner
+      steps:
+        - - name: steps-inner-step1
+            template: whalesay
+        - - name: steps-inner-step2
+            template: approve
+
+    - name: approve
+      suspend: {}
+
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2

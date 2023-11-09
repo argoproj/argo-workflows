@@ -1,0 +1,44 @@
+# This example demonstrates a workflow accepting a list of items (as JSON string)
+# as an input parameter, and using it for expanding a step into multiple steps.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-param-arg-
+spec:
+  entrypoint: loop-param-arg-example
+  arguments:
+    parameters:
+    - name: os-list
+      value: |
+        [
+          { "image": "debian", "tag": "9.1" },
+          { "image": "debian", "tag": "8.9" },
+          { "image": "alpine", "tag": "3.6" },
+          { "image": "ubuntu", "tag": "17.10" }
+        ]
+
+  templates:
+  - name: loop-param-arg-example
+    inputs:
+      parameters:
+      - name: os-list
+    steps:
+    - - name: test-linux
+        template: cat-os-release
+        arguments:
+          parameters:
+          - name: image
+            value: "{{item.image}}"
+          - name: tag
+            value: "{{item.tag}}"
+        withParam: "{{inputs.parameters.os-list}}"
+
+  - name: cat-os-release
+    inputs:
+      parameters:
+      - name: image
+      - name: tag
+    container:
+      image: "{{inputs.parameters.image}}:{{inputs.parameters.tag}}"
+      command: [cat]
+      args: [/etc/os-release]

@@ -1,0 +1,46 @@
+# This example is used to demonstrate the resubmitting of a failed workflow with memoized results
+# from a previous run. Submit this workflow, which will very likely fail. When it does, resubmit
+# the failed workflow using the command:
+# argo resubmit --memoized WORKFLOWNAME
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resubmit-
+spec:
+  entrypoint: rand-fail-dag
+  templates:
+  - name: rand-fail-dag
+    dag:
+      tasks:
+      - name: A
+        template: random-fail
+      - name: B
+        template: rand-fail-steps
+      - name: C
+        depends: "B"
+        template: random-fail
+      - name: D
+        depends: "A && B"
+        template: random-fail
+
+  - name: rand-fail-steps
+    steps:
+    - - name: randfail1a
+        template: random-fail
+      - name: randfail1b
+        template: random-fail
+    - - name: randfail2a
+        template: random-fail
+      - name: randfail2b
+        template: random-fail
+      - name: randfail2c
+        template: random-fail
+      - name: randfail2d
+        template: random-fail
+
+  # fail with a 33% probability
+  - name: random-fail
+    container:
+      image: python:alpine3.6
+      command: ["python", -c]
+      args: ["import random; import sys; exit_code = random.choice([0, 0, 1]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"]

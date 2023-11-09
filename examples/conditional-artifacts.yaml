@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: conditional-artifacts-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      Conditional artifacts provide a way to choose the output artifacts based on expression.
+
+      In this example the main template has two steps which will run conditionall using `when` .
+
+      Based on the `when` condition one of step will not execute. The main template's output artifact named "result"
+      will be set to the executed step's output.
+    workflows.argoproj.io/version: '>= 3.1.0'
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: flip-coin
+            template: flip-coin
+        - - name: heads
+            template: heads
+            when: "{{steps.flip-coin.outputs.result}} == heads"
+          - name: tails
+            template: tails
+            when: "{{steps.flip-coin.outputs.result}} == tails"
+      outputs:
+        artifacts:
+          - name: result
+            fromExpression: "steps['flip-coin'].outputs.result == 'heads' ? steps.heads.outputs.artifacts.result : steps.tails.outputs.artifacts.result"
+
+    - name: flip-coin
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          import random
+          print("heads" if random.randint(0,1) == 0 else "tails")
+
+    - name: heads
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          with open("result.txt", "w") as f:
+            f.write("it was heads")
+      outputs:
+        artifacts:
+          - name: result
+            path: /result.txt
+
+    - name: tails
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          with open("result.txt", "w") as f:
+            f.write("it was tails")
+      outputs:
+        artifacts:
+          - name: result
+            path: /result.txt

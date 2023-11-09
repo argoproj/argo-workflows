@@ -1,0 +1,195 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: ci
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflows builds and tests Argo Workflows.
+
+      It demonstrates:
+
+      * Cache restore and store.
+      * Publishing test reports.
+spec:
+  arguments:
+    parameters:
+      - name: branch
+        value: master
+
+  entrypoint: main
+  onExit: cache-store
+
+  volumeClaimTemplates:
+    - metadata:
+        name: work
+      spec:
+        accessModes: [ ReadWriteOnce ]
+        resources:
+          requests:
+            storage: 64Mi
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: cache-restore
+            template: cache-restore
+          - name: clone
+            template: clone
+          - name: deps
+            template: deps
+            dependencies:
+              - clone
+              - cache-restore
+          - name: build
+            template: build
+            dependencies:
+              - deps
+          - name: test
+            template: test
+            dependencies:
+              - build
+
+    - name: cache-restore
+      inputs:
+        artifacts:
+          - name: GOMODCACHE
+            path: /mnt/GOMODCACHE
+            optional: true
+            s3:
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOMODCACHE"
+          - name: GOCACHE
+            path: /mnt/GOCACHE
+            optional: true
+            s3:
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOCACHE"
+      container:
+        volumeMounts:
+          - mountPath: /go/pkg/mod
+            name: work
+            subPath: mod
+          - mountPath: /root/.cache/go-build
+            name: work
+            subPath: cache
+        image: golang:1.18
+        workingDir: /go/src/github.com/golang/example
+        command: [ sh, -euxc ]
+        args:
+          - |
+            mkdir -p $(go env GOMODCACHE)
+            [ -e /mnt/GOMODCACHE ] && cp -Rf /mnt/GOMODCACHE $(go env GOMODCACHE)
+            mkdir -p $(go env GOCACHE)
+            [ -e /mnt/GOCACHE ] &&  cp -Rf /mnt/GOCACHE $(go env GOCACHE)
+
+    - name: cache-store
+      container:
+        volumeMounts:
+          - mountPath: /go/pkg/mod
+            name: work
+            subPath: GOMODCACHE
+          - mountPath: /root/.cache/go-build
+            name: work
+            subPath: GOCACHE
+        image: golang:1.18
+        workingDir: /go/src/github.com/golang/example
+      outputs:
+        artifacts:
+          - name: GOMODCACHE
+            path: /go/pkg/mod
+            optional: true
+            s3:
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOMODCACHE"
+          - name: GOCACHE
+            path: /root/.cache/go-build
+            optional: true
+            s3:
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOCACHE"
+
+    - name: clone
+      container:
+        volumeMounts:
+          - mountPath: /go/src/github.com/golang/example
+            name: work
+            subPath: src
+          - mountPath: /go/pkg/mod
+            name: work
+            subPath: GOMODCACHE
+          - mountPath: /root/.cache/go-build
+            name: work
+            subPath: GOCACHE
+        image: golang:1.18
+        workingDir: /go/src/github.com/golang/example
+        command: [ sh, -euxc ]
+        args:
+          - |
+            git clone -v -b "{{workflow.parameters.branch}}" --single-branch --depth 1 https://github.com/golang/example.git .
+
+    - name: deps
+      container:
+        image: golang:1.18
+        volumeMounts:
+          - mountPath: /go/src/github.com/golang/example
+            name: work
+            subPath: src
+          - mountPath: /go/pkg/mod
+            name: work
+            subPath: GOMODCACHE
+          - mountPath: /root/.cache/go-build
+            name: work
+            subPath: GOCACHE
+        workingDir: /go/src/github.com/golang/example
+        command: [ sh, -xuce ]
+        args:
+          - |
+            go mod download -x
+
+    - name: build
+      container:
+        image: golang:1.18
+        volumeMounts:
+          - mountPath: /go/src/github.com/golang/example
+            name: work
+            subPath: src
+          - mountPath: /go/pkg/mod
+            name: work
+            subPath: GOMODCACHE
+          - mountPath: /root/.cache/go-build
+            name: work
+            subPath: GOCACHE
+        workingDir: /go/src/github.com/golang/example
+        command: [ sh, -xuce ]
+        args:
+          - |
+            go build ./...
+
+    - name: test
+      container:
+        image: golang:1.18
+        volumeMounts:
+          - mountPath: /go/src/github.com/golang/example
+            name: work
+            subPath: src
+          - mountPath: /go/pkg/mod
+            name: work
+            subPath: GOMODCACHE
+          - mountPath: /root/.cache/go-build
+            name: work
+            subPath: GOCACHE
+        workingDir: /go/src/github.com/golang/example
+        command: [ sh, -euxc ]
+        args:
+          - |
+            go install github.com/jstemmer/go-junit-report@latest
+            go install github.com/alexec/junit2html@v0.0.2
+
+            trap 'cat test.out | go-junit-report | junit2html > test-report.html' EXIT
+
+            go test -v ./... 2>&1 > test.out
+      outputs:
+        artifacts:
+          - name: test-report
+            path: /go/src/github.com/golang/example/test-report.html
+            archive:
+              none: { }
+            s3:
+              key: "{{workflow.parameters.branch}}/test-report.html"

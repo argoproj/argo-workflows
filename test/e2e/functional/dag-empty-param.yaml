@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-param-result-
+spec:
+  entrypoint: dag-param-result-example
+  templates:
+  - name: dag-param-result-example
+    dag:
+      tasks:
+      - name: generate
+        template: gen-number-list
+      - name: sleep
+        template: sleep-n-sec
+        arguments:
+          parameters:
+          - name: seconds
+            value: "{{item}}"
+        withParam: "{{tasks.generate.outputs.result}}"
+        dependencies:
+        - generate
+
+  - name: gen-number-list
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import json
+        import sys
+        json.dump([i for i in range(0, -1)], sys.stdout)
+
+  - name: sleep-n-sec
+    inputs:
+      parameters:
+      - name: seconds
+    container:
+      image: argoproj/argosay:v1
+      command: [sh, -c]
+      args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]

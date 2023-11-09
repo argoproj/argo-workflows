@@ -1,0 +1,28 @@
+# This example demonstrates a workflow with a step using node selectors.
+# In this case, it requires that the 'print-arch' template, run on a
+# node with architecture 'amd64'. This can be overridden via argo CLI,
+# e.g. argo submit node-selector.yaml -p arch=somethingelse
+# Node selectors can also be set at the workflow level, meaning all pods
+# of the workflow will be scheduled using the selector.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: node-selector-
+spec:
+  entrypoint: print-arch
+  arguments:
+    parameters:
+    - name: arch
+      value: amd64
+
+  templates:
+  - name: print-arch
+    inputs:
+      parameters:
+      - name: arch
+    nodeSelector:
+      beta.kubernetes.io/arch: "{{inputs.parameters.arch}}"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["uname -a"]

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  template:
+    spec:
+      priorityClassName: workflow-controller
+      containers:
+        - name: workflow-controller
+          args:
+            - --loglevel=warn
+            - --namespaced
+            - --burst=2048
+            - --qps=512
+            - --workflow-workers=128
+          env:
+            - name: ARGO_PPROF
+              value: "true"

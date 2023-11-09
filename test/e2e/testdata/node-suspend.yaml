@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: node-suspend-
+spec:
+  entrypoint: node-suspend
+  templates:
+    - name: node-suspend
+      steps:
+      - - name: step1
+          template: whalesay
+      - - name: suspend1
+          template: suspend
+          arguments:
+            parameters:
+              - name: "tag"
+                value: "suspend1-{{steps.step1.outputs.result}}"
+      - - name: suspend2
+          template: suspend
+          arguments:
+            parameters:
+              - name: "tag"
+                value: "suspend2-{{steps.step1.outputs.result}}"
+
+    - name: whalesay
+      script:
+        image: python:alpine3.6
+        command: [sh]
+        source: echo tag1
+
+    - name: suspend
+      inputs:
+        parameters:
+          - name: tag
+      suspend: {}

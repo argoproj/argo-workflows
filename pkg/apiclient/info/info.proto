@@ -1,0 +1,61 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/info";
+
+import "google/api/annotations.proto";
+import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
+
+package info;
+
+message GetInfoRequest {
+}
+
+message InfoResponse {
+  string managedNamespace = 1;
+  repeated github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Link links = 2;
+  // which modals to show
+  map<string, bool> modals = 3;
+  string navColor = 4;
+  repeated github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Column columns = 5;
+}
+
+message GetVersionRequest {
+}
+
+message GetUserInfoRequest {
+}
+
+message GetUserInfoResponse {
+  string issuer = 1;
+  string subject = 2;
+  repeated string groups = 3;
+  string email = 4;
+  bool emailVerified = 5;
+  string serviceAccountName = 6;
+  string serviceAccountNamespace = 7;
+  string name = 8;
+}
+
+message CollectEventRequest {
+  string name = 1;
+}
+
+message CollectEventResponse {
+}
+
+service InfoService {
+  rpc GetInfo(GetInfoRequest) returns (InfoResponse) {
+    option (google.api.http).get = "/api/v1/info";
+  }
+  rpc GetVersion(GetVersionRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Version) {
+    option (google.api.http).get = "/api/v1/version";
+  }
+  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
+    option (google.api.http).get = "/api/v1/userinfo";
+  }
+  rpc CollectEvent(CollectEventRequest) returns (CollectEventResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/tracking/event"
+      body : "*"
+    };
+  }
+}

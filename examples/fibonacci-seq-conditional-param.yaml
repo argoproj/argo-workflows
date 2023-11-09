@@ -1,0 +1,124 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: fibonacci-
+  annotations:
+    workflows.argoproj.io/description: |
+      This example demonstrates fibonacci sequence problem using conditional parameter feature.
+    workflows.argoproj.io/veriiony: ">= 3.1.0"
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: num
+        value: "5"
+  templates:
+    - name: main
+      steps:
+        - - name: fibonaccimain
+            template: fibonacci
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{workflow.parameters.num}}"
+        - - name: printresult
+            template: printresult
+            arguments:
+              parameters:
+                - name: result
+                  value: "{{steps.fibonaccimain.outputs.parameters.fib}}"
+    - name: fibonacci
+      inputs:
+        parameters:
+          - name: num
+      memoize:
+        key: "{{inputs.parameters.num}}"
+        maxAge: "120s"
+        cache:
+          configMap:
+            name: fibonacci-m
+            key: fibonacci-cache
+      steps:
+        - - name: fibonacci-helper
+            template: fibonaccihelper
+            when: "{{inputs.parameters.num}} != 1 && {{inputs.parameters.num}} != 2"
+            arguments:
+              parameters:
+                - name: num-1
+                  value: "{{inputs.parameters.num}}"
+      outputs:
+        parameters:
+          - name: fib
+            valueFrom:
+              # If template name has "-" then variable path should have steps['fibonacci-helper']
+              expression: "asInt(inputs.parameters.num) == 1? 1: asInt(inputs.parameters.num) == 2? 1: steps['fibonacci-helper'].outputs.parameters.result"
+    - name: fibonaccihelper
+      inputs:
+        parameters:
+          - name: num-1
+      steps:
+        - - name: sub-1
+            template: do-math
+            arguments:
+              parameters:
+                - { name: a, value: "{{inputs.parameters.num-1}}" }
+                - { name: op, value: "-" }
+                - { name: b, value: "1" }
+        - - name: sub-2
+            template: do-math
+            when: "{{inputs.parameters.num-1}} != 1 && {{inputs.parameters.num-1}} != 2"
+            arguments:
+              parameters:
+                - { name: a, value: "{{inputs.parameters.num-1}}" }
+                - { name: op, value: "-" }
+                - { name: b, value: "2" }
+        - - name: fib-sub-1
+            template: fibonacci
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{steps.sub-1.outputs.result}}"
+        - - name: fib-sub-2
+            template: fibonacci
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{steps.sub-2.outputs.result}}"
+        - - name: add
+            template: do-math
+            arguments:
+              parameters:
+                - { name: a, value: "{{steps.fib-sub-1.outputs.parameters.fib}}" }
+                - { name: op, value: "+" }
+                - { name: b, value: "{{steps.fib-sub-2.outputs.parameters.fib}}" }
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              parameter: "{{steps.add.outputs.result}}"
+    - name: return-1
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: print(1)
+
+    - name: do-math
+      inputs:
+        parameters:
+          - name: a
+          - name: op
+          - name: b
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          print({{inputs.parameters.a}} {{inputs.parameters.op}} {{inputs.parameters.b}})
+
+    - name: printresult
+      inputs:
+        parameters:
+          - name: result
+      container:
+        image: alpine:latest
+        command: [ sh, -c ]
+        args: [ "echo {{inputs.parameters.result}}" ]

@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-depends-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: P
+            template: pass
+          - name: F
+            template: fail
+          - name: should-execute-1
+            depends: "P && (F.Succeeded || F.Failed)"
+            template: pass
+          - name: should-execute-2
+            depends: "P || F"
+            template: pass
+          - name: should-not-execute
+            depends: "P && F"
+            template: pass
+          - name: should-execute-3
+            depends: "should-execute-2.Succeeded || should-not-execute"
+            template: pass
+
+    - name: pass
+      container:
+        image: argoproj/argosay:v2
+
+    - name: fail
+      container:
+        image: argoproj/argosay:v2
+        args: ["exit 1"]

@@ -1,0 +1,58 @@
+# This example demonstrates the 'resource' template type, which provides a
+# convenient way to create/update/delete any type of kubernetes resources
+# in a workflow. The resource template type accepts any k8s manifest
+# (including CRDs) and can perform any kubectl action against it (e.g. create,
+# apply, delete, patch).
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: k8s-jobs
+spec:
+  entrypoint: rand-num
+  templates:
+  - name: rand-num
+    resource:
+      action: create
+      # successCondition and failureCondition are optional expressions which are
+      # evaluated upon every update of the resource. If failureCondition is ever
+      # evaluated to true, the step is considered failed. Likewise, if successCondition
+      # is ever evaluated to true the step is considered successful. It uses kubernetes
+      # label selection syntax and can be applied against any field of the resource
+      # (not just labels). Multiple AND conditions can be represented by comma
+      # delimited expressions. For more details, see:
+      # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+      successCondition: status.succeeded > 2
+      failureCondition: status.failed > 1
+      setOwnerReference: true
+      manifest: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          generateName: rand-num-
+        spec:
+          completions: 3
+          parallelism: 3
+          template:
+            metadata:
+              name: rand
+            spec:
+              containers:
+              - name: rand
+                image: python:alpine3.6
+                command: ["python", "-c", "import random; import time; print(random.randint(1, 1000)); time.sleep(10)"]
+              restartPolicy: Never
+    # Resource templates can have output parameters extracted from fields of the
+    # resource. Two techniques are provided: jsonpath and a jq filter.
+    outputs:
+      parameters:
+      # job-name is extracted using a jsonPath expression and is equivalent to:
+      # `kubectl get job <jobname> -o jsonpath='{.metadata.name}'`
+      - name: job-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'
+      # job-obj is extracted using a jq filter and is equivalent to:
+      # `kubectl get job <jobname> -o json | jq -c '.'
+      # which returns the entire job object in json format
+      - name: job-obj
+        valueFrom:
+          jqFilter: '.'

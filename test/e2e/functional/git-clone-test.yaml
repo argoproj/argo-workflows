@@ -1,0 +1,39 @@
+# Tests that we are able to clone various revision styles (branches, tags, head, commit)
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: git-clone-test-
+spec:
+  entrypoint: try-clones
+  templates:
+  - name: try-clones
+    steps:
+    - - name: clone
+        template: git-clone
+        arguments:
+          parameters:
+          - {name: revision, value: "{{item}}"}
+        withItems:
+        - HEAD
+        - HEAD~3
+        - release-2.1
+        - v2.1.1
+        - ""
+        - ecef0e3dd506eefc222c1ebed58ab81265ac9638
+        - ecef0e3
+
+  - name: git-clone
+    inputs:
+      parameters:
+      - name: revision
+      artifacts:
+      - name: argo-source
+        path: /src
+        git:
+          repo: https://github.com/argoproj/argo-workflows.git
+          revision: "{{inputs.parameters.revision}}"
+    container:
+      image: golang:1.8
+      command: [sh, -c]
+      args: ["git status && cat VERSION"]
+      workingDir: /src

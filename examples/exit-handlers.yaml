@@ -1,0 +1,59 @@
+# An exit handler is a template reference that executes at the end of the workflow
+# irrespective of the success, failure, or error of the primary workflow. To specify
+# an exit handler, reference the name of a template in 'spec.onExit'.
+# Some common use cases of exit handlers are:
+# - sending notifications of workflow status (e.g. e-mail/slack)
+# - posting the pass/fail status to a webhook result (e.g. github build result)
+# - cleaning up workflow artifacts
+# - resubmitting or submitting another workflow
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: intentional-fail
+  onExit: exit-handler
+  templates:
+  # primary workflow template
+  - name: intentional-fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo intentional failure; exit 1"]
+
+  # exit handler related templates
+  # After the completion of the entrypoint template, the status of the
+  # workflow is made available in the global variable {{workflow.status}}.
+  # {{workflow.status}} will be one of: Succeeded, Failed, Error
+  - name: exit-handler
+    steps:
+    - - name: notify
+        template: send-email
+      - name: celebrate
+        template: celebrate
+        when: "{{workflow.status}} == Succeeded"
+      - name: cry
+        template: cry
+        when: "{{workflow.status}} != Succeeded"
+  - name: send-email
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      # Tip: {{workflow.failures}} is a JSON list. If you're using bash to read it, we recommend using jq to manipulate
+      # it. For example:
+      #
+      # echo "{{workflow.failures}}" | jq -r '.[] | "Failed Step: \(.displayName)\tMessage: \(.message)"'
+      #
+      # Will print a list of all the failed steps and their messages. For more info look up the jq docs.
+      # Note: jq is not installed by default on the "alpine:latest" image, however it can be installed with "apk add jq"
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}. Failed steps {{workflow.failures}}"]
+  - name: celebrate
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo hooray!"]
+  - name: cry
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo boohoo!"]

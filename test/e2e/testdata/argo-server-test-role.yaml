@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argotest-role
+rules:
+  - apiGroups:
+      - "argoproj.io"
+    resources:
+      - workflows
+      - workflowtemplates
+      - cronworkflows
+    verbs:
+      - create
+      - get
+      - list
+      - delete

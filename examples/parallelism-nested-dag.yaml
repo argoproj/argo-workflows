@@ -1,0 +1,87 @@
+# Example on specifying parallelism on the outer DAG and limiting the number of its
+# children DAGs to be run at the same time.
+# 
+# As the parallelism of A is 2, only two of the three DAGs (b2, b3, b4) will start 
+# running after b1 is finished, and the left DAG will run after either one is finished.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parallelism-nested-dag-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    parallelism: 2
+    dag:
+      tasks:
+      - name: b1
+        template: B
+        arguments:
+          parameters:
+          - name: msg
+            value: "1"
+      - name: b2
+        template: B
+        depends: "b1"
+        arguments:
+          parameters:
+          - name: msg
+            value: "2"
+      - name: b3
+        template: B
+        depends: "b1"
+        arguments:
+          parameters:
+          - name: msg
+            value: "3"
+      - name: b4
+        template: B
+        depends: "b1"
+        arguments:
+          parameters:
+          - name: msg
+            value: "4"
+      - name: b5
+        template: B
+        depends: "b2 && b3 && b4"
+        arguments:
+          parameters:
+          - name: msg
+            value: "5"
+
+  - name: B
+    inputs:
+      parameters:
+      - name: msg
+    dag:
+      tasks:
+      - name: c1
+        template: one-job
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{inputs.parameters.msg}} c1"
+      - name: c2
+        template: one-job
+        depends: "c1"
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{inputs.parameters.msg}} c2"
+      - name: c3
+        template: one-job
+        depends: "c1"
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{inputs.parameters.msg}} c3"
+
+  - name: one-job
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine
+      command: ['/bin/sh', '-c']
+      args: ["echo {{inputs.parameters.msg}}; sleep 10"]

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yaml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: 'argo'
+        static_configs:
+          - targets: ['workflow-controller-metrics:9090', 'argo-server:2746']

@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: stop-terminate-daemon-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: Daemon
+            template: sleep
+        - - name: B
+            template: pass
+
+    - name: sleep
+      daemon: true
+      container:
+        image: argoproj/argosay:v1
+        command: [ sleep ]
+        args: [ "999" ]
+
+    - name: pass
+      container:
+        image: argoproj/argosay:v1
+        command: [ sleep ]
+        args: [ "999" ]

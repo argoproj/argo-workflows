@@ -1,0 +1,61 @@
+####################################################################################################
+# Builder image
+# Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
+# Also used as the image in CI jobs so needs all dependencies
+####################################################################################################
+
+ARG IMAGE_OS_VERSION=ltsc2022-amd64
+ARG GIT_COMMIT=unknown
+ARG GIT_TAG=unknown
+ARG GIT_TREE_STATE=unknown
+
+# had issues with official golange image for windows so I'm using plain servercore
+FROM mcr.microsoft.com/windows/servercore:${IMAGE_OS_VERSION} as builder
+ENV GOLANG_VERSION=1.21
+SHELL ["powershell", "-Command"]
+
+# install chocolatey package manager
+ENV chocolateyUseWindowsCompression=false
+RUN iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1')); \
+    choco feature disable --name showDownloadProgress ; \
+    choco feature enable -n allowGlobalConfirmation
+
+# install golang, dep and other tools
+RUN choco install golang --version=$env:GOLANG_VERSION ; \
+    choco install make dep git.portable 7zip.portable
+
+####################################################################################################
+# argoexec-base
+# Used as the base for both the release and development version of argoexec
+####################################################################################################
+FROM mcr.microsoft.com/windows/nanoserver:${IMAGE_OS_VERSION} as argoexec-base
+COPY --from=builder /windows/system32/netapi32.dll /windows/system32/netapi32.dll
+
+COPY --from=builder C:/ProgramData/chocolatey/lib/7zip.portable/tools/7z-extra/x64/7za.exe C:/app/7za.exe
+
+# add binaries to path
+USER Administrator
+RUN SETX /m path C:\app;%path%
+
+####################################################################################################
+# Argo Build stage which performs the actual build of Argo binaries
+####################################################################################################
+FROM builder as argo-build
+
+ARG GIT_COMMIT
+ARG GIT_TAG
+ARG GIT_TREE_STATE
+
+# Perform the build
+WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
+COPY . .
+# run in git bash for all the shell commands in Makefile to work
+RUN bash -c 'make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}'
+
+####################################################################################################
+# argoexec
+####################################################################################################
+FROM argoexec-base as argoexec
+COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows/dist/argoexec C:/app/argoexec.exe
+RUN argoexec version
+ENTRYPOINT [ "argoexec" ]

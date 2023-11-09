@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+grep -q 'Signed-off-by: ' "$1" || {
+  echo '❌Commits must be signed-off: https://probot.github.io/apps/dco/' >&2
+  exit 1
+}
+
+grep -qE '^(?:build|feat|fix|docs|style|refactor|perf|test|ci|chore|revert)\(?(?:\w+|\s|\-|_)?\)?!?:\s\w+' "$1" || grep -q 'Merge' "$1" || {
+  echo >&2 '❌ Commit message must be semantic: https://github.com/zeke/semantic-pull-requests' >&2
+  exit 1
+}
+
+echo "✅ Commit looks good"

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  labels:
+    app: minio
+spec:
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: main
+          image: minio/minio:RELEASE.2022-11-17T23-20-09Z
+          env:
+            - name: MINIO_ACCESS_KEY
+              value: admin
+            - name: MINIO_SECRET_KEY
+              value: password
+          ports:
+            - containerPort: 9000
+              name: api
+            - containerPort: 9001
+              name: dashboard
+          command: [minio, server, --console-address, ":9001", /data]
+          lifecycle:
+            postStart:
+              exec:
+                command: [mkdir, -p, /data/my-bucket]
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: 9000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: 9000
+            initialDelaySeconds: 5
+            periodSeconds: 10

@@ -1,0 +1,81 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-aggregation-
+spec:
+  entrypoint: parameter-aggregation
+  templates:
+  - name: parameter-aggregation
+    steps:
+    - - name: odd-or-even
+        template: odd-or-even
+        arguments:
+          parameters:
+          - name: num
+            value: "{{item}}"
+        withItems: [1, 2]
+    - - name: divide-by-2
+        template: divide-by-2
+        arguments:
+          parameters:
+          - name: num
+            value: "{{item.num}}"
+        withParam: "{{steps.odd-or-even.outputs.parameters}}"
+        when: "{{item.evenness}} == even"
+    - - name: print
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "{{steps.divide-by-2.outputs.parameters}}"
+
+  # odd-or-even accepts a number and returns whether or not that number is odd or even
+  - name: odd-or-even
+    inputs:
+      parameters:
+      - name: num
+    container:
+      image: argoproj/argosay:v1
+      command: [sh, -xc]
+      args:
+      - |
+        sleep 1 &&
+        echo {{inputs.parameters.num}} > /tmp/num &&
+        if [ $(({{inputs.parameters.num}}%2)) -eq 0 ]; then
+          echo "even" > /tmp/even;
+        else
+          echo "odd" > /tmp/even;
+        fi
+    outputs:
+      parameters:
+      - name: num
+        valueFrom:
+          path: /tmp/num
+      - name: evenness
+        valueFrom:
+          path: /tmp/even
+
+  # divide-by-2 divides a number in half
+  - name: divide-by-2
+    inputs:
+      parameters:
+      - name: num
+    container:
+      image: argoproj/argosay:v1
+      command: [sh, -c]
+      args: ["echo $(({{inputs.parameters.num}}/2)) > /tmp/res"]
+    outputs:
+      parameters:
+        - name: res
+          valueFrom:
+            path: /tmp/res
+
+  # whalesay prints a number using whalesay
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: argoproj/argosay:v2
+      args: ["echo", "{{inputs.parameters.message}}"]

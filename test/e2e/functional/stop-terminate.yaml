@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: stop-terminate-
+spec:
+  entrypoint: main
+  onExit: exit
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: A
+            template: echo
+            onExit: exit-template
+
+    - name: echo
+      container:
+        image: argoproj/argosay:v1
+        command: [ sleep ]
+        args: [ "999" ]
+
+    # This sleep value is only a temporal workaround ensuring template-level hooks finish faster.
+    # See https://github.com/argoproj/argo-workflows/issues/11880
+    - name: exit
+      container:
+        image: argoproj/argosay:v1
+        command: [ sleep ]
+        args: [ "4" ]
+
+    - name: exit-template
+      container:
+        image: argoproj/argosay:v1

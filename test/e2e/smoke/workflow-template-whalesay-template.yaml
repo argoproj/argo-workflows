@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-whalesay-template
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: whalesay-template
+  onExit: on-exit
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.message}}"]
+    - name: on-exit
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "Exit Handler"]

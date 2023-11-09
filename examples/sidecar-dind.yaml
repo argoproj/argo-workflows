@@ -1,0 +1,33 @@
+# sidecar-dind (dind is an acronym for docker-in-docker) demonstrates
+# the ability to run docker commands (e.g. `docker run`, `docker build`)
+# from within a container, by running the docker daemon as a sidecar to
+# the main container.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sidecar-dind-
+spec:
+  entrypoint: dind-sidecar-example
+  templates:
+  - name: dind-sidecar-example
+    container:
+      image: docker:19.03.13
+      command: [sh, -c]
+      args: ["until docker ps; do sleep 3; done; docker run --rm debian:latest cat /etc/os-release"]
+      env:
+      - name: DOCKER_HOST
+        value: 127.0.0.1
+    sidecars:
+    - name: dind
+      image: docker:19.03.13-dind
+      command: [dockerd-entrypoint.sh]
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+      securityContext:
+        privileged: true
+      # mirrorVolumeMounts will mount the same volumes specified in the main container
+      # to the sidecar (including artifacts), at the same mountPaths. This enables
+      # dind daemon to (partially) see the same filesystem as the main container in
+      # order to use features such as docker volume binding.
+      mirrorVolumeMounts: true

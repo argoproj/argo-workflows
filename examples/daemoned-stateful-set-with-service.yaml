@@ -1,0 +1,112 @@
+# This example shows how to create a stateful set with an attached service to use as a daemoned server.
+# It is complete with a tear-down handler, and a wait step that ensures the stateful set is ready before continuing.
+# Note that the service account that Argo uses to run this must have sufficient permissions to create, delte, and get
+# the resources.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: daemoned-stateful-set-with-service-
+spec:
+  entrypoint: create-wait-and-test
+  onExit: delete
+
+  templates:
+    - name: create-wait-and-test
+      steps:
+        - - name: create-service
+            template: create-service
+          - name: create-stateful-set
+            template: create-stateful-set
+
+        - - name: wait-stateful-set
+            template: wait-stateful-set
+
+        - - name: test
+            template: test
+
+    - name: delete # This is called as an onExit handler
+      steps:
+        - - name: delete-service
+            template: delete-service
+          - name: delete-stateful-set
+            template: delete-stateful-set
+
+    - name: create-service
+      resource:
+        action: create
+        manifest: |
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: nginx
+            labels:
+              app: nginx
+          spec:
+            ports:
+              - port: 80
+                name: web
+            clusterIP: None
+            selector:
+              app: nginx
+
+    - name: create-stateful-set
+      resource:
+        action: create
+        manifest: |
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: web
+          spec:
+            selector:
+              matchLabels:
+                app: nginx # has to match .spec.template.metadata.labels
+            serviceName: "nginx"
+            template:
+              metadata:
+                labels:
+                  app: nginx # has to match .spec.selector.matchLabels
+              spec:
+                terminationGracePeriodSeconds: 10
+                containers:
+                  - name: nginx
+                    image: registry.k8s.io/nginx-slim:0.8
+                    ports:
+                      - containerPort: 80
+                        name: web
+
+    - name: wait-stateful-set
+      resource:
+        action: get
+        successCondition: status.readyReplicas == 1
+        manifest: |
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: web
+
+    - name: test
+      container:
+        image: curlimages/curl:latest
+        command: [sh, -c]
+        args: ["curl nginx"]
+
+    - name: delete-service
+      resource:
+        action: delete
+        flags: ["--ignore-not-found"]
+        manifest: |
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: nginx
+
+    - name: delete-stateful-set
+      resource:
+        action: delete
+        flags: ["--ignore-not-found"]
+        manifest: |
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: web

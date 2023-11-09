@@ -1,0 +1,104 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: archive-strategies-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          # use the default settings (auto-detect)
+          - name: generate-default
+            template: generate-default
+          - name: consume-default
+            template: consume-default
+            dependencies: [generate-default]
+            arguments:
+              artifacts:
+                - name: file-default
+                  from: "{{tasks.generate-default.outputs.artifacts.file-default}}"
+
+          # explicitly tar
+          - name: generate-tar
+            template: generate-tar
+          - name: consume-tar
+            template: consume-tar
+            dependencies: [generate-tar]
+            arguments:
+              artifacts:
+                - name: file-tar
+                  from: "{{tasks.generate-tar.outputs.artifacts.file-tar}}"
+
+          # explicitly none
+          - name: generate-none
+            template: generate-none
+          - name: consume-none
+            template: consume-none
+            dependencies: [generate-none]
+            arguments:
+              artifacts:
+                - name: file-none
+                  from: "{{tasks.generate-none.outputs.artifacts.file-none}}"
+
+    - name: generate-default
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, hello, /tmp/file-default]
+      outputs:
+        artifacts:
+          - name: file-default
+            path: /tmp/file-default
+
+    - name: consume-default
+      inputs:
+        artifacts:
+          - name: file-default
+            path: /tmp/file-default
+      container:
+        image: argoproj/argosay:v2
+        args: [assert_contains, /tmp/file-default, hello]
+
+    - name: generate-tar
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, hello, /tmp/file-tar]
+      outputs:
+        artifacts:
+          - name: file-tar
+            path: /tmp/file-tar
+            archive:
+              tar: {}
+
+    - name: consume-tar
+      inputs:
+        artifacts:
+          - name: file-tar
+            path: /tmp/file-tar
+            archive:
+              tar: {}
+      container:
+        image: argoproj/argosay:v2
+        args: [assert_contains, /tmp/file-tar, hello]
+
+    - name: generate-none
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, hello, /tmp/file-none]
+      outputs:
+        artifacts:
+          - name: file-none
+            path: /tmp/file-none
+            archive:
+              none: {}
+
+    - name: consume-none
+      inputs:
+        artifacts:
+          - name: file-none
+            path: /tmp/file-none
+            archive:
+              none: {}
+      container:
+        image: argoproj/argosay:v2
+        args: [assert_contains, /tmp/file-none, hello]

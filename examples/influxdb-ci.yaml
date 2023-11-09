@@ -1,0 +1,228 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: influxdb-ci-
+
+spec:
+  entrypoint: influxdb-ci
+  arguments:
+    parameters:
+    - name: repo
+      value: https://github.com/influxdata/influxdb.git
+    - name: revision
+      value: '1.6'
+
+  templates:
+  - name: influxdb-ci
+    steps:
+    - - name: checkout
+        template: checkout
+    - - name: build
+        template: build
+        arguments:
+          artifacts:
+          - name: source
+            from: "{{steps.checkout.outputs.artifacts.source}}"
+      - name: test-unit
+        template: test-unit
+        arguments:
+          artifacts:
+          - name: source
+            from: "{{steps.checkout.outputs.artifacts.source}}"
+    - - name: test-cov
+        template: test-cov
+        arguments:
+          artifacts:
+          - name: source
+            from: "{{steps.checkout.outputs.artifacts.source}}"
+      - name: test-e2e
+        template: test-e2e
+        arguments:
+          artifacts:
+          - name: influxd
+            from: "{{steps.build.outputs.artifacts.influxd}}"
+
+  - name: checkout
+    inputs:
+      artifacts:
+      - name: source
+        path: /src
+        git:
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
+    outputs:
+      artifacts:
+      - name: source
+        path: /src
+    container:
+      image: golang:1.9.2
+      command: ["/bin/sh", "-c"]
+      args: ["cd /src && git status && ls -l"]
+
+  - name: build
+    inputs:
+      artifacts:
+      - name: source
+        path: /go/src/github.com/influxdata/influxdb
+    outputs:
+      artifacts:
+      - name: influxd
+        path: /go/bin
+    container:
+      image: golang:1.9.2
+      command: ["/bin/sh", "-c"]
+      args: ["
+        cd /go/src/github.com/influxdata/influxdb &&
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
+        go install -v ./...
+      "]
+      resources:
+        requests:
+          memory: 1024Mi
+          cpu: 200m
+
+  - name: test-unit
+    inputs:
+      artifacts:
+      - name: source
+        path: /go/src/github.com/influxdata/influxdb
+    container:
+      image: golang:1.9.2
+      command: ["/bin/sh", "-c"]
+      args: ["
+        cd /go/src/github.com/influxdata/influxdb &&
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
+        go test -parallel=1 ./...
+      "]
+
+  - name: test-cov
+    inputs:
+      artifacts:
+      - name: source
+    steps:
+    - - name: test-cov-query
+        template: test-cov-base
+        arguments:
+          parameters:
+          - name: package
+            value: "query"
+          artifacts:
+          - name: source
+            from: "{{inputs.artifacts.source}}"
+      - name: test-cov-tsm1
+        template: test-cov-base
+        arguments:
+          parameters:
+          - name: package
+            value: "tsdb/engine/tsm1"
+          artifacts:
+          - name: source
+            from: "{{inputs.artifacts.source}}"
+  - name: test-cov-base
+    inputs:
+      parameters:
+      - name: package
+      artifacts:
+      - name: source
+        path: /go/src/github.com/influxdata/influxdb
+    outputs:
+      artifacts:
+      - name: covreport
+        path: /tmp/index.html
+    container:
+      image: golang:1.9.2
+      command: ["/bin/sh", "-c"]
+      args: ["
+        cd /go/src/github.com/influxdata/influxdb &&
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
+        go test -v -coverprofile /tmp/cov.out ./{{inputs.parameters.package}} &&
+        go tool cover -html=/tmp/cov.out -o /tmp/index.html
+      "]
+      resources:
+        requests:
+          memory: 4096Mi
+          cpu: 200m
+
+  - name: test-e2e
+    inputs:
+      artifacts:
+      - name: influxd
+    steps:
+    - - name: influxdb-server
+        template: influxdb-server
+        arguments:
+          artifacts:
+          - name: influxd
+            from: "{{inputs.artifacts.influxd}}"
+    - - name: initdb
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: curl -XPOST 'http://{{steps.influxdb-server.ip}}:8086/query' --data-urlencode "q=CREATE DATABASE mydb"
+    - - name: producer1
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: for i in $(seq 1 20); do curl -XPOST 'http://{{steps.influxdb-server.ip}}:8086/write?db=mydb' -d "cpu,host=server01,region=uswest load=$i" ; sleep .5 ; done
+      - name: producer2
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: for i in $(seq 1 20); do curl -XPOST 'http://{{steps.influxdb-server.ip}}:8086/write?db=mydb' -d "cpu,host=server02,region=uswest load=$((RANDOM % 100))" ; sleep .5 ; done
+      - name: producer3
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: curl -XPOST 'http://{{steps.influxdb-server.ip}}:8086/write?db=mydb' -d 'cpu,host=server03,region=useast load=15.4'
+      - name: consumer
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: curl --silent -G http://{{steps.influxdb-server.ip}}:8086/query?pretty=true --data-urlencode "db=mydb" --data-urlencode "q=SELECT * FROM cpu"
+
+  - name: influxdb-server
+    inputs:
+      artifacts:
+      - name: influxd
+        path: /app
+    daemon: true
+    outputs:
+      artifacts:
+        - name: data
+          path: /var/lib/influxdb/data
+    container:
+      image: debian:9.4
+      readinessProbe:
+        httpGet:
+          path: /ping
+          port: 8086
+        initialDelaySeconds: 5
+        timeoutSeconds: 1
+      command: ["/bin/sh", "-c"]
+      args: ["chmod +x /app/influxd && /app/influxd"]
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: 250m
+
+  - name: influxdb-client
+    inputs:
+      parameters:
+      - name: cmd
+    container:
+      image: appropriate/curl:latest
+      command: ["/bin/sh", "-c"]
+      args: ["{{inputs.parameters.cmd}}"]
+      resources:
+        requests:
+          memory: 32Mi
+          cpu: 100m
+

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-nested-template
+spec:
+  templates:
+    - name: whalesay-inner-template
+      inputs:
+        parameters:
+            - name: message
+      steps:
+        - - name: step
+            templateRef:
+              name: cluster-workflow-template-whalesay-template
+              template: whalesay-template
+              clusterScope: true
+            arguments:
+              parameters:
+                  - name: message
+                    value: "{{inputs.parameters.message}}"
+    - name: whalesay-template
+      inputs:
+        parameters:
+            - name: message
+      steps:
+        - - name: step
+            template: whalesay-inner-template
+            arguments:
+              parameters:
+                  - name: message
+                    value: "{{inputs.parameters.message}}"
+
