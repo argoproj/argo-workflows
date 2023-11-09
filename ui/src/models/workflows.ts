@@ -548,11 +548,13 @@ export function isWorkflowInCluster(wf: Workflow): boolean {
     return !wf.metadata.labels[archivalStatus] || wf.metadata.labels[archivalStatus] === 'Pending' || wf.metadata.labels[archivalStatus] === 'Archived';
 }
 
-export function isArchivedWorkflow(wf: Workflow): boolean {
+export function isArchivedWorkflow(wf?: Workflow): boolean {
     if (!wf) {
         return false;
     }
-    return wf.metadata.labels && (wf.metadata.labels[archivalStatus] === 'Archived' || wf.metadata.labels[archivalStatus] === 'Persisted');
+
+    const labelValue = wf.metadata?.labels?.[archivalStatus];
+    return labelValue === 'Archived' || labelValue === 'Persisted';
 }
 
 export type NodeType = 'Pod' | 'Container' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
