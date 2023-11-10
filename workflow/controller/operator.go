@@ -787,7 +787,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithError(err).Warn("error updating taskset")
 	}
 
-	if woc.wf.Status.Phase.Completed() {
+	// Note that the woc.checkTaskResultsCompleted() resolves a ~1/30 garbage collection failure race conidtion.
+	if woc.wf.Status.Phase.Completed() && woc.checkTaskResultsCompleted() {
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}

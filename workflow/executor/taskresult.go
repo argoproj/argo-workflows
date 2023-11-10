@@ -70,10 +70,10 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		common.LabelKeyReportOutputsCompleted: "false",
 	})
 	taskResult.SetOwnerReferences([]metav1.OwnerReference{{
-		APIVersion: "v1",
-		Kind:       "Pod",
-		Name:       we.PodName,
-		UID:        we.podUID,
+		APIVersion: workflow.APIVersion,
+		Kind:       workflow.WorkflowKind,
+		Name:       we.workflow,
+		UID:        we.workflowUID,
 	}})
 
 	if v := os.Getenv(common.EnvVarInstanceID); v != "" {

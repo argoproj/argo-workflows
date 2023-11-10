@@ -1,18 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artgc-dag-wf-stopped-
+  generateName: artgc-dag-wf-stopped-pod-gc-on-pod-completion-
 spec:
   workflowMetadata:
     labels:
       workflows.argoproj.io/test: "true"
-      workflows.argoproj.io/workflow: "artgc-dag-wf-stopped"
-  podGC:
-    strategy: OnPodCompletion
+      workflows.argoproj.io/workflow: "artgc-dag-wf-stopped-pod-gc-on-pod-completion"
   artifactGC:
     serviceAccountName: default
     strategy: OnWorkflowDeletion
-  entrypoint: artgc-dag-wf-stopped-main
+  entrypoint: artgc-dag-wf-stopped-pod-gc-on-pod-completion-main
   serviceAccountName: argo
   executor:
     serviceAccountName: default
@@ -25,7 +23,7 @@ spec:
           requests:
             storage: 1Gi
   templates:
-    - name: artgc-dag-wf-stopped-main
+    - name: artgc-dag-wf-stopped-pod-gc-on-pod-completion-main
       dag:
         tasks:
           - name: create-artifact-1
@@ -66,7 +64,7 @@ spec:
         args: 
           - stop
           - -l
-          - workflows.argoproj.io/workflow=artgc-dag-wf-stopped
+          - workflows.argoproj.io/workflow=artgc-dag-wf-stopped-pod-gc-on-pod-completion
           - --namespace=argo
           - --loglevel=debug
     - name: artgc-dag-artifact-creator-1

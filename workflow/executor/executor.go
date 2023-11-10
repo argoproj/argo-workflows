@@ -56,6 +56,7 @@ type WorkflowExecutor struct {
 	PodName             string
 	podUID              types.UID
 	workflow            string
+	workflowUID         types.UID
 	nodeId              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
@@ -113,7 +114,9 @@ func NewExecutor(
 	restClient rest.Interface,
 	podName string,
 	podUID types.UID,
-	workflow, nodeId, namespace string,
+	workflow string,
+	workflowUID types.UID,
+	nodeId, namespace string,
 	cre ContainerRuntimeExecutor,
 	template wfv1.Template,
 	includeScriptOutput bool,
@@ -125,6 +128,7 @@ func NewExecutor(
 		PodName:                      podName,
 		podUID:                       podUID,
 		workflow:                     workflow,
+		workflowUID:                  workflowUID,
 		nodeId:                       nodeId,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
