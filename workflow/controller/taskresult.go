@@ -72,9 +72,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.wf.Status.MarkTaskResultComplete(resultName)
 		}
 
-		woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.GetTaskResultsCompleted())
-		woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.GetTaskResultsCompleted()))
-
 		nodeID := result.Name
 		old, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
@@ -101,4 +98,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.updated = true
 		}
 	}
+	woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.GetTaskResultsCompleted())
+	woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.GetTaskResultsCompleted()))
 }

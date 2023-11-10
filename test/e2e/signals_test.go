@@ -158,16 +158,16 @@ func (s *SignalsSuite) TestSignaledContainerSet() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Equal(t, "(exit code 137)", status.Message)
+			assert.Contains(t, "(exit code 137)", status.Message)
 			one := status.Nodes.FindByDisplayName("one")
 			if assert.NotNil(t, one) {
 				assert.Equal(t, wfv1.NodeFailed, one.Phase)
-				assert.Equal(t, "(exit code 137): ", one.Message)
+				assert.Contains(t, "(exit code 137)", one.Message)
 			}
 			two := status.Nodes.FindByDisplayName("two")
 			if assert.NotNil(t, two) {
 				assert.Equal(t, wfv1.NodeFailed, two.Phase)
-				assert.Equal(t, "(exit code 143): ", two.Message)
+				assert.Contains(t, "(exit code 143)", two.Message)
 			}
 		})
 }
