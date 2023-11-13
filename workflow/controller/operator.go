@@ -1770,7 +1770,7 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 		if node == nil {
 			continue
 		}
-		if strings.HasSuffix(node.Name, ".onExit") {
+		if node.NodeFlag != nil && node.NodeFlag.Hooked {
 			childrenIds = append(childrenIds, node.ID)
 		} else if len(node.Children) > 0 {
 			childrenIds = append(childrenIds, node.Children...)
