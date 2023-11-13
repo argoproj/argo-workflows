@@ -27,10 +27,9 @@ const artifactGCComponent = "artifact-gc"
 // artifactGCEnabled is a feature flag to globally disabled artifact GC in case of emergency
 var artifactGCEnabled, _ = env.GetBool("ARGO_ARTIFACT_GC_ENABLED", true)
 
-func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
-
+func (woc *wfOperationCtx) addArtifactGCFinalizer() {
 	if !artifactGCEnabled {
-		return nil
+		return
 	}
 
 	if woc.wf.Status.ArtifactGCStatus == nil {
@@ -41,7 +40,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	// and there's work left to do for it)
 	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
 		if woc.wf.Status.ArtifactGCStatus.NotSpecified {
-			return nil // we already verified it's not required for this workflow
+			return // we already verified it's not required for this workflow
 		}
 		if woc.HasArtifactGC() {
 			woc.log.Info("adding artifact GC finalizer")
@@ -51,6 +50,12 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		} else {
 			woc.wf.Status.ArtifactGCStatus.NotSpecified = true
 		}
+	}
+}
+
+func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
+
+	if !artifactGCEnabled {
 		return nil
 	}
 

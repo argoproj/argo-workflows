@@ -56,6 +56,7 @@ type WorkflowExecutor struct {
 	PodName             string
 	podUID              types.UID
 	workflow            string
+	workflowUID         types.UID
 	nodeId              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
@@ -113,7 +114,9 @@ func NewExecutor(
 	restClient rest.Interface,
 	podName string,
 	podUID types.UID,
-	workflow, nodeId, namespace string,
+	workflow string,
+	workflowUID types.UID,
+	nodeId, namespace string,
 	cre ContainerRuntimeExecutor,
 	template wfv1.Template,
 	includeScriptOutput bool,
@@ -125,6 +128,7 @@ func NewExecutor(
 		PodName:                      podName,
 		podUID:                       podUID,
 		workflow:                     workflow,
+		workflowUID:                  workflowUID,
 		nodeId:                       nodeId,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
@@ -287,6 +291,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 		log.Infof("No output artifacts")
 		return nil
 	}
+
 	log.Infof("Saving output artifacts")
 	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
 	if err != nil {
@@ -584,7 +589,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 	return nil
 }
 
-func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
+func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 	var logArtifacts []wfv1.Artifact
 	tempLogsDir := "/tmp/argo/outputs/logs"
 
@@ -608,11 +613,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
 		}
 	}
 
-	// try to upsert TaskResult, if it fails, we will try to update the Pod's Annotations
-	err := we.reportOutputs(ctx, logArtifacts)
-	if err != nil {
-		we.AddError(err)
-	}
+	return logArtifacts
 }
 
 // saveContainerLogs saves a single container's log into a file
@@ -780,17 +781,38 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// reportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
-func (we *WorkflowExecutor) reportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
+// FinalizeOutput adds a label or annotation to denote that outputs have completed reporting.
+func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
+	err := retryutil.OnError(wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, errorsutil.IsTransientErr, func() error {
+		err := we.patchTaskResultLabels(ctx, map[string]string{
+			common.LabelKeyReportOutputsCompleted: "true",
+		})
+		if apierr.IsForbidden(err) {
+			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
+			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
+		}
+		return err
+	})
+	if err != nil {
+		we.AddError(err)
+	}
+}
+
+// ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
+func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
 	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
-	if !result.Outputs.HasOutputs() && !result.Progress.IsValid() {
-		return nil
-	}
 	return retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
@@ -812,6 +834,8 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 			if result.Progress.IsValid() { // this may result in occasionally two patches
 				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
 			}
+			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
+			return we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
 		}
 
 		return err

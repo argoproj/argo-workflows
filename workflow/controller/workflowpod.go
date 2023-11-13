@@ -558,6 +558,10 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			Name:  common.EnvVarWorkflowName,
 			Value: woc.wf.Name,
 		},
+		{
+			Name:  common.EnvVarWorkflowUID,
+			Value: string(woc.wf.UID),
+		},
 	}
 	if v := woc.controller.Config.InstanceID; v != "" {
 		execEnvVars = append(execEnvVars,

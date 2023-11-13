@@ -121,6 +121,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             'stored_templates': ({str: (IoArgoprojWorkflowV1alpha1Template,)},),  # noqa: E501
             'stored_workflow_template_spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
             'synchronization': (IoArgoprojWorkflowV1alpha1SynchronizationStatus,),  # noqa: E501
+            'task_results_completed': ({str: (bool,)},),  # noqa: E501
         }
 
     @cached_property
@@ -147,6 +148,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
         'stored_templates': 'storedTemplates',  # noqa: E501
         'stored_workflow_template_spec': 'storedWorkflowTemplateSpec',  # noqa: E501
         'synchronization': 'synchronization',  # noqa: E501
+        'task_results_completed': 'taskResultsCompleted',  # noqa: E501
     }
 
     read_only_vars = {
@@ -208,6 +210,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             stored_templates ({str: (IoArgoprojWorkflowV1alpha1Template,)}): StoredTemplates is a mapping between a template ref and the node's status.. [optional]  # noqa: E501
             stored_workflow_template_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1SynchronizationStatus): [optional]  # noqa: E501
+            task_results_completed ({str: (bool,)}): Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -307,6 +310,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             stored_templates ({str: (IoArgoprojWorkflowV1alpha1Template,)}): StoredTemplates is a mapping between a template ref and the node's status.. [optional]  # noqa: E501
             stored_workflow_template_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1SynchronizationStatus): [optional]  # noqa: E501
+            task_results_completed ({str: (bool,)}): Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

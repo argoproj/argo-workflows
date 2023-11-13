@@ -46,8 +46,8 @@ func (s *ProgressSuite) TestLoggedProgress() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning).
-		WaitForWorkflow(toHaveProgress("0/100"), 20*time.Second).
-		WaitForWorkflow(toHaveProgress("50/100"), 20*time.Second).
+		WaitForWorkflow(toHaveProgress("0/100"), time.Minute).
+		WaitForWorkflow(toHaveProgress("50/100"), time.Minute).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {

@@ -7611,6 +7611,13 @@
         "synchronization": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SynchronizationStatus",
           "description": "Synchronization stores the status of synchronization locks"
+        },
+        "taskResultsCompleted": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+          "type": "object"
         }
       },
       "type": "object"

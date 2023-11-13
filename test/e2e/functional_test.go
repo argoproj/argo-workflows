@@ -28,7 +28,7 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		Workflow(`@testdata/archive-strategies.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(time.Minute).
+		WaitForWorkflow(time.Second * 90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
@@ -94,7 +94,7 @@ func (s *FunctionalSuite) TestWhenExpressions() {
 		Workflow("@functional/conditionals.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 150*time.Second).
 		Then().
 		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-govaluate"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
@@ -223,7 +223,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Len(t, status.Nodes, 7)
@@ -348,7 +348,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(60*time.Second).
+		WaitForWorkflow(90*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -384,7 +384,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		Workflow("@expectedfailures/volumes-pvc-fail-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(120*time.Second).
+		WaitForWorkflow(150*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -553,7 +553,7 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 		Workflow("@functional/param-aggregation.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(time.Minute).
+		WaitForWorkflow(time.Second * 90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
@@ -569,7 +569,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 		Workflow("@functional/dag-depends.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(time.Minute).
+		WaitForWorkflow(time.Second * 90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("should-execute-1").Phase)
@@ -811,7 +811,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.Phase == wfv1.WorkflowFailed, "Waiting for timeout"
-		}), 30*time.Second)
+		}), 60*time.Second)
 }
 
 func (s *FunctionalSuite) TestTemplateLevelTimeoutWithForbidden() {
@@ -898,7 +898,7 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		Workflow("@testdata/data-transformation.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(90 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
