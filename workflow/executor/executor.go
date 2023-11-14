@@ -198,6 +198,15 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			// unbeknownst to the user.
 			log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
 			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
+
+			// Ensure parent directory exists
+			artDir, _ := filepath.Split(artPath)
+			if artDir != "" {
+				// Create any missing dirs
+				if err := os.MkdirAll(artDir, 0o700); err != nil {
+					return err
+				}
+			}
 		}
 
 		// The artifact is downloaded to a temporary location, after which we determine if
