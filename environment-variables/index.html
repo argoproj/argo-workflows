@@ -3885,10 +3885,12 @@
 
 
 <h1 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h1>
-<p>This document outlines the set of environment variables that can be used to customize the behavior at different
-levels.</p>
-<p>⚠️ Environment variables are typically added to test out experimental features and should not be used by
-most users. Environment variables may be removed at any time.</p>
+<p>This document outlines environment variables that can be used to customize behavior.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Environment variables are typically added to test out experimental features and should not be used by most users.
+Environment variables may be removed at any time.</p>
+</div>
 <h2 id="controller">Controller<a class="headerlink" href="#controller" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -4019,12 +4021,6 @@ most users. Environment variables may be removed at any time.</p>
 <td><code>bool</code></td>
 <td><code>false</code></td>
 <td>Whether event annotations will be used when aggregating events.</td>
-</tr>
-<tr>
-<td><code>GRPC_MESSAGE_SIZE</code></td>
-<td><code>string</code></td>
-<td>Use different GRPC Max message size for Argo server deployment (supporting huge workflows).</td>
-<td></td>
 </tr>
 <tr>
 <td><code>GZIP_IMPLEMENTATION</code></td>
@@ -4160,41 +4156,14 @@ most users. Environment variables may be removed at any time.</p>
 </tr>
 </tbody>
 </table>
-<p>CLI parameters of the <code>argo-server</code> and <code>workflow-controller</code> can be specified as environment variables with the <code>ARGO_</code>
-prefix. For example:</p>
+<p>CLI parameters of the Controller can be specified as environment variables with the <code>ARGO_</code> prefix.
+For example:</p>
 <div class="highlight"><pre><span></span><code>workflow-controller<span class="w"> </span>--managed-namespace<span class="o">=</span>argo
 </code></pre></div>
 <p>Can be expressed as:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">ARGO_MANAGED_NAMESPACE</span><span class="o">=</span>argo<span class="w"> </span>workflow-controller
 </code></pre></div>
-<p>You can set environment variable for the argo-server deployment, for example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">args</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server</span>
-<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
-<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-<span class="w">          </span><span class="nt">env</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GRPC_MESSAGE_SIZE</span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;209715200&quot;</span>
-<span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">          </span><span class="l l-Scalar l-Scalar-Plain">..</span>
-<span class="w">          </span><span class="l l-Scalar l-Scalar-Plain">...</span>
-<span class="w">          </span><span class="l l-Scalar l-Scalar-Plain">....</span>
-</code></pre></div>
-<p>You can set the environment variables for controller in controller's container spec like the following:</p>
+<p>You can set environment variables for the Controller Deployment's container spec like the following:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -4268,8 +4237,7 @@ prefix. For example:</p>
 </tr>
 </tbody>
 </table>
-<p>You can set the environment variables for executor by customizing executor container's environment variables in your
-controller's config-map like the following:</p>
+<p>You can set environment variables for the Executor in your <a href="../workflow-controller-configmap/"><code>workflow-controller-configmap</code></a> like the following:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -4322,8 +4290,46 @@ controller's config-map like the following:</p>
 <td><code>v2</code></td>
 <td>Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller</td>
 </tr>
+<tr>
+<td><code>GRPC_MESSAGE_SIZE</code></td>
+<td><code>string</code></td>
+<td><code>104857600</code></td>
+<td>Use different GRPC Max message size for Server (supporting huge workflows).</td>
+</tr>
 </tbody>
 </table>
+<p>CLI parameters of the Server can be specified as environment variables with the <code>ARGO_</code> prefix.
+For example:</p>
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>server<span class="w"> </span>--managed-namespace<span class="o">=</span>argo
+</code></pre></div>
+<p>Can be expressed as:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">ARGO_MANAGED_NAMESPACE</span><span class="o">=</span>argo<span class="w"> </span>argo<span class="w"> </span>server
+</code></pre></div>
+<p>You can set environment variables for the Server Deployment's container spec like the following:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server</span>
+<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+<span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GRPC_MESSAGE_SIZE</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;209715200&quot;</span>
+<span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">          </span><span class="c1"># ...</span>
+</code></pre></div>
 
               
 
