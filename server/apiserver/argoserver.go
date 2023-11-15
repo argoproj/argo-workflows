@@ -326,7 +326,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 // using grpc-gateway as a proxy to the gRPC server.
 func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
-	var ipKeyFunc = httplimit.IPKeyFunc()
+	ipKeyFunc := httplimit.IPKeyFunc()
 	if ipKeyFuncHeadersStr := env.GetString("IP_KEY_FUNC_HEADERS", ""); ipKeyFuncHeadersStr != "" {
 		ipKeyFuncHeaders := strings.Split(ipKeyFuncHeadersStr, ",")
 		ipKeyFunc = httplimit.IPKeyFunc(ipKeyFuncHeaders...)
