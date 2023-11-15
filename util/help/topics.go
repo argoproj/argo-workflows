@@ -1,7 +1,7 @@
 package help
 
 const (
-	root       = "https://argoproj.github.io/argo-workflows"
+	root       = "https://argo-workflows.readthedocs.io/en/stable"
 	ArgoServer = root + "/argo-server/"
 	CLI        = root + "/cli/argo"
 
