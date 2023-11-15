@@ -351,6 +351,11 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		return node, err
 	}
 	if outputs != nil {
+		node, err = woc.wf.GetNodeByName(nodeName)
+		if err != nil {
+			woc.log.Errorf("unable to get node by name for %s", nodeName)
+			return nil, err
+		}
 		node.Outputs = outputs
 		woc.wf.Status.Nodes.Set(node.ID, *node)
 	}
