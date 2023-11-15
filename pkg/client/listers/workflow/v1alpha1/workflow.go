@@ -65,7 +65,9 @@ type workflowNamespaceLister struct {
 // List lists all Workflows in the indexer for a given namespace.
 func (s workflowNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.Workflow, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Workflow))
+		if _, ok := m.(*v1alpha1.Workflow); ok {
+			ret = append(ret, m.(*v1alpha1.Workflow))
+		}
 	})
 	return ret, err
 }
