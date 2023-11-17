@@ -1200,3 +1200,17 @@ func (s *FunctionalSuite) TestEntrypointName() {
 		})
 
 }
+
+func (s *FunctionalSuite) TestMissingStepsInUI() {
+	s.Given().
+		Workflow(`@functional/missing-steps.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithName(`missing-steps[0].step1[0].execute-script`), func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
+			assert.NotNil(t, n)
+			assert.NotNil(t, n.Children)
+			assert.Equal(t, 1, len(n.Children))
+		})
+}
