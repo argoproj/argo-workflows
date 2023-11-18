@@ -11,7 +11,7 @@ require (
 	github.com/TwiN/go-color v1.4.1
 	github.com/alibabacloud-go/tea v1.2.1
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.1+incompatible
-	github.com/aliyun/credentials-go v1.3.1
+	github.com/aliyun/credentials-go v1.3.2
 	github.com/antonmedv/expr v1.15.3
 	github.com/argoproj/argo-events v1.7.3
 	github.com/argoproj/pkg v0.13.7-0.20230901113346-235a5432ec98
