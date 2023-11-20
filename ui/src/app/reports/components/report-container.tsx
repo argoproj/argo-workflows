@@ -9,7 +9,7 @@ export const ReportsContainer = (props: RouteComponentProps<any>) => (
 );
 
 // lazy load Reports as it is infrequently used and imports large Chart components (which can be split into a separate bundle)
-const LazyReports = React.lazy(() => import('./reports'));
+const LazyReports = React.lazy(() => import(/* webpackChunkName: "reports" */ './reports'));
 
 function SuspenseReports(props: RouteComponentProps<any>) {
     return (
