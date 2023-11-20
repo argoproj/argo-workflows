@@ -2297,34 +2297,34 @@
     Synopsis
   </a>
   
+    <nav class="md-nav" aria-label="Synopsis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-api-mode-default" class="md-nav__link">
+    Kubernetes API Mode (default)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#argo-server-grpc-mode" class="md-nav__link">
+    Argo Server GRPC Mode
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#argo-server-http1-mode" class="md-nav__link">
+    Argo Server HTTP1 Mode
+  </a>
+  
 </li>
         
       </ul>
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#kubernetes-api-mode-default" class="md-nav__link">
-    Kubernetes API Mode (default)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#argo-server-grpc-mode" class="md-nav__link">
-    Argo Server GRPC Mode
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#argo-server-http1-mode" class="md-nav__link">
-    Argo Server HTTP1 Mode
-  </a>
-  
-    <nav class="md-nav" aria-label="Argo Server HTTP1 Mode">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#options" class="md-nav__link">
@@ -3892,34 +3892,34 @@
     Synopsis
   </a>
   
+    <nav class="md-nav" aria-label="Synopsis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-api-mode-default" class="md-nav__link">
+    Kubernetes API Mode (default)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#argo-server-grpc-mode" class="md-nav__link">
+    Argo Server GRPC Mode
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#argo-server-http1-mode" class="md-nav__link">
+    Argo Server HTTP1 Mode
+  </a>
+  
 </li>
         
       </ul>
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#kubernetes-api-mode-default" class="md-nav__link">
-    Kubernetes API Mode (default)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#argo-server-grpc-mode" class="md-nav__link">
-    Argo Server GRPC Mode
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#argo-server-http1-mode" class="md-nav__link">
-    Argo Server HTTP1 Mode
-  </a>
-  
-    <nav class="md-nav" aria-label="Argo Server HTTP1 Mode">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#options" class="md-nav__link">
@@ -3958,19 +3958,21 @@
 </a>
 
 
+  <h1>argo</h1>
+
 <h2 id="argo">argo<a class="headerlink" href="#argo" title="Permanent link">&para;</a></h2>
 <p>argo is the command line interface to Argo</p>
 <h3 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h3>
 <p>You can use the CLI in the following modes:</p>
-<h1 id="kubernetes-api-mode-default">Kubernetes API Mode (default)<a class="headerlink" href="#kubernetes-api-mode-default" title="Permanent link">&para;</a></h1>
+<h4 id="kubernetes-api-mode-default">Kubernetes API Mode (default)<a class="headerlink" href="#kubernetes-api-mode-default" title="Permanent link">&para;</a></h4>
 <p>Requests are sent directly to the Kubernetes API. No Argo Server is needed. Large workflows and the workflow archive are not supported.</p>
 <p>Use when you have direct access to the Kubernetes API, and don't need large workflow or workflow archive support.</p>
 <p>If you're using instance ID (which is very unlikely), you'll need to set it:</p>
 <div class="codehilite"><pre><span></span><code>ARGO_INSTANCEID=your-instanceid
 </code></pre></div>
 
-<h1 id="argo-server-grpc-mode">Argo Server GRPC Mode<a class="headerlink" href="#argo-server-grpc-mode" title="Permanent link">&para;</a></h1>
-<p>Requests are sent to the Argo Server API via GRPC (using HTTP/2). Large workflows and the workflow archive are supported. Network load-balancers that do not support HTTP/2 are not supported. </p>
+<h4 id="argo-server-grpc-mode">Argo Server GRPC Mode<a class="headerlink" href="#argo-server-grpc-mode" title="Permanent link">&para;</a></h4>
+<p>Requests are sent to the Argo Server API via GRPC (using HTTP/2). Large workflows and the workflow archive are supported. Network load-balancers that do not support HTTP/2 are not supported.</p>
 <p>Use if you do not have access to the Kubernetes API (e.g. you're in another cluster), and you're running the Argo Server using a network load-balancer that support HTTP/2.</p>
 <p>To enable, set ARGO_SERVER:</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">ARGO_SERVER</span><span class="o">=</span><span class="nt">localhost</span><span class="p">:</span><span class="nd">2746</span><span class="w"> </span><span class="o">;</span><span class="err">#</span><span class="w"> </span><span class="nt">The</span><span class="w"> </span><span class="nt">format</span><span class="w"> </span><span class="nt">is</span><span class="w"> </span><span class="s2">&quot;host:port&quot;</span><span class="w"> </span><span class="nt">-</span><span class="w"> </span><span class="nt">do</span><span class="w"> </span><span class="nt">not</span><span class="w"> </span><span class="nt">prefix</span><span class="w"> </span><span class="nt">with</span><span class="w"> </span><span class="s2">&quot;http&quot;</span><span class="w"> </span><span class="nt">or</span><span class="w"> </span><span class="s2">&quot;https&quot;</span>
@@ -3996,7 +3998,7 @@
 <div class="codehilite"><pre><span></span><code>ARGO_TOKEN=&#39;Bearer ******&#39; ;# Should always start with &quot;Bearer &quot; or &quot;Basic &quot;.
 </code></pre></div>
 
-<h1 id="argo-server-http1-mode">Argo Server HTTP1 Mode<a class="headerlink" href="#argo-server-http1-mode" title="Permanent link">&para;</a></h1>
+<h4 id="argo-server-http1-mode">Argo Server HTTP1 Mode<a class="headerlink" href="#argo-server-http1-mode" title="Permanent link">&para;</a></h4>
 <p>As per GRPC mode, but uses HTTP. Can be used with ALB that does not support HTTP/2. The command "argo logs --since-time=2020...." will not work (due to time-type).</p>
 <p>Use this when your network load-balancer does not support HTTP/2.</p>
 <p>Use the same configuration as GRPC mode, but also set:</p>
