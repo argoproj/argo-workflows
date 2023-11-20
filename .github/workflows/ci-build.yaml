@@ -408,8 +408,7 @@ jobs:
           git add ui/yarn.lock
           git commit -s -m 'chore: deduplicate yarn.lock'
           git push
-      - if: github.actor != 'dependabot[bot]'
-        run: git diff --exit-code
+      - run: git diff --exit-code
       # check to see if it'll start (but not if it'll render)
       - run: yarn --cwd ui start &
       - run: until curl http://localhost:8080 > /dev/null ; do sleep 10s ; done
