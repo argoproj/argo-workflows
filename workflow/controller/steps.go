@@ -172,6 +172,10 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	}
 
 	if outputs != nil {
+		node, err := woc.wf.GetNodeByName(nodeName)
+		if err != nil {
+			return nil, err
+		}
 		node.Outputs = outputs
 		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes.Set(node.ID, *node)

@@ -3,7 +3,7 @@ import * as React from 'react';
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
+import {isArchivedWorkflow, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -229,7 +229,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                         <>
                             {(counts.complete > 100 || counts.incomplete > 100) && (
                                 <CostOptimisationNudge name='workflow-list'>
-                                    You have at least {counts.incomplete} incomplete, and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
+                                    You have at least {counts.incomplete} incomplete and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
                                 </CostOptimisationNudge>
                             )}
                             <div className='argo-table-list'>
@@ -347,7 +347,12 @@ function nullSafeTimeFilter(createdAfter: Date, finishedBefore: Date, w: Workflo
 function countsByCompleted(workflows?: Workflow[]) {
     const counts = {complete: 0, incomplete: 0};
     (workflows || []).forEach(wf => {
-        if (wf.metadata?.labels && wf.metadata?.labels[models.labels.completed] === 'true') {
+        // don't count archived workflows as this is for GC purposes
+        if (isArchivedWorkflow(wf)) {
+            return;
+        }
+
+        if (wf.metadata?.labels?.[models.labels.completed] === 'true') {
             counts.complete++;
         } else {
             counts.incomplete++;

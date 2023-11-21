@@ -103,9 +103,10 @@ func (cc *Controller) Run(ctx context.Context) {
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
 	cc.addCronWorkflowInformerHandler()
 
-	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
-		wfInformerListOptionsFunc(options, cc.instanceId)
-	}, cache.Indexers{})
+	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
+		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceId) },
+		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceId) },
+		cache.Indexers{})
 	go wfInformer.Run(ctx.Done())
 
 	cc.wfLister = util.NewWorkflowLister(wfInformer)

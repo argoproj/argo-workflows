@@ -45,7 +45,8 @@ A workflow (and for that matter, any Kubernetes resource) will incur a cost as l
 
 The workflow controller memory and CPU needs to increase linearly with the number of pods and workflows you are currently running.
 
-You should delete workflows once they are no longer needed, or enable a [Workflow Archive](workflow-archive.md) and you can still view them after they are removed from Kubernetes.
+You should delete workflows once they are no longer needed.
+You can enable the [Workflow Archive](workflow-archive.md) to continue viewing them after they are removed from Kubernetes.
 
 Limit the total number of workflows using:
 

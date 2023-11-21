@@ -104,10 +104,11 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 					p = nil // i did not expect to need to nil the pod, but here we are
 				}
 			}
+			f(tt, n, p)
 		} else {
 			_, _ = fmt.Println("Did not find node")
+			t.t.Error("Did not find expected node")
 		}
-		f(tt, n, p)
 	})
 }
 
