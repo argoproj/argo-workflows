@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **items** | [**List&lt;IoArgoprojWorkflowV1alpha1Workflow&gt;**](IoArgoprojWorkflowV1alpha1Workflow.md) |  | 
 **kind** | **String** | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  [optional]
 **metadata** | [**io.kubernetes.client.openapi.models.V1ListMeta**](io.kubernetes.client.openapi.models.V1ListMeta.md) |  | 
+**paginationOptions** | [**IoArgoprojWorkflowV1alpha1WorkflowPaginationOptions**](IoArgoprojWorkflowV1alpha1WorkflowPaginationOptions.md) |  | 
 
 
 

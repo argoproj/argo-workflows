@@ -151,6 +151,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC":       schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowList":                  schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata":              schema_pkg_apis_workflow_v1alpha1_WorkflowMetadata(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowPaginationOptions":     schema_pkg_apis_workflow_v1alpha1_WorkflowPaginationOptions(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec":                  schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus":                schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStep":                  schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref),
@@ -7226,12 +7227,18 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref common.ReferenceCallback
 							},
 						},
 					},
+					"paginationOptions": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowPaginationOptions"),
+						},
+					},
 				},
-				Required: []string{"metadata", "items"},
+				Required: []string{"metadata", "items", "paginationOptions"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowPaginationOptions", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -7290,6 +7297,33 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowMetadata(ref common.ReferenceCall
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelValueFrom"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowPaginationOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"wfContinue": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"archivedContinue": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"wfContinue", "archivedContinue"},
+			},
+		},
 	}
 }
 

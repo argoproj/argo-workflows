@@ -11121,7 +11121,8 @@
       "type": "object",
       "required": [
         "metadata",
-        "items"
+        "items",
+        "paginationOptions"
       ],
       "properties": {
         "apiVersion": {
@@ -11140,6 +11141,9 @@
         },
         "metadata": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        },
+        "paginationOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowPaginationOptions"
         }
       }
     },
@@ -11163,6 +11167,21 @@
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelValueFrom"
           }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowPaginationOptions": {
+      "type": "object",
+      "required": [
+        "wfContinue",
+        "archivedContinue"
+      ],
+      "properties": {
+        "archivedContinue": {
+          "type": "string"
+        },
+        "wfContinue": {
+          "type": "string"
         }
       }
     },
