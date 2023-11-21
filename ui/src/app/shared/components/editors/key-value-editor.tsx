@@ -1,18 +1,21 @@
 import * as React from 'react';
+import {useState} from 'react';
+
 import {TextInput} from '../text-input';
 
 interface KeyValues {
     [key: string]: string;
 }
 
-export const KeyValueEditor = ({onChange, keyValues, hide}: {keyValues: KeyValues; onChange: (value: KeyValues) => void; hide?: (key: string) => boolean}) => {
-    const [name, setName] = React.useState('');
-    const [value, setValue] = React.useState('');
-    const deleteItem = (k: string) => {
+export function KeyValueEditor({onChange, keyValues, hide}: {keyValues: KeyValues; onChange: (value: KeyValues) => void; hide?: (key: string) => boolean}) {
+    const [name, setName] = useState('');
+    const [value, setValue] = useState('');
+
+    function deleteItem(k: string) {
         delete keyValues[k];
         onChange(keyValues);
-    };
-    const addItem = () => {
+    }
+    function addItem() {
         if (!name || !value) {
             return;
         }
@@ -20,7 +23,8 @@ export const KeyValueEditor = ({onChange, keyValues, hide}: {keyValues: KeyValue
         onChange(keyValues);
         setName('');
         setValue('');
-    };
+    }
+
     return (
         <>
             {Object.entries(keyValues)
@@ -57,7 +61,7 @@ export const KeyValueEditor = ({onChange, keyValues, hide}: {keyValues: KeyValue
             </div>
         </>
     );
-};
+}
 
 KeyValueEditor.defaultProps = {
     keyValues: {}
