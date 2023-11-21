@@ -36,6 +36,24 @@ func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.Nod
 	return err
 }
 
+func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels map[string]string) error {
+	data, err := json.Marshal(&wfv1.WorkflowTaskResult{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: labels,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	_, err = we.taskResultClient.Patch(ctx,
+		we.nodeId,
+		types.MergePatchType,
+		data,
+		metav1.PatchOptions{},
+	)
+	return err
+}
+
 func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult) error {
 	taskResult := &wfv1.WorkflowTaskResult{
 		TypeMeta: metav1.TypeMeta{
@@ -43,20 +61,20 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 			Kind:       workflow.WorkflowTaskResultKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   we.nodeId,
-			Labels: map[string]string{common.LabelKeyWorkflow: we.workflow},
+			Name: we.nodeId,
 		},
 		NodeResult: result,
 	}
-	taskResult.SetOwnerReferences(
-		[]metav1.OwnerReference{
-			{
-				APIVersion: "v1",
-				Kind:       "Pod",
-				Name:       we.PodName,
-				UID:        we.podUID,
-			},
-		})
+	taskResult.SetLabels(map[string]string{
+		common.LabelKeyWorkflow:               we.workflow,
+		common.LabelKeyReportOutputsCompleted: "false",
+	})
+	taskResult.SetOwnerReferences([]metav1.OwnerReference{{
+		APIVersion: workflow.APIVersion,
+		Kind:       workflow.WorkflowKind,
+		Name:       we.workflow,
+		UID:        we.workflowUID,
+	}})
 
 	if v := os.Getenv(common.EnvVarInstanceID); v != "" {
 		taskResult.Labels[common.LabelKeyControllerInstanceID] = v

@@ -234,12 +234,21 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 	woc.artifactRepository = repo
 
-	// check to see if we can do garbage collection of Artifacts; this is the only functionality in this method which can be called for 'Completed' Workflows,
-	// so we can check for Completed Workflows after and return
-	if err := woc.garbageCollectArtifacts(ctx); err != nil {
-		woc.log.WithError(err).Error("failed to GC artifacts")
-		return
+	woc.addArtifactGCFinalizer()
+
+	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
+	woc.taskResultReconciliation()
+
+	// Do artifact GC if all task results are completed.
+	if woc.checkTaskResultsCompleted() {
+		if err := woc.garbageCollectArtifacts(ctx); err != nil {
+			woc.log.WithError(err).Error("failed to GC artifacts")
+			return
+		}
+	} else {
+		woc.log.Debug("Skipping artifact GC")
 	}
+
 	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
 		return
 	}
@@ -298,7 +307,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
-		woc.taskResultReconciliation()
 		err = woc.podReconciliation(ctx)
 		if err == nil {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
@@ -779,7 +787,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithError(err).Warn("error updating taskset")
 	}
 
-	if woc.wf.Status.Phase.Completed() {
+	// Make sure the TaskResults are incorporated into WorkflowStatus before we delete them.
+	if woc.wf.Status.Phase.Completed() && woc.checkTaskResultsCompleted() {
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
@@ -789,6 +798,19 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be be labeled multiple times.
 	woc.queuePodsForCleanup()
+}
+
+func (woc *wfOperationCtx) checkTaskResultsCompleted() bool {
+	taskResultsCompleted := woc.wf.Status.GetTaskResultsCompleted()
+	if len(taskResultsCompleted) == 0 {
+		return false
+	}
+	for _, completed := range taskResultsCompleted {
+		if !completed {
+			return false
+		}
+	}
+	return true
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
@@ -1345,6 +1367,15 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	// only update Pod IP for daemoned nodes to reduce number of updates
 	if !new.Completed() && new.IsDaemoned() {
 		new.PodIP = pod.Status.PodIP
+	}
+
+	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
+		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+		resultName := pod.GetName()
+		woc.wf.Status.InitializeTaskResultIncomplete(resultName)
+		if x == "true" {
+			woc.wf.Status.MarkTaskResultComplete(resultName)
+		}
 	}
 
 	if x, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
