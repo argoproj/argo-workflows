@@ -1873,6 +1873,8 @@ message WorkflowList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated Workflow items = 2;
+
+  optional WorkflowPaginationOptions paginationOptions = 3;
 }
 
 message WorkflowMetadata {
@@ -1881,6 +1883,12 @@ message WorkflowMetadata {
   map<string, string> annotations = 2;
 
   map<string, LabelValueFrom> labelsFrom = 3;
+}
+
+message WorkflowPaginationOptions {
+  optional string wfContinue = 1;
+
+  optional string archivedContinue = 2;
 }
 
 // WorkflowSpec is the specification of a Workflow.

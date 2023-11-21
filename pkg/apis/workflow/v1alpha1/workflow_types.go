@@ -237,12 +237,18 @@ var (
 	}
 )
 
+type WorkflowPaginationOptions struct {
+	WfContinue       string `json:"wfContinue" protobuf:"bytes,1,opt,name=wfContinue"`
+	ArchivedContinue string `json:"archivedContinue" protobuf:"bytes,2,opt,name=archivedContinue"`
+}
+
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Items           Workflows `json:"items" protobuf:"bytes,2,opt,name=items"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ListMeta   `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+	Items             Workflows                 `json:"items" protobuf:"bytes,2,opt,name=items"`
+	PaginationOptions WorkflowPaginationOptions `json:"paginationOptions" protobuf:"bytes,3,opt,name=paginationOptions"`
 }
 
 var _ TemplateHolder = &Workflow{}

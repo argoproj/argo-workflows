@@ -128,65 +128,70 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
-func mergeWithArchivedWorkflows(liveWfs wfv1.WorkflowList, archivedWfs wfv1.WorkflowList, numWfsToKeep int) *wfv1.WorkflowList {
-	var mergedWfs []wfv1.Workflow
-	var uidToWfs = map[types.UID][]wfv1.Workflow{}
-	for _, item := range liveWfs.Items {
-		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
-	}
-	for _, item := range archivedWfs.Items {
-		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
-	}
-
-	for _, v := range uidToWfs {
-		// The archived workflow we saved in the database have "Persisted" as the archival status.
-		// Prioritize 'Archived' over 'Persisted' because 'Archived' means the workflow is in the cluster
-		if len(v) == 1 {
-			mergedWfs = append(mergedWfs, v[0])
-		} else {
-			if ok := v[0].Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"; ok {
-				mergedWfs = append(mergedWfs, v[0])
-			} else {
-				mergedWfs = append(mergedWfs, v[1])
-			}
-		}
-	}
-	mergedWfsList := wfv1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
-	sort.Sort(mergedWfsList.Items)
-	numWfs := 0
-	var finalWfs []wfv1.Workflow
-	for _, item := range mergedWfsList.Items {
-		if numWfsToKeep == 0 || numWfs < numWfsToKeep {
-			finalWfs = append(finalWfs, item)
-			numWfs += 1
-		}
-	}
-	return &wfv1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
-}
-
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
+
+	var mergedWfs wfv1.Workflows
+	k8sContinue := common.CheckNilString(req.PaginationOptions.WfContinue)
+	archivedContinue := common.CheckNilString(req.PaginationOptions.ArchivedContinue)
+	labelSelector := common.CheckNilString(req.ListOptions.LabelSelector)
+	limit := req.ListOptions.Limit
 
 	listOption := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		listOption = req.ListOptions
 	}
 	s.instanceIDService.With(listOption)
+
+	/* list k8s workflows - filter archived resources */
+	wfLabelSelector := ""
+	if labelSelector != "" {
+		wfLabelSelector += fmt.Sprintf("%s,", labelSelector)
+	}
+	wfLabelSelector += fmt.Sprintf("%s!=%s", common.LabelKeyWorkflowArchivingStatus, "Archived")
+
+	listOption.Continue = k8sContinue
+	listOption.LabelSelector = wfLabelSelector
 	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(ctx, *listOption)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	archivedWfList, err := s.wfArchiveServer.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{
-		ListOptions: listOption,
-		NamePrefix:  "",
-		Namespace:   req.Namespace,
-	})
+	mergedWfs = append(mergedWfs, wfList.Items...)
+
+	/* list archived workflows */
+	archivedWfList := &wfv1.WorkflowList{
+		Items:    wfv1.Workflows{},
+		ListMeta: metav1.ListMeta{},
+	}
+	if limit == 0 {
+		listOption.Continue = ""
+		listOption.LabelSelector = labelSelector
+		archivedWfList, err = s.wfArchiveServer.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{
+			ListOptions: listOption,
+			NamePrefix:  "",
+			Namespace:   req.Namespace,
+		})
+	} else {
+		if int64(len(mergedWfs)) < limit {
+			listOption.Continue = archivedContinue
+			listOption.Limit = limit - int64(len(mergedWfs))
+			listOption.LabelSelector = labelSelector
+			archivedWfList, err = s.wfArchiveServer.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{
+				ListOptions: listOption,
+				NamePrefix:  "",
+				Namespace:   req.Namespace,
+			})
+		}
+	}
 	if err != nil {
 		log.Warnf("unable to list archived workflows:%v", err)
-	} else {
-		if archivedWfList != nil {
-			wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList, int(listOption.Limit))
+		archivedWfList = &wfv1.WorkflowList{
+			Items:    wfv1.Workflows{},
+			ListMeta: metav1.ListMeta{},
 		}
+	}
+	if len(archivedWfList.Items) > 0 {
+		mergedWfs = append(mergedWfs, archivedWfList.Items...)
 	}
 
 	cleaner := fields.NewCleaner(req.Fields)
@@ -207,9 +212,12 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	// we make no promises about the overall list sorting, we just sort each page
-	sort.Sort(wfList.Items)
+	sort.Sort(mergedWfs)
 
-	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
+	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{ResourceVersion: wfList.ResourceVersion}, Items: mergedWfs, PaginationOptions: wfv1.WorkflowPaginationOptions{
+		WfContinue:       common.CheckNilString(wfList.ListMeta.Continue),
+		ArchivedContinue: common.CheckNilString(archivedWfList.ListMeta.Continue),
+	}}
 	newRes := &wfv1.WorkflowList{}
 	if ok, err := cleaner.Clean(res, &newRes); err != nil {
 		return nil, sutils.ToStatusError(fmt.Errorf("unable to CleanFields in request: %w", err), codes.Internal)

@@ -380,3 +380,7 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
 }
+
+func TestCheckNilString(t *testing.T) {
+	assert.Equal(t, CheckNilString(nil), "")
+}

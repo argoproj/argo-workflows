@@ -774,6 +774,10 @@ export interface Condition {
 export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError' | 'ArtifactGCError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown';
 
+export interface WorkflowsPaginationOptions {
+    wfContinue: string;
+    archivedContinue: string;
+}
 /**
  * WorkflowList is list of Workflow resources
  */
@@ -790,6 +794,7 @@ export interface WorkflowList {
      */
     kind?: string;
     metadata: kubernetes.ListMeta;
+    paginationOptions: WorkflowsPaginationOptions;
 }
 
 /**

@@ -2883,6 +2883,16 @@
             "description": "Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".",
             "name": "fields",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "paginationOptions.wfContinue",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "paginationOptions.archivedContinue",
+            "in": "query"
           }
         ],
         "responses": {

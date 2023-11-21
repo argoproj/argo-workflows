@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"testing"
-	"time"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
@@ -627,7 +626,10 @@ func getWorkflow(ctx context.Context, server workflowpkg.WorkflowServiceServer, 
 }
 
 func getWorkflowList(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string) (*v1alpha1.WorkflowList, error) {
-	return server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
+	return server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace, PaginationOptions: &v1alpha1.WorkflowPaginationOptions{
+		WfContinue:       "",
+		ArchivedContinue: "",
+	}, ListOptions: &metav1.ListOptions{}})
 }
 
 func TestCreateWorkflow(t *testing.T) {
@@ -648,26 +650,6 @@ type testWatchWorkflowServer struct {
 
 func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 	panic("implement me")
-}
-
-func TestMergeWithArchivedWorkflows(t *testing.T) {
-	timeNow := time.Now()
-	wf1Live := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
-			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Archived"}}}
-	wf1Archived := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
-			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Persisted"}}}
-	wf2 := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "2", CreationTimestamp: metav1.Time{Time: timeNow.Add(2 * time.Second)}}}
-	wf3 := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "3", CreationTimestamp: metav1.Time{Time: timeNow.Add(3 * time.Second)}}}
-	liveWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Live, wf2}}
-	archivedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Archived, wf3, wf2}}
-	expectedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2, wf1Live}}
-	expectedShortWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2}}
-	assert.Equal(t, expectedWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 0).Items)
-	assert.Equal(t, expectedShortWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 2).Items)
 }
 
 func TestWatchWorkflows(t *testing.T) {
@@ -754,7 +736,7 @@ func TestListWorkflow(t *testing.T) {
 	wfl, err := getWorkflowList(ctx, server, "workflows")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wfl)
-		assert.Equal(t, 4, len(wfl.Items))
+		assert.Equal(t, 5, len(wfl.Items))
 	}
 	wfl, err = getWorkflowList(ctx, server, "test")
 	if assert.NoError(t, err) {

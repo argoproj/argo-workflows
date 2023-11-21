@@ -322,3 +322,10 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyCompleted] == "true" &&
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
+
+func CheckNilString(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+	return value.(string)
+}

@@ -1,5 +1,6 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import {Observable} from 'rxjs';
+import {WorkflowsPaginationOptions} from '../../models/workflows';
 import {RetryWatch} from './retry-watch';
 
 interface Resource {
@@ -16,8 +17,8 @@ export const sortByYouth: Sorter = (a: Resource, b: Resource) => b.metadata.crea
  * ListWatch allows you to start watching for changes, automatically reconnecting on error.
  */
 export class ListWatch<T extends Resource> {
-    private readonly list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>;
-    private readonly onLoad: (metadata: kubernetes.ListMeta) => void;
+    private readonly list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]; paginationOptions?: WorkflowsPaginationOptions}>;
+    private readonly onLoad: (paginationOptions: WorkflowsPaginationOptions) => void;
     private readonly onChange: (items: T[], item?: T, type?: Type) => void;
     private readonly onError: (error: Error) => void;
     private readonly sorter: (a: T, b: T) => number;
@@ -27,9 +28,9 @@ export class ListWatch<T extends Resource> {
     private reconnectAfterMs = 3000;
 
     constructor(
-        list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>,
+        list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]; paginationOptions?: WorkflowsPaginationOptions}>,
         watch: (resourceVersion?: string) => Observable<kubernetes.WatchEvent<T>>,
-        onLoad: (metadata: kubernetes.ListMeta) => void, // called when the list is loaded
+        onLoad: (paginationOptions: WorkflowsPaginationOptions) => void, // called when the list is loaded
         onOpen: () => void, //  called, when watches is re-established after error,  so should clear any errors
         onChange: (items: T[], item?: T, type?: Type) => void, // called whenever items change, any users that changes state should use [...items]
         onError: (error: Error) => void, // called on any error
@@ -58,7 +59,7 @@ export class ListWatch<T extends Resource> {
         this.list()
             .then(x => {
                 this.items = (x.items || []).sort(this.sorter);
-                this.onLoad(x.metadata);
+                this.onLoad(x.paginationOptions);
                 this.onChange(this.items);
                 this.retryWatch.start(x.metadata.resourceVersion);
             })
