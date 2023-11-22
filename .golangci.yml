@@ -24,12 +24,14 @@ run:
     - plugins
 linters:
   enable:
+    - asasalint
+    - bidichk
     - bodyclose
     - errcheck
+    - exportloopref
     - goimports
     # only minor issues
     # - errorlint
-    - exportloopref
     # seems to have bugs in recent version, also slow
     # - gci
     - gosec
@@ -37,6 +39,9 @@ linters:
     - govet
     - ineffassign
     - misspell
+    - nakedret
+    - nosprintfhostport
+    - reassign
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
