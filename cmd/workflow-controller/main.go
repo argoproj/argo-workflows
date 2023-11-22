@@ -191,12 +191,15 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
 
+	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	if err := viper.BindPFlags(command.Flags()); err != nil {
 		log.Fatal(err)
 	}
+	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
 	command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)

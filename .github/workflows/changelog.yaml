@@ -5,6 +5,7 @@ on:
     tags:
       - v*
       - "!v0.0.0"
+
 permissions:
   contents: read
 

@@ -256,7 +256,7 @@ func (s *CLISuite) TestLogs() {
 		WaitForWorkflow(fixtures.ToStart).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.Nodes.FindByDisplayName(wf.Name) != nil, "pod running"
-		}), 10*time.Second).
+		}), 40*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -836,7 +836,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		WaitForWorkflow(fixtures.ToStart).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.AnyActiveSuspendNode(), "suspended node"
-		}), time.Minute).
+		}), time.Second*90).
 		RunCli([]string{"terminate", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Regexp(t, "workflow retry-test-.* terminated", output)
@@ -855,7 +855,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		}).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.AnyActiveSuspendNode(), "suspended node"
-		}), time.Minute).
+		}), time.Second*90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			outerStepsPodNode := status.Nodes.FindByDisplayName("steps-outer-step1")

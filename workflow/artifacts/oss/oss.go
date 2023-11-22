@@ -236,12 +236,23 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			if err != nil {
 				return !isTransientOSSErr(err), err
 			}
-			results, err := bucket.ListObjectsV2(oss.Prefix(artifact.OSS.Key))
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			for _, object := range results.Objects {
-				files = append(files, object.Key)
+			pre := oss.Prefix(artifact.OSS.Key)
+			continueToken := ""
+			for {
+				results, err := bucket.ListObjectsV2(pre, oss.ContinuationToken(continueToken))
+				if err != nil {
+					return !isTransientOSSErr(err), err
+				}
+				// Add to files. By default, 100 records are returned at a time. https://help.aliyun.com/zh/oss/user-guide/list-objects-18
+				for _, object := range results.Objects {
+					files = append(files, object.Key)
+				}
+				if results.IsTruncated {
+					continueToken = results.NextContinuationToken
+					pre = oss.Prefix(results.Prefix)
+				} else {
+					break
+				}
 			}
 			return true, nil
 		})
@@ -451,6 +462,21 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 	return files, nil
 }
 
-func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
-	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for OSS")
+// IsDirectory tests if the key is acting like a OSS directory
+func (ossDriver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	osscli, err := ossDriver.newOSSClient()
+	if err != nil {
+		return !isTransientOSSErr(err), err
+	}
+	bucketName := artifact.OSS.Bucket
+	bucket, err := osscli.Bucket(bucketName)
+	if err != nil {
+		return !isTransientOSSErr(err), err
+	}
+	objectName := artifact.OSS.Key
+	isDir, err := IsOssDirectory(bucket, objectName)
+	if err != nil {
+		return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
+	}
+	return isDir, nil
 }

@@ -43,7 +43,7 @@ const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
 const reportsUrl = uiUrl('reports');
 
-export const AppRouter = ({popupManager, history, notificationsManager}: {popupManager: PopupManager; history: H.History; notificationsManager: NotificationsManager}) => {
+export function AppRouter({popupManager, history, notificationsManager}: {popupManager: PopupManager; history: H.History; notificationsManager: NotificationsManager}) {
     const [popupProps, setPopupProps] = useState<PopupProps>();
     const [modals, setModals] = useState<{string: boolean}>();
     const [version, setVersion] = useState<Version>();
@@ -186,4 +186,4 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             </Router>
         </>
     );
-};
+}

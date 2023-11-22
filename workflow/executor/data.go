@@ -26,7 +26,7 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 		return err
 	}
 	we.Template.Outputs.Result = pointer.StringPtr(string(out))
-	err = we.reportOutputs(ctx, nil)
+	err = we.ReportOutputs(ctx, nil)
 	if err != nil {
 		return err
 	}
