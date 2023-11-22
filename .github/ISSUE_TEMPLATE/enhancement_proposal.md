@@ -16,3 +16,12 @@ When would you use this?
 **Message from the maintainers**:
 
 Love this enhancement proposal? Give it a 👍. We prioritise the proposals with the most 👍.
+
+**Beyond this issue**:
+
+Are you a contributor? If not, have you thought about it? 
+
+Argo Workflows is seeking more community involvement and ultimately more Reviewers and Approvers to help keep it viable. 
+We are gauging interest in a potential system in which many companies pledge a little bit of time each to help get more people into these roles. 
+See [here](https://github.com/argoproj/argo-workflows/issues/12229) for more information. 
+If you think you or your company might be interested, please email julie_vogelman@intuit.com.

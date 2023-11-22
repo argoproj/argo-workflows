@@ -36,3 +36,10 @@ Fixes #TODO
 ### Verification
 
 <!-- TODO: Say how you tested your changes. -->
+
+
+### Beyond this PR
+
+Thank you for submitting this! Have you ever thought of becoming a Reviewer or Approver on the project? 
+
+Argo Workflows needs more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to ensure its future viability. We are gauging interest in a potential system in which many companies pledge a little bit of time each to help get more people into these roles. See [here](https://github.com/argoproj/argo-workflows/issues/12229) for more information. If you think you or your company might be interested, please email julie_vogelman@intuit.com.
