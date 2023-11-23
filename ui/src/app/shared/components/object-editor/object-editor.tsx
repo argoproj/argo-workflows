@@ -1,12 +1,13 @@
-import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
 import * as React from 'react';
-import {createRef, useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import MonacoEditor from 'react-monaco-editor';
+
 import {uiUrl} from '../../base';
 import {ScopedLocalStorage} from '../../scoped-local-storage';
 import {Button} from '../button';
 import {parse, stringify} from '../object-parser';
 import {PhaseIcon} from '../phase-icon';
+import {SuspenseMonacoEditor} from '../suspense-monaco-editor';
 
 interface Props<T> {
     type?: string;
@@ -22,11 +23,16 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
     const [error, setError] = useState<Error>();
     const [lang, setLang] = useState<string>(storage.getItem('lang', defaultLang));
     const [text, setText] = useState<string>(stringify(value, lang));
+    const editor = useRef<MonacoEditor>(null);
 
     useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
     useEffect(() => setText(stringify(value, lang)), [value]);
     useEffect(() => setText(stringify(parse(text), lang)), [lang]);
     useEffect(() => {
+        if (!editor.current) {
+            return;
+        }
+
         // we ONLY want to change the text, if the normalized version has changed, this prevents white-space changes
         // from resulting in a significant change
         const editorText = stringify(parse(editor.current.editor.getValue()), lang);
@@ -34,36 +40,42 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
         if (text !== editorText || lang !== editorLang) {
             editor.current.editor.setValue(stringify(parse(text), lang));
         }
-    }, [text, lang]);
+    }, [editor, text, lang]);
 
     useEffect(() => {
-        if (type && lang === 'json') {
-            const uri = uiUrl('assets/jsonschema/schema.json');
-            fetch(uri)
-                .then(res => res.json())
-                .then(swagger => {
-                    // adds auto-completion to JSON only
-                    languages.json.jsonDefaults.setDiagnosticsOptions({
-                        validate: true,
-                        schemas: [
-                            {
-                                uri,
-                                fileMatch: ['*'],
-                                schema: {
-                                    $id: 'http://workflows.argoproj.io/' + type + '.json',
-                                    $ref: '#/definitions/' + type,
-                                    $schema: 'http://json-schema.org/draft-07/schema',
-                                    definitions: swagger.definitions
-                                }
-                            }
-                        ]
-                    });
-                })
-                .catch(setError);
+        if (!type || lang !== 'json') {
+            return;
         }
+
+        (async () => {
+            const uri = uiUrl('assets/jsonschema/schema.json');
+            try {
+                const res = await fetch(uri);
+                const swagger = await res.json();
+                // lazy load this, otherwise all of monaco-editor gets imported into the main bundle
+                const languages = (await import(/* webpackChunkName: "monaco-editor" */ 'monaco-editor/esm/vs/editor/editor.api')).languages;
+                // adds auto-completion to JSON only
+                languages.json.jsonDefaults.setDiagnosticsOptions({
+                    validate: true,
+                    schemas: [
+                        {
+                            uri,
+                            fileMatch: ['*'],
+                            schema: {
+                                $id: 'http://workflows.argoproj.io/' + type + '.json',
+                                $ref: '#/definitions/' + type,
+                                $schema: 'http://json-schema.org/draft-07/schema',
+                                definitions: swagger.definitions
+                            }
+                        }
+                    ]
+                });
+            } catch (err) {
+                setError(err);
+            }
+        })();
     }, [lang, type]);
 
-    const editor = createRef<MonacoEditor>();
     // this calculation is rough, it is probably hard to work for for every case, essentially it is:
     // some pixels above and below for buttons, plus a bit of a buffer/padding
     const height = Math.max(600, window.innerHeight * 0.9 - 250);
@@ -100,7 +112,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                 {buttons}
             </div>
             <div>
-                <MonacoEditor
+                <SuspenseMonacoEditor
                     ref={editor}
                     key='editor'
                     defaultValue={text}

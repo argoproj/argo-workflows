@@ -9,6 +9,7 @@ General guidelines:
 * Explain when you would want to use a feature.
 * Provide working examples.
 * Format code using back-ticks to avoid it being reported as a spelling error.
+* Prefer 1 sentence per line of markdown
 * Follow the recommendations in the official [Kubernetes Documentation Style Guide](https://kubernetes.io/docs/contribute/style/style-guide/).
     * Particularly useful sections include [Content best practices](https://kubernetes.io/docs/contribute/style/style-guide/#content-best-practices) and [Patterns to avoid](https://kubernetes.io/docs/contribute/style/style-guide/#patterns-to-avoid).
     * **Note**: Argo does not use the same tooling, so the sections on "shortcodes" and "EditorConfig" are not relevant.

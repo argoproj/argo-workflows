@@ -1,8 +1,9 @@
 import * as React from 'react';
 import {createRef, useState} from 'react';
+
 import {Notice} from '../../shared/components/notice';
 
-export const CliHelp = () => {
+export function CliHelp() {
     const argoSecure = document.location.protocol === 'https:';
     const argoBaseHref = document
         .getElementsByTagName('base')[0]
@@ -15,15 +16,15 @@ export const CliHelp = () => {
             .find(x => x.startsWith('authorization=')) || ''
     ).replace(/^authorization="?(.*?)"?$/, '$1');
 
-    const text = `export ARGO_SERVER='${document.location.hostname}:${document.location.port || (argoSecure ? 443 : 80)}' 
-export ARGO_HTTP1=true  
+    const text = `export ARGO_SERVER='${document.location.hostname}:${document.location.port || (argoSecure ? 443 : 80)}'
+export ARGO_HTTP1=true
 export ARGO_SECURE=${argoSecure ? 'true' : 'false'}
 export ARGO_BASE_HREF=${argoBaseHref}
-export ARGO_TOKEN='${argoToken}' 
-export ARGO_NAMESPACE=argo ;# or whatever your namespace is 
+export ARGO_TOKEN='${argoToken}'
+export ARGO_NAMESPACE=argo ;# or whatever your namespace is
 export KUBECONFIG=/dev/null ;# recommended
 
-# check it works: 
+# check it works:
 argo list`;
 
     const [copied, setCopied] = useState(false);
@@ -61,4 +62,4 @@ argo list`;
             <textarea ref={hiddenText} style={{width: 0, height: 0, opacity: 0}} defaultValue={text} />
         </>
     );
-};
+}

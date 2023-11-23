@@ -1,4 +1,4 @@
-import jsyaml = require('js-yaml');
+import jsyaml from 'js-yaml';
 
 export function parse<T>(value: string) {
     if (value.startsWith('{')) {

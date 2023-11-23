@@ -53,10 +53,25 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
+
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
+		resultName := result.GetName()
+
+		woc.log.Debugf("task result:\n%+v", result)
+		woc.log.Debugf("task result name:\n%+v", resultName)
+
+		// Explicitly initialize the TaskResultsCompleted state for the given result.
+		woc.wf.Status.InitializeTaskResultIncomplete(resultName)
+
+		// If the task result is completed, set the state to true.
+		if result.Labels[common.LabelKeyReportOutputsCompleted] == "true" {
+			woc.log.Debugf("Marking task result complete %s", resultName)
+			woc.wf.Status.MarkTaskResultComplete(resultName)
+		}
+
 		nodeID := result.Name
 		old, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
@@ -83,4 +98,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.updated = true
 		}
 	}
+	woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.GetTaskResultsCompleted())
+	woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.GetTaskResultsCompleted()))
 }
