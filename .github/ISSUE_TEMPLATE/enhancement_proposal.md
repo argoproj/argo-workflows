@@ -19,9 +19,12 @@ Love this enhancement proposal? Give it a 👍. We prioritise the proposals with
 
 **Beyond this issue**:
 
+<!-- 
 Are you a contributor? If not, have you thought about it? 
 
 Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. 
+
 We are gauging interest in a potential system in which many companies pledge a little bit of time each to help get more people into these roles. 
-See [here](https://github.com/argoproj/argo-workflows/issues/12229) for more information. 
+See [#12229](https://github.com/argoproj/argo-workflows/issues/12229) for more information. 
 If you think you or your company might be interested, please add a comment to the issue.
+-->
