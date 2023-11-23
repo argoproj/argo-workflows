@@ -2710,9 +2710,9 @@ func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
 
 func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{})
-	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	assert.Nil(t, err)
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Lint: true})
-	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	assert.Nil(t, err)
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.value is required")
 }
@@ -3317,5 +3317,28 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 
 			_ = deleteWorkflowTemplate(wftmpl.Name)
 		})
+	}
+}
+
+var spacedParameterWorkflowTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+    generateName: hello-world-
+spec:
+  entrypoint: helloworld
+
+  templates:
+  - name: helloworld
+    container:
+      image: "alpine:3.18"
+      command: ["echo", "{{  workflow.thisdoesnotexist  }}"]
+`
+
+func TestShouldCheckValidationToSpacedParameters(t *testing.T) {
+	err := validate(spacedParameterWorkflowTemplate)
+	// Do not allow leading or trailing spaces in parameters
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{  workflow.thisdoesnotexist  }}")
 	}
 }

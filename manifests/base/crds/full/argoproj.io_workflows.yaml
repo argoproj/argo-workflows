@@ -974,6 +974,8 @@ spec:
                           type: string
                         type: object
                     type: object
+                  podSpecPatch:
+                    type: string
                   serviceAccountName:
                     type: string
                   strategy:
@@ -19179,6 +19181,8 @@ spec:
                         type: boolean
                       artifactory:
                         properties:
+                          keyFormat:
+                            type: string
                           passwordSecret:
                             properties:
                               key:
@@ -20050,6 +20054,13 @@ spec:
                       type: string
                     name:
                       type: string
+                    nodeFlag:
+                      properties:
+                        hooked:
+                          type: boolean
+                        retried:
+                          type: boolean
+                      type: object
                     outboundNodes:
                       items:
                         type: string
@@ -31036,6 +31047,8 @@ spec:
                               type: string
                             type: object
                         type: object
+                      podSpecPatch:
+                        type: string
                       serviceAccountName:
                         type: string
                       strategy:
@@ -49270,6 +49283,10 @@ spec:
                           type: object
                         type: array
                     type: object
+                type: object
+              taskResultsCompleted:
+                additionalProperties:
+                  type: boolean
                 type: object
             type: object
         required:

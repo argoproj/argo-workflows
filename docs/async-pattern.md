@@ -21,39 +21,44 @@ kind: WorkflowTemplate
 metadata:
   name: external-job-template
 spec:
+  entrypoint: run-external-job
+  arguments:
+    parameters:
+      - name: "job-cmd"
   templates:
-  - name: run-external-job
-    inputs:
-      parameters:
-        - name: "job-cmd"
-    steps:
-      - - name: trigger-job
-          template: trigger-job
-          arguments:
-            parameters:
-              - name: "job-cmd"
-                value: "{{inputs.parameters.job-cmd}}"
-      - - name: wait-completion
-          template: wait-completion
-          arguments:
-            parameters:
-              - name: uuid
-                value: "{{steps.trigger-job.outputs.result}}"
+    - name: run-external-job
+      inputs:
+        parameters:
+          - name: "job-cmd"
+            value: "{{workflow.parameters.job-cmd}}"
+      steps:
+        - - name: trigger-job
+            template: trigger-job
+            arguments:
+              parameters:
+                - name: "job-cmd"
+                  value: "{{inputs.parameters.job-cmd}}"
+        - - name: wait-completion
+            template: wait-completion
+            arguments:
+              parameters:
+                - name: uuid
+                  value: "{{steps.trigger-job.outputs.result}}"
 
-  - name: trigger-job
-    inputs:
-      parameters:
-        - name: "job-cmd"
-          value: "{{inputs.parameters.job-cmd}}"
-      image: appropriate/curl:latest
-      command: ["/bin/sh", "-c"]
-      args: ["{{inputs.parameters.cmd}}"]
+    - name: trigger-job
+      inputs:
+        parameters:
+          - name: "job-cmd"
+      container:
+        image: appropriate/curl:latest
+        command: [ "/bin/sh", "-c" ]
+        args: [ "{{inputs.parameters.job-cmd}}" ]
 
-  - name: wait-completion
-    inputs:
-      parameters:
-        - name: uuid
-    suspend: {}
+    - name: wait-completion
+      inputs:
+        parameters:
+          - name: uuid
+      suspend: { }
 ```
 
 In this case the ```job-cmd``` parameter can be a command that makes an HTTP call via curl to an endpoint that returns a job UUID. More sophisticated submission and parsing of submission output could be done with something like a Python script step.
@@ -66,12 +71,12 @@ You may need  an [access token](access-token.md).
 curl --request PUT \
   --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
   --header 'content-type: application/json' \
-  --header "Authorization: Bearer $ARGO_TOKEN" \
+  --header "Authorization: $ARGO_TOKEN" \
   --data '{
       "namespace": "<NAMESPACE>",
       "name": "<WORKFLOWNAME>",
       "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>"
-    }'  
+    }'
 ```
 
 or stop if unsuccessful:
@@ -80,13 +85,13 @@ or stop if unsuccessful:
 curl --request PUT \
   --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
   --header 'content-type: application/json' \
-  --header "Authorization: Bearer $ARGO_TOKEN" \
+  --header "Authorization: $ARGO_TOKEN" \
   --data '{
       "namespace": "<NAMESPACE>",
       "name": "<WORKFLOWNAME>",
       "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>",
       "message": "<FAILURE-MESSAGE>"
-    }'  
+    }'
 ```
 
 ## Retrying failed jobs

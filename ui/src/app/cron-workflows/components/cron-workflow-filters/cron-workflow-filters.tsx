@@ -15,7 +15,7 @@ interface WorkflowFilterProps {
     onChange: (namespace: string, labels: string[], states: string[]) => void;
 }
 
-export const CronWorkflowFilters = ({cronWorkflows, namespace, labels, states, onChange}: WorkflowFilterProps) => {
+export function CronWorkflowFilters({cronWorkflows, namespace, labels, states, onChange}: WorkflowFilterProps) {
     const [labelSuggestion, setLabelSuggestion] = useState([]);
 
     useEffect(() => {
@@ -74,4 +74,4 @@ export const CronWorkflowFilters = ({cronWorkflows, namespace, labels, states, o
             </div>
         </div>
     );
-};
+}

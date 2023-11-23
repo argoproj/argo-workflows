@@ -145,7 +145,7 @@ class IoArgoprojWorkflowV1alpha1GCSArtifactRepository(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             service_account_key_secret (SecretKeySelector): [optional]  # noqa: E501
         """
 
@@ -229,7 +229,7 @@ class IoArgoprojWorkflowV1alpha1GCSArtifactRepository(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
+            key_format (str): KeyFormat defines the format of how to store keys and can reference workflow variables.. [optional]  # noqa: E501
             service_account_key_secret (SecretKeySelector): [optional]  # noqa: E501
         """
 

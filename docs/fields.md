@@ -857,6 +857,7 @@ WorkflowStatus contains overall status information about a workflow
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
+|`taskResultsCompleted`|`Map< boolean , string >`|Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.|
 
 ## CronWorkflowSpec
 
@@ -1454,6 +1455,7 @@ WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflo
 |:----------:|:----------:|---------------|
 |`forceFinalizerRemoval`|`boolean`|ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
+|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.|
 |`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
 |`strategy`|`string`|Strategy is the strategy to use.|
 
@@ -1811,6 +1813,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`memoizationStatus`|[`MemoizationStatus`](#memoizationstatus)|MemoizationStatus holds information about cached nodes|
 |`message`|`string`|A human readable message indicating details about why the node is in this condition.|
 |`name`|`string`|Name is unique name in the node tree used to generate the node ID|
+|`nodeFlag`|[`NodeFlag`](#nodeflag)|NodeFlag tracks some history of node. e.g.) hooked, retried, etc.|
 |`outboundNodes`|`Array< string >`|OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step. In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded", "Skipped", "Failed", "Error", or "Omitted" as a final state.|
@@ -3201,6 +3204,16 @@ MemoizationStatus is the status of this memoized node
 |`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
 |`key`|`string`|Key is the name of the key used for this node's cache|
 
+## NodeFlag
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`hooked`|`boolean`|Hooked tracks whether or not this node was triggered by hook or onExit|
+|`retried`|`boolean`|Retried tracks whether or not this node was retried by retryStrategy|
+
 ## NodeSynchronizationStatus
 
 NodeSynchronizationStatus stores the status of a node
@@ -4127,6 +4140,7 @@ ArtifactoryArtifactRepository defines the controller configuration for an artifa
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
 |`repoURL`|`string`|RepoURL is the url for artifactory repo.|
 |`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
@@ -4170,7 +4184,7 @@ GCSArtifactRepository defines the controller configuration for a GCS artifact re
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`bucket`|`string`|Bucket is the name of the bucket|
-|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |`serviceAccountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServiceAccountKeySecret is the secret selector to the bucket's service account key|
 
 ## HDFSArtifactRepository
@@ -4216,7 +4230,7 @@ OSSArtifactRepository defines the controller configuration for an OSS artifact r
 |`bucket`|`string`|Bucket is the name of the bucket|
 |`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
-|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
@@ -4236,7 +4250,7 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |`encryptionOptions`|[`S3EncryptionOptions`](#s3encryptionoptions)|_No description available_|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
-|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |~~`keyPrefix`~~|~~`string`~~|~~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~~ DEPRECATED. Use KeyFormat instead|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|

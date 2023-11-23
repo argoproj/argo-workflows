@@ -7,7 +7,7 @@ require('./workflows-summary-container.scss');
 
 type ReduceReturnType = Record<string, number>;
 
-export const WorkflowsSummaryContainer = (props: {workflows: Workflow[]}) => {
+export function WorkflowsSummaryContainer(props: {workflows: Workflow[]}) {
     const [wfSummary, setWfSummary] = useState(null);
     useEffect(() => {
         if (props.workflows) {
@@ -54,4 +54,4 @@ export const WorkflowsSummaryContainer = (props: {workflows: Workflow[]}) => {
             </div>
         </div>
     );
-};
+}

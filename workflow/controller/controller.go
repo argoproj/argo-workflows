@@ -67,6 +67,8 @@ import (
 	plugin "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
 )
 
+const maxAllowedStackDepth = 100
+
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
@@ -97,6 +99,10 @@ type WorkflowController struct {
 	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
 	wfclientset      wfclientset.Interface
+
+	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
+	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
+	maxStackDepth int
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -189,6 +195,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	}
 
 	wfc.UpdateConfig(ctx)
+	wfc.maxStackDepth = wfc.getMaxStackDepth()
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
@@ -240,6 +247,11 @@ var indexers = cache.Indexers{
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
+	// init DB after leader election (if enabled)
+	if err := wfc.initDB(); err != nil {
+		log.Fatalf("Failed to init db: %v", err)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -249,12 +261,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	log.WithField("version", argo.GetVersion().Version).
 		WithField("defaultRequeueTime", GetRequeueTime()).
 		Info("Starting Workflow Controller")
-	log.WithField("workflow", wfWorkers).
-		WithField("workflowTtl", workflowTTLWorkers).
+	log.WithField("workflowWorkers", wfWorkers).
+		WithField("workflowTtlWorkers", workflowTTLWorkers).
 		WithField("podCleanup", podCleanupWorkers).
 		Info("Current Worker Numbers")
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
+	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
@@ -805,13 +817,19 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) error {
 	return nil
 }
 
-func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
+func (wfc *WorkflowController) tweakListRequestListOptions(options *metav1.ListOptions) {
 	labelSelector := labels.NewSelector().
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 	// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
 	// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
 	options.ResourceVersion = ""
+}
+
+func (wfc *WorkflowController) tweakWatchRequestListOptions(options *metav1.ListOptions) {
+	labelSelector := labels.NewSelector().
+		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
+	options.LabelSelector = labelSelector.String()
 }
 
 func getWfPriority(obj interface{}) (int32, time.Time) {
@@ -1127,6 +1145,10 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 		return wfc.managedNamespace
 	}
 	return wfc.Config.Namespace
+}
+
+func (wfc *WorkflowController) getMaxStackDepth() int {
+	return maxAllowedStackDepth
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

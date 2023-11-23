@@ -62,8 +62,9 @@ func TestMetrics(t *testing.T) {
 	}
 	m := New(config, config)
 
-	m.OperationCompleted(0.05)
-	assert.Equal(t, uint64(1), *write(m.operationDurations).Histogram.Bucket[0].CumulativeCount)
+	// Default buckets: {5, 10, 15, 20, 25, 30}
+	m.OperationCompleted(5)
+	assert.Equal(t, 1, int(*write(m.operationDurations).Histogram.Bucket[1].CumulativeCount))
 
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
@@ -92,6 +93,9 @@ func TestMetrics(t *testing.T) {
 func TestErrors(t *testing.T) {
 	_, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "invalid.name"}, func() float64 { return 0.0 })
 	assert.Error(t, err)
+
+	_, err = ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name", Labels: []*v1alpha1.MetricLabel{{Key: "invalid-key", Value: "value"}}}, func() float64 { return 0.0 })
+	assert.Error(t, err)
 }
 
 func TestMetricGC(t *testing.T) {
@@ -114,7 +118,15 @@ func TestMetricGC(t *testing.T) {
 	go m.garbageCollector(ctx)
 
 	// Ensure we get at least one TTL run
-	time.Sleep(1*time.Second + 100*time.Millisecond)
+	timeoutTime := time.Now().Add(time.Second * 2)
+	for time.Now().Before(timeoutTime) {
+		// Break if we know our test will pass.
+		if len(m.customMetrics) == 0 {
+			break
+		}
+		// Sleep to prevent overloading test worker CPU.
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	assert.Len(t, m.customMetrics, 0)
 }

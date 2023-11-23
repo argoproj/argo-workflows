@@ -3910,6 +3910,10 @@
     "io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository": {
       "description": "ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository",
       "properties": {
+        "keyFormat": {
+          "description": "KeyFormat defines the format of how to store keys and can reference workflow variables.",
+          "type": "string"
+        },
         "passwordSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "PasswordSecret is the secret selector to the repository password"
@@ -4766,7 +4770,7 @@
           "type": "string"
         },
         "keyFormat": {
-          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "description": "KeyFormat defines the format of how to store keys and can reference workflow variables.",
           "type": "string"
         },
         "serviceAccountKeySecret": {
@@ -5460,6 +5464,19 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.NodeFlag": {
+      "properties": {
+        "hooked": {
+          "description": "Hooked tracks whether or not this node was triggered by hook or onExit",
+          "type": "boolean"
+        },
+        "retried": {
+          "description": "Retried tracks whether or not this node was retried by retryStrategy",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.NodeResult": {
       "properties": {
         "message": {
@@ -5530,6 +5547,10 @@
         "name": {
           "description": "Name is unique name in the node tree used to generate the node ID",
           "type": "string"
+        },
+        "nodeFlag": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeFlag",
+          "description": "NodeFlag tracks some history of node. e.g.) hooked, retried, etc."
         },
         "outboundNodes": {
           "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.",
@@ -5717,7 +5738,7 @@
           "type": "string"
         },
         "keyFormat": {
-          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "description": "KeyFormat defines the format of how to store keys and can reference workflow variables.",
           "type": "string"
         },
         "lifecycleRule": {
@@ -6123,7 +6144,7 @@
           "type": "boolean"
         },
         "keyFormat": {
-          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "description": "KeyFormat defines the format of how to store keys and can reference workflow variables.",
           "type": "string"
         },
         "keyPrefix": {
@@ -7137,6 +7158,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
           "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion"
         },
+        "podSpecPatch": {
+          "description": "PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.",
+          "type": "string"
+        },
         "serviceAccountName": {
           "description": "ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion",
           "type": "string"
@@ -7474,9 +7499,7 @@
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaim"
           },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
+          "type": "array"
         },
         "volumes": {
           "description": "Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.",
@@ -7588,6 +7611,13 @@
         "synchronization": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SynchronizationStatus",
           "description": "Synchronization stores the status of synchronization locks"
+        },
+        "taskResultsCompleted": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+          "type": "object"
         }
       },
       "type": "object"

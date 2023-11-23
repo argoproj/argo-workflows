@@ -9,7 +9,7 @@ import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 import {EventSourceEditor} from './event-source-editor';
 
-export const EventSourceCreator = ({onCreate, namespace}: {namespace: string; onCreate: (eventSource: EventSource) => void}) => {
+export function EventSourceCreator({onCreate, namespace}: {namespace: string; onCreate: (eventSource: EventSource) => void}) {
     const [eventSource, setEventSource] = useState<EventSource>(exampleEventSource(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
@@ -36,4 +36,4 @@ export const EventSourceCreator = ({onCreate, namespace}: {namespace: string; on
             </p>
         </>
     );
-};
+}

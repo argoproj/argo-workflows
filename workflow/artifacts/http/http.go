@@ -21,6 +21,48 @@ type ArtifactDriver struct {
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
+func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Response, error) {
+	var req *http.Request
+	var url string
+	var err error
+	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
+		url = inputArtifact.Artifactory.URL
+		req, err = http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			return http.Response{}, err
+		}
+		req.SetBasicAuth(h.Username, h.Password)
+	} else if inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil {
+		url = inputArtifact.HTTP.URL
+		req, err = http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			return http.Response{}, err
+		}
+		for _, h := range inputArtifact.HTTP.Headers {
+			req.Header.Add(h.Name, h.Value)
+		}
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
+	} else {
+		return http.Response{}, errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
+	}
+
+	// Note that we will close the response body in either `Load()`
+	// or `ArtifactServer.returnArtifact()`, which is the caller of `OpenStream()`.
+	res, err := h.Client.Do(req) //nolint:bodyclose
+	if err != nil {
+		return http.Response{}, err
+	}
+	if res.StatusCode == 404 {
+		return http.Response{}, errors.New(errors.CodeNotFound, res.Status)
+	}
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return http.Response{}, errors.InternalErrorf("loading content from %s failed with reason: %s", url, res.Status)
+	}
+	return *res, nil
+}
+
 // Load reads the artifact from the HTTP URL
 func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	lf, err := os.Create(path)
@@ -30,51 +72,23 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer func() {
 		_ = lf.Close()
 	}()
-	var req *http.Request
-	var url string
-	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
-		url = inputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return err
-		}
-		req.SetBasicAuth(h.Username, h.Password)
-	} else {
-		url = inputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return err
-		}
-		for _, h := range inputArtifact.HTTP.Headers {
-			req.Header.Add(h.Name, h.Value)
-		}
-		if h.Username != "" && h.Password != "" {
-			req.SetBasicAuth(h.Username, h.Password)
-		}
-	}
-
-	res, err := h.Client.Do(req)
+	res, err := h.retrieveContent(inputArtifact)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = res.Body.Close()
 	}()
-	if res.StatusCode == 404 {
-		return errors.New(errors.CodeNotFound, res.Status)
-	}
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("loading file from %s failed with reason: %s", url, res.Status)
-	}
-
 	_, err = io.Copy(lf, res.Body)
-
 	return err
 }
 
-func (h *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
-	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(a, h)
+func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	res, err := h.retrieveContent(inputArtifact)
+	if err != nil {
+		return nil, err
+	}
+	return res.Body, nil
 }
 
 // Save writes the artifact to the URL
@@ -133,6 +147,6 @@ func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) 
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
 
-func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (h *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
 	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for http")
 }

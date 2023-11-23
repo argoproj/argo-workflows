@@ -290,9 +290,7 @@ type WorkflowSpec struct {
 	// VolumeClaimTemplates is a list of claims that containers are allowed to reference.
 	// The Workflow controller will create the claims at the beginning of the workflow
 	// and delete the claims upon completion of the workflow
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,6,opt,name=volumeClaimTemplates"`
+	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" protobuf:"bytes,6,opt,name=volumeClaimTemplates"`
 
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,7,opt,name=parallelism"`
@@ -984,6 +982,10 @@ func (a *Artifact) CleanPath() error {
 		return argoerrs.InternalErrorf("Artifact '%s' did not specify a path", a.Name)
 	}
 
+	// ensure path is separated by filepath.Separator (aka os.PathSeparator).
+	// This ensures e.g. on windows /foo/bar is translated to \foo\bar first - otherwise the regexps below wouldn't trigger.
+	path := filepath.FromSlash(a.Path)
+
 	// Ensure that the artifact path does not use directory traversal to escape a
 	// "safe" sub-directory, assuming malicious user input is present. For example:
 	// inputs:
@@ -995,12 +997,12 @@ func (a *Artifact) CleanPath() error {
 	safeDir := ""
 	slashDotDotRe := regexp.MustCompile(fmt.Sprintf(`%c..$`, os.PathSeparator))
 	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
-	if strings.Contains(a.Path, slashDotDotSlash) {
-		safeDir = a.Path[:strings.Index(a.Path, slashDotDotSlash)]
-	} else if slashDotDotRe.FindStringIndex(a.Path) != nil {
-		safeDir = a.Path[:len(a.Path)-3]
+	if strings.Contains(path, slashDotDotSlash) {
+		safeDir = path[:strings.Index(path, slashDotDotSlash)]
+	} else if slashDotDotRe.FindStringIndex(path) != nil {
+		safeDir = path[:len(path)-3]
 	}
-	cleaned := filepath.Clean(a.Path)
+	cleaned := filepath.Clean(path)
 	safeDirWithSlash := fmt.Sprintf(`%s%c`, safeDir, os.PathSeparator)
 	if len(safeDir) > 0 && (!strings.HasPrefix(cleaned, safeDirWithSlash) || len(cleaned) <= len(safeDirWithSlash)) {
 		return argoerrs.InternalErrorf("Artifact '%s' attempted to use a path containing '..'. Directory traversal is not permitted", a.Name)
@@ -1041,8 +1043,12 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 type WorkflowLevelArtifactGC struct {
 	// ArtifactGC is an embedded struct
 	ArtifactGC `json:",inline" protobuf:"bytes,1,opt,name=artifactGC"`
+
 	// ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails
 	ForceFinalizerRemoval bool `json:"forceFinalizerRemoval,omitempty" protobuf:"bytes,2,opt,name=forceFinalizerRemoval"`
+
+	// PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.
+	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,3,opt,name=podSpecPatch"`
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
@@ -1937,6 +1943,30 @@ type WorkflowStatus struct {
 
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
+
+	// Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
+	TaskResultsCompleted map[string]bool `json:"taskResultsCompleted,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompleted"`
+}
+
+func (ws *WorkflowStatus) InitializeTaskResultIncomplete(resultName string) {
+	if ws.TaskResultsCompleted == nil {
+		ws.TaskResultsCompleted = make(map[string]bool)
+	}
+	if _, ok := ws.TaskResultsCompleted[resultName]; !ok {
+		ws.MarkTaskResultIncomplete(resultName)
+	}
+}
+func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
+	ws.TaskResultsCompleted[name] = true
+}
+func (ws *WorkflowStatus) MarkTaskResultIncomplete(name string) {
+	ws.TaskResultsCompleted[name] = false
+}
+func (ws *WorkflowStatus) GetTaskResultCompleted(name string) bool {
+	return ws.TaskResultsCompleted[name]
+}
+func (ws *WorkflowStatus) GetTaskResultsCompleted() map[string]bool {
+	return ws.TaskResultsCompleted
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -2218,6 +2248,9 @@ type NodeStatus struct {
 
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty" protobuf:"varint,13,opt,name=daemoned"`
+
+	// NodeFlag tracks some history of node. e.g.) hooked, retried, etc.
+	NodeFlag *NodeFlag `json:"nodeFlag,omitempty" protobuf:"bytes,27,opt,name=nodeFlag"`
 
 	// Inputs captures input parameter values and artifact locations supplied to this template invocation
 	Inputs *Inputs `json:"inputs,omitempty" protobuf:"bytes,14,opt,name=inputs"`
@@ -3814,4 +3847,11 @@ func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) Synchro
 type NodeSynchronizationStatus struct {
 	// Waiting is the name of the lock that this node is waiting for
 	Waiting string `json:"waiting,omitempty" protobuf:"bytes,1,opt,name=waiting"`
+}
+
+type NodeFlag struct {
+	// Hooked tracks whether or not this node was triggered by hook or onExit
+	Hooked bool `json:"hooked,omitempty" protobuf:"varint,1,opt,name=hooked"`
+	// Retried tracks whether or not this node was retried by retryStrategy
+	Retried bool `json:"retried,omitempty" protobuf:"varint,2,opt,name=retried"`
 }

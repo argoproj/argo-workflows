@@ -2,14 +2,17 @@
 
 Docs help our customers understand how to use workflows and fix their own problems.
 
-Doc changes are checked for spelling, broken links, and lint issues by CI. To check locally run `make docs`.
+Doc changes are checked for spelling, broken links, and lint issues by CI. To check locally, run `make docs`.
+
+General guidelines:
 
 * Explain when you would want to use a feature.
 * Provide working examples.
-* Use simple short sentences and avoid jargon.
-* Format code using back-ticks to avoid it being reported spelling error.
-* Avoid use title-case mid-sentence. E.g. instead of "the Workflow", write "the workflow".
-* Headings should be title-case. E.g. instead of "and", write "And".
+* Format code using back-ticks to avoid it being reported as a spelling error.
+* Prefer 1 sentence per line of markdown
+* Follow the recommendations in the official [Kubernetes Documentation Style Guide](https://kubernetes.io/docs/contribute/style/style-guide/).
+    * Particularly useful sections include [Content best practices](https://kubernetes.io/docs/contribute/style/style-guide/#content-best-practices) and [Patterns to avoid](https://kubernetes.io/docs/contribute/style/style-guide/#patterns-to-avoid).
+    * **Note**: Argo does not use the same tooling, so the sections on "shortcodes" and "EditorConfig" are not relevant.
 
 ## Running Locally
 

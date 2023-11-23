@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	invalidMetricNameError = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
-	invalidMetricLabelrror = "metric label '%s' is invalid: keys may only contain alphanumeric characters, '_', or ':'"
-	descRegex              = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels: {`, argoNamespace, workflowsSubsystem))
+	invalidMetricNameError  = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
+	invalidMetricLabelError = "metric label '%s' is invalid: keys may only contain alphanumeric characters, '_', or ':'"
+	descRegex               = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels: {`, argoNamespace, workflowsSubsystem))
 )
 
 type RealTimeMetric struct {
@@ -45,13 +45,17 @@ func ConstructRealTimeGaugeMetric(metricSpec *wfv1.Prometheus, valueFunc func() 
 	if !IsValidMetricName(metricSpec.Name) {
 		return nil, fmt.Errorf(invalidMetricNameError)
 	}
+	labels := metricSpec.GetMetricLabels()
+	if err := ValidateMetricLabels(labels); err != nil {
+		return nil, err
+	}
 
 	gaugeOpts := prometheus.GaugeOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
 		Name:        metricSpec.Name,
 		Help:        metricSpec.Help,
-		ConstLabels: metricSpec.GetMetricLabels(),
+		ConstLabels: labels,
 	}
 
 	return prometheus.NewGaugeFunc(gaugeOpts, valueFunc), nil
@@ -254,7 +258,7 @@ func ValidateMetricValues(metric *wfv1.Prometheus) error {
 func ValidateMetricLabels(metrics map[string]string) error {
 	for name := range metrics {
 		if !IsValidMetricName(name) {
-			return fmt.Errorf(invalidMetricLabelrror, name)
+			return fmt.Errorf(invalidMetricLabelError, name)
 		}
 	}
 	return nil
