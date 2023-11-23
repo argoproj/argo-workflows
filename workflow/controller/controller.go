@@ -529,19 +529,20 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 					Value:     "true",
 				},
 			}
-			obj, _, _ := wfc.podInformer.GetIndexer().GetByKey(namespace + "/" + podName)
-			if p, ok := obj.(*apiv1.Pod); ok {
-				i := slices.Index(p.Finalizers, common.Finalizer)
-				if i >= 0 {
-					patch = append(patch, common.DeleteFinalizerPatch{
-						Operation: "remove",
-						Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
-					})
-				}
+			p, err := wfc.getPodFromAPI(ctx, namespace, podName)
+			if err != nil {
+				return err
+			}
+			i := slices.Index(p.Finalizers, common.Finalizer)
+			if i >= 0 {
+				patch = append(patch, common.DeleteFinalizerPatch{
+					Operation: "remove",
+					Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
+				})
 			}
 			data, _ := json.Marshal(patch)
 			log.WithField("data", string(data)).Debug("patching pod")
-			_, err := pods.Patch(
+			_, err = pods.Patch(
 				ctx,
 				podName,
 				types.JSONPatchType,
@@ -553,19 +554,20 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 		case deletePod:
 			var patch []common.DeleteFinalizerPatch
-			obj, _, _ := wfc.podInformer.GetIndexer().GetByKey(namespace + "/" + podName)
-			if p, ok := obj.(*apiv1.Pod); ok {
-				i := slices.Index(p.Finalizers, common.Finalizer)
-				if i >= 0 {
-					patch = append(patch, common.DeleteFinalizerPatch{
-						Operation: "remove",
-						Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
-					})
-				}
+			p, err := wfc.getPodFromAPI(ctx, namespace, podName)
+			if err != nil {
+				return err
+			}
+			i := slices.Index(p.Finalizers, common.Finalizer)
+			if i >= 0 {
+				patch = append(patch, common.DeleteFinalizerPatch{
+					Operation: "remove",
+					Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
+				})
 			}
 			data, _ := json.Marshal(patch)
 			log.WithField("data", string(data)).Debug("patching pod")
-			_, err := pods.Patch(
+			_, err = pods.Patch(
 				ctx,
 				podName,
 				types.JSONPatchType,
@@ -595,7 +597,15 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	return true
 }
 
-func (wfc *WorkflowController) getPod(namespace string, podName string) (*apiv1.Pod, error) {
+func (wfc *WorkflowController) getPodFromAPI(ctx context.Context, namespace string, podName string) (*apiv1.Pod, error) {
+	pod, err := wfc.kubeclientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return pod, nil
+}
+
+func (wfc *WorkflowController) getPodFromCache(namespace string, podName string) (*apiv1.Pod, error) {
 	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
 		return nil, err
@@ -611,7 +621,7 @@ func (wfc *WorkflowController) getPod(namespace string, podName string) (*apiv1.
 }
 
 func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
-	pod, err := wfc.getPod(namespace, podName)
+	pod, err := wfc.getPodFromCache(namespace, podName)
 	if pod == nil || err != nil {
 		return 0, err
 	}
