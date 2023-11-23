@@ -26,5 +26,5 @@ Argo Workflows is seeking more community involvement and ultimately more [Review
 
 We are gauging interest in a potential system in which many companies pledge a little bit of time each to help get more people into these roles. 
 See [#12229](https://github.com/argoproj/argo-workflows/issues/12229) for more information. 
-If you think you or your company might be interested, please add a comment to the issue.
+If you think you or your company may be interested in getting involved, please add a comment to the issue.
 -->
