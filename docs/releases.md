@@ -28,8 +28,11 @@ Both the `argo-server` and `argocli` should be the same version as the controlle
 
 ## Release Cycle
 
-New minor versions are released roughly every 6 months. Release candidates for each major release are typically available
-for 4-6 weeks before the release becomes generally available.
+New minor versions are released roughly every 6 months.
+
+Release candidates (RCs) for major and minor releases are typically available for 4-6 weeks before the release becomes generally available (GA). Features may be shipped in subsequent release candidates.
+
+When features are shipped in a new release candidate, the most recent release candidate will be available for at least 2 weeks to ensure it is tested sufficiently before it is pushed to GA. If bugs are found with a feature and are not resolved within the 2 week period, the features will be rolled back so as to be saved for the next major/minor release timeline, and a new release candidate will be cut for testing before pushing to GA.
 
 Otherwise, we typically release every two weeks:
 
