@@ -118,7 +118,15 @@ func TestMetricGC(t *testing.T) {
 	go m.garbageCollector(ctx)
 
 	// Ensure we get at least one TTL run
-	time.Sleep(1*time.Second + 100*time.Millisecond)
+	timeoutTime := time.Now().Add(time.Second * 2)
+	for time.Now().Before(timeoutTime) {
+		// Break if we know our test will pass.
+		if len(m.customMetrics) == 0 {
+			break
+		}
+		// Sleep to prevent overloading test worker CPU.
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	assert.Len(t, m.customMetrics, 0)
 }

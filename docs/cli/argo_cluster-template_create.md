@@ -6,6 +6,20 @@ create a cluster workflow template
 argo cluster-template create FILE1 FILE2... [flags]
 ```
 
+### Examples
+
+```
+# Create a Cluster Workflow Template:
+  argo cluster-template create FILE1
+	
+# Create a Cluster Workflow Template and print it as YAML:
+  argo cluster-template create FILE1 --output yaml
+  
+# Create a Cluster Workflow Template with relaxed validation:
+  argo cluster-template create FILE1 --strict false
+
+```
+
 ### Options
 
 ```

@@ -17,8 +17,8 @@ export const ApiDocs = () => {
 
 // lazy load SwaggerUI as it is infrequently used and imports very large components (which can be split into a separate bundle)
 const LazySwaggerUI = React.lazy(() => {
-    import('swagger-ui-react/swagger-ui.css');
-    return import('swagger-ui-react');
+    import(/* webpackChunkName: "swagger-ui-react-css" */ 'swagger-ui-react/swagger-ui.css');
+    return import(/* webpackChunkName: "swagger-ui-react" */ 'swagger-ui-react');
 });
 
 function SuspenseSwaggerUI(props: any) {
