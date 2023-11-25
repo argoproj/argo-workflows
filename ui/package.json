@@ -32,7 +32,7 @@
         "prop-types": "^15.8.1",
         "react": "^16.14.0",
         "react-chartjs-2": "^2.11.2",
-        "react-datepicker": "^4.21.0",
+        "react-datepicker": "^4.23.0",
         "react-dom": "^16.14.0",
         "react-monaco-editor": "^0.50.1",
         "react-router-dom": "^4.2.2",
