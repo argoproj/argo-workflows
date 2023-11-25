@@ -2,6 +2,7 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
+
 import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -23,7 +24,7 @@ import {Utils} from '../../../shared/utils';
 import {WorkflowTemplateCreator} from '../workflow-template-creator';
 import {WorkflowTemplateFilters} from '../workflow-template-filters/workflow-template-filters';
 
-require('./workflow-template-list.scss');
+import './workflow-template-list.scss';
 
 const learnMore = <a href='https://argoproj.github.io/argo-workflows/workflow-templates/'>Learn more</a>;
 

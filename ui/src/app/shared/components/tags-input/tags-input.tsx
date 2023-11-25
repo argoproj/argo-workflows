@@ -1,8 +1,9 @@
+import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui';
 import classNames from 'classnames';
 import * as React from 'react';
 import {useRef, useState} from 'react';
 
-import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui';
+import './tags-input.scss';
 
 interface TagsInputProps {
     tags: string[];
@@ -11,8 +12,6 @@ interface TagsInputProps {
     onChange: (tags: string[]) => void;
     placeholder?: string;
 }
-
-require('./tags-input.scss');
 
 export function TagsInput(props: TagsInputProps) {
     const inputRef = useRef<HTMLInputElement>(null);

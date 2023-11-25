@@ -2,6 +2,7 @@ import {NotificationType, Page} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+
 import {Sensor} from '../../../../models';
 import {ID} from '../../../event-flow/components/event-flow-details/id';
 import {uiUrl} from '../../../shared/base';
@@ -16,7 +17,7 @@ import {useQueryParams} from '../../../shared/use-query-params';
 import {SensorEditor} from '../sensor-editor';
 import {SensorSidePanel} from '../sensor-side-panel';
 
-require('../../../workflows/components/workflow-details/workflow-details.scss');
+import '../../../workflows/components/workflow-details/workflow-details.scss';
 
 export function SensorDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate

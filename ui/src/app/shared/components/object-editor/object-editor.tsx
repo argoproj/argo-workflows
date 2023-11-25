@@ -18,7 +18,7 @@ interface Props<T> {
 
 const defaultLang = 'yaml';
 
-export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Props<T>) => {
+export function ObjectEditor<T>({type, value, buttons, onChange}: Props<T>) {
     const storage = new ScopedLocalStorage('object-editor');
     const [error, setError] = useState<Error>();
     const [lang, setLang] = useState<string>(storage.getItem('lang', defaultLang));
@@ -97,7 +97,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                             // editor, but Monaco editor does not have method for this (e.g. `revealLineAtTop`).
 
                             // find the line for the section in either YAML or JSON
-                            const index = text.split('\n').findIndex((y, i) => (lang === 'yaml' ? y.startsWith(x + ':') : y.includes('"' + x + '":')));
+                            const index = text.split('\n').findIndex(y => (lang === 'yaml' ? y.startsWith(x + ':') : y.includes('"' + x + '":')));
 
                             if (index >= 0) {
                                 const lineNumber = index + 1;
@@ -153,4 +153,4 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
             )}
         </>
     );
-};
+}

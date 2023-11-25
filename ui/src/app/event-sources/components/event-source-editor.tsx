@@ -7,7 +7,6 @@ import {ObjectEditor} from '../../shared/components/object-editor/object-editor'
 
 export function EventSourceEditor({
     onChange,
-    onError,
     onTabSelected,
     selectedTabKey,
     eventSource

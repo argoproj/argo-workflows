@@ -1,11 +1,12 @@
 import * as React from 'react';
+
 import {NODE_PHASE} from '../../../models';
 import {DataLoaderDropdown} from '../../shared/components/data-loader-dropdown';
 import {NamespaceFilter} from '../../shared/components/namespace-filter';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {services} from '../../shared/services';
 
-require('./reports-filters.scss');
+import './reports-filters.scss';
 
 const labelKeyPhase = 'workflows.argoproj.io/phase';
 const labelKeyWorkflowTemplate = 'workflows.argoproj.io/workflow-template';
