@@ -48,7 +48,7 @@
         "@types/history": "^4.6.2",
         "@types/jest": "^26.0.15",
         "@types/js-yaml": "^4.0.9",
-        "@types/prop-types": "^15.7.10",
+        "@types/prop-types": "^15.7.11",
         "@types/react": "^16.8.5",
         "@types/react-autocomplete": "^1.8.9",
         "@types/react-datepicker": "^4.19.3",
