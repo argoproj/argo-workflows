@@ -6900,10 +6900,10 @@ react-copy-to-clipboard@5.1.0:
     copy-to-clipboard "^3.3.1"
     prop-types "^15.8.1"
 
-react-datepicker@^4.21.0:
-  version "4.21.0"
-  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-4.21.0.tgz#09b2ba3e53654a8563b22c9f649835716c8456d3"
-  integrity sha512-z0DtuRrKMz9i7dcTusW29VacbM9pn08g1yw0cG+Y5GpodJDxSWv7zUMxl3IwKN9Ap/AMphiepvmT5P+iNCgEiA==
+react-datepicker@^4.23.0:
+  version "4.23.0"
+  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-4.23.0.tgz#0da50b3815b3350b7df6cf0dbc63e37c6c3079b4"
+  integrity sha512-w+msqlOZ14v6H1UknTKtZw/dw9naFMgAOspf59eY130gWpvy5dvKj/bgsFICDdvxB7PtKWxDcbGlAqCloY1d2A==
   dependencies:
     "@popperjs/core" "^2.11.8"
     classnames "^2.2.6"
