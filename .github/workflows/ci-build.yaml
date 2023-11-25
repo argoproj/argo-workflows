@@ -17,6 +17,94 @@ permissions:
   contents: read
 
 jobs:
+  changed-files:
+    name: Get changed files
+    outputs:
+      # reference: https://github.com/tj-actions/changed-files#outputs-
+      tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
+      e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
+      codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
+      lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
+      ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50 # assume PRs are less than 50 commits
+      - name: Get relevant files changed per group
+        id: changed-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files_yaml: |
+            common: &common
+              - .github/workflows/ci-build.yaml
+              - Makefile
+              - tasks.yaml
+            tests: &tests
+              - *common
+              - cmd/**
+              - config/**
+              - errors/**
+              - persist/**
+              - pkg/**
+              - server/**
+              - test/**
+              - util/**
+              - workflow/**
+              - go.mod
+              - go.sum
+            e2e-tests:
+              - *tests
+              # plus manifests and SDKs that are used in E2E tests
+              - manifests/**
+              - sdks/**
+            codegen:
+              - *common
+              # generated files
+              - api/**
+              - docs/fields.md
+              - docs/executor_swagger.md
+              - docs/cli/**
+              - pkg/**
+              - sdks/java/**
+              - sdks/python/**
+              # files that generation is based off
+              - pkg/**
+              - cmd/**
+              - examples/** # examples are used within the fields lists
+              # generation scripts
+              - hack/cli/**
+              - hack/jsonschema/**
+              - hack/swagger/**
+              - hack/auto-gen-msg.sh
+              - hack/crdgen.sh
+              - hack/crds.go
+              - hack/docgen.go
+              - hack/parse_examples.go
+              - hack/swaggify.sh
+              - .clang-format
+            lint:
+              - *tests
+              # plus lint config
+              - .golangci.yml
+              # docs files below
+              - docs/**
+              # generated files are covered by codegen
+              - '!docs/fields.md'
+              - '!docs/executor_swagger.md'
+              - '!docs/cli/**'
+              # proposals live only on GH as pure markdown
+              - '!docs/proposals/**'
+              # docs scripts & tools from `make docs`
+              - hack/check-mkdocs.sh
+              - hack/check-env-doc.sh
+              - .markdownlint.yaml
+              - .mlc_config.json
+              - .spelling
+              - mkdocs.yml
+            ui:
+              - *common
+              - ui/**
   tests:
     name: Unit Tests
     runs-on: ubuntu-latest
