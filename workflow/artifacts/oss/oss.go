@@ -8,8 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/argoproj/pkg/file"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/credentials-go/credentials"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
@@ -28,6 +31,7 @@ type ArtifactDriver struct {
 	AccessKey     string
 	SecretKey     string
 	SecurityToken string
+	UseSDKCreds   bool
 }
 
 var (
@@ -39,11 +43,64 @@ var (
 	bucketLogFilePrefix    = "bucket-log-"
 )
 
+type ossCredentials struct {
+	teaCred credentials.Credential
+}
+
+func (cred *ossCredentials) GetAccessKeyID() string {
+	value, err := cred.teaCred.GetAccessKeyId()
+	if err != nil {
+		log.Infof("get access key id failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+func (cred *ossCredentials) GetAccessKeySecret() string {
+	value, err := cred.teaCred.GetAccessKeySecret()
+	if err != nil {
+		log.Infof("get access key secret failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+func (cred *ossCredentials) GetSecurityToken() string {
+	value, err := cred.teaCred.GetSecurityToken()
+	if err != nil {
+		log.Infof("get access security token failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+type ossCredentialsProvider struct {
+	cred credentials.Credential
+}
+
+func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
+	return &ossCredentials{teaCred: p.cred}
+}
+
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	var options []oss.ClientOption
 	if token := ossDriver.SecurityToken; token != "" {
 		options = append(options, oss.SecurityToken(token))
 	}
+	if ossDriver.UseSDKCreds {
+		// using default provider chains in sdk to get credential
+		log.Infof("Using default sdk provider chains for OSS driver")
+		// need install ack-pod-identity-webhook in your cluster when using oidc provider for OSS drirver
+		// the mutating webhook will help to inject the required OIDC env variables and toke volume mount configuration
+		// please refer to https://www.alibabacloud.com/help/en/ack/product-overview/ack-pod-identity-webhook
+		cred, err := credentials.NewCredential(nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create new OSS client: %w", err)
+		}
+		provider := &ossCredentialsProvider{cred: cred}
+		return oss.New(ossDriver.Endpoint, "", "", oss.SetCredentialsProvider(provider))
+	}
+	log.Infof("Using AK provider")
 	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new OSS client: %w", err)
@@ -179,12 +236,23 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			if err != nil {
 				return !isTransientOSSErr(err), err
 			}
-			results, err := bucket.ListObjectsV2(oss.Prefix(artifact.OSS.Key))
-			if err != nil {
-				return !isTransientOSSErr(err), err
-			}
-			for _, object := range results.Objects {
-				files = append(files, object.Key)
+			pre := oss.Prefix(artifact.OSS.Key)
+			continueToken := ""
+			for {
+				results, err := bucket.ListObjectsV2(pre, oss.ContinuationToken(continueToken))
+				if err != nil {
+					return !isTransientOSSErr(err), err
+				}
+				// Add to files. By default, 100 records are returned at a time. https://help.aliyun.com/zh/oss/user-guide/list-objects-18
+				for _, object := range results.Objects {
+					files = append(files, object.Key)
+				}
+				if results.IsTruncated {
+					continueToken = results.NextContinuationToken
+					pre = oss.Prefix(results.Prefix)
+				} else {
+					break
+				}
 			}
 			return true, nil
 		})
@@ -394,6 +462,21 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 	return files, nil
 }
 
-func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
-	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for OSS")
+// IsDirectory tests if the key is acting like a OSS directory
+func (ossDriver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	osscli, err := ossDriver.newOSSClient()
+	if err != nil {
+		return !isTransientOSSErr(err), err
+	}
+	bucketName := artifact.OSS.Bucket
+	bucket, err := osscli.Bucket(bucketName)
+	if err != nil {
+		return !isTransientOSSErr(err), err
+	}
+	objectName := artifact.OSS.Key
+	isDir, err := IsOssDirectory(bucket, objectName)
+	if err != nil {
+		return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
+	}
+	return isDir, nil
 }

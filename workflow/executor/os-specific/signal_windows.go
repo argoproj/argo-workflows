@@ -7,6 +7,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
+var (
+	Term = os.Interrupt
+)
+
 func CanIgnoreSignal(s os.Signal) bool {
 	return false
 }

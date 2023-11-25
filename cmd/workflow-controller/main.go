@@ -57,6 +57,7 @@ func NewRootCommand() *cobra.Command {
 		workflowWorkers         int    // --workflow-workers
 		workflowTTLWorkers      int    // --workflow-ttl-workers
 		podCleanupWorkers       int    // --pod-cleanup-workers
+		cronWorkflowWorkers     int    // --cron-workflow-workers
 		burst                   int
 		qps                     float32
 		namespaced              bool   // --namespaced
@@ -116,7 +117,7 @@ func NewRootCommand() *cobra.Command {
 			if leaderElectionOff == "true" {
 				log.Info("Leader election is turned off. Running in single-instance mode")
 				log.WithField("id", "single-instance").Info("starting leading")
-				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers)
 				go wfController.RunMetricsServer(ctx, false)
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
@@ -146,7 +147,7 @@ func NewRootCommand() *cobra.Command {
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()
-							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers)
 							go wfController.RunMetricsServer(ctx, false)
 						},
 						OnStoppedLeading: func() {
@@ -183,18 +184,22 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
 	command.Flags().IntVar(&workflowTTLWorkers, "workflow-ttl-workers", 4, "Number of workflow TTL workers")
 	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod cleanup workers")
+	command.Flags().IntVar(&cronWorkflowWorkers, "cron-workflow-workers", 8, "Number of cron workflow workers")
 	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
 
+	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	if err := viper.BindPFlags(command.Flags()); err != nil {
 		log.Fatal(err)
 	}
+	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
 	command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)

@@ -15,6 +15,17 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <h4 className='new-version-modal-title'>
                 It looks like <b>{version}</b> has just been installed!
             </h4>
+            <h5>v3.5</h5>
+            <ul className='new-version-modal-bullets'>
+                <li>Improvements to existing UI/UX and CLI</li>
+                <li>Additional fields and parameters in workflow/template spec</li>
+                <li>Controller performance optimizations</li>
+            </ul>
+            <p>
+                <a href='https://blog.argoproj.io/whats-new-in-argo-workflows-v3-5-f260e8603ca6' target='_blank'>
+                    Learn more
+                </a>
+            </p>
             <h5>v3.4</h5>
             <ul className='new-version-modal-bullets'>
                 <li>
@@ -36,6 +47,7 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
                     </a>
                     in the middle of the workflow
                 </li>
+                <li>Filter by date and time in the UI</li>
             </ul>
             <p>
                 <a href='https://blog.argoproj.io/what-to-expect-in-argo-workflows-v3-4-711702ad88e9?utm_source=argo-ui' target='_blank'>

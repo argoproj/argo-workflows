@@ -39,6 +39,12 @@ spec:
         annotation-key-1: annotation-value-1
         annotation-key-2: annotation-value-2
     serviceAccountName: default
+    podSpecPatch: |
+      containers:
+      - name: main
+        resources:
+          limits:
+            memory: 1G
   entrypoint: entrypoint
   podGC: {}
   podSpecPatch: |
@@ -383,6 +389,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// For each Pod:
 	//  verify ServiceAccount and Annotations
 	//  verify that the right volume mounts get created
+	//  verify patched pod spec
 	assert.Equal(t, pod1.Spec.ServiceAccountName, "default")
 	assert.Contains(t, pod1.Annotations, "annotation-key-1")
 	assert.Equal(t, "annotation-value-1", pod1.Annotations["annotation-key-1"])
@@ -402,6 +409,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	}
 	assert.Contains(t, volumesMap2, "my-minio-cred-1")
 	assert.NotContains(t, volumesMap2, "my-minio-cred-2")
+	assert.Equal(t, "1G", pod1.Spec.Containers[0].Resources.Limits.Memory().String())
 
 	///////////////////////////////////////////////////////////////////////////////////////////
 	// Verify WorkflowArtifactGCTasks

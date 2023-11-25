@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/go-sql-driver/mysql"
-	"upper.io/db.v3"
+	"github.com/upper/db/v4"
 )
 
 type dbType string
@@ -14,7 +14,7 @@ const (
 	Postgres dbType = "postgres"
 )
 
-func dbTypeFor(session db.Database) dbType {
+func dbTypeFor(session db.Session) dbType {
 	switch session.Driver().(*sql.DB).Driver().(type) {
 	case *mysql.MySQLDriver:
 		return MySQL

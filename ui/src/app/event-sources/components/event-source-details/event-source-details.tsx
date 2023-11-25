@@ -17,7 +17,7 @@ import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceEditor} from '../event-source-editor';
 import {EventSourceLogsViewer} from '../event-source-log-viewer';
 
-export const EventSourceDetails = ({history, location, match}: RouteComponentProps<any>) => {
+export function EventSourceDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {notifications, navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -63,12 +63,16 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
     })();
 
     useEffect(() => {
-        services.eventSource
-            .get(name, namespace)
-            .then(setEventSource)
-            .then(() => setEdited(false)) // set back to false
-            .then(() => setError(null))
-            .catch(setError);
+        (async () => {
+            try {
+                const newEventSource = await services.eventSource.get(name, namespace);
+                setEventSource(newEventSource);
+                setEdited(false); // set back to false
+                setError(null);
+            } catch (err) {
+                setError(err);
+            }
+        })();
     }, [name, namespace]);
 
     useEffect(() => setEdited(true), [eventSource]);
@@ -168,4 +172,4 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
             </SlidingPanel>
         </Page>
     );
-};
+}

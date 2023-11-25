@@ -49,3 +49,21 @@ func dnsFriendly(s string) string {
 	value = regexp.MustCompile("[^a-z0-9A-Z]*$").ReplaceAllString(value, "")
 	return value
 }
+
+func UserInfoMap(ctx context.Context) map[string]string {
+	claims := auth.GetClaims(ctx)
+	if claims == nil {
+		return nil
+	}
+	res := map[string]string{}
+	if claims.Subject != "" {
+		res["User"] = claims.Subject
+	}
+	if claims.Email != "" {
+		res["Email"] = claims.Email
+	}
+	if claims.PreferredUsername != "" {
+		res["PreferredUsername"] = claims.PreferredUsername
+	}
+	return res
+}

@@ -53,7 +53,7 @@ To allow service accounts to manage resources in other namespaces create a role 
 
 RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.
 
-Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You almost certainly want to be able to configure RBAC using groups, so add `scopes:` to the SSO settings:
+Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You likely want to configure RBAC using groups, so add `scopes:` to the SSO settings:
 
 ```yaml
 sso:
@@ -193,4 +193,22 @@ sso:
 ```bash
 # assuming customClaimGroupName: argo_groups
 workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
+```
+
+## Filtering groups
+
+> v3.5 and above
+
+You can configure `filterGroupsRegex` to filter the groups returned by the OIDC provider. Some use-cases for this include:
+
+- You have multiple applications using the same OIDC provider, and you only want to use groups that are relevant to Argo Workflows.
+- You have many groups and exceed the [4KB cookie size limit](https://chromestatus.com/feature/4946713618939904) (cookies are used to store authentication tokens). If this occurs, login will fail.
+
+```yaml
+sso:
+    # Specify a list of regular expressions to filter the groups returned by the OIDC provider.
+    # A logical "OR" is used between each regex in the list
+    filterGroupsRegex:
+    - ".*argo-wf.*"
+    - ".*argo-workflow.*"
 ```

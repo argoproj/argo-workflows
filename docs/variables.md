@@ -118,8 +118,10 @@ Trim a string:
 sprig.trim(inputs.parameters['my-string-param'])
 ```
 
-!!! Warning In Sprig functions, errors are often not raised. E.g. if `int` is used on an invalid value, it
-returns `0`. Please review the Sprig documentation to understand which functions do and which do not.
+!!! Warning "Sprig error handling"
+    Sprig functions often do not raise errors.
+    For example, if `int` is used on an invalid value, it returns `0`.
+    Please review the Sprig documentation to understand which functions raise errors and which do not.
 
 ## Reference
 
@@ -263,7 +265,7 @@ For `Template`-level metrics:
 | `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation time-stamp formatted with a [`strftime`](http://strftime.org) format character. |
 | `workflow.creationTimestamp.RFC3339` | Creation time-stamp formatted with in RFC 3339. |
 | `workflow.priority` | Workflow priority |
-| `workflow.duration` | Workflow duration estimate, may differ from actual duration by a couple of seconds |
+| `workflow.duration` | Workflow duration estimate in seconds, may differ from actual duration by a couple of seconds |
 | `workflow.scheduledTime` | Scheduled runtime formatted in RFC 3339 (only available for `CronWorkflow`) |
 
 ### Exit Handler

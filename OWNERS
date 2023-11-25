@@ -1,11 +1,6 @@
 owners:
-- alexec
 - sarabala1979
 - terrytangyuan
-
-reviewers:
-- isubasinghe
-- tczhao
 
 approvers:
 - alexec
@@ -13,3 +8,9 @@ approvers:
 - edlee2121
 - jessesuen
 - juliev0
+
+reviewers:
+- agilgur5
+- isubasinghe
+- joibel
+- tczhao

@@ -275,6 +275,9 @@ message ArtifactoryArtifactRepository {
 
   // RepoURL is the url for artifactory repo.
   optional string repoURL = 2;
+
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
+  optional string keyFormat = 3;
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
@@ -615,7 +618,7 @@ message GCSArtifact {
 message GCSArtifactRepository {
   optional GCSBucket gCSBucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 }
 
@@ -972,6 +975,14 @@ message MutexStatus {
   repeated MutexHolding waiting = 2;
 }
 
+message NodeFlag {
+  // Hooked tracks whether or not this node was triggered by hook or onExit
+  optional bool hooked = 1;
+
+  // Retried tracks whether or not this node was retried by retryStrategy
+  optional bool retried = 2;
+}
+
 message NodeResult {
   optional string phase = 1;
 
@@ -1040,6 +1051,9 @@ message NodeStatus {
 
   // Daemoned tracks whether or not this node was daemoned and need to be terminated
   optional bool daemoned = 13;
+
+  // NodeFlag tracks some history of node. e.g.) hooked, retried, etc.
+  optional NodeFlag nodeFlag = 27;
 
   // Inputs captures input parameter values and artifact locations supplied to this template invocation
   optional Inputs inputs = 14;
@@ -1120,7 +1134,7 @@ message OSSArtifact {
 message OSSArtifactRepository {
   optional OSSBucket oSSBucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 }
 
@@ -1146,6 +1160,9 @@ message OSSBucket {
 
   // LifecycleRule specifies how to manage bucket's lifecycle
   optional OSSLifecycleRule lifecycleRule = 7;
+
+  // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+  optional bool useSDKCreds = 8;
 }
 
 // OSSLifecycleRule specifies how to manage bucket's lifecycle
@@ -1335,7 +1352,7 @@ message S3Artifact {
 message S3ArtifactRepository {
   optional S3Bucket s3Bucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 
   // KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
@@ -1373,6 +1390,9 @@ message S3Bucket {
   optional CreateS3BucketOptions createBucketIfNotPresent = 9;
 
   optional S3EncryptionOptions encryptionOptions = 10;
+
+  // CASecret specifies the secret that contains the CA, used to verify the TLS connection
+  optional k8s.io.api.core.v1.SecretKeySelector caSecret = 11;
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
@@ -1497,7 +1517,7 @@ message SuppliedValueFrom {
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
-  // Could also be a Duration, e.g.: "2m", "6h", "1d"
+  // Could also be a Duration, e.g.: "2m", "6h"
   optional string duration = 1;
 }
 
@@ -1842,6 +1862,9 @@ message WorkflowLevelArtifactGC {
 
   // ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails
   optional bool forceFinalizerRemoval = 2;
+
+  // PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.
+  optional string podSpecPatch = 3;
 }
 
 // WorkflowList is list of Workflow resources
@@ -1893,8 +1916,6 @@ message WorkflowSpec {
   // VolumeClaimTemplates is a list of claims that containers are allowed to reference.
   // The Workflow controller will create the claims at the beginning of the workflow
   // and delete the claims upon completion of the workflow
-  // +patchStrategy=merge
-  // +patchMergeKey=name
   repeated k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 6;
 
   // Parallelism limits the max total parallel pods that can execute at the same time in a workflow
@@ -2095,6 +2116,9 @@ message WorkflowStatus {
 
   // ArtifactGCStatus maintains the status of Artifact Garbage Collection
   optional ArtGCStatus artifactGCStatus = 19;
+
+  // Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
+  map<string, bool> taskResultsCompleted = 20;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

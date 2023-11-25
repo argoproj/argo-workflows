@@ -95,6 +95,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex":                         schema_pkg_apis_workflow_v1alpha1_Mutex(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexHolding":                  schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexStatus":                   schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeFlag":                      schema_pkg_apis_workflow_v1alpha1_NodeFlag(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult":                    schema_pkg_apis_workflow_v1alpha1_NodeResult(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus":                    schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus":     schema_pkg_apis_workflow_v1alpha1_NodeSynchronizationStatus(ref),
@@ -1192,6 +1193,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifactRepository(ref common.
 					"repoURL": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RepoURL is the url for artifactory repo.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"keyFormat": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KeyFormat defines the format of how to store keys and can reference workflow variables.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2627,7 +2635,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifactRepository(ref common.Referenc
 					},
 					"keyFormat": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+							Description: "KeyFormat defines the format of how to store keys and can reference workflow variables.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3938,6 +3946,32 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_NodeFlag(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"hooked": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Hooked tracks whether or not this node was triggered by hook or onExit",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"retried": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Retried tracks whether or not this node was retried by retryStrategy",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_NodeResult(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4112,6 +4146,12 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"nodeFlag": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NodeFlag tracks some history of node. e.g.) hooked, retried, etc.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeFlag"),
+						},
+					},
 					"inputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Inputs captures input parameter values and artifact locations supplied to this template invocation",
@@ -4178,7 +4218,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeFlag", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -4352,6 +4392,13 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
 						},
 					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the path in the bucket where the artifact resides",
@@ -4422,9 +4469,16 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref common.Referenc
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
 						},
 					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"keyFormat": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+							Description: "KeyFormat defines the format of how to store keys and can reference workflow variables.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4488,6 +4542,13 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 						SchemaProps: spec.SchemaProps{
 							Description: "LifecycleRule specifies how to manage bucket's lifecycle",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
+						},
+					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -5056,6 +5117,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
 						},
 					},
+					"caSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -5143,9 +5210,15 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
 						},
 					},
+					"caSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 					"keyFormat": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+							Description: "KeyFormat defines the format of how to store keys and can reference workflow variables.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5235,6 +5308,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"encryptionOptions": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
+						},
+					},
+					"caSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 				},
@@ -5851,7 +5930,7 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"duration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\", \"1d\"",
+							Description: "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\"",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7092,6 +7171,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref common.Refere
 							Format:      "",
 						},
 					},
+					"podSpecPatch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -7289,12 +7375,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						},
 					},
 					"volumeClaimTemplates": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
 						SchemaProps: spec.SchemaProps{
 							Description: "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
 							Type:        []string{"array"},
@@ -7758,6 +7838,22 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus"),
+						},
+					},
+					"taskResultsCompleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: false,
+										Type:    []string{"boolean"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 				},

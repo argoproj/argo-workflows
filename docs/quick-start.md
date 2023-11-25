@@ -11,7 +11,8 @@ Before you start you need a Kubernetes cluster and `kubectl` set up to be able t
 
 Alternatively, if you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, try the [Killercoda course](training.md#hands-on).
 
-⚠️ These instructions are intended to help you get started quickly. They are not suitable in production. For production installs, please refer to [the installation documentation](installation.md) ⚠️
+!!! Warning "Development vs. Production"
+    These instructions are intended to help you get started quickly. They are not suitable in production. For production installs, please refer to [the installation documentation](installation.md).
 
 ## Install Argo Workflows
 
@@ -56,7 +57,7 @@ This will serve the UI on <https://localhost:2746>. Due to the self-signed certi
 
 ## Install the Argo Workflows CLI
 
-Next, Download the latest Argo CLI from the same [releases page](https://github.com/argoproj/argo-workflows/releases/latest).
+You can more easily interact with Argo Workflows with the [Argo CLI](walk-through/argo-cli.md).
 
 ## Submitting an example workflow
 

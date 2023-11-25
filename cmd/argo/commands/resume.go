@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
@@ -20,15 +21,29 @@ func NewResumeCommand() *cobra.Command {
 
 	command := &cobra.Command{
 		Use:   "resume WORKFLOW1 WORKFLOW2...",
-		Short: "resume zero or more workflows",
-		Example: `# Resume a workflow that has been stopped or suspended:
+		Short: "resume zero or more workflows (opposite of suspend)",
+		Example: `# Resume a workflow that has been suspended:
 
   argo resume my-wf
 
+# Resume multiple workflows:
+		
+  argo resume my-wf my-other-wf my-third-wf		
+		
 # Resume the latest workflow:
+		
   argo resume @latest
+		
+# Resume multiple workflows by node field selector:
+		
+  argo resume --node-field-selector inputs.paramaters.myparam.value=abc		
 `,
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 && resumeArgs.nodeFieldSelector == "" {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
+
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()

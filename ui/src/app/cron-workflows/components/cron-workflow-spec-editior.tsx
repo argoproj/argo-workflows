@@ -5,7 +5,7 @@ import {NumberInput} from '../../shared/components/number-input';
 import {TextInput} from '../../shared/components/text-input';
 import {ScheduleValidator} from './schedule-validator';
 
-export const CronWorkflowSpecEditor = ({onChange, spec}: {spec: CronWorkflowSpec; onChange: (spec: CronWorkflowSpec) => void}) => {
+export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec; onChange: (spec: CronWorkflowSpec) => void}) {
     return (
         <div className='white-box'>
             <div className='white-box__details'>
@@ -24,8 +24,9 @@ export const CronWorkflowSpecEditor = ({onChange, spec}: {spec: CronWorkflowSpec
                 </div>
                 <div className='row white-box__details-row'>
                     <div className='columns small-3'>Concurrency Policy</div>
-                    <div className='columns small-9'>
+                    <div className='columns small-9' style={{lineHeight: '30px'}}>
                         <Select
+                            placeholder='Select concurrency policy'
                             options={['Allow', 'Forbid', 'Replace']}
                             value={spec.concurrencyPolicy}
                             onChange={x =>
@@ -88,4 +89,4 @@ export const CronWorkflowSpecEditor = ({onChange, spec}: {spec: CronWorkflowSpec
             </div>
         </div>
     );
-};
+}
