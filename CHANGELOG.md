@@ -1,5 +1,37 @@
 # Changelog
 
+## v3.5.2 (2023-11-27)
+
+* [237addc9d](https://github.com/argoproj/argo-workflows/commit/237addc9dab0f31435e8eb7f98bf254c2d19c480) fix: Update yarn.lock file
+* [afd5399cb](https://github.com/argoproj/argo-workflows/commit/afd5399cbd129b267a2d31d278402aa1c06d07c5) fix(ui): Cost Opt should only apply to live Workflows (#12170)
+* [c296cf233](https://github.com/argoproj/argo-workflows/commit/c296cf233235e46bd581a0333e0c4e675a5f3e80) fix: ArtifactGC Fails for Stopped Workflows. Fixes #11879 (#11947)
+* [82560421a](https://github.com/argoproj/argo-workflows/commit/82560421aaa4845d3e33dc5f98e69a2dc2495b1d) fix: retry S3 on RequestError. Fixes #9914 (#12191)
+* [a69ca2342](https://github.com/argoproj/argo-workflows/commit/a69ca234237145ae3ec15dffe7f510e7dfc70b2b) fix: Resource version incorrectly overridden for wfInformer list requests. Fixes #11948 (#12133)
+* [1faa1e62e](https://github.com/argoproj/argo-workflows/commit/1faa1e62eb67512cab96a0b435eef640c10947fe) fix(server): allow passing loglevels as env vars to Server (#12145)
+* [9c378d162](https://github.com/argoproj/argo-workflows/commit/9c378d162f9d244b775d25ede751c7841d64127d) fix: Fix for missing steps in the UI (#12203)
+* [59f5409c9](https://github.com/argoproj/argo-workflows/commit/59f5409c95da83d9045fa936b0ec2dbb09e7724b) fix: leak stream (#12193)
+* [4b162df16](https://github.com/argoproj/argo-workflows/commit/4b162df16260053d1493e66bcae64689053f03e2) refactor(ui): code-split gigantic Monaco Editor dep (#12150)
+* [8615f5364](https://github.com/argoproj/argo-workflows/commit/8615f5364c0f4c3fc7ca35d86d9739e3bd9210b1) refactor(ui): replace `moment-timezone` with native `Intl` (#12097)
+* [d83f7b3b8](https://github.com/argoproj/argo-workflows/commit/d83f7b3b829ee44de329399294dad23e0de50166) build(ui): code-split `ApiDocs` and `Reports` components (#12061)
+* [93b54c5d0](https://github.com/argoproj/argo-workflows/commit/93b54c5d054fe422b758c902999ddc0a6d97066f) chore(deps): bump github.com/creack/pty from 1.1.18 to 1.1.20 (#12139)
+* [4558bfc69](https://github.com/argoproj/argo-workflows/commit/4558bfc69deeb94484dd6e5d6c6a2ab4ca5948d5) chore(deps): bump github.com/aliyun/aliyun-oss-go-sdk from 2.2.9+incompatible to 3.0.1+incompatible (#12140)
+* [913c71881](https://github.com/argoproj/argo-workflows/commit/913c718812e91d540f0075457bbc895e9edda598) chore(deps): bump github.com/go-jose/go-jose/v3 from 3.0.0 to 3.0.1 (#12184)
+* [92923f960](https://github.com/argoproj/argo-workflows/commit/92923f9605318e10b1b2d241365b0c98adc735d9) chore(deps): bump golang.org/x/term from 0.13.0 to 0.14.0 (#12225)
+* [67dff4f22](https://github.com/argoproj/argo-workflows/commit/67dff4f22178028b81253f1b239cda2b06ebe9e1) chore(deps): bump github.com/gorilla/websocket from 1.5.0 to 1.5.1 (#12226)
+* [a16ba1df8](https://github.com/argoproj/argo-workflows/commit/a16ba1df88303b40e48e480c91854269d4a45d76) chore(deps): bump github.com/TwiN/go-color from 1.4.0 to 1.4.1 (#11567)
+* [30b6a91a5](https://github.com/argoproj/argo-workflows/commit/30b6a91a5a04aef3370f36d1ccc39a76834c79a5) chore(deps): bump github.com/minio/minio-go/v7 from 7.0.63 to 7.0.64 (#12267)
+
+### Contributors
+
+* Alan Clucas
+* Anton Gilgur
+* Garett MacGowan
+* Helge Willum Thingvad
+* Weidong Cai
+* Yuan (Terry) Tang
+* Yuan Tang
+* dependabot[bot]
+
 ## v3.5.1 (2023-11-03)
 
 * [877c55230](https://github.com/argoproj/argo-workflows/commit/877c5523066e17687856fe3484c9b2d398e986f5) chore(deps): bump golang.org/x/oauth2 from 0.12.0 to 0.13.0 (#12000)
@@ -487,6 +519,22 @@
 * vanny96
 * yeicandoit
 * younggil
+
+## v3.4.14 (2023-11-27)
+
+* [a34723324](https://github.com/argoproj/argo-workflows/commit/a3472332401f0cff56fd39293eebe3aeca7220ad) fix: Upgrade go-jose to v3.0.1
+* [3201f61fb](https://github.com/argoproj/argo-workflows/commit/3201f61fba1a11147a55e57e57972c3df5758cc7) feat: Use WorkflowTemplate/ClusterWorkflowTemplate Informers when validating CronWorkflows (#11470)
+* [d9a0797e7](https://github.com/argoproj/argo-workflows/commit/d9a0797e7778b4a109518fe9c4d9f9367c3beac8) fix: Resource version incorrectly overridden for wfInformer list requests. Fixes #11948 (#12133)
+* [b3033ea11](https://github.com/argoproj/argo-workflows/commit/b3033ea1133b350e4cc702e1023dd8dc907526d6) Revert "fix: Add missing new version modal for v3.5 (#11692)"
+* [f829cb52e](https://github.com/argoproj/argo-workflows/commit/f829cb52e2398f256829e4b4f49af671ee36c2a1) fix(ui): missing `uiUrl` in `ArchivedWorkflowsList` (#12172)
+* [0c50de391](https://github.com/argoproj/argo-workflows/commit/0c50de3912e6fa4e725f67e1255280ad4a5475ac) fix: Revert "fix: regression in memoization without outputs (#12130)" (#12201)
+
+### Contributors
+
+* Anton Gilgur
+* Julie Vogelman
+* Yuan (Terry) Tang
+* Yuan Tang
 
 ## v3.4.13 (2023-11-03)
 
