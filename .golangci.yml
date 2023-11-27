@@ -63,8 +63,6 @@ linters-settings:
       # G601: Implicit memory aliasing in for loop.
       - G601
 issues:
-  exclude:
-    - "SA1019: rand.Seed has been deprecated since Go 1.20"
   exclude-rules:
     - path: server/artifacts/artifact_server_test.go
       text: "response body must be closed"
