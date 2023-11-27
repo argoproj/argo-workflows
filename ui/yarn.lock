@@ -2289,15 +2289,6 @@ aws4@^1.8.0:
   resolved "https://registry.yarnpkg.com/aws4/-/aws4-1.11.0.tgz#d61f46d83b2519250e2784daf5b09479a8b41c59"
   integrity sha512-xh1Rl34h6Fi1DC2WWKfxUTVqRsNnr6LsKz2+hfwDxQJWmrx8+c7ylaqBMcHfl1U1r2dsifOvKX3LQuLNZ+XSvA==
 
-axios@^1.4.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.0.tgz#f1e5292f26b2fd5c2e66876adc5b06cdbd7d2102"
-  integrity sha512-EZ1DYihju9pwVB+jg67ogm+Tmqc6JmhamRN6I4Zt8DfZu5lbcQGw3ozH9lFejSJgs/ibaef3A9PMXPLeefFGJg==
-  dependencies:
-    follow-redirects "^1.15.0"
-    form-data "^4.0.0"
-    proxy-from-env "^1.1.0"
-
 babel-jest@^26.6.3:
   version "26.6.3"
   resolved "https://registry.yarnpkg.com/babel-jest/-/babel-jest-26.6.3.tgz#d87d25cb0037577a0c89f82e5755c5d293c01056"
@@ -5543,10 +5534,10 @@ monaco-editor-webpack-plugin@^7.1.0:
   dependencies:
     loader-utils "^2.0.2"
 
-monaco-editor@^0.43.0:
-  version "0.43.0"
-  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.43.0.tgz#cb02a8d23d1249ad00b7cffe8bbecc2ac09d4baf"
-  integrity sha512-cnoqwQi/9fml2Szamv1XbSJieGJ1Dc8tENVMD26Kcfl7xGQWp7OBKMjlwKVGYFJ3/AXJjSOGvcqK7Ry/j9BM1Q==
+monaco-editor@^0.44.0:
+  version "0.44.0"
+  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.44.0.tgz#3c0fe3655923bbf7dd647057302070b5095b6c59"
+  integrity sha512-5SmjNStN6bSuSE5WPT2ZV+iYn1/yI9sd4Igtk23ChvqB7kDk9lZbB9F5frsuvpB+2njdIeGGFf2G4gbE6rCC9Q==
 
 ms@2.0.0:
   version "2.0.0"
