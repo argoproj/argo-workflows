@@ -602,10 +602,6 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // generates an insecure random string
 func randString(n int) string {
 	b := make([]byte, n)
