@@ -4313,7 +4313,7 @@ a way to view and analyze historical data, consider the <a href="../workflow-arc
 <h4 id="argo_workflows_k8s_request_total"><code>argo_workflows_k8s_request_total</code><a class="headerlink" href="#argo_workflows_k8s_request_total" title="Permanent link">&para;</a></h4>
 <p>Number of API requests sent to the Kubernetes API.</p>
 <h4 id="argo_workflows_operation_duration_seconds"><code>argo_workflows_operation_duration_seconds</code><a class="headerlink" href="#argo_workflows_operation_duration_seconds" title="Permanent link">&para;</a></h4>
-<p>A histogram of durations of operations.</p>
+<p>A histogram of durations of operations. An operation is a single workflow reconciliation loop within the workflow-controller. It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.</p>
 <h4 id="argo_workflows_pods_count"><code>argo_workflows_pods_count</code><a class="headerlink" href="#argo_workflows_pods_count" title="Permanent link">&para;</a></h4>
 <p>It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done.</p>
 <h4 id="argo_workflows_queue_adds_count"><code>argo_workflows_queue_adds_count</code><a class="headerlink" href="#argo_workflows_queue_adds_count" title="Permanent link">&para;</a></h4>
