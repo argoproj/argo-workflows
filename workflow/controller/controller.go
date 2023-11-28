@@ -77,7 +77,7 @@ type recentlyCompletedWorkflow struct {
 
 type recentCompletions struct {
 	completions []recentlyCompletedWorkflow
-	mutex       gosync.Mutex
+	mutex       gosync.RWMutex
 }
 
 // WorkflowController is the controller for workflow resources
@@ -761,7 +761,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wfc.checkRecentlyCompleted(wf.ObjectMeta.Name) {
+	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.ObjectMeta.Name) {
 		log.WithFields(log.Fields{"name": wf.ObjectMeta.Name}).Warn("Cache: Rejecting recently deleted")
 		return true
 	}
@@ -869,6 +869,8 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 // 10 minutes in the past
 const maxCompletedStoreTime = time.Second * -600
 
+// This is a helper function for expiring old records of workflows
+// completed more than maxCompletedStoreTime ago
 func (wfc *WorkflowController) cleanCompletedWorkflowsRecord() {
 	cutoff := time.Now().Add(maxCompletedStoreTime)
 	removeIndex := -1
@@ -886,35 +888,43 @@ func (wfc *WorkflowController) cleanCompletedWorkflowsRecord() {
 	}
 }
 
+// Records a workflow as recently completed in the list
+// if it isn't already in the list
 func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
 	if !wfc.checkRecentlyCompleted(key) {
 		wfc.recentCompletions.mutex.Lock()
+		defer wfc.recentCompletions.mutex.Unlock()
 		wfc.recentCompletions.completions = append(wfc.recentCompletions.completions,
 			recentlyCompletedWorkflow{
 				key:  key,
 				when: time.Now(),
 			})
-		wfc.recentCompletions.mutex.Unlock()
 	}
 }
 
+// Returns true if the workflow given by key is in the recently completed
+// list. Will perform expiry cleanup before checking.
 func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
 	wfc.cleanCompletedWorkflowsRecord()
 	recent := false
-	wfc.recentCompletions.mutex.Lock()
+	wfc.recentCompletions.mutex.RLock()
+	defer wfc.recentCompletions.mutex.RUnlock()
 	for _, val := range wfc.recentCompletions.completions {
 		if val.key == key {
 			recent = true
 			break
 		}
 	}
-	wfc.recentCompletions.mutex.Unlock()
 	return recent
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) {
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
+			// FilterFunc is called for every operation affecting the
+			// informer cache and can be used to reject things from
+			// the cache. When they are rejected (this returns false)
+			// they will be deleted.
 			FilterFunc: func(obj interface{}) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
@@ -925,11 +935,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				if !needed {
 					key, _ := cache.MetaNamespaceKeyFunc(un)
 					wfc.recordCompletedWorkflow(key)
-					wfc.throttler.Remove(key)
 				}
 				return needed
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
+				// This function is called when a new to the informer object
+				// is to be added to the informer
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
@@ -939,6 +950,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
+				// This function is called when an updated (we already know about this object)
+				// is to be updated in the informer
 				UpdateFunc: func(old, new interface{}) {
 					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
 					// this check is very important to prevent doing many reconciliations we do not need to do
@@ -952,6 +965,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
+				// This function is called when an object is to be removed
+				// from the informer
 				DeleteFunc: func(obj interface{}) {
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
