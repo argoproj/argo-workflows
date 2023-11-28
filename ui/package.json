@@ -35,7 +35,7 @@
         "react-monaco-editor": "^0.50.1",
         "react-router-dom": "^4.2.2",
         "superagent": "^8.1.2",
-        "swagger-ui-react": "^4.19.1"
+        "swagger-ui-react": "^5.10.3"
     },
     "devDependencies": {
         "@babel/core": "^7.22.11",
