@@ -15,7 +15,7 @@ body:
   - type: textarea
     id: description
     attributes:
-      label: What happened/what you expected to happen?
+      label: What happened/what did you expect to happen?
     validations:
       required: true
   - type: input
@@ -48,3 +48,13 @@ body:
       value: kubectl logs -n argo -c wait -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
     validations:
       required: true
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for submitting this issue! Are you a contributor? If not, have you thought about it? 
+
+        Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. 
+        We are gauging interest in a potential system in which many companies pledge a little bit of time each to help get more people into these roles. 
+        See [here](https://github.com/argoproj/argo-workflows/issues/12229) for more information. 
+        If you think you or your company may be interested in getting involved, please add a comment to the issue.
+

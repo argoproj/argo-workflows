@@ -32,7 +32,7 @@ import {buildGraph} from './build-graph';
 import {genres} from './genres';
 import {ID} from './id';
 
-require('./event-flow-page.scss');
+import './event-flow-page.scss';
 
 export function EventFlowPage({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate

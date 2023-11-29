@@ -10,15 +10,15 @@ function status(r: {status?: {conditions?: Condition[]}}) {
     if (!r.status || !r.status.conditions) {
         return '';
     }
-    if (!!r.status.conditions.find(c => c.status === 'False')) {
+    if (r.status.conditions.find(c => c.status === 'False')) {
         return 'Failed';
     }
-    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Ready';
+    return r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Ready';
 }
 
 const numNodesToHide = 2;
 export function buildGraph(eventSources: EventSource[], sensors: Sensor[], workflows: Workflow[], flow: {[p: string]: {count: number; timeout?: any}}, expanded: boolean) {
-    const edgeLabel = (id: Node, label?: string) => (!!flow[id] ? (label || '') + ' (' + flow[id].count + ')' : label);
+    const edgeLabel = (id: Node, label?: string) => (flow[id] ? (label || '') + ' (' + flow[id].count + ')' : label);
     const edgeClassNames = (id: Node) => (!!flow[id] && flow[id].timeout ? 'flow' : '');
     const graph = new Graph();
 

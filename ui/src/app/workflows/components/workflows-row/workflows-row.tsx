@@ -35,7 +35,7 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                         onClick={e => {
                             e.stopPropagation();
                         }}
-                        onChange={e => {
+                        onChange={() => {
                             props.select(props.workflow);
                         }}
                     />

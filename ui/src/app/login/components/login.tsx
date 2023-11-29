@@ -1,9 +1,10 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
+
 import {uiUrl, uiUrlWithParams} from '../../shared/base';
 import {useCollectEvent} from '../../shared/components/use-collect-event';
 
-require('./login.scss');
+import './login.scss';
 
 function logout() {
     document.cookie = 'authorization=;Max-Age=0';

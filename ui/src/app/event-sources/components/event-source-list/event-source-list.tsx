@@ -141,7 +141,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
                                 </div>
                                 <div className='columns small-2'>
                                     <div
-                                        onClick={e => {
+                                        onClick={() => {
                                             setSelectedNode(`${es.metadata.namespace}/event-sources/${es.metadata.name}`);
                                         }}>
                                         <i className='fa fa-bars' />

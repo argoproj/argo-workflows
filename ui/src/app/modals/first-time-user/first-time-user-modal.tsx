@@ -11,7 +11,7 @@ import {SurveyButton} from '../../shared/components/survey-button';
  */
 export const FirstTimeUserModal = ({dismiss}: {dismiss: () => void}) => (
     <Modal dismiss={dismiss}>
-        <h3 style={{textAlign: 'center'}}>Tell us what you want to use Argo for - we'll tell you how to do it. </h3>
+        <h3 style={{textAlign: 'center'}}>Tell us what you want to use Argo for - we&apos;ll tell you how to do it. </h3>
         <div style={{textAlign: 'center'}}>
             {[
                 {key: 'machine-learning', icon: 'brain', title: 'Machine Learning'},

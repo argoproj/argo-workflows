@@ -1,2 +1,1 @@
-declare var SYSTEM_INFO: { version: string; };
-
+declare let SYSTEM_INFO: {version: string};
