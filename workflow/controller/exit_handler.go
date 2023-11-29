@@ -33,7 +33,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 			woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
 			onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
 			resolvedArgs := exitHook.Arguments
-			if !resolvedArgs.IsEmpty() && outputs != nil {
+			if !resolvedArgs.IsEmpty() {
 				resolvedArgs, err = woc.resolveExitTmplArgument(exitHook.Arguments, prefix, outputs, scope)
 				if err != nil {
 					return true, nil, err
@@ -56,11 +56,13 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(args wfv1.Arguments, prefix s
 	if scope == nil {
 		scope = createScope(nil)
 	}
-	for _, param := range outputs.Parameters {
-		scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
-	}
-	for _, arts := range outputs.Artifacts {
-		scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, arts.Name), arts)
+	if outputs != nil {
+		for _, param := range outputs.Parameters {
+			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
+		}
+		for _, arts := range outputs.Artifacts {
+			scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, arts.Name), arts)
+		}
 	}
 
 	stepBytes, err := json.Marshal(args)
