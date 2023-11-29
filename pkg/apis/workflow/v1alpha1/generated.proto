@@ -1176,6 +1176,7 @@ message OSSLifecycleRule {
 
 // +kubebuilder:validation:Type=object
 message Object {
+  optional bytes value = 1;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
