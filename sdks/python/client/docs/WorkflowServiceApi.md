@@ -11176,6 +11176,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         message="message_example",
                         name="name_example",
+                        node_flag=IoArgoprojWorkflowV1alpha1NodeFlag(
+                            hooked=True,
+                            retried=True,
+                        ),
                         outbound_nodes=[
                             "outbound_nodes_example",
                         ],
@@ -27343,6 +27347,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                 ),
+                task_results_completed={
+                    "key": True,
+                },
             ),
         ),
     ) # IoArgoprojWorkflowV1alpha1WorkflowCreateRequest | 
@@ -38723,6 +38730,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         message="message_example",
                         name="name_example",
+                        node_flag=IoArgoprojWorkflowV1alpha1NodeFlag(
+                            hooked=True,
+                            retried=True,
+                        ),
                         outbound_nodes=[
                             "outbound_nodes_example",
                         ],
@@ -54890,6 +54901,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                 ),
+                task_results_completed={
+                    "key": True,
+                },
             ),
         ),
     ) # IoArgoprojWorkflowV1alpha1WorkflowLintRequest | 

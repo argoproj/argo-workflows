@@ -78,10 +78,10 @@ func TestTarDirectory(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			err = os.Remove(f.Name())
+			err = f.Close()
 			assert.NoError(t, err)
 
-			err = f.Close()
+			err = os.Remove(f.Name())
 			assert.NoError(t, err)
 		})
 	}
@@ -172,10 +172,10 @@ func TestZipDirectory(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			err = os.Remove(f.Name())
+			err = f.Close()
 			assert.NoError(t, err)
 
-			err = f.Close()
+			err = os.Remove(f.Name())
 			assert.NoError(t, err)
 		})
 	}

@@ -1,10 +1,10 @@
-import jsyaml = require('js-yaml');
+import jsyaml from 'js-yaml';
 
-export function parse<T>(value: string) {
+export function parse<T>(value: string): T {
     if (value.startsWith('{')) {
         return JSON.parse(value);
     }
-    return jsyaml.load(value);
+    return jsyaml.load(value) as T;
 }
 
 export function stringify<T>(value: T, type: string) {

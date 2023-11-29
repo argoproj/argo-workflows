@@ -1,9 +1,9 @@
-import React = require('react');
+import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Link} from '../../../models';
 import {services} from '../services';
 
-export const ChatButton = () => {
+export function ChatButton() {
     const [link, setLink] = useState<Link>();
 
     useEffect(() => {
@@ -27,4 +27,4 @@ export const ChatButton = () => {
             </a>
         </div>
     );
-};
+}

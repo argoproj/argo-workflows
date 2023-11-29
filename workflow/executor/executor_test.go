@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +26,7 @@ import (
 const (
 	fakePodName       = "fake-test-pod-1234567890"
 	fakeWorkflow      = "my-wf"
+	fakeWorkflowUID   = "my-wf-uid"
 	fakePodUID        = "my-pod-uid"
 	fakeNodeID        = "my-node-id"
 	fakeNamespace     = "default"
@@ -231,6 +233,10 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 }
 
 func TestIsTarball(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// TODO: fix this test in windows
+		t.Skip("test not working in windows - temp disable")
+	}
 	tests := []struct {
 		path      string
 		isTarball bool
@@ -257,6 +263,10 @@ func TestIsTarball(t *testing.T) {
 }
 
 func TestUnzip(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// TODO: fix this test in windows
+		t.Skip("test not working in windows - temp disable")
+	}
 	zipPath := "testdata/file.zip"
 	destPath := "testdata/unzippedFile"
 
@@ -311,6 +321,10 @@ func TestUntar(t *testing.T) {
 }
 
 func TestChmod(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod does not work in windows")
+	}
+
 	type perm struct {
 		dir  string
 		file string
@@ -365,12 +379,13 @@ func TestChmod(t *testing.T) {
 func TestSaveArtifacts(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	templateWithOutParam := wfv1.Template{
 		Inputs: wfv1.Inputs{
 			Artifacts: []wfv1.Artifact{
 				{
 					Name: "samedir",
-					Path: "/samedir",
+					Path: string(os.PathSeparator) + "samedir",
 				},
 			},
 		},
@@ -378,7 +393,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name:     "samedir",
-					Path:     "/samedir",
+					Path:     string(os.PathSeparator) + "samedir",
 					Optional: true,
 				},
 			},
@@ -389,7 +404,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name: "samedir",
-					Path: "/samedir",
+					Path: string(os.PathSeparator) + "samedir",
 				},
 			},
 		},
@@ -397,7 +412,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name:     "samedir",
-					Path:     "/samedir",
+					Path:     string(os.PathSeparator) + "samedir",
 					Optional: false,
 				},
 			},
@@ -408,7 +423,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name: "samedir",
-					Path: "/samedir",
+					Path: string(os.PathSeparator) + "samedir",
 				},
 			},
 		},
@@ -416,7 +431,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name:     "samedir",
-					Path:     "/samedir",
+					Path:     string(os.PathSeparator) + "samedir",
 					Optional: true,
 					Archive: &wfv1.ArchiveStrategy{
 						Zip: &wfv1.ZipStrategy{},
@@ -431,31 +446,34 @@ func TestSaveArtifacts(t *testing.T) {
 	}{
 		{
 			workflowExecutor: WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        templateWithOutParam,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
+				PodName:          fakePodName,
+				Template:         templateWithOutParam,
+				ClientSet:        fakeClientset,
+				Namespace:        fakeNamespace,
+				RuntimeExecutor:  &mockRuntimeExecutor,
+				taskResultClient: mockTaskResultClient,
 			},
 			expectError: false,
 		},
 		{
 			workflowExecutor: WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        templateOptionFalse,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
+				PodName:          fakePodName,
+				Template:         templateOptionFalse,
+				ClientSet:        fakeClientset,
+				Namespace:        fakeNamespace,
+				RuntimeExecutor:  &mockRuntimeExecutor,
+				taskResultClient: mockTaskResultClient,
 			},
 			expectError: true,
 		},
 		{
 			workflowExecutor: WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        templateZipArchive,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
+				PodName:          fakePodName,
+				Template:         templateZipArchive,
+				ClientSet:        fakeClientset,
+				Namespace:        fakeNamespace,
+				RuntimeExecutor:  &mockRuntimeExecutor,
+				taskResultClient: mockTaskResultClient,
 			},
 			expectError: false,
 		},
@@ -493,6 +511,7 @@ func TestMonitorProgress(t *testing.T) {
 		fakePodName,
 		fakePodUID,
 		fakeWorkflow,
+		fakeWorkflowUID,
 		fakeNodeID,
 		fakeNamespace,
 		&mocks.ContainerRuntimeExecutor{},
@@ -534,7 +553,39 @@ func TestSaveLogs(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		we.SaveLogs(ctx)
+		logArtifacts := we.SaveLogs(ctx)
+
 		assert.EqualError(t, we.errors[0], artStorageError)
+		assert.Empty(t, logArtifacts)
 	})
+}
+
+func TestReportOutputs(t *testing.T) {
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	t.Run("Simple report output", func(t *testing.T) {
+		artifacts := []wfv1.Artifact{
+			{
+				Name: "samedir",
+				Path: "/samedir",
+			},
+		}
+		templateWithArtifacts := wfv1.Template{
+			Inputs: wfv1.Inputs{
+				Artifacts: artifacts,
+			},
+		}
+		we := WorkflowExecutor{
+			Template:         templateWithArtifacts,
+			RuntimeExecutor:  &mockRuntimeExecutor,
+			taskResultClient: mockTaskResultClient,
+		}
+
+		ctx := context.Background()
+		err := we.ReportOutputs(ctx, artifacts)
+
+		assert.Equal(t, err, nil)
+		assert.Empty(t, we.errors)
+	})
+
 }

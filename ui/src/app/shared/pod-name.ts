@@ -40,13 +40,11 @@ export const createFNVHash = (input: string): number => {
 
     for (let i = 0; i < input.length; i++) {
         const character = input.charCodeAt(i);
-        /* tslint:disable:no-bitwise */
         hashint = hashint ^ character;
         hashint += (hashint << 1) + (hashint << 4) + (hashint << 7) + (hashint << 8) + (hashint << 24);
     }
 
     return hashint >>> 0;
-    /* tslint:enable:no-bitwise */
 };
 
 export const getTemplateNameFromNode = (node: NodeStatus): string => {

@@ -6,7 +6,7 @@ import {ConditionsPanel} from '../../shared/conditions-panel';
 import {WorkflowLink} from '../../workflows/components/workflow-link';
 import {PrettySchedule} from './pretty-schedule';
 
-export const CronWorkflowStatusViewer = ({spec, status}: {spec: CronWorkflowSpec; status: CronWorkflowStatus}) => {
+export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec; status: CronWorkflowStatus}) {
     if (status === null) {
         return null;
     }
@@ -34,7 +34,7 @@ export const CronWorkflowStatusViewer = ({spec, status}: {spec: CronWorkflowSpec
             </div>
         </div>
     );
-};
+}
 
 function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]) {
     return active.reverse().map(activeWf => <WorkflowLink key={activeWf.uid} namespace={activeWf.namespace} name={activeWf.name} />);

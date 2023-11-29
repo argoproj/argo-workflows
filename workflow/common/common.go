@@ -51,6 +51,10 @@ const (
 	// AnnotationKeyProgress is N/M progress for the node
 	AnnotationKeyProgress = workflow.WorkflowFullName + "/progress"
 
+	// AnnotationKeyReportOutputsCompleted is an annotation on a workflow pod indicating outputs have completed.
+	// Only used as a backup in case LabelKeyReportOutputsCompleted can't be added to WorkflowTaskResult.
+	AnnotationKeyReportOutputsCompleted = workflow.WorkflowFullName + "/report-outputs-completed"
+
 	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
@@ -94,6 +98,8 @@ const (
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
 	// LabelKeyArtifactGCPodHash is a label applied to WorkflowTaskSets used by the Artifact Garbage Collection Pod
 	LabelKeyArtifactGCPodHash = workflow.WorkflowFullName + "/artifact-gc-pod"
+	// LabelKeyReportOutputsCompleted is a label applied to WorkflowTaskResults indicating whether all the outputs have been reported.
+	LabelKeyReportOutputsCompleted = workflow.WorkflowFullName + "/report-outputs-completed"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)

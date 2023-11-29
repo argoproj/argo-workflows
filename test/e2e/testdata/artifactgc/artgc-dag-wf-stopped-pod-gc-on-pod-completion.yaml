@@ -1,0 +1,135 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artgc-dag-wf-stopped-pod-gc-on-pod-completion-
+spec:
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+      workflows.argoproj.io/workflow: "artgc-dag-wf-stopped-pod-gc-on-pod-completion"
+  artifactGC:
+    serviceAccountName: default
+    strategy: OnWorkflowDeletion
+  entrypoint: artgc-dag-wf-stopped-pod-gc-on-pod-completion-main
+  serviceAccountName: argo
+  executor:
+    serviceAccountName: default
+  volumeClaimTemplates:
+    - metadata:
+        name: artifacts
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+  templates:
+    - name: artgc-dag-wf-stopped-pod-gc-on-pod-completion-main
+      dag:
+        tasks:
+          - name: create-artifact-1
+            template: artgc-dag-artifact-creator-1
+          - name: create-artifact-2
+            template: artgc-dag-artifact-creator-2
+            dependencies: [create-artifact-1]
+          - name: delay-stop-workflow
+            template: artgc-dag-delay-stop
+            dependencies: [create-artifact-1]
+          - name: stop-workflow
+            template: artgc-dag-workflow-stopper
+            dependencies: [delay-stop-workflow]
+    - name: artgc-dag-delay-stop
+      container:
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
+        args:
+          - |
+            echo "Delaying workflow stop"
+            ls /mnt
+            x=0
+            while [ $x -le 60 ]
+            do
+              sleep 1
+              if [ -f "/mnt/vol/test-1.txt" ] && [ -f "/mnt/vol/test-2.txt" ]; then
+                echo "Artifacts found in shared volume"
+                break
+              fi
+              x=$(( $x + 1 ))
+            done
+    - name: artgc-dag-workflow-stopper
+      container:
+        image: argoproj/argocli:latest
+        args: 
+          - stop
+          - -l
+          - workflows.argoproj.io/workflow=artgc-dag-wf-stopped-pod-gc-on-pod-completion
+          - --namespace=argo
+          - --loglevel=debug
+    - name: artgc-dag-artifact-creator-1
+      metadata:
+        labels:
+          template: "artgc-dag-artifact-creator-1"
+      container:
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
+        args:
+          - |
+            echo 'testing' > /mnt/vol/test-1.txt
+            echo "Artifact saved to /mnt/vol/test-1.txt"
+      outputs:
+        artifacts:
+          - name: on-deletion-wf-stopped-1
+            path: /mnt/vol/test-1.txt
+            s3:
+              key: on-deletion-wf-stopped-1
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: OnWorkflowDeletion
+    - name: artgc-dag-artifact-creator-2
+      metadata:
+        labels:
+          template: "artgc-dag-artifact-creator-2"
+      container:
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
+        args:
+          - |
+            echo 'testing' > /mnt/vol/test-2.txt
+            echo "Artifact saved to /mnt/vol/test-2.txt"
+            while true
+            do
+              sleep 1
+            done
+      outputs:
+        artifacts:
+          - name: on-deletion-wf-stopped-2
+            path: /mnt/vol/test-2.txt
+            s3:
+              key: on-deletion-wf-stopped-2
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: OnWorkflowDeletion
