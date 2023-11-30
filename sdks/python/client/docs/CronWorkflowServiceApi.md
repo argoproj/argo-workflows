@@ -112,6 +112,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
                 starting_deadline_seconds=1,
+                stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
+                    condition="condition_example",
+                ),
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
@@ -10787,6 +10790,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         uid="uid_example",
                     ),
                 ],
+                completed=True,
                 conditions=[
                     IoArgoprojWorkflowV1alpha1Condition(
                         message="message_example",
@@ -10794,7 +10798,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         type="type_example",
                     ),
                 ],
+                failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                succeeded=1,
             ),
         ),
         namespace="namespace_example",
@@ -11119,6 +11125,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
                 starting_deadline_seconds=1,
+                stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
+                    condition="condition_example",
+                ),
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
@@ -21794,6 +21803,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         uid="uid_example",
                     ),
                 ],
+                completed=True,
                 conditions=[
                     IoArgoprojWorkflowV1alpha1Condition(
                         message="message_example",
@@ -21801,7 +21811,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         type="type_example",
                     ),
                 ],
+                failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                succeeded=1,
             ),
         ),
         namespace="namespace_example",
@@ -22211,6 +22223,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
                 starting_deadline_seconds=1,
+                stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
+                    condition="condition_example",
+                ),
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
@@ -32886,6 +32901,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         uid="uid_example",
                     ),
                 ],
+                completed=True,
                 conditions=[
                     IoArgoprojWorkflowV1alpha1Condition(
                         message="message_example",
@@ -32893,7 +32909,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         type="type_example",
                     ),
                 ],
+                failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                succeeded=1,
             ),
         ),
         name="name_example",

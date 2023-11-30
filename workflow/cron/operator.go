@@ -20,6 +20,7 @@ import (
 	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -90,6 +91,13 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 		return
 	}
 
+	completed, err := woc.checkStopingCondition()
+	if err != nil {
+		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprintf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err))
+		return
+	}
+	woc.cronWf.Status.Completed = completed
+
 	proceed, err := woc.enforceRuntimePolicy(ctx)
 	if err != nil {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Concurrency policy error: %s", err))
@@ -145,7 +153,7 @@ func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
 }
 
 func (woc *cronWfOperationCtx) persistUpdateActiveWorkflows(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active}})
+	woc.patch(ctx, map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "completed": woc.cronWf.Status.Completed}})
 }
 
 func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]interface{}) {
@@ -171,6 +179,11 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, error) {
 	if woc.cronWf.Spec.Suspend {
 		woc.log.Infof("%s is suspended, skipping execution", woc.name)
+		return false, nil
+	}
+
+	if woc.cronWf.Status.Completed {
+		woc.log.Infof("CronWorkflow %s is marked as completed since it achieved the stopping condition", woc.cronWf.Name)
 		return false, nil
 	}
 
@@ -280,12 +293,19 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, err
 	return time.Time{}, nil
 }
 
+type fulfilledWfsPhase struct {
+	fulfilled bool
+	phase     v1alpha1.WorkflowPhase
+}
+
 func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows []v1alpha1.Workflow) error {
 	updated := false
-	currentWfsFulfilled := make(map[types.UID]bool)
+	currentWfsFulfilled := make(map[types.UID]fulfilledWfsPhase, len(workflows))
 	for _, wf := range workflows {
-		currentWfsFulfilled[wf.UID] = wf.Status.Fulfilled()
-
+		currentWfsFulfilled[wf.UID] = fulfilledWfsPhase{
+			fulfilled: wf.Status.Fulfilled(),
+			phase:     wf.Status.Phase,
+		}
 		if !woc.cronWf.Status.HasActiveUID(wf.UID) && !wf.Status.Fulfilled() {
 			updated = true
 			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(&wf, &wf))
@@ -293,9 +313,17 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows
 	}
 
 	for _, objectRef := range woc.cronWf.Status.Active {
-		if fulfilled, found := currentWfsFulfilled[objectRef.UID]; !found || fulfilled {
+		if fulfilled, found := currentWfsFulfilled[objectRef.UID]; !found || fulfilled.fulfilled {
 			updated = true
 			woc.removeFromActiveList(objectRef.UID)
+			if found && fulfilled.fulfilled {
+				woc.updateWfPhaseCounter(fulfilled.phase)
+				completed, err := woc.checkStopingCondition()
+				if err != nil {
+					return fmt.Errorf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err)
+				}
+				woc.cronWf.Status.Completed = completed
+			}
 		}
 	}
 
@@ -387,8 +415,35 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.Co
 	if conditionType == v1alpha1.ConditionTypeSpecError {
 		woc.metrics.CronWorkflowSpecError()
 	} else {
+		if conditionType == v1alpha1.ConditionTypeSubmissionError {
+			woc.cronWf.Status.Failed++
+		}
 		woc.metrics.CronWorkflowSubmissionError()
 	}
+}
+
+func (woc *cronWfOperationCtx) updateWfPhaseCounter(phase v1alpha1.WorkflowPhase) {
+	switch phase {
+	case v1alpha1.WorkflowError, v1alpha1.WorkflowFailed:
+		woc.cronWf.Status.Failed++
+	case v1alpha1.WorkflowSucceeded:
+		woc.cronWf.Status.Succeeded++
+	}
+}
+
+func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
+	if woc.cronWf.Spec.StopStrategy == nil {
+		return false, nil
+	}
+	env := map[string]any{
+		"failed":    woc.cronWf.Status.Failed,
+		"succeeded": woc.cronWf.Status.Succeeded,
+	}
+	suspend, err := argoexpr.EvalBool(woc.cronWf.Spec.StopStrategy.Condition, env)
+	if err != nil {
+		return false, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+	return suspend, nil
 }
 
 func inferScheduledTime() time.Time {
