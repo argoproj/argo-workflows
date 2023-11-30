@@ -24,7 +24,7 @@ manual patch is necessary.
 
 Ignore:
 
-* Fixes for features only on master.
+* Fixes for features only on `main`.
 * Dependency upgrades, unless they fix known security issues.
 * Build or CI improvements, unless the release pipeline is blocked without them.
 

@@ -485,9 +485,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 return;
             }
 
-            updateOutputParametersForNodeIfRequired()
-                .then(resumeNode)
-                .catch(setError);
+            updateOutputParametersForNodeIfRequired().then(resumeNode).catch(setError);
         });
     }
 
