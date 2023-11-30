@@ -386,6 +386,7 @@ spec:
 			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, int64(0), cronWf.Status.Failed)
 				assert.Equal(t, int64(1), cronWf.Status.Succeeded)
 				assert.Equal(t, true, cronWf.Status.Completed)
 			})
@@ -419,6 +420,7 @@ spec:
 			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, int64(0), cronWf.Status.Succeeded)
 				assert.Equal(t, int64(1), cronWf.Status.Failed)
 				assert.Equal(t, true, cronWf.Status.Completed)
 			})
