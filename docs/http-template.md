@@ -48,4 +48,4 @@ HTTP Templates use the Argo Agent, which executes the requests independently of 
 Controller communicate through the `WorkflowTaskSet` CRD, which is created for each running `Workflow` that requires the use
 of the `Agent`.
 
-In order to use the Argo Agent, you will need to ensure that you have added the appropriate [workflow RBAC](workflow-rbac.md) to add an agent role with to Argo Workflows. An example agent role can be found in [the quick-start manifests](https://github.com/argoproj/argo-workflows/tree/master/manifests/quick-start/base/agent-role.yaml).
+In order to use the Argo Agent, you will need to ensure that you have added the appropriate [workflow RBAC](workflow-rbac.md) to add an agent role with to Argo Workflows. An example agent role can be found in [the quick-start manifests](https://github.com/argoproj/argo-workflows/tree/main/manifests/quick-start/base/agent-role.yaml).
