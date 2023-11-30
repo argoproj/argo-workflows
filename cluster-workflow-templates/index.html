@@ -4079,10 +4079,10 @@ Just as how you reference other <code>templates</code> within the same <code>Wor
 <h2 id="managing-clusterworkflowtemplates">Managing <code>ClusterWorkflowTemplates</code><a class="headerlink" href="#managing-clusterworkflowtemplates" title="Permanent link">&para;</a></h2>
 <h3 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
 <p>You can create some example templates as follows:</p>
-<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>cluster-template<span class="w"> </span>create<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/cluster-workflow-template/clustertemplates.yaml
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>cluster-template<span class="w"> </span>create<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/cluster-workflow-template/clustertemplates.yaml
 </code></pre></div>
 <p>The submit a workflow using one of those templates:</p>
-<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>submit<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>submit<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
 </code></pre></div>
 <blockquote>
 <p>2.7 and after</p>

@@ -3950,7 +3950,7 @@
 <span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>You can run this example and get the logs:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>argo<span class="w"> </span>submit<span class="w"> </span>--watch<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-windows.yaml
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>argo<span class="w"> </span>submit<span class="w"> </span>--watch<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-windows.yaml
 $<span class="w"> </span>argo<span class="w"> </span>logs<span class="w"> </span>hello-windows-s9kk5
 hello-windows-s9kk5:<span class="w"> </span><span class="s2">&quot;Hello from Windows Container!&quot;</span>
 </code></pre></div>
@@ -3987,7 +3987,7 @@ hello-windows-s9kk5:<span class="w"> </span><span class="s2">&quot;Hello from Wi
 <span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Linux</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>Again, you can run this example and get the logs:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>argo<span class="w"> </span>submit<span class="w"> </span>--watch<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-hybrid.yaml
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>argo<span class="w"> </span>submit<span class="w"> </span>--watch<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-hybrid.yaml
 $<span class="w"> </span>argo<span class="w"> </span>logs<span class="w"> </span>hello-hybrid-plqpp
 hello-hybrid-plqpp-1977432187:<span class="w"> </span><span class="s2">&quot;Hello from Windows Container!&quot;</span>
 hello-hybrid-plqpp-764774907:<span class="w"> </span>Hello<span class="w"> </span>from<span class="w"> </span>Linux<span class="w"> </span>Container!

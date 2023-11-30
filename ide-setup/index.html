@@ -3910,13 +3910,13 @@
 
 <h1 id="ide-set-up">IDE Set-Up<a class="headerlink" href="#ide-set-up" title="Permanent link">&para;</a></h1>
 <h2 id="validating-argo-yaml-against-the-json-schema">Validating Argo YAML against the JSON Schema<a class="headerlink" href="#validating-argo-yaml-against-the-json-schema" title="Permanent link">&para;</a></h2>
-<p>Argo provides a <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">JSON Schema</a> that enables validation of YAML resources in your IDE.</p>
+<p>Argo provides a <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/jsonschema/schema.json">JSON Schema</a> that enables validation of YAML resources in your IDE.</p>
 <h3 id="jetbrains-ides-community-ultimate-editions">JetBrains IDEs (Community &amp; Ultimate Editions)<a class="headerlink" href="#jetbrains-ides-community-ultimate-editions" title="Permanent link">&para;</a></h3>
 <p>YAML validation is supported natively in IDEA.</p>
 <p>Configure your IDE to reference the Argo schema and map it to your Argo YAML files:</p>
 <p><img alt="JetBrains IDEs Configure Schema" src="../assets/jetbrains-ide-step-1-config.png" /></p>
 <ul>
-<li>The schema is located <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">here</a>.</li>
+<li>The schema is located <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/jsonschema/schema.json">here</a>.</li>
 <li>Specify a file glob pattern that locates <strong>your</strong> Argo files. The example glob here is for the Argo Github project!</li>
 <li>Note that you may need to restart IDEA to pick up the changes.</li>
 </ul>
@@ -3931,7 +3931,7 @@ instead of using the internal JSON schema file validator.</p>
 based on Kubernetes resource definition keys and does not require a file glob pattern.
 Like the previously described method:</p>
 <ul>
-<li>The schema is located <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">here</a>.</li>
+<li>The schema is located <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/jsonschema/schema.json">here</a>.</li>
 <li>Note that you may need to restart IDEA to pick up the changes.</li>
 </ul>
 <h3 id="vscode">VSCode<a class="headerlink" href="#vscode" title="Permanent link">&para;</a></h3>
@@ -3943,7 +3943,7 @@ Like the previously described method:</p>
 <p>Add the Argo schema setting <code>yaml.schemas</code>:</p>
 <p><img alt="VSCode Specify Argo Schema" src="../assets/vscode-ide-step-3-spec-schema.png" /></p>
 <ul>
-<li>The schema is located <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">here</a>.</li>
+<li>The schema is located <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/jsonschema/schema.json">here</a>.</li>
 <li>Specify a file glob pattern that locates <strong>your</strong> Argo files. The example glob here is for the Argo Github project!</li>
 <li>Note that other defined schema with overlapping glob patterns may cause errors.</li>
 </ul>

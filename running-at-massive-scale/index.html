@@ -3931,7 +3931,7 @@ pod GC and workflow GC to achieve this.</p>
 <li>Use the Emissary executor (&gt;= v3.1). This does not make any Kubernetes API requests (except for resources template).</li>
 <li>Limit the number of concurrent workflows using parallelism.</li>
 <li>Rate-limit pod creation <a href="../workflow-controller-configmap.yaml">configuration</a> (&gt;= v3.1).</li>
-<li>Set <code>DEFAULT_REQUEUE_TIME=1m</code> (see <a href="https://github.com/argoproj/argo-workflows/blob/master/docs/environment-variables.md">docs</a>).</li>
+<li>Set <a href="../environment-variables/"><code>DEFAULT_REQUEUE_TIME=1m</code></a></li>
 </ul>
 <h2 id="overwhelmed-database">Overwhelmed Database<a class="headerlink" href="#overwhelmed-database" title="Permanent link">&para;</a></h2>
 <p>If you're running workflows with many nodes, you'll probably be offloading data to a database. Offloaded data is kept

@@ -3899,7 +3899,7 @@ See the below Workflow which will download the specified webHDFS artifact into t
 <span class="w">    </span><span class="nt">http</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://mywebhdfsprovider.com/webhdfs/v1/file.txt?op=OPEN&quot;</span>
 </code></pre></div>
-<p>Additional fields can be set for HTTP artifacts (for example, headers). See usage in the <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml">full webHDFS example</a>.</p>
+<p>Additional fields can be set for HTTP artifacts (for example, headers). See usage in the <a href="https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml">full webHDFS example</a>.</p>
 <h2 id="output-artifacts">Output Artifacts<a class="headerlink" href="#output-artifacts" title="Permanent link">&para;</a></h2>
 <p>To declare a webHDFS output artifact, instead use the <a href="https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Create_and_Write_to_a_File">CREATE operation</a> and set the file path to your desired location.
 In the below example, the artifact will be stored at <code>outputs/newfile.txt</code>. You can <a href="https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Overwrite">overwrite</a> existing files with <code>overwrite=true</code>.</p>
@@ -3920,7 +3920,7 @@ The authentication mechanism is limited to those supported by HTTP artifacts:</p
 <li>OAuth2</li>
 <li>Client Certificates</li>
 </ul>
-<p>Examples for the latter two mechanisms can be found in the <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml">full webHDFS example</a>.</p>
+<p>Examples for the latter two mechanisms can be found in the <a href="https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml">full webHDFS example</a>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Provider dependent</p>
 <p>While your webHDFS provider may support the above mechanisms, Hadoop <em>itself</em> only supports <a href="https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Authentication">authentication</a> via Kerberos SPNEGO and Hadoop delegation token. HTTP artifacts do not currently support SPNEGO, but delegation tokens can be used via the <code>delegation</code> query parameter.</p>

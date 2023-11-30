@@ -3924,7 +3924,7 @@
 <li><code>Always</code>: Retry all failed steps</li>
 <li><code>OnFailure</code>: Retry steps whose main container is marked as failed in Kubernetes</li>
 <li><code>OnError</code>: Retry steps that encounter Argo controller errors, or whose init or wait containers fail</li>
-<li><code>OnTransientError</code>: Retry steps that encounter errors <a href="https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go">defined as transient</a>, or errors matching the <code>TRANSIENT_ERROR_PATTERN</code> <a href="https://argoproj.github.io/argo-workflows/environment-variables/">environment variable</a>. Available in version 3.0 and later.</li>
+<li><code>OnTransientError</code>: Retry steps that encounter errors <a href="https://github.com/argoproj/argo-workflows/blob/main/util/errors/errors.go">defined as transient</a>, or errors matching the <code>TRANSIENT_ERROR_PATTERN</code> <a href="../environment-variables/">environment variable</a>. Available in version 3.0 and later.</li>
 </ul>
 <p>The <code>retryPolicy</code> applies even if you also specify an <code>expression</code>, but in version 3.5 or later the default policy means the expression makes the decision unless you explicitly specify a policy.</p>
 <p>The default <code>retryPolicy</code> is <code>OnFailure</code>, except in version 3.5 or later when an expression is also supplied, when it is <code>Always</code>. This may be easier to understand in this diagram.</p>
@@ -3982,9 +3982,9 @@ access to the following variables:</p>
 </ul>
 <p>If <code>expression</code> evaluates to false, the step will not be retried.</p>
 <p>The <code>expression</code> result will be logical <em>and</em> with the <code>retryPolicy</code>. Both must be true to retry.</p>
-<p>See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/retry-conditional.yaml">example</a> for usage.</p>
+<p>See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/retry-conditional.yaml">example</a> for usage.</p>
 <h2 id="back-off">Back-Off<a class="headerlink" href="#back-off" title="Permanent link">&para;</a></h2>
-<p>You can configure the delay between retries with <code>backoff</code>. See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/retry-backoff.yaml">example</a> for usage.</p>
+<p>You can configure the delay between retries with <code>backoff</code>. See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/retry-backoff.yaml">example</a> for usage.</p>
 
               
 

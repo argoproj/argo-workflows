@@ -3817,13 +3817,13 @@
 <p>Many clients can send events via the <a href="../events/">events</a> API endpoint using a standard authorization header. However, for clients that are unable to do so (e.g. because they use signature verification as proof of origin), additional configuration is required.</p>
 <p>In the namespace that will receive the event, create <a href="../access-token/">access token</a> resources for your client:</p>
 <ul>
-<li>A role with permissions to get workflow templates and to create a workflow: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example</a></li>
-<li>A service account for the client: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/github.com-sa.yaml">example</a>.</li>
-<li>A binding of the account to the role: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/github.com-rolebinding.yaml">example</a></li>
+<li>A role with permissions to get workflow templates and to create a workflow: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example</a></li>
+<li>A service account for the client: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/github.com-sa.yaml">example</a>.</li>
+<li>A binding of the account to the role: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/github.com-rolebinding.yaml">example</a></li>
 </ul>
 <p>Additionally create:</p>
 <ul>
-<li>A secret named <code>argo-workflows-webhook-clients</code> listing the service accounts: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml">example</a></li>
+<li>A secret named <code>argo-workflows-webhook-clients</code> listing the service accounts: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml">example</a></li>
 </ul>
 <p>The secret <code>argo-workflows-webhook-clients</code> tells Argo:</p>
 <ul>

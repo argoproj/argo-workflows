@@ -4043,7 +4043,7 @@
 
 
 <h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h1>
-<p><a href="https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md">To report security issues</a>.</p>
+<p><a href="https://github.com/argoproj/argo-workflows/blob/main/SECURITY.md">To report security issues</a>.</p>
 <p>💡 Read <a href="https://blog.argoproj.io/practical-argo-workflows-hardening-dd8429acc1ce">Practical Argo Workflows Hardening</a>.</p>
 <h2 id="workflow-controller-security">Workflow Controller Security<a class="headerlink" href="#workflow-controller-security" title="Permanent link">&para;</a></h2>
 <p>This has three parts.</p>
@@ -4054,7 +4054,7 @@
 <li>Create/get/delete pods, PVCs, and PDBs.</li>
 <li>List/get template, config maps, service accounts, and secrets.</li>
 </ul>
-<p>See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml">workflow controller cluster-role</a> or <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml">workflow-controller-role.yaml</a></p>
+<p>See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml"><code>workflow-controller-cluster-role.yaml</code></a> or <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml"><code>workflow-controller-role.yaml</code></a></p>
 <h3 id="user-permissions">User Permissions<a class="headerlink" href="#user-permissions" title="Permanent link">&para;</a></h3>
 <p>Users minimally need permission to create/read workflows. The controller will then create workflow pods (config maps etc) on behalf of the users, even if the user does not have permission to do this themselves. The controller will only create workflow pods in the workflow's namespace.</p>
 <p>A way to think of this is that, if the user has permission to create a workflow in a namespace, then it is OK to create pods or anything else for them in that namespace.</p>
@@ -4082,7 +4082,7 @@
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span>
-<span class="w">  </span><span class="c1"># Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/master/manifests/cluster-install/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4</span>
+<span class="w">  </span><span class="c1"># Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/main/manifests/cluster-install/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io</span>
 <span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
@@ -4119,7 +4119,7 @@
 <p>Secondly, you should enable an <a href="../argo-server/#auth-mode">authentication mode</a> to ensure that you do not run workflows from unknown users.</p>
 <p>Finally, you should configure the <code>argo-server</code> role and role binding with the correct permissions.</p>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
-<p>You can achieve this by configuring the <code>argo-server</code> role (<a href="https://github.com/argoproj/argo-workflows/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml">example</a> with only read access (i.e. only <code>get</code>/<code>list</code>/<code>watch</code> verbs)).</p>
+<p>You can achieve this by configuring the <code>argo-server</code> role (<a href="https://github.com/argoproj/argo-workflows/blob/main/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml">example</a> with only read access (i.e. only <code>get</code>/<code>list</code>/<code>watch</code> verbs)).</p>
 <h2 id="network-security">Network Security<a class="headerlink" href="#network-security" title="Permanent link">&para;</a></h2>
 <p>Argo Workflows requires various levels of network access depending on configuration and the features enabled. The following describes the different workflow components and their network access needs, to help provide guidance on how to configure the argo namespace in a secure manner (e.g. <code>NetworkPolicy</code>).</p>
 <h3 id="argo-server">Argo Server<a class="headerlink" href="#argo-server" title="Permanent link">&para;</a></h3>

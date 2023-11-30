@@ -4517,7 +4517,7 @@ is logged.</p>
 <li>You must not use the <code>stable</code> tag. This is defunct, and will be removed in v3.1.</li>
 </ul>
 <h3 id="ab361667a-featcontroller-emissary-executor-4925"><a href="https://github.com/argoproj/argo-workflows/commit/ab361667a">ab361667a</a> feat(controller) Emissary executor.  (#4925)<a class="headerlink" href="#ab361667a-featcontroller-emissary-executor-4925" title="Permanent link">&para;</a></h3>
-<p>The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using <a href="https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125">config map configuration</a>.</p>
+<p>The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using <a href="https://github.com/argoproj/argo-workflows/blob/v3.1.0/docs/workflow-controller-configmap.yaml#L125">a <code>workflow-controller-configmap</code> configuration</a>.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Specifies the executor to use.</span>
 <span class="c1">#</span>
 <span class="c1"># You can use this to:</span>
@@ -4551,7 +4551,7 @@ always play nicely with the <code>when</code> condition syntax (Goevaluate).</p>
 <h3 id="01d310235-choreserver-required-authentication-by-default-resolves-5206-5211"><a href="https://github.com/argoproj/argo-workflows/commit/01d310235a9349e6d552c758964cc2250a9e9616">01d310235</a> chore(server)!: Required authentication by default. Resolves #5206 (#5211)<a class="headerlink" href="#01d310235-choreserver-required-authentication-by-default-resolves-5206-5211" title="Permanent link">&para;</a></h3>
 <p>To login to the user interface, you must provide a login token. The original behaviour can be configured with <code>--auth-mode=server</code>.</p>
 <h3 id="f31e0c6f9-chore-remove-deprecated-fields-5035"><a href="https://github.com/argoproj/argo-workflows/commit/f31e0c6f92ec5e383d2f32f57a822a518cbbef86">f31e0c6f9</a> chore!: Remove deprecated fields (#5035)<a class="headerlink" href="#f31e0c6f9-chore-remove-deprecated-fields-5035" title="Permanent link">&para;</a></h3>
-<p>Some fields that were deprecated in early 2020 have been removed.  </p>
+<p>Some fields that were deprecated in early 2020 have been removed.</p>
 <table>
 <thead>
 <tr>

@@ -3904,21 +3904,21 @@
 </blockquote>
 <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
 <p>A <a href="../fields/#lifecyclehook"><code>LifecycleHook</code></a> triggers an action based on a conditional expression or on completion of a step or template. It is configured either at the workflow-level or template-level, for instance as a function of the <code>workflow.status</code> or <code>steps.status</code>, respectively. A <code>LifecycleHook</code> executes during execution time and executes once. It will execute in parallel to its step or template once the expression is satisfied.</p>
-<p>In other words, a <code>LifecycleHook</code> functions like an <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml">exit handler</a> with a conditional expression. You must not name a <code>LifecycleHook</code> <code>exit</code> or it becomes an exit handler; otherwise the hook name has no relevance.</p>
+<p>In other words, a <code>LifecycleHook</code> functions like an <a href="https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml">exit handler</a> with a conditional expression. You must not name a <code>LifecycleHook</code> <code>exit</code> or it becomes an exit handler; otherwise the hook name has no relevance.</p>
 <p><strong>Workflow-level <code>LifecycleHook</code></strong>: Executes the template when a configured expression is met during the workflow.</p>
 <ul>
-<li><a href="https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml">Workflow-level Lifecycle-Hook example</a></li>
+<li><a href="https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-wf-level.yaml">Workflow-level Lifecycle-Hook example</a></li>
 </ul>
 <p><strong>Template-level <code>Lifecycle-Hook</code></strong>: Executes the template when a configured expression is met during the step in which it is defined.</p>
 <ul>
-<li><a href="https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml">Template-level Lifecycle-Hook example</a></li>
+<li><a href="https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-tmpl-level.yaml">Template-level Lifecycle-Hook example</a></li>
 </ul>
 <h2 id="supported-conditions">Supported conditions<a class="headerlink" href="#supported-conditions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../variables/#exit-handler">Exit handler variables</a>: <code>workflow.status</code> and <code>workflow.failures</code></li>
 <li><a href="../fields/#template"><code>template</code></a></li>
 <li><a href="../fields/#templateref"><code>templateRef</code></a></li>
-<li><a href="https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml"><code>arguments</code></a></li>
+<li><a href="https://github.com/argoproj/argo-workflows/blob/main/examples/conditionals.yaml"><code>arguments</code></a></li>
 </ul>
 <h2 id="unsupported-conditions">Unsupported conditions<a class="headerlink" href="#unsupported-conditions" title="Permanent link">&para;</a></h2>
 <ul>

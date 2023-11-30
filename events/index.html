@@ -4070,7 +4070,7 @@
 <p>You may also wish to read about <a href="../webhooks/">webhooks</a>.</p>
 <h2 id="authentication-and-security">Authentication and Security<a class="headerlink" href="#authentication-and-security" title="Permanent link">&para;</a></h2>
 <p>Clients wanting to send events to the endpoint need an <a href="../access-token/">access token</a>.</p>
-<p>It is only possible to submit workflow templates your access token has access to: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example role</a>.</p>
+<p>It is only possible to submit workflow templates your access token has access to: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example role</a>.</p>
 <p>Example (note the trailing slash):</p>
 <div class="highlight"><pre><span></span><code>curl<span class="w"> </span>https://localhost:2746/api/v1/events/argo/<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -4081,7 +4081,7 @@
 <span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
 </code></pre></div>
-<p>The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.  </p>
+<p>The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.</p>
 <div class="admonition warning">
 <p class="admonition-title">Processing Order</p>
 <p>Events may not always be processed in the order they are received.</p>
@@ -4129,7 +4129,7 @@ The following example will be triggered by an event with "message" in the payloa
 </code></pre></div>
 <p>Please, notice that <code>workflowTemplateRef</code> refers to a template with the name <code>my-wf-tmple</code>, this template has to be created before the triggering of the event.
 After that you have to apply the above explained <code>WorkflowEventBinding</code> (in this example this is called <code>event-template.yml</code>) to realize the binding between Workflow Template and event (you can use <code>kubectl</code> to do that):</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>event-template.yml<span class="w">   </span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>event-template.yml
 </code></pre></div>
 <p>Finally you can trigger the creation of your first parametrized workflow template, by using the following call:</p>
 <p>Event:</p>
@@ -4182,7 +4182,7 @@ requirements</a>.</p>
 <ul>
 <li><code>payload</code> the event payload.</li>
 <li><code>metadata</code> event meta-data, including HTTP headers.</li>
-<li><code>discriminator</code> the discriminator from the URL.  </li>
+<li><code>discriminator</code> the discriminator from the URL.</li>
 </ul>
 <h3 id="payload">Payload<a class="headerlink" href="#payload" title="Permanent link">&para;</a></h3>
 <p>This is the JSON payload of the event.</p>
