@@ -10,7 +10,7 @@ Use cases:
 * Visualizing end results of ML pipeline runs.
 * Debugging workflows where visual artifacts are the most helpful.
 
-[![Demo](assets/artifact-visualization-demo.png)](https://youtu.be/whoRfYY9Fhk)  
+[![Demo](assets/artifact-visualization-demo.png)](https://youtu.be/whoRfYY9Fhk)
 
 * Artifacts appear as elements in the workflow DAG that you can click on.
 * When you click on the artifact, a panel appears.
@@ -20,9 +20,7 @@ Use cases:
 * Artifacts are sandboxed using a Content-Security-Policy that prevents JavaScript execution.
 * JSON is shown with syntax highlighting.
 
-To start, take a look at
-the [example](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflowtemplate.yaml)
-.
+To start, take a look at the [example](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml).
 
 ![Graph Report](assets/graph-report.png)
 ![Test Report](assets/test-report.png)

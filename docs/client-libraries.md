@@ -14,9 +14,9 @@ Please expect very minimal support from the Argo team.
 
 | Language | Client Library                                                                                      | Examples/Docs                                                                                 |
 |----------|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| Golang   | [`apiclient.go`](https://github.com/argoproj/argo-workflows/blob/master/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/master/cmd/argo/commands/submit.go) |
-| Java     | [Java](https://github.com/argoproj/argo-workflows/blob/master/sdks/java)                            |                                                                                               |
-| Python   | [Python](https://github.com/argoproj/argo-workflows/blob/master/sdks/python)                        |                                                                                               |
+| Golang   | [`apiclient.go`](https://github.com/argoproj/argo-workflows/blob/main/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/main/cmd/argo/commands/submit.go) |
+| Java     | [Java](https://github.com/argoproj/argo-workflows/blob/main/sdks/java)                            |                                                                                               |
+| Python   | [Python](https://github.com/argoproj/argo-workflows/blob/main/sdks/python)                        |                                                                                               |
 
 ## Community-maintained client libraries
 

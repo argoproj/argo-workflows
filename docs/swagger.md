@@ -18,7 +18,7 @@
   <script>
    window.onload = () => {
    window.ui = SwaggerUIBundle({
-    url: "https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/openapi-spec/swagger.json",
+    url: "https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/openapi-spec/swagger.json",
     dom_id: "#swagger-ui",
    });
    };
