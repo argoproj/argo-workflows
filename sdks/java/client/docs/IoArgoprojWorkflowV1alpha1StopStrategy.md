@@ -2,6 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1StopStrategy
 
+StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
 
 ## Properties
 

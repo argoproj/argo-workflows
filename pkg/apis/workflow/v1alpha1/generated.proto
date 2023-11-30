@@ -497,7 +497,7 @@ message CronWorkflowSpec {
   // WorkflowMetadata contains some metadata of the workflow to be run
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 
-  // StopStrategy defines if the cron workflow should have a stopping condition
+  // StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
   optional StopStrategy stopStrategy = 10;
 }
 
@@ -1472,6 +1472,7 @@ message Sequence {
   optional string format = 4;
 }
 
+// StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
 message StopStrategy {
   // Condition defines a condition that stops scheduling workflows when evaluates to true. Use the
   // keywords `failed` or `succeeded` to access the number of failed or successful child workflows.

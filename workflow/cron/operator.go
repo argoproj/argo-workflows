@@ -152,7 +152,7 @@ func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
 	woc.patch(ctx, map[string]interface{}{"status": woc.cronWf.Status, "metadata": map[string]interface{}{"annotations": woc.cronWf.Annotations}})
 }
 
-func (woc *cronWfOperationCtx) persistUpdateActiveWorkflows(ctx context.Context) {
+func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context) {
 	woc.patch(ctx, map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "completed": woc.cronWf.Status.Completed}})
 }
 
@@ -328,7 +328,7 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows
 	}
 
 	if updated {
-		woc.persistUpdateActiveWorkflows(ctx)
+		woc.persistCurrentWorkflowStatus(ctx)
 	}
 
 	return nil

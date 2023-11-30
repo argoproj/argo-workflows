@@ -4520,7 +4520,7 @@
         },
         "stopStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.StopStrategy",
-          "description": "StopStrategy defines if the cron workflow should have a stopping condition"
+          "description": "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow"
         },
         "successfulJobsHistoryLimit": {
           "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
@@ -6420,6 +6420,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.StopStrategy": {
+      "description": "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
       "properties": {
         "condition": {
           "description": "Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.",

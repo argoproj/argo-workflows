@@ -8464,7 +8464,7 @@
           "type": "integer"
         },
         "stopStrategy": {
-          "description": "StopStrategy defines if the cron workflow should have a stopping condition",
+          "description": "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.StopStrategy"
         },
         "successfulJobsHistoryLimit": {
@@ -10360,6 +10360,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.StopStrategy": {
+      "description": "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
       "type": "object",
       "required": [
         "condition"

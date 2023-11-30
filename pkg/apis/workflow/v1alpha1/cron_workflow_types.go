@@ -59,10 +59,11 @@ type CronWorkflowSpec struct {
 	Timezone string `json:"timezone,omitempty" protobuf:"bytes,8,opt,name=timezone"`
 	// WorkflowMetadata contains some metadata of the workflow to be run
 	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,9,opt,name=workflowMeta"`
-	// StopStrategy defines if the cron workflow should have a stopping condition
+	// StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
 	StopStrategy *StopStrategy `json:"stopStrategy,omitempty" protobuf:"bytes,10,opt,name=stopStrategy"`
 }
 
+// StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
 type StopStrategy struct {
 	// Condition defines a condition that stops scheduling workflows when evaluates to true. Use the
 	// keywords `failed` or `succeeded` to access the number of failed or successful child workflows.
