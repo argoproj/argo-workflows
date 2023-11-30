@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
+
 import {WorkflowTemplate} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -19,11 +20,13 @@ export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: strin
                 <UploadButton onUpload={setTemplate} onError={setError} />
                 <Button
                     icon='plus'
-                    onClick={() => {
-                        services.workflowTemplate
-                            .create(template, Utils.getNamespaceWithDefault(template.metadata.namespace))
-                            .then(onCreate)
-                            .catch(setError);
+                    onClick={async () => {
+                        try {
+                            const newTemplate = await services.workflowTemplate.create(template, Utils.getNamespaceWithDefault(template.metadata.namespace));
+                            onCreate(newTemplate);
+                        } catch (err) {
+                            setError(err);
+                        }
                     }}>
                     Create
                 </Button>

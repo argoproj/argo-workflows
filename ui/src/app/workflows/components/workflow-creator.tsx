@@ -1,6 +1,7 @@
 import {Select} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
+
 import {Workflow, WorkflowTemplate} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -105,11 +106,13 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                         <UploadButton onUpload={setWorkflow} onError={setError} />
                         <Button
                             icon='plus'
-                            onClick={() => {
-                                services.workflows
-                                    .create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace))
-                                    .then(onCreate)
-                                    .catch(setError);
+                            onClick={async () => {
+                                try {
+                                    const newWorkflow = await services.workflows.create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace));
+                                    onCreate(newWorkflow);
+                                } catch (err) {
+                                    setError(err);
+                                }
                             }}>
                             Create
                         </Button>
