@@ -6,7 +6,7 @@ software is light-weight and installs in under a minute, and provides complete w
 substitution, artifacts, fixtures, loops and recursive workflows.
 
 Dozens of examples are available in
-the [examples directory](https://github.com/argoproj/argo-workflows/tree/master/examples) on GitHub.
+the [`examples` directory](https://github.com/argoproj/argo-workflows/tree/main/examples) on GitHub.
 
 For a complete description of the Argo workflow spec, please refer
 to [the spec documentation](../fields.md#workflowspec).

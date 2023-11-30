@@ -110,7 +110,7 @@ func getExamples(examples Set, summary string) string {
 	for _, example := range sortedSetKeys(examples) {
 		split := strings.Split(example, "/")
 		name := split[len(split)-1]
-		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo-workflows/blob/master/"+example))
+		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo-workflows/blob/main/"+example))
 	}
 	out += dropdownCloser
 	return out

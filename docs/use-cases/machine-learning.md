@@ -3,7 +3,7 @@
 ## Docs
 
 * [Quick start](../quick-start.md) and [training](../training.md)
-* Try out the updated [Python and Java SDKs](https://github.com/argoproj/argo-workflows/tree/master/sdks).
+* Try out the updated [Python and Java SDKs](../client-libraries.md).
 * [Authoring and Submitting Argo Workflows using Python](https://blog.argoproj.io/authoring-and-submitting-argo-workflows-using-python-aff9a070d95f)
 * Head to the [Kubeflow docs](https://www.kubeflow.org/docs/components/pipelines/).
 

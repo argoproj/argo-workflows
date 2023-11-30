@@ -12,7 +12,7 @@ body:
           required: true
         - label: I can confirm the issues exists when I tested with `:latest`
           required: true
-        - label: I'd like to contribute the fix myself (see [contributing guide](https://github.com/argoproj/argo-workflows/blob/master/docs/CONTRIBUTING.md))
+        - label: I'd like to contribute the fix myself (see [contributing guide](https://github.com/argoproj/argo-workflows/blob/main/docs/CONTRIBUTING.md))
   - type: textarea
     id: description
     attributes:

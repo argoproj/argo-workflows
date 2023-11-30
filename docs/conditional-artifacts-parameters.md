@@ -28,8 +28,8 @@ under step/DAG level output parameter. Both use the
 
 ```
 
-* [Steps artifacts example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/conditional-artifacts.yaml)
-* [DAG artifacts example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/dag-conditional-artifacts.yaml)
+* [Steps artifacts example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/conditional-artifacts.yaml)
+* [DAG artifacts example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/dag-conditional-artifacts.yaml)
 
 ## Conditional Parameters
 
@@ -51,9 +51,6 @@ under step/DAG level output parameter. Both use the
               expression: "steps['flip-coin'].outputs.result == 'heads' ? steps.heads.outputs.result : steps.tails.outputs.result"
 ```
 
-* [Steps parameter example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/conditional-parameters.yaml)
-* [DAG parameter example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/dag-conditional-parameters.yaml)
-
 ## Built-In Functions
 
 Convenient functions added to support more use cases:
@@ -65,8 +62,11 @@ Convenient functions added to support more use cases:
    e.g: `jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" )` )
 5. [Sprig](http://masterminds.github.io/sprig/) - Support all `sprig` functions
 
-* [Advanced example: fibonacci Sequence](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/fibonacci-seq-conditional-param.yaml)
-
 !!! NOTE
     Expressions will decode the `-` as operator if template name has `-`, it will fail the expression. So here solution
     for template name which has `-` in its name. `step['one-two-three'].outputs.artifacts`
+
+* [Steps parameter example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/conditional-parameters.yaml)
+* [DAG parameter example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/dag-conditional-parameters.yaml)
+* [Advanced example: fibonacci Sequence](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/fibonacci-seq-conditional-param.yaml)
+

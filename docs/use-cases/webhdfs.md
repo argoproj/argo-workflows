@@ -19,7 +19,7 @@ spec:
       url: "https://mywebhdfsprovider.com/webhdfs/v1/file.txt?op=OPEN"
 ```
 
-Additional fields can be set for HTTP artifacts (for example, headers). See usage in the [full webHDFS example](https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml).
+Additional fields can be set for HTTP artifacts (for example, headers). See usage in the [full webHDFS example](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml).
 
 ## Output Artifacts
 
@@ -46,7 +46,7 @@ The authentication mechanism is limited to those supported by HTTP artifacts:
 - OAuth2
 - Client Certificates
 
-Examples for the latter two mechanisms can be found in the [full webHDFS example](https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml).
+Examples for the latter two mechanisms can be found in the [full webHDFS example](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml).
 
 !!! Warning "Provider dependent"
     While your webHDFS provider may support the above mechanisms, Hadoop _itself_ only supports [authentication](https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Authentication) via Kerberos SPNEGO and Hadoop delegation token. HTTP artifacts do not currently support SPNEGO, but delegation tokens can be used via the `delegation` query parameter.
