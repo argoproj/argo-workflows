@@ -2071,48 +2071,36 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
 			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
+
+		var retryNum int
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
 			// Last child node is still running.
+			// The corresponding resource may not be created yet, for example, exceeded quota error.
 			nodeName = lastChildNode.Name
 			node = lastChildNode
-
-			// Instance may be missing caused by creation failure, for example, ResourceQuota error,
-			// so when recreating the pod, we also need to inject variables.
-			woc.log.Debugf("Assume instance is missing, nodeName: %s, all children: %v", nodeName, retryParentNode.Children)
-			localParams := make(map[string]string)
-			// Change the `pod.name` variable to the retry node name
-			if processedTmpl.IsPodType() {
-				localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
-			}
-			// Inject the retryAttempt number
-			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children) - 1)
-
-			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
-			if err != nil {
-				return woc.markNodeError(nodeName, err), err
-			}
+			retryNum = len(retryParentNode.Children) - 1
 		} else {
-			retryNum := len(childNodeIDs)
 			// Create a new child node and append it to the retry node.
+			retryNum = len(retryParentNode.Children)
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
+		}
 
-			localParams := make(map[string]string)
-			// Change the `pod.name` variable to the new retry node name
-			if processedTmpl.IsPodType() {
-				localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
-			}
-			// Inject the retryAttempt number
-			localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
+		localParams = make(map[string]string)
+		// Change the `pod.name` variable to the new retry node name
+		if processedTmpl.IsPodType() {
+			localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
+		}
+		// Inject the retryAttempt number
+		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
 
-			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
-			if errorsutil.IsTransientErr(err) {
-				return node, err
-			}
-			if err != nil {
-				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
-			}
+		processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
+		if errorsutil.IsTransientErr(err) {
+			return node, err
+		}
+		if err != nil {
+			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
 	}
 
