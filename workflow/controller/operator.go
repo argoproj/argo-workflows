@@ -2078,10 +2078,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			// The corresponding resource may not be created yet, for example, exceeded quota error.
 			nodeName = lastChildNode.Name
 			node = lastChildNode
-			retryNum = len(retryParentNode.Children) - 1
+			retryNum = len(childNodeIDs) - 1
 		} else {
 			// Create a new child node and append it to the retry node.
-			retryNum = len(retryParentNode.Children)
+			retryNum = len(childNodeIDs)
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil

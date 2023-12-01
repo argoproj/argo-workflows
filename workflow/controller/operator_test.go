@@ -9744,12 +9744,12 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 	})
 }
 
-func TestRetryWhenNodeInstanceMissing(t *testing.T) {
+func TestRetryWhenEncounterExceededQuota(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 kind: Workflow
 apiVersion: argoproj.io/v1alpha1
 metadata:
-  name: node-missing
+  name: exceeded-quota
   creationTimestamp:
   labels:
     workflows.argoproj.io/phase: Running
@@ -9786,41 +9786,53 @@ status:
   estimatedDuration: 1
   progress: 0/1
   nodes:
-    node-missing:
-      id: node-missing
-      name: node-missing
-      displayName: node-missing
+    exceeded-quota:
+      id: exceeded-quota
+      name: exceeded-quota
+      displayName: exceeded-quota
       type: Retry
       templateName: main
-      templateScope: local/node-missing
+      templateScope: local/exceeded-quota
       phase: Running
       startedAt: '2023-09-05T12:02:20Z'
       finishedAt:
       estimatedDuration: 1
       progress: 0/1
       children:
-      - node-missing-3674300323
-      - node-missing-8574637190
-    node-missing-3674300323:
-      id: node-missing-3674300323
-      name: node-missing(0)
-      displayName: node-missing(0)
+      - exceeded-quota-3674300323
+      - exceeded-quota-hook-8574637190
+      - exceeded-quota-8574637190
+    exceeded-quota-3674300323:
+      id: exceeded-quota-3674300323
+      name: exceeded-quota(0)
+      displayName: exceeded-quota(0)
       type: Pod
+      nodeFlag:
+        retried: true
       templateName: main
-      templateScope: local/node-missing
+      templateScope: local/exceeded-quota
       phase: Failed
       message: 'test1.test "test" is forbidden: exceeded quota'
       startedAt: '2023-09-05T12:02:20Z'
       finishedAt:
       estimatedDuration: 1
       progress: 0/1
-    node-missing-8574637190:
-      id: node-missing-8574637190
-      name: node-missing(1)
-      displayName: node-missing(1)
+    exceeded-quota-hook-8574637190:
+      id: exceeded-quota-hook-8574637190
+      name: exceeded-quota-hook
+      displayName: exceeded-quota-hook
       type: Pod
+      nodeFlag:
+        hooked: true
+    exceeded-quota-8574637190:
+      id: exceeded-quota-8574637190
+      name: exceeded-quota(1)
+      displayName: exceeded-quota(1)
+      type: Pod
+      nodeFlag:
+        retried: true
       templateName: main
-      templateScope: local/node-missing
+      templateScope: local/exceeded-quota
       phase: Pending
       message: 'test1.test "test" is forbidden: exceeded quota'
       startedAt: '2023-09-05T12:02:20Z'
