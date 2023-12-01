@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
+
 import {EventSource} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -18,11 +19,13 @@ export function EventSourceCreator({onCreate, namespace}: {namespace: string; on
                 <UploadButton onUpload={setEventSource} onError={setError} />
                 <Button
                     icon='plus'
-                    onClick={() => {
-                        services.eventSource
-                            .create(eventSource, Utils.getNamespaceWithDefault(eventSource.metadata.namespace))
-                            .then(onCreate)
-                            .catch(setError);
+                    onClick={async () => {
+                        try {
+                            const newEventSource = await services.eventSource.create(eventSource, Utils.getNamespaceWithDefault(eventSource.metadata.namespace));
+                            onCreate(newEventSource);
+                        } catch (err) {
+                            setError(err);
+                        }
                     }}>
                     Create
                 </Button>
