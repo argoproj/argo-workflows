@@ -2074,8 +2074,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 		var retryNum int
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
-			// Last child node is still running.
-			// The corresponding resource may not be created yet, for example, exceeded quota error.
+			// Last child node is either still running, or in some cases the corresponding Pod hasn't even been
+			// created yet, for example if it exceeded the ResourceQuota
 			nodeName = lastChildNode.Name
 			node = lastChildNode
 			retryNum = len(childNodeIDs) - 1
