@@ -71,6 +71,23 @@ func TestWorkflowIndexValue(t *testing.T) {
 }
 
 func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
+	t.Run("Incomplete without label", func(t *testing.T) {
+		un, _ := util.ToUnstructured(&wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{
+				Synchronization: &wfv1.Synchronization{
+					Semaphore: &wfv1.SemaphoreRef{
+						ConfigMapKeyRef: &apiv1.ConfigMapKeySelector{},
+					},
+				},
+			},
+		})
+		result, err := WorkflowSemaphoreKeysIndexFunc()(un)
+		assert.NoError(t, err)
+		assert.Len(t, result, 1)
+	})
 	t.Run("Incomplete", func(t *testing.T) {
 		un, _ := util.ToUnstructured(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
