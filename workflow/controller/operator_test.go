@@ -254,6 +254,8 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
+	assert.Equal(t, "false", woc.wf.Labels[common.LabelKeyCompleted])
+
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
@@ -262,6 +264,7 @@ spec:
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Progress)
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes.FindByDisplayName("pod").Progress)
+	assert.Equal(t, "true", woc.wf.Labels[common.LabelKeyCompleted])
 }
 
 func TestLoggedProgress(t *testing.T) {
