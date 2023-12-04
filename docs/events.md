@@ -14,7 +14,7 @@ You may also wish to read about [webhooks](webhooks.md).
 
 Clients wanting to send events to the endpoint need an [access token](access-token.md).
 
-It is only possible to submit workflow templates your access token has access to: [example role](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
+It is only possible to submit workflow templates your access token has access to: [example role](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
 
 Example (note the trailing slash):
 
@@ -32,11 +32,11 @@ curl https://localhost:2746/api/v1/events/argo/my-discriminator \
   -d '{"message": "hello"}'
 ```
 
-The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.  
+The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.
 
 !!! Warning "Processing Order"
     Events may not always be processed in the order they are received.
-  
+
 ## Workflow Template triggered by the event
 
 Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
@@ -90,7 +90,7 @@ Please, notice that `workflowTemplateRef` refers to a template with the name `my
 After that you have to apply the above explained `WorkflowEventBinding` (in this example this is called `event-template.yml`) to realize the binding between Workflow Template and event (you can use `kubectl` to do that):
 
 ```bash
-kubectl apply -f event-template.yml   
+kubectl apply -f event-template.yml
 ```
 
 Finally you can trigger the creation of your first parametrized workflow template, by using the following call:
@@ -164,7 +164,7 @@ The event environment contains:
 
 * `payload` the event payload.
 * `metadata` event meta-data, including HTTP headers.
-* `discriminator` the discriminator from the URL.  
+* `discriminator` the discriminator from the URL.
 
 ### Payload
 

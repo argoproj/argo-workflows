@@ -246,7 +246,7 @@ The manifests in the repository on the tag will no longer contain the image tag,
 
 ### [ab361667a](https://github.com/argoproj/argo-workflows/commit/ab361667a) feat(controller) Emissary executor.  (#4925)
 
-The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using [config map configuration](https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125).
+The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using [a `workflow-controller-configmap` configuration](https://github.com/argoproj/argo-workflows/blob/v3.1.0/docs/workflow-controller-configmap.yaml#L125).
 
 ```yaml
 # Specifies the executor to use.
@@ -298,7 +298,7 @@ To login to the user interface, you must provide a login token. The original beh
 
 ### [f31e0c6f9](https://github.com/argoproj/argo-workflows/commit/f31e0c6f92ec5e383d2f32f57a822a518cbbef86) chore!: Remove deprecated fields (#5035)
 
-Some fields that were deprecated in early 2020 have been removed.  
+Some fields that were deprecated in early 2020 have been removed.
 
 | Field | Action |
 |---|---|

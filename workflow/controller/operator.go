@@ -2071,32 +2071,36 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
 			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
+
+		var retryNum int
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
-			// Last child node is still running.
+			// Last child node is either still running, or in some cases the corresponding Pod hasn't even been
+			// created yet, for example if it exceeded the ResourceQuota
 			nodeName = lastChildNode.Name
 			node = lastChildNode
+			retryNum = len(childNodeIDs) - 1
 		} else {
-			retryNum := len(childNodeIDs)
 			// Create a new child node and append it to the retry node.
+			retryNum = len(childNodeIDs)
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
+		}
 
-			localParams := make(map[string]string)
-			// Change the `pod.name` variable to the new retry node name
-			if processedTmpl.IsPodType() {
-				localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
-			}
-			// Inject the retryAttempt number
-			localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
+		localParams = make(map[string]string)
+		// Change the `pod.name` variable to the new retry node name
+		if processedTmpl.IsPodType() {
+			localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
+		}
+		// Inject the retryAttempt number
+		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
 
-			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
-			if errorsutil.IsTransientErr(err) {
-				return node, err
-			}
-			if err != nil {
-				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
-			}
+		processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
+		if errorsutil.IsTransientErr(err) {
+			return node, err
+		}
+		if err != nil {
+			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
 	}
 
@@ -2265,6 +2269,9 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			woc.wf.ObjectMeta.Labels = make(map[string]string)
 		}
 		woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = string(phase)
+		if _, ok := woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted]; !ok {
+			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "false"
+		}
 		switch phase {
 		case wfv1.WorkflowRunning:
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowRunning", "Workflow Running")
@@ -3071,6 +3078,15 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	if len(childNodes) == 0 {
 		return nil
 	}
+	// Some of the children may be hooks, only keep those that aren't
+	nodeIdx := 0
+	for i := range childNodes {
+		if childNodes[i].NodeFlag == nil || !childNodes[i].NodeFlag.Hooked {
+			childNodes[nodeIdx] = childNodes[i]
+			nodeIdx++
+		}
+	}
+	childNodes = childNodes[:nodeIdx]
 	// need to sort the child node list so that the order of outputs are preserved
 	sort.Sort(loopNodes(childNodes))
 	paramList := make([]map[string]string, 0)
