@@ -204,26 +204,49 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 }
 
 func (cc *Controller) addCronWorkflowInformerHandler() {
-	cc.cronWfInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-		UpdateFunc: func(old, new interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(new)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-		DeleteFunc: func(obj interface{}) {
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-	})
+	cc.cronWfInformer.Informer().AddEventHandler(
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				un, ok := obj.(*unstructured.Unstructured)
+				if !ok {
+					log.Warnf("Cron Workflow FilterFunc: '%v' is not an unstructured", obj)
+					return false
+				}
+				cronWf := &v1alpha1.CronWorkflow{}
+				err := util.FromUnstructuredObj(un, cronWf)
+				if err != nil {
+					log.Warnf("Cron Workflow FilterFunc: failed to convert unstructured '%v' to a CronWorkflow: %v", un, err)
+					return false
+				}
+				cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
+				completed, err := cronWorkflowOperationCtx.checkStopingCondition()
+				if err != nil {
+					log.Warnf("Cron Workflow FilterFunc: failed to check stopping condition: %v ", err)
+					return false
+				}
+				return !completed
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(obj)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+				UpdateFunc: func(old, new interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(new)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+				DeleteFunc: func(obj interface{}) {
+					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+			},
+		})
 }
 
 func (cc *Controller) syncAll(ctx context.Context) {
