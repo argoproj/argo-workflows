@@ -72,7 +72,7 @@ spec:
         value: bar
   workflowMetadata:
     labelsFrom:
-      my-label: 
+      my-label:
         expression: workflow.parameters.foo
   entrypoint: main
   templates:
@@ -654,7 +654,7 @@ spec:
         parameters:
         - name: message
       container:
-        image: argoproj/argosay:v2 
+        image: argoproj/argosay:v2
         command: [cowsay]
         args: ["{{inputs.parameters.message}}"]
 `).
@@ -1334,4 +1334,12 @@ func (s *FunctionalSuite) TestMissingStepsInUI() {
 			assert.NotNil(t, n.Children)
 			assert.Equal(t, 1, len(n.Children))
 		})
+}
+
+func (s *FunctionalSuite) TestWithItemsWithHooks() {
+	s.Given().
+		Workflow("@smoke/with-items-with-hooks.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
