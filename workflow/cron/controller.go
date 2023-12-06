@@ -218,13 +218,7 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 					log.Warnf("Cron Workflow FilterFunc: failed to convert unstructured '%v' to a CronWorkflow: %v", un, err)
 					return false
 				}
-				cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
-				completed, err := cronWorkflowOperationCtx.checkStopingCondition()
-				if err != nil {
-					log.Warnf("Cron Workflow FilterFunc: failed to check stopping condition: %v ", err)
-					return false
-				}
-				return !completed
+				return !cronWf.Status.Completed
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
