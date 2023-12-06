@@ -21,7 +21,7 @@ The workflow will pause at a `Suspend` node, and user will be able to update par
 
 ## Intermediate Parameters Approval Example
 
-- The [below example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/intermediate-parameters.yaml) shows static enum values `approval` step.
+- The [below example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/intermediate-parameters.yaml) shows static enum values `approval` step.
 - The user will be able to choose between `[YES, NO]` which will be used in subsequent steps.
 
 [![Approval Example Demo](assets/intermediate-inputs.png)](https://youtu.be/eyeZ2oddwWE)

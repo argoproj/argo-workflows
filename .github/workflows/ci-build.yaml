@@ -2,12 +2,12 @@ name: CI
 on:
   push:
     branches:
-      - "master"
+      - "main"
       - "release-*"
       - "!release-2.8"
   pull_request:
     branches:
-      - "master"
+      - "main"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -121,7 +121,7 @@ jobs:
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
       - name: Upload coverage report
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         run: bash <(curl -s https://codecov.io/bash)
 
   tests-windows:
