@@ -5,7 +5,7 @@ on:
     tags:
       - v*
     branches:
-      - master
+      - main
       - dev-*
 
 concurrency:
@@ -69,7 +69,7 @@ jobs:
         run: |
           set -eux
           tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
+          if [ $tag = "main" ]; then
             tag="latest"
           fi
           # copied verbatim from Makefile
@@ -118,7 +118,7 @@ jobs:
           docker_org=$DOCKERIO_ORG
 
           tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
+          if [ $tag = "main" ]; then
             tag="latest"
           fi
 
@@ -177,7 +177,7 @@ jobs:
           docker_org=$DOCKERIO_ORG
 
           tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
+          if [ $tag = "main" ]; then
             tag="latest"
           fi
 
@@ -230,7 +230,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
+          if [ $tag = "main" ]; then
             tag="latest"
           fi
 
@@ -262,7 +262,7 @@ jobs:
         run: |
           docker_org=$DOCKERIO_ORG
           tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
+          if [ $tag = "main" ]; then
             tag="latest"
           fi
 
@@ -302,7 +302,7 @@ jobs:
           cosign-release: 'v1.13.0'
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
       - run: |
-          if [ ${GITHUB_REF##*/} = master ]; then
+          if [ ${GITHUB_REF##*/} = main ]; then
            echo "VERSION=latest" >> $GITHUB_ENV
           else
             echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
