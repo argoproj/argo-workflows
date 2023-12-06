@@ -14,7 +14,7 @@ All vulnerabilities and associated information will be treated with full confide
 
 ## Public Disclosure
 
-Security vulnerabilities will be disclosed via [release notes](https://github.com/argoproj/argo-workflows/blob/master/CHANGELOG.md) and using the
+Security vulnerabilities will be disclosed via [release notes](CHANGELOG.md) and using the
 [GitHub Security Advisories](https://github.com/argoproj/argo-workflows/security/advisories)
 feature to keep our community well informed, and will credit you for your findings (unless you prefer to stay anonymous, of course).
 

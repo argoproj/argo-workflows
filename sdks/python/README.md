@@ -9,14 +9,15 @@ Python >= 3.6
 ## Installation
 
 If you'd like to install the official releases of the SDK on PyPI, please run the following:
-```
+
+```sh
 pip install argo-workflows==6.3.0rc2
 ```
 
 Otherwise, you can install the latest development version of the SDK via the following:
 
-```
-pip install git+https://github.com/argoproj/argo-workflows@master#subdirectory=sdks/python/client
+```sh
+pip install git+https://github.com/argoproj/argo-workflows@main#subdirectory=sdks/python/client
 ```
 
 If you have any questions regarding which specific SDK version to use, please see the section on [versioning](#versioning).
@@ -40,7 +41,7 @@ from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request 
 configuration = argo_workflows.Configuration(host="https://127.0.0.1:2746")
 configuration.verify_ssl = False
 
-resp = requests.get('https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml')
+resp = requests.get('https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-world.yaml')
 manifest = yaml.safe_load(resp.text)
 
 api_client = argo_workflows.ApiClient(configuration)
