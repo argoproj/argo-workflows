@@ -39,7 +39,10 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Try Argo Workflows
 
-[Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo) (login using Github)
+You can try Argo Workflows via one of the following:
+
+1. [Interactive Training Material](https://killercoda.com/argoproj/course/argo-workflows/)
+1. [Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo)
 
 ![Screenshot](docs/assets/screenshot.png)
 

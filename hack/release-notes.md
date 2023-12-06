@@ -2,7 +2,7 @@
 
 ## What's New?
 
-Find out on [our blog](https://blog.argoproj.io) and [changelog](https://github.com/argoproj/argo-workflows/blob/master/CHANGELOG.md).
+Find out on [our blog](https://blog.argoproj.io) and [changelog](https://github.com/argoproj/argo-workflows/blob/main/CHANGELOG.md).
 
 ## Breaking Changes and Known Issues
 
