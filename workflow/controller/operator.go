@@ -1555,6 +1555,10 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 	sort.Slice(ctrs, func(i, j int) bool { return order(ctrs[i].Name) < order(ctrs[j].Name) })
 	// Init containers have the highest preferences over other containers.
 	ctrs = append(pod.Status.InitContainerStatuses, ctrs...)
+	// When there isn't any containstatus (such as no stock in public cloud), return Failure.
+	if len(ctrs) == 0 {
+		return wfv1.NodeFailed, fmt.Sprintf("can't find failed message for pod %s namespace %s", pod.Name, pod.Namespace)
+	}
 
 	for _, ctr := range ctrs {
 
