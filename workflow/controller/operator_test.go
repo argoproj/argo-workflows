@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
+	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -253,6 +254,8 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
+	assert.Equal(t, "false", woc.wf.Labels[common.LabelKeyCompleted])
+
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
@@ -261,6 +264,7 @@ spec:
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Progress)
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes.FindByDisplayName("pod").Progress)
+	assert.Equal(t, "true", woc.wf.Labels[common.LabelKeyCompleted])
 }
 
 func TestLoggedProgress(t *testing.T) {
@@ -9741,4 +9745,131 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		assert.Equal(t, 2, len(childNodeIds))
 		assert.Equal(t, childNodes[1].ID, lastChildNode.ID)
 	})
+}
+
+func TestRetryWhenEncounterExceededQuota(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  name: exceeded-quota
+  creationTimestamp:
+  labels:
+    workflows.argoproj.io/phase: Running
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+spec:
+  templates:
+  - name: entrypoint
+    inputs: {}
+    outputs: {}
+    metadata: {}
+    container:
+      name: 'main'
+      image: centos:7
+      command:
+      - python
+      - "-c"
+      - echo
+      args:
+      - "{{retries}}"
+      - "{{pod.name}}"
+      resources: {}
+    retryStrategy:
+      limit: 10
+      retryPolicy: Always
+      backoff:
+        duration: 5s
+  entrypoint: entrypoint
+  arguments: {}
+status:
+  phase: Runningg
+  startedAt: '2023-09-05T12:02:20Z'
+  finishedAt:
+  estimatedDuration: 1
+  progress: 0/1
+  nodes:
+    exceeded-quota:
+      id: exceeded-quota
+      name: exceeded-quota
+      displayName: exceeded-quota
+      type: Retry
+      templateName: main
+      templateScope: local/exceeded-quota
+      phase: Running
+      startedAt: '2023-09-05T12:02:20Z'
+      finishedAt:
+      estimatedDuration: 1
+      progress: 0/1
+      children:
+      - exceeded-quota-3674300323
+      - exceeded-quota-hook-8574637190
+      - exceeded-quota-8574637190
+    exceeded-quota-3674300323:
+      id: exceeded-quota-3674300323
+      name: exceeded-quota(0)
+      displayName: exceeded-quota(0)
+      type: Pod
+      nodeFlag:
+        retried: true
+      templateName: main
+      templateScope: local/exceeded-quota
+      phase: Failed
+      message: 'test1.test "test" is forbidden: exceeded quota'
+      startedAt: '2023-09-05T12:02:20Z'
+      finishedAt:
+      estimatedDuration: 1
+      progress: 0/1
+    exceeded-quota-hook-8574637190:
+      id: exceeded-quota-hook-8574637190
+      name: exceeded-quota-hook
+      displayName: exceeded-quota-hook
+      type: Pod
+      nodeFlag:
+        hooked: true
+    exceeded-quota-8574637190:
+      id: exceeded-quota-8574637190
+      name: exceeded-quota(1)
+      displayName: exceeded-quota(1)
+      type: Pod
+      nodeFlag:
+        retried: true
+      templateName: main
+      templateScope: local/exceeded-quota
+      phase: Pending
+      message: 'test1.test "test" is forbidden: exceeded quota'
+      startedAt: '2023-09-05T12:02:20Z'
+      finishedAt:
+      estimatedDuration: 1
+      progress: 0/1
+  artifactRepositoryRef: {}
+  artifactGCStatus:
+    notSpecified: true
+`)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	controller.kubeclientset.(*fake.Clientset).CoreV1().(*corefake.FakeCoreV1).Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction, ok := action.(k8stesting.CreateAction)
+		assert.True(t, ok)
+
+		pod, ok := createAction.GetObject().(*apiv1.Pod)
+		assert.True(t, ok)
+
+		for _, container := range pod.Spec.Containers {
+			if container.Name == "main" {
+				t.Log("Container args: ", container.Args[0], container.Args[1])
+				assert.Equal(t, "1", container.Args[0])
+			}
+		}
+
+		return true, pod, nil
+	})
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
 }
