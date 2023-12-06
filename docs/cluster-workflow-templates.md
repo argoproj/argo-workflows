@@ -103,7 +103,7 @@ spec:
   workflowTemplateRef:
     name: cluster-workflow-template-submittable
     clusterScope: true
-```  
+```
 
 Here is an example of a creating `WorkflowTemplate` as Workflow and using `WorkflowTemplates`'s `entrypoint` and `Workflow Arguments`
 
@@ -126,13 +126,13 @@ spec:
 You can create some example templates as follows:
 
 ```bash
-argo cluster-template create https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/cluster-workflow-template/clustertemplates.yaml
+argo cluster-template create https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/cluster-workflow-template/clustertemplates.yaml
 ```
 
 The submit a workflow using one of those templates:
 
 ```bash
-argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
+argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
 ```
 
 > 2.7 and after
