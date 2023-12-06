@@ -13,13 +13,13 @@ spec:
   - name: hardwired-artifact
     inputs:
       artifacts:
-      # Check out the master branch of the argo repo and place it at /src
+      # Check out the main branch of the argo repo and place it at /src
       # revision can be anything that git checkout accepts: branch, commit, tag, etc.
       - name: argo-source
         path: /src
         git:
           repo: https://github.com/argoproj/argo-workflows.git
-          revision: "master"
+          revision: "main"
       # Download kubectl 1.8.0 and place it at /bin/kubectl
       - name: kubectl
         path: /bin/kubectl

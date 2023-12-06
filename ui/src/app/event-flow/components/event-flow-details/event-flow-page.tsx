@@ -325,9 +325,11 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
                                                 source={{
                                                     key: 'logs',
                                                     loadLogs: () =>
-                                                        ((selected.kind === 'Sensor'
-                                                            ? services.sensor.sensorsLogs(namespace, selected.name, selected.key, '', 50)
-                                                            : services.eventSource.eventSourcesLogs(namespace, selected.name, '', selected.key, '', 50)) as Observable<any>).pipe(
+                                                        (
+                                                            (selected.kind === 'Sensor'
+                                                                ? services.sensor.sensorsLogs(namespace, selected.name, selected.key, '', 50)
+                                                                : services.eventSource.eventSourcesLogs(namespace, selected.name, '', selected.key, '', 50)) as Observable<any>
+                                                        ).pipe(
                                                             filter(e => !!e),
                                                             map(
                                                                 e =>
