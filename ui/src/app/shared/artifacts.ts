@@ -16,10 +16,7 @@ export const nodeArtifacts = (node: NodeStatus, ar: ArtifactRepository) =>
         .map(a => ({
             ...a,
             // trim trailing slash to get the correct filename for a directory
-            filename: a.key
-                .replace(/\/$/, '')
-                .split('/')
-                .pop()
+            filename: a.key.replace(/\/$/, '').split('/').pop()
         }));
 
 export const artifactURN = <A extends Artifact>(a: A, ar: ArtifactRepository) => {

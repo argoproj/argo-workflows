@@ -32,7 +32,7 @@ spec:
 You can run this example and get the logs:
 
 ```bash
-$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-windows.yaml
+$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-windows.yaml
 $ argo logs hello-windows-s9kk5
 hello-windows-s9kk5: "Hello from Windows Container!"
 ```
@@ -77,7 +77,7 @@ spec:
 Again, you can run this example and get the logs:
 
 ```bash
-$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-hybrid.yaml
+$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-hybrid.yaml
 $ argo logs hello-hybrid-plqpp
 hello-hybrid-plqpp-1977432187: "Hello from Windows Container!"
 hello-hybrid-plqpp-764774907: Hello from Linux Container!

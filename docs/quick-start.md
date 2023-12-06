@@ -64,7 +64,7 @@ You can more easily interact with Argo Workflows with the [Argo CLI](walk-throug
 ### Submit an example workflow (CLI)
 
 ```bash
-argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
+argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-world.yaml
 ```
 
 The `--watch` flag used above will allow you to observe the workflow as it runs and the status of whether it succeeds.

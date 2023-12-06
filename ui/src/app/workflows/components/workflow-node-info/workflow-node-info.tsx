@@ -321,9 +321,7 @@ function EnvVar(props: {env: models.kubernetes.EnvVar}) {
             </Tooltip>
             {secret.name}/{secret.key}
         </>
-    ) : (
-        undefined
-    );
+    ) : undefined;
 
     return (
         <pre key={env.name}>
