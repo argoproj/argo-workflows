@@ -1,6 +1,7 @@
 import {Select} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
+
 import {Workflow, WorkflowTemplate} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -14,7 +15,7 @@ import {WorkflowEditor} from './workflow-editor';
 
 type Stage = 'choose-method' | 'submit-workflow' | 'full-editor';
 
-export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) => {
+export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: Workflow) => void}) {
     const [workflowTemplates, setWorkflowTemplates] = useState<WorkflowTemplate[]>();
     const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplate>();
     const [stage, setStage] = useState<Stage>('choose-method');
@@ -105,11 +106,13 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                         <UploadButton onUpload={setWorkflow} onError={setError} />
                         <Button
                             icon='plus'
-                            onClick={() => {
-                                services.workflows
-                                    .create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace))
-                                    .then(onCreate)
-                                    .catch(setError);
+                            onClick={async () => {
+                                try {
+                                    const newWorkflow = await services.workflows.create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace));
+                                    onCreate(newWorkflow);
+                                } catch (err) {
+                                    setError(err);
+                                }
                             }}>
                             Create
                         </Button>
@@ -123,4 +126,4 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
             )}
         </>
     );
-};
+}

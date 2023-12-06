@@ -848,6 +848,17 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                caSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 createBucketIfNotPresent:
                                   properties:
                                     objectLocking:
@@ -970,6 +981,8 @@ spec:
                               type: string
                             type: object
                         type: object
+                      podSpecPatch:
+                        type: string
                       serviceAccountName:
                         type: string
                       strategy:
@@ -1462,6 +1475,17 @@ spec:
                                         type: object
                                       bucket:
                                         type: string
+                                      caSecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
                                       createBucketIfNotPresent:
                                         properties:
                                           objectLocking:
@@ -2633,6 +2657,17 @@ spec:
                                 type: object
                               bucket:
                                 type: string
+                              caSecret:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
                               createBucketIfNotPresent:
                                 properties:
                                   objectLocking:
@@ -4350,6 +4385,17 @@ spec:
                                                 type: object
                                               bucket:
                                                 type: string
+                                              caSecret:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  name:
+                                                    type: string
+                                                  optional:
+                                                    type: boolean
+                                                required:
+                                                - key
+                                                type: object
                                               createBucketIfNotPresent:
                                                 properties:
                                                   objectLocking:
@@ -4914,6 +4960,17 @@ spec:
                                                       type: object
                                                     bucket:
                                                       type: string
+                                                    caSecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
                                                     createBucketIfNotPresent:
                                                       properties:
                                                         objectLocking:
@@ -5529,6 +5586,17 @@ spec:
                                         type: object
                                       bucket:
                                         type: string
+                                      caSecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
                                       createBucketIfNotPresent:
                                         properties:
                                           objectLocking:
@@ -6694,6 +6762,17 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    caSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
                                     createBucketIfNotPresent:
                                       properties:
                                         objectLocking:
@@ -7348,6 +7427,17 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    caSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
                                     createBucketIfNotPresent:
                                       properties:
                                         objectLocking:
@@ -7923,6 +8013,17 @@ spec:
                                         type: object
                                       bucket:
                                         type: string
+                                      caSecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
                                       createBucketIfNotPresent:
                                         properties:
                                           objectLocking:
@@ -10742,6 +10843,17 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                caSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 createBucketIfNotPresent:
                                   properties:
                                     objectLocking:
@@ -12459,6 +12571,17 @@ spec:
                                                   type: object
                                                 bucket:
                                                   type: string
+                                                caSecret:
+                                                  properties:
+                                                    key:
+                                                      type: string
+                                                    name:
+                                                      type: string
+                                                    optional:
+                                                      type: boolean
+                                                  required:
+                                                  - key
+                                                  type: object
                                                 createBucketIfNotPresent:
                                                   properties:
                                                     objectLocking:
@@ -13023,6 +13146,17 @@ spec:
                                                         type: object
                                                       bucket:
                                                         type: string
+                                                      caSecret:
+                                                        properties:
+                                                          key:
+                                                            type: string
+                                                          name:
+                                                            type: string
+                                                          optional:
+                                                            type: boolean
+                                                        required:
+                                                        - key
+                                                        type: object
                                                       createBucketIfNotPresent:
                                                         properties:
                                                           objectLocking:
@@ -13638,6 +13772,17 @@ spec:
                                           type: object
                                         bucket:
                                           type: string
+                                        caSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
                                         createBucketIfNotPresent:
                                           properties:
                                             objectLocking:
@@ -14803,6 +14948,17 @@ spec:
                                         type: object
                                       bucket:
                                         type: string
+                                      caSecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
                                       createBucketIfNotPresent:
                                         properties:
                                           objectLocking:
@@ -15457,6 +15613,17 @@ spec:
                                         type: object
                                       bucket:
                                         type: string
+                                      caSecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
                                       createBucketIfNotPresent:
                                         properties:
                                           objectLocking:
@@ -16032,6 +16199,17 @@ spec:
                                           type: object
                                         bucket:
                                           type: string
+                                        caSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
                                         createBucketIfNotPresent:
                                           properties:
                                             objectLocking:

@@ -38,7 +38,7 @@ type stepsContext struct {
 func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag)
 	}
 
 	defer func() {
@@ -68,7 +68,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		{
 			sgNode, err := woc.wf.GetNodeByName(sgNodeName)
 			if err != nil {
-				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, &wfv1.WorkflowStep{}, stepsCtx.boundaryID, wfv1.NodeRunning)
+				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, &wfv1.WorkflowStep{}, stepsCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{})
 			} else if !sgNode.Fulfilled() {
 				_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 			}
@@ -170,6 +170,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	if err != nil {
 		return node, err
 	}
+
 	if outputs != nil {
 		node, err := woc.wf.GetNodeByName(nodeName)
 		if err != nil {
@@ -178,13 +179,14 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		node.Outputs = outputs
 		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes.Set(node.ID, *node)
-		if node.MemoizationStatus != nil {
-			c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-			err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-			if err != nil {
-				woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-				node.Phase = wfv1.NodeError
-			}
+	}
+
+	if node.MemoizationStatus != nil {
+		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+		if err != nil {
+			woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+			node.Phase = wfv1.NodeError
 		}
 	}
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
@@ -260,7 +262,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
-			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
+			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, err.Error())
 			woc.addChildNode(sgNodeName, childNodeName)
 			woc.markNodeError(childNodeName, err)
 			return woc.markNodeError(sgNodeName, err), nil
@@ -269,7 +271,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			if _, err := woc.wf.GetNodeByName(childNodeName); err != nil {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
 			continue
@@ -284,8 +286,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			case ErrDeadlineExceeded:
 				return node, nil
 			case ErrParallelismReached:
+			case ErrMaxDepthExceeded:
 			case ErrTimeout:
-				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName)), nil
+				return woc.markNodePhase(node.Name, wfv1.NodeFailed, err.Error()), nil
 			default:
 				woc.addChildNode(sgNodeName, childNodeName)
 				return woc.markNodeError(node.Name, fmt.Errorf("step group deemed errored due to child %s error: %w", childNodeName, err)), nil
@@ -488,7 +491,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 				stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 				skipReason := "Skipped, empty params"
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
 		}
@@ -498,6 +501,9 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 }
 
 // expandStep expands a step containing withItems or withParams into multiple parallel steps
+// We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
+// expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
+// check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
 func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	var err error
 	expandedStep := make([]wfv1.WorkflowStep, 0)
@@ -507,12 +513,18 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	} else if step.WithParam != "" {
 		err = json.Unmarshal([]byte(step.WithParam), &items)
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
+			mustExec, mustExecErr := shouldExecute(step.When)
+			if mustExecErr != nil || mustExec {
+				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
+			}
 		}
 	} else if step.WithSequence != nil {
 		items, err = expandSequence(step.WithSequence)
 		if err != nil {
-			return nil, err
+			mustExec, mustExecErr := shouldExecute(step.When)
+			if mustExecErr != nil || mustExec {
+				return nil, err
+			}
 		}
 	} else {
 		// this should have been prevented in expandStepGroup()

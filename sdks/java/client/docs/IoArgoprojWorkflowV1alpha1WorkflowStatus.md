@@ -26,6 +26,7 @@ Name | Type | Description | Notes
 **storedTemplates** | [**Map&lt;String, IoArgoprojWorkflowV1alpha1Template&gt;**](IoArgoprojWorkflowV1alpha1Template.md) | StoredTemplates is a mapping between a template ref and the node&#39;s status. |  [optional]
 **storedWorkflowTemplateSpec** | [**IoArgoprojWorkflowV1alpha1WorkflowSpec**](IoArgoprojWorkflowV1alpha1WorkflowSpec.md) |  |  [optional]
 **synchronization** | [**IoArgoprojWorkflowV1alpha1SynchronizationStatus**](IoArgoprojWorkflowV1alpha1SynchronizationStatus.md) |  |  [optional]
+**taskResultsCompleted** | **Map&lt;String, Boolean&gt;** | Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts. |  [optional]
 
 
 

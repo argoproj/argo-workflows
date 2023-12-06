@@ -2,6 +2,10 @@
 
 stop zero or more workflows allowing all exit handlers to run
 
+### Synopsis
+
+Stop a workflow but still run exit handlers.
+
 ```
 argo stop WORKFLOW WORKFLOW2... [flags]
 ```
@@ -30,7 +34,7 @@ argo stop WORKFLOW WORKFLOW2... [flags]
 ### Options
 
 ```
-      --dry-run                      If true, only stop the workflows that would be stopped, without stopping them.
+      --dry-run                      If true, only print the workflows that would be stopped, without stopping them.
       --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for stop
       --message string               Message to add to previously running nodes

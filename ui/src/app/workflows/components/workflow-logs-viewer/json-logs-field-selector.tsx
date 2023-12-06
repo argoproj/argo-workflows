@@ -1,14 +1,16 @@
 import * as React from 'react';
+import {useState} from 'react';
 import {TextInput} from '../../../shared/components/text-input';
 
 export interface SelectedJsonFields {
     values: string[];
 }
 
-export const JsonLogsFieldSelector = ({fields, onChange}: {fields: SelectedJsonFields; onChange: (v: string[]) => void}) => {
-    const [inputFields, setInputFields] = React.useState(fields);
-    const [key, setKey] = React.useState('');
-    const deleteItem = (k: string) => {
+export function JsonLogsFieldSelector({fields, onChange}: {fields: SelectedJsonFields; onChange: (v: string[]) => void}) {
+    const [inputFields, setInputFields] = useState(fields);
+    const [key, setKey] = useState('');
+
+    function deleteItem(k: string) {
         const index = inputFields.values.indexOf(k, 0);
         if (index === -1) {
             return;
@@ -16,8 +18,8 @@ export const JsonLogsFieldSelector = ({fields, onChange}: {fields: SelectedJsonF
         const values = inputFields.values.filter(v => v !== k);
         setInputFields({values});
         onChange(values);
-    };
-    const addItem = () => {
+    }
+    function addItem() {
         if (!key || key.trim().length === 0) {
             return;
         }
@@ -29,7 +31,7 @@ export const JsonLogsFieldSelector = ({fields, onChange}: {fields: SelectedJsonF
         setInputFields({values});
         setKey('');
         onChange(values);
-    };
+    }
 
     return (
         <>
@@ -54,16 +56,16 @@ export const JsonLogsFieldSelector = ({fields, onChange}: {fields: SelectedJsonF
                     <TextInput value={key} onChange={setKey} placeholder='jsonPayload.message' />
                 </div>
                 <div className='columns small-2'>
-                    <button onClick={() => addItem()}>
+                    <button onClick={addItem}>
                         <i className='fa fa-plus-circle' />
                     </button>
                 </div>
             </div>
         </>
     );
-};
+}
 
-export const extractJsonValue = (obj: any, jsonpath: string): string | null => {
+export function extractJsonValue(obj: any, jsonpath: string): string | null {
     const fields = jsonpath.split('.');
     try {
         let target = obj;
@@ -74,4 +76,4 @@ export const extractJsonValue = (obj: any, jsonpath: string): string | null => {
     } catch (e) {
         return null;
     }
-};
+}

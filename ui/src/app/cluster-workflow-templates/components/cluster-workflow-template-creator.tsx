@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
+
 import {ClusterWorkflowTemplate} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -9,7 +10,7 @@ import {exampleClusterWorkflowTemplate} from '../../shared/examples';
 import {services} from '../../shared/services';
 import {ClusterWorkflowTemplateEditor} from './cluster-workflow-template-editor';
 
-export const ClusterWorkflowTemplateCreator = ({onCreate}: {onCreate: (workflow: ClusterWorkflowTemplate) => void}) => {
+export function ClusterWorkflowTemplateCreator({onCreate}: {onCreate: (workflow: ClusterWorkflowTemplate) => void}) {
     const [template, setTemplate] = useState<ClusterWorkflowTemplate>(exampleClusterWorkflowTemplate());
     const [error, setError] = useState<Error>();
     return (
@@ -18,11 +19,13 @@ export const ClusterWorkflowTemplateCreator = ({onCreate}: {onCreate: (workflow:
                 <UploadButton onUpload={setTemplate} onError={setError} />
                 <Button
                     icon='plus'
-                    onClick={() => {
-                        services.clusterWorkflowTemplate
-                            .create(template)
-                            .then(onCreate)
-                            .catch(setError);
+                    onClick={async () => {
+                        try {
+                            const newTemplate = await services.clusterWorkflowTemplate.create(template);
+                            onCreate(newTemplate);
+                        } catch (err) {
+                            setError(err);
+                        }
                     }}>
                     Create
                 </Button>
@@ -34,4 +37,4 @@ export const ClusterWorkflowTemplateCreator = ({onCreate}: {onCreate: (workflow:
             </div>
         </>
     );
-};
+}

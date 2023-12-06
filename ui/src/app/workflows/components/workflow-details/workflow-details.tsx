@@ -1,17 +1,19 @@
 import {Page, SlidingPanel} from 'argo-ui';
-import * as classNames from 'classnames';
+import classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+
 import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
-import {ProcessURL} from '../../../shared/components/links';
+import {openLinkWithKey, processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -27,6 +29,7 @@ import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {EventsPanel} from '../events-panel';
 import {ResubmitWorkflowPanel} from '../resubmit-workflow-panel';
+import {RetryWorkflowPanel} from '../retry-workflow-panel';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowLogsViewer} from '../workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../workflow-node-info/workflow-node-info';
@@ -39,7 +42,7 @@ import {ArtifactPanel} from './artifact-panel';
 import {SuspendInputs} from './suspend-inputs';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
-require('./workflow-details.scss');
+import './workflow-details.scss';
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
@@ -56,7 +59,7 @@ const ANIMATION_BUFFER_MS = 20;
 // component to render with the updated state.
 let globalDeleteArchived = false;
 
-const DeleteCheck = (props: {isWfInDB: boolean; isWfInCluster: boolean}) => {
+function DeleteCheck(props: {isWfInDB: boolean; isWfInCluster: boolean}) {
     // The local states are created intentionally so that the checkbox works as expected
     const [da, sda] = useState(false);
     if (props.isWfInDB && props.isWfInCluster) {
@@ -85,9 +88,9 @@ const DeleteCheck = (props: {isWfInDB: boolean; isWfInCluster: boolean}) => {
             </>
         );
     }
-};
+}
 
-export const WorkflowDetails = ({history, location, match}: RouteComponentProps<any>) => {
+export function WorkflowDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
@@ -128,7 +131,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         [history]
     );
 
-    const getInputParametersForNode = (selectedWorkflowNodeId: string): Parameter[] => {
+    function getInputParametersForNode(selectedWorkflowNodeId: string): Parameter[] {
         const selectedWorkflowNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[selectedWorkflowNodeId];
         return (
             selectedWorkflowNode?.inputs?.parameters?.map(param => {
@@ -139,7 +142,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 return paramClone;
             }) || []
         );
-    };
+    }
 
     useEffect(() => {
         // update the default Artifact Repository for the Template that corresponds to the selectedArtifact
@@ -162,12 +165,17 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
     useEffect(() => {
-        services.info
-            .getInfo()
-            .then(info => setLinks(info.links))
-            .catch(setError);
-        services.info.collectEvent('openedWorkflowDetails').then();
+        (async () => {
+            try {
+                const info = await services.info.getInfo();
+                setLinks(info.links);
+            } catch (err) {
+                setError(err);
+            }
+        })();
     }, []);
+
+    useCollectEvent('openedWorkflowDetails');
 
     useEffect(() => {
         setParameters(getInputParametersForNode(nodeId));
@@ -175,7 +183,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const parsedSidePanel = parseSidePanelParam(sidePanel);
 
-    const getItems = () => {
+    function getItems() {
         const workflowOperationsMap: WorkflowOperations = Operations.WorkflowOperationsMap;
         const items = Object.keys(workflowOperationsMap)
             .filter(actionName => !workflowOperationsMap[actionName].disabled(workflow))
@@ -188,32 +196,44 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                         if (workflowOperation.title === 'DELETE') {
                             popup
                                 .confirm('Confirm', () => <DeleteCheck isWfInDB={isArchivedWorkflow(workflow)} isWfInCluster={isWorkflowInCluster(workflow)} />)
-                                .then(yes => {
-                                    if (yes) {
-                                        if (isWorkflowInCluster(workflow)) {
-                                            services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(setError);
-                                        }
-                                        if (isArchivedWorkflow(workflow) && (globalDeleteArchived || !isWorkflowInCluster(workflow))) {
-                                            services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(setError);
-                                        }
-                                        navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                        // TODO: This is a temporary workaround so that the list of workflows
-                                        //  is correctly displayed. Workflow list page needs to be more responsive.
-                                        window.location.reload();
+                                .then(async yes => {
+                                    if (!yes) {
+                                        return;
                                     }
+
+                                    const allPromises = [];
+                                    if (isWorkflowInCluster(workflow)) {
+                                        allPromises.push(services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(setError));
+                                    }
+                                    if (isArchivedWorkflow(workflow) && (globalDeleteArchived || !isWorkflowInCluster(workflow))) {
+                                        allPromises.push(services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(setError));
+                                    }
+                                    await Promise.all(allPromises);
+                                    if (error !== null) {
+                                        return;
+                                    }
+
+                                    navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                    // TODO: This is a temporary workaround so that the list of workflows
+                                    //  is correctly displayed. Workflow list page needs to be more responsive.
+                                    window.location.reload();
                                 });
                         } else if (workflowOperation.title === 'RESUBMIT') {
                             setSidePanel('resubmit');
+                        } else if (workflowOperation.title === 'RETRY') {
+                            setSidePanel('retry');
                         } else {
                             popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
-                                if (yes) {
-                                    workflowOperation
-                                        .action(workflow)
-                                        .then((wf: Workflow) => {
-                                            setName(wf.metadata.name);
-                                        })
-                                        .catch(setError);
+                                if (!yes) {
+                                    return;
                                 }
+
+                                workflowOperation
+                                    .action(workflow)
+                                    .then((wf: Workflow) => {
+                                        setName(wf.metadata.name);
+                                    })
+                                    .catch(setError);
                             });
                         }
                     }
@@ -284,15 +304,15 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }
 
         return items;
-    };
+    }
 
-    const renderSecurityNudge = () => {
+    function renderSecurityNudge() {
         if (!execSpec(workflow).securityContext) {
             return <SecurityNudge>This workflow does not have security context set. It maybe possible to set this to run it more securely.</SecurityNudge>;
         }
-    };
+    }
 
-    const renderCostOptimisations = () => {
+    function renderCostOptimisations() {
         const recommendations: string[] = [];
         if (!execSpec(workflow).activeDeadlineSeconds) {
             recommendations.push('activeDeadlineSeconds');
@@ -311,9 +331,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 You do not have {recommendations.join('/')} enabled for this workflow. Enabling these will reduce your costs.
             </CostOptimisationNudge>
         );
-    };
+    }
 
-    const renderSummaryTab = () => {
+    function renderSummaryTab() {
         return (
             <>
                 {!workflow ? (
@@ -340,7 +360,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 )}
             </>
         );
-    };
+    }
+
     useEffect(() => {
         if (!isWorkflowInCluster(workflow)) {
             return;
@@ -375,45 +396,40 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     // Get workflow
     useEffect(() => {
-        const getWf = async () => {
+        (async () => {
             let archivedWf: Workflow;
             if (uid !== '') {
-                await services.workflows
-                    .getArchived(namespace, uid)
-                    .then(wf => {
-                        setError(null);
-                        archivedWf = wf;
-                    })
-                    .catch(err => {
-                        if (err.status !== 404) {
-                            setError(err);
-                        }
-                    });
-            }
-            await services.workflows
-                .get(namespace, name)
-                .then(wf => {
+                try {
+                    archivedWf = await services.workflows.getArchived(namespace, uid);
                     setError(null);
-                    // If we find live workflow which has same uid, we use live workflow.
-                    if (!archivedWf || archivedWf.metadata.uid === wf.metadata.uid) {
-                        setWorkflow(wf);
-                        setUid(wf.metadata.uid);
-                    } else {
-                        setWorkflow(archivedWf);
-                    }
-                })
-                .catch(err => {
-                    if (archivedWf) {
-                        setWorkflow(archivedWf);
-                    } else {
+                } catch (err) {
+                    if (err.status !== 404) {
                         setError(err);
                     }
-                });
-        };
-        getWf();
+                }
+            }
+
+            try {
+                const wf = await services.workflows.get(namespace, name);
+                setError(null);
+                // If we find live workflow which has same uid, we use live workflow.
+                if (!archivedWf || archivedWf.metadata.uid === wf.metadata.uid) {
+                    setWorkflow(wf);
+                    setUid(wf.metadata.uid);
+                } else {
+                    setWorkflow(archivedWf);
+                }
+            } catch (err) {
+                if (archivedWf) {
+                    setWorkflow(archivedWf);
+                } else {
+                    setError(err);
+                }
+            }
+        })();
     }, [namespace, name, uid]);
 
-    const openLink = (link: Link) => {
+    function openLink(link: Link) {
         const object = {
             metadata: {
                 namespace: workflow.metadata.namespace,
@@ -425,16 +441,10 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 finishedAt: workflow.status.finishedAt
             }
         };
-        const url = ProcessURL(link.url, object);
+        openLinkWithKey(processURL(link.url, object));
+    }
 
-        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
-            window.open(url, '_blank');
-        } else {
-            document.location.href = url;
-        }
-    };
-
-    const setParameter = (key: string, value: string) => {
+    function setParameter(key: string, value: string) {
         setParameters(previous => {
             return previous?.map(parameter => {
                 if (parameter.name === key) {
@@ -443,43 +453,43 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 return parameter;
             });
         });
-    };
+    }
 
-    const renderSuspendNodeOptions = () => {
+    function renderSuspendNodeOptions() {
         return <SuspendInputs parameters={parameters} nodeId={nodeId} setParameter={setParameter} />;
-    };
+    }
 
-    const getParametersAsJsonString = () => {
+    function getParametersAsJsonString() {
         const outputVariables: {[x: string]: string} = {};
         parameters.forEach(param => {
             outputVariables[param.name] = param.value;
         });
         return JSON.stringify(outputVariables);
-    };
+    }
 
-    const updateOutputParametersForNodeIfRequired = () => {
+    function updateOutputParametersForNodeIfRequired() {
         // No need to set outputs on node if there are no parameters
         if (parameters.length > 0) {
             return services.workflows.set(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId, getParametersAsJsonString());
         }
         return Promise.resolve(null);
-    };
+    }
 
-    const resumeNode = () => {
+    function resumeNode() {
         return services.workflows.resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId);
-    };
+    }
 
-    const renderResumePopup = () => {
+    function renderResumePopup() {
         return popup.confirm('Confirm', renderSuspendNodeOptions).then(yes => {
-            if (yes) {
-                updateOutputParametersForNodeIfRequired()
-                    .then(resumeNode)
-                    .catch(setError);
+            if (!yes) {
+                return;
             }
-        });
-    };
 
-    const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
+            updateOutputParametersForNodeIfRequired().then(resumeNode).catch(setError);
+        });
+    }
+
+    function ensurePodName(wf: Workflow, node: NodeStatus, nodeID: string): string {
         if (workflow && node) {
             const annotations = workflow.metadata.annotations || {};
             const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
@@ -488,7 +498,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }
 
         return nodeID;
-    };
+    }
 
     const podName = ensurePodName(workflow, selectedNode, nodeId);
 
@@ -567,7 +577,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     ))}
             </div>
             {workflow && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={parsedSidePanel.type === 'resubmit'}>
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={['resubmit', 'retry'].includes(parsedSidePanel.type)}>
                     {parsedSidePanel.type === 'logs' && (
                         <WorkflowLogsViewer
                             workflow={workflow}
@@ -581,9 +591,12 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
                     {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} isArchived={isArchivedWorkflow(workflow)} />}
+                    {parsedSidePanel.type === 'retry' && (
+                        <RetryWorkflowPanel workflow={workflow} isArchived={isArchivedWorkflow(workflow)} isWorkflowInCluster={isWorkflowInCluster(workflow)} />
+                    )}
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}
         </Page>
     );
-};
+}

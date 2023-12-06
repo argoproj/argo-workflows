@@ -90,7 +90,7 @@ Number of API requests sent to the Kubernetes API.
 
 #### `argo_workflows_operation_duration_seconds`
 
-A histogram of durations of operations.
+A histogram of durations of operations. An operation is a single workflow reconciliation loop within the workflow-controller. It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
 
 #### `argo_workflows_pods_count`
 
@@ -281,7 +281,7 @@ Finally, an example of a `Template`-level Histogram metric that tracks an intern
 ### Real-Time Metrics
 
 Argo supports a limited number of real-time metrics. These metrics are emitted in real-time, beginning when the step execution starts
-and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#realtime-metrics).
+and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#real-time-metrics).
 
 To define a real-time metric simply add `realtime: true` to a gauge metric with a valid real-time variable. For example:
 
@@ -327,7 +327,7 @@ spec:
   - port: metrics
   selector:
     matchLabels:
-      app.kubernetes.io/instance: argo-workflows
+      app: workflow-controller
 EOF
 ```
 
@@ -344,7 +344,7 @@ metricsConfig: |
 
   # Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
   path: /metrics
-  
+
   # Port is the port where metrics are emitted. Default is "9090"
   port: 8080
 

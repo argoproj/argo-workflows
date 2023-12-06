@@ -5,7 +5,7 @@ import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbo
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 
-require('./cron-workflow-filters.scss');
+import './cron-workflow-filters.scss';
 
 interface WorkflowFilterProps {
     cronWorkflows: models.WorkflowTemplate[];
@@ -15,7 +15,7 @@ interface WorkflowFilterProps {
     onChange: (namespace: string, labels: string[], states: string[]) => void;
 }
 
-export const CronWorkflowFilters = ({cronWorkflows, namespace, labels, states, onChange}: WorkflowFilterProps) => {
+export function CronWorkflowFilters({cronWorkflows, namespace, labels, states, onChange}: WorkflowFilterProps) {
     const [labelSuggestion, setLabelSuggestion] = useState([]);
 
     useEffect(() => {
@@ -74,4 +74,4 @@ export const CronWorkflowFilters = ({cronWorkflows, namespace, labels, states, o
             </div>
         </div>
     );
-};
+}

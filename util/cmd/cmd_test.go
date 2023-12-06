@@ -77,3 +77,29 @@ func TestMakeParseLabels(t *testing.T) {
 		}
 	}
 }
+
+func TestIsURL(t *testing.T) {
+	tests := []struct {
+		name string
+		args string
+		want bool
+	}{
+		{
+			name: "test is url",
+			args: "http://www.foo.com",
+			want: true,
+		},
+		{
+			name: "test is not url",
+			args: "www.foo.com",
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsURL(tt.args); got != tt.want {
+				t.Errorf("IsURL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

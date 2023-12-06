@@ -7,6 +7,8 @@ resources:
   - hello-executor-plugin.service-account-token-secret.yaml
   - hello-executor-plugin-configmap.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: argo
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/part-of: argo
 namespace: argo

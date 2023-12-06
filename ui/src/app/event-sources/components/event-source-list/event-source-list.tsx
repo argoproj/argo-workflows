@@ -1,5 +1,5 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui';
-import * as classNames from 'classnames';
+import classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
@@ -26,7 +26,7 @@ import {EventSourceLogsViewer} from '../event-source-log-viewer';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/event_source/'>Learn more</a>;
 
-export const EventSourceList = ({match, location, history}: RouteComponentProps<any>) => {
+export function EventSourceList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
@@ -141,7 +141,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                                 </div>
                                 <div className='columns small-2'>
                                     <div
-                                        onClick={e => {
+                                        onClick={() => {
                                             setSelectedNode(`${es.metadata.namespace}/event-sources/${es.metadata.name}`);
                                         }}>
                                         <i className='fa fa-bars' />
@@ -151,7 +151,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                         ))}
                     </div>
                     <Footnote>
-                        <a onClick={() => navigation.goto(uiUrl('event-flow/' + namespace))}>Show events-flow page</a>
+                        <a onClick={() => navigation.goto(uiUrl('event-flow/' + namespace))}>Show event-flow page</a>
                     </Footnote>
                 </>
             )}
@@ -187,4 +187,4 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
             </SlidingPanel>
         </Page>
     );
-};
+}

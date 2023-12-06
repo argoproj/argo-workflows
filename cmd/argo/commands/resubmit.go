@@ -37,6 +37,7 @@ func NewResubmitCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "resubmit [WORKFLOW...]",
 		Short: "resubmit one or more workflows",
+		Long:  "Submit a completed workflow again. Optionally override parameters and memoize. Similar to running `argo submit` again with the same parameters.",
 		Example: `# Resubmit a workflow:
 
   argo resubmit my-wf

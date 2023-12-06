@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ type ArtifactDriver struct {
 	Endpoint              string
 	Region                string
 	Secure                bool
+	TrustedCA             string
 	AccessKey             string
 	SecretKey             string
 	RoleARN               string
@@ -56,6 +58,16 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Clien
 			Enabled:               s3Driver.EnableEncryption,
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
 		},
+	}
+
+	if tr, err := argos3.GetDefaultTransport(opts); err == nil {
+		if s3Driver.Secure && s3Driver.TrustedCA != "" {
+			// Trust only the provided root CA
+			pool := x509.NewCertPool()
+			pool.AppendCertsFromPEM([]byte(s3Driver.TrustedCA))
+			tr.TLSClientConfig.RootCAs = pool
+		}
+		opts.Transport = tr
 	}
 
 	return argos3.NewS3Client(ctx, opts)

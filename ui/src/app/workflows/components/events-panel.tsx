@@ -10,7 +10,7 @@ import debounce from '../../shared/debounce';
 import {ListWatch} from '../../shared/list-watch';
 import {services} from '../../shared/services';
 
-export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: string; kind: string}) => {
+export function EventsPanel({namespace, name, kind}: {namespace: string; name: string; kind: string}) {
     const [showAll, setShowAll] = useState(false);
     const [hideNormal, setHideNormal] = useState(false);
     const [events, setEvents] = useState<Event[]>();
@@ -53,7 +53,7 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
     const tableRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        const calculateTooltips = () => {
+        function calculateTooltips() {
             const table = tableRef.current;
 
             if (table) {
@@ -64,7 +64,6 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                 // not valid to use `for of` loops with NodeList.  When that target is changed or if
                 // downlevelIteration is enabled, we can swap this to use a `for of` loop.
 
-                // tslint:disable-next-line:prefer-for-of
                 for (let i = 0; i < columns.length; i++) {
                     const col = columns[i];
 
@@ -75,7 +74,7 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                     }
                 }
             }
-        };
+        }
 
         const [debouncedCalculateTooltips, cleanup] = debounce(calculateTooltips, 1000);
 
@@ -134,4 +133,4 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
             )}
         </>
     );
-};
+}

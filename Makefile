@@ -18,7 +18,7 @@ GIT_BRANCH            := $(shell git rev-parse --symbolic-full-name --verify --q
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
-DEV_BRANCH            := $(shell [ "$(GIT_BRANCH)" = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+DEV_BRANCH            := $(shell [ "$(GIT_BRANCH)" = main ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
 SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 
 
@@ -40,7 +40,7 @@ E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 
 VERSION               := latest
-DOCKER_PUSH           := false
+DOCKER_PUSH           ?= false
 
 # VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag
@@ -167,7 +167,7 @@ ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type
 $(GOPATH)/bin/staticfiles:
 # update this in Nix when updating it here
 ifneq ($(USE_NIX), true)
-	go install bou.ke/staticfiles@dd04075 
+	go install bou.ke/staticfiles@dd04075
 endif
 
 ifeq ($(STATIC_FILES),true)
@@ -441,7 +441,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.52.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.55.1
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -456,6 +456,8 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
 	# Lint the UI
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
+	# Deduplicate Node modules
+	if [ -e ui/node_modules ]; then yarn --cwd ui deduplicate ; fi
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
@@ -482,12 +484,33 @@ endif
 
 .PHONY: argosay
 argosay:
-	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
+ifeq ($(DOCKER_PUSH),true)
+	cd test/e2e/images/argosay/v2 && \
+		docker buildx build \
+			--platform linux/amd64,linux/arm64 \
+			-t argoproj/argosay:v2 \
+			--push \
+			.
+else
+	cd test/e2e/images/argosay/v2 && \
+		docker build . -t argoproj/argosay:v2
+endif
 ifeq ($(K3D),true)
 	k3d image import -c $(K3D_CLUSTER_NAME) argoproj/argosay:v2
 endif
+
+.PHONY: argosayv1
+argosayv1:
 ifeq ($(DOCKER_PUSH),true)
-	docker push argoproj/argosay:v2
+	cd test/e2e/images/argosay/v1 && \
+		docker buildx build \
+			--platform linux/amd64,linux/arm64 \
+			-t argoproj/argosay:v1 \
+			--push \
+			.
+else
+	cd test/e2e/images/argosay/v1 && \
+		docker build . -t argoproj/argosay:v1
 endif
 
 dist/argosay:
@@ -535,7 +558,7 @@ endif
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) PROFILE=$(PROFILE) kit $(TASKS)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) PROFILE=$(PROFILE) kit $(TASKS)
 endif
 
 .PHONY: wait
@@ -677,7 +700,7 @@ docs-linkcheck: /usr/local/bin/markdown-link-check
 /usr/local/bin/markdownlint:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm i -g markdownlint-cli@0.33.0 
+	npm i -g markdownlint-cli@0.33.0
 endif
 
 

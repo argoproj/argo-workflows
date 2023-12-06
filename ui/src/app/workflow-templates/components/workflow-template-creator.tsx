@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
+
 import {WorkflowTemplate} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -10,7 +11,7 @@ import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
-export const WorkflowTemplateCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) => {
+export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) {
     const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
@@ -19,11 +20,13 @@ export const WorkflowTemplateCreator = ({namespace, onCreate}: {namespace: strin
                 <UploadButton onUpload={setTemplate} onError={setError} />
                 <Button
                     icon='plus'
-                    onClick={() => {
-                        services.workflowTemplate
-                            .create(template, Utils.getNamespaceWithDefault(template.metadata.namespace))
-                            .then(onCreate)
-                            .catch(setError);
+                    onClick={async () => {
+                        try {
+                            const newTemplate = await services.workflowTemplate.create(template, Utils.getNamespaceWithDefault(template.metadata.namespace));
+                            onCreate(newTemplate);
+                        } catch (err) {
+                            setError(err);
+                        }
                     }}>
                     Create
                 </Button>
@@ -35,4 +38,4 @@ export const WorkflowTemplateCreator = ({namespace, onCreate}: {namespace: strin
             </p>
         </>
     );
-};
+}

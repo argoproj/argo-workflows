@@ -89,7 +89,7 @@ export const Utils = {
         }
     },
 
-    onNamespaceChange(value: string) {
+    onNamespaceChange() {
         // noop
     },
 
@@ -125,15 +125,16 @@ export const Utils = {
         namespace?: string;
         name?: string;
         namePrefix?: string;
+        namePattern?: string;
         phases?: Array<string>;
         labels?: Array<string>;
-        minStartedAt?: Date;
-        maxStartedAt?: Date;
+        createdAfter?: Date;
+        finishedBefore?: Date;
         pagination?: Pagination;
         resourceVersion?: string;
     }) {
         const queryParams: string[] = [];
-        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.name, filter.minStartedAt, filter.maxStartedAt);
+        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.name, filter.createdAfter, filter.finishedBefore);
         if (fieldSelector.length > 0) {
             queryParams.push(`listOptions.fieldSelector=${fieldSelector}`);
         }
@@ -152,13 +153,16 @@ export const Utils = {
         if (filter.namePrefix) {
             queryParams.push(`namePrefix=${filter.namePrefix}`);
         }
+        if (filter.namePattern) {
+            queryParams.push(`namePattern=${filter.namePattern}`);
+        }
         if (filter.resourceVersion) {
             queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);
         }
         return queryParams;
     },
 
-    fieldSelectorParams(namespace?: string, name?: string, minStartedAt?: Date, maxStartedAt?: Date) {
+    fieldSelectorParams(namespace?: string, name?: string, createdAfter?: Date, finishedBefore?: Date) {
         let fieldSelector = '';
         if (namespace) {
             fieldSelector += 'metadata.namespace=' + namespace + ',';
@@ -166,14 +170,14 @@ export const Utils = {
         if (name) {
             fieldSelector += 'metadata.name=' + name + ',';
         }
-        if (minStartedAt) {
-            fieldSelector += 'spec.startedAt>' + minStartedAt.toISOString() + ',';
+        if (createdAfter) {
+            fieldSelector += 'metadata.creationTimestamp>' + createdAfter.toISOString() + ',';
         }
-        if (maxStartedAt) {
-            fieldSelector += 'spec.startedAt<' + maxStartedAt.toISOString() + ',';
+        if (finishedBefore) {
+            fieldSelector += 'spec.finishedAt<' + finishedBefore.toISOString() + ',';
         }
         if (fieldSelector.endsWith(',')) {
-            fieldSelector = fieldSelector.substr(0, fieldSelector.length - 1);
+            fieldSelector = fieldSelector.substring(0, fieldSelector.length - 1);
         }
         return fieldSelector;
     },

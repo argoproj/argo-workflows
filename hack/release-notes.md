@@ -2,11 +2,11 @@
 
 ## What's New?
 
-Find out on [our blog](https://blog.argoproj.io) and [changelog](https://github.com/argoproj/argo-workflows/blob/master/CHANGELOG.md).
+Find out on [our blog](https://blog.argoproj.io) and [changelog](https://github.com/argoproj/argo-workflows/blob/main/CHANGELOG.md).
 
 ## Breaking Changes and Known Issues
 
-Can be found in the [installation guide](https://argoproj.github.io/argo-workflows/installation/).
+Check the [upgrading guide](https://argoproj.github.io/argo-workflows/upgrading/) and search for [existing issues on GitHub](https://github.com/argoproj/argo-workflows/issues).
 
 ## Installation
 

@@ -1,6 +1,7 @@
 import {Tabs, Ticker, Tooltip} from 'argo-ui';
-import * as moment from 'moment';
+import moment from 'moment';
 import * as React from 'react';
+import {useState} from 'react';
 
 import * as models from '../../../../models';
 import {Artifact, NodeStatus, Workflow} from '../../../../models';
@@ -17,7 +18,7 @@ import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 
-require('./workflow-node-info.scss');
+import './workflow-node-info.scss';
 
 function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
     const endTime = node.finishedAt ? moment(node.finishedAt) : now;
@@ -68,7 +69,7 @@ interface Props {
 const AttributeRow = (attr: {title: string; value: any}) => (
     <React.Fragment key={attr.title}>
         <div>{attr.title}</div>
-        <div style={{overflow: 'auto hidden'}}>{attr.value}</div>
+        <div>{attr.value}</div>
     </React.Fragment>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
@@ -79,7 +80,7 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
     </div>
 );
 
-const DisplayWorkflowTime = (props: {date: Date | string | number}) => {
+function DisplayWorkflowTime(props: {date: Date | string | number}) {
     const {date} = props;
     const getLocalDateTime = (utc: Date | string | number) => {
         return new Date(utc.toString()).toLocaleString();
@@ -95,9 +96,9 @@ const DisplayWorkflowTime = (props: {date: Date | string | number}) => {
             )}
         </div>
     );
-};
+}
 
-const WorkflowNodeSummary = (props: Props) => {
+function WorkflowNodeSummary(props: Props) {
     const {workflow, node} = props;
 
     const annotations = workflow.metadata.annotations || {};
@@ -239,7 +240,7 @@ const WorkflowNodeSummary = (props: Props) => {
             </div>
         </div>
     );
-};
+}
 
 const WorkflowNodeInputs = (props: Props) => (
     <>
@@ -265,7 +266,7 @@ const WorkflowNodeOutputs = (props: Props) => (
     </>
 );
 
-const WorkflowNodeParameters = ({parameters}: {parameters: models.Parameter[]}) => {
+function WorkflowNodeParameters({parameters}: {parameters: models.Parameter[]}) {
     return (
         <div className='white-box'>
             <div className='white-box__details'>
@@ -284,7 +285,7 @@ const WorkflowNodeParameters = ({parameters}: {parameters: models.Parameter[]}) 
             </div>
         </div>
     );
-};
+}
 
 const WorkflowNodeResult = ({result}: {result: string}) =>
     result ? (
@@ -310,7 +311,7 @@ function hasEnv(container: models.kubernetes.Container | models.UserContainer | 
     return (container as models.kubernetes.Container | models.UserContainer).env !== undefined;
 }
 
-const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
+function EnvVar(props: {env: models.kubernetes.EnvVar}) {
     const {env} = props;
     const secret = env.valueFrom?.secretKeyRef;
     const secretValue = secret ? (
@@ -320,23 +321,21 @@ const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
             </Tooltip>
             {secret.name}/{secret.key}
         </>
-    ) : (
-        undefined
-    );
+    ) : undefined;
 
     return (
         <pre key={env.name}>
             {env.name}={env.value || secretValue}
         </pre>
     );
-};
+}
 
-const WorkflowNodeContainer = (props: {
+function WorkflowNodeContainer(props: {
     nodeId: string;
     container: models.kubernetes.Container | models.UserContainer | models.Script;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowEvents: () => void;
-}) => {
+}) {
     const container = {name: 'main', args: Array<string>(), source: '', ...props.container};
     const maybeQuote = (v: string) => (v.includes(' ') ? `'${v}'` : v);
     const attributes = [
@@ -358,7 +357,7 @@ const WorkflowNodeContainer = (props: {
                   value: (
                       <pre className='workflow-node-info__multi-line'>
                           {(container.env || []).map(e => (
-                              <EnvVar env={e} />
+                              <EnvVar key={e.name} env={e} />
                           ))}
                       </pre>
                   )
@@ -375,54 +374,44 @@ const WorkflowNodeContainer = (props: {
             </div>
         </div>
     );
-};
+}
 
-class WorkflowNodeContainers extends React.Component<Props, {selectedSidecar: string}> {
-    constructor(props: Props) {
-        super(props);
-        this.state = {selectedSidecar: null};
-    }
+function WorkflowNodeContainers(props: Props) {
+    const [selectedSidecar, setSelectedSidecar] = useState(null);
 
-    public render() {
-        const template = getResolvedTemplates(this.props.workflow, this.props.node);
-        if (!template || (!template.container && !template.containerSet && !template.script)) {
-            return (
-                <div className='white-box'>
-                    <div className='row'>
-                        <div className='columns small-12 text-center'>No data to display</div>
-                    </div>
-                </div>
-            );
-        }
-        const containers = (template.containerSet ? template.containerSet.containers : []).concat(template.sidecars || []);
-
-        const container = (this.state.selectedSidecar && containers.find(item => item.name === this.state.selectedSidecar)) || template.container || template.script;
-
+    const template = getResolvedTemplates(props.workflow, props.node);
+    if (!template || (!template.container && !template.containerSet && !template.script)) {
         return (
-            <div className='workflow-node-info__containers'>
-                {this.state.selectedSidecar && <i className='fa fa-angle-left workflow-node-info__sidecar-back' onClick={() => this.setState({selectedSidecar: null})} />}
-                <WorkflowNodeContainer
-                    nodeId={this.props.node.id}
-                    container={container}
-                    onShowContainerLogs={this.props.onShowContainerLogs}
-                    onShowEvents={this.props.onShowEvents}
-                />
-                {!this.state.selectedSidecar && (
-                    <div>
-                        <p>SIDECARS:</p>
-                        {containers.map(sidecar => (
-                            <div className='workflow-node-info__sidecar' key={sidecar.name} onClick={() => this.setState({selectedSidecar: sidecar.name})}>
-                                <span>{sidecar.name}</span> <i className='fa fa-angle-right' />
-                            </div>
-                        ))}
-                    </div>
-                )}
+            <div className='white-box'>
+                <div className='row'>
+                    <div className='columns small-12 text-center'>No data to display</div>
+                </div>
             </div>
         );
     }
+
+    const containers = (template.containerSet ? template.containerSet.containers : []).concat(template.sidecars || []);
+    const container = (selectedSidecar && containers.find(item => item.name === selectedSidecar)) || template.container || template.script;
+
+    return (
+        <div className='workflow-node-info__containers'>
+            {selectedSidecar && <i className='fa fa-angle-left workflow-node-info__sidecar-back' onClick={() => setSelectedSidecar(null)} />}
+            <WorkflowNodeContainer nodeId={props.node.id} container={container} onShowContainerLogs={props.onShowContainerLogs} onShowEvents={props.onShowEvents} />
+            {!selectedSidecar && (
+                <div>
+                    <p>SIDECARS:</p>
+                    {containers.map(sidecar => (
+                        <div className='workflow-node-info__sidecar' key={sidecar.name} onClick={() => setSelectedSidecar(sidecar.name)}>
+                            <span>{sidecar.name}</span> <i className='fa fa-angle-right' />
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }
 
-const WorkflowNodeArtifacts = (props: {workflow: Workflow; node: NodeStatus; archived: boolean; isInput: boolean; artifacts: Artifact[]}) => {
+function WorkflowNodeArtifacts(props: {workflow: Workflow; node: NodeStatus; archived: boolean; isInput: boolean; artifacts: Artifact[]}) {
     const artifacts =
         (props.artifacts &&
             props.artifacts.map(artifact =>
@@ -472,7 +461,7 @@ const WorkflowNodeArtifacts = (props: {workflow: Workflow; node: NodeStatus; arc
             ))}
         </div>
     );
-};
+}
 
 export const WorkflowNodeInfo = (props: Props) => (
     <div className='workflow-node-info'>

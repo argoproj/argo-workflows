@@ -28,12 +28,16 @@ We're always looking for contributors.
 * Code contribution - investigate
   a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
   , or anything not assigned.
+* You can work on an issue without being assigned.
 * Join the `#argo-contributors` channel on [our Slack](https://argoproj.github.io/community/join-slack).
-* Get a [mentor](mentoring.md) to help you get started.
 
 ### Running Locally
 
 To run Argo Workflows locally for development: [running locally](running-locally.md).
+
+### Committing
+
+See the [Committing Guidelines](running-locally.md#committing).
 
 ### Dependencies
 
@@ -52,18 +56,21 @@ Example, should we add `fasttemplate`
 | Test                                    | Outcome                             |
 |-----------------------------------------|-------------------------------------|
 | A strong use case.                      | ❌ Fail. We can use `text/template`. |
-| It has an acceptable license (e.g. MIT) | ✅ Pass. MIT license.                |
+| It has an acceptable license (e.g. MIT) | ✅ Pass. MIT license.               |
 | It is actively maintained.              | ❌ Fail. Project is inactive.        |
-| It has no security issues.              | ✅ Pass. No known security issues.   |
+| It has no security issues.              | ✅ Pass. No known security issues.  |
 
 No, we should not add that dependency.
 
 ### Test Policy
 
 Changes without either unit or e2e tests are unlikely to be accepted.
-See [the pull request template](https://github.com/argoproj/argo-workflows/blob/master/.github/pull_request_template.md)
-.
+See [the pull request template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md).
 
 ### Contributor Workshop
 
-We have a [90m video on YouTube](https://youtu.be/zZv0lNCDG9w) show you have to get hands-on contributing.
+Please check out the following resources if you are interested in contributing:
+
+* [90m hands-on contributor workshop](https://youtu.be/zZv0lNCDG9w).
+* [Deep-dive into components and hands-on experiments](https://docs.google.com/presentation/d/1IU0a3unnr3tBRi38Zn3EHQZj3z6yvocfG9x9icRu1LE/edit?usp=sharing).
+* [Architecture overview](https://github.com/argoproj/argo-workflows/blob/main/docs/architecture.md).

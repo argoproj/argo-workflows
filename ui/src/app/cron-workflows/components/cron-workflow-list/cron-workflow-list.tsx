@@ -22,20 +22,19 @@ import {CronWorkflowCreator} from '../cron-workflow-creator';
 import {CronWorkflowFilters} from '../cron-workflow-filters/cron-workflow-filters';
 import {PrettySchedule} from '../pretty-schedule';
 
-require('./cron-workflow-list.scss');
+import './cron-workflow-list.scss';
 
 const learnMore = <a href='https://argoproj.github.io/argo-workflows/cron-workflows/'>Learn more</a>;
 
-export const CronWorkflowList = ({match, location, history}: RouteComponentProps<any>) => {
-    // boiler-plate
+export function CronWorkflowList({match, location, history}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
-    // state for URL, query and label parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    // state for URL, query, and label parameters
+    const [namespace, setNamespace] = useState<string>(Utils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
-    const [labels, setLabels] = useState([]);
-    const [states, setStates] = useState([]);
+    const [labels, setLabels] = useState<string[]>([]);
+    const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
 
     useEffect(
         useQueryParams(history, p => {
@@ -44,6 +43,7 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
         [history]
     );
 
+    // save history
     useEffect(
         () =>
             history.push(
@@ -60,22 +60,24 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
     const [cronWorkflows, setCronWorkflows] = useState<CronWorkflow[]>();
 
     useEffect(() => {
-        services.cronWorkflows
-            .list(namespace, labels)
-            .then(l => {
+        (async () => {
+            try {
+                const list = await services.cronWorkflows.list(namespace, labels);
                 if (states.length === 1) {
                     if (states.includes('Suspended')) {
-                        return l.filter(el => el.spec.suspend === true);
+                        setCronWorkflows(list.filter(el => el.spec.suspend === true));
                     } else {
-                        return l.filter(el => el.spec.suspend !== true);
+                        setCronWorkflows(list.filter(el => el.spec.suspend !== true));
                     }
+                } else {
+                    setCronWorkflows(list);
                 }
-                return l;
-            })
-            .then(setCronWorkflows)
-            .then(() => setError(null))
-            .catch(setError);
-    }, [namespace, labels, states]);
+                setError(null);
+            } catch (newError) {
+                setError(newError);
+            }
+        })();
+    }, [namespace, labels.toString(), states.toString()]); // referential equality, so use values, not refs
 
     useCollectEvent('openedCronWorkflowList');
 
@@ -176,4 +178,4 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
             </SlidingPanel>
         </Page>
     );
-};
+}

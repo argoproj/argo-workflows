@@ -1,6 +1,8 @@
+<!-- markdownlint-disable-next-line MD041 -->
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
-[![CI](https://github.com/argoproj/argo-workflows/workflows/CI/badge.svg)](https://github.com/argoproj/argo-workflows/actions?query=event%3Apush+branch%3Amaster)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows/badge)](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows)
+[![FOSSA License Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fargoproj%2Fargo-workflows.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fargoproj%2Fargo-workflows?ref=badge_shield)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/argo-workflows)](https://artifacthub.io/packages/helm/argo/argo-workflows)
 [![Twitter Follow](https://img.shields.io/twitter/follow/argoproj?style=social)](https://twitter.com/argoproj)
 
@@ -33,11 +35,14 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
   environments.
 * Cloud agnostic and can run on any Kubernetes cluster.
 
-[Read what people said in our latest survey](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee)
+[Read what people said in our latest survey](https://blog.argoproj.io/argo-workflows-events-2023-user-survey-results-82c53bc30543)
 
 ## Try Argo Workflows
 
-[Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo) (login using Github)
+You can try Argo Workflows via one of the following:
+
+1. [Interactive Training Material](https://killercoda.com/argoproj/course/argo-workflows/)
+1. [Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo)
 
 ![Screenshot](docs/assets/screenshot.png)
 
@@ -67,7 +72,7 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 
 Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
-## Quickstart 
+## Quickstart
 
 * [Get started here](docs/quick-start.md)
 * [Walk-through examples](https://argoproj.github.io/argo-workflows/walk-through/)
