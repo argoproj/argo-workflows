@@ -231,3 +231,8 @@ nix.conf
 LDFlags
 dev
 dependabot
+CronWorkflow
+CronWorkflows
+maxFailures
+maxSuccess
+gitops
