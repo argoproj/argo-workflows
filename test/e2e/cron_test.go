@@ -389,6 +389,7 @@ spec:
 				assert.Equal(t, int64(0), cronWf.Status.Failed)
 				assert.Equal(t, int64(1), cronWf.Status.Succeeded)
 				assert.Equal(t, true, cronWf.Status.Completed)
+				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
 			})
 	})
 	s.Run("TestStoppingConditionWithFailed", func() {
@@ -423,6 +424,7 @@ spec:
 				assert.Equal(t, int64(0), cronWf.Status.Succeeded)
 				assert.Equal(t, int64(1), cronWf.Status.Failed)
 				assert.Equal(t, true, cronWf.Status.Completed)
+				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
 			})
 	})
 }

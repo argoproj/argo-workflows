@@ -212,13 +212,7 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 					log.Warnf("Cron Workflow FilterFunc: '%v' is not an unstructured", obj)
 					return false
 				}
-				cronWf := &v1alpha1.CronWorkflow{}
-				err := util.FromUnstructuredObj(un, cronWf)
-				if err != nil {
-					log.Warnf("Cron Workflow FilterFunc: failed to convert unstructured '%v' to a CronWorkflow: %v", un, err)
-					return false
-				}
-				return !cronWf.Status.Completed
+				return !isCompleted(un)
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
@@ -241,6 +235,14 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 				},
 			},
 		})
+}
+
+func isCompleted(wf v1.Object) bool {
+	completed, ok := wf.GetLabels()[common.LabelKeyCronWorkflowCompleted]
+	if !ok {
+		return false
+	}
+	return completed == "true"
 }
 
 func (cc *Controller) syncAll(ctx context.Context) {

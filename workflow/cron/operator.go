@@ -95,8 +95,9 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	if err != nil {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprintf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err))
 		return
+	} else if completed {
+		woc.setAsCompleted()
 	}
-	woc.cronWf.Status.Completed = completed
 
 	proceed, err := woc.enforceRuntimePolicy(ctx)
 	if err != nil {
@@ -149,7 +150,7 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 }
 
 func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": woc.cronWf.Status, "metadata": map[string]interface{}{"annotations": woc.cronWf.Annotations}})
+	woc.patch(ctx, map[string]interface{}{"status": woc.cronWf.Status, "metadata": map[string]interface{}{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
 }
 
 func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context) {
@@ -321,8 +322,9 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows
 				completed, err := woc.checkStopingCondition()
 				if err != nil {
 					return fmt.Errorf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err)
+				} else if completed {
+					woc.setAsCompleted()
 				}
-				woc.cronWf.Status.Completed = completed
 			}
 		}
 	}
@@ -444,6 +446,14 @@ func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
 		return false, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	return suspend, nil
+}
+
+func (woc *cronWfOperationCtx) setAsCompleted() {
+	woc.cronWf.Status.Completed = true
+	if woc.cronWf.Labels == nil {
+		woc.cronWf.Labels = map[string]string{}
+	}
+	woc.cronWf.Labels[common.LabelKeyCronWorkflowCompleted] = "true"
 }
 
 func inferScheduledTime() time.Time {
