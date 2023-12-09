@@ -26,6 +26,11 @@ func (c *errorTranslatingWorkflowServiceClient) GetWorkflow(ctx context.Context,
 	return workflow, grpcutil.TranslateError(err)
 }
 
+func (c *errorTranslatingWorkflowServiceClient) ListK8SAndArchivedWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
+	workflows, err := c.delegate.ListK8SAndArchivedWorkflows(ctx, req)
+	return workflows, grpcutil.TranslateError(err)
+}
+
 func (c *errorTranslatingWorkflowServiceClient) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
 	workflows, err := c.delegate.ListWorkflows(ctx, req)
 	return workflows, grpcutil.TranslateError(err)

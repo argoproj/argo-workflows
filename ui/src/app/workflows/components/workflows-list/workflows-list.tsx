@@ -144,7 +144,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     useEffect(() => {
         const listWatch = new ListWatch(
-            () => services.workflows.list(namespace, phases, labels, pagination),
+            () => services.workflows.k8sAndArchivedList(namespace, phases, labels, pagination),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
             paginationOptions => {
                 setError(null);

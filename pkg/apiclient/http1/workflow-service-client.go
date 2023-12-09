@@ -21,6 +21,11 @@ func (h WorkflowServiceClient) GetWorkflow(_ context.Context, in *workflowpkg.Wo
 	return out, h.Get(in, out, "/api/v1/workflows/{namespace}/{name}")
 }
 
+func (h WorkflowServiceClient) ListK8SAndArchivedWorkflows(_ context.Context, in *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*wfv1.WorkflowList, error) {
+	out := &wfv1.WorkflowList{}
+	return out, h.Get(in, out, "/api/v1/k8s-archived-workflows/{namespace}")
+}
+
 func (h WorkflowServiceClient) ListWorkflows(_ context.Context, in *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*wfv1.WorkflowList, error) {
 	out := &wfv1.WorkflowList{}
 	return out, h.Get(in, out, "/api/v1/workflows/{namespace}")

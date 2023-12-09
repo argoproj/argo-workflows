@@ -24,6 +24,10 @@ func (c *argoKubeWorkflowServiceClient) GetWorkflow(ctx context.Context, req *wo
 	return c.delegate.GetWorkflow(ctx, req)
 }
 
+func (c *argoKubeWorkflowServiceClient) ListK8SAndArchivedWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
+	return c.delegate.ListK8SAndArchivedWorkflows(ctx, req)
+}
+
 func (c *argoKubeWorkflowServiceClient) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
 	return c.delegate.ListWorkflows(ctx, req)
 }

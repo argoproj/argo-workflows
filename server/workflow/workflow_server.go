@@ -128,7 +128,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
-func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
+func (s *workflowServer) ListK8SAndArchivedWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	var mergedWfs wfv1.Workflows
@@ -218,6 +218,48 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		WfContinue:       common.CheckNilString(wfList.ListMeta.Continue),
 		ArchivedContinue: common.CheckNilString(archivedWfList.ListMeta.Continue),
 	}}
+	newRes := &wfv1.WorkflowList{}
+	if ok, err := cleaner.Clean(res, &newRes); err != nil {
+		return nil, sutils.ToStatusError(fmt.Errorf("unable to CleanFields in request: %w", err), codes.Internal)
+	} else if ok {
+		return newRes, nil
+	}
+	return res, nil
+}
+
+func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
+	wfClient := auth.GetWfClient(ctx)
+
+	listOption := &metav1.ListOptions{}
+	if req.ListOptions != nil {
+		listOption = req.ListOptions
+	}
+	s.instanceIDService.With(listOption)
+	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(ctx, *listOption)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	cleaner := fields.NewCleaner(req.Fields)
+	if s.offloadNodeStatusRepo.IsEnabled() && !cleaner.WillExclude("items.status.nodes") {
+		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+		for i, wf := range wfList.Items {
+			if wf.Status.IsOffloadNodeStatus() {
+				if s.offloadNodeStatusRepo.IsEnabled() {
+					wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+				} else {
+					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
+				}
+			}
+		}
+	}
+
+	// we make no promises about the overall list sorting, we just sort each page
+	sort.Sort(wfList.Items)
+
+	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
 	newRes := &wfv1.WorkflowList{}
 	if ok, err := cleaner.Clean(res, &newRes); err != nil {
 		return nil, sutils.ToStatusError(fmt.Errorf("unable to CleanFields in request: %w", err), codes.Internal)

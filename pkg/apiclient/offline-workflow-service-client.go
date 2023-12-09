@@ -26,6 +26,10 @@ func (o OfflineWorkflowServiceClient) GetWorkflow(context.Context, *workflowpkg.
 	return nil, OfflineErr
 }
 
+func (o OfflineWorkflowServiceClient) ListK8SAndArchivedWorkflows(context.Context, *workflowpkg.WorkflowListRequest, ...grpc.CallOption) (*wfv1.WorkflowList, error) {
+	return nil, OfflineErr
+}
+
 func (o OfflineWorkflowServiceClient) ListWorkflows(context.Context, *workflowpkg.WorkflowListRequest, ...grpc.CallOption) (*wfv1.WorkflowList, error) {
 	return nil, OfflineErr
 }

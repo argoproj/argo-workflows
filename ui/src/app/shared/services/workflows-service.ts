@@ -6,6 +6,7 @@ import {ResubmitOpts, RetryOpts} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
 import {WorkflowsUtils} from '../../workflows/utils';
 import {uiUrl} from '../base';
+import {Pagination} from '../pagination';
 import {Utils} from '../utils';
 import {WorkflowsPagination} from './../../workflows/pagination';
 import requests from './requests';
@@ -37,7 +38,7 @@ export const WorkflowsService = {
             .then(res => res.body as Workflow);
     },
 
-    list(
+    k8sAndArchivedList(
         namespace: string,
         phases: WorkflowPhase[],
         labels: string[],
@@ -62,6 +63,33 @@ export const WorkflowsService = {
         ]
     ) {
         const params = WorkflowsUtils.queryParams({phases, labels, pagination});
+        params.push(`fields=${fields.join(',')}`);
+        return requests.get(`api/v1/k8s-archived-workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
+    },
+
+    list(
+        namespace: string,
+        phases: WorkflowPhase[],
+        labels: string[],
+        pagination: Pagination,
+        fields = [
+            'metadata',
+            'items.metadata.uid',
+            'items.metadata.name',
+            'items.metadata.namespace',
+            'items.metadata.creationTimestamp',
+            'items.metadata.labels',
+            'items.metadata.annotations',
+            'items.status.phase',
+            'items.status.message',
+            'items.status.finishedAt',
+            'items.status.startedAt',
+            'items.status.estimatedDuration',
+            'items.status.progress',
+            'items.spec.suspend'
+        ]
+    ) {
+        const params = Utils.queryParams({phases, labels, pagination});
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     },
