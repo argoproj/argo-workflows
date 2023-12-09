@@ -322,3 +322,18 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyCompleted] == "true" &&
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
+
+// Check whether child hooked nodes Fulfilled
+func CheckAllHooksFullfilled(node *wfv1.NodeStatus, nodes wfv1.Nodes) bool {
+	childs := node.Children
+	for _, id := range childs {
+		n, ok := nodes[id]
+		if !ok {
+			continue
+		}
+		if n.NodeFlag != nil && n.NodeFlag.Hooked && !n.Fulfilled() {
+			return false
+		}
+	}
+	return true
+}
