@@ -1178,6 +1178,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			continue
 		}
 		recentlyStarted := recentlyStarted(node)
+		// In case in the absence of nodes, collect metrics.
 		metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Add(0)
 		if _, ok := seenPods[nodeID]; !ok {
 
