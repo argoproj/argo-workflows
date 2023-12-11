@@ -71,20 +71,24 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 	if err != nil {
 		return err
 	}
-	taskWorkers := env.LookupEnvIntOr(common.EnvExecGCWorkers, 4)
+	gcWorkers := env.LookupEnvIntOr(common.EnvExecArtifactGCWorkers, 4)
 
 	totalTasks := 0
 	for _, task := range taskList.Items {
 		totalTasks += len(task.Spec.ArtifactsByNode)
 	}
+	// Channel for dispatching GC work to the workers
+	// large enough for every single task
 	taskQueue := make(chan *request, totalTasks)
+	// Channel for the replies when they complete
 	responseQueue := make(chan response, totalTasks)
-	for i := 0; i < taskWorkers; i++ {
+	for i := 0; i < gcWorkers; i++ {
 		go deleteWorker(ctx, taskQueue, responseQueue)
 	}
 
 	taskno := 0
 	nodesToGo := make(map[*v1alpha1.WorkflowArtifactGCTask]int)
+	// Dispatch all GC tasks to workers
 	for _, task := range taskList.Items {
 		nodesToGo[&task] = len(task.Spec.ArtifactsByNode)
 		task.Status.ArtifactResultsByNode = make(map[string]v1alpha1.ArtifactResultNodeStatus)
@@ -95,17 +99,27 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 	}
 	close(taskQueue)
 	completed := 0
+	// And now process all the responses as they are completed
 	for {
 		response := <-responseQueue
+		// A worker has had an error, we abort collecting any more information
+		// This is probably not ideal.
 		if response.Err != nil {
 			return response.Err
 		}
+		// If we get a nil response this means a worker has reached the end of the queued
+		// work, so keep a record and complete if all workers are done.
 		if response.Task == nil {
 			completed++
-			if completed >= taskWorkers {
+			if completed >= gcWorkers {
 				break
 			}
 		} else {
+			if response.Task == nil {
+				// Internal error, this shouldn't happen
+				return err
+			}
+			// Process the response
 			response.Task.Status.ArtifactResultsByNode[response.NodeName] = v1alpha1.ArtifactResultNodeStatus{ArtifactResults: response.Results}
 			// Check for completed tasks
 			nodesToGo[response.Task]--
@@ -129,7 +143,7 @@ func deleteWorker(ctx context.Context, taskQueue chan *request, responseQueue ch
 	for {
 		item, ok := <-taskQueue
 		if !ok {
-			// Done
+			// Report a done to the response queue
 			responseQueue <- response{Task: nil, NodeName: "", Err: nil}
 			return
 		}
@@ -151,6 +165,7 @@ func deleteWorker(ctx context.Context, taskQueue chan *request, responseQueue ch
 			}
 			drv, err := executor.NewDriver(ctx, &artifact, resources)
 			if err != nil {
+				// Report an error and process next item
 				responseQueue <- response{Task: item.Task, NodeName: item.NodeName, Results: results, Err: err}
 				continue
 			}
@@ -163,9 +178,15 @@ func deleteWorker(ctx context.Context, taskQueue chan *request, responseQueue ch
 					return false, err
 				}
 				results[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: true, Error: nil}
-				return true, err
+				return true, nil
 			})
+			if err != nil {
+				// Report an error and process next item
+				responseQueue <- response{Task: item.Task, NodeName: item.NodeName, Results: results, Err: err}
+				continue
+			}
 		}
+		// Report a success to the response queue
 		responseQueue <- response{Task: item.Task, NodeName: item.NodeName, Results: results, Err: nil}
 	}
 }
