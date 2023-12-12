@@ -6,44 +6,45 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestHealthz(t *testing.T) {
 
-	veryOldWF := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	veryOldWF.SetCreationTimestamp(metav1.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)) // a long time ago
-	veryOldWF.SetName(veryOldWF.Name + "-1")
+	veryOldUnreconciledWF := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	veryOldUnreconciledWF.SetCreationTimestamp(metav1.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)) // a long time ago
+	veryOldUnreconciledWF.SetName(veryOldUnreconciledWF.Name + "-1")
 
-	newWF := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	newWF.SetCreationTimestamp(metav1.Now())
-	newWF.SetName(newWF.Name + "-2")
+	newUnreconciledWF := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	newUnreconciledWF.SetCreationTimestamp(metav1.Now())
+	newUnreconciledWF.SetName(newUnreconciledWF.Name + "-2")
 
-	veryOldButReconciledWF := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	veryOldButReconciledWF.SetCreationTimestamp(metav1.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)) // a long time ago
-	veryOldButReconciledWF.SetName(veryOldWF.Name + "-3")
-	veryOldButReconciledWF.Labels = map[string]string{common.LabelKeyPhase: string(wfv1.WorkflowPending)}
+	veryOldReconciledWF := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	veryOldReconciledWF.SetCreationTimestamp(metav1.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)) // a long time ago
+	veryOldReconciledWF.SetName(veryOldUnreconciledWF.Name + "-3")
+	veryOldReconciledWF.Labels = map[string]string{common.LabelKeyPhase: string(wfv1.WorkflowPending)}
 
 	tests := []struct {
 		workflows      []*wfv1.Workflow
 		expectedStatus int
 	}{
 		{
-			[]*wfv1.Workflow{veryOldWF},
+			[]*wfv1.Workflow{veryOldUnreconciledWF},
 			500,
 		},
 		{
-			[]*wfv1.Workflow{newWF},
+			[]*wfv1.Workflow{newUnreconciledWF},
 			200,
 		},
 		{
-			[]*wfv1.Workflow{veryOldWF, newWF},
+			[]*wfv1.Workflow{veryOldUnreconciledWF, newUnreconciledWF},
 			500,
 		},
 		{
-			[]*wfv1.Workflow{veryOldButReconciledWF},
+			[]*wfv1.Workflow{veryOldReconciledWF},
 			200,
 		},
 	}
