@@ -57,7 +57,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 			unreconciledWorkflows = append(unreconciledWorkflows, wf)
 		})
 		if err != nil {
-			log.Errorf("Healthz check failed to list Workflows using Informer, err=%v", err)
+			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%v", err)
 		}
 		// go through the unreconciled workflows to determine if any of them exceed the max allowed age
 		for _, wf := range unreconciledWorkflows {
