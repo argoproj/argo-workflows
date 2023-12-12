@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	age = env.LookupEnvDurationOr("HEALTHZ_AGE", time.Minute) //5*time.Minute)
+	age = env.LookupEnvDurationOr("HEALTHZ_AGE", 5*time.Minute)
 )
 
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
