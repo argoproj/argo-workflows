@@ -105,13 +105,17 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
                 <ZeroState>
                     <p>{introductionText}</p>
                     <p>
-                        Once you've created a workflow event binding, you can test it from the CLI using <code>curl</code>, for example:
+                        Once you&apos;ve created a workflow event binding, you can test it from the CLI using <code>curl</code>, for example:
                     </p>
                     <p>
-                        <code>curl '{absoluteUrl('api/v1/events/{namespace}/-')}' -H 'Content-Type: application/json' -H 'Authorization: $ARGO_TOKEN' -d '&#123;&#125;'</code>
+                        <code>
+                            curl &apos;{absoluteUrl('api/v1/events/{namespace}/-')}&apos; -H &apos;Content-Type: application/json&apos; -H &apos;Authorization: $ARGO_TOKEN&apos; -d
+                            &apos;&#123;&#125;&apos;
+                        </code>
                     </p>
                     <p>
-                        You'll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for "EventService".
+                        You&apos;ll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for
+                        &quot;EventService&quot;.
                     </p>
                     <p>{learnMore}</p>
                 </ZeroState>

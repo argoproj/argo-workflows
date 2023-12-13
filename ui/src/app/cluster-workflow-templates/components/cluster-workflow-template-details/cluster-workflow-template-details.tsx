@@ -16,7 +16,7 @@ import {Utils} from '../../../shared/utils';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
 import {ClusterWorkflowTemplateEditor} from '../cluster-workflow-template-editor';
 
-require('../../../workflows/components/workflow-details/workflow-details.scss');
+import '../../../workflows/components/workflow-details/workflow-details.scss';
 
 export function ClusterWorkflowTemplateDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate

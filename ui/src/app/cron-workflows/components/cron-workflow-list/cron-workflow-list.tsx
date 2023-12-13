@@ -22,7 +22,7 @@ import {CronWorkflowCreator} from '../cron-workflow-creator';
 import {CronWorkflowFilters} from '../cron-workflow-filters/cron-workflow-filters';
 import {PrettySchedule} from '../pretty-schedule';
 
-require('./cron-workflow-list.scss');
+import './cron-workflow-list.scss';
 
 const learnMore = <a href='https://argoproj.github.io/argo-workflows/cron-workflows/'>Learn more</a>;
 

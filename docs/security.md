@@ -1,6 +1,6 @@
 # Security
 
-[To report security issues](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
+[To report security issues](https://github.com/argoproj/argo-workflows/blob/main/SECURITY.md).
 
 💡 Read [Practical Argo Workflows Hardening](https://blog.argoproj.io/practical-argo-workflows-hardening-dd8429acc1ce).
 
@@ -16,7 +16,7 @@ The controller has permission (via Kubernetes RBAC + its config map) with either
 * Create/get/delete pods, PVCs, and PDBs.
 * List/get template, config maps, service accounts, and secrets.
 
-See [workflow controller cluster-role](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [workflow-controller-role.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
+See [`workflow-controller-cluster-role.yaml`](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [`workflow-controller-role.yaml`](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
 
 ### User Permissions
 
@@ -52,7 +52,7 @@ rules:
       - get
       - list
       - watch
-  # Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/master/manifests/cluster-install/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4
+  # Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/main/manifests/cluster-install/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4
   - apiGroups:
       - argoproj.io
     resources:
@@ -104,7 +104,7 @@ Finally, you should configure the `argo-server` role and role binding with the c
 
 ### Read-Only
 
-You can achieve this by configuring the `argo-server` role ([example](https://github.com/argoproj/argo-workflows/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml) with only read access (i.e. only `get`/`list`/`watch` verbs)).
+You can achieve this by configuring the `argo-server` role ([example](https://github.com/argoproj/argo-workflows/blob/main/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml) with only read access (i.e. only `get`/`list`/`watch` verbs)).
 
 ## Network Security
 

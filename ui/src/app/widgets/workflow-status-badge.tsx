@@ -1,13 +1,14 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+
 import {NodePhase} from '../../models';
 import {uiUrl} from '../shared/base';
 import {historyUrl} from '../shared/history';
 import {RetryWatch} from '../shared/retry-watch';
 import {services} from '../shared/services';
 
-require('./workflow-status-badge.scss');
+import './workflow-status-badge.scss';
 
 export function WorkflowStatusBadge({history, match}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);

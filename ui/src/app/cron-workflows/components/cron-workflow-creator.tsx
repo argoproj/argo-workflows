@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
+
 import {CronWorkflow} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -19,11 +20,13 @@ export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; o
                 <UploadButton onUpload={setCronWorkflow} onError={setError} />
                 <Button
                     icon='plus'
-                    onClick={() => {
-                        services.cronWorkflows
-                            .create(cronWorkflow, Utils.getNamespaceWithDefault(cronWorkflow.metadata.namespace))
-                            .then(onCreate)
-                            .catch(setError);
+                    onClick={async () => {
+                        try {
+                            const newCronWorkflow = await services.cronWorkflows.create(cronWorkflow, Utils.getNamespaceWithDefault(cronWorkflow.metadata.namespace));
+                            onCreate(newCronWorkflow);
+                        } catch (err) {
+                            setError(err);
+                        }
                     }}>
                     Create
                 </Button>
