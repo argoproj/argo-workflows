@@ -6,7 +6,7 @@ We are trying out a system in which users pledge a certain number of hours per w
 
 Help is also needed for triaging new incoming bugs (prioritizing them with `P0`, `P1`, `P2`, and `P3` labels).
 
-## Terms
+## Commitment
 
 The Argo project currently has 4 designated [roles](https://github.com/argoproj/argoproj/blob/main/community/membership.md):
 - Member
