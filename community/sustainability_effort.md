@@ -30,7 +30,7 @@ Participants should join the [#argo-wf-contributors](https://cloud-native.slack.
 ### Finding code to work on
 
 If you have a business need, definitely feel free to work on that. Otherwise, you can find an Issue and assign it to yourself. If you're a new developer, one option is to pick one up that has the 
-label "good-first-issue". Otherwise, you can pick up an Issue labeled "P1" or "P2". These are the Issues deemed most important to the project.
+label "good-first-issue". Otherwise, you can pick up an Issue labeled "P1" or "P2". 
 
 ### Finding a PR to review
 
