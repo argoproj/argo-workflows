@@ -38,7 +38,9 @@ We will first prioritize review of any PRs which have the "prioritized" label, m
 An Assignee is a Reviewer/Approver/Lead who owns reviewing the PR. PRs with this label should be given an initial review within a week and should respond to each question or modification from the author
 within a week.
 
-Next, look for the Pull Requests which have no existing Assignee. In the case of a Reviewer being the Assignee, the Reviewer can request a review from one or more Approvers once they have approved the PR.
+Next, look for the Pull Requests which have no existing Assignee. 
+
+In the case of a Reviewer being the Assignee, once the Reviewer has approved the PR, then  can request a review from one or more Approvers.
 
 ### Authoring PRs
 
