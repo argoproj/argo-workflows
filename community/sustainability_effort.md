@@ -4,7 +4,7 @@ Argo Workflows is seeking more community involvement and ultimately more [Review
 
 We are trying out a system in which users pledge a certain number of hours per week (average) and in return have their own PRs prioritized for review.
 
-Help is also needed for triaging new incoming bugs (prioritizing them with `P1`, `P2`, and `P3` labels).
+Help is also needed for triaging new incoming bugs (prioritizing them with `P0`, `P1`, `P2`, and `P3` labels).
 
 ## Terms
 
@@ -37,11 +37,15 @@ label "good-first-issue". Otherwise, you can pick up an Issue labeled "P1" or "P
 Ideally, look for the Pull Requests which have no existing Assignee. An Assignee is a Reviewer/Approver/Lead who owns reviewing the PR. In the case of a Reviewer being the Assignee, the Reviewer 
 can request a review from one or more Approvers once they have approved the PR.
 
+### Authoring PRs
+
+For participants of the system, any PRs that you author you can apply a "prioritized" label to.
+
 ### Bug Triaging
 
-We need to make sure that all new bugs are seen by somebody so that we can identify the highest priority ones. There are labels "P1", "P2", and "P3" that should be applied, in which "P1" is considered
-highest priority. The "bug" label can be removed if the issue is determined to be user error. The label "more-information-needed" can be added if more information is needed from the author to in order
-to determine whether it's a bug or its priority. If there's a new P1 bug which appears to be a showstopper, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
+We need to make sure that all new bugs are seen by somebody so that we can identify the highest priority ones. There are labels "P0", "P1", "P2", and "P3" that should be applied, in which "P0" is considered
+highest priority and needs immediate attention. The "bug" label can be removed if the issue is determined to be user error. The label "more-information-needed" can be added if more information is needed from 
+the author to in order to determine whether it's a bug or its priority. If there's a new P0 bug, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
 
 Any bugs that have >= 5 "thumbs up" reactions should be labeled `P1`. Any bugs with 3-4 "thumbs up" should be labeled `P2`. (Bugs can be sorted by "thumbs up").
 
