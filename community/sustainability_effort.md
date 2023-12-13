@@ -48,9 +48,9 @@ For participants of the system, any PRs that you author you can apply a "priorit
 
 ### Bug Triaging
 
-We need to make sure that all new bugs are seen by somebody so that we can identify the highest priority ones. There are labels "P0", "P1", "P2", and "P3" that should be applied, in which "P0" is considered
-highest priority and needs immediate attention, followed by "P1", "P2", and then "P3". The "bug" label can be removed if the issue is determined to be user error. The label "more-information-needed" can be added 
-if more information is needed from the author to in order to determine whether it's a bug or its priority. If there's a new P0 bug, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
+We need to make sure that all new bugs are seen by somebody so that we can identify the highest priority ones. There are labels `P0`, `P1`, `P2`, and `P3` that should be applied, in which `P0` is considered
+highest priority and needs immediate attention, followed by `P1`, `P2`, and then `P3`. The "bug" label can be removed if the issue is determined to be user error. The label `more-information-needed` can be added 
+if more information is needed from the author to in order to determine whether it's a bug or its priority. If there's a new `P0` bug, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
 
 Any bugs that have >= 5 "thumbs up" reactions should be labeled `P1`. Any bugs with 3-4 "thumbs up" should be labeled `P2`. (Bugs can be sorted by "thumbs up").
 
