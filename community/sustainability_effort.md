@@ -40,7 +40,7 @@ within a week.
 
 Next, look for the Pull Requests which have no existing Assignee. 
 
-In the case of a Reviewer being the Assignee, once the Reviewer has approved the PR, then  can request a review from one or more Approvers.
+In the case of a Reviewer being the Assignee, once the Reviewer has approved the PR, they can request a review from one or more Approvers.
 
 ### Authoring PRs
 
