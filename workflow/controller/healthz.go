@@ -6,11 +6,14 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 var (
@@ -29,7 +32,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 	}()
 	labelSelector := "!" + common.LabelKeyPhase + "," + instanceIDSelector
 	err := func() error {
-		seletor, err := labels.Parse(labelSelector)
+		selector, err := labels.Parse(labelSelector)
 		if err != nil {
 			return err
 		}
@@ -38,12 +41,26 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 			log.Info("healthz: current pod is not the leader")
 			return nil
 		}
-		lister := v1alpha1.NewWorkflowLister(wfc.wfInformer.GetIndexer())
-		list, err := lister.Workflows(wfc.managedNamespace).List(seletor)
+
+		// establish a list of unreconciled workflows
+		unreconciledWorkflows := []*wfv1.Workflow{}
+		err = cache.ListAllByNamespace(wfc.wfInformer.GetIndexer(), wfc.managedNamespace, selector, func(m interface{}) {
+			// Informer holds Workflows as type *Unstructured
+			un := m.(*unstructured.Unstructured)
+			// verify it's of type *Workflow (if not, it's an incorrectly formatted Workflow spec)
+			wf, err := util.FromUnstructured(un)
+			if err != nil {
+				log.Warnf("Healthz check found an incorrectly formatted Workflow: %q (namespace %q)", un.GetName(), un.GetNamespace())
+				return
+			}
+
+			unreconciledWorkflows = append(unreconciledWorkflows, wf)
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%v", err)
 		}
-		for _, wf := range list {
+		// go through the unreconciled workflows to determine if any of them exceed the max allowed age
+		for _, wf := range unreconciledWorkflows {
 			if time.Since(wf.GetCreationTimestamp().Time) > age {
 				return fmt.Errorf("workflow never reconciled: %s", wf.Name)
 			}
