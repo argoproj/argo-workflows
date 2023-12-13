@@ -34,9 +34,9 @@ label `good-first-issue`. Otherwise, you can pick up an Issue labeled `P1` or `P
 
 ### Finding a PR to review
 
-We will first prioritize review of any PRs which have the "prioritized" label, meaning they were authored by a participant of this sytem. We need to make sure each of these has an Assignee. 
-An Assignee is a Reviewer/Approver/Lead who owns reviewing the PR. PRs with this label should be given an initial review within a week and should respond to each question or modification from the author
-within a week.
+We will first prioritize review of any PRs which have the "prioritized" label, meaning they were authored by a participant of this sytem (we can verify that they in fact are by github ID). We need to make 
+sure each of these has an Assignee. An Assignee is a Reviewer/Approver/Lead who owns reviewing the PR. PRs with this label should be given an initial review within a week and should respond to each question 
+or modification from the author within a week.
 
 Next, look for the Pull Requests which have no existing Assignee. 
 
