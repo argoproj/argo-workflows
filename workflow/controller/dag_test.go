@@ -1467,6 +1467,8 @@ status:
       templateName: echo
       templateScope: local/dag-diamond-dj7q5
       type: Pod
+      nodeFlag:
+        retried: true
   phase: Running
   resourcesDuration:
     cpu: 2
@@ -1686,6 +1688,7 @@ func TestRetryStrategyNodes(t *testing.T) {
 	onExitNode, err := woc.wf.GetNodeByName("wf-retry-pol.onExit")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, onExitNode)
+		assert.True(t, onExitNode.NodeFlag.Hooked)
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 
@@ -1853,6 +1856,7 @@ func TestOnExitDAGPhase(t *testing.T) {
 	retryNode, err = woc.wf.GetNodeByName("dag-diamond-88trp.B.onExit")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, retryNode)
+		assert.True(t, retryNode.NodeFlag.Hooked)
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
@@ -1979,6 +1983,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 	retryNode, err := woc.wf.GetNodeByName("exit-handler-bug-example.step-2.onExit")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, retryNode)
+		assert.True(t, retryNode.NodeFlag.Hooked)
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
@@ -2251,6 +2256,7 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 	onExitNode, err := woc.wf.GetNodeByName("dag-primay-branch-6bnnl.A.onExit")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, onExitNode)
+		assert.True(t, onExitNode.NodeFlag.Hooked)
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 }
@@ -3587,12 +3593,14 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	onExitNode := woc.wf.Status.Nodes.FindByDisplayName("printA.onExit")
 	assert.NotNil(t, onExitNode)
 	assert.Equal(t, wfv1.NodeRunning, onExitNode.Phase)
+	assert.True(t, onExitNode.NodeFlag.Hooked)
 
 	// exitNode succeeded
 	makePodsPhase(ctx, woc, v1.PodSucceeded)
 	woc.operate(ctx)
 	onExitNode = woc.wf.Status.Nodes.FindByDisplayName("printA.onExit")
 	assert.Equal(t, wfv1.NodeSucceeded, onExitNode.Phase)
+	assert.True(t, onExitNode.NodeFlag.Hooked)
 
 	// run next DAGTask
 	woc.operate(ctx)
@@ -3646,4 +3654,58 @@ spec:
 	woc1 := newWoc(*woc.wf)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+func TestDagWftmplHookWithRetry(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_wftmpl_hook_with_retry.yaml")
+	woc := newWoc(*wf)
+	ctx := context.Background()
+	woc.operate(ctx)
+
+	// assert task kicked
+	taskNode := woc.wf.Status.Nodes.FindByDisplayName("task")
+	assert.Equal(t, wfv1.NodePending, taskNode.Phase)
+
+	// task failed
+	makePodsPhase(ctx, woc, v1.PodFailed)
+	woc.operate(ctx)
+
+	// onFailure retry hook(0) kicked
+	taskNode = woc.wf.Status.Nodes.FindByDisplayName("task")
+	assert.Equal(t, wfv1.NodeFailed, taskNode.Phase)
+	failHookRetryNode := woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure")
+	failHookChild0Node := woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure(0)")
+	assert.Equal(t, wfv1.NodeRunning, failHookRetryNode.Phase)
+	assert.Equal(t, wfv1.NodePending, failHookChild0Node.Phase)
+
+	// onFailure retry hook(0) failed
+	makePodsPhase(ctx, woc, v1.PodFailed)
+	woc.operate(ctx)
+
+	// onFailure retry hook(1) kicked
+	taskNode = woc.wf.Status.Nodes.FindByDisplayName("task")
+	assert.Equal(t, wfv1.NodeFailed, taskNode.Phase)
+	failHookRetryNode = woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure")
+	failHookChild0Node = woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure(0)")
+	failHookChild1Node := woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure(1)")
+	assert.Equal(t, wfv1.NodeRunning, failHookRetryNode.Phase)
+	assert.Equal(t, wfv1.NodeFailed, failHookChild0Node.Phase)
+	assert.Equal(t, wfv1.NodePending, failHookChild1Node.Phase)
+
+	// onFailure retry hook(1) failed
+	makePodsPhase(ctx, woc, v1.PodFailed)
+	woc.operate(ctx)
+
+	// onFailure retry node faled
+	taskNode = woc.wf.Status.Nodes.FindByDisplayName("task")
+	assert.Equal(t, wfv1.NodeFailed, taskNode.Phase)
+	failHookRetryNode = woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure")
+	failHookChild0Node = woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure(0)")
+	failHookChild1Node = woc.wf.Status.Nodes.FindByDisplayName("task.hooks.failure(1)")
+	assert.Equal(t, wfv1.NodeFailed, failHookRetryNode.Phase)
+	assert.Equal(t, wfv1.NodeFailed, failHookChild0Node.Phase)
+	assert.Equal(t, wfv1.NodeFailed, failHookChild1Node.Phase)
+	// finish Node skipped
+	finishNode := woc.wf.Status.Nodes.FindByDisplayName("finish")
+	assert.Equal(t, wfv1.NodeOmitted, finishNode.Phase)
 }

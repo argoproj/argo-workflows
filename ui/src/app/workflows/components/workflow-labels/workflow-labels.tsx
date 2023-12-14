@@ -1,7 +1,8 @@
 import * as React from 'react';
+
 import * as models from '../../../../models';
 
-require('./workflow-labels.scss');
+import './workflow-labels.scss';
 
 interface WorkflowLabelsProps {
     workflow: models.Workflow;

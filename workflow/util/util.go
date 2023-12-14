@@ -59,7 +59,7 @@ import (
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo-workflows/issues/632
-func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListRequestListOptions internalinterfaces.TweakListOptionsFunc, tweakWatchRequestListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
@@ -71,7 +71,8 @@ func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time
 		ns,
 		resyncPeriod,
 		indexers,
-		tweakListOptions,
+		tweakListRequestListOptions,
+		tweakWatchRequestListOptions,
 	)
 	return informer
 }
@@ -601,10 +602,6 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // generates an insecure random string
 func randString(n int) string {
 	b := make([]byte, n)
@@ -919,7 +916,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						}
 					}
 				} else {
-					if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSuspend {
+					if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSuspend || node.Type == wfv1.NodeTypeSkipped {
 						newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
 						// Only remove the descendants of a suspended node but not the suspended node itself. The descendants
 						// of a suspended node need to be removed since the conditions should be re-evaluated based on
@@ -945,7 +942,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							}
 						}
 					} else {
-						log.Debugf("Reset non-pod/suspend node %s", node.Name)
+						log.Debugf("Reset non-pod/suspend/skipped node %s", node.Name)
 						newNode := node.DeepCopy()
 						newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
 					}

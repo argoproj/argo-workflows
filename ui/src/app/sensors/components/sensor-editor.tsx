@@ -7,7 +7,6 @@ import {ObjectEditor} from '../../shared/components/object-editor/object-editor'
 
 export const SensorEditor = ({
     onChange,
-    onError,
     onTabSelected,
     selectedTabKey,
     sensor

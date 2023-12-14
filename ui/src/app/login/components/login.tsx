@@ -1,27 +1,29 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
+
 import {uiUrl, uiUrlWithParams} from '../../shared/base';
 import {useCollectEvent} from '../../shared/components/use-collect-event';
 
-require('./login.scss');
+import './login.scss';
 
-const logout = () => {
+function logout() {
     document.cookie = 'authorization=;Max-Age=0';
     document.location.reload();
-};
-const user = (token: string) => {
+}
+function user(token: string) {
     const path = uiUrl('');
     document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
     document.location.href = path;
-};
-const getRedirect = (): string => {
+}
+function getRedirect(): string {
     const urlParams = new URLSearchParams(new URL(document.location.href).search);
     if (urlParams.has('redirect')) {
         return 'redirect=' + urlParams.get('redirect');
     }
     return 'redirect=' + window.location.origin + '/workflows';
-};
-export const Login = () => {
+}
+
+export function Login() {
     useCollectEvent('openedLogin');
     return (
         <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
@@ -77,4 +79,4 @@ export const Login = () => {
             </div>
         </Page>
     );
-};
+}

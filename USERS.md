@@ -1,11 +1,16 @@
 # Argo Workflows User Community Surveys & Feedback
 
-User community survey results are available: [2023](https://blog.argoproj.io/argo-workflows-events-2023-user-survey-results-82c53bc30543), [2021](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee?gi=857daaa1faa9), and [2020](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf).
+User community survey results are available: [2023](https://blog.argoproj.io/argo-workflows-events-2023-user-survey-results-82c53bc30543), [2021](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee?gi=857daaa1faa9), and [2020](https://github.com/argoproj/argoproj/blob/main/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf).
 
 
 ## Who uses Argo Workflows?
 
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization or project name in the following sections.
+
+Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. 
+We are gauging interest in a potential system in which many companies pledge a little bit of time each to help get more people into these roles. 
+See [#12229](https://github.com/argoproj/argo-workflows/issues/12229) for more information. 
+If you think you or your company may be interested in getting involved, please add a comment to the issue.
 
 ### Organizations Using Argo
 
@@ -170,6 +175,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Schlumberger](https://slb.com/)
 1. [Securitas](https://securitas.com/)
 1. [SegmentStream](https://segmentstream.com)
+1. [Semgrep](https://semgrep.com)
 1. [Sendible](https://sendible.com)
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [smallcase](https://smallcase.com/)

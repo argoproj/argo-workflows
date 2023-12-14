@@ -245,13 +245,14 @@ export const WorkflowsService = {
                 return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
             }),
             mergeMap(r => r.text.split('\n')),
-            map(content => ({content, podName: workflow.status.nodes[nodeId].displayName} as LogEntry)),
+            map(content => ({content, podName: workflow.status.nodes[nodeId].displayName}) as LogEntry),
             filter(x => !!x.content.match(grep))
         );
     },
 
     getContainerLogs(workflow: Workflow, podName: string, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
         const getLogsFromArtifact = () => this.getContainerLogsFromArtifact(workflow, nodeId, container, grep, archived);
+        const getLogsFromCluster = () => this.getContainerLogsFromCluster(workflow, podName, container, grep);
 
         // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely
         // that the Workflow and associated pods have been deleted
@@ -263,9 +264,9 @@ export const WorkflowsService = {
         return from(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
             switchMap(isPendingOrRunning => {
                 if (!isPendingOrRunning && hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
-                    return getLogsFromArtifact();
+                    return getLogsFromArtifact().pipe(catchError(getLogsFromCluster));
                 }
-                return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
+                return getLogsFromCluster().pipe(catchError(getLogsFromArtifact));
             })
         );
     },

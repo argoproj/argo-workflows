@@ -112,7 +112,7 @@ These templates are used to invoke/call other templates and provide execution co
 
 ##### [Steps](fields.md#workflowstep)
 
-A steps template allows you to define your tasks in a series of steps. The structure of the template is a "list of lists". Outer lists will run sequentially and inner lists will run in parallel. If you want to run inner lists one by one, use the [Synchronization](fields.md#synchronization) feature. You can set a wide array of options to control execution, such as [`when:` clauses to conditionally execute a step](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/coinflip.yaml).
+A steps template allows you to define your tasks in a series of steps. The structure of the template is a "list of lists". Outer lists will run sequentially and inner lists will run in parallel. If you want to run inner lists one by one, use the [Synchronization](fields.md#synchronization) feature. You can set a wide array of options to control execution, such as [`when:` clauses to conditionally execute a step](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/coinflip.yaml).
 
 In this example `step1` runs first. Once it is completed, `step2a` and `step2b` will run in parallel:
 

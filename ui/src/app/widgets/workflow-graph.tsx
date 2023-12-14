@@ -9,7 +9,7 @@ import {RetryWatch} from '../shared/retry-watch';
 import {services} from '../shared/services';
 import {WorkflowDag} from '../workflows/components/workflow-dag/workflow-dag';
 
-export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
+export function WorkflowGraph({history, match}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
     const namespace = match.params.namespace;
     const name = queryParams.get('name');
@@ -71,4 +71,4 @@ export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
             />
         </>
     );
-};
+}

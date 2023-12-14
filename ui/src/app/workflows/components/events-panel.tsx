@@ -64,7 +64,6 @@ export function EventsPanel({namespace, name, kind}: {namespace: string; name: s
                 // not valid to use `for of` loops with NodeList.  When that target is changed or if
                 // downlevelIteration is enabled, we can swap this to use a `for of` loop.
 
-                // tslint:disable-next-line:prefer-for-of
                 for (let i = 0; i < columns.length; i++) {
                     const col = columns[i];
 

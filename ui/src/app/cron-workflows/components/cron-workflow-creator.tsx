@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
+
 import {CronWorkflow} from '../../../models';
 import {Button} from '../../shared/components/button';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -10,7 +11,7 @@ import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
-export const CronWorkflowCreator = ({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) => {
+export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) {
     const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>(exampleCronWorkflow(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
@@ -19,11 +20,13 @@ export const CronWorkflowCreator = ({onCreate, namespace}: {namespace: string; o
                 <UploadButton onUpload={setCronWorkflow} onError={setError} />
                 <Button
                     icon='plus'
-                    onClick={() => {
-                        services.cronWorkflows
-                            .create(cronWorkflow, Utils.getNamespaceWithDefault(cronWorkflow.metadata.namespace))
-                            .then(onCreate)
-                            .catch(setError);
+                    onClick={async () => {
+                        try {
+                            const newCronWorkflow = await services.cronWorkflows.create(cronWorkflow, Utils.getNamespaceWithDefault(cronWorkflow.metadata.namespace));
+                            onCreate(newCronWorkflow);
+                        } catch (err) {
+                            setError(err);
+                        }
                     }}>
                     Create
                 </Button>
@@ -35,4 +38,4 @@ export const CronWorkflowCreator = ({onCreate, namespace}: {namespace: string; o
             </p>
         </>
     );
-};
+}

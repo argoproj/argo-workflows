@@ -2,10 +2,10 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
-import * as models from '../../../../models';
-import {Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
 
+import * as models from '../../../../models';
+import {isArchivedWorkflow, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
+import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
@@ -27,7 +27,7 @@ import {WorkflowsRow} from '../workflows-row/workflows-row';
 import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflows-summary-container';
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
-require('./workflows-list.scss');
+import './workflows-list.scss';
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
@@ -115,7 +115,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     // save history and localStorage
     useEffect(() => {
         // add empty selectedPhases + selectedLabels for forward-compat w/ old version: previous code relies on them existing, so if you move up a version and back down, it breaks
-        const options = ({selectedPhases: [], selectedLabels: []} as unknown) as WorkflowListRenderOptions;
+        const options = {selectedPhases: [], selectedLabels: []} as unknown as WorkflowListRenderOptions;
         options.phases = phases;
         options.labels = labels;
         if (pagination.limit) {
@@ -185,8 +185,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             <WorkflowsToolbar
                 selectedWorkflows={selectedWorkflows}
                 clearSelection={clearSelectedWorkflows}
+                disabledActions={batchActionDisabled}
                 loadWorkflows={clearSelectedWorkflows}
-                isDisabled={batchActionDisabled}
             />
             <div className={`row ${selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
                 <div className='columns small-12 xlarge-2'>
@@ -229,7 +229,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                         <>
                             {(counts.complete > 100 || counts.incomplete > 100) && (
                                 <CostOptimisationNudge name='workflow-list'>
-                                    You have at least {counts.incomplete} incomplete, and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
+                                    You have at least {counts.incomplete} incomplete and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
                                 </CostOptimisationNudge>
                             )}
                             <div className='argo-table-list'>
@@ -242,7 +242,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             onClick={e => {
                                                 e.stopPropagation();
                                             }}
-                                            onChange={e => {
+                                            onChange={() => {
                                                 const newSelections = new Map<string, models.Workflow>();
                                                 // Not all workflows are selected, select them all
                                                 if (filteredWorkflows.length !== selectedWorkflows.size) {
@@ -347,7 +347,12 @@ function nullSafeTimeFilter(createdAfter: Date, finishedBefore: Date, w: Workflo
 function countsByCompleted(workflows?: Workflow[]) {
     const counts = {complete: 0, incomplete: 0};
     (workflows || []).forEach(wf => {
-        if (wf.metadata?.labels && wf.metadata?.labels[models.labels.completed] === 'true') {
+        // don't count archived workflows as this is for GC purposes
+        if (isArchivedWorkflow(wf)) {
+            return;
+        }
+
+        if (wf.metadata?.labels?.[models.labels.completed] === 'true') {
             counts.complete++;
         } else {
             counts.incomplete++;

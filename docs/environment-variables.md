@@ -1,10 +1,10 @@
 # Environment Variables
 
-This document outlines the set of environment variables that can be used to customize the behavior at different
-levels.
+This document outlines environment variables that can be used to customize behavior.
 
-⚠️ Environment variables are typically added to test out experimental features and should not be used by
-most users. Environment variables may be removed at any time.
+!!! Warning
+    Environment variables are typically added to test out experimental features and should not be used by most users.
+    Environment variables may be removed at any time.
 
 ## Controller
 
@@ -30,7 +30,6 @@ most users. Environment variables may be removed at any time.
 | `DISABLE_MAX_RECURSION`                  | `bool`              | `false`                                                                                     | Set to true to disable the recursion preventer, which will stop a workflow running which has called into a child template 100 times                                                                                                                                      |
 | `EXPRESSION_TEMPLATES`                   | `bool`              | `true`                                                                                      | Escape hatch to disable expression templates.                                                                                                                                                                                                                            |
 | `EVENT_AGGREGATION_WITH_ANNOTATIONS`     | `bool`              | `false`                                                                                     | Whether event annotations will be used when aggregating events.                                                                                                                                                                                                          |
-| `GRPC_MESSAGE_SIZE`                      | `string`            | Use different GRPC Max message size for Argo server deployment (supporting huge workflows). |
 | `GZIP_IMPLEMENTATION`                    | `string`            | `PGZip`                                                                                     | The implementation of compression/decompression. Currently only "`PGZip`" and "`GZip`" are supported.                                                                                                                                                                    |
 | `INFORMER_WRITE_BACK`                    | `bool`              | `true`                                                                                      | Whether to write back to informer instead of catching up.                                                                                                                                                                                                                |
 | `HEALTHZ_AGE`                            | `time.Duration`     | `5m`                                                                                        | How old a un-reconciled workflow is to report unhealthy.                                                                                                                                                                                                                 |
@@ -54,8 +53,8 @@ most users. Environment variables may be removed at any time.
 | `WORKFLOW_GC_PERIOD`                     | `time.Duration`     | `5m`                                                                                        | The periodicity for GC of workflows.                                                                                                                                                                                                                                     |
 | `SEMAPHORE_NOTIFY_DELAY`                 | `time.Duration`     | `1s`                                                                                        | Tuning Delay when notifying semaphore waiters about availability in the semaphore                                                                                                                                                                                        |
 
-CLI parameters of the `argo-server` and `workflow-controller` can be specified as environment variables with the `ARGO_`
-prefix. For example:
+CLI parameters of the Controller can be specified as environment variables with the `ARGO_` prefix.
+For example:
 
 ```bash
 workflow-controller --managed-namespace=argo
@@ -67,37 +66,7 @@ Can be expressed as:
 ARGO_MANAGED_NAMESPACE=argo workflow-controller
 ```
 
-You can set environment variable for the argo-server deployment, for example:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: argo-server
-spec:
-  selector:
-    matchLabels:
-      app: argo-server
-  template:
-    metadata:
-      labels:
-        app: argo-server
-    spec:
-      containers:
-        - args:
-            - server
-          image: argoproj/argocli:latest
-          name: argo-server
-          env:
-            - name: GRPC_MESSAGE_SIZE
-              value: "209715200"
-          ports:
-          ..
-          ...
-          ....
-```
-
-You can set the environment variables for controller in controller's container spec like the following:
+You can set environment variables for the Controller Deployment's container spec like the following:
 
 ```yaml
 apiVersion: apps/v1
@@ -131,8 +100,7 @@ spec:
 | `RESOURCE_STATE_CHECK_INTERVAL`        | `time.Duration` | `5s`    | The time interval between resource status checks against the specified success and failure conditions. |
 | `WAIT_CONTAINER_STATUS_CHECK_INTERVAL` | `time.Duration` | `5s`    | The time interval for wait container to check whether the containers have completed.                   |
 
-You can set the environment variables for executor by customizing executor container's environment variables in your
-controller's config-map like the following:
+You can set environment variables for the Executor in your [`workflow-controller-configmap`](workflow-controller-configmap.md) like the following:
 
 ```yaml
 apiVersion: v1
@@ -156,3 +124,45 @@ data:
 | `FEEDBACK_MODAL`                           | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `NEW_VERSION_MODAL`                        | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `POD_NAMES`                                | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller |
+| `GRPC_MESSAGE_SIZE`                        | `string` | `104857600` | Use different GRPC Max message size for Server (supporting huge workflows).                                         |
+
+CLI parameters of the Server can be specified as environment variables with the `ARGO_` prefix.
+For example:
+
+```bash
+argo server --managed-namespace=argo
+```
+
+Can be expressed as:
+
+```bash
+ARGO_MANAGED_NAMESPACE=argo argo server
+```
+
+You can set environment variables for the Server Deployment's container spec like the following:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+        - args:
+            - server
+          image: argoproj/argocli:latest
+          name: argo-server
+          env:
+            - name: GRPC_MESSAGE_SIZE
+              value: "209715200"
+          ports:
+          # ...
+```

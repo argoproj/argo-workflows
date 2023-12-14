@@ -107,7 +107,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                     <p>
                         A sensor defines what actions to trigger when certain events occur. Typical events are a Git push, a file dropped into a bucket, or a message on a queue or
                         topic. Typical triggers are start a workflow, creating a Kubernetes resource, or sending a message to another queue or topic. Each sensor listens for events
-                        from the event bus, checks to see if they're the right one, and then triggers some actions.
+                        from the event bus, checks to see if they&apos;re the right one, and then triggers some actions.
                     </p>
                     <p>{learnMore}.</p>
                 </ZeroState>

@@ -1,7 +1,8 @@
 <!-- markdownlint-disable-next-line MD041 -->
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows/badge)](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows)
+[![FOSSA License Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fargoproj%2Fargo-workflows.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fargoproj%2Fargo-workflows?ref=badge_shield)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/argo-workflows)](https://artifacthub.io/packages/helm/argo/argo-workflows)
 [![Twitter Follow](https://img.shields.io/twitter/follow/argoproj?style=social)](https://twitter.com/argoproj)
 
@@ -38,7 +39,10 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Try Argo Workflows
 
-[Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo) (login using Github)
+You can try Argo Workflows via one of the following:
+
+1. [Interactive Training Material](https://killercoda.com/argoproj/course/argo-workflows/)
+1. [Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo)
 
 ![Screenshot](docs/assets/screenshot.png)
 
@@ -139,6 +143,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 * [Argo Workflows vs Apache Airflow](http://bit.ly/30YNIvT)
 * [CI/CD with Argo on Kubernetes](https://medium.com/@bouwe.ceunen/ci-cd-with-argo-on-kubernetes-28c1a99616a9)
 * [Define Your CI/CD Pipeline with Argo Workflows](https://haque-zubair.medium.com/define-your-ci-cd-pipeline-with-argo-workflows-25aefb02fa63)
+* [Distributed Machine Learning Patterns from Manning Publication](https://github.com/terrytangyuan/distributed-ml-patterns)
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
