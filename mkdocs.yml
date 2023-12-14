@@ -34,6 +34,13 @@ markdown_extensions:
   - pymdownx.details
   - toc:
       permalink: true
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+exclude_docs: |
+  proposals/
+
 nav:
   - Home: README.md
   - Getting Started:

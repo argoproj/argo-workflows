@@ -10,7 +10,7 @@ argo server [flags]
 
 ```
 
-See https://argoproj.github.io/argo-workflows/argo-server/
+See https://argo-workflows.readthedocs.io/en/stable/argo-server/
 ```
 
 ### Options
