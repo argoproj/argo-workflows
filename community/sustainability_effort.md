@@ -63,3 +63,4 @@ Any bugs that have >= 5 "thumbs up" reactions should be labeled `P1`. Any bugs w
 | Julie Vogelman            | [juliev0](https://github.com/juliev0)                   |
 | Saravanan Balasubramanian | [sarabala1979](https://github.com/sarabala1979)         |
 | Yuan Tang                 | [terrytangyuan](https://github.com/terrytangyuan)       |
+| Alan Clucas               | [Joibel](https://github.com/Joibel)                     |
