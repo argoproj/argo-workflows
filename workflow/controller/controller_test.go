@@ -1069,3 +1069,37 @@ spec:
 	podCleanupKey := "test/my-wf/labelPodCompleted"
 	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
 }
+
+func TestPodCleanupDeletePendingPodWhenTerminate(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: test
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+  `)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	woc.execWf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+	woc.operate(ctx)
+	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 0)
+}
