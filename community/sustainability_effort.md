@@ -17,7 +17,7 @@ The Argo project currently has 4 designated [roles](https://github.com/argoproj/
 For those who focus on just one area of the code (such as UI), the `Reviewer` and `Approver` roles can optionally be scoped to just that area.
 
 Anybody in any of these roles can sign up to be a part of this Incentive System. Participants are expected to try to advance in roles. The minimum expectations are different depending on which role:
-- Member: should focus primarily on authoring PRs, should average a minimum of 8 hours per week; can also assist with triaging bugs
+- Member: should focus primarily on authoring PRs, should average a minimum of 8 hours per week; can also assist with triaging bugs or optionally reviewing PRs
 - Reviewer: should author PRs and review PRs to move into the "Approver" role, should average a minimum of 2 hours per week of either PR review time or triaging bugs
 - Approver/Lead: should average a minimum of 2 hours per week of either PR review time or triaging bugs
 
