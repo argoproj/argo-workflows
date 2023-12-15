@@ -129,11 +129,11 @@ func initExecutor() *executor.WorkflowExecutor {
 		progressFileTickDuration,
 	)
 
+	log.Debugf("template: %s", wfv1.MustMarshallJSON(&wfExecutor.Template))
 	log.
 		WithField("version", version.String()).
 		WithField("namespace", namespace).
 		WithField("podName", podName).
-		WithField("template", wfv1.MustMarshallJSON(&wfExecutor.Template)).
 		WithField("includeScriptOutput", includeScriptOutput).
 		WithField("deadline", deadline).
 		Info("Executor initialized")
