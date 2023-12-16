@@ -2085,10 +2085,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-datepicker@^4.19.3":
-  version "4.19.3"
-  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-4.19.3.tgz#0a58e42d820adf12337617bd72289766643775db"
-  integrity sha512-85F9eKWu9fGiD9r4KVVMPYAdkJJswR3Wci9PvqplmB6T+D+VbUqPeKtifg96NZ4nEhufjehW+SX4JLrEWVplWw==
+"@types/react-datepicker@^4.19.4":
+  version "4.19.4"
+  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-4.19.4.tgz#07807187ead4c7025bc0039fe05eb5713298f3e4"
+  integrity sha512-HRD0LHTxBVe61LRJgTdPscbapLQl7+jI/7bxnPGpvzdJ/iXN9q7ucYv8HKULeIAN84O5LzFhwTMOkO4QnIUJaQ==
   dependencies:
     "@popperjs/core" "^2.9.2"
     "@types/react" "*"
