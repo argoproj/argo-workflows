@@ -7,5 +7,6 @@ The [Argoproj Community README](https://github.com/argoproj/argoproj/blob/main/c
 
 ## Argo Workflows Sustainability Effort
 
-Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. Please see [this document](sustainability_effort.md) for more information.
+Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
+Please see [Sustainability Effort](sustainability_effort.md) for more information.
 
