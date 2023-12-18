@@ -43,7 +43,7 @@ Each of these should have an Assignee: a Reviewer, Approver, or Lead who "owns" 
 These PRs should be given an initial review within a week.
 The Assignee should then respond to each question or modification from the author within a week.
 
-Next, look for the Pull Requests which have no existing Assignee. 
+Next, look for PRs with no Assignee. 
 
 In the case of a Reviewer being the Assignee, once the Reviewer has approved the PR, they can request a review from one or more Approvers.
 
