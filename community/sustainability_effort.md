@@ -38,9 +38,10 @@ You can also try to pick up higher priority issues labeled `P1` or `P2`.
 
 ### Finding a PR to review
 
-We will first prioritize review of any PRs which have the "prioritized" label, meaning they were authored by a participant of this sytem (we can verify that they in fact are by github ID). We need to make 
-sure each of these has an Assignee. An Assignee is a Reviewer/Approver/Lead who owns reviewing the PR. PRs with this label should be given an initial review within a week and should respond to each question 
-or modification from the author within a week.
+First priority is to review any PRs which have the `prioritized` label, meaning they were authored by a participant of this system (verified by GitHub ID).
+Each of these should have an Assignee: a Reviewer, Approver, or Lead who "owns" reviewing the PR.<br />
+These PRs should be given an initial review within a week.
+The Assignee should then respond to each question or modification from the author within a week.
 
 Next, look for the Pull Requests which have no existing Assignee. 
 
