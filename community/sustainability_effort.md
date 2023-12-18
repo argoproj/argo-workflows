@@ -58,8 +58,8 @@ New bugs need to be triaged to identify the highest priority ones.
 Apply the labels `P0`, `P1`, `P2`, and `P3`, where `P0` is highest priority and needs immediate attention, followed by `P1`, `P2`, and then `P3`.
 If there's a new `P0` bug, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
 
-Any bugs with >= 5 "👍" reactions should be labeled `P1`.
-Any bugs with 3-4 "👍" reactions should be labeled `P2`. 
+Any bugs with >= 5 "👍" reactions should be labeled at least `P1`.
+Any bugs with 3-4 "👍" reactions should be labeled at least `P2`. 
 Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Abug).
 
 If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
