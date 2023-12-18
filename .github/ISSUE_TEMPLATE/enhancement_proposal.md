@@ -24,5 +24,5 @@ Love this enhancement proposal? Give it a 👍. We prioritise the proposals with
 Are you a contributor? If not, have you thought about it? 
 
 Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. 
-See [here](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information. 
+See [Sustainability Effort](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information. 
 -->
