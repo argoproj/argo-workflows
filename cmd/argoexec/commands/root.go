@@ -133,7 +133,7 @@ func initExecutor() *executor.WorkflowExecutor {
 		WithField("version", version.String()).
 		WithField("namespace", namespace).
 		WithField("podName", podName).
-		WithField("template", wfv1.MustMarshallJSON(&wfExecutor.Template)).
+		WithField("templateName", wfExecutor.Template.Name).
 		WithField("includeScriptOutput", includeScriptOutput).
 		WithField("deadline", deadline).
 		Info("Executor initialized")
