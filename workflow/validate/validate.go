@@ -1424,8 +1424,8 @@ func validateDAGTaskArgumentDependency(arguments wfv1.Arguments, ancestry []stri
 
 	for _, param := range arguments.Parameters {
 		if param.Value == nil {
-			// Disallow ValueFrom.Parameter, but allow ValueFrom.ConfigMapKeyRef
-			if param.ValueFrom == nil || param.ValueFrom.Parameter != "" {
+			// Allow ValueFrom.ConfigMapKeyRef
+			if param.ValueFrom == nil || param.ValueFrom.ConfigMapKeyRef == nil {
 				return errors.Errorf(errors.CodeBadRequest, "missing value for parameter '%s'", param.Name)
 			}
 		} else if strings.HasPrefix(param.Value.String(), "{{tasks.") {
