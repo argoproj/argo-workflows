@@ -89,7 +89,7 @@ export const Utils = {
         }
     },
 
-    onNamespaceChange(value: string) {
+    onNamespaceChange() {
         // noop
     },
 

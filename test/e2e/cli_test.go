@@ -1710,6 +1710,22 @@ spec:
 		})
 }
 
+func (s *CLISuite) TestPluginStruct() {
+	s.setMode(GRPC)
+	s.Given().
+		Workflow("@testdata/plugins/executor/template-executor-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		Then().
+		RunCli([]string{"get", "@latest", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				wf := wfv1.Workflow{}
+				assert.NoError(t, yaml.UnmarshalStrict([]byte(output), &wf))
+				assert.NotNil(t, wf.Spec.Templates[0].Plugin)
+			}
+		})
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }

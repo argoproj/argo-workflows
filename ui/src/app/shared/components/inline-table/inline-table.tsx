@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {ReactChild} from 'react';
-require('./inline-table.scss');
+
+import './inline-table.scss';
 
 interface TableProps {
     rows: Row[];

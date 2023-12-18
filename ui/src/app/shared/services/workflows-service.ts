@@ -245,7 +245,7 @@ export const WorkflowsService = {
                 return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
             }),
             mergeMap(r => r.text.split('\n')),
-            map(content => ({content, podName: workflow.status.nodes[nodeId].displayName} as LogEntry)),
+            map(content => ({content, podName: workflow.status.nodes[nodeId].displayName}) as LogEntry),
             filter(x => !!x.content.match(grep))
         );
     },

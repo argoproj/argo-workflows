@@ -843,18 +843,8 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 
 		// If the task is still running, we should not proceed.
 		depNode := d.getTaskNode(taskName)
-		if depNode == nil || !depNode.Fulfilled() {
+		if depNode == nil || !depNode.Fulfilled() || !common.CheckAllHooksFullfilled(depNode, d.wf.Status.Nodes) {
 			return false, false, nil
-		}
-
-		// If a task happens to have an onExit node, don't proceed until the onExit node is fulfilled
-		if onExitNode, err := d.wf.GetNodeByName(common.GenerateOnExitNodeName(depNode.Name)); onExitNode != nil {
-			if err != nil {
-				return false, false, err
-			}
-			if !onExitNode.Fulfilled() {
-				return false, false, nil
-			}
 		}
 
 		evalTaskName := strings.Replace(taskName, "-", "_", -1)

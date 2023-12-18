@@ -65,8 +65,7 @@ No, we should not add that dependency.
 ### Test Policy
 
 Changes without either unit or e2e tests are unlikely to be accepted.
-See [the pull request template](https://github.com/argoproj/argo-workflows/blob/master/.github/pull_request_template.md)
-.
+See [the pull request template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md).
 
 ### Contributor Workshop
 
@@ -74,4 +73,4 @@ Please check out the following resources if you are interested in contributing:
 
 * [90m hands-on contributor workshop](https://youtu.be/zZv0lNCDG9w).
 * [Deep-dive into components and hands-on experiments](https://docs.google.com/presentation/d/1IU0a3unnr3tBRi38Zn3EHQZj3z6yvocfG9x9icRu1LE/edit?usp=sharing).
-* [Architecture overview](https://github.com/argoproj/argo-workflows/blob/master/docs/architecture.md).
+* [Architecture overview](https://github.com/argoproj/argo-workflows/blob/main/docs/architecture.md).

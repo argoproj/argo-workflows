@@ -47,5 +47,4 @@ rules:
 Warning: For many organizations, it may not be acceptable to give a workflow the `pod patch` permission, see [#3961](https://github.com/argoproj/argo-workflows/issues/3961)
 
 If you are not using the emissary, you'll need additional permissions.
-See [executor](https://github.com/argoproj/argo-workflows/tree/master/manifests/quick-start/base/executor) for suitable
-permissions.
+See [executor](https://github.com/argoproj/argo-workflows/tree/main/manifests/quick-start/base/executor) for suitable permissions.

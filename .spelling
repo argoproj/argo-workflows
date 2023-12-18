@@ -95,6 +95,7 @@ PVCs
 Peixuan
 Ploomber
 Postgres
+RCs
 Roadmap
 RoleBinding
 s3
@@ -230,3 +231,8 @@ nix.conf
 LDFlags
 dev
 dependabot
+CronWorkflow
+CronWorkflows
+maxFailures
+maxSuccess
+gitops
