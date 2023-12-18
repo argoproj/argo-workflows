@@ -49,7 +49,7 @@ If a Reviewer is the Assignee, then once they have approved the PR, they should 
 
 ### Authoring PRs
 
-For participants of the system, any PRs that you author you can apply a "prioritized" label to.
+Participants can apply a `prioritized` label to any PRs they author.
 
 ### Bug Triaging
 
