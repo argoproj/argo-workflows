@@ -29,7 +29,12 @@ We're always looking for contributors.
   a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
   , or anything not assigned.
 * You can work on an issue without being assigned.
-* Join the `#argo-contributors` channel on [our Slack](https://argoproj.github.io/community/join-slack).
+* Join the `#argo-wf-contributors` channel (and optionally the `#argo-contributors` channel for all Argo projects) on [our Slack](https://argoproj.github.io/community/join-slack)
+
+### Sustainability Effort
+
+Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
+Please see [Sustainability Effort](sustainability_effort.md) for more information.
 
 ### Running Locally
 
