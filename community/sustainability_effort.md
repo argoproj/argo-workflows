@@ -45,7 +45,7 @@ The Assignee should then respond to each question or modification from the autho
 
 Next, look for PRs with no Assignee. 
 
-In the case of a Reviewer being the Assignee, once the Reviewer has approved the PR, they can request a review from one or more Approvers.
+If a Reviewer is the Assignee, then once they have approved the PR, they should request a review from one or more Approvers.
 
 ### Authoring PRs
 
