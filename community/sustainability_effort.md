@@ -67,7 +67,7 @@ If more information is needed from the author to diagnose the issue, then apply 
 
 ## Participants
 
-(if you'd like to join, just add your name here and submit in a PR)
+If you'd like to participate, add yourself here in a PR.
 
 | Name                      | GitHub ID                                               |
 |---------------------------|---------------------------------------------------------|
