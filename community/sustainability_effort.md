@@ -51,7 +51,7 @@ If a Reviewer is the Assignee, then once they have approved the PR, they should 
 
 Participants can apply a `prioritized` label to any PRs they author.
 
-### Bug Triaging
+### Triaging Bugs
 
 We need to make sure that all new bugs are seen by somebody so that we can identify the highest priority ones. There are labels `P0`, `P1`, `P2`, and `P3` that should be applied, in which `P0` is considered
 highest priority and needs immediate attention, followed by `P1`, `P2`, and then `P3`. The "bug" label can be removed if the issue is determined to be user error. The label `more-information-needed` can be added 
