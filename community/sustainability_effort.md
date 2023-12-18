@@ -2,7 +2,7 @@
 
 Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. 
 
-We are trying out a system in which users pledge a certain number of hours per week (average) and in return have their own PRs prioritized for review.
+We are trying an Incentive System in which contributors pledge a certain number of hours per week (average) and in return have their PRs prioritized for review.
 
 Help is also needed for triaging new incoming bugs (prioritizing them with `P0`, `P1`, `P2`, and `P3` labels).
 
