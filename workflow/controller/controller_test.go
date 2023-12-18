@@ -64,6 +64,35 @@ spec:
       args: ["hello world"]
 `
 
+var fromExrpessingWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: from-expression
+spec:
+  entrypoint: main
+  arguments:
+    artifacts:
+    - name: foo
+      raw:
+        data: |
+          Hello
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+        - name: foo
+      steps:
+      - - name: hello
+          inline:
+            container:
+              image: docker/whalesay:latest
+      outputs:
+        artifacts:
+        - name: result
+          fromExpression: "1 == 1 ? inputs.artifacts.foo : inputs.artifacts.foo"
+`
+
 var helloDaemonWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1102,4 +1131,23 @@ spec:
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 0)
+}
+
+func TestWorkflowReferItselfFromExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(fromExrpessingWf)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	woc.operate(ctx)
+	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
