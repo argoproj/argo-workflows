@@ -1,8 +1,9 @@
 import * as React from 'react';
 import {ReactNode, useState} from 'react';
+
 import {Button} from './button';
 
-require('./drop-down-button.scss');
+import './drop-down-button.scss';
 
 export const DropDownButton = ({onClick, items, children}: {onClick: () => void; children: ReactNode; items: {value: string; onClick: () => void}[]}) => {
     const [dropped, setDropped] = useState(false);

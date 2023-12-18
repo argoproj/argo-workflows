@@ -1,0 +1,76 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  namespace: argo
+  generateName: with-items-dag-error-
+spec:
+  podMetadata:
+    labels:
+      parent-workflow:  '{{workflow.name}}'
+  podGC:
+    strategy: OnPodCompletion
+  templates:
+    - name: hook-template
+      inputs:
+        parameters:
+          - name: 'foo'
+      script:
+        image: >-
+          alpine:3.17.3
+        command:
+          - sh
+        source: >-
+          echo "I am a hook {{inputs.parameters.foo}}"
+    - name: run-sim-template
+      inputs:
+        parameters:
+          - name: fanoutValue
+      script:
+        image: >-
+          alpine:3.17.3
+        command:
+          - sh
+        source: >-
+          echo $FANOUT_VALUE
+        env:
+          - name: FANOUT_VALUE
+            value: '{{inputs.parameters.fanoutValue}}'
+    - name: run-sim-steps-template
+      inputs:
+        parameters:
+          - name: fanoutValue
+      steps:
+        - - name: run-sim
+            arguments:
+              parameters:
+                - name: fanoutValue
+                  value: '{{inputs.parameters.fanoutValue}}'
+            template: run-sim-template
+    - name: main
+      dag:
+        tasks:
+          - name: run-sim
+            arguments:
+              parameters:
+                - name: fanoutValue
+                  value: '{{item}}'
+            template: run-sim-steps-template
+            withItems:
+              - 1
+              - 2
+              - 3
+            hooks:
+              exit:
+                template: hook-template
+                arguments:
+                  parameters:
+                    - name: foo
+                      value: bar
+              running:
+                template: hook-template
+                arguments:
+                  parameters:
+                    - name: foo
+                      value: bar
+                expression: tasks["run-sim"].status == "Running"
+  entrypoint: main

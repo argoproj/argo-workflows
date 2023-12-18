@@ -1,8 +1,10 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
+
 import {uiUrl} from '../../shared/base';
 import {useCollectEvent} from '../../shared/components/use-collect-event';
-require('./help.scss');
+
+import './help.scss';
 
 export function Help() {
     useCollectEvent('openedHelp');
@@ -13,10 +15,10 @@ export function Help() {
                     <div className='help-box'>
                         <div className='help-box__ico help-box__ico--manual' />
                         <h3>Documentation</h3>
-                        <a href='https://argoproj.github.io/argo-workflows' target='_blank' className='help-box__link'>
+                        <a href='https://argoproj.github.io/argo-workflows' target='_blank' className='help-box__link' rel='noreferrer'>
                             Online Help
                         </a>
-                        <a className='help-box__link' target='_blank' href={uiUrl('apidocs')}>
+                        <a className='help-box__link' target='_blank' href={uiUrl('apidocs')} rel='noreferrer'>
                             API Docs
                         </a>
                     </div>
@@ -25,7 +27,7 @@ export function Help() {
                     <div className='help-box'>
                         <div className='help-box__ico help-box__ico--email' />
                         <h3>Contact</h3>
-                        <a className='help-box__link' target='_blank' href='https://argoproj.github.io/community/join-slack/'>
+                        <a className='help-box__link' target='_blank' href='https://argoproj.github.io/community/join-slack/' rel='noreferrer'>
                             Slack
                         </a>
                     </div>
@@ -34,7 +36,7 @@ export function Help() {
                     <div className='help-box'>
                         <div className='help-box__ico help-box__ico--download' />
                         <h3>Argo CLI</h3>
-                        <a className='help-box__link' target='_blank' href='https://github.com/argoproj/argo-workflows/releases/latest'>
+                        <a className='help-box__link' target='_blank' href='https://github.com/argoproj/argo-workflows/releases/latest' rel='noreferrer'>
                             Releases
                         </a>
                     </div>

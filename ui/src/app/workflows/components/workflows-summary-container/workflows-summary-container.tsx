@@ -1,9 +1,10 @@
 import {Tooltip} from 'argo-ui';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
+
 import {Workflow} from '../../../../models';
 
-require('./workflows-summary-container.scss');
+import './workflows-summary-container.scss';
 
 type ReduceReturnType = Record<string, number>;
 

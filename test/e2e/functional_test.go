@@ -72,7 +72,7 @@ spec:
         value: bar
   workflowMetadata:
     labelsFrom:
-      my-label: 
+      my-label:
         expression: workflow.parameters.foo
   entrypoint: main
   templates:
@@ -654,7 +654,7 @@ spec:
         parameters:
         - name: message
       container:
-        image: argoproj/argosay:v2 
+        image: argoproj/argosay:v2
         command: [cowsay]
         args: ["{{inputs.parameters.message}}"]
 `).
@@ -989,12 +989,12 @@ func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
 
-func (s *FunctionalSuite) TestStepLevelMemozie() {
+func (s *FunctionalSuite) TestStepLevelMemoize() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-memozie-
+  generateName: steps-memoize-
 spec:
   entrypoint: hello-hello-hello
   templates:
@@ -1054,12 +1054,72 @@ spec:
 
 }
 
-func (s *FunctionalSuite) TestDAGLevelMemozie() {
+func (s *FunctionalSuite) TestStepLevelMemoizeNoOutput() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-memozie-
+  generateName: steps-memoize-noout-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+    - name: hello-hello-hello
+      steps:
+        - - name: hello1
+            template: memostep
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+        - - name: hello2a
+            template: memostep
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+    - name: memostep
+      inputs:
+        parameters:
+        - name: message
+      memoize:
+        key: "{{inputs.parameters.message}}"
+        maxAge: "10s"
+        cache:
+          configMap:
+            name: my-config-memo-step-no-out
+      steps:
+      - - name: cache
+          template: whalesay
+          arguments:
+            parameters: [{name: message, value: "{{inputs.parameters.message}}"}]
+    - name: whalesay
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2
+        command: [echo]
+        args: ["{{inputs.parameters.message}}"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			memoHit := false
+			for _, node := range status.Nodes {
+				if node.MemoizationStatus != nil && node.MemoizationStatus.Hit {
+					memoHit = true
+				}
+			}
+			assert.True(t, memoHit)
+
+		})
+
+}
+
+func (s *FunctionalSuite) TestDAGLevelMemoize() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-memoize-
 spec:
   entrypoint: hello-hello-hello
   templates:
@@ -1094,6 +1154,67 @@ spec:
         - name: output
           valueFrom:
             Parameter: "{{tasks.cache.outputs.result}}"
+    - name: whalesay
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2
+        command: [echo]
+        args: ["{{inputs.parameters.message}}"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			memoHit := false
+			for _, node := range status.Nodes {
+				if node.MemoizationStatus != nil && node.MemoizationStatus.Hit {
+					memoHit = true
+				}
+			}
+			assert.True(t, memoHit)
+
+		})
+
+}
+
+func (s *FunctionalSuite) TestDAGLevelMemoizeNoOutput() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-memoize-noout-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+    - name: hello-hello-hello
+      steps:
+        - - name: hello1
+            template: memostep
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+        - - name: hello2a
+            template: memostep
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+    - name: memostep
+      inputs:
+        parameters:
+        - name: message
+      memoize:
+        key: "{{inputs.parameters.message}}"
+        maxAge: "10s"
+        cache:
+          configMap:
+            name: my-config-memo-dag
+      dag:
+        tasks:
+        - name: cache
+          template: whalesay
+          arguments:
+            parameters: [{name: message, value: "{{inputs.parameters.message}}"}]
     - name: whalesay
       inputs:
         parameters:
@@ -1199,4 +1320,26 @@ func (s *FunctionalSuite) TestEntrypointName() {
 			assert.Equal(t, "bar", n.Inputs.Parameters[0].Value.String())
 		})
 
+}
+
+func (s *FunctionalSuite) TestMissingStepsInUI() {
+	s.Given().
+		Workflow(`@functional/missing-steps.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithName(`missing-steps[0].step1[0].execute-script`), func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
+			assert.NotNil(t, n)
+			assert.NotNil(t, n.Children)
+			assert.Equal(t, 1, len(n.Children))
+		})
+}
+
+func (s *FunctionalSuite) TestWithItemsWithHooks() {
+	s.Given().
+		Workflow("@smoke/with-items-with-hooks.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }

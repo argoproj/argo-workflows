@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import {Workflow} from '../../../../models';
 
+import {Workflow} from '../../../../models';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Loading} from '../../../shared/components/loading';
 import {ConditionsPanel} from '../../../shared/conditions-panel';
@@ -11,7 +11,7 @@ import {WorkflowCreatorInfo} from '../workflow-creator-info/workflow-creator-inf
 import {WorkflowFrom} from '../workflow-from';
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
-require('./workflow-drawer.scss');
+import './workflow-drawer.scss';
 
 interface WorkflowDrawerProps {
     name: string;
@@ -59,9 +59,10 @@ export function WorkflowDrawer(props: WorkflowDrawerProps) {
                                         <div className='workflow-drawer__title'>
                                             RESOURCES DURATION&nbsp;
                                             <a
-                                                href='https://github.com/argoproj/argo-workflows/blob/master/docs/resource-duration.md'
+                                                href='https://argoproj.github.io/argo-workflows/resource-duration/'
                                                 onClick={e => e.stopPropagation()}
-                                                target='_blank'>
+                                                target='_blank'
+                                                rel='noreferrer'>
                                                 <i className='fas fa-info-circle' />
                                             </a>
                                         </div>

@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as models from '../../../../models';
 import {labels} from '../../../../models';
 
-require('./workflow-creator-info.scss');
+import './workflow-creator-info.scss';
 
 interface WorkflowCreatorInfoProps {
     workflow: models.Workflow;

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -172,6 +173,10 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	}
 
 	if outputs != nil {
+		node, err := woc.wf.GetNodeByName(nodeName)
+		if err != nil {
+			return nil, err
+		}
 		node.Outputs = outputs
 		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes.Set(node.ID, *node)
@@ -589,6 +594,10 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		realTimeScope[common.LocalVarDuration] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
+	}
+
+	if len(node.Children) != 0 {
+		localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
 	}
 
 	if node.Phase != "" {

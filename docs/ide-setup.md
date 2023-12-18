@@ -2,7 +2,7 @@
 
 ## Validating Argo YAML against the JSON Schema
 
-Argo provides a [JSON Schema](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json) that enables validation of YAML resources in your IDE.
+Argo provides a [JSON Schema](https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/jsonschema/schema.json) that enables validation of YAML resources in your IDE.
 
 ### JetBrains IDEs (Community & Ultimate Editions)
 
@@ -12,7 +12,7 @@ Configure your IDE to reference the Argo schema and map it to your Argo YAML fil
 
 ![JetBrains IDEs Configure Schema](assets/jetbrains-ide-step-1-config.png)
 
-- The schema is located [here](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json).
+- The schema is located [here](https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/jsonschema/schema.json).
 - Specify a file glob pattern that locates **your** Argo files. The example glob here is for the Argo Github project!
 - Note that you may need to restart IDEA to pick up the changes.
 
@@ -32,7 +32,7 @@ Unlike the previous JSON schema validation method, the plugin detects the necess
 based on Kubernetes resource definition keys and does not require a file glob pattern.
 Like the previously described method:
 
-- The schema is located [here](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json).
+- The schema is located [here](https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/jsonschema/schema.json).
 - Note that you may need to restart IDEA to pick up the changes.
 
 ### VSCode
@@ -51,7 +51,7 @@ Add the Argo schema setting `yaml.schemas`:
 
 ![VSCode Specify Argo Schema](assets/vscode-ide-step-3-spec-schema.png)
 
-- The schema is located [here](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json).
+- The schema is located [here](https://raw.githubusercontent.com/argoproj/argo-workflows/main/api/jsonschema/schema.json).
 - Specify a file glob pattern that locates **your** Argo files. The example glob here is for the Argo Github project!
 - Note that other defined schema with overlapping glob patterns may cause errors.
 
