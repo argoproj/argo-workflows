@@ -159,7 +159,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: argoexec
           path: /tmp/argoexec_image.tar
@@ -243,7 +243,7 @@ jobs:
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
       - name: Download argoexec image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: argoexec
           path: /tmp
