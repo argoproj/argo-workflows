@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -593,6 +594,10 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		realTimeScope[common.LocalVarDuration] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
+	}
+
+	if len(node.Children) != 0 {
+		localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
 	}
 
 	if node.Phase != "" {
