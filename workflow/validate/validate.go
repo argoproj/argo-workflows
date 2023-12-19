@@ -861,6 +861,9 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 			}
 		}
+		if param.ValueFrom != nil && param.ValueFrom.Default == nil && param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.Expression == "" {
+			return errors.Errorf(errors.CodeBadRequest, "only default, configMapKeyRef and supplied allowed for valueFrom '%s'", param.Name)
+		}
 		if param.Enum != nil {
 			if len(param.Enum) == 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.enum should contain at least one value", prefix, param.Name)
@@ -1423,12 +1426,7 @@ func validateDAGTaskArgumentDependency(arguments wfv1.Arguments, ancestry []stri
 	}
 
 	for _, param := range arguments.Parameters {
-		if param.Value == nil {
-			// Allow ValueFrom.ConfigMapKeyRef
-			if param.ValueFrom == nil || param.ValueFrom.ConfigMapKeyRef == nil {
-				return errors.Errorf(errors.CodeBadRequest, "missing value for parameter '%s'", param.Name)
-			}
-		} else if strings.HasPrefix(param.Value.String(), "{{tasks.") {
+		if param.Value != nil && strings.HasPrefix(param.Value.String(), "{{tasks.") {
 			// All parameter values should have been validated, so
 			// index 1 should exist.
 			refTaskName := strings.Split(param.Value.String(), ".")[1]
