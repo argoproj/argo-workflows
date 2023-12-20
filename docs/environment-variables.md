@@ -122,6 +122,7 @@ data:
 | `DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN` | `string` | `""`    | Disable the retrieval of the list of label values for keys based on this regular expression.                            |
 | `FIRST_TIME_USER_MODAL`                    | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `FEEDBACK_MODAL`                           | `bool`   | `true`  | Show this modal.                                                                                                        |
+| `IP_KEY_FUNC_HEADERS`                      | `string` | `""`    | List of comma separated request headers containing IPs to use for rate limiting. For example, "X-Forwarded-For,X-Real-IP". By default, uses the request's remote IP address.          |
 | `NEW_VERSION_MODAL`                        | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `POD_NAMES`                                | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller |
 | `GRPC_MESSAGE_SIZE`                        | `string` | `104857600` | Use different GRPC Max message size for Server (supporting huge workflows).                                         |
