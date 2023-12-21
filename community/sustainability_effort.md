@@ -21,7 +21,7 @@ Participants are expected to try to advance in roles.
 There are different expectations depending on the role:
 - Member and below: should focus primarily on authoring PRs, averaging a minimum of 8 hours per week. Can also assist with triaging bugs or reviewing PRs.
 - Reviewer: should author PRs and review PRs to move into the "Approver" role, should average a minimum of 2 hours per week of either PR review time or triaging bugs
-- Approver/Lead: should average a minimum of 2 hours per week of either PR review time or triaging bugs
+- Approver and above: should average a minimum of 2 hours per week of either PR review time or triaging bugs
 
 Note that the hours per week from above is an average over time, and it's fine to have weeks of no activity.
 
