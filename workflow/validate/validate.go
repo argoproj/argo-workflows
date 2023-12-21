@@ -856,14 +856,23 @@ func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error 
 // validateArgumentsValues ensures that all arguments have parameter values or artifact locations
 func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmptyValues bool) error {
 	for _, param := range arguments.Parameters {
+		// check if any value is defined
 		if param.ValueFrom == nil && param.Value == nil {
 			if !allowEmptyValues {
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 			}
 		}
-		if param.ValueFrom != nil && param.ValueFrom.Default == nil && param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.Expression == "" {
+		// check for valid valueFrom sub-parameters
+		// INFO: default needs to be accompanied by with ConfigMapKeyRef.
+		// TODO: check if ValueFrom.Expression is valid!
+		if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.Expression == "" {
 			return errors.Errorf(errors.CodeBadRequest, "only default, configMapKeyRef and supplied allowed for valueFrom '%s'", param.Name)
 		}
+		// check for invalid valueFrom sub-parameters
+		if param.ValueFrom != nil && param.ValueFrom.Path != "" && param.ValueFrom.JSONPath != "" && param.ValueFrom.Event != "" && param.ValueFrom.Parameter != "" && param.ValueFrom.Supplied != nil {
+			return errors.Errorf(errors.CodeBadRequest, "only default, configMapKeyRef and supplied allowed for valueFrom '%s'", param.Name)
+		}
+		// validate enum
 		if param.Enum != nil {
 			if len(param.Enum) == 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.enum should contain at least one value", prefix, param.Name)

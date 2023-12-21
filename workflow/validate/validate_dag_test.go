@@ -1075,11 +1075,11 @@ spec:
 func TestDAGMissingParamValueInTask(t *testing.T) {
 	err := validate(dagMissingParamValueInTask)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "templates.root.tasks.task missing value for parameter 'data'")
+		assert.Contains(t, err.Error(), "only default, configMapKeyRef and supplied allowed for valueFrom 'data'")
 	}
 }
 
-var dagParamValueFromConfigMapInTask = `
+var dagArgParamValueFromConfigMapInTask = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 spec:
@@ -1104,9 +1104,10 @@ spec:
                     configMapKeyRef:
                       name: my-config
                       key: my-data
+                    default: my-default
 `
 
-func TestDAGParamValueFromConfigMapInTask(t *testing.T) {
-	err := validate(dagParamValueFromConfigMapInTask)
+func TestDAGArgParamValueFromConfigMapInTask(t *testing.T) {
+	err := validate(dagArgParamValueFromConfigMapInTask)
 	assert.NoError(t, err)
 }
