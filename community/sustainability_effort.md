@@ -16,7 +16,8 @@ The Argo project currently has 4 designated [roles](https://github.com/argoproj/
 
 For those who focus on just one area of the code (such as UI), the `Reviewer` and `Approver` roles can optionally be scoped to just that area.
 
-Any person in a designated role (or even those who are not yet Members) can sign up to participate in this Incentive System.
+Any person in a designated role or with an open Membership request can sign up to participate in this Incentive System.
+To create a Membership request, create an Issue in the [argoproj](https://github.com/argoproj/argoproj) repository as described in the [Membership](https://github.com/argoproj/argoproj/blob/main/community/membership.md) guide.
 Participants are expected to try to advance in roles.
 There are different expectations depending on the role:
 - Member and below: should focus primarily on authoring PRs, averaging a minimum of 8 hours per week. Can also assist with triaging bugs or reviewing PRs.
