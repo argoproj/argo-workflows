@@ -25,7 +25,7 @@ There are different expectations depending on the role:
 
 Note that the hours per week listed above is an average over time; it's fine to have weeks of no activity so long as the average meets expectations.
 
-Current roles for Reviewers, Approvers, and Leads can be found in [OWNERS](../OWNERS).
+Current roles for Reviewers and above can be found in [OWNERS](../OWNERS).
 
 Participants should join the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
 
