@@ -191,6 +191,14 @@ func newServer() *ArtifactServer {
 									},
 								},
 							},
+							{
+								Name: "my-s3-artifact-directory",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "my-wf/my-node-1/my-s3-artifact-directory",
+									},
+								},
+							},
 						},
 					},
 					Outputs: &wfv1.Outputs{
@@ -389,6 +397,21 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 		},
 		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/my-s3-artifact-directory/subdirectory/",
+			statusCode:  200,
+			isDirectory: true,
+			directoryFiles: []string{
+				"..",
+				"b.txt",
+				"c.txt",
+			},
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/inputs/my-s3-input-artifact",
+			statusCode:  200,
+			isDirectory: false,
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/inputs/my-s3-artifact-directory/subdirectory/",
 			statusCode:  200,
 			isDirectory: true,
 			directoryFiles: []string{
