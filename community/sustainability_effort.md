@@ -23,7 +23,7 @@ There are different expectations depending on the role:
 - Reviewer: should author PRs and review PRs to move into the "Approver" role, should average a minimum of 2 hours per week of either PR review time or triaging bugs
 - Approver and above: should average a minimum of 2 hours per week of either PR review time or triaging bugs
 
-Note that the hours per week from above is an average over time, and it's fine to have weeks of no activity.
+Note that the hours per week listed above is an average over time; it's fine to have weeks of no activity so long as the average meets expectations.
 
 Current roles for Reviewers, Approvers, and Leads can be found in [OWNERS](../OWNERS).
 
