@@ -2,27 +2,26 @@
 
 Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. 
 
-We are trying an Incentive System in which contributors pledge a certain number of hours per week (average) and in return have their PRs prioritized for review.
+We are trying an Incentive System in which contributors pledge a certain number of hours per week (average) to the project and in return have their PRs prioritized for review.
 
-Help is also needed for triaging new incoming bugs by prioritizing them with `P0`, `P1`, `P2`, and `P3` labels.
+## Where is help needed?
+
+Help is needed for:
+* reviewing PRs
+* [triaging](../docs/CONTRIBUTING.md#triaging-bugs) new incoming bugs by prioritizing them with `P0`, `P1`, `P2`, and `P3` labels
+* responding to questions in [Github Discussions](https://github.com/argoproj/argo-workflows/discussions)
+* responding to questions in [CNCF Slack](https://argoproj.github.io/community/join-slack) on `#argo-workflows` and `#argo-wf-contributors` channels 
 
 ## Commitment
 
-The Argo project currently has 4 designated [roles](https://github.com/argoproj/argoproj/blob/main/community/membership.md):
-- Member
-- Reviewer
-- Approver
-- Lead
-
-For those who focus on just one area of the code (such as UI), the `Reviewer` and `Approver` roles can optionally be scoped to just that area.
-
-Any person in a designated role or with an open Membership request can sign up to participate in this Incentive System.
+Argo Workflows has roles as described in the [Contributing](../docs/CONTRIBUTING.md#roles) document.
+Any code contributor in a designated role or with an open Membership request can sign up to participate in this Incentive System.
 To create a Membership request, create an Issue in the [argoproj](https://github.com/argoproj/argoproj) repository as described in the [Membership](https://github.com/argoproj/argoproj/blob/main/community/membership.md) guide.
+
 Participants are expected to try to advance in roles.
 There are different expectations depending on the role:
-- Member and below: should focus primarily on authoring PRs, averaging a minimum of 8 hours per week. Can also assist with triaging bugs or reviewing PRs.
-- Reviewer: should author PRs and review PRs to move into the "Approver" role, should average a minimum of 2 hours per week of either PR review time or triaging bugs
-- Approver and above: should average a minimum of 2 hours per week of either PR review time or triaging bugs
+- Member and below: should average a minimum of 8 hours per week of either [authoring PRs](../docs/CONTRIBUTING.md#authoring-prs) or doing any of the activities listed above in ["Where is help needed?"](#where-is-help-needed?) section (more time is required in this role in order to make sufficient progress)
+- Reviewer and above: should average a minimum of 2 hours per week doing any of the activities listed above in ["Where is help needed?"](#where-is-help-needed?) section (highest priority is to ensure that all [`prioritized` PRs](#authoring-prs) have an Assignee)
 
 Note that the hours per week listed above is an average over time; it's fine to have weeks of no activity so long as the average meets expectations.
 
@@ -30,19 +29,13 @@ Current roles for Reviewers and above can be found in [OWNERS](../OWNERS).
 
 Participants should join the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
 
-### Finding code to work on
-
-If you have a business need, definitely feel free to work on that.
-Otherwise, you can find an issue and assign it to yourself.
-If you're a new developer, one option is to pick one up that has the label `good-first-issue`.
-You can also try to pick up higher priority issues labeled `P1` or `P2`. 
 
 ### Finding a PR to review
 
 First priority is to review any PRs which have the `prioritized` label, meaning they were authored by a participant of this system (verified by GitHub ID).
 Each of these should have an Assignee: a Reviewer, Approver, or Lead who "owns" reviewing the PR.<br />
 These PRs should be given an initial review within a week.
-The Assignee should then respond to each question or modification from the author within a week.
+The Assignee should then respond to each question or requested modification from the author within a week.
 
 Next, look for PRs with no Assignee. 
 
@@ -52,19 +45,6 @@ If a Reviewer is the Assignee, then once they have approved the PR, they should 
 
 Participants can apply a `prioritized` label to any PRs they author.
 
-### Triaging Bugs
-
-New bugs need to be triaged to identify the highest priority ones.
-
-Apply the labels `P0`, `P1`, `P2`, and `P3`, where `P0` is highest priority and needs immediate attention, followed by `P1`, `P2`, and then `P3`.
-If there's a new `P0` bug, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
-
-Any bugs with >= 5 "👍" reactions should be labeled at least `P1`.
-Any bugs with 3-4 "👍" reactions should be labeled at least `P2`. 
-Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Abug).
-
-If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
-If more information is needed from the author to diagnose the issue, then apply the `more-information-needed` label.
 
 ## Participants
 
