@@ -76,7 +76,7 @@ The Reviewer and Approver roles can optionally be scoped to an area of the codeb
 ### Sustainability Effort
 
 Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
-Please see [Sustainability Effort](sustainability_effort.md) for more information.
+Please see [Sustainability Effort](../community/sustainability_effort.md) for more information.
 
 ### Running Locally
 
