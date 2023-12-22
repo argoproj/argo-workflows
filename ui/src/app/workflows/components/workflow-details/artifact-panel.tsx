@@ -21,7 +21,7 @@ export function ArtifactPanel({
 }: {
     workflow: Workflow;
     artifact: Artifact & {nodeId: string; artifactNameDiscriminator: string};
-    archived?: boolean;
+    archived: boolean;
     artifactRepository: ArtifactRepository;
 }) {
     const input = artifact.artifactNameDiscriminator === 'input';
