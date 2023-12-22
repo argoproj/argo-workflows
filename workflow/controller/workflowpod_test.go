@@ -1789,6 +1789,44 @@ func TestPodExists(t *testing.T) {
 	assert.EqualValues(t, pod, existingPod)
 }
 
+func TestPodFinalizerExits(t *testing.T) {
+	_ = os.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "true")
+	defer func() { _ = os.Unsetenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") }()
+	cancel, controller := newController()
+	defer cancel()
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.NoError(t, err)
+	assert.NotNil(t, pod)
+
+	assert.Equal(t, []string{common.FinalizerPodStatus}, pod.GetFinalizers())
+}
+
+func TestPodFinalizerDoesNotExist(t *testing.T) {
+	_ = os.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "false")
+	defer func() { _ = os.Unsetenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") }()
+	cancel, controller := newController()
+	defer cancel()
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.NoError(t, err)
+	assert.NotNil(t, pod)
+
+	assert.Equal(t, []string(nil), pod.GetFinalizers())
+}
+
 func TestProgressEnvVars(t *testing.T) {
 	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
 		cancel, controller := newController(options...)

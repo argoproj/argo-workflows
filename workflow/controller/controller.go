@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	gosync "sync"
 	"syscall"
 	"time"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
+	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
@@ -148,6 +150,12 @@ type WorkflowController struct {
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
 	recentCompletions recentCompletions
+}
+
+type PatchOperation struct {
+	Operation string      `json:"op"`
+	Path      string      `json:"path"`
+	Value     interface{} `json:"value,omitempty"`
 }
 
 const (
@@ -523,32 +531,49 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	logCtx.Info("cleaning up pod")
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
+		pod, err := pods.Get(ctx, podName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 		switch action {
 		case terminateContainers:
-			pod, err := wfc.getPod(namespace, podName)
-			if err == nil && pod != nil && pod.Status.Phase == apiv1.PodPending {
-				wfc.queuePodForCleanup(namespace, podName, deletePod)
-			} else if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
+			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
+			if err := applyPatch(ctx, pods, podName, patch); err != nil {
 				return err
-			} else if terminationGracePeriod > 0 {
-				wfc.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
+			}
+			if pod.Status.Phase == apiv1.PodPending {
+				wfc.queuePodForCleanup(namespace, podName, deletePod)
+			} else {
+				terminationGracePeriod := wfc.signalContainers(pod, syscall.SIGTERM)
+				if terminationGracePeriod > 0 {
+					wfc.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
+				}
 			}
 		case killContainers:
-			if _, err := wfc.signalContainers(namespace, podName, syscall.SIGKILL); err != nil {
+			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
+			if err := applyPatch(ctx, pods, podName, patch); err != nil {
 				return err
 			}
+			wfc.signalContainers(pod, syscall.SIGKILL)
 		case labelPodCompleted:
-			_, err := pods.Patch(
-				ctx,
-				podName,
-				types.MergePatchType,
-				[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`),
-				metav1.PatchOptions{},
-			)
-			if err != nil {
+			// Escape for JSON Pointer https://datatracker.ietf.org/doc/html/rfc6901#section-3
+			escaped := strings.ReplaceAll(common.LabelKeyCompleted, "/", "~1")
+			patch := []PatchOperation{
+				{
+					Operation: "replace",
+					Path:      fmt.Sprintf("/metadata/labels/%s", escaped),
+					Value:     "true",
+				},
+			}
+			patch = append(patch, createFinalizerPodStatusRemovalPatchIfExists(pod)...)
+			if err := applyPatch(ctx, pods, podName, patch); err != nil {
 				return err
 			}
 		case deletePod:
+			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
+			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+				return err
+			}
 			propagation := metav1.DeletePropagationBackground
 			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
 				PropagationPolicy:  &propagation,
@@ -569,6 +594,46 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	return true
 }
 
+func createFinalizerPodStatusRemovalPatchIfExists(pod *apiv1.Pod) []PatchOperation {
+	var patch []PatchOperation
+	i := slices.Index(pod.Finalizers, common.FinalizerPodStatus)
+	if i >= 0 {
+		patch = append(patch, PatchOperation{
+			Operation: "remove",
+			Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
+		})
+	}
+	return patch
+}
+
+func applyPatch(ctx context.Context, pods typedv1.PodInterface, podName string, patch []PatchOperation) error {
+	if len(patch) == 0 {
+		log.Debug("not patching pod")
+		return nil
+	}
+	data, err := json.Marshal(patch)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch: %w", err)
+	}
+	log.WithField("data", string(data)).Debug("patching pod")
+	_, err = pods.Patch(ctx, podName, types.JSONPatchType, data, metav1.PatchOptions{})
+	return err
+}
+
+func (wfc *WorkflowController) signalContainers(pod *apiv1.Pod, sig syscall.Signal) time.Duration {
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.State.Running == nil {
+			continue
+		}
+		// problems are already logged at info level, so we just ignore errors here
+		_ = signal.SignalContainer(wfc.restConfig, pod, c.Name, sig)
+	}
+	if pod.Spec.TerminationGracePeriodSeconds == nil {
+		return 30 * time.Second
+	}
+	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second
+}
+
 func (wfc *WorkflowController) getPod(namespace string, podName string) (*apiv1.Pod, error) {
 	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
@@ -582,25 +647,6 @@ func (wfc *WorkflowController) getPod(namespace string, podName string) (*apiv1.
 		return nil, fmt.Errorf("object is not a pod")
 	}
 	return pod, nil
-}
-
-func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
-	pod, err := wfc.getPod(namespace, podName)
-	if pod == nil || err != nil {
-		return 0, err
-	}
-
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.State.Running == nil {
-			continue
-		}
-		// problems are already logged at info level, so we just ignore errors here
-		_ = signal.SignalContainer(wfc.restConfig, pod, c.Name, sig)
-	}
-	if pod.Spec.TerminationGracePeriodSeconds == nil {
-		return 30 * time.Second, nil
-	}
-	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second, nil
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
@@ -973,6 +1019,22 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				DeleteFunc: func(obj interface{}) {
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
+
+					// Remove finalizers if they exist before deletion
+					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
+					podList, err := pods.List(ctx, metav1.ListOptions{
+						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
+					})
+					if err != nil {
+						log.WithError(err).Error("Failed to list pods")
+					}
+					for _, p := range podList.Items {
+						patch := createFinalizerPodStatusRemovalPatchIfExists(&p)
+						if err := applyPatch(ctx, pods, p.Name, patch); err != nil {
+							log.WithError(err).Error("Failed to remove finalizer from pod")
+						}
+					}
+
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
