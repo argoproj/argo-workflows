@@ -10,7 +10,6 @@ const (
 	WorkflowSucceeded WorkflowPhase = "Succeeded"
 	WorkflowFailed    WorkflowPhase = "Failed" // it maybe that the workflow was terminated
 	WorkflowError     WorkflowPhase = "Error"
-	WorkflowCanceled  WorkflowPhase = "Canceled" // it is an intermediate state when enable failFast. Workflow phase will be changed from Canceled to Succeeded/Failed/Error
 )
 
 func (p WorkflowPhase) Completed() bool {
@@ -20,8 +19,4 @@ func (p WorkflowPhase) Completed() bool {
 	default:
 		return false
 	}
-}
-
-func (p WorkflowPhase) Canceled() bool {
-	return p == WorkflowCanceled
 }

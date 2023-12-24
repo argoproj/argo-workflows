@@ -1692,7 +1692,7 @@ func TestRetryStrategyNodes(t *testing.T) {
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 
-	assert.Equal(t, wfv1.WorkflowCanceled, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var testOnExitNodeDAGPhase = `
