@@ -68,6 +68,8 @@ The Argo project currently has 4 designated [roles](https://github.com/argoproj/
 
 The Reviewer and Approver roles can optionally be scoped to an area of the codebase (for example, UI or docs).
 
+Current roles for Reviewers and above can be found in [OWNERS](../OWNERS).
+
 ### Sustainability Effort
 
 Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
