@@ -32,7 +32,7 @@ We're always looking for contributors.
 
 ### Authoring PRs
 
-* Documentation - something missing or unclear? Please submit a pull request!
+* Documentation - something missing or unclear? Please submit a pull request according to our [docs contribution guide](doc-changes.md)!
 * Code contribution - investigate
   a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
   , or anything not assigned.
