@@ -20,7 +20,8 @@ To create a Membership request, create an Issue in the [argoproj](https://github
 
 Participants are expected to try to advance in roles.
 There are different expectations depending on the role:
-- Member and below: should average a minimum of 8 hours per week of either [authoring PRs](../docs/CONTRIBUTING.md#authoring-prs) or doing any of the activities listed above in ["Where is help needed?"](#where-is-help-needed) section (more time is required in this role in order to make sufficient progress)
+- Member and below: should average a minimum of 8 hours per week of either [authoring PRs](../docs/CONTRIBUTING.md#authoring-prs) or performing any activities listed above in the ["Where is help needed?"](#where-is-help-needed) section
+  - Note that more time is required in this role in order to learn the codebase and processes to make sufficient progress
 - Reviewer and above: should average a minimum of 2 hours per week doing any of the activities listed above in ["Where is help needed?"](#where-is-help-needed) section (highest priority is to ensure that all [`prioritized` PRs](#authoring-prs) have an Assignee)
 
 Note that the hours per week listed above is an average over time; it's fine to have weeks of no activity so long as the average meets expectations.
