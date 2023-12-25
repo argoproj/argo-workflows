@@ -37,7 +37,7 @@ The Assignee should then respond to each question or requested modification from
 
 Next, look for PRs with no Assignee. 
 
-If a Reviewer is the Assignee, then once they have approved the PR, they should request a review from one or more Approvers.
+For general guidance regarding PR Reviews, see [Reviewing PRs](../CONTRIBUTING.md#reviewing-prs).
 
 ### Authoring PRs
 

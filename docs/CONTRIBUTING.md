@@ -16,7 +16,7 @@ please [see here](http://bit.ly/argo-wf-cmty-mtng).
 
 ## Contributor Meetings (twice monthly)
 
-A weekly opportunity for committers and maintainers of Workflows and Events to discuss their current work and
+An opportunity for committers and maintainers of Workflows and Events to discuss their current work and
 talk about what’s next. Feel free to join us! For Contributor Meeting information, minutes and recordings
 please [see here](https://bit.ly/argo-data-weekly).
 
@@ -30,34 +30,6 @@ You can join the following channels on [CNCF Slack](https://argoproj.github.io/c
 
 We're always looking for contributors.
 
-### Authoring PRs
-
-* Documentation - something missing or unclear? Please submit a pull request according to our [docs contribution guide](doc-changes.md)!
-* Code contribution - investigate a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22), [high priority bugs](#triaging-bugs), or anything not assigned.
-* You can work on an issue without being assigned.
-* Most valuable issues are the ones of higher priority. Priority is indicated by a label of `P0`-`P3`, with lower numbers indicating higher priority.
-
-### Other Contributions
-
-* Reviewing PRs
-* Responding to questions in the [Slack](#slack) channels
-* Responding to questions in [Github Discussions](https://github.com/argoproj/argo-workflows/discussions)
-* Triaging new bugs
-
-#### Triaging Bugs
-
-New bugs need to be triaged to identify the highest priority ones.
-
-Apply the labels `P0`, `P1`, `P2`, and `P3`, where `P0` is highest priority and needs immediate attention, followed by `P1`, `P2`, and then `P3`.
-If there's a new `P0` bug, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
-
-Any bugs with >= 5 "👍" reactions should be labeled at least `P1`.
-Any bugs with 3-4 "👍" reactions should be labeled at least `P2`. 
-Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Abug).
-
-If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
-If more information is needed from the author to diagnose the issue, then apply the `more-information-needed` label.
-
 ### Roles
 
 The Argo project currently has 4 designated [roles](https://github.com/argoproj/argoproj/blob/main/community/membership.md):
@@ -70,20 +42,29 @@ The Reviewer and Approver roles can optionally be scoped to an area of the codeb
 
 Current roles for Reviewers and above can be found in [OWNERS](../OWNERS).
 
-### Sustainability Effort
+### Authoring PRs
 
-Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
-Please see [Sustainability Effort](../community/sustainability_effort.md) for more information.
+* Documentation - something missing or unclear? Please submit a pull request according to our [docs contribution guide](doc-changes.md)!
+* Code contribution - investigate a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22), [high priority bugs](#triaging-bugs), or anything not assigned.
+* You can work on an issue without being assigned.
 
-### Running Locally
+#### Contributor Workshop
+
+Please check out the following resources if you are interested in contributing:
+
+* [90m hands-on contributor workshop](https://youtu.be/zZv0lNCDG9w).
+* [Deep-dive into components and hands-on experiments](https://docs.google.com/presentation/d/1IU0a3unnr3tBRi38Zn3EHQZj3z6yvocfG9x9icRu1LE/edit?usp=sharing).
+* [Architecture overview](https://github.com/argoproj/argo-workflows/blob/main/docs/architecture.md).
+
+#### Running Locally
 
 To run Argo Workflows locally for development: [running locally](running-locally.md).
 
-### Committing
+#### Committing
 
 See the [Committing Guidelines](running-locally.md#committing).
 
-### Dependencies
+#### Dependencies
 
 Dependencies increase the risk of security issues and have on-going maintenance costs.
 
@@ -106,15 +87,39 @@ Example, should we add `fasttemplate`
 
 No, we should not add that dependency.
 
-### Test Policy
+#### Test Policy
 
 Changes without either unit or e2e tests are unlikely to be accepted.
 See [the pull request template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md).
 
-### Contributor Workshop
+### Other Contributions
 
-Please check out the following resources if you are interested in contributing:
+* [Reviewing PRs](#reviewing-prs)
+* Responding to questions in the [Slack](#slack) channels
+* Responding to questions in [Github Discussions](https://github.com/argoproj/argo-workflows/discussions)
+* [Triaging new bugs](#triaging-bugs)
 
-* [90m hands-on contributor workshop](https://youtu.be/zZv0lNCDG9w).
-* [Deep-dive into components and hands-on experiments](https://docs.google.com/presentation/d/1IU0a3unnr3tBRi38Zn3EHQZj3z6yvocfG9x9icRu1LE/edit?usp=sharing).
-* [Architecture overview](https://github.com/argoproj/argo-workflows/blob/main/docs/architecture.md).
+#### Reviewing PRs
+
+Anybody can review a PR; however, those who are in the roles of Reviewer and above are expected to assign themselves to PRs.
+Since Reviewers cannot merge PRs, then once they have approved a PR, they should request a review from one or more Approvers/Leads.
+
+#### Triaging Bugs
+
+New bugs need to be triaged to identify the highest priority ones.
+
+Apply the labels `P0`, `P1`, `P2`, and `P3`, where `P0` is highest priority and needs immediate attention, followed by `P1`, `P2`, and then `P3`.
+If there's a new `P0` bug, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
+
+Any bugs with >= 5 "👍" reactions should be labeled at least `P1`.
+Any bugs with 3-4 "👍" reactions should be labeled at least `P2`. 
+Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Abug).
+
+If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
+If more information is needed from the author to diagnose the issue, then apply the `more-information-needed` label.
+
+### Sustainability Effort
+
+Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
+Please see [Sustainability Effort](../community/sustainability_effort.md) for more information.
+
