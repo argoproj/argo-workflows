@@ -26,7 +26,6 @@ You can join the following channels on [CNCF Slack](https://argoproj.github.io/c
 * `#argo-workflows`: discussions focused mainly on use of Argo Workflows
 * `#argo-wf-contributors`: discussions focused mainly on development of Argo Workflows
 
-
 ## How To Contribute
 
 We're always looking for contributors.
