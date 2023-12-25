@@ -37,7 +37,7 @@ We're always looking for contributors.
 * You can work on an issue without being assigned.
 * Most valuable issues are the ones of higher priority. Priority is indicated by a label of `P0`-`P3`, with lower numbers indicating higher priority.
 
-### Other ways to contribute to the project
+### Other Contributions
 
 * Reviewing PRs
 * Responding to questions in the [Slack](#slack) channels
