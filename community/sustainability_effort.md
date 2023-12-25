@@ -45,7 +45,6 @@ If a Reviewer is the Assignee, then once they have approved the PR, they should 
 
 Participants can apply a `prioritized` label to any PRs they author.
 
-
 ## Participants
 
 If you'd like to participate, add yourself here in a PR.
