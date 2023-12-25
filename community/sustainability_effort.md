@@ -30,7 +30,6 @@ Current roles for Reviewers and above can be found in [OWNERS](../OWNERS).
 
 Participants should join the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
 
-
 ### Finding a PR to review
 
 First priority is to review any PRs which have the `prioritized` label, meaning they were authored by a participant of this system (verified by GitHub ID).
