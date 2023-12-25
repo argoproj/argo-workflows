@@ -33,9 +33,7 @@ We're always looking for contributors.
 ### Authoring PRs
 
 * Documentation - something missing or unclear? Please submit a pull request according to our [docs contribution guide](doc-changes.md)!
-* Code contribution - investigate
-  a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-  , or anything not assigned.
+* Code contribution - investigate a [good first issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22), [high priority bugs](#triaging-bugs), or anything not assigned.
 * You can work on an issue without being assigned.
 * Most valuable issues are the ones of higher priority. Priority is indicated by a label of `P0`-`P3`, with lower numbers indicating higher priority.
 
