@@ -182,8 +182,14 @@ jobs:
             profile: minimal
           - test: test-corefunctional
             profile: minimal
+          - test: test-corefunctional
+            profile: minimal
+            pod-status-finalizer: true
           - test: test-functional
             profile: minimal
+          - test: test-functional
+            profile: minimal
+            pod-status-finalizer: true
           - test: test-api
             profile: mysql
           - test: test-cli
@@ -204,9 +210,17 @@ jobs:
           - test: test-corefunctional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
+          - test: test-corefunctional
+            install_k3s_version: v1.25.11-k3s1
+            profile: minimal
+            pod-status-finalizer: true
           - test: test-functional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
+          - test: test-functional
+            install_k3s_version: v1.25.11-k3s1
+            profile: minimal
+            pod-status-finalizer: true
     steps:
       - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
@@ -264,7 +278,13 @@ jobs:
         run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
       - name: Start controller/API
-        run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
+        run: |
+          make start PROFILE=${{matrix.profile}} \
+            AUTH_MODE=client STATIC_FILES=false \
+            LOG_LEVEL=info \
+            API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} \
+            UI=false \
+            POD_STATUS_CAPTURE_FINALIZER=${{ matrix.pod-status-finalizer || 'false' }}> /tmp/argo.log 2>&1 &
       - name: Wait for controller to be up
         run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         timeout-minutes: 5
