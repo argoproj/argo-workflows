@@ -538,7 +538,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		switch action {
 		case terminateContainers:
 			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
-			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+			if err := applyPatchIfExists(ctx, pods, podName, patch); err != nil {
 				return err
 			}
 			if pod.Status.Phase == apiv1.PodPending {
@@ -551,7 +551,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 		case killContainers:
 			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
-			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+			if err := applyPatchIfExists(ctx, pods, podName, patch); err != nil {
 				return err
 			}
 			wfc.signalContainers(pod, syscall.SIGKILL)
@@ -566,12 +566,12 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				},
 			}
 			patch = append(patch, createFinalizerPodStatusRemovalPatchIfExists(pod)...)
-			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+			if err := applyPatchIfExists(ctx, pods, podName, patch); err != nil {
 				return err
 			}
 		case deletePod:
 			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
-			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+			if err := applyPatchIfExists(ctx, pods, podName, patch); err != nil {
 				return err
 			}
 			propagation := metav1.DeletePropagationBackground
@@ -606,7 +606,7 @@ func createFinalizerPodStatusRemovalPatchIfExists(pod *apiv1.Pod) []PatchOperati
 	return patch
 }
 
-func applyPatch(ctx context.Context, pods typedv1.PodInterface, podName string, patch []PatchOperation) error {
+func applyPatchIfExists(ctx context.Context, pods typedv1.PodInterface, podName string, patch []PatchOperation) error {
 	if len(patch) == 0 {
 		log.Debug("not patching pod")
 		return nil
@@ -1030,7 +1030,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					}
 					for _, p := range podList.Items {
 						patch := createFinalizerPodStatusRemovalPatchIfExists(&p)
-						if err := applyPatch(ctx, pods, p.Name, patch); err != nil {
+						if err := applyPatchIfExists(ctx, pods, p.Name, patch); err != nil {
 							log.WithError(err).Error("Failed to remove finalizer from pod")
 						}
 					}
