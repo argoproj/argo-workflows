@@ -569,6 +569,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                session_token_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
                                 use_sdk_creds=True,
                             ),
                             sub_path="sub_path_example",
@@ -878,6 +883,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -1498,6 +1508,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             region="region_example",
                             role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            session_token_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
@@ -2313,6 +2328,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                 ),
+                                                session_token_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                                 use_sdk_creds=True,
                                             ),
                                             sub_path="sub_path_example",
@@ -2592,6 +2612,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        session_token_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
@@ -2897,6 +2922,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    session_token_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
@@ -3461,6 +3491,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    session_token_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                     use_sdk_creds=True,
                                 ),
                                 sub_path="sub_path_example",
@@ -3786,6 +3821,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    session_token_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                     use_sdk_creds=True,
                                 ),
                                 sub_path="sub_path_example",
@@ -4068,6 +4108,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    session_token_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
@@ -4915,6 +4960,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                 ),
+                                                session_token_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                                 use_sdk_creds=True,
                                             ),
                                             sub_path="sub_path_example",
@@ -5190,6 +5240,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        session_token_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
@@ -6078,6 +6133,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                session_token_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
                                 use_sdk_creds=True,
                             ),
                         ),
@@ -6889,6 +6949,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -7168,6 +7233,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -7473,6 +7543,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -8037,6 +8112,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -8362,6 +8442,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -8644,6 +8729,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -9491,6 +9581,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -9766,6 +9861,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -10885,6 +10985,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            session_token_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
                             use_sdk_creds=True,
                         ),
                     ),
@@ -11152,6 +11257,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -11439,6 +11549,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -11735,6 +11850,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                session_token_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
@@ -12571,6 +12691,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                session_token_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
                                 use_sdk_creds=True,
                             ),
                         ),
@@ -13382,6 +13507,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -13661,6 +13791,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -13966,6 +14101,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -14530,6 +14670,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -14855,6 +15000,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -15137,6 +15287,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -15984,6 +16139,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -16259,6 +16419,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -17178,6 +17343,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    session_token_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                     use_sdk_creds=True,
                                 ),
                                 sub_path="sub_path_example",
@@ -17487,6 +17657,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             region="region_example",
                                             role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            session_token_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
@@ -18107,6 +18282,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                session_token_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
@@ -18922,6 +19102,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -19201,6 +19386,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -19506,6 +19696,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -20070,6 +20265,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -20395,6 +20595,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -20677,6 +20882,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -21524,6 +21734,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -21799,6 +22014,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -22687,6 +22907,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    session_token_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                     use_sdk_creds=True,
                                 ),
                             ),
@@ -23498,6 +23723,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             name="name_example",
                                                             optional=True,
                                                         ),
+                                                        session_token_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                         use_sdk_creds=True,
                                                     ),
                                                     sub_path="sub_path_example",
@@ -23777,6 +24007,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 region="region_example",
                                                                 role_arn="role_arn_example",
                                                                 secret_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                session_token_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
                                                                     optional=True,
@@ -24082,6 +24317,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             region="region_example",
                                             role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            session_token_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
@@ -24646,6 +24886,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                             ),
+                                            session_token_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                             use_sdk_creds=True,
                                         ),
                                         sub_path="sub_path_example",
@@ -24971,6 +25216,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                             ),
+                                            session_token_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                             use_sdk_creds=True,
                                         ),
                                         sub_path="sub_path_example",
@@ -25253,6 +25503,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             region="region_example",
                                             role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            session_token_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
@@ -26100,6 +26355,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             name="name_example",
                                                             optional=True,
                                                         ),
+                                                        session_token_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                         use_sdk_creds=True,
                                                     ),
                                                     sub_path="sub_path_example",
@@ -26375,6 +26635,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 region="region_example",
                                                                 role_arn="role_arn_example",
                                                                 secret_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                session_token_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
                                                                     optional=True,
@@ -28172,6 +28437,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                session_token_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
                                 use_sdk_creds=True,
                             ),
                             sub_path="sub_path_example",
@@ -28481,6 +28751,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -29101,6 +29376,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             region="region_example",
                             role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            session_token_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
@@ -29916,6 +30196,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                 ),
+                                                session_token_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                                 use_sdk_creds=True,
                                             ),
                                             sub_path="sub_path_example",
@@ -30195,6 +30480,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        session_token_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
@@ -30500,6 +30790,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    session_token_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
@@ -31064,6 +31359,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    session_token_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                     use_sdk_creds=True,
                                 ),
                                 sub_path="sub_path_example",
@@ -31389,6 +31689,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    session_token_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                     use_sdk_creds=True,
                                 ),
                                 sub_path="sub_path_example",
@@ -31671,6 +31976,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     region="region_example",
                                     role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    session_token_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
@@ -32518,6 +32828,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                 ),
+                                                session_token_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                                 use_sdk_creds=True,
                                             ),
                                             sub_path="sub_path_example",
@@ -32793,6 +33108,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         region="region_example",
                                                         role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        session_token_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
@@ -33681,6 +34001,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                session_token_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
                                 use_sdk_creds=True,
                             ),
                         ),
@@ -34492,6 +34817,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -34771,6 +35101,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -35076,6 +35411,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -35640,6 +35980,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -35965,6 +36310,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -36247,6 +36597,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -37094,6 +37449,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -37369,6 +37729,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -38488,6 +38853,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            session_token_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
                             use_sdk_creds=True,
                         ),
                     ),
@@ -38755,6 +39125,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -39042,6 +39417,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -39338,6 +39718,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                session_token_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
@@ -40174,6 +40559,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                session_token_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
                                 use_sdk_creds=True,
                             ),
                         ),
@@ -40985,6 +41375,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -41264,6 +41659,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -41569,6 +41969,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -42133,6 +42538,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -42458,6 +42868,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -42740,6 +43155,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -43587,6 +44007,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -43862,6 +44287,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -44781,6 +45211,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    session_token_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                     use_sdk_creds=True,
                                 ),
                                 sub_path="sub_path_example",
@@ -45090,6 +45525,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             region="region_example",
                                             role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            session_token_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
@@ -45710,6 +46150,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 region="region_example",
                                 role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                session_token_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
@@ -46525,6 +46970,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -46804,6 +47254,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -47109,6 +47564,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -47673,6 +48133,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -47998,6 +48463,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                         ),
+                                        session_token_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         use_sdk_creds=True,
                                     ),
                                     sub_path="sub_path_example",
@@ -48280,6 +48750,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         region="region_example",
                                         role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        session_token_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
@@ -49127,6 +49602,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                     ),
+                                                    session_token_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
                                                     use_sdk_creds=True,
                                                 ),
                                                 sub_path="sub_path_example",
@@ -49402,6 +49882,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             region="region_example",
                                                             role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            session_token_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
@@ -50290,6 +50775,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    session_token_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                     use_sdk_creds=True,
                                 ),
                             ),
@@ -51101,6 +51591,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             name="name_example",
                                                             optional=True,
                                                         ),
+                                                        session_token_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                         use_sdk_creds=True,
                                                     ),
                                                     sub_path="sub_path_example",
@@ -51380,6 +51875,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 region="region_example",
                                                                 role_arn="role_arn_example",
                                                                 secret_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                session_token_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
                                                                     optional=True,
@@ -51685,6 +52185,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             region="region_example",
                                             role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            session_token_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
@@ -52249,6 +52754,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                             ),
+                                            session_token_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                             use_sdk_creds=True,
                                         ),
                                         sub_path="sub_path_example",
@@ -52574,6 +53084,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                             ),
+                                            session_token_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                             use_sdk_creds=True,
                                         ),
                                         sub_path="sub_path_example",
@@ -52856,6 +53371,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             region="region_example",
                                             role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            session_token_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
@@ -53703,6 +54223,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             name="name_example",
                                                             optional=True,
                                                         ),
+                                                        session_token_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                         use_sdk_creds=True,
                                                     ),
                                                     sub_path="sub_path_example",
@@ -53978,6 +54503,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 region="region_example",
                                                                 role_arn="role_arn_example",
                                                                 secret_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                session_token_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
                                                                     optional=True,
