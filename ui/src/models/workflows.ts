@@ -780,6 +780,7 @@ export interface WorkflowsPaginationOptions {
     wfContinue: string;
     archivedContinue: string;
 }
+
 /**
  * WorkflowList is list of Workflow resources
  */
