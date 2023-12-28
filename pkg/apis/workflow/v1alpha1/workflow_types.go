@@ -1944,29 +1944,26 @@ type WorkflowStatus struct {
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 
-	// Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
-	TaskResultsCompleted map[string]bool `json:"taskResultsCompleted,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompleted"`
+	// Are there task results in progress? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
+	TaskResultsInProgress map[string]bool `json:"taskResultsInProgress,omitempty" protobuf:"bytes,20,opt,name=taskResultsInProgress"`
 }
 
-func (ws *WorkflowStatus) InitializeTaskResultIncomplete(resultName string) {
-	if ws.TaskResultsCompleted == nil {
-		ws.TaskResultsCompleted = make(map[string]bool)
+func (ws *WorkflowStatus) InitializeTaskResultInProgress(resultName string) {
+	if ws.TaskResultsInProgress == nil {
+		ws.TaskResultsInProgress = make(map[string]bool)
 	}
-	if _, ok := ws.TaskResultsCompleted[resultName]; !ok {
-		ws.MarkTaskResultIncomplete(resultName)
+	if _, ok := ws.TaskResultsInProgress[resultName]; !ok {
+		ws.MarkTaskResultInProgress(resultName)
 	}
 }
 func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
-	ws.TaskResultsCompleted[name] = true
+	delete(ws.TaskResultsInProgress, name)
 }
-func (ws *WorkflowStatus) MarkTaskResultIncomplete(name string) {
-	ws.TaskResultsCompleted[name] = false
+func (ws *WorkflowStatus) MarkTaskResultInProgress(name string) {
+	ws.TaskResultsInProgress[name] = true
 }
-func (ws *WorkflowStatus) GetTaskResultCompleted(name string) bool {
-	return ws.TaskResultsCompleted[name]
-}
-func (ws *WorkflowStatus) GetTaskResultsCompleted() map[string]bool {
-	return ws.TaskResultsCompleted
+func (ws *WorkflowStatus) GetTaskResultsInProgress() map[string]bool {
+	return ws.TaskResultsInProgress
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

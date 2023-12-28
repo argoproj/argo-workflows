@@ -63,8 +63,8 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		woc.log.Debugf("task result:\n%+v", result)
 		woc.log.Debugf("task result name:\n%+v", resultName)
 
-		// Explicitly initialize the TaskResultsCompleted state for the given result.
-		woc.wf.Status.InitializeTaskResultIncomplete(resultName)
+		// Explicitly initialize the TaskResultsInProgress state for the given result.
+		woc.wf.Status.InitializeTaskResultInProgress(resultName)
 
 		// If the task result is completed, set the state to true.
 		if result.Labels[common.LabelKeyReportOutputsCompleted] == "true" {
@@ -98,6 +98,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.updated = true
 		}
 	}
-	woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.GetTaskResultsCompleted())
-	woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.GetTaskResultsCompleted()))
+	woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.GetTaskResultsInProgress())
+	woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.GetTaskResultsInProgress()))
 }
