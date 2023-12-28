@@ -42,6 +42,8 @@ You can try Argo Workflows via one of the following:
 1. [Interactive Training Material](https://killercoda.com/argoproj/course/argo-workflows/)
 1. [Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo)
 
+![Screenshot](https://github.com/argoproj/argo-workflows/raw/main/docs/assets/screenshot.png)
+
 ## Who uses Argo Workflows?
 
 [About 200+ organizations are officially using Argo Workflows](https://github.com/argoproj/argo-workflows/blob/main/USERS.md)
