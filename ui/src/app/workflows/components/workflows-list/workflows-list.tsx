@@ -3,7 +3,7 @@ import * as React from 'react';
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {isArchivedWorkflow, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
+import {isArchivedWorkflow, Workflow, WorkflowPhase, WorkflowPhases, WorkflowsPagination} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -20,7 +20,6 @@ import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import * as Actions from '../../../shared/workflow-operations-map';
-import {WorkflowsPagination} from '../../pagination';
 import {WorkflowCreator} from '../workflow-creator';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 import {WorkflowPaginationPanel} from '../workflow-pagination-panel/workflow-pagination-panel';

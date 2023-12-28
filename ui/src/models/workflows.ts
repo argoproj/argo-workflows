@@ -781,6 +781,14 @@ export interface WorkflowsPaginationOptions {
     archivedContinue: string;
 }
 
+export interface WorkflowsPagination {
+    wfOffset: string;
+    archivedOffset: string;
+    nextWfOffset: string;
+    nextArchivedOffset: string;
+    limit: number;
+}
+
 /**
  * WorkflowList is list of Workflow resources
  */

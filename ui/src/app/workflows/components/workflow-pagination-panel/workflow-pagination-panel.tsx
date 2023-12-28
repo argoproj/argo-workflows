@@ -1,7 +1,7 @@
 import * as React from 'react';
+import {WorkflowsPagination} from '../../../../models';
 import {WarningIcon} from '../../../shared/components/fa-icons';
 import {parseLimit} from '../../../shared/pagination';
-import {WorkflowsPagination} from '../../pagination';
 
 export function WorkflowPaginationPanel(props: {pagination: WorkflowsPagination; onChange: (pagination: WorkflowsPagination) => void; numRecords: number}) {
     const isFirstDisabled = !props.pagination.wfOffset && !props.pagination.archivedOffset;

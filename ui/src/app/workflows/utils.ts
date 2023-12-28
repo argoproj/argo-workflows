@@ -1,5 +1,5 @@
+import {WorkflowsPagination} from '../../models';
 import {Utils} from '../shared/utils';
-import {WorkflowsPagination} from './pagination';
 
 export const WorkflowsUtils = {
     queryParams(filter: {

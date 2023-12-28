@@ -1,14 +1,13 @@
 import {EMPTY, from, Observable, of} from 'rxjs';
 import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import * as models from '../../../models';
-import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
+import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase, WorkflowsPagination} from '../../../models';
 import {ResubmitOpts, RetryOpts} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
 import {WorkflowsUtils} from '../../workflows/utils';
 import {uiUrl} from '../base';
 import {Pagination} from '../pagination';
 import {Utils} from '../utils';
-import {WorkflowsPagination} from './../../workflows/pagination';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 
