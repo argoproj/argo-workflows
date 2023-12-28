@@ -16,9 +16,8 @@ please [see here](http://bit.ly/argo-wf-cmty-mtng).
 
 ## Contributor Meetings (twice monthly)
 
-An opportunity for committers and maintainers of Workflows and Events to discuss their current work and
-talk about what’s next. Feel free to join us! For Contributor Meeting information, minutes and recordings
-please [see here](https://bit.ly/argo-data-weekly).
+An opportunity for contributors and maintainers of Workflows and Events to discuss their current work and talk about what’s next. Feel free to join us!
+See the [Contributor Meeting doc](https://bit.ly/argo-data-weekly) for minutes, recordings, and more information.
 
 ## Slack
 
