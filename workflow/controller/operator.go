@@ -801,11 +801,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 }
 
 func (woc *wfOperationCtx) checkTaskResultsInProgress() bool {
-	taskResultsInProgress := woc.wf.Status.GetTaskResultsInProgress()
-	if len(taskResultsInProgress) != 0 {
-		return true
-	}
-	return false
+	return len(woc.wf.Status.GetTaskResultsInProgress()) != 0
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
