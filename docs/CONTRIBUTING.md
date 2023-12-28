@@ -100,8 +100,9 @@ See [the pull request template](https://github.com/argoproj/argo-workflows/blob/
 
 #### Reviewing PRs
 
-Anybody can review a PR; however, those who are in the roles of Reviewer and above are expected to assign themselves to PRs.
-Since Reviewers cannot merge PRs, then once they have approved a PR, they should request a review from one or more Approvers/Leads.
+Anybody can review a PR.
+If you are in a [designated role](#roles), add yourself as an "Assignee" to a PR if you plan to lead the review.
+If you are a Reviewer or below, then once you have approved a PR, request a review from one or more Approvers and above.
 
 #### Triaging Bugs
 
