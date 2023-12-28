@@ -87,7 +87,7 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                     <div className='columns small-1'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>
                     {(props.columns || []).map(column => {
                         // best not to make any assumptions and wait until this data is filled
-                        const value = wf?.metadata?.labels?.[column.key] ?? 'unknown';
+                        const value = wf?.metadata?.annotations?.[column.key] ?? wf?.metadata?.labels?.[column.key] ?? 'unknown';
                         return (
                             <div key={column.name} className='columns small-1'>
                                 {value}
