@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -117,10 +119,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if err != nil {
 				return nil, err
 			}
-			if err := json.Unmarshal(a, &c); err != nil {
+
+			mergedContainerByte, err := strategicpatch.StrategicMergePatch(a, b, apiv1.Container{})
+			if err != nil {
 				return nil, err
 			}
-			if err = json.Unmarshal(b, &c); err != nil {
+			c = apiv1.Container{}
+			if err := json.Unmarshal(mergedContainerByte, &c); err != nil {
 				return nil, err
 			}
 		}

@@ -1884,3 +1884,88 @@ func TestProgressEnvVars(t *testing.T) {
 		})
 	})
 }
+
+var helloWorldWfWithEnvReferSecret = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+      env:
+      - name: ENV3
+        valueFrom:
+          secretKeyRef:
+            name: mysecret
+            key: sec
+`
+
+func TestMergeEnvVars(t *testing.T) {
+	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
+		cancel, controller := newController(options...)
+
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithEnvReferSecret)
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		err := woc.setExecWorkflow(ctx)
+		require.NoError(t, err)
+		mainCtrSpec := &apiv1.Container{
+			Name:            common.MainContainerName,
+			SecurityContext: &apiv1.SecurityContext{},
+			Env: []apiv1.EnvVar{
+				{
+					Name:  "ENV1",
+					Value: "env1",
+				},
+				{
+					Name:  "ENV2",
+					Value: "env2",
+				},
+			},
+		}
+		woc.controller.Config.MainContainer = mainCtrSpec
+		mainCtr := woc.execWf.Spec.Templates[0].Container
+
+		pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+		require.NoError(t, err)
+		assert.NotNil(t, pod)
+		return cancel, pod
+	}
+
+	t.Run("test merge envs", func(t *testing.T) {
+		cancel, pod := setup(t)
+		defer cancel()
+		assert.Contains(t, pod.Spec.Containers[1].Env, apiv1.EnvVar{
+			Name:  "ENV1",
+			Value: "env1",
+		})
+		assert.Contains(t, pod.Spec.Containers[1].Env, apiv1.EnvVar{
+			Name:  "ENV2",
+			Value: "env2",
+		})
+		assert.Contains(t, pod.Spec.Containers[1].Env, apiv1.EnvVar{
+			Name: "ENV3",
+			ValueFrom: &apiv1.EnvVarSource{
+				SecretKeyRef: &apiv1.SecretKeySelector{
+					LocalObjectReference: apiv1.LocalObjectReference{
+						Name: "mysecret",
+					},
+					Key: "sec",
+				},
+			},
+		})
+	})
+}
