@@ -25,11 +25,7 @@ You can join the following channels on [CNCF Slack](https://argoproj.github.io/c
 * `#argo-workflows`: discussions focused mainly on use of Argo Workflows
 * `#argo-wf-contributors`: discussions focused mainly on development of Argo Workflows
 
-## How To Contribute
-
-We're always looking for contributors.
-
-### Roles
+## Roles
 
 The Argo project currently has 4 designated [roles](https://github.com/argoproj/argoproj/blob/main/community/membership.md):
 - Member
@@ -40,6 +36,12 @@ The Argo project currently has 4 designated [roles](https://github.com/argoproj/
 The Reviewer and Approver roles can optionally be scoped to an area of the codebase (for example, UI or docs).
 
 Current roles for Reviewers and above can be found in [OWNERS](../OWNERS).
+
+If you are interested in formally joining the Argo project, [create a Membership request](https://github.com/argoproj/argoproj/issues/new?template=membership.md&title=REQUEST%3A%20New%20membership%20for%20%3Cyour-GH-handle%3E) in the [argoproj](https://github.com/argoproj/argoproj) repository as described in the [Membership](https://github.com/argoproj/argoproj/blob/main/community/membership.md) guide.
+
+## How To Contribute
+
+We're always looking for contributors.
 
 ### Authoring PRs
 
@@ -118,7 +120,7 @@ Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues
 If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
 If more information is needed from the author to diagnose the issue, then apply the `more-information-needed` label.
 
-### Sustainability Effort
+## Sustainability Effort
 
 Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
 Please see [Sustainability Effort](../community/sustainability_effort.md) for more information.
