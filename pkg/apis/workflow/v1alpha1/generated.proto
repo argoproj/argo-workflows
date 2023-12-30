@@ -2118,8 +2118,8 @@ message WorkflowStatus {
   // ArtifactGCStatus maintains the status of Artifact Garbage Collection
   optional ArtGCStatus artifactGCStatus = 19;
 
-  // Are there task results in progress? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
-  map<string, bool> taskResultsInProgress = 20;
+  // TaskResultsCompleted tracks completed task results. Used to prevent premature archiving and garbage collection.
+  map<string, bool> taskResultsCompleted = 20;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

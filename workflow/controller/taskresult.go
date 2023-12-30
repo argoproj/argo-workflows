@@ -63,9 +63,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		woc.log.Debugf("task result:\n%+v", result)
 		woc.log.Debugf("task result name:\n%+v", resultName)
 
-		// Explicitly initialize the TaskResultsInProgress state for the given result.
-		woc.wf.Status.InitializeTaskResultInProgress(resultName)
-
 		// If the task result is completed, set the state to true.
 		if result.Labels[common.LabelKeyReportOutputsCompleted] == "true" {
 			woc.log.Debugf("Marking task result complete %s", resultName)
@@ -86,6 +83,8 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			if old.Outputs != nil && newNode.Outputs.ExitCode == nil { // prevent overwriting of ExitCode
 				newNode.Outputs.ExitCode = old.Outputs.ExitCode
 			}
+			// Add outputs to global scope here to ensure that they are reflected in archive.
+			woc.addOutputsToGlobalScope(newNode.Outputs)
 		}
 		if result.Progress.IsValid() {
 			newNode.Progress = result.Progress
@@ -98,6 +97,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.updated = true
 		}
 	}
-	woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.GetTaskResultsInProgress())
-	woc.log.Debugf("task result completed len: %d", len(woc.wf.Status.GetTaskResultsInProgress()))
+	woc.log.Debugf("task results completed:\n%+v", woc.wf.Status.GetTaskResultsCompleted())
+	woc.log.Debugf("task result completed len: %d", woc.wf.Status.GetNumTaskResultsCompleted())
 }

@@ -239,8 +239,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
 	woc.taskResultReconciliation()
 
-	// Do artifact GC if all task results are completed.
-	if !woc.checkTaskResultsInProgress() {
+	// Do artifact GC if task result reconciliation is complete.
+	if woc.checkReconciliationComplete() {
 		if err := woc.garbageCollectArtifacts(ctx); err != nil {
 			woc.log.WithError(err).Error("failed to GC artifacts")
 			return
@@ -788,7 +788,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	// Make sure the TaskResults are incorporated into WorkflowStatus before we delete them.
-	if woc.wf.Status.Phase.Completed() && !woc.checkTaskResultsInProgress() {
+	if woc.checkReconciliationComplete() {
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
@@ -800,8 +800,13 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	woc.queuePodsForCleanup()
 }
 
-func (woc *wfOperationCtx) checkTaskResultsInProgress() bool {
-	return len(woc.wf.Status.GetTaskResultsInProgress()) != 0
+func (woc *wfOperationCtx) checkReconciliationComplete() bool {
+	numExecutedPods := len(woc.wf.Status.Nodes.Filter(func(x wfv1.NodeStatus) bool {
+		return x.Phase.Executed() && x.Type == wfv1.NodeTypePod
+	}))
+	woc.log.Debugf("Number of executed pods: %v", numExecutedPods)
+	woc.log.Debugf("Number of task results completed: %v", woc.wf.Status.GetNumTaskResultsCompleted())
+	return woc.wf.Status.Phase.Completed() && numExecutedPods == woc.wf.Status.GetNumTaskResultsCompleted()
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
@@ -1365,7 +1370,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
 		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 		resultName := pod.GetName()
-		woc.wf.Status.InitializeTaskResultInProgress(resultName)
 		if x == "true" {
 			woc.wf.Status.MarkTaskResultComplete(resultName)
 		}
@@ -2303,8 +2307,8 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 
 	switch phase {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
-		// wait for all daemon nodes to get terminated before marking workflow completed & make sure task results are complete as well.
-		if phase.Completed() && !woc.hasDaemonNodes() && !woc.checkTaskResultsInProgress() {
+		// Make sure all task results have been reconciled and wait for all daemon nodes to get terminated before marking the workflow completed.
+		if woc.checkReconciliationComplete() && !woc.hasDaemonNodes() {
 			woc.log.Info("Marking workflow completed")
 			woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())

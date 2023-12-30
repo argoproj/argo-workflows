@@ -857,7 +857,7 @@ WorkflowStatus contains overall status information about a workflow
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
-|`taskResultsInProgress`|`Map< boolean , string >`|Are there task results in progress? (mapped by Pod name) used to prevent premature garbage collection of artifacts.|
+|`taskResultsInProgress`|`Map< boolean , string >`|TaskResultsCompleted tracks completed task results. Used to prevent premature archiving and garbage collection.|
 
 ## CronWorkflowSpec
 

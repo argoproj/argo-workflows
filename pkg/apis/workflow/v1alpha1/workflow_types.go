@@ -1944,26 +1944,29 @@ type WorkflowStatus struct {
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 
-	// Are there task results in progress? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
-	TaskResultsInProgress map[string]bool `json:"taskResultsInProgress,omitempty" protobuf:"bytes,20,opt,name=taskResultsInProgress"`
+	// TaskResultsCompleted tracks completed task results. Used to prevent premature archiving and garbage collection.
+	TaskResultsCompleted map[string]bool `json:"taskResultsInProgress,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompleted"`
 }
 
-func (ws *WorkflowStatus) InitializeTaskResultInProgress(resultName string) {
-	if ws.TaskResultsInProgress == nil {
-		ws.TaskResultsInProgress = make(map[string]bool)
-	}
-	if _, ok := ws.TaskResultsInProgress[resultName]; !ok {
-		ws.MarkTaskResultInProgress(resultName)
-	}
-}
 func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
-	delete(ws.TaskResultsInProgress, name)
+	if ws.TaskResultsCompleted == nil {
+		ws.TaskResultsCompleted = make(map[string]bool)
+	}
+	ws.TaskResultsCompleted[name] = true
 }
-func (ws *WorkflowStatus) MarkTaskResultInProgress(name string) {
-	ws.TaskResultsInProgress[name] = true
+
+func (ws *WorkflowStatus) GetTaskResultsCompleted() map[string]bool {
+	return ws.TaskResultsCompleted
 }
-func (ws *WorkflowStatus) GetTaskResultsInProgress() map[string]bool {
-	return ws.TaskResultsInProgress
+
+func (ws *WorkflowStatus) GetNumTaskResultsCompleted() int {
+	var nCompleted int = 0
+	for _, value := range ws.TaskResultsCompleted {
+		if value {
+			nCompleted++
+		}
+	}
+	return nCompleted
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -2306,6 +2309,11 @@ func (phase NodePhase) Completed() bool {
 
 func (phase NodePhase) FailedOrError() bool {
 	return phase == NodeFailed || phase == NodeError
+}
+
+// Executed returns whether the node has been executed. Notably, it is pending, running, succeeded, failed, or errored.
+func (phase NodePhase) Executed() bool {
+	return phase == NodePending || phase == NodeRunning || phase == NodeSucceeded || phase == NodeFailed || phase == NodeError
 }
 
 // Fulfilled returns whether or not the workflow has fulfilled its execution

@@ -7842,7 +7842,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					},
 					"taskResultsInProgress": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Are there task results in progress? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+							Description: "TaskResultsCompleted tracks completed task results. Used to prevent premature archiving and garbage collection.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,

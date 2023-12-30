@@ -3962,8 +3962,8 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 		*out = new(ArtGCStatus)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.TaskResultsInProgress != nil {
-		in, out := &in.TaskResultsInProgress, &out.TaskResultsInProgress
+	if in.TaskResultsCompleted != nil {
+		in, out := &in.TaskResultsCompleted, &out.TaskResultsCompleted
 		*out = make(map[string]bool, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val

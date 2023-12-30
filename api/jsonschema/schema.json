@@ -7616,7 +7616,7 @@
           "additionalProperties": {
             "type": "boolean"
           },
-          "description": "Are there task results in progress? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+          "description": "TaskResultsCompleted tracks completed task results. Used to prevent premature archiving and garbage collection.",
           "type": "object"
         }
       },
