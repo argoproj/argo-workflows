@@ -137,8 +137,8 @@ github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68/go.mod h1:6p
 github.com/alibabacloud-go/tea v1.1.8/go.mod h1:/tmnEaQMyb4Ky1/5D+SE1BAsa5zj/KeGOFfwYm3N/p4=
 github.com/alibabacloud-go/tea v1.2.1 h1:rFF1LnrAdhaiPmKwH5xwYOKlMh66CqRwPUTzIK74ask=
 github.com/alibabacloud-go/tea v1.2.1/go.mod h1:qbzof29bM/IFhLMtJPrgTGK3eauV5J2wSyEUo4OEmnA=
-github.com/aliyun/aliyun-oss-go-sdk v3.0.1+incompatible h1:so4m5rRA32Tc5GgKg/5gKUu0CRsYmVO3ThMP6T3CwLc=
-github.com/aliyun/aliyun-oss-go-sdk v3.0.1+incompatible/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
+github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible h1:8psS8a+wKfiLt1iVDX79F7Y6wUM49Lcha2FMXt4UM8g=
+github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
 github.com/aliyun/credentials-go v1.3.2 h1:L4WppI9rctC8PdlMgyTkF8bBsy9pyKQEzBD1bHMRl+g=
 github.com/aliyun/credentials-go v1.3.2/go.mod h1:tlpz4uys4Rn7Ik4/piGRrTbXy2uLKvePgQJJduE+Y5c=
 github.com/andybalholm/brotli v1.0.2/go.mod h1:loMXtMfwqflxFJPmdbJO0a3KNoPuLBgiu3qAvBg8x/Y=
