@@ -1,0 +1,22 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.wf-rows-name {
+  line-height: 1.5em;
+  display: inline-block;
+  position: relative;
+  pointer-events: none;
+  vertical-align: middle;
+  white-space: pre-line;
+}
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.wf-rows-name a {
+  pointer-events: all;
+  position: relative;
+  z-index: 1;
+}
