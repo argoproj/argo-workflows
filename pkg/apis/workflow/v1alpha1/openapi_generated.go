@@ -7840,9 +7840,9 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus"),
 						},
 					},
-					"taskResultsInProgress": {
+					"taskResultsCompletionStatus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TaskResultsCompleted tracks completed task results. Used to prevent premature archiving and garbage collection.",
+							Description: "TaskResultsCompletionStatus tracks task result completion status' (mapped by pod name). Used to prevent premature archiving and garbage collection.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,

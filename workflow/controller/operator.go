@@ -801,12 +801,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 }
 
 func (woc *wfOperationCtx) checkReconciliationComplete() bool {
-	numExecutedPods := len(woc.wf.Status.Nodes.Filter(func(x wfv1.NodeStatus) bool {
-		return x.Phase.Executed() && x.Type == wfv1.NodeTypePod
-	}))
-	woc.log.Debugf("Number of executed pods: %v", numExecutedPods)
-	woc.log.Debugf("Number of task results completed: %v", woc.wf.Status.GetNumTaskResultsCompleted())
-	return woc.wf.Status.Phase.Completed() && numExecutedPods == woc.wf.Status.GetNumTaskResultsCompleted()
+	woc.log.Debugf("Task results completion status: %v", woc.wf.Status.TaskResultsCompletionStatus)
+	return woc.wf.Status.Phase.Completed() && woc.wf.Status.TaskResultsComplete()
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
