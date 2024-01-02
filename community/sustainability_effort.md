@@ -22,7 +22,7 @@ There are different expectations depending on the role:
 - Member and non-member: should average a minimum of 6 hours per week of either [authoring PRs](../docs/CONTRIBUTING.md#authoring-prs) or performing any activities listed above in the ["Where is help needed?"](#where-is-help-needed) section
   - Note that more time is required in this role in order to learn the codebase and processes to make sufficient progress
 - Reviewer and above: should average a minimum of 2 hours per week performing any activities listed above in ["Where is help needed?"](#where-is-help-needed) section 
-  - Highest priority is to ensure that all `prioritized` [PRs](#authoring-prs) have an Assignee
+  - Highest priority is to ensure that all PRs labeled ["prioritized-review"](#authoring-prs) have an Assignee
 
 Note that the hours per week listed above is an average over time; it's fine to have weeks of no activity so long as the average meets expectations.
 
@@ -30,7 +30,7 @@ Participants should join the [#argo-wf-contributors](https://cloud-native.slack.
 
 ### Reviewing PRs
 
-First priority is to review any PRs which have the `prioritized` label, meaning they were authored by a participant of this system (verified by GitHub ID).
+First priority is to review any PRs which have the `prioritized-review` label, meaning they were authored by a participant of this system (verified by GitHub ID).
 Each of these should have an Assignee: a Reviewer, Approver, or Lead who "owns" reviewing the PR.<br />
 These PRs should be given an initial review within a week.
 The Assignee should then respond to each question or requested modification from the author within a week.
@@ -41,7 +41,7 @@ For general guidance regarding PR Reviews, see [Reviewing PRs](../CONTRIBUTING.m
 
 ### Authoring PRs
 
-Participants can apply a `prioritized` label to any PRs they author.
+Participants can apply a `prioritized-review` label to any PRs they author.
 
 ## Participants
 
