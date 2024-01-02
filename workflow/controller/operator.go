@@ -422,7 +422,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.markNodeError(node.Name, err)
 	}
 	// Reconcile TaskSet and Agent for HTTP templates when is not shutdown
-	if !woc.wf.Spec.Shutdown.Enabled() {
+	if !woc.execWf.Spec.Shutdown.Enabled() {
 		woc.taskSetReconciliation(ctx)
 	}
 
