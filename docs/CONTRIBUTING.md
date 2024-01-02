@@ -22,16 +22,18 @@ See the [Contributor Meeting doc](https://bit.ly/argo-data-weekly) for minutes, 
 ## Slack
 
 You can join the following channels on [CNCF Slack](https://argoproj.github.io/community/join-slack):
+
 * `#argo-workflows`: discussions focused mainly on use of Argo Workflows
 * `#argo-wf-contributors`: discussions focused mainly on development of Argo Workflows
 
 ## Roles
 
 The Argo project currently has 4 designated [roles](https://github.com/argoproj/argoproj/blob/main/community/membership.md):
-- Member
-- Reviewer
-- Approver
-- Lead
+
+* Member
+* Reviewer
+* Approver
+* Lead
 
 The Reviewer and Approver roles can optionally be scoped to an area of the code base (for example, UI or docs).
 
@@ -43,7 +45,6 @@ If you are interested in formally joining the Argo project, [create a Membership
 
 We're always looking for contributors.
 
-<<<<<<< HEAD
 ### Authoring PRs
 
 * Documentation - something missing or unclear? Please submit a pull request according to our [docs contribution guide](doc-changes.md)!
@@ -115,7 +116,7 @@ Apply the labels `P0`, `P1`, `P2`, and `P3`, where `P0` is highest priority and 
 If there's a new `P0` bug, notify the [#argo-wf-contributors](https://cloud-native.slack.com/archives/C0510EUH90V) slack channel.
 
 Any bugs with >= 5 "👍" reactions should be labeled at least `P1`.
-Any bugs with 3-4 "👍" reactions should be labeled at least `P2`. 
+Any bugs with 3-4 "👍" reactions should be labeled at least `P2`.
 Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Abug).
 
 If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
@@ -125,4 +126,3 @@ If more information is needed from the author to diagnose the issue, then apply 
 
 Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
 Please see [Sustainability Effort](../community/sustainability_effort.md) for more information.
-
