@@ -18,8 +18,6 @@ permissions:
 jobs:
   docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # for publishing the docs to GH Pages
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,10 +42,3 @@ jobs:
           name: docs
           path: site
           if-no-files-found: error
-      - name: Publish to GH Pages (when on main)
-        if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./site

@@ -201,7 +201,7 @@ data:
   kubeletInsecure: "false"
 
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.
-  # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
+  # https://argo-workflows.readthedocs.io/en/stable/workflow-executors/#emissary-emissary
   images: |
     argoproj/argosay:v2:
       cmd: [/argosay]
@@ -372,7 +372,7 @@ data:
 
   # SSO Configuration for the Argo server.
   # You must also start argo server with `--auth-mode sso`.
-  # https://argoproj.github.io/argo-workflows/argo-server-auth-mode/
+  # https://argo-workflows.readthedocs.io/en/stable/argo-server-auth-mode/
   sso: |
     # This is the root URL of the OIDC provider (required).
     issuer: https://issuer.root.url/
