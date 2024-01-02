@@ -5,6 +5,6 @@ import {Nudge} from './nudge';
 export const SecurityNudge = (props: {children: ReactNode}) => (
     <Nudge key='security-nudge'>
         <i className='fa fa-lock-open status-icon--failed' /> {props.children}{' '}
-        <a href='https://argo-workflows.readthedocs.io/en/stable/workflow-pod-security-context/'>Learn more</a>
+        <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-pod-security-context/'>Learn more</a>
     </Nudge>
 );

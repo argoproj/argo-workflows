@@ -15,7 +15,7 @@ var K8sRequestTotalMetric = prometheus.NewCounterVec(
 		Namespace: argoNamespace,
 		Subsystem: workflowsSubsystem,
 		Name:      "k8s_request_total",
-		Help:      "Number of kubernetes requests executed. https://argo-workflows.readthedocs.io/en/stable/metrics/#argo_workflows_k8s_request_total",
+		Help:      "Number of kubernetes requests executed. https://argo-workflows.readthedocs.io/en/latest/metrics/#argo_workflows_k8s_request_total",
 	},
 	[]string{"kind", "verb", "status_code"},
 )
