@@ -70,7 +70,7 @@ Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Quickstart
 
-* [Get started here](docs/quick-start.md)
+* [Get started here](https://argo-workflows.readthedocs.io/en/release-3.5/quick-start/)
 * [Walk-through examples](https://argo-workflows.readthedocs.io/en/release-3.5/walk-through/)
 
 ## Documentation
