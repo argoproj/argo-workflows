@@ -34,6 +34,13 @@ markdown_extensions:
   - pymdownx.details
   - toc:
       permalink: true
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+exclude_docs: |
+  proposals/
+
 nav:
   - Home: README.md
   - Getting Started:
@@ -121,6 +128,7 @@ nav:
           - artifact-visualization.md
           - widgets.md
           - intermediate-inputs.md
+          - title-and-description.md
       - Debugging Tools:
           - workflow-events.md
           - debug-pause.md

@@ -43,6 +43,7 @@ If you are interested in formally joining the Argo project, [create a Membership
 
 We're always looking for contributors.
 
+<<<<<<< HEAD
 ### Authoring PRs
 
 * Documentation - something missing or unclear? Please submit a pull request according to our [docs contribution guide](doc-changes.md)!
