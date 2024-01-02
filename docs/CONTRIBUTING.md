@@ -33,7 +33,7 @@ The Argo project currently has 4 designated [roles](https://github.com/argoproj/
 - Approver
 - Lead
 
-The Reviewer and Approver roles can optionally be scoped to an area of the codebase (for example, UI or docs).
+The Reviewer and Approver roles can optionally be scoped to an area of the code base (for example, UI or docs).
 
 Current roles for Reviewers and above can be found in [OWNERS](../OWNERS).
 

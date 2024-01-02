@@ -31,7 +31,10 @@ Alexandre
 Alibaba
 Ang
 Anthos
+Approvers
 ArgoLabs
+argoproj
+argo-wf-contributors
 Artifactory
 BlackRock
 Breitgand
@@ -46,6 +49,7 @@ DataDog
 Dataflow
 DevOps
 Dex
+docs
 EditorConfig
 EtcD
 EventRouter
@@ -179,7 +183,10 @@ runtimes
 sandboxed
 stateful
 stderr
+Triaging
+triaged
 un-reconciled
+UI
 v1
 v1.0
 v1.1
