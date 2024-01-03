@@ -1,5 +1,6 @@
 site_name: Argo Workflows - The workflow engine for Kubernetes
 repo_url: https://github.com/argoproj/argo-workflows
+edit_uri: https://github.com/argoproj/argo-workflows/edit/main/docs
 strict: true
 theme:
   name: material
@@ -33,6 +34,13 @@ markdown_extensions:
   - pymdownx.details
   - toc:
       permalink: true
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+exclude_docs: |
+  proposals/
+
 nav:
   - Home: README.md
   - Getting Started:

@@ -712,7 +712,7 @@ docs-lint: /usr/local/bin/markdownlint
 /usr/local/bin/mkdocs:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	python -m pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
+	python -m pip install --no-cache-dir -r docs/requirements.txt
 endif
 
 .PHONY: docs
@@ -758,4 +758,3 @@ release-notes: /dev/null
 .PHONY: checksums
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
-

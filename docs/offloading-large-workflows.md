@@ -23,6 +23,6 @@ size limit. To resolve, either enable node status offload as described
 above or look for ways to reduce the size of your workflow manifest:
 
 - Use `withItems` or `withParams` to consolidate similar templates into a single parametrized template
-- Use [template defaults](https://argoproj.github.io/argo-workflows/template-defaults/) to factor shared template options to the workflow level
-- Use [workflow templates](https://argoproj.github.io/argo-workflows/workflow-templates/) to factor frequently-used templates into separate resources
-- Use [workflows of workflows](https://argoproj.github.io/argo-workflows/workflow-of-workflows/) to factor a large workflow into a workflow of smaller workflows
+- Use [template defaults](https://argo-workflows.readthedocs.io/en/v3.5.2/template-defaults/) to factor shared template options to the workflow level
+- Use [workflow templates](https://argo-workflows.readthedocs.io/en/v3.5.2/workflow-templates/) to factor frequently-used templates into separate resources
+- Use [workflows of workflows](https://argo-workflows.readthedocs.io/en/v3.5.2/workflow-of-workflows/) to factor a large workflow into a workflow of smaller workflows
