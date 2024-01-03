@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 50 # assume PRs are less than 50 commits
       - name: Get relevant files changed per group
         id: changed-files
-        uses: tj-actions/changed-files@v40
+        uses: tj-actions/changed-files@v41
         with:
           files_yaml: |
             common: &common
@@ -114,7 +114,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -132,7 +132,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -159,7 +159,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: argoexec
           path: /tmp/argoexec_image.tar
@@ -211,7 +211,7 @@ jobs:
       - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -224,7 +224,7 @@ jobs:
           cache: maven
       - name: Install Python for the SDK
         if: ${{matrix.test == 'test-python-sdk'}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
           cache: pip
@@ -243,7 +243,7 @@ jobs:
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
       - name: Download argoexec image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: argoexec
           path: /tmp
@@ -335,7 +335,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -372,7 +372,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true

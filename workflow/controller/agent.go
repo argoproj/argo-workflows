@@ -18,6 +18,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func (woc *wfOperationCtx) getAgentPodName() string {
@@ -243,6 +244,14 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl)
 	woc.addMetadata(pod, tmpl)
 
+	if woc.execWf.Spec.HasPodSpecPatch() {
+		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
+		}
+		pod.Spec = *patchedPodSpec
+	}
+
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
@@ -293,17 +302,17 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 }
 
 func addresses(containers []apiv1.Container) []string {
-	var addresses []string
+	var pluginAddresses []string
 	for _, c := range containers {
-		addresses = append(addresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
+		pluginAddresses = append(pluginAddresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
 	}
-	return addresses
+	return pluginAddresses
 }
 
 func names(containers []apiv1.Container) []string {
-	var addresses []string
+	var pluginNames []string
 	for _, c := range containers {
-		addresses = append(addresses, c.Name)
+		pluginNames = append(pluginNames, c.Name)
 	}
-	return addresses
+	return pluginNames
 }

@@ -31,20 +31,23 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <h5>v3.4</h5>
             <ul className='new-version-modal-bullets'>
                 <li>
-                    <a href='https://argoproj.github.io/argo-workflows/artifact-visualization/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/artifact-visualization/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         Visualize artifact{' '}
                     </a>
                     in the UI
                 </li>
                 <li>
                     Automated{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/walk-through/artifacts/#artifact-garbage-collection?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a
+                        href='https://argo-workflows.readthedocs.io/en/latest/walk-through/artifacts/#artifact-garbage-collection?utm_source=argo-ui'
+                        target='_blank'
+                        rel='noreferrer'>
                         artifact garbage collection
                     </a>
                 </li>
                 <li>
                     Provide{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/intermediate-inputs/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/intermediate-inputs/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         parameter input{' '}
                     </a>
                     in the middle of the workflow
@@ -60,7 +63,7 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <ul className='new-version-modal-bullets'>
                 <li>
                     Write your own types of step with{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/plugins/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/plugins/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         plugin templates
                     </a>
                     .
@@ -77,7 +80,7 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <ul className='new-version-modal-bullets'>
                 <li>
                     Writing workflows <b>without YAML</b> using{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/client-libraries/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/client-libraries/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         Python and Java SDKs
                     </a>
                     .
@@ -91,7 +94,7 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
                 </li>
                 <li>
                     Interact with third-party systems using{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/http-template/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/http-template/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         HTTP template
                     </a>
                     .
@@ -106,21 +109,21 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <ul className='new-version-modal-bullets'>
                 <li>
                     Run workflows <b>faster and cheaper</b>{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/container-set-template/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/container-set-template/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         using container set template and Emissary executor
                     </a>
                     .
                 </li>
                 <li>
                     Run fan-out workflows based on bucket contents using{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/data-sourcing-and-transformation/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/data-sourcing-and-transformation/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         data templates
                     </a>
                     .
                 </li>
                 <li>
                     Complex and dynamic templating using{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/variables/?utm_source=argo-ui#expression' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/variables/?utm_source=argo-ui#expression' target='_blank' rel='noreferrer'>
                         expression tag templates
                     </a>
                     .

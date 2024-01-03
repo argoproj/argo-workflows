@@ -34,7 +34,7 @@ export function PluginList({match, history}: RouteComponentProps<any>) {
                 <pre>kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin</pre>
                 <br />
                 <p>
-                    <a href='https://argoproj.github.io/argo-workflows/plugins/'>Learn more</a>.
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/plugins/'>Learn more</a>.
                 </p>
             </ZeroState>
         </Page>

@@ -1,3 +1,6 @@
+#######
+# NEW URL FOR THIS FILE: https://argo-workflows.readthedocs.io/en/latest/workflow-controller-configmap.yaml
+#######
 # This file describes the config settings available in the workflow controller configmap
 apiVersion: v1
 kind: ConfigMap
@@ -201,7 +204,7 @@ data:
   kubeletInsecure: "false"
 
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.
-  # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
+  # https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary
   images: |
     argoproj/argosay:v2:
       cmd: [/argosay]
@@ -372,7 +375,7 @@ data:
 
   # SSO Configuration for the Argo server.
   # You must also start argo server with `--auth-mode sso`.
-  # https://argoproj.github.io/argo-workflows/argo-server-auth-mode/
+  # https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/
   sso: |
     # This is the root URL of the OIDC provider (required).
     issuer: https://issuer.root.url/
