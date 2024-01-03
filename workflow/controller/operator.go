@@ -802,7 +802,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 func (woc *wfOperationCtx) checkReconciliationComplete() bool {
 	woc.log.Debugf("Task results completion status: %v", woc.wf.Status.TaskResultsCompletionStatus)
-	return woc.wf.Status.Phase.Completed() && woc.wf.Status.TaskResultsComplete()
+	return woc.wf.Status.Phase.Completed() && !woc.wf.Status.TaskResultsInProgress()
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
@@ -1368,6 +1368,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		resultName := pod.GetName()
 		if x == "true" {
 			woc.wf.Status.MarkTaskResultComplete(resultName)
+		} else {
+			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
 	}
 

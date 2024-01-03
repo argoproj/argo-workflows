@@ -1962,13 +1962,13 @@ func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
 	ws.TaskResultsCompletionStatus[name] = true
 }
 
-func (ws *WorkflowStatus) TaskResultsComplete() bool {
+func (ws *WorkflowStatus) TaskResultsInProgress() bool {
 	for _, value := range ws.TaskResultsCompletionStatus {
 		if !value {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
