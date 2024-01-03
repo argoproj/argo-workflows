@@ -239,8 +239,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
 	woc.taskResultReconciliation()
 
-	// Do artifact GC if all task results are completed.
-	if woc.checkTaskResultsCompleted() {
+	// Do artifact GC if task result reconciliation is complete.
+	if woc.checkReconciliationComplete() {
 		if err := woc.garbageCollectArtifacts(ctx); err != nil {
 			woc.log.WithError(err).Error("failed to GC artifacts")
 			return
@@ -788,7 +788,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	// Make sure the TaskResults are incorporated into WorkflowStatus before we delete them.
-	if woc.wf.Status.Phase.Completed() && woc.checkTaskResultsCompleted() {
+	if woc.checkReconciliationComplete() {
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
@@ -800,17 +800,9 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	woc.queuePodsForCleanup()
 }
 
-func (woc *wfOperationCtx) checkTaskResultsCompleted() bool {
-	taskResultsCompleted := woc.wf.Status.GetTaskResultsCompleted()
-	if len(taskResultsCompleted) == 0 {
-		return false
-	}
-	for _, completed := range taskResultsCompleted {
-		if !completed {
-			return false
-		}
-	}
-	return true
+func (woc *wfOperationCtx) checkReconciliationComplete() bool {
+	woc.log.Debugf("Task results completion status: %v", woc.wf.Status.TaskResultsCompletionStatus)
+	return woc.wf.Status.Phase.Completed() && !woc.wf.Status.TaskResultsInProgress()
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
@@ -1374,9 +1366,10 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
 		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		resultName := pod.GetName()
-		woc.wf.Status.InitializeTaskResultIncomplete(resultName)
 		if x == "true" {
 			woc.wf.Status.MarkTaskResultComplete(resultName)
+		} else {
+			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
 	}
 
@@ -2262,7 +2255,6 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.WorkflowPhase, message string) {
-	markCompleted := false
 	if woc.wf.Status.Phase != phase {
 		if woc.wf.Status.Fulfilled() {
 			woc.log.WithFields(log.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
@@ -2286,7 +2278,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		case wfv1.WorkflowFailed, wfv1.WorkflowError:
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", message)
 		}
-		markCompleted = phase.Completed()
 	}
 	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
 		woc.updated = true
@@ -2314,8 +2305,8 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 
 	switch phase {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
-		// wait for all daemon nodes to get terminated before marking workflow completed
-		if markCompleted && !woc.hasDaemonNodes() {
+		// Make sure all task results have been reconciled and wait for all daemon nodes to get terminated before marking the workflow completed.
+		if woc.checkReconciliationComplete() && !woc.hasDaemonNodes() {
 			woc.log.Info("Marking workflow completed")
 			woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())

@@ -805,6 +805,27 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 	}
 }
 
+func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
+	err := retryutil.OnError(wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, errorsutil.IsTransientErr, func() error {
+		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
+		if apierr.IsForbidden(err) {
+			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
+			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
+		}
+		return err
+	})
+	if err != nil {
+		we.AddError(err)
+	}
+}
+
 // ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
 func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()

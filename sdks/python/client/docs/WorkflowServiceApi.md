@@ -27347,7 +27347,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                 ),
-                task_results_completed={
+                task_results_completion_status={
                     "key": True,
                 },
             ),
@@ -54901,7 +54901,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                 ),
-                task_results_completed={
+                task_results_completion_status={
                     "key": True,
                 },
             ),
