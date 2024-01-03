@@ -309,7 +309,7 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 	} else if x := tmplHolder.GetTemplateRef(); x != nil {
 		return fmt.Sprintf("%T (%s/%s#%v)", tmplHolder, x.Name, x.Template, x.ClusterScope)
 	} else {
-		return fmt.Sprintf("%T invalid (https://argoproj.github.io/argo-workflows/templates/)", tmplHolder)
+		return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", tmplHolder)
 	}
 }
 

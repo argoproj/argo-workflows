@@ -794,7 +794,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
 		}
@@ -822,7 +822,7 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			if result.Outputs.HasOutputs() {
 				value, err := json.Marshal(result.Outputs)
 				if err != nil {

@@ -138,7 +138,7 @@ See %s`, help.ArgoServer),
 				}
 
 			} else {
-				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
+				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argo-workflows.readthedocs.io/en/latest/tls/")
 			}
 
 			modes := auth.Modes{}
@@ -149,7 +149,7 @@ See %s`, help.ArgoServer),
 				}
 			}
 			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
-				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo-workflows/argo-server-auth-mode/")
+				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/")
 			}
 
 			opts := apiserver.ArgoServerOpts{
