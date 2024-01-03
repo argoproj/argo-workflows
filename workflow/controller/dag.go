@@ -264,6 +264,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	// kick off execution of each target task asynchronously
+	onExitCompleted := true
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(ctx, dagCtx, taskName)
 
@@ -287,19 +288,21 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			}
 			if taskNode.Fulfilled() {
 				if taskNode.Completed() {
-					// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
-					// of the onExit node before continuing. That will be done in assesDAGPhase
-					_, _, err := woc.runOnExitNode(ctx, dagCtx.GetTask(taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
+					hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, dagCtx.GetTask(taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
 					if err != nil {
 						return node, err
+					}
+					if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled()) {
+						onExitCompleted = false
 					}
 				}
 			}
 		}
 	}
 
-	// check if we are still running any tasks in this dag and return early if we do
-	dagPhase, err := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes, woc.GetShutdownStrategy().Enabled())
+	// Check if we are still running any tasks in this dag and return early if we do
+	// We should wait for onExit nodes even if ShutdownStrategy is enabled.
+	dagPhase, err := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes, woc.GetShutdownStrategy().Enabled() && onExitCompleted)
 	if err != nil {
 		return nil, err
 	}

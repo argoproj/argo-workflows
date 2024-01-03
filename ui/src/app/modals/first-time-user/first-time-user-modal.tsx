@@ -21,7 +21,7 @@ export const FirstTimeUserModal = ({dismiss}: {dismiss: () => void}) => (
                 {key: 'infrastructure-automation', icon: 'network-wired', title: 'Infrastructure Automation'},
                 {key: 'other', icon: 'question-circle', title: 'Other...'}
             ].map(({key, icon, title}) => (
-                <BigButton key={key} title={title} icon={icon as Icon} href={`https://argoproj.github.io/argo-workflows/use-cases/${key}?utm_source=argo-ui`} />
+                <BigButton key={key} title={title} icon={icon as Icon} href={`https://argo-workflows.readthedocs.io/en/latest/use-cases/${key}?utm_source=argo-ui`} />
             ))}
         </div>
         <p style={{textAlign: 'center', paddingTop: 20}}>

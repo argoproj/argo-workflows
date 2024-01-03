@@ -34,7 +34,7 @@ export function Login() {
                     </h3>
                     <p>It may not be necessary to be logged in to use Argo Workflows, it depends on how it is configured.</p>
                     <p>
-                        <a href='https://argoproj.github.io/argo-workflows/argo-server-auth-mode/'>Learn more</a>.
+                        <a href='https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/'>Learn more</a>.
                     </p>
                 </div>
 
@@ -56,7 +56,7 @@ export function Login() {
                     <div className='columns small-4'>
                         <p>
                             If your organisation has configured <b>client authentication</b>, get your token following this instructions from{' '}
-                            <a href='https://argoproj.github.io/argo-workflows/access-token/#token-creation'>here</a> and paste in this box:
+                            <a href='https://argo-workflows.readthedocs.io/en/latest/access-token/#token-creation'>here</a> and paste in this box:
                         </p>
                         <div>
                             <textarea id='token' cols={32} rows={8} />
