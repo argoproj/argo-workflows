@@ -1,4 +1,4 @@
-# https://argo-workflows.readthedocs.io/en/stable/workflow-rbac/
+# https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:

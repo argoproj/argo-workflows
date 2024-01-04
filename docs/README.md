@@ -19,11 +19,11 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Use Cases
 
-* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/stable/use-cases/machine-learning/)
-* [Data and batch processing](https://argo-workflows.readthedocs.io/en/stable/use-cases/data-processing/)
-* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/stable/use-cases/infrastructure-automation/)
-* [CI/CD](https://argo-workflows.readthedocs.io/en/stable/use-cases/ci-cd/)
-* [Other use cases](https://argo-workflows.readthedocs.io/en/stable/use-cases/other/)
+* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/latest/use-cases/machine-learning/)
+* [Data and batch processing](https://argo-workflows.readthedocs.io/en/latest/use-cases/data-processing/)
+* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/latest/use-cases/infrastructure-automation/)
+* [CI/CD](https://argo-workflows.readthedocs.io/en/latest/use-cases/ci-cd/)
+* [Other use cases](https://argo-workflows.readthedocs.io/en/latest/use-cases/other/)
 
 ## Why Argo Workflows?
 
