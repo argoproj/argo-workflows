@@ -19,11 +19,11 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Use Cases
 
-* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/v3.5.2/use-cases/machine-learning/)
-* [Data and batch processing](https://argo-workflows.readthedocs.io/en/v3.5.2/use-cases/data-processing/)
-* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/v3.5.2/use-cases/infrastructure-automation/)
-* [CI/CD](https://argo-workflows.readthedocs.io/en/v3.5.2/use-cases/ci-cd/)
-* [Other use cases](https://argo-workflows.readthedocs.io/en/v3.5.2/use-cases/other/)
+* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/machine-learning/)
+* [Data and batch processing](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/data-processing/)
+* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/infrastructure-automation/)
+* [CI/CD](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/ci-cd/)
+* [Other use cases](https://argo-workflows.readthedocs.io/en/release-3.5/use-cases/other/)
 
 ## Why Argo Workflows?
 
@@ -69,11 +69,11 @@ Check out our [Java, Golang and Python clients](https://github.com/argoproj/argo
 ## Quickstart
 
 * [Get started here](https://github.com/argoproj/argo-workflows/blob/master/docs/quick-start.md)
-* [Walk-through examples](https://argo-workflows.readthedocs.io/en/v3.5.2/walk-through/)
+* [Walk-through examples](https://argo-workflows.readthedocs.io/en/release-3.5/walk-through/)
 
 ## Documentation
 
-[View the docs](https://argo-workflows.readthedocs.io/en/v3.5.2/)
+[View the docs](https://argo-workflows.readthedocs.io/en/release-3.5/)
 
 ## Features
 

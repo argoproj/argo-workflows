@@ -97,7 +97,7 @@ type Config struct {
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
-	// https://argo-workflows.readthedocs.io/en/v3.5.2/workflow-executors/#emissary-emissary
+	// https://argo-workflows.readthedocs.io/en/release-3.5/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
 
 	// Workflow retention by number of workflows

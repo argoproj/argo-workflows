@@ -6,7 +6,7 @@ var PodMissingMetric = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Namespace: argoNamespace,
 		Name:      "pod_missing",
-		Help:      "Incidents of pod missing. https://argo-workflows.readthedocs.io/en/v3.5.2/metrics/#argo_pod_missing",
+		Help:      "Incidents of pod missing. https://argo-workflows.readthedocs.io/en/release-3.5/metrics/#argo_pod_missing",
 	},
 	[]string{"recently_started", "node_phase"},
 )
