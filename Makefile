@@ -723,10 +723,8 @@ docs: /usr/local/bin/mkdocs \
 	# docs-linkcheck
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/check-env-doc.sh
-	# check all docs are listed in mkdocs.yml
-	./hack/check-mkdocs.sh
 	# build the docs
-	mkdocs build
+	mkdocs build --strict
 	# fix the fields.md document
 	go run -tags fields ./hack parseexamples
 	# tell the user the fastest way to edit docs
