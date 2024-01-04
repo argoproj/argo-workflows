@@ -8,7 +8,7 @@ We are trying an Incentive System in which contributors pledge a certain number 
 
 Help is needed for:
 * [reviewing PRs](#reviewing-PRs)
-* [triaging](../docs/CONTRIBUTING.md#triaging-bugs) new incoming bugs by prioritizing them with `P0`, `P1`, `P2`, and `P3` labels
+* [triaging](../docs/CONTRIBUTING.md#triaging-bugs) new bugs by prioritizing them with `P0`, `P1`, `P2`, and `P3` labels
 * responding to questions in [Github Discussions](https://github.com/argoproj/argo-workflows/discussions)
 * responding to questions in [CNCF Slack](https://argoproj.github.io/community/join-slack) in the `#argo-workflows` and `#argo-wf-contributors` channels 
 
