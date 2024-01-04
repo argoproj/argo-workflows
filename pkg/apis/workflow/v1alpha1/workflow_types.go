@@ -2441,6 +2441,11 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
 }
 
+// IsActivePluginNode returns whether this node is an active plugin node
+func (n *NodeStatus) IsActivePluginNode() bool {
+	return n.Type == NodeTypePlugin && (n.Phase == NodeRunning || n.Phase == NodePending)
+}
+
 func (n NodeStatus) GetDuration() time.Duration {
 	if n.FinishedAt.IsZero() {
 		return 0

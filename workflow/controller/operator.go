@@ -421,8 +421,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
-	// Reconcile TaskSet and Agent for HTTP templates
-	woc.taskSetReconciliation(ctx)
+	// Reconcile TaskSet and Agent for HTTP templates when is not shutdown
+	if !woc.execWf.Spec.Shutdown.Enabled() {
+		woc.taskSetReconciliation(ctx)
+	}
 
 	// Check all hooks are completes
 	if !hookCompleted {
@@ -1222,8 +1224,8 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 
 func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() {
 	for _, node := range woc.wf.Status.Nodes {
-		// fail suspended nodes when shuting down
-		if woc.GetShutdownStrategy().Enabled() && node.IsActiveSuspendNode() {
+		// fail suspended nodes or plugin nodes when shuting down
+		if woc.GetShutdownStrategy().Enabled() && (node.IsActiveSuspendNode() || node.IsActivePluginNode()) {
 			message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			continue
