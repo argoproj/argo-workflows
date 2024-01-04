@@ -23,8 +23,8 @@ See the [Contributor Meeting doc](https://bit.ly/argo-data-weekly) for minutes, 
 
 You can join the following channels on [CNCF Slack](https://argoproj.github.io/community/join-slack):
 
-* `#argo-workflows`: discussions focused mainly on use of Argo Workflows
-* `#argo-wf-contributors`: discussions focused mainly on development of Argo Workflows
+* [`#argo-workflows`](https://cloud-native.slack.com/archives/C01QW9QSSSK): discussions focused mainly on use of Argo Workflows
+* [`#argo-wf-contributors`](https://cloud-native.slack.com/archives/C0510EUH90V): discussions focused mainly on development of Argo Workflows
 
 ## Roles
 
