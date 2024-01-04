@@ -37,7 +37,7 @@ The Argo project currently has 4 designated [roles](https://github.com/argoproj/
 
 The Reviewer and Approver roles can optionally be scoped to an area of the code base (for example, UI or docs).
 
-Current roles for Reviewers and above can be found in [OWNERS](../OWNERS).
+Current roles for Reviewers and above can be found in [OWNERS](https://github.com/argoproj/argo-workflows/blob/main/OWNERS).
 
 If you are interested in formally joining the Argo project, [create a Membership request](https://github.com/argoproj/argoproj/issues/new?template=membership.md&title=REQUEST%3A%20New%20membership%20for%20%3Cyour-GH-handle%3E) in the [argoproj](https://github.com/argoproj/argoproj) repository as described in the [Membership](https://github.com/argoproj/argoproj/blob/main/community/membership.md) guide.
 
@@ -125,4 +125,4 @@ If more information is needed from the author to diagnose the issue, then apply 
 ## Sustainability Effort
 
 Argo Workflows is seeking more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
-Please see [Sustainability Effort](../community/sustainability_effort.md) for more information.
+Please see [Sustainability Effort](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information.
