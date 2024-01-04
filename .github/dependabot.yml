@@ -16,6 +16,9 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
+    ignore:
+      - dependency-name: "actions/download-artifact"
+      - dependency-name: "actions/upload-artifact"
 
   - package-ecosystem: "npm"
     directory: "/ui"
