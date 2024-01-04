@@ -30,7 +30,7 @@ Participants should join the [`#argo-wf-contributors`](https://cloud-native.slac
 
 ### Reviewing PRs
 
-First priority is to review any PRs which have the `prioritized-review` label, meaning they were authored by a participant of this system (verified by GitHub ID).
+First priority is to review any PRs which have the [`prioritized-review` label](https://github.com/argoproj/argo-workflows/labels/prioritized-review), meaning they were authored by a participant of this system (verified by GitHub ID).
 Each of these should have an Assignee: a Reviewer, Approver, or Lead who "owns" reviewing the PR.<br />
 These PRs should be given an initial review within a week.
 The Assignee should then respond to each question or requested modification from the author within a week.
