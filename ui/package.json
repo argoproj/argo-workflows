@@ -52,7 +52,7 @@
         "@types/prop-types": "^15.7.11",
         "@types/react": "^16.8.5",
         "@types/react-autocomplete": "^1.8.10",
-        "@types/react-datepicker": "^4.19.4",
+        "@types/react-datepicker": "^4.19.5",
         "@types/react-dom": "^16.8.2",
         "@types/react-form": "^2.16.1",
         "@types/react-helmet": "^6.1.11",
