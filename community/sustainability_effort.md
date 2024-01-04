@@ -37,7 +37,7 @@ The Assignee should then respond to each question or requested modification from
 
 Next, look for PRs with no Assignee. 
 
-For general guidance regarding PR Reviews, see [Reviewing PRs](../CONTRIBUTING.md#reviewing-prs).
+For general guidance regarding PR Reviews, see [the Contributing docs](../CONTRIBUTING.md#reviewing-prs).
 
 ### Authoring PRs
 
