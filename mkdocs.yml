@@ -39,7 +39,8 @@ validation:
   absolute_links: warn
   unrecognized_links: warn
 exclude_docs: |
-  proposals/
+  /proposals/
+  /requirements.txt
 
 nav:
   - Home: README.md
