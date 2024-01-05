@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 50 # assume PRs are less than 50 commits
       - name: Get relevant files changed per group
         id: changed-files
-        uses: tj-actions/changed-files@v40
+        uses: tj-actions/changed-files@v41
         with:
           files_yaml: |
             common: &common
@@ -114,7 +114,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -132,7 +132,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -211,20 +211,20 @@ jobs:
       - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '8'
           distribution: adopt
           cache: maven
       - name: Install Python for the SDK
         if: ${{matrix.test == 'test-python-sdk'}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
           cache: pip
@@ -335,7 +335,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -372,7 +372,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true

@@ -59,7 +59,7 @@ export function WorkflowDrawer(props: WorkflowDrawerProps) {
                                         <div className='workflow-drawer__title'>
                                             RESOURCES DURATION&nbsp;
                                             <a
-                                                href='https://argoproj.github.io/argo-workflows/resource-duration/'
+                                                href='https://argo-workflows.readthedocs.io/en/latest/resource-duration/'
                                                 onClick={e => e.stopPropagation()}
                                                 target='_blank'
                                                 rel='noreferrer'>

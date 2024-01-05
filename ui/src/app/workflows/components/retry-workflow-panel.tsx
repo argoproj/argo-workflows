@@ -86,7 +86,7 @@ export function RetryWorkflowPanel(props: Props) {
                 {restartSuccessful && (
                     <div key='node-field-selector' style={{marginBottom: 25}}>
                         <label>
-                            Node Field Selector to restart nodes. <a href='https://argoproj.github.io/argo-workflows/node-field-selector/'>See document</a>.
+                            Node Field Selector to restart nodes. <a href='https://argo-workflows.readthedocs.io/en/latest/node-field-selector/'>See document</a>.
                         </label>
 
                         <div className='columns small-9'>

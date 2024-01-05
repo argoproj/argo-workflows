@@ -49284,7 +49284,7 @@ spec:
                         type: array
                     type: object
                 type: object
-              taskResultsCompleted:
+              taskResultsCompletionStatus:
                 additionalProperties:
                   type: boolean
                 type: object

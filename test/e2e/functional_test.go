@@ -898,7 +898,7 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		Workflow("@testdata/data-transformation.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(90 * time.Second).
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
