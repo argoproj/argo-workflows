@@ -21,12 +21,12 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 
 ## Use Cases
 
-* [Machine Learning pipelines](https://argoproj.github.io/argo-workflows/use-cases/machine-learning/)
-* [Data and batch processing](https://argoproj.github.io/argo-workflows/use-cases/data-processing/)
-* [Infrastructure automation](https://argoproj.github.io/argo-workflows/use-cases/infrastructure-automation/)
-* [CI/CD](https://argoproj.github.io/argo-workflows/use-cases/ci-cd/)
+* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/release-3.4/use-cases/machine-learning/)
+* [Data and batch processing](https://argo-workflows.readthedocs.io/en/release-3.4/use-cases/data-processing/)
+* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/release-3.4/use-cases/infrastructure-automation/)
+* [CI/CD](https://argo-workflows.readthedocs.io/en/release-3.4/use-cases/ci-cd/)
 * ETL
-* [Other use cases](https://argoproj.github.io/argo-workflows/use-cases/other/)
+* [Other use cases](https://argo-workflows.readthedocs.io/en/release-3.4/use-cases/other/)
 
 ## Why Argo Workflows?
 
@@ -47,7 +47,7 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 
 ## Documentation
 
-[View the docs](https://argoproj.github.io/argo-workflows/)
+[View the docs](https://argo-workflows.readthedocs.io/en/release-3.4/)
 
 ## Ecosystem
 

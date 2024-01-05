@@ -1,3 +1,3 @@
 # Documentation by Example
 
-This has been moved to [the docs](https://argoproj.github.io/argo-workflows/walk-through/).
+This has been moved to [the docs](https://argo-workflows.readthedocs.io/en/release-3.4/walk-through/).

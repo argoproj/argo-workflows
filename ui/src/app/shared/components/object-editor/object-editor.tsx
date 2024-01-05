@@ -136,7 +136,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                 <div>
                     <i className='fa fa-info-circle' />{' '}
                     {lang === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
+                    <a href='https://argo-workflows.readthedocs.io/en/release-3.4/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
                 </div>
             )}
         </>
