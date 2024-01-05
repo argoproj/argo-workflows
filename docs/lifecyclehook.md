@@ -4,7 +4,7 @@
 
 ## Introduction
 
-A [`LifecycleHook`](https://argoproj.github.io/argo-workflows/fields/#lifecyclehook) triggers an action based on a conditional expression. It is configured either at the workflow-level or template-level, for instance as a function of the `workflow.status` or `steps.status`, respectively. A `LifecycleHook` executes during execution time and executes once.
+A [`LifecycleHook`](https://argo-workflows.readthedocs.io/en/release-3.4/fields/#lifecyclehook) triggers an action based on a conditional expression. It is configured either at the workflow-level or template-level, for instance as a function of the `workflow.status` or `steps.status`, respectively. A `LifecycleHook` executes during execution time and executes once.
 
 In other words, a `LifecycleHook` functions like an [exit handler](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml) with a conditional expression.
 
@@ -19,13 +19,13 @@ In other words, a `LifecycleHook` functions like an [exit handler](https://githu
 ## Supported conditions
 
 - [Exit handler variables](https://github.com/argoproj/argo-workflows/blob/ebd3677c7a9c973b22fa81ef3b409404a38ec331/docs/variables.md#exit-handler): `workflow.status` and `workflow.failures`
-- [`template`](https://argoproj.github.io/argo-workflows/fields/#template)
-- [`templateRef`](https://argoproj.github.io/argo-workflows/fields/#templateref)
+- [`template`](https://argo-workflows.readthedocs.io/en/release-3.4/fields/#template)
+- [`templateRef`](https://argo-workflows.readthedocs.io/en/release-3.4/fields/#templateref)
 - [`arguments`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 ## Unsupported conditions
 
-- [`outputs`](https://argoproj.github.io/argo-workflows/fields/#outputs) are not usable since `LifecycleHook` executes during execution time and `outputs` are not produced until the step is completed.
+- [`outputs`](https://argo-workflows.readthedocs.io/en/release-3.4/fields/#outputs) are not usable since `LifecycleHook` executes during execution time and `outputs` are not produced until the step is completed.
 
 ## Notification use case
 

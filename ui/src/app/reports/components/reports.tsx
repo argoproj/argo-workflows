@@ -351,12 +351,12 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <p>
                         Use this page to find costly or time consuming workflows. You must label workflows you want to report on. If you use <b>workflow templates</b> or{' '}
                         <b>cron workflows</b>, your workflows will be automatically labelled. You'll probably need to enable the{' '}
-                        <a href='https://argoproj.github.io/argo-workflows/workflow-archive/'>workflow archive</a> to get long term data. Only the {limit} most recent workflows are
+                        <a href='https://argo-workflows.readthedocs.io/en/release-3.4/workflow-archive/'>workflow archive</a> to get long term data. Only the {limit} most recent workflows are
                         shown.
                     </p>
                     <p>Select a namespace and at least one label to get a report.</p>
                     <p>
-                        <a href='https://argoproj.github.io/argo-workflows/cost-optimisation/'>Learn more about cost optimization</a>
+                        <a href='https://argo-workflows.readthedocs.io/en/release-3.4/cost-optimisation/'>Learn more about cost optimization</a>
                     </p>
                 </ZeroState>
             );

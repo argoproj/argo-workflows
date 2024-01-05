@@ -13,7 +13,7 @@ export class ResourcesDuration extends React.Component<Props> {
                     Object.entries(this.props.resourcesDuration)
                         .map(([resource, duration]) => formatDuration(duration, 1) + '*(' + denominator(resource) + ' ' + resource + ')')
                         .join(',')}{' '}
-                <a href='https://argoproj.github.io/argo-workflows/resource-duration/'>
+                <a href='https://argo-workflows.readthedocs.io/en/release-3.4/resource-duration/'>
                     <i className='fa fa-info-circle' />
                 </a>
             </>

@@ -394,7 +394,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 				})
 				if err != nil {
-					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: %w", c.Image, err)
+					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/release-3.4/workflow-executors/#emissary-emissary: %w", c.Image, err)
 				}
 				c.Command = x.Entrypoint
 				if c.Args == nil { // check nil rather than length, as zero-length is valid args
