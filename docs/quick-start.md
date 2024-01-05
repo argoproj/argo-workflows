@@ -2,7 +2,7 @@
 
 To see how Argo Workflows work, you can install it and run examples of simple workflows.
 
-Before you start you need a Kubernetes cluster and `kubectl` set up to be able to access that cluster. To get up and run the argo workflow, a local cluster is fine. You could consider the following local Kubernetes cluster options:
+Before you start you need a Kubernetes cluster and `kubectl` set up to be able to access that cluster. For the purposes of getting up and running, a local cluster is fine. You could consider the following local Kubernetes cluster options:
 
 * [minikube](https://minikube.sigs.k8s.io/docs/)
 * [kind](https://kind.sigs.k8s.io/)
@@ -100,7 +100,7 @@ argo logs -n argo @latest
 * Open a port-forward so you can access the UI:
 
 ```bash
-kubectl -n argo port-forward services/argo-server 2746:2746
+kubectl -n argo port-forward service/argo-server 2746:2746
 ```
 
 * Navigate your browser to <https://localhost:2746>.
