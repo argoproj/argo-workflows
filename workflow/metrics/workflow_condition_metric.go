@@ -9,7 +9,7 @@ var WorkflowConditionMetric = prometheus.NewGaugeVec(
 		Namespace: argoNamespace,
 		Subsystem: workflowsSubsystem,
 		Name:      "workflow_condition",
-		Help:      "Workflow condition. https://argo-workflows.readthedocs.io/en/v3.5.2/metrics/#argo_workflows_workflow_condition",
+		Help:      "Workflow condition. https://argo-workflows.readthedocs.io/en/release-3.5/metrics/#argo_workflows_workflow_condition",
 	},
 	[]string{"type", "status"},
 )

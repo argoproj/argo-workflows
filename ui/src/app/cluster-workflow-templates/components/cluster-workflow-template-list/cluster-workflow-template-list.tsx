@@ -56,7 +56,7 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
         if (!templates) {
             return <Loading />;
         }
-        const learnMore = <a href='https://argo-workflows.readthedocs.io/en/v3.5.2/cluster-workflow-templates/'>Learn more</a>;
+        const learnMore = <a href='https://argo-workflows.readthedocs.io/en/release-3.5/cluster-workflow-templates/'>Learn more</a>;
         if (templates.length === 0) {
             return (
                 <ZeroState title='No cluster workflow templates'>
