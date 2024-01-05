@@ -12,7 +12,7 @@ Before you start you need a Kubernetes cluster and `kubectl` set up to be able t
 Alternatively, if you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, try the [Killercoda course](training.md#hands-on).
 
 !!! Warning "Development vs. Production"
-    These instructions are intended to help you get started quickly. They are not suitable in production. For production installs, please refer to [the installation documentation](installation.md).
+    These instructions are intended to help you get started quickly. They are not suitable for production. For production installs, please refer to [the installation documentation](installation.md).
 
 ## Install Argo Workflows
 
@@ -29,7 +29,7 @@ kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/dow
 
 ### Patch argo-server authentication
 
-The argo-server (and thus the UI) defaults to client authentication, which requires clients to provide their Kubernetes bearer token in order to authenticate. For more information, refer to the [Argo Server Auth Mode documentation](argo-server-auth-mode.md). We will switch the authentication mode to `server` so that we can bypass the UI login for now:
+The argo-server (and thus the UI) defaults to client authentication, which requires clients to provide their Kubernetes bearer token to authenticate. For more information, refer to the [Argo Server Auth Mode documentation](argo-server-auth-mode.md). We will switch the authentication mode to `server` so that we can bypass the UI login for now:
 
 ```bash
 kubectl patch deployment \
@@ -53,7 +53,7 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 
 This will serve the UI on <https://localhost:2746>. Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.
 
-> Pay close attention to the URI. It uses `https` and not `http`. Navigating to `http://localhost:2746` result in server-side error that breaks the port-forwarding.
+> Pay close attention to the URI. It uses `https` and not `http`. Navigating to `http://localhost:2746` results in a server-side error that breaks the port forwarding.
 
 ## Install the Argo Workflows CLI
 
@@ -80,14 +80,14 @@ You will notice the Workflow name has a `hello-world-` prefix followed by random
 to give Workflows unique names to help identify specific runs of a Workflow. If you submitted this Workflow again,
 the next Workflow run would have a different name.
 
-Using the `argo get` command, you can always review details of a Workflow run. The output for the command below will
-be the same as the information shown as when you submitted the Workflow:
+Using the `argo get` command, you can always review the details of a Workflow run. The output for the command below will
+be the same as the information shown when you submitted the Workflow:
 
 ```bash
 argo get -n argo @latest
 ```
 
-The `@latest` argument to the CLI is a short cut to view the latest Workflow run that was executed.
+The `@latest` argument to the CLI is a shortcut to view the latest Workflow run that was executed.
 
 You can also observe the logs of the Workflow run by running the following:
 
@@ -100,7 +100,7 @@ argo logs -n argo @latest
 * Open a port-forward so you can access the UI:
 
 ```bash
-kubectl -n argo port-forward deployment/argo-server 2746:2746
+kubectl -n argo port-forward service/argo-server 2746:2746
 ```
 
 * Navigate your browser to <https://localhost:2746>.
