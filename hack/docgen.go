@@ -36,11 +36,11 @@ const tableRow = `
 const depTableRow = `
 |~~` + "`%s`" + `~~|~~%s~~|%s|`
 
+// `markdown` attribute for MD in HTML: https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown/#markdown-in-html
 const dropdownOpener = `
 
-<details>
-<summary>%s (click to open)</summary>
-<br>`
+<details markdown>
+<summary>%s (click to open)</summary>`
 
 const listElement = `
 
