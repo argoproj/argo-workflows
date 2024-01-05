@@ -12,8 +12,6 @@ func main() {
 		removeCRDValidation(os.Args[2])
 	case "docgen":
 		generateDocs()
-	case "parseexamples":
-		parseExamples()
 	default:
 		panic(os.Args[1])
 	}

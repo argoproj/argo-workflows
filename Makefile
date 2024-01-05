@@ -658,7 +658,7 @@ docs-lint: /usr/local/bin/markdownlint
 	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
 
 /usr/local/bin/mkdocs:
-	python -m pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
+	python -m pip install --no-cache-dir -r docs/requirements.txt
 
 .PHONY: docs
 docs: /usr/local/bin/mkdocs \
@@ -672,8 +672,6 @@ docs: /usr/local/bin/mkdocs \
 	./hack/check-mkdocs.sh
 	# build the docs
 	mkdocs build
-	# fix the fields.md document
-	go run -tags fields ./hack parseexamples
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
