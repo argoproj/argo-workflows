@@ -3,6 +3,8 @@
 ## Cherry-Picking Fixes
 
 ✋ Before you start, make sure you have created a release branch (e.g. `release-3.3`) and it's passing CI.
+Please make sure all patch releases (e.g. `v3.3.5`) should be released from its associated minor release branch (e.g. `release-3.3`)
+to work well with our setup for versioned documentation website.
 
 Then get a list of commits you may want to cherry-pick:
 
