@@ -24,7 +24,7 @@ Below is an example of the install commands, ensure that you update the command 
 
 ```yaml
 kubectl create namespace argo
-kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v<<ARGO_WORKFLOWS_VERSION>>/install.yaml
+kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v<<ARGO_WORKFLOWS_VERSION>>/quick-start-minimal.yaml
 ```
 
 ### Patch argo-server authentication

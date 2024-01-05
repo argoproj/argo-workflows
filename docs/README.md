@@ -19,11 +19,11 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Use Cases
 
-* [Machine Learning pipelines](https://argoproj.github.io/argo-workflows/use-cases/machine-learning/)
-* [Data and batch processing](https://argoproj.github.io/argo-workflows/use-cases/data-processing/)
-* [Infrastructure automation](https://argoproj.github.io/argo-workflows/use-cases/infrastructure-automation/)
-* [CI/CD](https://argoproj.github.io/argo-workflows/use-cases/ci-cd/)
-* [Other use cases](https://argoproj.github.io/argo-workflows/use-cases/other/)
+* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/latest/use-cases/machine-learning/)
+* [Data and batch processing](https://argo-workflows.readthedocs.io/en/latest/use-cases/data-processing/)
+* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/latest/use-cases/infrastructure-automation/)
+* [CI/CD](https://argo-workflows.readthedocs.io/en/latest/use-cases/ci-cd/)
+* [Other use cases](https://argo-workflows.readthedocs.io/en/latest/use-cases/other/)
 
 ## Why Argo Workflows?
 
@@ -37,7 +37,10 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Try Argo Workflows
 
-[Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo) (login using Github)
+You can try Argo Workflows via one of the following:
+
+1. [Interactive Training Material](https://killercoda.com/argoproj/course/argo-workflows/)
+1. [Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo)
 
 ![Screenshot](https://github.com/argoproj/argo-workflows/raw/main/docs/assets/screenshot.png)
 

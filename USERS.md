@@ -8,9 +8,7 @@ User community survey results are available: [2023](https://blog.argoproj.io/arg
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization or project name in the following sections.
 
 Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. 
-We are gauging interest in a potential system in which many companies pledge a little bit of time each to help get more people into these roles. 
-See [#12229](https://github.com/argoproj/argo-workflows/issues/12229) for more information. 
-If you think you or your company may be interested in getting involved, please add a comment to the issue.
+See [Sustainability Effort](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information. 
 
 ### Organizations Using Argo
 

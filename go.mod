@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/TwiN/go-color v1.4.1
 	github.com/alibabacloud-go/tea v1.2.1
-	github.com/aliyun/aliyun-oss-go-sdk v3.0.1+incompatible
+	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/aliyun/credentials-go v1.3.2
 	github.com/antonmedv/expr v1.15.5
 	github.com/argoproj/argo-events v1.7.3

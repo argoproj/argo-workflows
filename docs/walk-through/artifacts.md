@@ -113,7 +113,7 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
 
 ## Artifact Garbage Collection
 
-As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](https://argoproj.github.io/argo-workflows/configure-artifact-repository/) for the current supported store engine).
+As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](../configure-artifact-repository.md) for the current supported store engine).
 
 Artifacts can be deleted `OnWorkflowCompletion` or `OnWorkflowDeletion`. You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:
 
