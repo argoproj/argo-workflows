@@ -332,6 +332,8 @@ Workflow is the definition of a workflow resource
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -755,6 +757,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -857,7 +861,7 @@ WorkflowStatus contains overall status information about a workflow
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
-|`taskResultsCompleted`|`Map< boolean , string >`|Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.|
+|`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.|
 
 ## CronWorkflowSpec
 
@@ -1190,6 +1194,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
+
+- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -3707,6 +3713,8 @@ MetricLabel is a single label for a prometheus metric
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-metadata.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
+
+- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
 </details>
 
 ### Fields
@@ -4895,6 +4903,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -5502,6 +5512,8 @@ A single application container that you want to run within a pod.
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
+
+- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -6237,6 +6249,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
+
+- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 

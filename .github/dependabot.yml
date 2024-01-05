@@ -16,6 +16,10 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
+    ignore:
+      # temporarily ignore until https://github.com/actions/download-artifact/issues/249 is resolved
+      - dependency-name: "actions/download-artifact"
+      - dependency-name: "actions/upload-artifact"
 
   - package-ecosystem: "npm"
     directory: "/ui"
