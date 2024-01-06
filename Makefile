@@ -725,8 +725,6 @@ docs: /usr/local/bin/mkdocs \
 	./hack/check-env-doc.sh
 	# build the docs
 	mkdocs build --strict
-	# fix the fields.md document
-	go run -tags fields ./hack parseexamples
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
