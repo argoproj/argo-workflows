@@ -299,7 +299,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal(err)
 	}
 
-	if os.Getenv("WATCH_CONTROLLER_CONFIGMAP") != "false" {
+	if os.Getenv("WATCH_CONFIGMAPS") != "false" {
 		go wfc.runConfigMapWatcher(ctx.Done())
 	}
 	
