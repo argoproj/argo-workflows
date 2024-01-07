@@ -50,10 +50,6 @@ var (
 	maxEnvVarLen = 131072
 )
 
-func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
-	return woc.execWf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
-}
-
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
 // retryStrategy.affinity.nodeAntiAffinity{} is specified
 func (woc *wfOperationCtx) scheduleOnDifferentHost(node *wfv1.NodeStatus, pod *apiv1.Pod) error {
@@ -353,24 +349,27 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	// Apply the patch string from template
-	if woc.hasPodSpecPatch(tmpl) {
-		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
-		}
-
+	// Apply the patch string from workflow and template
+	var podSpecPatchs []string
+	if woc.execWf.Spec.HasPodSpecPatch() {
 		// Final substitution for workflow level PodSpecPatch
 		localParams := make(map[string]string)
 		if tmpl.IsPodType() {
 			localParams[common.LocalVarPodName] = pod.Name
 		}
-		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		newTmpl := tmpl.DeepCopy()
+		newTmpl.PodSpecPatch = woc.execWf.Spec.PodSpecPatch
+		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
-
-		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, tmpl.PodSpecPatch)
+		podSpecPatchs = append(podSpecPatchs, processedTmpl.PodSpecPatch)
+	}
+	if tmpl.HasPodSpecPatch() {
+		podSpecPatchs = append(podSpecPatchs, tmpl.PodSpecPatch)
+	}
+	if len(podSpecPatchs) > 0 {
+		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, podSpecPatchs...)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
 		}
