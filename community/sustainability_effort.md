@@ -26,7 +26,7 @@ There are different expectations depending on the role:
 
 Note that the hours per week listed above is an average over time; it's fine to have weeks of no activity so long as the average meets expectations.
 
-Participants should join the [`#argo-wf-contributors`](https://cloud-native.slack.com/archives/C0510EUH90V) Slack channel.
+Participants should join the [`#argo-wf-contributors`](https://cloud-native.slack.com/archives/C0510EUH90V) Slack channel. They should also be invited to the private `#argo-wf-sustainability` channel.
 
 ### Reviewing PRs
 
