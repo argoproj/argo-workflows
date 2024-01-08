@@ -38,9 +38,9 @@ git log --oneline --grep "${commitGrepPattern}" "$base...main" | while read -r m
   else
     commit=$(grep -q "$(echo "$m" | prNo)" /tmp/prs && echo "${m:0:9}")
     echo "cherry-picking: $commit"
-    if ! git cp "$commit"; then
+    if ! git cherry-pick "$commit"; then
       echo "failed to cherry-pick $commit"
-      git cp --abort
+      git cherry-pick --abort
     fi
   fi
 done
