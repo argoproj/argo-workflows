@@ -15,7 +15,7 @@ import (
 
 func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string, scope *wfScope) (bool, *wfv1.NodeStatus, error) {
 	outputs := parentNode.Outputs
-	if parentNode.Type == wfv1.NodeTypeRetry {
+	if parentNode.Type == wfv1.NodeTypeRetry && !(parentNode.MemoizationStatus != nil && parentNode.MemoizationStatus.Hit) {
 		lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
 		outputs = lastChildNode.Outputs
 	}
