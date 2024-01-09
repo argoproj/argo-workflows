@@ -1173,7 +1173,7 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 	} else if a.S3 != nil {
 		return a.S3, nil
 	}
-	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
+	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 }
 
 // SetType sets the type of the artifact to type the argument.
@@ -1944,29 +1944,31 @@ type WorkflowStatus struct {
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 
-	// Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
-	TaskResultsCompleted map[string]bool `json:"taskResultsCompleted,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompleted"`
+	// TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.
+	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
 }
 
-func (ws *WorkflowStatus) InitializeTaskResultIncomplete(resultName string) {
-	if ws.TaskResultsCompleted == nil {
-		ws.TaskResultsCompleted = make(map[string]bool)
-	}
-	if _, ok := ws.TaskResultsCompleted[resultName]; !ok {
-		ws.MarkTaskResultIncomplete(resultName)
-	}
-}
-func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
-	ws.TaskResultsCompleted[name] = true
-}
 func (ws *WorkflowStatus) MarkTaskResultIncomplete(name string) {
-	ws.TaskResultsCompleted[name] = false
+	if ws.TaskResultsCompletionStatus == nil {
+		ws.TaskResultsCompletionStatus = make(map[string]bool)
+	}
+	ws.TaskResultsCompletionStatus[name] = false
 }
-func (ws *WorkflowStatus) GetTaskResultCompleted(name string) bool {
-	return ws.TaskResultsCompleted[name]
+
+func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
+	if ws.TaskResultsCompletionStatus == nil {
+		ws.TaskResultsCompletionStatus = make(map[string]bool)
+	}
+	ws.TaskResultsCompletionStatus[name] = true
 }
-func (ws *WorkflowStatus) GetTaskResultsCompleted() map[string]bool {
-	return ws.TaskResultsCompleted
+
+func (ws *WorkflowStatus) TaskResultsInProgress() bool {
+	for _, value := range ws.TaskResultsCompletionStatus {
+		if !value {
+			return true
+		}
+	}
+	return false
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -2437,6 +2439,11 @@ func (n *NodeStatus) GetOutputs() *Outputs {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
+// IsActivePluginNode returns whether this node is an active plugin node
+func (n *NodeStatus) IsActivePluginNode() bool {
+	return n.Type == NodeTypePlugin && (n.Phase == NodeRunning || n.Phase == NodePending)
 }
 
 func (n NodeStatus) GetDuration() time.Duration {

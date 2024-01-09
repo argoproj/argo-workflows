@@ -159,7 +159,7 @@ func TestParseObjects(t *testing.T) {
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
-	assert.Equal(t, "*v1alpha1.DAGTask invalid (https://argoproj.github.io/argo-workflows/templates/)", GetTemplateHolderString(&wfv1.DAGTask{}))
+	assert.Equal(t, "*v1alpha1.DAGTask invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", GetTemplateHolderString(&wfv1.DAGTask{}))
 	assert.Equal(t, "*v1alpha1.DAGTask inlined", GetTemplateHolderString(&wfv1.DAGTask{Inline: &wfv1.Template{}}))
 	assert.Equal(t, "*v1alpha1.DAGTask (foo)", GetTemplateHolderString(&wfv1.DAGTask{Template: "foo"}))
 	assert.Equal(t, "*v1alpha1.DAGTask (foo/bar#false)", GetTemplateHolderString(&wfv1.DAGTask{TemplateRef: &wfv1.TemplateRef{
