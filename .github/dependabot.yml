@@ -6,12 +6,12 @@ updates:
       interval: "weekly"
       day: "saturday"
     ignore:
-    - dependency-name: k8s.io/*
-    - dependency-name: github.com/grpc-ecosystem/*
-    - dependency-name: google.golang.org/grpc
-    # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#specifying-dependencies-and-versions-to-ignore
-    - dependency-name: "*"
-      update-types: [version-update:semver-major, version-update:semver-minor, version-update:semver-patch]
+      - dependency-name: k8s.io/*
+      - dependency-name: github.com/grpc-ecosystem/*
+      - dependency-name: google.golang.org/grpc
+      # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#specifying-dependencies-and-versions-to-ignore
+      - dependency-name: "*"
+        update-types: [version-update:semver-major, version-update:semver-minor, version-update:semver-patch]
     open-pull-requests-limit: 10
 
   - package-ecosystem: "github-actions"
