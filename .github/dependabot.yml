@@ -9,6 +9,9 @@ updates:
     - dependency-name: k8s.io/*
     - dependency-name: github.com/grpc-ecosystem/*
     - dependency-name: google.golang.org/grpc
+    # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#specifying-dependencies-and-versions-to-ignore
+    - dependency-name: "*"
+      update-types: [version-update:semver-major, version-update:semver-minor, version-update:semver-patch]
     open-pull-requests-limit: 10
 
   - package-ecosystem: "github-actions"
@@ -20,6 +23,9 @@ updates:
       # temporarily ignore until https://github.com/actions/download-artifact/issues/249 is resolved
       - dependency-name: "actions/download-artifact"
       - dependency-name: "actions/upload-artifact"
+      # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#specifying-dependencies-and-versions-to-ignore
+      - dependency-name: "*"
+        update-types: [version-update:semver-major, version-update:semver-minor, version-update:semver-patch]
 
   - package-ecosystem: "npm"
     directory: "/ui"
@@ -31,4 +37,7 @@ updates:
       - dependency-name: style-loader
       - dependency-name: react-router-dom
       - dependency-name: "@types/react-router-dom"
+      # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#specifying-dependencies-and-versions-to-ignore
+      - dependency-name: "*"
+        update-types: [version-update:semver-major, version-update:semver-minor, version-update:semver-patch]
     open-pull-requests-limit: 10
