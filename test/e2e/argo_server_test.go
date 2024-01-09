@@ -1037,7 +1037,7 @@ spec:
 	})
 }
 
-func (s *ArgoServerSuite) TestArtifactServerArtifactPassing() {
+func (s *ArgoServerSuite) TestArtifactServerArchivedWorkflow() {
 	var uid types.UID
 	var nodeID string
 	s.Given().
