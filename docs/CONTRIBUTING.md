@@ -120,7 +120,16 @@ Any bugs with 3-4 "👍" reactions should be labeled at least `P2`.
 Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Abug).
 
 If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
-If more information is needed from the author to diagnose the issue, then apply the `more-information-needed` label.
+If more information is needed from the author to diagnose the issue, then apply the `more information needed` label.
+
+##### Staleness
+
+Only issues and PRs that have the [`more information needed` label](https://github.com/argoproj/argo-workflows/labels/more%20information%20needed) will be considered for staleness.
+
+If the author does not respond timely to a request for more information, the issue or PR will be automatically marked with the `stale` label and a bot message.
+Subsequently, if there is still no response, it will be automatically closed as "not planned".
+
+See the [Stale Action configuration](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/stale.yaml) for more details.
 
 ## Sustainability Effort
 
