@@ -537,8 +537,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 		switch action {
 		case terminateContainers:
-			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
-			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+			if err := enablePodForDeletion(ctx, pods, pod); err != nil {
 				return err
 			}
 			if pod.Status.Phase == apiv1.PodPending {
@@ -550,28 +549,23 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				}
 			}
 		case killContainers:
-			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
-			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+			if err := enablePodForDeletion(ctx, pods, pod); err != nil {
 				return err
 			}
 			wfc.signalContainers(pod, syscall.SIGKILL)
 		case labelPodCompleted:
 			// Escape for JSON Pointer https://datatracker.ietf.org/doc/html/rfc6901#section-3
 			escaped := strings.ReplaceAll(common.LabelKeyCompleted, "/", "~1")
-			patch := []PatchOperation{
-				{
-					Operation: "replace",
-					Path:      fmt.Sprintf("/metadata/labels/%s", escaped),
-					Value:     "true",
-				},
+			patch := PatchOperation{
+				Operation: "replace",
+				Path:      fmt.Sprintf("/metadata/labels/%s", escaped),
+				Value:     "true",
 			}
-			patch = append(patch, createFinalizerPodStatusRemovalPatchIfExists(pod)...)
-			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+			if err := enablePodForDeletion(ctx, pods, pod, patch); err != nil {
 				return err
 			}
 		case deletePod:
-			patch := createFinalizerPodStatusRemovalPatchIfExists(pod)
-			if err := applyPatch(ctx, pods, podName, patch); err != nil {
+			if err := enablePodForDeletion(ctx, pods, pod); err != nil {
 				return err
 			}
 			propagation := metav1.DeletePropagationBackground
@@ -594,24 +588,33 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	return true
 }
 
-func createFinalizerPodStatusRemovalPatchIfExists(pod *apiv1.Pod) []PatchOperation {
-	var patch []PatchOperation
-	i := slices.Index(pod.Finalizers, common.FinalizerPodStatus)
+func enablePodForDeletion(ctx context.Context, pods typedv1.PodInterface, pod *apiv1.Pod, extraPatches ...PatchOperation) error {
+	patch := createFinalizerRemovalPatchIfExists(pod, common.FinalizerPodStatus)
+	patches := append([]PatchOperation{patch}, extraPatches...)
+	if err := applyPatches(ctx, pods, pod.Name, patches); err != nil {
+		return err
+	}
+	return nil
+}
+
+func createFinalizerRemovalPatchIfExists(pod *apiv1.Pod, targetFinalizer string) PatchOperation {
+	var patch PatchOperation
+	i := slices.Index(pod.Finalizers, targetFinalizer)
 	if i >= 0 {
-		patch = append(patch, PatchOperation{
+		patch = PatchOperation{
 			Operation: "remove",
 			Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
-		})
+		}
 	}
 	return patch
 }
 
-func applyPatch(ctx context.Context, pods typedv1.PodInterface, podName string, patch []PatchOperation) error {
-	if len(patch) == 0 {
+func applyPatches(ctx context.Context, pods typedv1.PodInterface, podName string, patches []PatchOperation) error {
+	if len(patches) == 0 {
 		log.Debug("not patching pod")
 		return nil
 	}
-	data, err := json.Marshal(patch)
+	data, err := json.Marshal(patches)
 	if err != nil {
 		return fmt.Errorf("failed to marshal patch: %w", err)
 	}
@@ -1029,9 +1032,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						log.WithError(err).Error("Failed to list pods")
 					}
 					for _, p := range podList.Items {
-						patch := createFinalizerPodStatusRemovalPatchIfExists(&p)
-						if err := applyPatch(ctx, pods, p.Name, patch); err != nil {
-							log.WithError(err).Error("Failed to remove finalizer from pod")
+						if err := enablePodForDeletion(ctx, pods, &p); err != nil {
+							log.WithError(err).Error("Failed to enable pod for deletion")
 						}
 					}
 
