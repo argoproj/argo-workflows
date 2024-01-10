@@ -589,24 +589,27 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 }
 
 func enablePodForDeletion(ctx context.Context, pods typedv1.PodInterface, pod *apiv1.Pod, extraPatches ...PatchOperation) error {
+	var patches []PatchOperation
 	patch := createFinalizerRemovalPatchIfExists(pod, common.FinalizerPodStatus)
-	patches := append([]PatchOperation{patch}, extraPatches...)
+	if patch != nil {
+		patches = append(patches, *patch)
+	}
+	patches = append(patches, extraPatches...)
 	if err := applyPatches(ctx, pods, pod.Name, patches); err != nil {
 		return err
 	}
 	return nil
 }
 
-func createFinalizerRemovalPatchIfExists(pod *apiv1.Pod, targetFinalizer string) PatchOperation {
-	var patch PatchOperation
+func createFinalizerRemovalPatchIfExists(pod *apiv1.Pod, targetFinalizer string) *PatchOperation {
 	i := slices.Index(pod.Finalizers, targetFinalizer)
 	if i >= 0 {
-		patch = PatchOperation{
+		return &PatchOperation{
 			Operation: "remove",
 			Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
 		}
 	}
-	return patch
+	return nil
 }
 
 func applyPatches(ctx context.Context, pods typedv1.PodInterface, podName string, patches []PatchOperation) error {
