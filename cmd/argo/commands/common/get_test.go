@@ -422,7 +422,7 @@ func Test_printWorkflowHelperNudges(t *testing.T) {
 
 	securityNudges := "This workflow does not have security context set. " +
 		"You can run your workflow pods more securely by setting it.\n" +
-		"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
+		"Learn more at https://argo-workflows.readthedocs.io/en/latest/workflow-pod-security-context/\n"
 
 	t.Run("SecuredWorkflow", func(t *testing.T) {
 		output := PrintWorkflowHelper(&securedWf, GetFlags{})

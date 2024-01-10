@@ -15,7 +15,7 @@ export function Help() {
                     <div className='help-box'>
                         <div className='help-box__ico help-box__ico--manual' />
                         <h3>Documentation</h3>
-                        <a href='https://argoproj.github.io/argo-workflows' target='_blank' className='help-box__link' rel='noreferrer'>
+                        <a href='https://argo-workflows.readthedocs.io/en/latest' target='_blank' className='help-box__link' rel='noreferrer'>
                             Online Help
                         </a>
                         <a className='help-box__link' target='_blank' href={uiUrl('apidocs')} rel='noreferrer'>
