@@ -4559,10 +4559,6 @@
           },
           "type": "array"
         },
-        "completed": {
-          "description": "Completed is a flag that is set to true when the stopping condition is achieved which stops new CronWorkflows from running",
-          "type": "boolean"
-        },
         "conditions": {
           "description": "Conditions is a list of conditions the CronWorkflow may have",
           "items": {
@@ -4578,6 +4574,10 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "description": "LastScheduleTime is the last time the CronWorkflow was scheduled"
         },
+        "phase": {
+          "description": "Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running",
+          "type": "string"
+        },
         "succeeded": {
           "description": "Succeeded is a counter of how many times the child workflows had success",
           "type": "integer"
@@ -4589,7 +4589,7 @@
         "conditions",
         "succeeded",
         "failed",
-        "completed"
+        "phase"
       ],
       "type": "object"
     },

@@ -154,7 +154,7 @@ func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
 }
 
 func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "completed": woc.cronWf.Status.Completed}})
+	woc.patch(ctx, map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "phase": woc.cronWf.Status.Phase}})
 }
 
 func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]interface{}) {
@@ -183,8 +183,8 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, 
 		return false, nil
 	}
 
-	if woc.cronWf.Status.Completed {
-		woc.log.Infof("CronWorkflow %s is marked as completed since it achieved the stopping condition", woc.cronWf.Name)
+	if woc.cronWf.Status.Phase == v1alpha1.StoppedPhase {
+		woc.log.Infof("CronWorkflow %s is marked as stopped since it achieved the stopping condition", woc.cronWf.Name)
 		return false, nil
 	}
 
@@ -449,7 +449,7 @@ func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
 }
 
 func (woc *cronWfOperationCtx) setAsCompleted() {
-	woc.cronWf.Status.Completed = true
+	woc.cronWf.Status.Phase = v1alpha1.StoppedPhase
 	if woc.cronWf.Labels == nil {
 		woc.cronWf.Labels = map[string]string{}
 	}

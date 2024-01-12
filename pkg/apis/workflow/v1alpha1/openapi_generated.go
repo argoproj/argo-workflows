@@ -2307,16 +2307,16 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 							Format:      "int64",
 						},
 					},
-					"completed": {
+					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Completed is a flag that is set to true when the stopping condition is achieved which stops new CronWorkflows from running",
-							Default:     false,
-							Type:        []string{"boolean"},
+							Description: "Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running",
+							Default:     "",
+							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
-				Required: []string{"active", "lastScheduledTime", "conditions", "succeeded", "failed", "completed"},
+				Required: []string{"active", "lastScheduledTime", "conditions", "succeeded", "failed", "phase"},
 			},
 		},
 		Dependencies: []string{

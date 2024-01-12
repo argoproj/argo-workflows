@@ -10790,7 +10790,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         uid="uid_example",
                     ),
                 ],
-                completed=True,
                 conditions=[
                     IoArgoprojWorkflowV1alpha1Condition(
                         message="message_example",
@@ -10800,6 +10799,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                phase="phase_example",
                 succeeded=1,
             ),
         ),
@@ -21803,7 +21803,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         uid="uid_example",
                     ),
                 ],
-                completed=True,
                 conditions=[
                     IoArgoprojWorkflowV1alpha1Condition(
                         message="message_example",
@@ -21813,6 +21812,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                phase="phase_example",
                 succeeded=1,
             ),
         ),
@@ -32901,7 +32901,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         uid="uid_example",
                     ),
                 ],
-                completed=True,
                 conditions=[
                     IoArgoprojWorkflowV1alpha1Condition(
                         message="message_example",
@@ -32911,6 +32910,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                phase="phase_example",
                 succeeded=1,
             ),
         ),

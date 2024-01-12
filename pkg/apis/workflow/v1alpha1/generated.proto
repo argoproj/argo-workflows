@@ -518,8 +518,8 @@ message CronWorkflowStatus {
   // Failed is a counter of how many times a child workflow terminated in failed or errored state
   optional int64 failed = 5;
 
-  // Completed is a flag that is set to true when the stopping condition is achieved which stops new CronWorkflows from running
-  optional bool completed = 6;
+  // Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running
+  optional string phase = 6;
 }
 
 // DAGTask represents a node in the graph during DAG execution

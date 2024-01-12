@@ -19197,8 +19197,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              completed:
-                type: boolean
               conditions:
                 items:
                   properties:
@@ -19216,15 +19214,17 @@ spec:
               lastScheduledTime:
                 format: date-time
                 type: string
+              phase:
+                type: string
               succeeded:
                 format: int64
                 type: integer
             required:
             - active
-            - completed
             - conditions
             - failed
             - lastScheduledTime
+            - phase
             - succeeded
             type: object
         required:

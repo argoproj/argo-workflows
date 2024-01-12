@@ -82,9 +82,16 @@ type CronWorkflowStatus struct {
 	Succeeded int64 `json:"succeeded" protobuf:"varint,4,rep,name=succeeded"`
 	// Failed is a counter of how many times a child workflow terminated in failed or errored state
 	Failed int64 `json:"failed" protobuf:"varint,5,rep,name=failed"`
-	// Completed is a flag that is set to true when the stopping condition is achieved which stops new CronWorkflows from running
-	Completed bool `json:"completed" protobuf:"varint,6,rep,name=completed"`
+	// Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running
+	Phase CronWorkflowPhase `json:"phase" protobuf:"varint,6,rep,name=phase"`
 }
+
+type CronWorkflowPhase string
+
+const (
+	ActivePhase  CronWorkflowPhase = "Active"
+	StoppedPhase CronWorkflowPhase = "Stopped"
+)
 
 func (c *CronWorkflow) IsUsingNewSchedule() bool {
 	lastUsedSchedule, exists := c.Annotations[annotationKeyLatestSchedule]

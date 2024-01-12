@@ -90,10 +90,10 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         lazy_import()
         return {
             'active': ([ObjectReference],),  # noqa: E501
-            'completed': (bool,),  # noqa: E501
             'conditions': ([IoArgoprojWorkflowV1alpha1Condition],),  # noqa: E501
             'failed': (int,),  # noqa: E501
             'last_scheduled_time': (datetime,),  # noqa: E501
+            'phase': (str,),  # noqa: E501
             'succeeded': (int,),  # noqa: E501
         }
 
@@ -104,10 +104,10 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
 
     attribute_map = {
         'active': 'active',  # noqa: E501
-        'completed': 'completed',  # noqa: E501
         'conditions': 'conditions',  # noqa: E501
         'failed': 'failed',  # noqa: E501
         'last_scheduled_time': 'lastScheduledTime',  # noqa: E501
+        'phase': 'phase',  # noqa: E501
         'succeeded': 'succeeded',  # noqa: E501
     }
 
@@ -118,15 +118,15 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, active, completed, conditions, failed, last_scheduled_time, succeeded, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, active, conditions, failed, last_scheduled_time, phase, succeeded, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowStatus - a model defined in OpenAPI
 
         Args:
             active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow
-            completed (bool): Completed is a flag that is set to true when the stopping condition is achieved which stops new CronWorkflows from running
             conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have
             failed (int): Failed is a counter of how many times a child workflow terminated in failed or errored state
             last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
+            phase (str): Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running
             succeeded (int): Succeeded is a counter of how many times the child workflows had success
 
         Keyword Args:
@@ -188,10 +188,10 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.active = active
-        self.completed = completed
         self.conditions = conditions
         self.failed = failed
         self.last_scheduled_time = last_scheduled_time
+        self.phase = phase
         self.succeeded = succeeded
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
@@ -213,15 +213,15 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, active, completed, conditions, failed, last_scheduled_time, succeeded, *args, **kwargs):  # noqa: E501
+    def __init__(self, active, conditions, failed, last_scheduled_time, phase, succeeded, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowStatus - a model defined in OpenAPI
 
         Args:
             active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow
-            completed (bool): Completed is a flag that is set to true when the stopping condition is achieved which stops new CronWorkflows from running
             conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have
             failed (int): Failed is a counter of how many times a child workflow terminated in failed or errored state
             last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
+            phase (str): Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running
             succeeded (int): Succeeded is a counter of how many times the child workflows had success
 
         Keyword Args:
@@ -281,10 +281,10 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.active = active
-        self.completed = completed
         self.conditions = conditions
         self.failed = failed
         self.last_scheduled_time = last_scheduled_time
+        self.phase = phase
         self.succeeded = succeeded
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \

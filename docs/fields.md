@@ -1245,10 +1245,10 @@ CronWorkflowStatus is the status of a CronWorkflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
-|`completed`|`boolean`|Completed is a flag that is set to true when the stopping condition is achieved which stops new CronWorkflows from running|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
 |`failed`|`integer`|Failed is a counter of how many times a child workflow terminated in failed or errored state|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
+|`phase`|`string`|Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running|
 |`succeeded`|`integer`|Succeeded is a counter of how many times the child workflows had success|
 
 ## Arguments
