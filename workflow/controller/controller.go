@@ -1022,21 +1022,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				DeleteFunc: func(obj interface{}) {
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
-
-					// Remove finalizers if they exist before deletion
-					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
-					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
-					})
-					if err != nil {
-						log.WithError(err).Error("Failed to list pods")
-					}
-					for _, p := range podList.Items {
-						if err := enablePodForDeletion(ctx, pods, &p); err != nil {
-							log.WithError(err).Error("Failed to enable pod for deletion")
-						}
-					}
-
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
