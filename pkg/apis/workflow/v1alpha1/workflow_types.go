@@ -2495,6 +2495,9 @@ type S3Bucket struct {
 
 	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
+
+	// SessionTokenSecret is used for credentials which are ephemeral (e.g. IAM assume role or S3 access grant)
+	SessionTokenSecret *apiv1.SecretKeySelector `json:"sessionTokenSecret,omitempty" protobuf:"bytes,12,opt,name=sessionTokenSecret"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations

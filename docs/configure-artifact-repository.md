@@ -82,6 +82,16 @@ an access key, you will need to create a user with just the permissions you want
 to associate with the access key. Otherwise, you can just create an access key
 using your existing user account.
 
+Although users are not able to have a reduced scope, S3 access grants created
+via a user are. These credentials however, are temporary, and therefore need
+to be periodically generated/refreshed by an external mechanism.
+
+The example below creates a bucket, a user that is able to access the bucket,
+and a set of access keys. The procedure is the same if you wish to use an IAM role,
+except you will need to instead create a role and attach the same policy as below.
+Please note that role credentials are temporary and will need to be periodically
+generated/refreshed by an external mechanism.
+
 ```bash
 $ export mybucket=bucket249
 $ cat > policy.json <<EOF
@@ -128,6 +138,34 @@ specify a bucket region in your workflow configuration.
          "Resource":"arn:aws:s3:::*"
       }
     ...
+```
+
+### AWS S3 with IAM credentials or S3 access grants
+
+Below is an example of how to use credentials from an [S3 access grant](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants.html)
+or temporary credentials from an IAM role. If you are using an IAM user, omit the `sessionTokenSecret` field.
+
+```yaml
+artifacts:
+  - name: my-output-artifact
+    path: /my-output-artifact
+    s3:
+      endpoint: s3.amazonaws.com
+      bucket: my-s3-bucket
+      # NOTE that, by default, all output artifacts are automatically tarred and
+      # gzipped before saving. So as a best practice, .tgz or .tar.gz
+      # should be incorporated into the key name so the resulting file
+      # has an accurate file extension.
+      key: path/in/bucket/my-output-artifact.tgz
+      accessKeySecret:
+        name: my-s3-credentials
+        key: accessKey
+      secretKeySecret:
+        name: my-s3-credentials
+        key: secretKey
+      sessionTokenSecret:
+        name: my-s3-credentials
+        key: sessionToken
 ```
 
 ### AWS S3 IRSA

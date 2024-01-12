@@ -2776,6 +2776,11 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.SessionTokenSecret != nil {
+		in, out := &in.SessionTokenSecret, &out.SessionTokenSecret
+		*out = new(v1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

@@ -6106,6 +6106,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "SecretKeySecret is the secret selector to the bucket's secret key"
         },
+        "sessionTokenSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "SessionTokenSecret is used for credentials which are ephemeral (e.g. IAM assume role or S3 access grant)"
+        },
         "useSDKCreds": {
           "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
           "type": "boolean"
@@ -6162,6 +6166,10 @@
         "secretKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "SecretKeySecret is the secret selector to the bucket's secret key"
+        },
+        "sessionTokenSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "SessionTokenSecret is used for credentials which are ephemeral (e.g. IAM assume role or S3 access grant)"
         },
         "useSDKCreds": {
           "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",

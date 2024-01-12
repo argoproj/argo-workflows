@@ -883,6 +883,17 @@ spec:
                               required:
                               - key
                               type: object
+                            sessionTokenSecret:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
                             useSDKCreds:
                               type: boolean
                           type: object
@@ -1500,6 +1511,17 @@ spec:
                                   roleARN:
                                     type: string
                                   secretKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  sessionTokenSecret:
                                     properties:
                                       key:
                                         type: string
@@ -2682,6 +2704,17 @@ spec:
                           roleARN:
                             type: string
                           secretKeySecret:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                          sessionTokenSecret:
                             properties:
                               key:
                                 type: string
@@ -4420,6 +4453,17 @@ spec:
                                             required:
                                             - key
                                             type: object
+                                          sessionTokenSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
                                           useSDKCreds:
                                             type: boolean
                                         type: object
@@ -4985,6 +5029,17 @@ spec:
                                                 roleARN:
                                                   type: string
                                                 secretKeySecret:
+                                                  properties:
+                                                    key:
+                                                      type: string
+                                                    name:
+                                                      type: string
+                                                    optional:
+                                                      type: boolean
+                                                  required:
+                                                  - key
+                                                  type: object
+                                                sessionTokenSecret:
                                                   properties:
                                                     key:
                                                       type: string
@@ -5611,6 +5666,17 @@ spec:
                                   roleARN:
                                     type: string
                                   secretKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  sessionTokenSecret:
                                     properties:
                                       key:
                                         type: string
@@ -6797,6 +6863,17 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                sessionTokenSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 useSDKCreds:
                                   type: boolean
                               type: object
@@ -7462,6 +7539,17 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                sessionTokenSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 useSDKCreds:
                                   type: boolean
                               type: object
@@ -8038,6 +8126,17 @@ spec:
                                   roleARN:
                                     type: string
                                   secretKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  sessionTokenSecret:
                                     properties:
                                       key:
                                         type: string
@@ -10878,6 +10977,17 @@ spec:
                               required:
                               - key
                               type: object
+                            sessionTokenSecret:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
                             useSDKCreds:
                               type: boolean
                           type: object
@@ -12606,6 +12716,17 @@ spec:
                                               required:
                                               - key
                                               type: object
+                                            sessionTokenSecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
                                             useSDKCreds:
                                               type: boolean
                                           type: object
@@ -13171,6 +13292,17 @@ spec:
                                                   roleARN:
                                                     type: string
                                                   secretKeySecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                  sessionTokenSecret:
                                                     properties:
                                                       key:
                                                         type: string
@@ -13797,6 +13929,17 @@ spec:
                                     roleARN:
                                       type: string
                                     secretKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    sessionTokenSecret:
                                       properties:
                                         key:
                                           type: string
@@ -14983,6 +15126,17 @@ spec:
                                     required:
                                     - key
                                     type: object
+                                  sessionTokenSecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
                                   useSDKCreds:
                                     type: boolean
                                 type: object
@@ -15648,6 +15802,17 @@ spec:
                                     required:
                                     - key
                                     type: object
+                                  sessionTokenSecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
                                   useSDKCreds:
                                     type: boolean
                                 type: object
@@ -16224,6 +16389,17 @@ spec:
                                     roleARN:
                                       type: string
                                     secretKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    sessionTokenSecret:
                                       properties:
                                         key:
                                           type: string

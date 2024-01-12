@@ -5123,6 +5123,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
+					"sessionTokenSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SessionTokenSecret is used for credentials which are ephemeral (e.g. IAM assume role or S3 access grant)",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -5213,6 +5219,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					"caSecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"sessionTokenSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SessionTokenSecret is used for credentials which are ephemeral (e.g. IAM assume role or S3 access grant)",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -5313,6 +5325,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"caSecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"sessionTokenSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SessionTokenSecret is used for credentials which are ephemeral (e.g. IAM assume role or S3 access grant)",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},

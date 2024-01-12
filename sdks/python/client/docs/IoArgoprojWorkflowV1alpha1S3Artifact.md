@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **region** | **str** | Region contains the optional bucket region | [optional] 
 **role_arn** | **str** | RoleARN is the Amazon Resource Name (ARN) of the role to assume. | [optional] 
 **secret_key_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
+**session_token_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **use_sdk_creds** | **bool** | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
