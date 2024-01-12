@@ -502,6 +502,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     const podName = ensurePodName(workflow, selectedNode, nodeId);
 
+    const archived = isArchivedWorkflow(workflow);
+
     return (
         <Page
             title={'Workflow Details'}
@@ -567,11 +569,13 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
-                                        archived={isArchivedWorkflow(workflow)}
+                                        archived={archived}
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
-                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={selectedTemplateArtifactRepo} />}
+                                {selectedArtifact && (
+                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} archived={archived} artifactRepository={selectedTemplateArtifactRepo} />
+                                )}
                             </div>
                         </div>
                     ))}
