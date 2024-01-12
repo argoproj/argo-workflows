@@ -537,9 +537,6 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 		switch action {
 		case terminateContainers:
-			if err := enablePodForDeletion(ctx, pods, pod); err != nil {
-				return err
-			}
 			if pod.Status.Phase == apiv1.PodPending {
 				wfc.queuePodForCleanup(namespace, podName, deletePod)
 			} else {
