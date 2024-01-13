@@ -777,14 +777,12 @@ func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, d
 	version := GetWorkflowPodNameVersion(wf)
 	expectedPodName := GeneratePodName(wf.Name, node.Name, templateName, node.ID, version)
 	podName := node.PodName
-	if node.Phase == wfv1.NodeSkipped {
+	if node.Phase == wfv1.NodeSkipped || node.Phase == wfv1.NodeOmitted {
+		// no pod was created so just return
 		return deletedPods, podsToDelete
 	}
 	if podName == nil {
 		panic("podName was nil expected " + expectedPodName + " for " + node.ID)
-	}
-	if expectedPodName != *podName {
-		panic("not equal podNames " + expectedPodName + " vs " + *podName)
 	}
 	if _, ok := deletedPods[*podName]; !ok {
 		deletedPods[*podName] = true
