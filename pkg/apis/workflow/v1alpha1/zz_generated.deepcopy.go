@@ -2162,6 +2162,11 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 		*out = new(NodeSynchronizationStatus)
 		**out = **in
 	}
+	if in.PodName != nil {
+		in, out := &in.PodName, &out.PodName
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

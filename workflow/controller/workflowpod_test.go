@@ -161,7 +161,9 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	ctx := context.Background()
-	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{})
+	nodeID := woc.wf.NodeID(tmpl.Name)
+	podName := wfutil.GeneratePodName(woc.wf.Name, tmpl.Name, tmpl.Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, podName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{})
 	assert.NoError(t, err)
 	// Note: pod.Spec.Containers[0] is wait
 	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
@@ -176,7 +178,9 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	woc = newWoc(*wf)
 	mainCtr = tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	pod, err = woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{includeScriptOutput: true})
+	nodeID = woc.wf.NodeID(tmpl.Name)
+	podName = wfutil.GeneratePodName(woc.wf.Name, tmpl.Name, tmpl.Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, err = woc.createWorkflowPod(ctx, tmpl.Name, podName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{includeScriptOutput: true})
 	assert.NoError(t, err)
 	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
 	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, customVolumeMount)
@@ -644,7 +648,10 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 
 func Test_createWorkflowPod_containerName(t *testing.T) {
 	woc := newWoc()
-	pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Name: "invalid", Command: []string{""}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+
+	nodeID := woc.wf.NodeID("")
+	podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Name: "invalid", Command: []string{""}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, common.MainContainerName, pod.Spec.Containers[1].Name)
 }
@@ -652,12 +659,17 @@ func Test_createWorkflowPod_containerName(t *testing.T) {
 func Test_createWorkflowPod_emissary(t *testing.T) {
 	t.Run("NoCommand", func(t *testing.T) {
 		woc := newWoc()
-		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "docker/whalesay:nope"}}, &wfv1.Template{Name: "my-tmpl"}, &createWorkflowPodOpts{})
+		nodeID := woc.wf.NodeID("")
+		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		_, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Image: "docker/whalesay:nope"}}, &wfv1.Template{Name: "my-tmpl"}, &createWorkflowPodOpts{})
 		assert.EqualError(t, err, "failed to look-up entrypoint/cmd for image \"docker/whalesay:nope\", you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: GET https://index.docker.io/v2/docker/whalesay/manifests/nope: MANIFEST_UNKNOWN: manifest unknown; unknown tag=nope")
 	})
 	t.Run("CommandNoArgs", func(t *testing.T) {
 		woc := newWoc()
-		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID("")
+		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
 			"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
@@ -665,7 +677,10 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 	})
 	t.Run("NoCommandWithImageIndex", func(t *testing.T) {
 		woc := newWoc()
-		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID("")
+		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Image: "my-image"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
 				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
@@ -675,7 +690,10 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 	})
 	t.Run("NoCommandWithArgsWithImageIndex", func(t *testing.T) {
 		woc := newWoc()
-		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID("")
+		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
 				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
@@ -692,7 +710,10 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		}}
 		podSpecPatch, err := json.Marshal(podSpec)
 		assert.NoError(t, err)
-		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID("")
+		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
 			"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
@@ -1247,7 +1268,10 @@ func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
 
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	for i := 1; i < 5; i++ {
-		pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID(wf.Name)
+		podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		if pod != nil {
 			assert.Contains(t, pod.Spec.Volumes, wantVolume)
 			assert.Len(t, pod.Spec.InitContainers, 1)
@@ -1337,19 +1361,28 @@ func TestPodSpecPatch(t *testing.T) {
 	ctx := context.Background()
 	woc := newWoc(*wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID := woc.wf.NodeID(wf.Name)
+	podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
 	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFPatch)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
-	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID = woc.wf.NodeID(wf.Name)
+	podName = wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
 	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLPatch)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
-	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID = woc.wf.NodeID(wf.Name)
+	podName = wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
@@ -1357,7 +1390,10 @@ func TestPodSpecPatch(t *testing.T) {
 	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidPatchFormat)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
-	_, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID = woc.wf.NodeID(wf.Name)
+	podName = wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	_, err := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.EqualError(t, err, "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
 }
 
@@ -1433,7 +1469,10 @@ func TestMainContainerCustomization(t *testing.T) {
 		woc := newWoc(*wf)
 		woc.controller.Config.MainContainer = mainCtrSpec
 		mainCtr := woc.execWf.Spec.Templates[0].Container
-		pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID(wf.Name)
+		podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	})
 	// The main container's resources should be changed since the existing
@@ -1444,7 +1483,10 @@ func TestMainContainerCustomization(t *testing.T) {
 		woc.controller.Config.MainContainer = mainCtrSpec
 		mainCtr := woc.execWf.Spec.Templates[0].Container
 		mainCtr.Resources = apiv1.ResourceRequirements{Limits: apiv1.ResourceList{}}
-		pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID(wf.Name)
+		podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, err := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
 			ctr := pod.Spec.Containers[1]
 			assert.NotNil(t, ctr.SecurityContext)
@@ -1468,7 +1510,10 @@ func TestMainContainerCustomization(t *testing.T) {
 				apiv1.ResourceMemory: resource.MustParse("512Mi"),
 			},
 		}
-		pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID(wf.Name)
+		podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		assert.Equal(t, "0.900", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
 	})
@@ -1484,7 +1529,10 @@ func TestMainContainerCustomization(t *testing.T) {
 				apiv1.ResourceMemory: resource.MustParse("123Mi"),
 			},
 		}
-		pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID(wf.Name)
+		podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		assert.Equal(t, "1", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 		assert.Equal(t, "128974848", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 	})
@@ -1537,7 +1585,10 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID := woc.wf.NodeID(wf.Name)
+	podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	waitCtrIdx, err := wfutil.FindWaitCtrIndex(pod)
 
 	if err != nil {
@@ -1576,7 +1627,10 @@ func TestPropagateMaxDuration(t *testing.T) {
 	woc := newWoc()
 	deadline := time.Time{}.Add(time.Second)
 	ctx := context.Background()
-	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{executionDeadline: deadline})
+
+	nodeID := woc.wf.NodeID(tmpl.Name)
+	podName := wfutil.GeneratePodName(woc.wf.Name, tmpl.Name, tmpl.Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, podName, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{executionDeadline: deadline})
 	assert.NoError(t, err)
 	v, err := getPodDeadline(pod)
 	assert.NoError(t, err)
@@ -1635,14 +1689,20 @@ func TestPodMetadata(t *testing.T) {
 	ctx := context.Background()
 	woc := newWoc(*wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID := woc.wf.NodeID("")
+	podName := wfutil.GeneratePodName(woc.wf.Name, "", wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "foo", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
 	assert.Equal(t, "bar", pod.ObjectMeta.Labels["workflow-level-pod-label"])
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadataAndTemplateMetadata)
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
-	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID = woc.wf.NodeID("")
+	podName = wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "fizz", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
 	assert.Equal(t, "buzz", pod.ObjectMeta.Labels["workflow-level-pod-label"])
 	assert.Equal(t, "hello", pod.ObjectMeta.Annotations["template-level-pod-annotation"])
@@ -1677,13 +1737,19 @@ func TestPodDefaultContainer(t *testing.T) {
 	wf.Spec.Templates[0].ContainerSet.Containers[0].Name = common.MainContainerName
 	woc := newWoc(*wf)
 	template := woc.execWf.Spec.Templates[0]
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID := woc.wf.NodeID("")
+	podName := wfutil.GeneratePodName(woc.wf.Name, "", wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, template.ContainerSet.GetContainers(), &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, common.MainContainerName, pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer])
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithContainerSet)
 	woc = newWoc(*wf)
 	template = woc.execWf.Spec.Templates[0]
-	pod, _ = woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &template, &createWorkflowPodOpts{})
+
+	nodeID = woc.wf.NodeID(wf.Name)
+	podName = wfutil.GeneratePodName(woc.wf.Name, wf.Name, template.Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, podName, template.ContainerSet.GetContainers(), &template, &createWorkflowPodOpts{})
 	assert.Equal(t, "b", pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer])
 }
 
@@ -1692,7 +1758,10 @@ func TestGetDeadline(t *testing.T) {
 	ctx := context.Background()
 	woc := newWoc(*wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID := woc.wf.NodeID(wf.Name)
+	podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	deadline, _ := getPodDeadline(pod)
 	assert.Equal(t, time.Time{}, deadline)
 
@@ -1701,7 +1770,9 @@ func TestGetDeadline(t *testing.T) {
 	ctx = context.Background()
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
-	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{executionDeadline: executionDeadline})
+	nodeID = woc.wf.NodeID(wf.Name)
+	podName = wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{executionDeadline: executionDeadline})
 	deadline, _ = getPodDeadline(pod)
 	assert.Equal(t, executionDeadline.Format(time.RFC3339), deadline.Format(time.RFC3339))
 }
@@ -1731,7 +1802,10 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	err := woc.setExecWorkflow(ctx)
 	assert.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID := woc.wf.NodeID(wf.Name)
+	podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "annotation-value", pod.ObjectMeta.Annotations["controller-level-pod-annotation"])
 	assert.Equal(t, "set-by-controller", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
 	assert.Equal(t, "label-value", pod.ObjectMeta.Labels["controller-level-pod-label"])
@@ -1754,7 +1828,10 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	err = woc.setExecWorkflow(ctx)
 	assert.NoError(t, err)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
-	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID = woc.wf.NodeID(wf.Name)
+	podName = wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "foo", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
 	assert.Equal(t, "bar", pod.ObjectMeta.Labels["workflow-level-pod-label"])
 	assert.Equal(t, "annotation-value", pod.ObjectMeta.Annotations["controller-level-pod-annotation"])
@@ -1772,7 +1849,10 @@ func TestPodExists(t *testing.T) {
 	err := woc.setExecWorkflow(ctx)
 	assert.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+	nodeID := woc.wf.NodeID(wf.Name)
+	podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	pod, err := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.NoError(t, err)
 	assert.NotNil(t, pod)
 
@@ -1799,7 +1879,10 @@ func TestProgressEnvVars(t *testing.T) {
 		err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		mainCtr := woc.execWf.Spec.Templates[0].Container
-		pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+
+		nodeID := woc.wf.NodeID(wf.Name)
+		podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, err := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		require.NoError(t, err)
 		assert.NotNil(t, pod)
 		return cancel, pod

@@ -9,7 +9,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
@@ -114,8 +113,13 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if !childNode.IsDaemoned() {
 			continue
 		}
-		podName := util.GeneratePodName(woc.wf.Name, childNode.Name, childNode.TemplateName, childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, terminateContainers)
+
+		if childNode.PodName == nil {
+			// this condition implies that a pod wasn't successfully created for this node
+			continue
+		}
+		podName := childNode.PodName
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, *podName, terminateContainers)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes.Set(childNode.ID, childNode)
