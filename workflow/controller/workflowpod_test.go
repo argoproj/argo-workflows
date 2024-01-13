@@ -671,9 +671,11 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
 		pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+		assert.Equal(t, []string{
+			"/var/run/argo/argoexec", "emissary",
 			"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
-			"--", "foo"}, pod.Spec.Containers[1].Command)
+			"--", "foo",
+		}, pod.Spec.Containers[1].Command)
 	})
 	t.Run("NoCommandWithImageIndex", func(t *testing.T) {
 		woc := newWoc()
@@ -682,9 +684,11 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
 		pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Image: "my-image"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+			assert.Equal(t, []string{
+				"/var/run/argo/argoexec", "emissary",
 				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
-				"--", "my-entrypoint"}, pod.Spec.Containers[1].Command)
+				"--", "my-entrypoint",
+			}, pod.Spec.Containers[1].Command)
 			assert.Equal(t, []string{"my-cmd"}, pod.Spec.Containers[1].Args)
 		}
 	})
@@ -695,9 +699,11 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
 		pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+			assert.Equal(t, []string{
+				"/var/run/argo/argoexec", "emissary",
 				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
-				"--", "my-entrypoint"}, pod.Spec.Containers[1].Command)
+				"--", "my-entrypoint",
+			}, pod.Spec.Containers[1].Command)
 			assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 		}
 	})
@@ -715,9 +721,11 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		podName := wfutil.GeneratePodName(woc.wf.Name, "", "", nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
 		pod, err := woc.createWorkflowPod(context.Background(), "", podName, []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+		assert.Equal(t, []string{
+			"/var/run/argo/argoexec", "emissary",
 			"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
-			"--", "bar"}, pod.Spec.Containers[1].Command)
+			"--", "bar",
+		}, pod.Spec.Containers[1].Command)
 	})
 }
 
@@ -773,9 +781,11 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 				assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
 			}
 			main := containers[1]
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+			assert.Equal(t, []string{
+				"/var/run/argo/argoexec", "emissary",
 				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
-				"--", "cowsay"}, main.Command)
+				"--", "cowsay",
+			}, main.Command)
 			if assert.Len(t, main.VolumeMounts, 2) {
 				assert.Equal(t, "volume-name", main.VolumeMounts[0].Name)
 				assert.Equal(t, "var-run-argo", main.VolumeMounts[1].Name)
@@ -1279,7 +1289,6 @@ func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
 			break
 		}
 	}
-
 }
 
 var helloWorldWfWithPatch = `
@@ -1515,7 +1524,6 @@ func TestMainContainerCustomization(t *testing.T) {
 		podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
 		pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		assert.Equal(t, "0.900", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
-
 	})
 	// If script template has limits then they take precedence over config in controller
 	t.Run("ScriptPrecedence", func(t *testing.T) {
@@ -1574,8 +1582,10 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 	inp := wfv1.Artifact{
 		Name: "kubectl",
 		Path: "C:\\kubectl",
-		ArtifactLocation: wfv1.ArtifactLocation{HTTP: &wfv1.HTTPArtifact{
-			URL: "https://dl.k8s.io/release/v1.22.0/bin/windows/amd64/kubectl.exe"},
+		ArtifactLocation: wfv1.ArtifactLocation{
+			HTTP: &wfv1.HTTPArtifact{
+				URL: "https://dl.k8s.io/release/v1.22.0/bin/windows/amd64/kubectl.exe",
+			},
 		},
 	}
 	wf.Spec.Volumes = append(wf.Spec.Volumes, uncVolume)
@@ -1590,7 +1600,6 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 	podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	waitCtrIdx, err := wfutil.FindWaitCtrIndex(pod)
-
 	if err != nil {
 		assert.Errorf(t, err, "could not find wait ctr index")
 	}
@@ -2022,7 +2031,9 @@ func TestMergeEnvVars(t *testing.T) {
 		woc.controller.Config.MainContainer = mainCtrSpec
 		mainCtr := woc.execWf.Spec.Templates[0].Container
 
-		pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+		nodeID := woc.wf.NodeID(wf.Name)
+		podName := wfutil.GeneratePodName(woc.wf.Name, wf.Name, wf.Spec.Templates[0].Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		pod, err := woc.createWorkflowPod(ctx, wf.Name, podName, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		require.NoError(t, err)
 		assert.NotNil(t, pod)
 		return cancel, pod
