@@ -619,6 +619,20 @@
 * yeicandoit
 * younggil
 
+## v3.4.15 (2024-01-13)
+
+* [b3aaaa45d](https://github.com/argoproj/argo-workflows/commit/b3aaaa45daff66444e42b8d78dd149e8dc132a6b) chore(build): Replaced master to main in changelogs
+* [fbf933563](https://github.com/argoproj/argo-workflows/commit/fbf9335635225eaa54420f3a520ef5c0043e5c34) fix: Resolve vulnerabilities in axios (#12470)
+* [feb992505](https://github.com/argoproj/argo-workflows/commit/feb992505ecbd57ddd16b8d27b88e26045bf3588) fix: liveness check (healthz) type asserts to wrong type (#12353)
+* [edb0a98c3](https://github.com/argoproj/argo-workflows/commit/edb0a98c31d7a459233131ae11e783ee45301ce6) fix(docs): release-3.4 readthedocs backport (#12474)
+
+### Contributors
+
+* Jason Meridth
+* Julie Vogelman
+* Saravanan Balasubramanian
+* Yuan Tang
+
 ## v3.4.14 (2023-11-27)
 
 * [a34723324](https://github.com/argoproj/argo-workflows/commit/a3472332401f0cff56fd39293eebe3aeca7220ad) fix: Upgrade go-jose to v3.0.1
