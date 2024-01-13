@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: master
+          ref: main
           fetch-depth: 0
       - run: git fetch --prune --prune-tags
       - run: git tag -l 'v*'
