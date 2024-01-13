@@ -20632,6 +20632,8 @@ spec:
                       type: string
                     podIP:
                       type: string
+                    podName:
+                      type: string
                     progress:
                       type: string
                     resourcesDuration:

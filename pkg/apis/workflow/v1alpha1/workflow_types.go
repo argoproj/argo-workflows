@@ -2285,6 +2285,9 @@ type NodeStatus struct {
 
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
+
+	// PodName is the name of the pod this node is executed on
+	PodName *string `json:"podName,omitempty" protobuf:"bytes,28,opt,name=podName"`
 }
 
 func (n *NodeStatus) GetName() string {

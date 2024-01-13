@@ -13,7 +13,7 @@ import (
 func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-
+	podName := "a"
 	woc := newWorkflowOperationCtx(&v1alpha1.Workflow{
 		Status: v1alpha1.WorkflowStatus{
 			Nodes: v1alpha1.Nodes{
@@ -21,6 +21,7 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 					ID:         "a",
 					BoundaryID: "a",
 					Daemoned:   pointer.BoolPtr(true),
+					PodName:    &podName,
 				},
 			},
 		},
