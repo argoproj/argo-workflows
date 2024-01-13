@@ -60,7 +60,7 @@
         "@types/superagent": "^8.1.1",
         "@types/swagger-ui-react": "^4.11.0",
         "@types/uuid": "^9.0.7",
-        "@typescript-eslint/eslint-plugin": "^6.17.0",
+        "@typescript-eslint/eslint-plugin": "^6.18.1",
         "@typescript-eslint/parser": "^6.10.0",
         "babel-jest": "^29.7.0",
         "babel-loader": "^9.1.3",
