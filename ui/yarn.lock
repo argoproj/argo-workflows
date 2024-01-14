@@ -2604,13 +2604,11 @@ atob@^2.1.2:
   integrity sha512-Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==
 
 autolinker@^3.11.0:
-  version "1.6.4"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.4.tgz#184ee1f63d412caffcf30d2c50982253c3ee86e0"
-  integrity sha512-heJnIs6N4aa1eSthhN9M5ioILu8Wi8vmQW9iHQ9NUvfkJb0lEEDUiIdQNAuBtfUt3FxReaKdpQA5DbmMOqzF/A==
+  version "3.16.1"
+  resolved "https://registry.yarnpkg.com/autolinker/-/autolinker-3.16.1.tgz#92f015cd4f4e5fcb81a41794de0c210a57f95883"
+  integrity sha512-DaCB8hJAVC7gfCMeh+rJ2iJEIMpbvCWzY5Bm3/i7Am7ZDrvpy4tZxMTYoc3iuvZqABrogfRgqPyxfA9ExATWaQ==
   dependencies:
-    follow-redirects "^1.15.4"
-    form-data "^4.0.0"
-    proxy-from-env "^1.1.0"
+    tslib "^2.3.0"
 
 axios@1.6.4:
   version "1.6.4"
