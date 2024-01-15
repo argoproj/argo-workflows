@@ -11,7 +11,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
+import {useCollectEvent} from '../../../shared/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';

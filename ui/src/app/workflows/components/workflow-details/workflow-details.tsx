@@ -13,7 +13,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {openLinkWithKey, processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
+import {useCollectEvent} from '../../../shared/use-collect-event';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';

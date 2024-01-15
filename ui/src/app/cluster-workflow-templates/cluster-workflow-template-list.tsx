@@ -10,7 +10,7 @@ import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
 import {Timestamp} from '../shared/components/timestamp';
-import {useCollectEvent} from '../shared/components/use-collect-event';
+import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {useQueryParams} from '../shared/use-query-params';

@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import {uiUrl} from '../shared/base';
 import {Loading} from '../shared/components/loading';
-import {useCollectEvent} from '../shared/components/use-collect-event';
+import {useCollectEvent} from '../shared/use-collect-event';
 
 export function ApiDocs() {
     useCollectEvent('openedApiDocs');

@@ -9,7 +9,7 @@ import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
-import {useCollectEvent} from '../shared/components/use-collect-event';
+import {useCollectEvent} from '../shared/use-collect-event';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';

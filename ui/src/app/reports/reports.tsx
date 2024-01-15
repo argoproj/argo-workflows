@@ -9,7 +9,7 @@ import {RouteComponentProps} from 'react-router-dom';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {InfoIcon} from '../shared/components/fa-icons';
-import {useCollectEvent} from '../shared/components/use-collect-event';
+import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';

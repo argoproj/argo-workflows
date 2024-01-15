@@ -2,7 +2,7 @@ import {Page} from 'argo-ui';
 import * as React from 'react';
 
 import {uiUrl, uiUrlWithParams} from '../shared/base';
-import {useCollectEvent} from '../shared/components/use-collect-event';
+import {useCollectEvent} from '../shared/use-collect-event';
 
 import './login.scss';
 

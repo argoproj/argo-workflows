@@ -4,7 +4,7 @@ import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
-import {useCollectEvent} from '../shared/components/use-collect-event';
+import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {historyUrl} from '../shared/history';
 import {Utils} from '../shared/utils';
