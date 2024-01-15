@@ -1037,6 +1037,30 @@ spec:
 	})
 }
 
+func (s *ArgoServerSuite) TestArtifactServerArchivedWorkflow() {
+	var uid types.UID
+	var nodeID string
+	s.Given().
+		Workflow(`@testdata/artifact-passing-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+			nodeID = status.Nodes.FindByDisplayName("generate-artifact").ID
+		})
+
+	// In this case, the artifact name is a file
+	s.Run("GetArtifactByNodeID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{nodeID}/outputs/hello", uid, nodeID).
+			Expect().
+			Status(200).
+			Body().
+			Contains(":) Hello Argo!")
+	})
+}
+
 func (s *ArgoServerSuite) TestArtifactServerArchivedStoppedWorkflow() {
 	var uid types.UID
 	var nodeID string
