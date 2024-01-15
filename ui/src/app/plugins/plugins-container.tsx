@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {Route, RouteComponentProps, Switch} from 'react-router';
-import {PluginList} from './plugin-list/plugin-list';
+
+import {PluginList} from './plugin-list';
 
 export const PluginsContainer = (props: RouteComponentProps<any>) => (
     <Switch>

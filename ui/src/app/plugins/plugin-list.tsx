@@ -2,11 +2,12 @@ import {Page} from 'argo-ui';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
-import {uiUrl} from '../../../shared/base';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
-import {ZeroState} from '../../../shared/components/zero-state';
-import {historyUrl} from '../../../shared/history';
-import {Utils} from '../../../shared/utils';
+
+import {uiUrl} from '../shared/base';
+import {useCollectEvent} from '../shared/components/use-collect-event';
+import {ZeroState} from '../shared/components/zero-state';
+import {historyUrl} from '../shared/history';
+import {Utils} from '../shared/utils';
 
 export function PluginList({match, history}: RouteComponentProps<any>) {
     // state for URL and query parameters
