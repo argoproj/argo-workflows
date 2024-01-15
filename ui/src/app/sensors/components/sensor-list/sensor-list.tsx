@@ -3,8 +3,9 @@ import classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
+
 import {kubernetes, Sensor} from '../../../../models';
-import {ID} from '../../../event-flow/components/event-flow-details/id';
+import {ID} from '../../../event-flow/id';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Node} from '../../../shared/components/graph/types';

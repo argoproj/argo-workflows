@@ -5,7 +5,7 @@ import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {EventSource, kubernetes} from '../../models';
-import {ID} from '../event-flow/event-flow-details/id';
+import {ID} from '../event-flow/id';
 import {Utils as EventsUtils} from '../sensors/components/utils';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';

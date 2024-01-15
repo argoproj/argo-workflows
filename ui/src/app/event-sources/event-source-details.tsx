@@ -5,7 +5,7 @@ import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {EventSource} from '../../models';
-import {ID} from '../event-flow/event-flow-details/id';
+import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';

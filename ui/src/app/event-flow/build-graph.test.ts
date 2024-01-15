@@ -1,4 +1,4 @@
-import {Node, NodeLabel} from '../../shared/components/graph/types';
+import {Node, NodeLabel} from '../shared/components/graph/types';
 import {buildGraph} from './build-graph';
 
 describe('build graph', () => {

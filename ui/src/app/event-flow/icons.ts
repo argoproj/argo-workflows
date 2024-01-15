@@ -1,4 +1,4 @@
-import {Icon} from '../../shared/components/icon';
+import {Icon} from '../shared/components/icon';
 
 const chat = 'comment';
 const compute = 'microchip';

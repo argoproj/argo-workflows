@@ -1,5 +1,5 @@
-import {EventSourceTypes} from '../../../../models/event-source';
-import {TriggerTypes} from '../../../../models/sensor';
+import {EventSourceTypes} from '../../models/event-source';
+import {TriggerTypes} from '../../models/sensor';
 
 export const genres = (() => {
     const v: {[label: string]: boolean} = {sensor: true, conditions: true, workflow: true, collapsed: true};
