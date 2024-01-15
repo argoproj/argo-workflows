@@ -1,14 +1,14 @@
 import * as React from 'react';
 import {useState} from 'react';
 
-import {WorkflowTemplate} from '../../../models';
-import {Button} from '../../shared/components/button';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {ExampleManifests} from '../../shared/components/example-manifests';
-import {UploadButton} from '../../shared/components/upload-button';
-import {exampleWorkflowTemplate} from '../../shared/examples';
-import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
+import {WorkflowTemplate} from '../../models';
+import {Button} from '../shared/components/button';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {ExampleManifests} from '../shared/components/example-manifests';
+import {UploadButton} from '../shared/components/upload-button';
+import {exampleWorkflowTemplate} from '../shared/examples';
+import {services} from '../shared/services';
+import {Utils} from '../shared/utils';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
 export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) {

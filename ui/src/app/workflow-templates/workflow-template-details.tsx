@@ -3,18 +3,19 @@ import {SlidingPanel} from 'argo-ui/src/index';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {WorkflowTemplate} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
-import {ErrorNotice} from '../../../shared/components/error-notice';
-import {Loading} from '../../../shared/components/loading';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
-import {Context} from '../../../shared/context';
-import {historyUrl} from '../../../shared/history';
-import {services} from '../../../shared/services';
-import {useQueryParams} from '../../../shared/use-query-params';
-import {WidgetGallery} from '../../../widgets/widget-gallery';
-import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
-import {WorkflowTemplateEditor} from '../workflow-template-editor';
+
+import {WorkflowTemplate} from '../../models';
+import {uiUrl} from '../shared/base';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {Loading} from '../shared/components/loading';
+import {useCollectEvent} from '../shared/use-collect-event';
+import {Context} from '../shared/context';
+import {historyUrl} from '../shared/history';
+import {services} from '../shared/services';
+import {useQueryParams} from '../shared/use-query-params';
+import {WidgetGallery} from '../widgets/widget-gallery';
+import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
+import {WorkflowTemplateEditor} from './workflow-template-editor';
 
 export function WorkflowTemplateDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate

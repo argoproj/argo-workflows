@@ -1,10 +1,10 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
-import * as models from '../../../../models';
-import {InputFilter} from '../../../shared/components/input-filter';
-import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {TagsInput} from '../../../shared/components/tags-input/tags-input';
+import * as models from '../../models';
+import {InputFilter} from '../shared/components/input-filter';
+import {NamespaceFilter} from '../shared/components/namespace-filter';
+import {TagsInput} from '../shared/components/tags-input/tags-input';
 
 import './workflow-template-filters.scss';
 
