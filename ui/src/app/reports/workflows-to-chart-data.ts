@@ -1,5 +1,5 @@
-import {getColorForNodePhase, Workflow} from '../../../models';
-import {denominator} from '../../shared/duration';
+import {getColorForNodePhase, Workflow} from '../../models';
+import {denominator} from '../shared/duration';
 
 export function workflowsToChartData(workflows: Workflow[], limit: number) {
     const filteredWorkflows = workflows

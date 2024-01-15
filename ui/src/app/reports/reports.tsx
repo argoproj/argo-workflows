@@ -5,16 +5,17 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Bar, ChartData} from 'react-chartjs-2';
 import {RouteComponentProps} from 'react-router-dom';
-import {uiUrl} from '../../shared/base';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {InfoIcon} from '../../shared/components/fa-icons';
-import {useCollectEvent} from '../../shared/components/use-collect-event';
-import {ZeroState} from '../../shared/components/zero-state';
-import {Context} from '../../shared/context';
-import {Footnote} from '../../shared/footnote';
-import {historyUrl} from '../../shared/history';
-import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
+
+import {uiUrl} from '../shared/base';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {InfoIcon} from '../shared/components/fa-icons';
+import {useCollectEvent} from '../shared/components/use-collect-event';
+import {ZeroState} from '../shared/components/zero-state';
+import {Context} from '../shared/context';
+import {Footnote} from '../shared/footnote';
+import {historyUrl} from '../shared/history';
+import {services} from '../shared/services';
+import {Utils} from '../shared/utils';
 import {ReportFilters} from './reports-filters';
 import {workflowsToChartData} from './workflows-to-chart-data';
 

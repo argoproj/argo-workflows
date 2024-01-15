@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {Route, RouteComponentProps, Switch} from 'react-router';
-import {Loading} from '../../shared/components/loading';
+
+import {Loading} from '../shared/components/loading';
 
 export const ReportsContainer = (props: RouteComponentProps<any>) => (
     <Switch>
