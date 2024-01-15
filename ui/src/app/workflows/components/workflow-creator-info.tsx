@@ -1,6 +1,6 @@
 import * as React from 'react';
-import * as models from '../../../../models';
-import {labels} from '../../../../models';
+import * as models from '../../../models';
+import {labels} from '../../../models';
 
 import './workflow-creator-info.scss';
 

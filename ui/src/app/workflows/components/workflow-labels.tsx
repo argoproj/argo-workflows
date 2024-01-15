@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import * as models from '../../../../models';
+import * as models from '../../../models';
 
 import './workflow-labels.scss';
 

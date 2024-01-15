@@ -1,9 +1,9 @@
 import {ObjectMeta} from 'argo-ui/src/models/kubernetes';
 import * as React from 'react';
-import {WorkflowStatus} from '../../../../models';
-import {Notice} from '../../../shared/components/notice';
-import {Phase} from '../../../shared/components/phase';
-import {WorkflowDag} from '../workflow-dag/workflow-dag';
+import {WorkflowStatus} from '../../../models';
+import {Notice} from '../../shared/components/notice';
+import {Phase} from '../../shared/components/phase';
+import {WorkflowDag} from './workflow-dag/workflow-dag';
 
 interface Props {
     workflowMetadata: ObjectMeta;

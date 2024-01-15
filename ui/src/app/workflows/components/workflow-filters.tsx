@@ -3,13 +3,13 @@ import {useMemo} from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
-import * as models from '../../../../models';
-import {WorkflowPhase} from '../../../../models';
-import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbox-filter';
-import {DataLoaderDropdown} from '../../../shared/components/data-loader-dropdown';
-import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {TagsInput} from '../../../shared/components/tags-input/tags-input';
-import {services} from '../../../shared/services';
+import * as models from '../../../models';
+import {WorkflowPhase} from '../../../models';
+import {CheckboxFilter} from '../../shared/components/checkbox-filter/checkbox-filter';
+import {DataLoaderDropdown} from '../../shared/components/data-loader-dropdown';
+import {NamespaceFilter} from '../../shared/components/namespace-filter';
+import {TagsInput} from '../../shared/components/tags-input/tags-input';
+import {services} from '../../shared/services';
 
 import './workflow-filters.scss';
 

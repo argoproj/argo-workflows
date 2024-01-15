@@ -3,8 +3,8 @@ import moment from 'moment';
 import React, {useEffect, useRef, useState} from 'react';
 import {fromEvent, interval, Subscription} from 'rxjs';
 
-import * as models from '../../../../models';
-import {Utils} from '../../../shared/utils';
+import * as models from '../../../models';
+import {Utils} from '../../shared/utils';
 
 import './workflow-timeline.scss';
 

@@ -2,6 +2,7 @@ import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
 import {useState} from 'react';
 import {Link} from 'react-router-dom';
+
 import * as models from '../../../../models';
 import {isArchivedWorkflow, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
@@ -9,7 +10,7 @@ import {DurationPanel} from '../../../shared/components/duration-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {wfDuration} from '../../../shared/duration';
-import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
+import {WorkflowDrawer} from '../workflow-drawer';
 import {WorkflowsRowName} from './workflows-row-name';
 
 interface WorkflowsRowProps {
