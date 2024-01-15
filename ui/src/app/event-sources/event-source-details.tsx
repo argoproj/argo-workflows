@@ -3,19 +3,20 @@ import {SlidingPanel, Tabs} from 'argo-ui/src/index';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {EventSource} from '../../../../models';
-import {ID} from '../../../event-flow/components/event-flow-details/id';
-import {uiUrl} from '../../../shared/base';
-import {ErrorNotice} from '../../../shared/components/error-notice';
-import {Loading} from '../../../shared/components/loading';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
-import {Context} from '../../../shared/context';
-import {historyUrl} from '../../../shared/history';
-import {services} from '../../../shared/services';
-import {useQueryParams} from '../../../shared/use-query-params';
-import {EventsPanel} from '../../../workflows/components/events-panel';
-import {EventSourceEditor} from '../event-source-editor';
-import {EventSourceLogsViewer} from '../event-source-log-viewer';
+
+import {EventSource} from '../../models';
+import {ID} from '../event-flow/event-flow-details/id';
+import {uiUrl} from '../shared/base';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {Loading} from '../shared/components/loading';
+import {useCollectEvent} from '../shared/components/use-collect-event';
+import {Context} from '../shared/context';
+import {historyUrl} from '../shared/history';
+import {services} from '../shared/services';
+import {useQueryParams} from '../shared/use-query-params';
+import {EventsPanel} from '../workflows/components/events-panel';
+import {EventSourceEditor} from './event-source-editor';
+import {EventSourceLogsViewer} from './event-source-log-viewer';
 
 export function EventSourceDetails({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate

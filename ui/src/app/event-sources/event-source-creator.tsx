@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {useState} from 'react';
 
-import {EventSource} from '../../../models';
-import {Button} from '../../shared/components/button';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {UploadButton} from '../../shared/components/upload-button';
-import {exampleEventSource} from '../../shared/examples';
-import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
+import {EventSource} from '../../models';
+import {Button} from '../shared/components/button';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {UploadButton} from '../shared/components/upload-button';
+import {exampleEventSource} from '../shared/examples';
+import {services} from '../shared/services';
+import {Utils} from '../shared/utils';
 import {EventSourceEditor} from './event-source-editor';
 
 export function EventSourceCreator({onCreate, namespace}: {namespace: string; onCreate: (eventSource: EventSource) => void}) {

@@ -2,11 +2,11 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
-import {EventSource} from '../../../models';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {Links} from '../../shared/components/links';
-import {services} from '../../shared/services';
-import {FullHeightLogsViewer} from '../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
+import {EventSource} from '../../models';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {Links} from '../shared/components/links';
+import {services} from '../shared/services';
+import {FullHeightLogsViewer} from '../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 
 function identity<T>(value: T) {
     return () => value;

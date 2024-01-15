@@ -1,7 +1,8 @@
 import * as React from 'react';
 import {Route, RouteComponentProps, Switch} from 'react-router';
-import {EventSourceDetails} from './event-source-details/event-source-details';
-import {EventSourceList} from './event-source-list/event-source-list';
+
+import {EventSourceDetails} from './event-source-details';
+import {EventSourceList} from './event-source-list';
 
 export const EventSourceContainer = (props: RouteComponentProps<any>) => (
     <Switch>
