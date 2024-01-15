@@ -1,6 +1,7 @@
 import * as React from 'react';
-import {uiUrl} from '../../shared/base';
-import {LinkButton} from '../../shared/components/link-button';
+
+import {uiUrl} from '../shared/base';
+import {LinkButton} from '../shared/components/link-button';
 
 export const ClusterWorkflowTemplateLink = (props: {name: string}) => (
     <LinkButton to={uiUrl('cluster-workflow-templates/' + props.name)}>

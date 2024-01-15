@@ -1,5 +1,6 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
+
 import {uiUrl} from '../shared/base';
 import {Loading} from '../shared/components/loading';
 import {useCollectEvent} from '../shared/components/use-collect-event';
