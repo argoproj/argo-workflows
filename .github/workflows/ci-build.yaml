@@ -180,6 +180,9 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
+          - test: test-executor
+            profile: minimal
+            pod-status-finalizer: true
           - test: test-corefunctional
             profile: minimal
           - test: test-corefunctional
@@ -206,6 +209,9 @@ jobs:
             profile: minimal
           - test: test-executor
             install_k3s_version: v1.25.11-k3s1
+          - test: test-executor
+            install_k3s_version: v1.25.11-k3s1
+            pod-status-finalizer: true
             profile: minimal
           - test: test-corefunctional
             install_k3s_version: v1.25.11-k3s1

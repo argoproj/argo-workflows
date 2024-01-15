@@ -546,9 +546,6 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				}
 			}
 		case killContainers:
-			if err := enablePodForDeletion(ctx, pods, pod); err != nil {
-				return err
-			}
 			wfc.signalContainers(pod, syscall.SIGKILL)
 		case labelPodCompleted:
 			// Escape for JSON Pointer https://datatracker.ietf.org/doc/html/rfc6901#section-3
