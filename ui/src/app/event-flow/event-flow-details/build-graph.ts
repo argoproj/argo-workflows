@@ -1,8 +1,8 @@
-import {Condition, Workflow} from '../../../../models';
-import {EventSource, EventSourceType} from '../../../../models/event-source';
-import {Sensor, TriggerType} from '../../../../models/sensor';
-import {Graph, Node} from '../../../shared/components/graph/types';
-import {icons as phaseIcons} from '../../../workflows/components/workflow-dag/icons';
+import {Condition, Workflow} from '../../../models';
+import {EventSource, EventSourceType} from '../../../models/event-source';
+import {Sensor, TriggerType} from '../../../models/sensor';
+import {Graph, Node} from '../../shared/components/graph/types';
+import {icons as phaseIcons} from '../../workflows/components/workflow-dag/icons';
 import {icons} from './icons';
 import {ID} from './id';
 
