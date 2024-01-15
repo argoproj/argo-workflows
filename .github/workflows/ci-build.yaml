@@ -209,10 +209,11 @@ jobs:
             profile: minimal
           - test: test-executor
             install_k3s_version: v1.25.11-k3s1
+            profile: minimal
           - test: test-executor
             install_k3s_version: v1.25.11-k3s1
-            pod-status-finalizer: true
             profile: minimal
+            pod-status-finalizer: true
           - test: test-corefunctional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
