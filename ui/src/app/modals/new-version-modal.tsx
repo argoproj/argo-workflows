@@ -1,14 +1,14 @@
 import * as React from 'react';
 
-import {Modal} from '../../shared/components/modal/modal';
-import {SurveyButton} from '../../shared/components/survey-button';
+import {Modal} from '../shared/components/modal/modal';
+import {SurveyButton} from '../shared/components/survey-button';
 
 import './new-version-modal.scss';
 
 /**
  * The intention of this modal is to encourage update of new features.
  */
-export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: () => void}) => {
+export function NewVersionModal({version, dismiss}: {version: string; dismiss: () => void}) {
     return (
         <Modal dismiss={dismiss}>
             <div className='new-version-modal-banner'>
@@ -139,4 +139,4 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             </p>
         </Modal>
     );
-};
+}

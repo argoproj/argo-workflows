@@ -1,8 +1,9 @@
 import * as React from 'react';
-import {BigButton} from '../../shared/components/big-button';
-import {Icon} from '../../shared/components/icon';
-import {Modal} from '../../shared/components/modal/modal';
-import {SurveyButton} from '../../shared/components/survey-button';
+
+import {BigButton} from '../shared/components/big-button';
+import {Icon} from '../shared/components/icon';
+import {Modal} from '../shared/components/modal/modal';
+import {SurveyButton} from '../shared/components/survey-button';
 
 /**
  * The intention of this modal is to:
