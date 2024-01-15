@@ -60,6 +60,8 @@ func TestPrintNode(t *testing.T) {
 		Time: time.Now(),
 	}
 
+	podName := util.GeneratePodName(workflowName, nodeName, nodeTemplateName, nodeID, util.GetPodNameVersion())
+
 	// Node without TemplateRef
 	node := wfv1.NodeStatus{
 		Name:         nodeName,
@@ -71,6 +73,7 @@ func TestPrintNode(t *testing.T) {
 		FinishedAt:   timestamp,
 		Message:      nodeMessage,
 		TemplateName: nodeTemplateName,
+		PodName:      &podName,
 	}
 	node.HostNodeName = kubernetesNodeName
 	// derive expected pod name:
@@ -119,8 +122,10 @@ func TestPrintNode(t *testing.T) {
 		Name:     nodeTemplateRefName,
 		Template: nodeTemplateRefName,
 	}
+
 	templateName = util.GetTemplateFromNode(node)
 	expectedPodName = util.GeneratePodName(workflowName, nodeName, templateName, nodeID, util.GetPodNameVersion())
+	node.PodName = &expectedPodName
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
 
 	getArgs.Output = "wide"
@@ -240,6 +245,7 @@ status:
     many-items-z26lj-753834747:
       boundaryID: many-items-z26lj
       displayName: sleep(8:eight)
+      podName: many-items-z26lj-sleep-753834747
       finishedAt: "2020-06-02T16:04:42Z"
       id: many-items-z26lj-753834747
       name: many-items-z26lj[0].sleep(8:eight)
@@ -250,6 +256,7 @@ status:
     many-items-z26lj-1052882686:
       boundaryID: many-items-z26lj
       displayName: sleep(10:ten)
+      podName: many-items-z26lj-sleep-1052882686 
       finishedAt: "2020-06-02T16:04:45Z"
       id: many-items-z26lj-1052882686
       name: many-items-z26lj[0].sleep(10:ten)
@@ -284,6 +291,7 @@ status:
     many-items-z26lj-1774150289:
       boundaryID: many-items-z26lj
       displayName: sleep(3:three)
+      podName: many-items-z26lj-sleep-1774150289 
       finishedAt: "2020-06-02T16:04:54Z"
       id: many-items-z26lj-1774150289
       name: many-items-z26lj[0].sleep(3:three)
@@ -297,6 +305,7 @@ status:
       finishedAt: "2020-06-02T16:04:48Z"
       id: many-items-z26lj-1939921510
       name: many-items-z26lj[0].sleep(0:zero)
+      podName: many-items-z26lj-sleep-1939921510
       phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
@@ -304,6 +313,7 @@ status:
     many-items-z26lj-1942531647:
       boundaryID: many-items-z26lj
       displayName: sleep(5:five)
+      podName: many-items-z26lj-sleep-1942531647 
       finishedAt: "2020-06-02T16:04:47Z"
       id: many-items-z26lj-1942531647
       name: many-items-z26lj[0].sleep(5:five)
@@ -317,6 +327,7 @@ status:
       finishedAt: "2020-06-02T16:04:53Z"
       id: many-items-z26lj-2156977535
       name: many-items-z26lj[0].sleep(1:one)
+      podName: many-items-z26lj-sleep-2156977535
       phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
@@ -324,6 +335,7 @@ status:
     many-items-z26lj-2619926859:
       boundaryID: many-items-z26lj
       displayName: sleep(9:nine)
+      podName: many-items-z26lj-sleep-2619926859 
       finishedAt: "2020-06-02T16:04:40Z"
       id: many-items-z26lj-2619926859
       name: many-items-z26lj[0].sleep(9:nine)
@@ -334,6 +346,7 @@ status:
     many-items-z26lj-3011405271:
       boundaryID: many-items-z26lj
       displayName: sleep(11:eleven)
+      podName: many-items-z26lj-sleep-3011405271 
       finishedAt: "2020-06-02T16:04:44Z"
       id: many-items-z26lj-3011405271
       name: many-items-z26lj[0].sleep(11:eleven)
@@ -344,6 +357,7 @@ status:
     many-items-z26lj-3031375822:
       boundaryID: many-items-z26lj
       displayName: sleep(7:seven)
+      podName: many-items-z26lj-sleep-3031375822 
       finishedAt: "2020-06-02T16:04:57Z"
       id: many-items-z26lj-3031375822
       name: many-items-z26lj[0].sleep(7:seven)
@@ -354,6 +368,7 @@ status:
     many-items-z26lj-3126938806:
       boundaryID: many-items-z26lj
       displayName: sleep(12:twelve)
+      podName: many-items-z26lj-sleep-3126938806
       finishedAt: "2020-06-02T16:04:59Z"
       id: many-items-z26lj-3126938806
       name: many-items-z26lj[0].sleep(12:twelve)
@@ -364,6 +379,7 @@ status:
     many-items-z26lj-3178865096:
       boundaryID: many-items-z26lj
       displayName: sleep(6:six)
+      podName: many-items-z26lj-sleep-3178865096
       finishedAt: "2020-06-02T16:04:56Z"
       id: many-items-z26lj-3178865096
       name: many-items-z26lj[0].sleep(6:six)
@@ -374,6 +390,7 @@ status:
     many-items-z26lj-3409403178:
       boundaryID: many-items-z26lj
       displayName: sleep(2:two)
+      podName: many-items-z26lj-sleep-3409403178
       finishedAt: "2020-06-02T16:04:51Z"
       id: many-items-z26lj-3409403178
       name: many-items-z26lj[0].sleep(2:two)
@@ -384,6 +401,7 @@ status:
     many-items-z26lj-3491220632:
       boundaryID: many-items-z26lj
       displayName: sleep(4:four)
+      podName: many-items-z26lj-sleep-3491220632
       finishedAt: "2020-06-02T16:04:50Z"
       id: many-items-z26lj-3491220632
       name: many-items-z26lj[0].sleep(4:four)
@@ -394,7 +412,6 @@ status:
   phase: Succeeded
   startedAt: "2020-06-02T16:04:21Z"
 `, &wf)
-
 		output := PrintWorkflowHelper(&wf, GetFlags{})
 
 		// derive expected pod name:

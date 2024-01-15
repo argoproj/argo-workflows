@@ -5571,6 +5571,10 @@
           "description": "PodIP captures the IP of the pod for daemoned steps",
           "type": "string"
         },
+        "podName": {
+          "description": "PodName is the name of the pod this node is executed on",
+          "type": "string"
+        },
         "progress": {
           "description": "Progress to completion",
           "type": "string"

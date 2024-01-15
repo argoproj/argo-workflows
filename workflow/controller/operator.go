@@ -141,7 +141,7 @@ type failedNodeStatus struct {
 	Message      string      `json:"message"`
 	TemplateName string      `json:"templateName"`
 	Phase        string      `json:"phase"`
-	PodName      string      `json:"podName"`
+	PodName      *string     `json:"podName,omitempty"`
 	FinishedAt   metav1.Time `json:"finishedAt"`
 }
 
@@ -404,7 +404,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					Message:      node.Message,
 					TemplateName: node.TemplateName,
 					Phase:        string(node.Phase),
-					PodName:      wfutil.GeneratePodName(woc.wf.Name, node.Name, node.TemplateName, node.ID, wfutil.GetPodNameVersion()),
+					PodName:      node.PodName,
 					FinishedAt:   node.FinishedAt,
 				})
 		}
@@ -2128,7 +2128,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node = woc.executePluginTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
-		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, opts.nodeFlag, err.Error()), err
+		return woc.initializeNode(nodeName, nil, wfv1.NodeTypeSkipped, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeError, opts.nodeFlag, err.Error()), err
 	}
 
 	if err != nil {
@@ -2402,7 +2402,7 @@ var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
-	node := woc.initializeNode(nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase, nodeFlag)
+	node := woc.initializeNode(nodeName, nil, nodeType, templateScope, executeTmpl, orgTmpl, boundaryID, phase, nodeFlag)
 
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
@@ -2430,7 +2430,9 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 		return woc.markNodeError(nodeName, err)
 	}
 
-	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, nodeFlag, err.Error())
+	// node doesn't exist, this implies that the Pod wasn't created as well.
+	// so we may initialize a node with no PodName attached safely.
+	return woc.initializeNode(nodeName, nil, wfv1.NodeTypeSkipped, templateScope, nil, orgTmpl, boundaryID, wfv1.NodeError, nodeFlag, err.Error())
 }
 
 // Creates a node status that is or will be cached
@@ -2456,13 +2458,22 @@ func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl 
 	return node
 }
 
-func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNode(nodeName string, podName *string, nodeType wfv1.NodeType, templateScope string, execTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, messages ...string) *wfv1.NodeStatus {
 	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	nodeID := woc.wf.NodeID(nodeName)
 	ok := woc.wf.Status.Nodes.Has(nodeID)
 	if ok {
 		panic(fmt.Sprintf("node %s already initialized", nodeName))
+	}
+
+	// Information about the link between Node's and PodNames.
+	// Previously Node's were created but not actually realised into a PodName
+	// this was because PodName was only really ever created when
+	// createWorkflowPod was run. This might not ever happen for some Nodes such as conditional ones.
+	if podName == nil && execTmpl != nil && len(messages) == 0 {
+		podNameStr := wfutil.GeneratePodName(woc.wf.Name, nodeName, execTmpl.Name, nodeID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+		podName = &podNameStr
 	}
 
 	node := wfv1.NodeStatus{
@@ -2477,6 +2488,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		NodeFlag:          nodeFlag,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
 		EstimatedDuration: woc.estimateNodeDuration(nodeName),
+		PodName:           podName,
 	}
 
 	if boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID); err == nil {
@@ -2741,8 +2753,14 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 		return node, err
 	}
 
+	podName := ""
+	if node.PodName == nil {
+		podName = wfutil.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, node.ID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	} else {
+		podName = *node.PodName
+	}
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl.Name)
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{
+	_, err = woc.createWorkflowPod(ctx, nodeName, podName, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
@@ -2751,7 +2769,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
-
+	node.PodName = &podName
 	return node, err
 }
 
@@ -2953,7 +2971,15 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	} else {
 		mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	}
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{
+
+	podName := ""
+	if node.PodName == nil {
+		podName = wfutil.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, node.ID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	} else {
+		podName = *node.PodName
+	}
+
+	_, err = woc.createWorkflowPod(ctx, nodeName, podName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
@@ -2961,6 +2987,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
+	node.PodName = &podName
 	return node, err
 }
 
@@ -3241,11 +3268,19 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
+
+	podName := ""
+	if node.PodName == nil {
+		podName = wfutil.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, node.ID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	} else {
+		podName = *node.PodName
+	}
+	_, err = woc.createWorkflowPod(ctx, nodeName, podName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
 
+	node.PodName = &podName
 	return node, err
 }
 
@@ -3264,11 +3299,18 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "data", string(dataTemplate)}
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
+
+	podName := ""
+	if node.PodName == nil {
+		podName = wfutil.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, node.ID, wfutil.GetWorkflowPodNameVersion(woc.wf))
+	} else {
+		podName = *node.PodName
+	}
+	_, err = woc.createWorkflowPod(ctx, nodeName, podName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
-
+	node.PodName = &podName
 	return node, nil
 }
 

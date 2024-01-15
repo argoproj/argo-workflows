@@ -115,6 +115,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'phase': (str,),  # noqa: E501
             'pod_ip': (str,),  # noqa: E501
+            'pod_name': (str,),  # noqa: E501
             'progress': (str,),  # noqa: E501
             'resources_duration': ({str: (int,)},),  # noqa: E501
             'started_at': (datetime,),  # noqa: E501
@@ -148,6 +149,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'outputs': 'outputs',  # noqa: E501
         'phase': 'phase',  # noqa: E501
         'pod_ip': 'podIP',  # noqa: E501
+        'pod_name': 'podName',  # noqa: E501
         'progress': 'progress',  # noqa: E501
         'resources_duration': 'resourcesDuration',  # noqa: E501
         'started_at': 'startedAt',  # noqa: E501
@@ -218,6 +220,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \"Pending\", \"Running\" before the node is completed, or \"Succeeded\", \"Skipped\", \"Failed\", \"Error\", or \"Omitted\" as a final state.. [optional]  # noqa: E501
             pod_ip (str): PodIP captures the IP of the pod for daemoned steps. [optional]  # noqa: E501
+            pod_name (str): PodName is the name of the pod this node is executed on. [optional]  # noqa: E501
             progress (str): Progress to completion. [optional]  # noqa: E501
             resources_duration ({str: (int,)}): ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
@@ -329,6 +332,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \"Pending\", \"Running\" before the node is completed, or \"Succeeded\", \"Skipped\", \"Failed\", \"Error\", or \"Omitted\" as a final state.. [optional]  # noqa: E501
             pod_ip (str): PodIP captures the IP of the pod for daemoned steps. [optional]  # noqa: E501
+            pod_name (str): PodName is the name of the pod this node is executed on. [optional]  # noqa: E501
             progress (str): Progress to completion. [optional]  # noqa: E501
             resources_duration ({str: (int,)}): ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501

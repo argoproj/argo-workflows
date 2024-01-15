@@ -20,7 +20,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type Then struct {
@@ -88,15 +87,14 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 		if n != nil {
 			_, _ = fmt.Println("Found node", "id="+n.ID, "type="+n.Type)
 			if n.Type == wfv1.NodeTypePod {
-				wf := &wfv1.Workflow{
-					ObjectMeta: *metadata,
+				podName := n.PodName
+				if podName == nil {
+					t.t.Error("Expected PodName to be populated")
+					return
 				}
-				version := util.GetWorkflowPodNameVersion(wf)
-				podName := util.GeneratePodName(t.wf.Name, n.Name, n.TemplateName, n.ID, version)
-
 				var err error
 				ctx := context.Background()
-				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, podName, metav1.GetOptions{})
+				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, *podName, metav1.GetOptions{})
 				if err != nil {
 					if !apierr.IsNotFound(err) {
 						t.t.Error(err)

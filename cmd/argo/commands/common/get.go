@@ -477,23 +477,28 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 }
 
 // Main method to print information of node in get
-func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix string, getArgs GetFlags, podNameVersion util.PodNameVersion) {
-	nodeName := node.Name
+func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName string, nodePrefix string, getArgs GetFlags, podNameVersion util.PodNameVersion) {
 	fmtNodeName := fmt.Sprintf("%s %s", JobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
 		fmtNodeName = fmt.Sprintf("%s %s", NodeTypeIconMap[node.Type], node.DisplayName)
 	}
-	templateName := util.GetTemplateFromNode(node)
 	fmtTemplateName := ""
 	if node.TemplateRef != nil {
 		fmtTemplateName = fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
 	} else if node.TemplateName != "" {
 		fmtTemplateName = node.TemplateName
 	}
+	templateName := util.GetTemplateFromNode(node)
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		podName := util.GeneratePodName(wfName, nodeName, templateName, node.ID, podNameVersion)
+		podName := ""
+		if node.PodName != nil {
+			podName = *node.PodName
+		} else {
+			expectedPodName := util.GeneratePodName(wfName, node.Name, templateName, node.ID, podNameVersion)
+			panic("podName absent expected " + expectedPodName + " for " + node.Name)
+		}
 		args = []interface{}{nodePrefix, fmtNodeName, fmtTemplateName, podName, duration, node.Message, ""}
 	} else {
 		args = []interface{}{nodePrefix, fmtNodeName, fmtTemplateName, "", "", node.Message, ""}

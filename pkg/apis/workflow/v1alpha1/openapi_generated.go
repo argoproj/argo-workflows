@@ -4213,6 +4213,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus"),
 						},
 					},
+					"podName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodName is the name of the pod this node is executed on",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},

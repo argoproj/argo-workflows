@@ -23,6 +23,7 @@ Name | Type | Description | Notes
 **outputs** | [**IoArgoprojWorkflowV1alpha1Outputs**](IoArgoprojWorkflowV1alpha1Outputs.md) |  | [optional] 
 **phase** | **str** | Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \&quot;Pending\&quot;, \&quot;Running\&quot; before the node is completed, or \&quot;Succeeded\&quot;, \&quot;Skipped\&quot;, \&quot;Failed\&quot;, \&quot;Error\&quot;, or \&quot;Omitted\&quot; as a final state. | [optional] 
 **pod_ip** | **str** | PodIP captures the IP of the pod for daemoned steps | [optional] 
+**pod_name** | **str** | PodName is the name of the pod this node is executed on | [optional] 
 **progress** | **str** | Progress to completion | [optional] 
 **resources_duration** | **{str: (int,)}** | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. | [optional] 
 **started_at** | **datetime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. | [optional] 

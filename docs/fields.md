@@ -1805,6 +1805,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded", "Skipped", "Failed", "Error", or "Omitted" as a final state.|
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
+|`podName`|`string`|PodName is the name of the pod this node is executed on|
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|

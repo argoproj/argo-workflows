@@ -775,10 +775,18 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
 	templateName := GetTemplateFromNode(node)
 	version := GetWorkflowPodNameVersion(wf)
-	podName := GeneratePodName(wf.Name, node.Name, templateName, node.ID, version)
-	if _, ok := deletedPods[podName]; !ok {
-		deletedPods[podName] = true
-		podsToDelete = append(podsToDelete, podName)
+	expectedPodName := GeneratePodName(wf.Name, node.Name, templateName, node.ID, version)
+	podName := node.PodName
+	if node.Phase == wfv1.NodeSkipped || node.Phase == wfv1.NodeOmitted {
+		// no pod was created so just return
+		return deletedPods, podsToDelete
+	}
+	if podName == nil {
+		panic("podName was nil expected " + expectedPodName + " for " + node.ID)
+	}
+	if _, ok := deletedPods[*podName]; !ok {
+		deletedPods[*podName] = true
+		podsToDelete = append(podsToDelete, *podName)
 	}
 	return deletedPods, podsToDelete
 }

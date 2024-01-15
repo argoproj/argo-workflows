@@ -11459,6 +11459,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         phase="phase_example",
                         pod_ip="pod_ip_example",
+                        pod_name="pod_name_example",
                         progress="progress_example",
                         resources_duration={
                             "key": 1,
@@ -39013,6 +39014,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         phase="phase_example",
                         pod_ip="pod_ip_example",
+                        pod_name="pod_name_example",
                         progress="progress_example",
                         resources_duration={
                             "key": 1,

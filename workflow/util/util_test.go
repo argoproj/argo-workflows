@@ -897,6 +897,7 @@ status:
       id: steps-9fkqc-3224593506
       message: failed with exit code 1
       name: steps-9fkqc[1].fail
+      podName: steps-9fkqc-fail-3224593506
       outputs:
         exitCode: "1"
       phase: Failed
@@ -991,6 +992,7 @@ status:
       id: retry-script-6xt68
       name: retry-script-6xt68
       displayName: retry-script-6xt68
+      podName: retry-script-6xt68 
       type: Pod
       templateName: retry-script
       templateScope: local/retry-script-6xt68
@@ -1012,6 +1014,7 @@ status:
     retry-script-6xt68-3924170365:
       id: retry-script-6xt68-3924170365
       name: retry-script-6xt68.onExit
+      podName: retry-script-6xt68-handler-3924170365
       displayName: retry-script-6xt68.onExit
       type: Pod
       templateName: handler
@@ -1067,6 +1070,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 	createdTime := metav1.Time{Time: time.Now().Add(-1 * time.Second).UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
 	t.Run("Steps", func(t *testing.T) {
+		failedNodePodName := "my-steps--2640489387"
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-steps",
@@ -1080,7 +1084,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 				StartedAt:  createdTime,
 				FinishedAt: finishedTime,
 				Nodes: map[string]wfv1.NodeStatus{
-					"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
+					"failed-node":    {Name: "failed-node", PodName: &failedNodePodName, StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
 					"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
 			},
 		}
@@ -1173,6 +1177,8 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 	})
 	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
+		podNameNode3 := "my-nested-dag-1--2166136261"
+		podNameNode4 := "my-nested-dag-1--2166136261"
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "my-nested-dag-1",
@@ -1184,8 +1190,8 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
 					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1", Children: []string{"2", "4"}},
 					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
-					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
-					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+					"3":               {ID: "3", PodName: &podNameNode3, Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":               {ID: "4", PodName: &podNameNode4, Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
@@ -1202,6 +1208,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 	})
 	t.Run("Nested DAG without Node Selected", func(t *testing.T) {
+		podNameNode4 := "my-nested-dag-2--2166136261"
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "my-nested-dag-2",
@@ -1214,7 +1221,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2", Children: []string{"2", "4"}},
 					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
 					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
-					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+					"4":               {ID: "4", PodName: &podNameNode4, Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
@@ -1338,6 +1345,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 	})
 
 	t.Run("Retry successful workflow with restartSuccessful and nodeFieldSelector", func(t *testing.T) {
+		podNameNode4 := "successful-workflow-2--2166136261"
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "successful-workflow-2",
@@ -1350,7 +1358,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					"1":                     {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "successful-workflow-2", Children: []string{"2", "4"}},
 					"2":                     {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
 					"3":                     {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
-					"4":                     {ID: "4", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+					"4":                     {ID: "4", PodName: &podNameNode4, Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
@@ -1599,6 +1607,7 @@ status:
       type: DAG
     fail-two-nested-dag-suspend-437639056:
       boundaryID: fail-two-nested-dag-suspend-1841799687
+      podName: fail-two-nested-dag-suspend-gen-random-int-javascript-437639056
       children:
       - fail-two-nested-dag-suspend-1250125036
       displayName: dag3-step3
@@ -1619,6 +1628,7 @@ status:
       type: Pod
     fail-two-nested-dag-suspend-454416675:
       boundaryID: fail-two-nested-dag-suspend-1841799687
+      podName: fail-two-nested-dag-suspend-gen-random-int-javascript-454416675
       children:
       - fail-two-nested-dag-suspend-437639056
       displayName: dag3-step2
@@ -1692,6 +1702,7 @@ status:
       type: Suspend
     fail-two-nested-dag-suspend-1199792179:
       boundaryID: fail-two-nested-dag-suspend
+      podName: fail-two-nested-dag-suspend-gen-random-int-javascript-1199792179
       children:
       - fail-two-nested-dag-suspend-1216569798
       displayName: dag1-step1
@@ -1783,6 +1794,7 @@ status:
       type: Suspend
     fail-two-nested-dag-suspend-2528852583:
       boundaryID: fail-two-nested-dag-suspend
+      podName: fail-two-nested-dag-suspend-node-to-fail-2528852583
       displayName: dag1-step5-tofail
       finishedAt: "2022-09-02T14:56:48Z"
       hostNodeName: k3d-k3s-default-server-0
@@ -1819,6 +1831,7 @@ status:
       type: Suspend
     fail-two-nested-dag-suspend-2798208682:
       boundaryID: fail-two-nested-dag-suspend-476458868
+      podName: fail-two-nested-dag-suspend-gen-random-int-javascript-2798208682 
       children:
       - fail-two-nested-dag-suspend-2814986301
       displayName: dag3-step2
@@ -1858,6 +1871,7 @@ status:
       type: DAG
     fail-two-nested-dag-suspend-2814986301:
       boundaryID: fail-two-nested-dag-suspend-476458868
+      podName: fail-two-nested-dag-suspend-gen-random-int-javascript-2814986301
       children:
       - fail-two-nested-dag-suspend-526791725
       displayName: dag3-step3
