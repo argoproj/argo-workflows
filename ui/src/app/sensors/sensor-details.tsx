@@ -3,19 +3,19 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {Sensor} from '../../../../models';
-import {ID} from '../../../event-flow/id';
-import {uiUrl} from '../../../shared/base';
-import {ErrorNotice} from '../../../shared/components/error-notice';
-import {Node} from '../../../shared/components/graph/types';
-import {Loading} from '../../../shared/components/loading';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
-import {Context} from '../../../shared/context';
-import {historyUrl} from '../../../shared/history';
-import {services} from '../../../shared/services';
-import {useQueryParams} from '../../../shared/use-query-params';
-import {SensorEditor} from '../sensor-editor';
-import {SensorSidePanel} from '../sensor-side-panel';
+import {Sensor} from '../../models';
+import {ID} from '../event-flow/id';
+import {uiUrl} from '../shared/base';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {Node} from '../shared/components/graph/types';
+import {Loading} from '../shared/components/loading';
+import {useCollectEvent} from '../shared/components/use-collect-event';
+import {Context} from '../shared/context';
+import {historyUrl} from '../shared/history';
+import {services} from '../shared/services';
+import {useQueryParams} from '../shared/use-query-params';
+import {SensorEditor} from './sensor-editor';
+import {SensorSidePanel} from './sensor-side-panel';
 
 import '../../../workflows/components/workflow-details/workflow-details.scss';
 

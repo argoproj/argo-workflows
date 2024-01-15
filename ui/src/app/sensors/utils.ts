@@ -1,4 +1,4 @@
-import {Condition} from '../../../models';
+import {Condition} from '../../models';
 
 export const Utils = {
     statusIconClasses(conditions: Condition[], icon: string): string {

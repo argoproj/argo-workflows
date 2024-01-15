@@ -1,12 +1,12 @@
 import {SlidingPanel, Tabs} from 'argo-ui';
 import * as React from 'react';
 import {useState} from 'react';
-import {Sensor} from '../../../models';
-import {Node} from '../../shared/components/graph/types';
-import {EventsPanel} from '../../workflows/components/events-panel';
+import {Sensor} from '../../models';
+import {Node} from '../shared/components/graph/types';
+import {EventsPanel} from '../workflows/components/events-panel';
 import {SensorLogsViewer} from './sensor-logs-viewer';
 
-export const SensorSidePanel = ({
+export function SensorSidePanel({
     isShown,
     namespace,
     sensor,
@@ -20,7 +20,7 @@ export const SensorSidePanel = ({
     selectedTrigger: string;
     onTriggerClicked: (selectedNode: string) => void;
     onClose: () => void;
-}) => {
+}) {
     const queryParams = new URLSearchParams(location.search);
     const [logTab, setLogTab] = useState<Node>(queryParams.get('logTab'));
 
@@ -53,4 +53,4 @@ export const SensorSidePanel = ({
             )}
         </SlidingPanel>
     );
-};
+}

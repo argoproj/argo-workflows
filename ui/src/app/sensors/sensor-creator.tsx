@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {useState} from 'react';
 
-import {Sensor} from '../../../models';
-import {Button} from '../../shared/components/button';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {UploadButton} from '../../shared/components/upload-button';
-import {exampleSensor} from '../../shared/examples';
-import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
+import {Sensor} from '../../models';
+import {Button} from '../shared/components/button';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {UploadButton} from '../shared/components/upload-button';
+import {exampleSensor} from '../shared/examples';
+import {services} from '../shared/services';
+import {Utils} from '../shared/utils';
 import {SensorEditor} from './sensor-editor';
 
 export function SensorCreator({namespace, onCreate}: {namespace: string; onCreate: (sensor: Sensor) => void}) {

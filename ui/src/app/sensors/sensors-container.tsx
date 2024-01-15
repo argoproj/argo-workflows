@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Route, RouteComponentProps, Switch} from 'react-router';
-import {SensorDetails} from './sensor-details/sensor-details';
-import {SensorList} from './sensor-list/sensor-list';
+import {SensorDetails} from './sensor-details';
+import {SensorList} from './sensor-list';
 
 export const SensorsContainer = (props: RouteComponentProps<any>) => (
     <Switch>

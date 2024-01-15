@@ -2,17 +2,18 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
 import {filter, map, publishReplay, refCount} from 'rxjs/operators';
-import {Sensor} from '../../../models';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {Links} from '../../shared/components/links';
-import {services} from '../../shared/services';
-import {FullHeightLogsViewer} from '../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
+
+import {Sensor} from '../../models';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {Links} from '../shared/components/links';
+import {services} from '../shared/services';
+import {FullHeightLogsViewer} from '../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 
 function identity<T>(value: T) {
     return () => value;
 }
 
-export const SensorLogsViewer = ({
+export function SensorLogsViewer({
     namespace,
     selectedTrigger,
     sensor,
@@ -22,7 +23,7 @@ export const SensorLogsViewer = ({
     selectedTrigger: string;
     sensor: Sensor;
     onClick: (selectedNode: string) => void;
-}) => {
+}) {
     const [error, setError] = useState<Error>();
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
     const [logLoaded, setLogLoaded] = useState(false);
@@ -102,4 +103,4 @@ export const SensorLogsViewer = ({
             </div>
         </div>
     );
-};
+}

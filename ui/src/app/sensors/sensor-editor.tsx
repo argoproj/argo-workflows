@@ -1,11 +1,11 @@
 import * as React from 'react';
 
 import {Tabs} from 'argo-ui';
-import {Sensor} from '../../../models';
-import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
-import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
+import {Sensor} from '../../models';
+import {MetadataEditor} from '../shared/components/editors/metadata-editor';
+import {ObjectEditor} from '../shared/components/object-editor/object-editor';
 
-export const SensorEditor = ({
+export function SensorEditor({
     onChange,
     onTabSelected,
     selectedTabKey,
@@ -16,7 +16,7 @@ export const SensorEditor = ({
     onError: (error: Error) => void;
     onTabSelected?: (tab: string) => void;
     selectedTabKey?: string;
-}) => {
+}) {
     return (
         <Tabs
             key='tabs'
@@ -37,4 +37,4 @@ export const SensorEditor = ({
             ]}
         />
     );
-};
+}

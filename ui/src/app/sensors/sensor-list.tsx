@@ -4,29 +4,29 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 
-import {kubernetes, Sensor} from '../../../../models';
-import {ID} from '../../../event-flow/id';
-import {uiUrl} from '../../../shared/base';
-import {ErrorNotice} from '../../../shared/components/error-notice';
-import {Node} from '../../../shared/components/graph/types';
-import {Loading} from '../../../shared/components/loading';
-import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {Timestamp} from '../../../shared/components/timestamp';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
-import {ZeroState} from '../../../shared/components/zero-state';
-import {Context} from '../../../shared/context';
-import {Footnote} from '../../../shared/footnote';
-import {historyUrl} from '../../../shared/history';
-import {services} from '../../../shared/services';
-import {useQueryParams} from '../../../shared/use-query-params';
-import {Utils} from '../../../shared/utils';
-import {SensorCreator} from '../sensor-creator';
-import {SensorSidePanel} from '../sensor-side-panel';
-import {Utils as EventsUtils} from '../utils';
+import {kubernetes, Sensor} from '../../models';
+import {ID} from '../event-flow/id';
+import {uiUrl} from '../shared/base';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {Node} from '../shared/components/graph/types';
+import {Loading} from '../shared/components/loading';
+import {NamespaceFilter} from '../shared/components/namespace-filter';
+import {Timestamp} from '../shared/components/timestamp';
+import {useCollectEvent} from '../shared/components/use-collect-event';
+import {ZeroState} from '../shared/components/zero-state';
+import {Context} from '../shared/context';
+import {Footnote} from '../shared/footnote';
+import {historyUrl} from '../shared/history';
+import {services} from '../shared/services';
+import {useQueryParams} from '../shared/use-query-params';
+import {Utils} from '../shared/utils';
+import {SensorCreator} from './sensor-creator';
+import {SensorSidePanel} from './sensor-side-panel';
+import {Utils as EventsUtils} from './utils';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
 
-export const SensorList = ({match, location, history}: RouteComponentProps<any>) => {
+export function SensorList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
@@ -171,4 +171,4 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
             )}
         </Page>
     );
-};
+}

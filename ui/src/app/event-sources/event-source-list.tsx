@@ -6,7 +6,7 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {EventSource, kubernetes} from '../../models';
 import {ID} from '../event-flow/id';
-import {Utils as EventsUtils} from '../sensors/components/utils';
+import {Utils as EventsUtils} from '../sensors/utils';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Node} from '../shared/components/graph/types';
