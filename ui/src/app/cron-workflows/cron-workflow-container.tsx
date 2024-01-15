@@ -1,7 +1,8 @@
 import * as React from 'react';
 import {Route, RouteComponentProps, Switch} from 'react-router';
-import {CronWorkflowDetails} from './cron-workflow-details/cron-workflow-details';
-import {CronWorkflowList} from './cron-workflow-list/cron-workflow-list';
+
+import {CronWorkflowDetails} from './cron-workflow-details';
+import {CronWorkflowList} from './cron-workflow-list';
 
 export const CronWorkflowContainer = (props: RouteComponentProps<any>) => (
     <Switch>

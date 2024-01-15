@@ -1,9 +1,10 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import * as models from '../../../../models';
-import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbox-filter';
-import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {TagsInput} from '../../../shared/components/tags-input/tags-input';
+
+import * as models from '../../models';
+import {CheckboxFilter} from '../shared/components/checkbox-filter/checkbox-filter';
+import {NamespaceFilter} from '../shared/components/namespace-filter';
+import {TagsInput} from '../shared/components/tags-input/tags-input';
 
 import './cron-workflow-filters.scss';
 

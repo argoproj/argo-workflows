@@ -1,9 +1,10 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import * as React from 'react';
-import {CronWorkflowSpec, CronWorkflowStatus} from '../../../models';
-import {Timestamp} from '../../shared/components/timestamp';
-import {ConditionsPanel} from '../../shared/conditions-panel';
-import {WorkflowLink} from '../../workflows/components/workflow-link';
+
+import {CronWorkflowSpec, CronWorkflowStatus} from '../../models';
+import {Timestamp} from '../shared/components/timestamp';
+import {ConditionsPanel} from '../shared/conditions-panel';
+import {WorkflowLink} from '../workflows/components/workflow-link';
 import {PrettySchedule} from './pretty-schedule';
 
 export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec; status: CronWorkflowStatus}) {

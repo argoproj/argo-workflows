@@ -1,7 +1,7 @@
 import x from 'cronstrue';
 import * as React from 'react';
 
-import {SuccessIcon, WarningIcon} from '../../shared/components/fa-icons';
+import {SuccessIcon, WarningIcon} from '../shared/components/fa-icons';
 
 export function ScheduleValidator({schedule}: {schedule: string}) {
     try {

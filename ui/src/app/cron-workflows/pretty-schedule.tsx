@@ -1,7 +1,7 @@
 import x from 'cronstrue';
 import * as React from 'react';
 
-import {WarningIcon} from '../../shared/components/fa-icons';
+import {WarningIcon} from '../shared/components/fa-icons';
 
 /*
     https://github.com/bradymholt/cRonstrue

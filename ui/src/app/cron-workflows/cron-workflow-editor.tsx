@@ -1,11 +1,11 @@
 import * as React from 'react';
-
 import {Tabs} from 'argo-ui';
-import {CronWorkflow} from '../../../models';
-import {LabelsAndAnnotationsEditor} from '../../shared/components/editors/labels-and-annotations-editor';
-import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
-import {WorkflowParametersEditor} from '../../shared/components/editors/workflow-parameters-editor';
-import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
+
+import {CronWorkflow} from '../../models';
+import {LabelsAndAnnotationsEditor} from '../shared/components/editors/labels-and-annotations-editor';
+import {MetadataEditor} from '../shared/components/editors/metadata-editor';
+import {WorkflowParametersEditor} from '../shared/components/editors/workflow-parameters-editor';
+import {ObjectEditor} from '../shared/components/object-editor';
 import {CronWorkflowSpecEditor} from './cron-workflow-spec-editior';
 import {CronWorkflowStatusViewer} from './cron-workflow-status-viewer';
 

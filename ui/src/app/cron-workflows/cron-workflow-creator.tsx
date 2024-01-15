@@ -1,14 +1,14 @@
 import * as React from 'react';
 import {useState} from 'react';
 
-import {CronWorkflow} from '../../../models';
-import {Button} from '../../shared/components/button';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {ExampleManifests} from '../../shared/components/example-manifests';
-import {UploadButton} from '../../shared/components/upload-button';
-import {exampleCronWorkflow} from '../../shared/examples';
-import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
+import {CronWorkflow} from '../../models';
+import {Button} from '../shared/components/button';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {ExampleManifests} from '../shared/components/example-manifests';
+import {UploadButton} from '../shared/components/upload-button';
+import {exampleCronWorkflow} from '../shared/examples';
+import {services} from '../shared/services';
+import {Utils} from '../shared/utils';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
 export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) {
