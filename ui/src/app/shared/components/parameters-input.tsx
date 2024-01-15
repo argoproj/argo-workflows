@@ -1,7 +1,7 @@
 import {Select, Tooltip} from 'argo-ui';
 import React from 'react';
-import {Parameter} from '../../../../models';
-import {Utils} from '../../utils';
+import {Parameter} from '../../../models';
+import {Utils} from '../utils';
 
 interface ParametersInputProps {
     parameters: Parameter[];

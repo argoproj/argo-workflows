@@ -2,12 +2,12 @@ import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import MonacoEditor from 'react-monaco-editor';
 
-import {uiUrl} from '../../base';
-import {ScopedLocalStorage} from '../../scoped-local-storage';
-import {Button} from '../button';
-import {parse, stringify} from '../object-parser';
-import {PhaseIcon} from '../phase-icon';
-import {SuspenseMonacoEditor} from '../suspense-monaco-editor';
+import {uiUrl} from '../base';
+import {ScopedLocalStorage} from '../scoped-local-storage';
+import {Button} from './button';
+import {parse, stringify} from './object-parser';
+import {PhaseIcon} from './phase-icon';
+import {SuspenseMonacoEditor} from './suspense-monaco-editor';
 
 interface Props<T> {
     type?: string;

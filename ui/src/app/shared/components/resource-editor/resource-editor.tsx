@@ -3,7 +3,7 @@ import * as React from 'react';
 import {useState} from 'react';
 import {Button} from '../button';
 import {ErrorNotice} from '../error-notice';
-import {ObjectEditor} from '../object-editor/object-editor';
+import {ObjectEditor} from '../object-editor';
 import {UploadButton} from '../upload-button';
 
 interface Props<T> {

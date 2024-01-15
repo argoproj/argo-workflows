@@ -3,7 +3,7 @@ import {Tabs} from 'argo-ui';
 
 import {EventSource} from '../../models';
 import {MetadataEditor} from '../shared/components/editors/metadata-editor';
-import {ObjectEditor} from '../shared/components/object-editor/object-editor';
+import {ObjectEditor} from '../shared/components/object-editor';
 
 export function EventSourceEditor({
     onChange,
