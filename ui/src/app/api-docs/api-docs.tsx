@@ -1,10 +1,10 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
-import {uiUrl} from '../../shared/base';
-import {Loading} from '../../shared/components/loading';
-import {useCollectEvent} from '../../shared/components/use-collect-event';
+import {uiUrl} from '../shared/base';
+import {Loading} from '../shared/components/loading';
+import {useCollectEvent} from '../shared/components/use-collect-event';
 
-export const ApiDocs = () => {
+export function ApiDocs() {
     useCollectEvent('openedApiDocs');
     return (
         <Page title='Swagger'>
@@ -13,7 +13,7 @@ export const ApiDocs = () => {
             </div>
         </Page>
     );
-};
+}
 
 // lazy load SwaggerUI as it is infrequently used and imports very large components (which can be split into a separate bundle)
 const LazySwaggerUI = React.lazy(() => {
