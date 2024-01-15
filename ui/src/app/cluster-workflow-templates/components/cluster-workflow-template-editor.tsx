@@ -7,7 +7,7 @@ import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
 import {WorkflowParametersEditor} from '../../shared/components/editors/workflow-parameters-editor';
 import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
 
-export const ClusterWorkflowTemplateEditor = ({
+export function ClusterWorkflowTemplateEditor({
     onChange,
     template,
     onError,
@@ -19,7 +19,7 @@ export const ClusterWorkflowTemplateEditor = ({
     onError: (error: Error) => void;
     onTabSelected?: (tab: string) => void;
     selectedTabKey?: string;
-}) => {
+}) {
     return (
         <Tabs
             key='tabs'
@@ -55,4 +55,4 @@ export const ClusterWorkflowTemplateEditor = ({
             ]}
         />
     );
-};
+}

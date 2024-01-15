@@ -2,21 +2,21 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import * as models from '../../../../models';
-import {uiUrl} from '../../../shared/base';
-import {ErrorNotice} from '../../../shared/components/error-notice';
-import {ExampleManifests} from '../../../shared/components/example-manifests';
-import {InfoIcon} from '../../../shared/components/fa-icons';
-import {Loading} from '../../../shared/components/loading';
-import {Timestamp} from '../../../shared/components/timestamp';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
-import {ZeroState} from '../../../shared/components/zero-state';
-import {Context} from '../../../shared/context';
-import {useQueryParams} from '../../../shared/use-query-params';
+import * as models from '../../../models';
+import {uiUrl} from '../../shared/base';
+import {ErrorNotice} from '../../shared/components/error-notice';
+import {ExampleManifests} from '../../shared/components/example-manifests';
+import {InfoIcon} from '../../shared/components/fa-icons';
+import {Loading} from '../../shared/components/loading';
+import {Timestamp} from '../../shared/components/timestamp';
+import {useCollectEvent} from '../../shared/components/use-collect-event';
+import {ZeroState} from '../../shared/components/zero-state';
+import {Context} from '../../shared/context';
+import {useQueryParams} from '../../shared/use-query-params';
 
-import {Footnote} from '../../../shared/footnote';
-import {services} from '../../../shared/services';
-import {ClusterWorkflowTemplateCreator} from '../cluster-workflow-template-creator';
+import {Footnote} from '../../shared/footnote';
+import {services} from '../../shared/services';
+import {ClusterWorkflowTemplateCreator} from './cluster-workflow-template-creator';
 
 import './cluster-workflow-template-list.scss';
 
