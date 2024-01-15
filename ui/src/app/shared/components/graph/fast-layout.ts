@@ -2,7 +2,7 @@ import {CoffmanGrahamSorter} from './coffman-graham-sorter';
 import {Edge, Graph, Node} from './types';
 
 const minSize = 1;
-export const layoutGraphFast = (graph: Graph, nodeSize: number, horizontal: boolean, hidden: (id: Node) => boolean) => {
+export function layoutGraphFast(graph: Graph, nodeSize: number, horizontal: boolean, hidden: (id: Node) => boolean) {
     const gap = nodeSize * 1.25;
     const layers = new CoffmanGrahamSorter(graph).sort();
 
@@ -36,9 +36,9 @@ export const layoutGraphFast = (graph: Graph, nodeSize: number, horizontal: bool
             label.points = generateEdge(graph, e, nodeSize, horizontal, hidden);
         }
     });
-};
+}
 
-const generateEdge = (graph: Graph, edge: Edge, nodeSize: number, horizontal: boolean, hiddenNode: (id: Node) => boolean) => {
+function generateEdge(graph: Graph, edge: Edge, nodeSize: number, horizontal: boolean, hiddenNode: (id: Node) => boolean) {
     // `h` and `v` move the arrow heads to next to the node, otherwise they would be behind it
     const h = horizontal ? nodeSize / 2 : 0;
     const v = !horizontal ? nodeSize / 2 : 0;
@@ -53,4 +53,4 @@ const generateEdge = (graph: Graph, edge: Edge, nodeSize: number, horizontal: bo
             y: graph.nodes.get(edge.w).y - (hiddenNode(edge.w) ? minSize : v)
         }
     ];
-};
+}
