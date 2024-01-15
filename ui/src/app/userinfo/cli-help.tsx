@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {createRef, useState} from 'react';
 
-import {Notice} from '../../shared/components/notice';
+import {Notice} from '../shared/components/notice';
 
 export function CliHelp() {
     const argoSecure = document.location.protocol === 'https:';

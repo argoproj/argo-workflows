@@ -1,11 +1,12 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import {GetUserInfoResponse} from '../../../models';
-import {uiUrl} from '../../shared/base';
-import {ErrorNotice} from '../../shared/components/error-notice';
-import {Notice} from '../../shared/components/notice';
-import {services} from '../../shared/services';
+
+import {GetUserInfoResponse} from '../../models';
+import {uiUrl} from '../shared/base';
+import {ErrorNotice} from '../shared/components/error-notice';
+import {Notice} from '../shared/components/notice';
+import {services} from '../shared/services';
 import {CliHelp} from './cli-help';
 
 export function UserInfo() {
