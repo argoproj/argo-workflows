@@ -4518,6 +4518,10 @@
           "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
           "type": "integer"
         },
+        "stopStrategy": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.StopStrategy",
+          "description": "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow"
+        },
         "successfulJobsHistoryLimit": {
           "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
           "type": "integer"
@@ -4562,15 +4566,30 @@
           },
           "type": "array"
         },
+        "failed": {
+          "description": "Failed is a counter of how many times a child workflow terminated in failed or errored state",
+          "type": "integer"
+        },
         "lastScheduledTime": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "description": "LastScheduleTime is the last time the CronWorkflow was scheduled"
+        },
+        "phase": {
+          "description": "Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running",
+          "type": "string"
+        },
+        "succeeded": {
+          "description": "Succeeded is a counter of how many times the child workflows had success",
+          "type": "integer"
         }
       },
       "required": [
         "active",
         "lastScheduledTime",
-        "conditions"
+        "conditions",
+        "succeeded",
+        "failed",
+        "phase"
       ],
       "type": "object"
     },
@@ -6398,6 +6417,19 @@
           "description": "Number at which to start the sequence (default: 0)"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.StopStrategy": {
+      "description": "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
+      "properties": {
+        "condition": {
+          "description": "Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "condition"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Submit": {

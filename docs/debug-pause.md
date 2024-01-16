@@ -68,5 +68,5 @@ In order to have access to the persistence volume used by the workflow step,  [`
 The ephemeral container can be used to perform debugging operations. When debugging has been completed, create the marker file to allow the workflow step to continue. When using process name space sharing container file systems are visible to other containers in the pod through the `/proc/$pid/root` link.
 
 ```bash
-touch /proc/1/root/run/argo/ctr/main/after
+touch /proc/1/root/var/run/argo/ctr/main/after
 ```

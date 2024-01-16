@@ -30,8 +30,10 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_stop_strategy import IoArgoprojWorkflowV1alpha1StopStrategy
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import IoArgoprojWorkflowV1alpha1WorkflowSpec
     from argo_workflows.model.object_meta import ObjectMeta
+    globals()['IoArgoprojWorkflowV1alpha1StopStrategy'] = IoArgoprojWorkflowV1alpha1StopStrategy
     globals()['IoArgoprojWorkflowV1alpha1WorkflowSpec'] = IoArgoprojWorkflowV1alpha1WorkflowSpec
     globals()['ObjectMeta'] = ObjectMeta
 
@@ -94,6 +96,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
             'concurrency_policy': (str,),  # noqa: E501
             'failed_jobs_history_limit': (int,),  # noqa: E501
             'starting_deadline_seconds': (int,),  # noqa: E501
+            'stop_strategy': (IoArgoprojWorkflowV1alpha1StopStrategy,),  # noqa: E501
             'successful_jobs_history_limit': (int,),  # noqa: E501
             'suspend': (bool,),  # noqa: E501
             'timezone': (str,),  # noqa: E501
@@ -111,6 +114,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
         'concurrency_policy': 'concurrencyPolicy',  # noqa: E501
         'failed_jobs_history_limit': 'failedJobsHistoryLimit',  # noqa: E501
         'starting_deadline_seconds': 'startingDeadlineSeconds',  # noqa: E501
+        'stop_strategy': 'stopStrategy',  # noqa: E501
         'successful_jobs_history_limit': 'successfulJobsHistoryLimit',  # noqa: E501
         'suspend': 'suspend',  # noqa: E501
         'timezone': 'timezone',  # noqa: E501
@@ -165,6 +169,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
             concurrency_policy (str): ConcurrencyPolicy is the K8s-style concurrency policy that will be used. [optional]  # noqa: E501
             failed_jobs_history_limit (int): FailedJobsHistoryLimit is the number of failed jobs to be kept at a time. [optional]  # noqa: E501
             starting_deadline_seconds (int): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
+            stop_strategy (IoArgoprojWorkflowV1alpha1StopStrategy): [optional]  # noqa: E501
             successful_jobs_history_limit (int): SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time. [optional]  # noqa: E501
             suspend (bool): Suspend is a flag that will stop new CronWorkflows from running if set to true. [optional]  # noqa: E501
             timezone (str): Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.. [optional]  # noqa: E501
@@ -259,6 +264,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
             concurrency_policy (str): ConcurrencyPolicy is the K8s-style concurrency policy that will be used. [optional]  # noqa: E501
             failed_jobs_history_limit (int): FailedJobsHistoryLimit is the number of failed jobs to be kept at a time. [optional]  # noqa: E501
             starting_deadline_seconds (int): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
+            stop_strategy (IoArgoprojWorkflowV1alpha1StopStrategy): [optional]  # noqa: E501
             successful_jobs_history_limit (int): SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time. [optional]  # noqa: E501
             suspend (bool): Suspend is a flag that will stop new CronWorkflows from running if set to true. [optional]  # noqa: E501
             timezone (str): Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.. [optional]  # noqa: E501
