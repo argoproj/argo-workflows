@@ -354,6 +354,79 @@ spec:
 				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
+	s.Run("TestStoppingConditionWithSucceeded", func() {
+		s.T().Parallel()
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-stop-condition-succeeded
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  stopStrategy:
+    condition: "succeeded >= 1"
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+            image: argoproj/argosay:v2
+            command: [/argosay]`).
+			When().
+			CreateCronWorkflow().
+			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
+			Then().
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, int64(0), cronWf.Status.Failed)
+				assert.Equal(t, int64(1), cronWf.Status.Succeeded)
+				assert.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
+				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
+			})
+	})
+	s.Run("TestStoppingConditionWithFailed", func() {
+		s.T().Parallel()
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-stop-condition-failed
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  stopStrategy:
+    condition: "failed >= 1"
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2
+          args: ["exit", "1"]`).
+			When().
+			CreateCronWorkflow().
+			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
+			Then().
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, int64(0), cronWf.Status.Succeeded)
+				assert.Equal(t, int64(1), cronWf.Status.Failed)
+				assert.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
+				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
+			})
+	})
 }
 
 func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {

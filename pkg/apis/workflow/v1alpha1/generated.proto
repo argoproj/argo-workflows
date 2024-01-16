@@ -496,6 +496,9 @@ message CronWorkflowSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be run
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
+
+  // StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+  optional StopStrategy stopStrategy = 10;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
@@ -508,6 +511,15 @@ message CronWorkflowStatus {
 
   // Conditions is a list of conditions the CronWorkflow may have
   repeated Condition conditions = 3;
+
+  // Succeeded is a counter of how many times the child workflows had success
+  optional int64 succeeded = 4;
+
+  // Failed is a counter of how many times a child workflow terminated in failed or errored state
+  optional int64 failed = 5;
+
+  // Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running
+  optional string phase = 6;
 }
 
 // DAGTask represents a node in the graph during DAG execution
@@ -1458,6 +1470,13 @@ message Sequence {
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
+}
+
+// StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+message StopStrategy {
+  // Condition defines a condition that stops scheduling workflows when evaluates to true. Use the
+  // keywords `failed` or `succeeded` to access the number of failed or successful child workflows.
+  optional string condition = 1;
 }
 
 message Submit {
