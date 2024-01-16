@@ -12,7 +12,7 @@ type Claims struct {
 	jwt.Claims
 	Groups                  []string               `json:"groups,omitempty"`
 	Email                   string                 `json:"email,omitempty"`
-	EmailVerified           bool                   `json:"email_verified,omitempty"`
+	EmailVerified           bool                   `json:"-"`
 	Name                    string                 `json:"name,omitempty"`
 	ServiceAccountName      string                 `json:"service_account_name,omitempty"`
 	ServiceAccountNamespace string                 `json:"service_account_namespace,omitempty"`
@@ -50,6 +50,10 @@ func (c *Claims) UnmarshalJSON(data []byte) error {
 	err = json.Unmarshal(data, &localClaim.RawClaim)
 	if err != nil {
 		return err
+	}
+
+	if localClaim.RawClaim["email_verified"] == true || localClaim.RawClaim["email_verified"] == "true" {
+		localClaim.EmailVerified = true
 	}
 
 	*c = Claims(localClaim)

@@ -135,6 +135,28 @@ func TestUnmarshalJSON(t *testing.T) {
 			},
 		},
 		{
+			description: "email verify field as string",
+			data:        `{"email_verified":"true"}`,
+			expectedErr: nil,
+			expectedClaims: &Claims{
+				RawClaim: map[string]interface{}{
+					"email_verified": "true",
+				},
+				EmailVerified: true,
+			},
+		},
+		{
+			description: "email verify field as bool",
+			data:        `{"email_verified":true}`,
+			expectedErr: nil,
+			expectedClaims: &Claims{
+				RawClaim: map[string]interface{}{
+					"email_verified": true,
+				},
+				EmailVerified: true,
+			},
+		},
+		{
 			description: "unmarshal no data",
 			data:        `{}`,
 			expectedErr: nil,
