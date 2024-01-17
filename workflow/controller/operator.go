@@ -312,6 +312,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 
+		if err != nil && strings.Contains(err.Error(), "need reconcil workflowtaskresults") {
+			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("need reconcil workflowtaskresults")
+			woc.requeue()
+			return
+		}
+
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow timed out")
@@ -1099,6 +1105,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 	podRunningCondition := wfv1.Condition{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse}
+	needReconcilTaskResult := false
 	performAssessment := func(pod *apiv1.Pod) {
 		if pod == nil {
 			return
@@ -1117,6 +1124,18 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err == nil {
 			if newState := woc.assessNodeStatus(pod, node); newState != nil {
+				if newState.Succeeded() {
+					tmpl, err := woc.GetNodeTemplate(node)
+					if err != nil {
+						return
+					}
+					// Check whether the node has output and whether its taskresult is in an incompleted state.
+					if tmpl.HasOutputs() && woc.wf.Status.IsTaskResultInCompleted(node.ID) && woc.wf.Status.IsTaskResultInCompleted(pod.Name) {
+						woc.log.WithFields(log.Fields{"nodeID": newState.ID}).WithError(err).Error("Taskresult of the node not yet completed")
+						needReconcilTaskResult = true
+						return
+					}
+				}
 				woc.addOutputsToGlobalScope(newState.Outputs)
 				if newState.MemoizationStatus != nil {
 					if newState.Succeeded() {
@@ -1159,6 +1178,12 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 	}
 
 	wg.Wait()
+
+	// If true, it means there are some nodes which have outputs want to be mark succeed, but the node's taskresults didn't completed.
+	// We should make sure it the taskresults processing is complete as it will be possible to reference it in the next step.
+	if needReconcilTaskResult {
+		return fmt.Errorf("need reconcil workflowtaskresults")
+	}
 
 	woc.wf.Status.Conditions.UpsertCondition(podRunningCondition)
 

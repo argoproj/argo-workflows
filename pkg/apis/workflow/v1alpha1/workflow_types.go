@@ -1971,6 +1971,14 @@ func (ws *WorkflowStatus) TaskResultsInProgress() bool {
 	return false
 }
 
+func (ws *WorkflowStatus) IsTaskResultInCompleted(name string) bool {
+	value, found := ws.TaskResultsCompletionStatus[name]
+	if found {
+		return !value
+	}
+	return true
+}
+
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
 	return ws.OffloadNodeStatusVersion != ""
 }
