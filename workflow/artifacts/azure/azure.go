@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -168,7 +170,8 @@ func DownloadFile(containerClient *container.Client, blobName, path string) erro
 		}
 	}()
 
-	_, err = blobClient.DownloadFile(context.TODO(), outFile, nil)
+	o := blob.DownloadFileOptions{Concurrency: 1} // workaround https://github.com/Azure/azure-sdk-for-go/issues/22156
+	_, err = blobClient.DownloadFile(context.TODO(), outFile, &o)
 	return err
 }
 
