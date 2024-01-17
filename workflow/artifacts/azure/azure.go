@@ -170,8 +170,8 @@ func DownloadFile(containerClient *container.Client, blobName, path string) erro
 		}
 	}()
 
-	o := blob.DownloadFileOptions{Concurrency: 1} // workaround https://github.com/Azure/azure-sdk-for-go/issues/22156
-	_, err = blobClient.DownloadFile(context.TODO(), outFile, &o)
+	opts := blob.DownloadFileOptions{Concurrency: 1} // workaround for https://github.com/Azure/azure-sdk-for-go/issues/22156
+	_, err = blobClient.DownloadFile(context.TODO(), outFile, &opts)
 	return err
 }
 
