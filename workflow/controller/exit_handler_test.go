@@ -283,6 +283,10 @@ func TestDAGOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
+			if woc.wf.Status.TaskResultsCompletionStatus == nil {
+				woc.wf.Status.TaskResultsCompletionStatus = make(map[string]bool)
+			}
+			woc.wf.Status.TaskResultsCompletionStatus[node.ID] = true
 		}
 	}
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
