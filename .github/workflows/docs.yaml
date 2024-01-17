@@ -32,8 +32,8 @@ jobs:
       # Use the same make target both locally and on CI to make it easier to debug failures.
       - name: Build & Lint docs
         run: make docs
-      # If markdownlint fixes issues, files will be changed. If so, fail the build.
-      - name: Check if markdownlint --fix made changes
+      # If linters auto-fix issues, files will be changed. If so, fail the build.
+      - name: Check if linters made changes
         run: git diff --exit-code
       # Upload the site so reviewers see it.
       - name: Upload Docs Site
