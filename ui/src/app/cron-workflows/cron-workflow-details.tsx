@@ -19,7 +19,7 @@ import {WidgetGallery} from '../widgets/widget-gallery';
 import {WorkflowsRow} from '../workflows/components/workflows-row/workflows-row';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
-import '../../../workflows/components/workflow-details/workflow-details.scss';
+import '../workflows/components/workflow-details/workflow-details.scss';
 import './cron-workflow-details.scss';
 
 export function CronWorkflowDetails({match, location, history}: RouteComponentProps<any>) {

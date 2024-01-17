@@ -17,7 +17,7 @@ import {useQueryParams} from '../shared/use-query-params';
 import {SensorEditor} from './sensor-editor';
 import {SensorSidePanel} from './sensor-side-panel';
 
-import '../../../workflows/components/workflow-details/workflow-details.scss';
+import '../workflows/components/workflow-details/workflow-details.scss';
 
 export function SensorDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
