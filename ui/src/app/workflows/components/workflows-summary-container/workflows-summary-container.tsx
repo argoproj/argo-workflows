@@ -2,7 +2,7 @@ import {Tooltip} from 'argo-ui';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
-import {Workflow} from '../../../models';
+import {Workflow} from '../../../../models';
 
 import './workflows-summary-container.scss';
 

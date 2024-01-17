@@ -1,15 +1,15 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
-import {Workflow} from '../../../models';
-import {InlineTable} from '../../shared/components/inline-table/inline-table';
-import {Loading} from '../../shared/components/loading';
-import {ConditionsPanel} from '../../shared/conditions-panel';
-import {formatDuration} from '../../shared/duration';
-import {services} from '../../shared/services';
-import {WorkflowCreatorInfo} from './workflow-creator-info';
-import {WorkflowFrom} from './workflow-from';
-import {WorkflowLabels} from './workflow-labels';
+import {Workflow} from '../../../../models';
+import {InlineTable} from '../../../shared/components/inline-table/inline-table';
+import {Loading} from '../../../shared/components/loading';
+import {ConditionsPanel} from '../../../shared/conditions-panel';
+import {formatDuration} from '../../../shared/duration';
+import {services} from '../../../shared/services';
+import {WorkflowCreatorInfo} from '../workflow-creator-info/workflow-creator-info';
+import {WorkflowFrom} from '../workflow-from';
+import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
 import './workflow-drawer.scss';
 

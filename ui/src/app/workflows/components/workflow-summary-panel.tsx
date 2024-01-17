@@ -10,9 +10,9 @@ import {ConditionsPanel} from '../../shared/conditions-panel';
 import {Consumer} from '../../shared/context';
 import {wfDuration} from '../../shared/duration';
 import {ResourcesDuration} from '../../shared/resources-duration';
-import {WorkflowCreatorInfo} from './workflow-creator-info';
+import {WorkflowCreatorInfo} from './workflow-creator-info/workflow-creator-info';
 import {WorkflowFrom} from './workflow-from';
-import {WorkflowLabels} from './workflow-labels';
+import {WorkflowLabels} from './workflow-labels/workflow-labels';
 
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>

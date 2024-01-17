@@ -3,20 +3,20 @@ import moment from 'moment';
 import * as React from 'react';
 import {useState} from 'react';
 
-import * as models from '../../../models';
-import {Artifact, NodeStatus, Workflow} from '../../../models';
-import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../shared/annotations';
-import {Button} from '../../shared/components/button';
-import {ClipboardText} from '../../shared/components/clipboard-text';
-import {DurationPanel} from '../../shared/components/duration-panel';
-import {InlineTable} from '../../shared/components/inline-table/inline-table';
-import {Links} from '../../shared/components/links';
-import {Phase} from '../../shared/components/phase';
-import {Timestamp} from '../../shared/components/timestamp';
-import {getPodName, getTemplateNameFromNode} from '../../shared/pod-name';
-import {ResourcesDuration} from '../../shared/resources-duration';
-import {services} from '../../shared/services';
-import {getResolvedTemplates} from '../../shared/template-resolution';
+import * as models from '../../../../models';
+import {Artifact, NodeStatus, Workflow} from '../../../../models';
+import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {Button} from '../../../shared/components/button';
+import {ClipboardText} from '../../../shared/components/clipboard-text';
+import {DurationPanel} from '../../../shared/components/duration-panel';
+import {InlineTable} from '../../../shared/components/inline-table/inline-table';
+import {Links} from '../../../shared/components/links';
+import {Phase} from '../../../shared/components/phase';
+import {Timestamp} from '../../../shared/components/timestamp';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {ResourcesDuration} from '../../../shared/resources-duration';
+import {services} from '../../../shared/services';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
 
 import './workflow-node-info.scss';
 
