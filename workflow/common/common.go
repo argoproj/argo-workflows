@@ -101,6 +101,9 @@ const (
 	// LabelKeyReportOutputsCompleted is a label applied to WorkflowTaskResults indicating whether all the outputs have been reported.
 	LabelKeyReportOutputsCompleted = workflow.WorkflowFullName + "/report-outputs-completed"
 
+	// LabelKeyCronWorkflowCompleted is a label applied to the cron workflow when the configured stopping condition is achieved
+	LabelKeyCronWorkflowCompleted = workflow.CronWorkflowFullName + "/completed"
+
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"
