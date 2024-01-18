@@ -2,12 +2,12 @@ name: CI
 on:
   push:
     branches:
-      - "master"
+      - "main"
       - "release-*"
       - "!release-2.8"
   pull_request:
     branches:
-      - "master"
+      - "main"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 50 # assume PRs are less than 50 commits
       - name: Get relevant files changed per group
         id: changed-files
-        uses: tj-actions/changed-files@v39
+        uses: tj-actions/changed-files@v41
         with:
           files_yaml: |
             common: &common
@@ -114,14 +114,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
       - name: Upload coverage report
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         run: bash <(curl -s https://codecov.io/bash)
 
   tests-windows:
@@ -132,7 +132,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -211,20 +211,20 @@ jobs:
       - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '8'
           distribution: adopt
           cache: maven
       - name: Install Python for the SDK
         if: ${{matrix.test == 'test-python-sdk'}}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
           cache: pip
@@ -335,7 +335,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -372,7 +372,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.21"
           cache: true
@@ -391,7 +391,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: "20" # change in all GH Workflows
           cache: yarn

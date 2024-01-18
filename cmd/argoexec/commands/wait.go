@@ -35,6 +35,9 @@ func waitContainer(ctx context.Context) error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
+	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
+	wfExecutor.InitializeOutput(bgCtx)
+
 	// Wait for main container to complete
 	err := wfExecutor.Wait(ctx)
 	if err != nil {

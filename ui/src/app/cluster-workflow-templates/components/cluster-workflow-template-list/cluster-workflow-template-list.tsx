@@ -17,7 +17,8 @@ import {useQueryParams} from '../../../shared/use-query-params';
 import {Footnote} from '../../../shared/footnote';
 import {services} from '../../../shared/services';
 import {ClusterWorkflowTemplateCreator} from '../cluster-workflow-template-creator';
-require('./cluster-workflow-template-list.scss');
+
+import './cluster-workflow-template-list.scss';
 
 export function ClusterWorkflowTemplateList({history, location}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);
@@ -56,7 +57,7 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
         if (!templates) {
             return <Loading />;
         }
-        const learnMore = <a href='https://argoproj.github.io/argo-workflows/cluster-workflow-templates/'>Learn more</a>;
+        const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/cluster-workflow-templates/'>Learn more</a>;
         if (templates.length === 0) {
             return (
                 <ZeroState title='No cluster workflow templates'>

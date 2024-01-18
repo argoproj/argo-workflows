@@ -18,7 +18,7 @@ GIT_BRANCH            := $(shell git rev-parse --symbolic-full-name --verify --q
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
-DEV_BRANCH            := $(shell [ "$(GIT_BRANCH)" = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+DEV_BRANCH            := $(shell [ "$(GIT_BRANCH)" = main ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
 SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 
 
@@ -441,7 +441,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.52.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.55.1
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -685,6 +685,8 @@ endif
 docs-spellcheck: /usr/local/bin/mdspell
 	# check docs for spelling mistakes
 	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name swagger.md -not -name executor_swagger.md -not -path '*/cli/*')
+	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
+	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "sort" }' | uniq | tee .spelling > /dev/null)
 
 /usr/local/bin/markdown-link-check:
 # update this in Nix when upgrading it here
@@ -712,7 +714,7 @@ docs-lint: /usr/local/bin/markdownlint
 /usr/local/bin/mkdocs:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	python -m pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
+	python -m pip install --no-cache-dir -r docs/requirements.txt
 endif
 
 .PHONY: docs
@@ -727,8 +729,6 @@ docs: /usr/local/bin/mkdocs \
 	./hack/check-mkdocs.sh
 	# build the docs
 	mkdocs build
-	# fix the fields.md document
-	go run -tags fields ./hack parseexamples
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
@@ -758,4 +758,3 @@ release-notes: /dev/null
 .PHONY: checksums
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
-

@@ -6,7 +6,7 @@ import {fromEvent, interval, Subscription} from 'rxjs';
 import * as models from '../../../../models';
 import {Utils} from '../../../shared/utils';
 
-require('./workflow-timeline.scss');
+import './workflow-timeline.scss';
 
 const ROUND_START_DIFF_MS = 1000;
 const NODE_NAME_WIDTH = 250;

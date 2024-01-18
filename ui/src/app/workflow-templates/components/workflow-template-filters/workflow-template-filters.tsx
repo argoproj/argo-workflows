@@ -1,11 +1,12 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
+
 import * as models from '../../../../models';
 import {InputFilter} from '../../../shared/components/input-filter';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 
-require('./workflow-template-filters.scss');
+import './workflow-template-filters.scss';
 
 interface WorkflowFilterProps {
     templates: models.WorkflowTemplate[];

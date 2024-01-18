@@ -1,5 +1,6 @@
 site_name: Argo Workflows - The workflow engine for Kubernetes
 repo_url: https://github.com/argoproj/argo-workflows
+edit_uri: https://github.com/argoproj/argo-workflows/edit/main/docs
 strict: true
 theme:
   name: material
@@ -29,10 +30,24 @@ extra:
 markdown_extensions:
   - codehilite
   - admonition
-  - pymdownx.superfences
+  - md_in_html
   - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        # support mermaid diagrams per https://squidfunk.github.io/mkdocs-material/reference/diagrams/#configuration
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
       permalink: true
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+exclude_docs: |
+  /proposals/
+  /requirements.txt
+
 nav:
   - Home: README.md
   - Getting Started:
@@ -120,6 +135,7 @@ nav:
           - artifact-visualization.md
           - widgets.md
           - intermediate-inputs.md
+          - title-and-description.md
       - Debugging Tools:
           - workflow-events.md
           - debug-pause.md

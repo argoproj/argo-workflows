@@ -32,7 +32,7 @@ touch /work/markers/$(date +%Y-%m-%d)-echo-{{inputs.parameters.num}}
 
 You need to store the marker files between workflows and this can be achieved using [a PVC](fields.md#persistentvolumeclaim) and [optional input artifact](fields.md#artifact).
 
-[This complete work avoidance example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/work-avoidance.yaml) has the following:
+[This complete work avoidance example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/work-avoidance.yaml) has the following:
 
 * A PVC to store the markers on.
 * A `load-markers` step that loads the marker files from artifact storage.

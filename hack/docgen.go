@@ -36,11 +36,11 @@ const tableRow = `
 const depTableRow = `
 |~~` + "`%s`" + `~~|~~%s~~|%s|`
 
+// `markdown` attribute for MD in HTML: https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown/#markdown-in-html
 const dropdownOpener = `
 
-<details>
-<summary>%s (click to open)</summary>
-<br>`
+<details markdown>
+<summary>%s (click to open)</summary>`
 
 const listElement = `
 
@@ -110,7 +110,7 @@ func getExamples(examples Set, summary string) string {
 	for _, example := range sortedSetKeys(examples) {
 		split := strings.Split(example, "/")
 		name := split[len(split)-1]
-		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo-workflows/blob/master/"+example))
+		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo-workflows/blob/main/"+example))
 	}
 	out += dropdownCloser
 	return out

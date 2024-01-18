@@ -6,22 +6,22 @@
 
 A [`LifecycleHook`](fields.md#lifecyclehook) triggers an action based on a conditional expression or on completion of a step or template. It is configured either at the workflow-level or template-level, for instance as a function of the `workflow.status` or `steps.status`, respectively. A `LifecycleHook` executes during execution time and executes once. It will execute in parallel to its step or template once the expression is satisfied.
 
-In other words, a `LifecycleHook` functions like an [exit handler](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml) with a conditional expression. You must not name a `LifecycleHook` `exit` or it becomes an exit handler; otherwise the hook name has no relevance.
+In other words, a `LifecycleHook` functions like an [exit handler](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml) with a conditional expression. You must not name a `LifecycleHook` `exit` or it becomes an exit handler; otherwise the hook name has no relevance.
 
 **Workflow-level `LifecycleHook`**: Executes the template when a configured expression is met during the workflow.
 
-- [Workflow-level Lifecycle-Hook example](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
+- [Workflow-level Lifecycle-Hook example](https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-wf-level.yaml)
 
 **Template-level `Lifecycle-Hook`**: Executes the template when a configured expression is met during the step in which it is defined.
 
-- [Template-level Lifecycle-Hook example](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+- [Template-level Lifecycle-Hook example](https://github.com/argoproj/argo-workflows/blob/main/examples/life-cycle-hooks-tmpl-level.yaml)
 
 ## Supported conditions
 
 - [Exit handler variables](variables.md#exit-handler): `workflow.status` and `workflow.failures`
 - [`template`](fields.md#template)
 - [`templateRef`](fields.md#templateref)
-- [`arguments`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
+- [`arguments`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditionals.yaml)
 
 ## Unsupported conditions
 

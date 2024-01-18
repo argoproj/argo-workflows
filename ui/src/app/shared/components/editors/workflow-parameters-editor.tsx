@@ -9,10 +9,13 @@ export const WorkflowParametersEditor = <T extends WorkflowSpec>(props: {value: 
         props.value.arguments.parameters &&
         props.value.arguments.parameters
             .map(param => [param.name, param.value])
-            .reduce((obj, [key, val]) => {
-                obj[key] = val;
-                return obj;
-            }, {} as {[key: string]: string});
+            .reduce(
+                (obj, [key, val]) => {
+                    obj[key] = val;
+                    return obj;
+                },
+                {} as {[key: string]: string}
+            );
 
     return (
         <>
@@ -29,7 +32,7 @@ export const WorkflowParametersEditor = <T extends WorkflowSpec>(props: {value: 
                                 ({
                                     name: k,
                                     value: v
-                                } as Parameter)
+                                }) as Parameter
                         );
                         props.onChange(props.value);
                     }}

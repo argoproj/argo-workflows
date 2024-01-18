@@ -19,11 +19,11 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Use Cases
 
-* [Machine Learning pipelines](https://argoproj.github.io/argo-workflows/use-cases/machine-learning/)
-* [Data and batch processing](https://argoproj.github.io/argo-workflows/use-cases/data-processing/)
-* [Infrastructure automation](https://argoproj.github.io/argo-workflows/use-cases/infrastructure-automation/)
-* [CI/CD](https://argoproj.github.io/argo-workflows/use-cases/ci-cd/)
-* [Other use cases](https://argoproj.github.io/argo-workflows/use-cases/other/)
+* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/latest/use-cases/machine-learning/)
+* [Data and batch processing](https://argo-workflows.readthedocs.io/en/latest/use-cases/data-processing/)
+* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/latest/use-cases/infrastructure-automation/)
+* [CI/CD](https://argo-workflows.readthedocs.io/en/latest/use-cases/ci-cd/)
+* [Other use cases](https://argo-workflows.readthedocs.io/en/latest/use-cases/other/)
 
 ## Why Argo Workflows?
 
@@ -37,13 +37,16 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Try Argo Workflows
 
-[Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo) (login using Github)
+You can try Argo Workflows via one of the following:
 
-![Screenshot](https://github.com/argoproj/argo-workflows/raw/master/docs/assets/screenshot.png)
+1. [Interactive Training Material](https://killercoda.com/argoproj/course/argo-workflows/)
+1. [Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo)
+
+![Screenshot](https://github.com/argoproj/argo-workflows/raw/main/docs/assets/screenshot.png)
 
 ## Who uses Argo Workflows?
 
-[About 200+ organizations are officially using Argo Workflows](https://github.com/argoproj/argo-workflows/blob/master/USERS.md)
+[About 200+ organizations are officially using Argo Workflows](https://github.com/argoproj/argo-workflows/blob/main/USERS.md)
 
 ## Ecosystem
 
@@ -64,16 +67,16 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 
 ## Client Libraries
 
-Check out our [Java, Golang and Python clients](https://github.com/argoproj/argo-workflows/blob/master/docs/client-libraries.md).
+Check out our [Java, Golang and Python clients](client-libraries.md).
 
 ## Quickstart
 
-* [Get started here](https://github.com/argoproj/argo-workflows/blob/master/docs/quick-start.md)
-* [Walk-through examples](https://argoproj.github.io/argo-workflows/walk-through/)
+* [Get started here](quick-start.md)
+* [Walk-through examples](walk-through/index.md)
 
 ## Documentation
 
-[View the docs](https://argoproj.github.io/argo-workflows/)
+[View the docs](README.md)
 
 ## Features
 
@@ -136,6 +139,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
 * [Argo Workflows vs Apache Airflow](http://bit.ly/30YNIvT)
 * [CI/CD with Argo on Kubernetes](https://medium.com/@bouwe.ceunen/ci-cd-with-argo-on-kubernetes-28c1a99616a9)
+* [Distributed Machine Learning Patterns from Manning Publication](https://github.com/terrytangyuan/distributed-ml-patterns)
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
@@ -150,4 +154,4 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Security
 
-See [SECURITY.md](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
+See [SECURITY.md](https://github.com/argoproj/argo-workflows/blob/main/SECURITY.md).

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -98,7 +99,13 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 
 	tmpl := &wfv1.Template{}
-	checkErr(json.Unmarshal([]byte(os.Getenv(common.EnvVarTemplate)), tmpl))
+	envVarTemplateValue := os.Getenv(common.EnvVarTemplate)
+	if envVarTemplateValue == common.EnvVarTemplateOffloaded {
+		data, err := os.ReadFile(filepath.Join(common.EnvConfigMountPath, common.EnvVarTemplate))
+		checkErr(err)
+		envVarTemplateValue = string(data)
+	}
+	checkErr(json.Unmarshal([]byte(envVarTemplateValue), tmpl))
 
 	includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))
@@ -133,7 +140,7 @@ func initExecutor() *executor.WorkflowExecutor {
 		WithField("version", version.String()).
 		WithField("namespace", namespace).
 		WithField("podName", podName).
-		WithField("template", wfv1.MustMarshallJSON(&wfExecutor.Template)).
+		WithField("templateName", wfExecutor.Template.Name).
 		WithField("includeScriptOutput", includeScriptOutput).
 		WithField("deadline", deadline).
 		Info("Executor initialized")

@@ -127,6 +127,11 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 				return !isTransientOSSErr(err), err
 			}
 			objectName := inputArtifact.OSS.Key
+			dirPath := filepath.Dir(path)
+			err = os.MkdirAll(dirPath, 0o700)
+			if err != nil {
+				return false, fmt.Errorf("mkdir %s error: %w", dirPath, err)
+			}
 			origErr := bucket.GetObjectToFile(objectName, path)
 			if origErr == nil {
 				return true, nil

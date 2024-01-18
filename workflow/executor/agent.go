@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -341,7 +342,12 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 			}
 			value = string(secret)
 		}
-		request.Header.Add(header.Name, value)
+		// for rewrite host header
+		if strings.ToLower(header.Name) == "host" {
+			request.Host = value
+		} else {
+			request.Header.Add(header.Name, value)
+		}
 	}
 
 	response, err := httpClients[httpTemplate.InsecureSkipVerify].Do(request)

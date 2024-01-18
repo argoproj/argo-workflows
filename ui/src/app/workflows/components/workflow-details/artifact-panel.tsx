@@ -21,7 +21,7 @@ export function ArtifactPanel({
 }: {
     workflow: Workflow;
     artifact: Artifact & {nodeId: string; artifactNameDiscriminator: string};
-    archived?: boolean;
+    archived: boolean;
     artifactRepository: ArtifactRepository;
 }) {
     const input = artifact.artifactNameDiscriminator === 'input';
@@ -105,7 +105,7 @@ export function ArtifactPanel({
                             <p>Artifact cannot be shown because it is a tgz.</p>
                         ) : (
                             <p>
-                                Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
+                                Unknown extension &quot;{ext}&quot;, <a onClick={() => setShow(true)}>show anyway</a>.
                             </p>
                         )}
                         {artifactGCStrategy !== '' && artifactGCStrategy !== 'Never' && !artifact.deleted && (

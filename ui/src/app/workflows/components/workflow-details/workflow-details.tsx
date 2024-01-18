@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+
 import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
@@ -41,7 +42,7 @@ import {ArtifactPanel} from './artifact-panel';
 import {SuspendInputs} from './suspend-inputs';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
-require('./workflow-details.scss');
+import './workflow-details.scss';
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
@@ -484,9 +485,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 return;
             }
 
-            updateOutputParametersForNodeIfRequired()
-                .then(resumeNode)
-                .catch(setError);
+            updateOutputParametersForNodeIfRequired().then(resumeNode).catch(setError);
         });
     }
 
@@ -502,6 +501,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     }
 
     const podName = ensurePodName(workflow, selectedNode, nodeId);
+
+    const archived = isArchivedWorkflow(workflow);
 
     return (
         <Page
@@ -568,11 +569,13 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
-                                        archived={isArchivedWorkflow(workflow)}
+                                        archived={archived}
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
-                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={selectedTemplateArtifactRepo} />}
+                                {selectedArtifact && (
+                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} archived={archived} artifactRepository={selectedTemplateArtifactRepo} />
+                                )}
                             </div>
                         </div>
                     ))}

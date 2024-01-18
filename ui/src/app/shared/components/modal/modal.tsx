@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-require('./modal.scss');
+import './modal.scss';
 
 export const Modal = ({children, dismiss}: {children: React.ReactNode; dismiss: () => void}) => (
     <div className='modal'>

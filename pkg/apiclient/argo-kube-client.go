@@ -8,8 +8,10 @@ import (
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
@@ -45,6 +47,8 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	if err != nil {
 		return nil, nil, err
 	}
+	version := argo.GetVersion()
+	restConfig = restclient.AddUserAgent(restConfig, fmt.Sprintf("argo-workflows/%s argo-api-client", version.Version))
 	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)

@@ -5,7 +5,7 @@ import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbo
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 
-require('./cron-workflow-filters.scss');
+import './cron-workflow-filters.scss';
 
 interface WorkflowFilterProps {
     cronWorkflows: models.WorkflowTemplate[];

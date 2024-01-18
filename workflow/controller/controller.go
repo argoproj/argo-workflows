@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	gosync "sync"
 	"syscall"
 	"time"
 
@@ -68,6 +69,16 @@ import (
 )
 
 const maxAllowedStackDepth = 100
+
+type recentlyCompletedWorkflow struct {
+	key  string
+	when time.Time
+}
+
+type recentCompletions struct {
+	completions []recentlyCompletedWorkflow
+	mutex       gosync.RWMutex
+}
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
@@ -135,6 +146,8 @@ type WorkflowController struct {
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
+
+	recentCompletions recentCompletions
 }
 
 const (
@@ -512,7 +525,10 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
 		case terminateContainers:
-			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
+			pod, err := wfc.getPod(namespace, podName)
+			if err == nil && pod != nil && pod.Status.Phase == apiv1.PodPending {
+				wfc.queuePodForCleanup(namespace, podName, deletePod)
+			} else if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
 				return err
 			} else if terminationGracePeriod > 0 {
 				wfc.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
@@ -632,13 +648,23 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 		if !ok {
 			return fmt.Errorf("object %+v is not an unstructured", workflows[0])
 		}
+		key := un.GetNamespace() + "/" + un.GetName()
+		wfc.workflowKeyLock.Lock(key)
+		defer wfc.workflowKeyLock.Unlock(key)
+
+		obj, ok := wfc.getWorkflowByKey(key)
+		if !ok {
+			return fmt.Errorf("failed to get workflow by key after locking")
+		}
+		un, ok = obj.(*unstructured.Unstructured)
+		if !ok {
+			return fmt.Errorf("object %+v is not an unstructured", obj)
+		}
 		wf, err = util.FromUnstructured(un)
 		if err != nil {
 			return err
 		}
-		key := wf.ObjectMeta.Namespace + "/" + wf.ObjectMeta.Name
-		wfc.workflowKeyLock.Lock(key)
-		defer wfc.workflowKeyLock.Unlock(key)
+
 		// workflow might still be hydrated
 		if wfc.hydrator.IsHydrated(wf) {
 			log.WithField("uid", wf.UID).Info("Hydrated workflow encountered")
@@ -712,19 +738,13 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
-	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
-	if err != nil {
-		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
-		return true
-	}
-	if !exists {
-		// This happens after a workflow was labeled with completed=true
-		// or was deleted, but the work queue still had an entry for it.
-		return true
-	}
-
 	wfc.workflowKeyLock.Lock(key.(string))
 	defer wfc.workflowKeyLock.Unlock(key.(string))
+
+	obj, ok := wfc.getWorkflowByKey(key.(string))
+	if !ok {
+		return true
+	}
 
 	// The workflow informer receives unstructured objects to deal with the possibility of invalid
 	// workflow manifests that are unable to unmarshal to workflow objects
@@ -745,6 +765,11 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates(ctx)
+		return true
+	}
+
+	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.ObjectMeta.Name) {
+		log.WithFields(log.Fields{"name": wf.ObjectMeta.Name}).Warn("Cache: Rejecting recently deleted")
 		return true
 	}
 
@@ -792,6 +817,20 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	// c.handleErr(err, key)
 	return true
+}
+
+func (wfc *WorkflowController) getWorkflowByKey(key string) (interface{}, bool) {
+	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
+	if err != nil {
+		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+		return nil, false
+	}
+	if !exists {
+		// This happens after a workflow was labeled with completed=true
+		// or was deleted, but the work queue still had an entry for it.
+		return nil, false
+	}
+	return obj, true
 }
 
 func reconciliationNeeded(wf metav1.Object) bool {
@@ -848,18 +887,81 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
+// 10 minutes in the past
+const maxCompletedStoreTime = time.Second * -600
+
+// This is a helper function for expiring old records of workflows
+// completed more than maxCompletedStoreTime ago
+func (wfc *WorkflowController) cleanCompletedWorkflowsRecord() {
+	cutoff := time.Now().Add(maxCompletedStoreTime)
+	removeIndex := -1
+	wfc.recentCompletions.mutex.Lock()
+	defer wfc.recentCompletions.mutex.Unlock()
+
+	for i, val := range wfc.recentCompletions.completions {
+		if val.when.After(cutoff) {
+			removeIndex = i - 1
+			break
+		}
+	}
+	if removeIndex >= 0 {
+		wfc.recentCompletions.completions = wfc.recentCompletions.completions[removeIndex+1:]
+	}
+}
+
+// Records a workflow as recently completed in the list
+// if it isn't already in the list
+func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
+	if !wfc.checkRecentlyCompleted(key) {
+		wfc.recentCompletions.mutex.Lock()
+		defer wfc.recentCompletions.mutex.Unlock()
+		wfc.recentCompletions.completions = append(wfc.recentCompletions.completions,
+			recentlyCompletedWorkflow{
+				key:  key,
+				when: time.Now(),
+			})
+	}
+}
+
+// Returns true if the workflow given by key is in the recently completed
+// list. Will perform expiry cleanup before checking.
+func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
+	wfc.cleanCompletedWorkflowsRecord()
+	recent := false
+	wfc.recentCompletions.mutex.RLock()
+	defer wfc.recentCompletions.mutex.RUnlock()
+	for _, val := range wfc.recentCompletions.completions {
+		if val.key == key {
+			recent = true
+			break
+		}
+	}
+	return recent
+}
+
 func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) {
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
+			// FilterFunc is called for every operation affecting the
+			// informer cache and can be used to reject things from
+			// the cache. When they are rejected (this returns false)
+			// they will be deleted.
 			FilterFunc: func(obj interface{}) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
 					log.Warnf("Workflow FilterFunc: '%v' is not an unstructured", obj)
 					return false
 				}
-				return reconciliationNeeded(un)
+				needed := reconciliationNeeded(un)
+				if !needed {
+					key, _ := cache.MetaNamespaceKeyFunc(un)
+					wfc.recordCompletedWorkflow(key)
+				}
+				return needed
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
+				// This function is called when a new to the informer object
+				// is to be added to the informer
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
@@ -869,6 +971,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
+				// This function is called when an updated (we already know about this object)
+				// is to be updated in the informer
 				UpdateFunc: func(old, new interface{}) {
 					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
 					// this check is very important to prevent doing many reconciliations we do not need to do
@@ -882,12 +986,15 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
+				// This function is called when an object is to be removed
+				// from the informer
 				DeleteFunc: func(obj interface{}) {
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
+						wfc.recordCompletedWorkflow(key)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
@@ -929,6 +1036,11 @@ func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj interfac
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
+	key, err = cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		log.Error("failed to get key for object after locking")
+		return
+	}
 	err = wfc.archiveWorkflowAux(ctx, obj)
 	if err != nil {
 		log.WithField("key", key).WithError(err).Error("failed to archive workflow")

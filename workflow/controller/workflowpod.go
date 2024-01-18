@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -43,6 +45,7 @@ var (
 			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
+	maxEnvVarLen = 131072
 )
 
 func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
@@ -117,10 +120,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if err != nil {
 				return nil, err
 			}
-			if err := json.Unmarshal(a, &c); err != nil {
+
+			mergedContainerByte, err := strategicpatch.StrategicMergePatch(a, b, apiv1.Container{})
+			if err != nil {
 				return nil, err
 			}
-			if err = json.Unmarshal(b, &c); err != nil {
+			c = apiv1.Container{}
+			if err := json.Unmarshal(mergedContainerByte, &c); err != nil {
 				return nil, err
 			}
 		}
@@ -379,7 +385,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 				})
 				if err != nil {
-					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: %w", c.Image, err)
+					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", c.Image, err)
 				}
 				c.Command = x.Entrypoint
 				if c.Args == nil { // check nil rather than length, as zero-length is valid args
@@ -403,6 +409,85 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*x)})
 		}
 		pod.Spec.Containers[i] = c
+	}
+
+	offloadEnvVarTemplate := false
+	for _, c := range pod.Spec.Containers {
+		if c.Name == common.MainContainerName {
+			for _, e := range c.Env {
+				if e.Name == common.EnvVarTemplate {
+					envVarTemplateValue = e.Value
+					if len(envVarTemplateValue) > maxEnvVarLen {
+						offloadEnvVarTemplate = true
+					}
+				}
+			}
+		}
+	}
+
+	if offloadEnvVarTemplate {
+		cmName := pod.Name
+		cm := &apiv1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cmName,
+				Namespace: woc.wf.ObjectMeta.Namespace,
+				Labels: map[string]string{
+					common.LabelKeyWorkflow: woc.wf.ObjectMeta.Name,
+				},
+				Annotations: map[string]string{
+					common.AnnotationKeyNodeName: nodeName,
+					common.AnnotationKeyNodeID:   nodeID,
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+				},
+			},
+			Data: map[string]string{
+				common.EnvVarTemplate: envVarTemplateValue,
+			},
+		}
+		created, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).Create(ctx, cm, metav1.CreateOptions{})
+		if err != nil {
+			return nil, err
+		}
+		woc.log.Infof("Created configmap: %s", created.Name)
+
+		volumeConfig := apiv1.Volume{
+			Name: "argo-env-config",
+			VolumeSource: apiv1.VolumeSource{
+				ConfigMap: &apiv1.ConfigMapVolumeSource{
+					LocalObjectReference: apiv1.LocalObjectReference{
+						Name: cmName,
+					},
+				},
+			},
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, volumeConfig)
+
+		volumeMountConfig := apiv1.VolumeMount{
+			Name:      volumeConfig.Name,
+			MountPath: common.EnvConfigMountPath,
+		}
+		for i, c := range pod.Spec.InitContainers {
+			for j, e := range c.Env {
+				if e.Name == common.EnvVarTemplate {
+					e.Value = common.EnvVarTemplateOffloaded
+					c.Env[j] = e
+				}
+			}
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
+			pod.Spec.InitContainers[i] = c
+		}
+		for i, c := range pod.Spec.Containers {
+			for j, e := range c.Env {
+				if e.Name == common.EnvVarTemplate {
+					e.Value = common.EnvVarTemplateOffloaded
+					c.Env[j] = e
+				}
+			}
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
+			pod.Spec.Containers[i] = c
+		}
 	}
 
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds

@@ -45,7 +45,7 @@ spec:
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
 ```
-  
+
 - A `WorkflowTemplate` is a definition of a `Workflow` that lives in your cluster. Since it is a definition of a `Workflow`
 it also contains `templates`. These `templates` can be referenced from within the `WorkflowTemplate` and from other `Workflows`
 and `WorkflowTemplates` on your cluster. To see how, please see [Referencing Other `WorkflowTemplates`](#referencing-other-workflowtemplates).
@@ -302,7 +302,7 @@ spec:
         value: "from workflow"
   workflowTemplateRef:
     name: workflow-template-submittable
-```  
+```
 
 Here is an example of a referring `WorkflowTemplate` as Workflow and using `WorkflowTemplates`'s `entrypoint` and `Workflow Arguments`
 
@@ -324,13 +324,13 @@ spec:
 You can create some example templates as follows:
 
 ```bash
-argo template create https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/templates.yaml
+argo template create https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/workflow-template/templates.yaml
 ```
 
 Then submit a workflow using one of those templates:
 
 ```bash
-argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/hello-world.yaml
+argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/workflow-template/hello-world.yaml
 ```
 
 > 2.7 and after
