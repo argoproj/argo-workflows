@@ -57,6 +57,10 @@ func TestIsTransientErr(t *testing.T) {
 		assert.False(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{}, "", nil)))
 		assert.True(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{Group: "v1", Resource: "resourcequotas"}, "", nil)))
 	})
+	t.Run("ResourceQuotaTimeoutErr", func(t *testing.T) {
+		assert.False(t, IsTransientErr(apierr.NewInternalError(errors.New(""))))
+		assert.True(t, IsTransientErr(apierr.NewInternalError(errors.New("resource quota evaluation timed out"))))
+	})
 	t.Run("ExceededQuotaErr", func(t *testing.T) {
 		assert.False(t, IsTransientErr(apierr.NewForbidden(schema.GroupResource{}, "", nil)))
 		assert.True(t, IsTransientErr(apierr.NewForbidden(schema.GroupResource{Group: "v1", Resource: "pods"}, "", errors.New("exceeded quota"))))
