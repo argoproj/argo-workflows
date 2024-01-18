@@ -908,6 +908,9 @@ func (s *FunctionalSuite) TestDataTransformation() {
 			}
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
+			for _, value := range status.TaskResultsCompletionStatus {
+				assert.True(t, value)
+			}
 		})
 }
 

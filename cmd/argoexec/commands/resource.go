@@ -39,6 +39,11 @@ func execResource(ctx context.Context, action string) error {
 		wfExecutor.AddError(err)
 		return err
 	}
+
+	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
+	wfExecutor.InitializeOutput(ctx)
+	defer wfExecutor.FinalizeOutput(ctx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+
 	isDelete := action == "delete"
 	if isDelete && (wfExecutor.Template.Resource.SuccessCondition != "" || wfExecutor.Template.Resource.FailureCondition != "" || len(wfExecutor.Template.Outputs.Parameters) > 0) {
 		err = fmt.Errorf("successCondition, failureCondition and outputs are not supported for delete action")
