@@ -401,7 +401,7 @@ jobs:
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
       - run: yarn --cwd ui deduplicate
-      # Depends deduplicate changes for dependabot-reviewer to work
+      # Deduplicate UI deps for dependabot PRs
       - if: github.actor == 'dependabot[bot]'
         run: |
           git config --global user.name 'github-actions[bot]'
