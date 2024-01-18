@@ -28,7 +28,7 @@ func IsTransientErr(err error) bool {
 		return false
 	}
 	err = argoerrs.Cause(err)
-	isTransient := isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err) ||
+	isTransient := isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isResourceQuotaTimeoutErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient(""))
 	if isTransient {
 		log.Infof("Transient error: %v", err)
@@ -55,6 +55,10 @@ func isExceededQuotaErr(err error) bool {
 
 func isResourceQuotaConflictErr(err error) bool {
 	return apierr.IsConflict(err) && strings.Contains(err.Error(), "Operation cannot be fulfilled on resourcequota")
+}
+
+func isResourceQuotaTimeoutErr(err error) bool {
+	return apierr.IsInternalError(err) && strings.Contains(err.Error(), "resource quota evaluation timed out")
 }
 
 func isTransientNetworkErr(err error) bool {
