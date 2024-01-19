@@ -1371,14 +1371,14 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 	t.Run("Nested DAG with Non-group Node Selected, NO restartSuccessful", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   "my-no-restart-nested-dag-2",
+				Name:   "my-nested-dag-3",
 				Labels: map[string]string{},
 			},
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-no-restart-nested-dag-2": {ID: "my-no-restart-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
-					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-no-restart-nested-dag-2", Children: []string{"2", "4"}},
+					"my-nested-dag-3": {ID: "my-nested-dag-3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-3", Children: []string{"2", "4"}},
 					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
 					"3":               {ID: "3", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "2"},
 					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
@@ -1390,7 +1390,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		if assert.NoError(t, err) {
 			// restartSuccessful is false, only retry Node #3 , so Node #4 is fail
 			if assert.Len(t, wf.Status.Nodes, 4) {
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-no-restart-nested-dag-2"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-3"].Phase)
 				// The parent group nodes should be running.
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
