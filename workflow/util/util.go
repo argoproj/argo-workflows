@@ -961,7 +961,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				continue
 			} else {
 				// If restartSuccessful flag is unset and nodeFieldSelector is set, retry the failed node specified by nodeFieldSelector
-				if !restartSuccessful {
+				if !restartSuccessful && len(nodeFieldSelector) > 0 {
 					if _, present := nodeIDsToReset[node.ID]; !present {
 						newWF.Status.Nodes.Set(node.ID, node)
 						// Skip the current iteration and move to the next node
