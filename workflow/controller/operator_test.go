@@ -5339,6 +5339,215 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 }
 
+var workflowStepCachedWithRetryStrategy = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: memoized-workflow-test
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hi-there-world
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    retryStrategy:
+      limit: "10"
+    memoize:
+      key: "{{inputs.parameters.message}}"
+      cache:
+        configMap:
+          name: whalesay-cache
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+var workflowDagCachedWithRetryStrategy = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-workflow-test
+spec:
+  entrypoint: main
+#  podGC:
+#    strategy: OnPodCompletion
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: regular-1
+        template: run
+        arguments:
+          parameters:
+          - name: id
+            value: 1
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: regular-2
+        template: run
+        depends: regular-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 2
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-retries-1
+        template: run-with-retries
+        arguments:
+          parameters:
+          - name: id
+            value: 3
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-retries-2
+        template: run-with-retries
+        depends: with-retries-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 4
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-dag-1
+        template: run-with-dag
+        arguments:
+          parameters:
+          - name: id
+            value: 5
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-dag-2
+        template: run-with-dag
+        depends: with-dag-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 6
+          - name: cache-key
+            value: '{{workflow.name}}'
+
+  - name: run
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+    memoize:
+      key: "regular-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache
+
+  - name: run-with-retries
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+    memoize:
+      key: "retry-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache
+    retryStrategy:
+      limit: '1'
+      retryPolicy: Always
+
+  - name: run-raw
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+
+  - name: run-with-dag
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    dag:
+      tasks:
+      - name: run-raw-step
+        template: run-raw
+        arguments:
+          parameters:
+          - name: id
+            value: '{{inputs.parameters.id}}'
+          - name: cache-key
+            value: '{{inputs.parameters.cache-key}}'
+    memoize:
+      key: "dag-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache`
+
+func TestStepConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowStepCachedWithRetryStrategy)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Contains(t, cm.Labels, common.LabelKeyConfigMapType)
+	assert.Equal(t, common.LabelValueTypeConfigMapCache, cm.Labels[common.LabelKeyConfigMapType])
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestDAGConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowDagCachedWithRetryStrategy)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "memoization-test-cache", metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Contains(t, cm.Labels, common.LabelKeyConfigMapType)
+	assert.Equal(t, common.LabelValueTypeConfigMapCache, cm.Labels[common.LabelKeyConfigMapType])
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
 func TestConfigMapCacheLoadNoLabels(t *testing.T) {
 	sampleConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
