@@ -30,7 +30,7 @@ You can install MinIO into your cluster via Helm.
 First, [install `helm`](https://helm.sh/docs/intro/install/). Then, install MinIO with the below commands:
 
 ```bash
-helm repo add minio https://helm.min.io/ # official minio Helm charts
+helm repo add minio https://charts.min.io/ # official minio Helm charts
 helm repo update
 helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 ```
