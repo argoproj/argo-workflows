@@ -237,3 +237,5 @@ CronWorkflows
 maxFailures
 maxSuccess
 gitops
+ConfigMap
+ConfigMaps
