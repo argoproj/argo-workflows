@@ -32,7 +32,7 @@ spec:
           bucket: my-bucket
           # Specify the bucket region. Note that if you want Argo to figure out this automatically,
           # you can set additional statement policy that allows `s3:GetBucketLocation` action.
-          # For details, check out: https://argoproj.github.io/argo-workflows/configure-artifact-repository/#configuring-aws-s3
+          # For details, check out: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/#configuring-aws-s3
           region: us-west-2
 
           # NOTE: by default, output artifacts are automatically tarred and gzipped before saving.

@@ -11,7 +11,7 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. For more information, please see https://argoproj.github.io/argo-workflows/",
+    "description": "Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. For more information, please see https://argo-workflows.readthedocs.io/en/latest/",
     "title": "Argo Workflows API",
     "version": "VERSION"
   },
@@ -8463,6 +8463,10 @@
           "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
           "type": "integer"
         },
+        "stopStrategy": {
+          "description": "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.StopStrategy"
+        },
         "successfulJobsHistoryLimit": {
           "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
           "type": "integer"
@@ -8491,7 +8495,10 @@
       "required": [
         "active",
         "lastScheduledTime",
-        "conditions"
+        "conditions",
+        "succeeded",
+        "failed",
+        "phase"
       ],
       "properties": {
         "active": {
@@ -8508,9 +8515,21 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Condition"
           }
         },
+        "failed": {
+          "description": "Failed is a counter of how many times a child workflow terminated in failed or errored state",
+          "type": "integer"
+        },
         "lastScheduledTime": {
           "description": "LastScheduleTime is the last time the CronWorkflow was scheduled",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "phase": {
+          "description": "Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running",
+          "type": "string"
+        },
+        "succeeded": {
+          "description": "Succeeded is a counter of how many times the child workflows had success",
+          "type": "integer"
         }
       }
     },
@@ -10340,6 +10359,19 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.StopStrategy": {
+      "description": "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
+      "type": "object",
+      "required": [
+        "condition"
+      ],
+      "properties": {
+        "condition": {
+          "description": "Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Submit": {
       "type": "object",
       "required": [
@@ -11535,8 +11567,8 @@
           "description": "Synchronization stores the status of synchronization locks",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SynchronizationStatus"
         },
-        "taskResultsCompleted": {
-          "description": "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+        "taskResultsCompletionStatus": {
+          "description": "TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.",
           "type": "object",
           "additionalProperties": {
             "type": "boolean"
