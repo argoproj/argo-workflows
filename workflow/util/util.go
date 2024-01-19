@@ -873,7 +873,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	// Get all children of nodes that match filter
-	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
+	nodeIDsToReset, err := getNodeIDsToReset(nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -960,6 +960,15 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
+				// If restartSuccessful flag is unset and nodeFieldSelector is set, retry the failed node specified by nodeFieldSelector
+				if !restartSuccessful {
+					if _, present := nodeIDsToReset[node.ID]; !present {
+						newWF.Status.Nodes.Set(node.ID, node)
+						// Skip the current iteration and move to the next node
+						continue
+					}
+				}
+
 				log.Debugf("Deleted %s node %s since it's not a group node", node.Name, string(node.Phase))
 				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
 				log.Debugf("Deleted pod node: %s", node.Name)
@@ -1047,12 +1056,11 @@ func GetTemplateFromNode(node wfv1.NodeStatus) string {
 	return node.TemplateName
 }
 
-func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
+func getNodeIDsToReset(nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
 	nodeIDsToReset := make(map[string]bool)
-	if !restartSuccessful || len(nodeFieldSelector) == 0 {
+	if len(nodeFieldSelector) == 0 {
 		return nodeIDsToReset, nil
 	}
-
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 	if err != nil {
 		return nil, err
