@@ -302,7 +302,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if os.Getenv("WATCH_CONFIGMAPS") != "false" {
 		go wfc.runConfigMapWatcher(ctx.Done())
 	}
-	
+
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
