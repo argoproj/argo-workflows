@@ -38,6 +38,8 @@ CloudSQL
 ClusterRoleBinding
 ClusterRoles
 Codespaces
+ConfigMap
+ConfigMaps
 Couler
 CronWorkflow
 CronWorkflows
@@ -241,5 +243,3 @@ webhook
 webhooks
 workflow-controller-configmap
 yaml
-ConfigMap
-ConfigMaps
