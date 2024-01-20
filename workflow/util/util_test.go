@@ -1368,7 +1368,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 	})
 
-	t.Run("Nested DAG with Non-group Node Selected, NO restartSuccessful", func(t *testing.T) {
+	t.Run("Retry failed workflow with only nodeFieldSelector", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "my-nested-dag-3",

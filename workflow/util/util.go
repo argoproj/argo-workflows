@@ -960,7 +960,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
-				// If restartSuccessful flag is unset and nodeFieldSelector is set, retry the failed node specified by nodeFieldSelector
+				// If restartSuccessful is unset and nodeFieldSelector is set, only retry the specified failed node
 				if !restartSuccessful && len(nodeFieldSelector) > 0 {
 					if _, present := nodeIDsToReset[node.ID]; !present {
 						newWF.Status.Nodes.Set(node.ID, node)
