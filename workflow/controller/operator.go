@@ -2503,7 +2503,6 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 			node.DisplayName = stepsOrDagSeparator.ReplaceAllString(node.DisplayName, "")
 		}
 	} else {
-		woc.log.Infof("was unable to obtain node for %s, letting display name to be nodeName", boundaryID)
 		node.DisplayName = nodeName
 	}
 
