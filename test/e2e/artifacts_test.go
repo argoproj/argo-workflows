@@ -238,7 +238,7 @@ func (s *ArtifactsSuite) TestDeleteWorkflow() {
 
 	when.WaitForWorkflowDeletion()
 
-	when = when.RemoveFinalizers(false)
+	when.RemoveFinalizers(false)
 }
 
 func (s *ArtifactsSuite) TestArtifactGC() {
