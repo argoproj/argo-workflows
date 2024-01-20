@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
-import {Autocomplete} from 'argo-ui';
+import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
 import {Observable} from 'rxjs';
 import {map, publishReplay, refCount} from 'rxjs/operators';
 

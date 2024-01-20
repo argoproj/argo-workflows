@@ -1,5 +1,6 @@
-import {Checkbox} from 'argo-ui';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
 import React, {useContext, useState} from 'react';
+
 import {Parameter, ResubmitOpts, Workflow} from '../../../models';
 import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
