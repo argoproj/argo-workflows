@@ -63,60 +63,63 @@ func (s *ArtifactsSuite) TestArtifactPassing() {
 }
 
 type expectedArtifact struct {
-	key                   string
-	bucketName            string
-	value 	              string
+	key        string
+	bucketName string
+	value      string
 }
 
 func (s *ArtifactsSuite) TestGlobalArtifactPassing() {
 	for _, tt := range []struct {
-		workflowFile string
+		workflowFile     string
 		expectedArtifact expectedArtifact
 	}{
 		{
 			workflowFile: "@testdata/global-artifact-passing.yaml",
 			expectedArtifact: expectedArtifact{
-				key: "globalArtifact",
+				key:        "globalArtifact",
 				bucketName: "my-bucket-3",
-				value: "01",
+				value:      "01",
 			},
 		},
 		{
 			workflowFile: "@testdata/complex-global-artifact-passing.yaml",
 			expectedArtifact: expectedArtifact{
-				key: "finalTestUpdate",
+				key:        "finalTestUpdate",
 				bucketName: "my-bucket-3",
-				value: "Updated testUpdate",
+				value:      "Updated testUpdate",
 			},
 		},
 	} {
 		then := s.Given().
-		Workflow(tt.workflowFile).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*2).
-		Then().
-		ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			// Check the global artifact value and see if it equals the expected value.
-			c, err := minio.New("localhost:9000", &minio.Options{
-				Creds: credentials.NewStaticV4("admin", "password", ""),
+			Workflow(tt.workflowFile).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*2).
+			Then().
+			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				// Check the global artifact value and see if it equals the expected value.
+				c, err := minio.New("localhost:9000", &minio.Options{
+					Creds: credentials.NewStaticV4("admin", "password", ""),
+				})
+
+				if err != nil {
+					t.Error(err)
+				}
+
+				object, err := c.GetObject(context.Background(), tt.expectedArtifact.bucketName, tt.expectedArtifact.key, minio.GetObjectOptions{})
+				if err != nil {
+					t.Error(err)
+				}
+
+				buf := new(bytes.Buffer)
+				_, err = buf.ReadFrom(object)
+				if err != nil {
+					t.Error(err)
+				}
+				value := buf.String()
+
+				assert.Equal(t, tt.expectedArtifact.value, value)
 			})
-
-			if err != nil {
-				t.Error(err)
-			}
-
-			object, err := c.GetObject(context.Background(), tt.expectedArtifact.bucketName, tt.expectedArtifact.key, minio.GetObjectOptions{})
-			if err != nil {
-				t.Error(err)
-			}
-
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(object)
-			newStr := buf.String()
-
-			assert.Equal(t, tt.expectedArtifact.value, newStr)
-		})
 
 		then.
 			When().
