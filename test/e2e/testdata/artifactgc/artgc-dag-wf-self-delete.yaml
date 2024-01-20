@@ -1,0 +1,99 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artgc-dag-wf-self-delete-
+spec:
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+      workflows.argoproj.io/workflow: "artgc-dag-wf-self-delete"
+  podGC:
+    strategy: OnPodCompletion
+  artifactGC:
+    serviceAccountName: default
+    strategy: OnWorkflowDeletion
+  entrypoint: artgc-dag-wf-self-delete-main
+  serviceAccountName: argo
+  executor:
+    serviceAccountName: default
+  volumeClaimTemplates:
+    - metadata:
+        name: artifacts
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+  templates:
+    - name: artgc-dag-wf-self-delete-main
+      dag:
+        tasks:
+          - name: create-artifact
+            template: artgc-dag-artifact-creator
+          - name: delay-delete-workflow
+            template: artgc-dag-delay-delete
+            dependencies: [create-artifact]
+          - name: delete-workflow
+            template: artgc-dag-workflow-deleter
+            dependencies: [delay-delete-workflow]
+    - name: artgc-dag-delay-delete
+      container:
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
+        args:
+          - |
+            echo "Delaying workflow delete"
+            ls /mnt
+            x=0
+            while [ $x -le 60 ]
+            do
+              sleep 1
+              if [ -f "/mnt/vol/test.txt" ]; then
+                echo "Artifacts found in shared volume"
+                break
+              fi
+              x=$(( $x + 1 ))
+            done
+    - name: artgc-dag-workflow-deleter
+      container:
+        image: argoproj/argocli:latest
+        args: 
+          - delete
+          - -l
+          - workflows.argoproj.io/workflow=artgc-dag-wf-self-delete
+          - --namespace=argo
+          - --loglevel=debug
+    - name: artgc-dag-artifact-creator
+      metadata:
+        labels:
+          template: "artgc-dag-artifact-creator"
+      container:
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
+        args:
+          - |
+            echo 'testing' > /mnt/vol/test.txt
+            echo "Artifact saved to /mnt/vol/test.txt"
+      outputs:
+        artifacts:
+          - name: artifact
+            path: /mnt/vol/test.txt
+            s3:
+              key: artifact
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: OnWorkflowDeletion
