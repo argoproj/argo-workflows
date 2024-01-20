@@ -69,6 +69,9 @@ func (d *dagContext) GetTaskDependencies(taskName string) []string {
 func (d *dagContext) GetTaskFinishedAtTime(taskName string) time.Time {
 	node := d.getTaskNode(taskName)
 	if node == nil {
+		// this is an issue, we
+		// really shouldn't be calling this function
+		// if the node doesn't exist
 		return time.Time{}
 	}
 	if !node.FinishedAt.IsZero() {
@@ -121,7 +124,6 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	nodeID := d.taskNodeID(taskName)
 	node, err := d.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		log.Warnf("was unable to obtain the node for %s, taskName %s", nodeID, taskName)
 		return nil
 	}
 	return node
@@ -494,6 +496,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range taskDependencies {
 				depNode := dagCtx.getTaskNode(depName)
+				// the caller function panics if depNode is nil
+				// this makes sense, we really expect depNode to exist.
+				// If our node exists, so should our parent.
 				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 				for _, outNodeID := range outboundNodeIDs {
 					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
@@ -565,6 +570,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	for _, t := range expandedTasks {
 		taskNodeName := dagCtx.taskNodeName(t.Name)
+		// perfectly safe to be nil here
+		// this is how we initialize a node.
 		node = dagCtx.getTaskNode(t.Name)
 		if node == nil {
 			woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
@@ -624,6 +631,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			node := dagCtx.getTaskNode(t.Name)
+			// this could potentially be an issue
+			// what if node was not present but we expected
+			// it to be. for now we assume this scenario will not happen
 			if node == nil || !node.Fulfilled() {
 				return
 			}
