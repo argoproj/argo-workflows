@@ -873,7 +873,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	// Get all children of nodes that match filter
-	nodeIDsToReset, err := getNodeIDsToReset(nodeFieldSelector, wf.Status.Nodes)
+	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1056,7 +1056,7 @@ func GetTemplateFromNode(node wfv1.NodeStatus) string {
 	return node.TemplateName
 }
 
-func getNodeIDsToReset(nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
+func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
 	nodeIDsToReset := make(map[string]bool)
 	if len(nodeFieldSelector) == 0 {
 		return nodeIDsToReset, nil
@@ -1067,6 +1067,9 @@ func getNodeIDsToReset(nodeFieldSelector string, nodes wfv1.Nodes) (map[string]b
 	} else {
 		for _, node := range nodes {
 			if SelectorMatchesNode(selector, node) {
+				if !restartSuccessful && node.Phase == wfv1.NodeSucceeded {
+					return nil, errors.Errorf(errors.CodeBadRequest, "cannot restart successful node %s , plz add --restart-successful", node.Name)
+				}
 				// traverse all children of the node
 				var queue []string
 				queue = append(queue, node.ID)
