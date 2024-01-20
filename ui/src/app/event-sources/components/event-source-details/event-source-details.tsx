@@ -5,6 +5,7 @@ import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+
 import {EventSource} from '../../../../models';
 import {ID} from '../../../event-flow/components/event-flow-details/id';
 import {uiUrl} from '../../../shared/base';

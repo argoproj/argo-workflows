@@ -1,8 +1,10 @@
-import {NotificationType, Page} from 'argo-ui';
+import type {NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+
 import {ClusterWorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';

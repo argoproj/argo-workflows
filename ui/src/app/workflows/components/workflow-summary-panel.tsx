@@ -1,4 +1,4 @@
-import {Ticker} from 'argo-ui';
+import {Ticker} from 'argo-ui/src/components/ticker';
 import * as React from 'react';
 
 import {labels, NODE_PHASE, Workflow} from '../../../models';

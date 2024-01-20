@@ -1,4 +1,5 @@
-import {Select, Tooltip} from 'argo-ui';
+import {Select} from 'argo-ui/src/components/select/select';
+import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import * as React from 'react';
 import {useState} from 'react';
 

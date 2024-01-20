@@ -1,9 +1,12 @@
-import {Page, SlidingPanel, Tabs} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
+import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import {useContext, useEffect, useState} from 'react';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
+
 import {kubernetes, Workflow} from '../../../../models';
 import {EventSource} from '../../../../models/event-source';
 import {Sensor} from '../../../../models/sensor';

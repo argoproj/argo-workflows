@@ -1,6 +1,6 @@
 import * as React from 'react';
+import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 
-import {Tabs} from 'argo-ui';
 import {Sensor} from '../../../models';
 import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
 import {ObjectEditor} from '../../shared/components/object-editor/object-editor';

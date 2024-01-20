@@ -1,5 +1,6 @@
-import {Select} from 'argo-ui';
+import {Select} from 'argo-ui/src/components/select/select';
 import React, {useMemo, useState} from 'react';
+
 import {Parameter, Template} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
