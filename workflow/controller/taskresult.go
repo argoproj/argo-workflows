@@ -86,11 +86,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			if old.Outputs != nil && newNode.Outputs.ExitCode == nil { // prevent overwriting of ExitCode
 				newNode.Outputs.ExitCode = old.Outputs.ExitCode
 			}
-			// Add outputs to global scope here to ensure that they are reflected in archive.
-			// We check that reconciliation is complete first since we don't want to break workflows that depend on global outputs.
-			if woc.checkReconciliationComplete() {
-				woc.addOutputsToGlobalScope(newNode.Outputs)
-			}
 		}
 		if result.Progress.IsValid() {
 			newNode.Progress = result.Progress

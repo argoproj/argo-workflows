@@ -45,7 +45,7 @@ spec:
             while [ $x -le 60 ]
             do
               sleep 1
-              if [ -f "/mnt/vol/test.txt" ]; then
+              if [ -f "/mnt/vol/test.txt" ] && [ -f "/mnt/vol/globaltest.txt" ]; then
                 echo "Artifact found in shared volume"
                 break
               fi
@@ -73,6 +73,7 @@ spec:
         args:
           - |
             echo 'testing' > /mnt/vol/test.txt
+            echo 'testing global' > /mnt/vol/globaltest.txt
             echo "Artifact saved to /mnt/vol/test.txt"
             echo "Pretending to continue to do work."
             ls /mnt
@@ -82,10 +83,26 @@ spec:
             done
       outputs:
         artifacts:
-          - name: artifact-creator
+          - name: local-artifact
             path: /mnt/vol/test.txt
             s3:
-              key: artifact-creator
+              key: local-artifact
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            archive:
+              none: {}
+          - name: global-artifact
+            globalName: global-artifact-global-name
+            path: /mnt/vol/globaltest.txt
+            s3:
+              key: global-artifact
               bucket: my-bucket-3
               endpoint: minio:9000
               insecure: true
