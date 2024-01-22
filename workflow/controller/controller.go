@@ -530,23 +530,20 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
-		pod, err := pods.Get(ctx, podName, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
 		switch action {
 		case terminateContainers:
-			if pod.Status.Phase == apiv1.PodPending {
+			pod, err := wfc.getPodFromCache(namespace, podName)
+			if err == nil && pod != nil && pod.Status.Phase == apiv1.PodPending {
 				wfc.queuePodForCleanup(namespace, podName, deletePod)
-			} else {
-				terminationGracePeriod := wfc.signalContainers(pod, syscall.SIGTERM)
-				if terminationGracePeriod > 0 {
-					wfc.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
-				}
+			} else if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
+				return err
+			} else if terminationGracePeriod > 0 {
+				wfc.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
 			}
 		case killContainers:
-			wfc.signalContainers(pod, syscall.SIGKILL)
+			if _, err := wfc.signalContainers(namespace, podName, syscall.SIGKILL); err != nil {
+				return err
+			}
 		case labelPodCompleted:
 			// Escape for JSON Pointer https://datatracker.ietf.org/doc/html/rfc6901#section-3
 			escaped := strings.ReplaceAll(common.LabelKeyCompleted, "/", "~1")
@@ -555,11 +552,13 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				Path:      fmt.Sprintf("/metadata/labels/%s", escaped),
 				Value:     "true",
 			}
-			if err := enablePodForDeletion(ctx, pods, pod, patch); err != nil {
+			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
+			if err := wfc.enablePodForDeletion(ctx, pods, namespace, podName, patch); err != nil {
 				return err
 			}
 		case deletePod:
-			if err := enablePodForDeletion(ctx, pods, pod); err != nil {
+			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
+			if err := wfc.enablePodForDeletion(ctx, pods, namespace, podName); err != nil {
 				return err
 			}
 			propagation := metav1.DeletePropagationBackground
@@ -582,8 +581,35 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	return true
 }
 
-func enablePodForDeletion(ctx context.Context, pods typedv1.PodInterface, pod *apiv1.Pod, extraPatches ...PatchOperation) error {
+func (wfc *WorkflowController) getPodFromAPI(ctx context.Context, namespace string, podName string) (*apiv1.Pod, error) {
+	pod, err := wfc.kubeclientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return pod, nil
+}
+
+func (wfc *WorkflowController) getPodFromCache(namespace string, podName string) (*apiv1.Pod, error) {
+	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, nil
+	}
+	pod, ok := obj.(*apiv1.Pod)
+	if !ok {
+		return nil, fmt.Errorf("object is not a pod")
+	}
+	return pod, nil
+}
+
+func (wfc *WorkflowController) enablePodForDeletion(ctx context.Context, pods typedv1.PodInterface, namespace string, podName string, extraPatches ...PatchOperation) error {
 	var patches []PatchOperation
+	pod, err := wfc.getPodFromAPI(ctx, namespace, podName)
+	if err != nil {
+		return err
+	}
 	patch := createFinalizerRemovalPatchIfExists(pod, common.FinalizerPodStatus)
 	if patch != nil {
 		patches = append(patches, *patch)
@@ -620,7 +646,12 @@ func applyPatches(ctx context.Context, pods typedv1.PodInterface, podName string
 	return err
 }
 
-func (wfc *WorkflowController) signalContainers(pod *apiv1.Pod, sig syscall.Signal) time.Duration {
+func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
+	pod, err := wfc.getPodFromCache(namespace, podName)
+	if pod == nil || err != nil {
+		return 0, err
+	}
+
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.State.Running == nil {
 			continue
@@ -629,24 +660,9 @@ func (wfc *WorkflowController) signalContainers(pod *apiv1.Pod, sig syscall.Sign
 		_ = signal.SignalContainer(wfc.restConfig, pod, c.Name, sig)
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
-		return 30 * time.Second
+		return 30 * time.Second, nil
 	}
-	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second
-}
-
-func (wfc *WorkflowController) getPod(namespace string, podName string) (*apiv1.Pod, error) {
-	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, nil
-	}
-	pod, ok := obj.(*apiv1.Pod)
-	if !ok {
-		return nil, fmt.Errorf("object is not a pod")
-	}
-	return pod, nil
+	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second, nil
 }
 
 func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
@@ -1047,7 +1063,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						log.WithError(err).Error("Failed to list pods")
 					}
 					for _, p := range podList.Items {
-						if err := enablePodForDeletion(ctx, pods, &p); err != nil {
+						if err := wfc.enablePodForDeletion(ctx, pods, p.Namespace, p.Name); err != nil {
 							log.WithError(err).Error("Failed to enable pod for deletion")
 						}
 					}
