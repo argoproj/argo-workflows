@@ -1068,7 +1068,7 @@ func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes w
 		for _, node := range nodes {
 			if SelectorMatchesNode(selector, node) {
 				if !restartSuccessful && node.Phase == wfv1.NodeSucceeded {
-					return nil, errors.Errorf(errors.CodeBadRequest, "cannot restart successful node %s , plz add --restart-successful", node.Name)
+					continue
 				}
 				// traverse all children of the node
 				var queue []string
