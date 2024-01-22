@@ -145,7 +145,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                 clearSelectedWorkflows();
             },
             () => setError(null),
-            newWorkflows => setWorkflows(newWorkflows),
+            newWorkflows => setWorkflows([...newWorkflows]),
             err => setError(err),
             sortByYouth
         );
