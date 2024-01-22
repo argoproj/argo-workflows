@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -1397,7 +1396,7 @@ func TestPodSpecPatchPodName(t *testing.T) {
 		{"v2", "hello-world-whalesay-3731220306", helloWorldStepWfWithPatch},
 	}
 	for _, tt := range tests {
-		os.Setenv("POD_NAMES", tt.podNameVersion)
+		t.Setenv("POD_NAMES", tt.podNameVersion)
 		ctx := context.Background()
 		wf := wfv1.MustUnmarshalWorkflow(tt.workflowYaml)
 		woc := newWoc(*wf)
@@ -1790,8 +1789,7 @@ func TestPodExists(t *testing.T) {
 }
 
 func TestPodFinalizerExits(t *testing.T) {
-	_ = os.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "true")
-	defer func() { _ = os.Unsetenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") }()
+	t.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "true")
 	cancel, controller := newController()
 	defer cancel()
 
@@ -1809,8 +1807,7 @@ func TestPodFinalizerExits(t *testing.T) {
 }
 
 func TestPodFinalizerDoesNotExist(t *testing.T) {
-	_ = os.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "false")
-	defer func() { _ = os.Unsetenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") }()
+	t.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "false")
 	cancel, controller := newController()
 	defer cancel()
 
