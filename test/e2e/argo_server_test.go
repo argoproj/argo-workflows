@@ -1075,12 +1075,20 @@ func (s *ArgoServerSuite) TestArtifactServerArchivedStoppedWorkflow() {
 			nodeID = status.Nodes.FindByDisplayName("create-artifact").ID
 		})
 
-	s.Run("GetArtifactByNodeID", func() {
-		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{nodeID}/outputs/artifact-creator", uid, nodeID).
+	s.Run("GetLocalArtifactByNodeID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{nodeID}/outputs/local-artifact", uid, nodeID).
 			Expect().
 			Status(200).
 			Body().
 			Contains("testing")
+	})
+
+	s.Run("GetGlobalArtifactByNodeID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{nodeID}/outputs/global-artifact", uid, nodeID).
+			Expect().
+			Status(200).
+			Body().
+			Contains("testing global")
 	})
 }
 
