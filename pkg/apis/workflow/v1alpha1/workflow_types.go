@@ -1971,7 +1971,7 @@ func (ws *WorkflowStatus) TaskResultsInProgress() bool {
 	return false
 }
 
-func (ws *WorkflowStatus) IsTaskResultInCompleted(name string) bool {
+func (ws *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
 	value, found := ws.TaskResultsCompletionStatus[name]
 	if found {
 		return !value

@@ -307,13 +307,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
-		err = woc.podReconciliation(ctx)
+		err, needReconcileTaskResult := woc.podReconciliation(ctx)
 		if err == nil {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 
-		if err != nil && strings.Contains(err.Error(), "need reconcil workflowtaskresults") {
-			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("need reconcil workflowtaskresults")
+		if needReconcileTaskResult {
+			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Debug("need reconcile workflowtaskresults")
 			woc.requeue()
 			return
 		}
@@ -1096,16 +1096,16 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 // pods and update the node state before continuing the evaluation of the workflow.
 // Records all pods which were observed completed, which will be labeled completed=true
 // after successful persist of the workflow.
-func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
+func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) {
 	podList, err := woc.getAllWorkflowPods()
 	if err != nil {
-		return err
+		return err, false
 	}
 	seenPods := make(map[string]*apiv1.Pod)
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 	podRunningCondition := wfv1.Condition{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse}
-	needReconcilTaskResult := false
+	needReconcileTaskResult := false
 	performAssessment := func(pod *apiv1.Pod) {
 		if pod == nil {
 			return
@@ -1130,9 +1130,9 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 						return
 					}
 					// Check whether the node has output and whether its taskresult is in an incompleted state.
-					if tmpl.HasOutputs() && woc.wf.Status.IsTaskResultInCompleted(node.ID) && woc.wf.Status.IsTaskResultInCompleted(pod.Name) {
-						woc.log.WithFields(log.Fields{"nodeID": newState.ID}).WithError(err).Error("Taskresult of the node not yet completed")
-						needReconcilTaskResult = true
+					if tmpl.HasOutputs() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
+						woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
+						needReconcileTaskResult = true
 						return
 					}
 				}
@@ -1181,8 +1181,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 	// If true, it means there are some nodes which have outputs want to be mark succeed, but the node's taskresults didn't completed.
 	// We should make sure it the taskresults processing is complete as it will be possible to reference it in the next step.
-	if needReconcilTaskResult {
-		return fmt.Errorf("need reconcil workflowtaskresults")
+	if needReconcileTaskResult {
+		return nil, needReconcileTaskResult
 	}
 
 	woc.wf.Status.Conditions.UpsertCondition(podRunningCondition)
@@ -1226,7 +1226,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
 		}
 	}
-	return nil
+	return nil, needReconcileTaskResult
 }
 
 func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
