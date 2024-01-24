@@ -150,6 +150,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 * [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
+* [What is Argo Workflows – Templates, Use Cases and Tutorial](https://spacelift.io/blog/argo-workflows)
 
 ## Project Resources
 
