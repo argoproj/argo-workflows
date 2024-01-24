@@ -209,10 +209,7 @@ func TestStepsOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
-			if woc.wf.Status.TaskResultsCompletionStatus == nil {
-				woc.wf.Status.TaskResultsCompletionStatus = make(map[string]bool)
-			}
-			woc.wf.Status.TaskResultsCompletionStatus[node.ID] = true
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
@@ -287,10 +284,7 @@ func TestDAGOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
-			if woc.wf.Status.TaskResultsCompletionStatus == nil {
-				woc.wf.Status.TaskResultsCompletionStatus = make(map[string]bool)
-			}
-			woc.wf.Status.TaskResultsCompletionStatus[node.ID] = true
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
@@ -391,10 +385,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 				},
 			}
 			woc2.wf.Status.Nodes[idx] = node
-			if woc2.wf.Status.TaskResultsCompletionStatus == nil {
-				woc2.wf.Status.TaskResultsCompletionStatus = make(map[string]bool)
-			}
-			woc2.wf.Status.TaskResultsCompletionStatus[node.ID] = true
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 
@@ -499,10 +490,7 @@ func TestDAGOnExit(t *testing.T) {
 				},
 			}
 			woc2.wf.Status.Nodes[idx] = node
-			if woc2.wf.Status.TaskResultsCompletionStatus == nil {
-				woc2.wf.Status.TaskResultsCompletionStatus = make(map[string]bool)
-			}
-			woc2.wf.Status.TaskResultsCompletionStatus[node.ID] = true
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
