@@ -313,7 +313,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 
 		if needReconcileTaskResult {
-			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Debug("need reconcile workflowtaskresults")
+			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info("need reconcile workflowtaskresults")
 			woc.requeue()
 			return
 		}
@@ -1127,6 +1127,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				if newState.Succeeded() {
 					tmpl, err := woc.GetNodeTemplate(node)
 					if err != nil {
+						woc.log.WithFields(log.Fields{"nodeID": newState.ID}).WithError(err).Error("Failed to get template by node ID")
 						return
 					}
 					// Check whether the node has output and whether its taskresult is in an incompleted state.
@@ -1179,8 +1180,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 
 	wg.Wait()
 
-	// If true, it means there are some nodes which have outputs want to be mark succeed, but the node's taskresults didn't completed.
-	// We should make sure it the taskresults processing is complete as it will be possible to reference it in the next step.
+	// If true, it means there are some nodes which have outputs we wanted to be marked succeed, but the node's taskresults didn't completed.
+	// We should make sure the taskresults processing is complete as it will be possible to reference it in the next step.
 	if needReconcileTaskResult {
 		return nil, needReconcileTaskResult
 	}
