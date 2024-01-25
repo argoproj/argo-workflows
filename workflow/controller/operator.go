@@ -313,7 +313,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 
 		if needReconcileTaskResult {
-			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Debug("need reconcile workflowtaskresults")
+			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Debug("need reconcile workflowtaskresults")
 			woc.requeue()
 			return
 		}
