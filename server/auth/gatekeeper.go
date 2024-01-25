@@ -286,7 +286,12 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *ty
 	if err != nil {
 		return nil, err
 	}
-	_, clients, err := s.clientForAuthorization(authorization, s.restConfig.QPS, s.restConfig.Burst)
+	var clients *servertypes.Clients
+	if s.restConfig != nil {
+		_, clients, err = s.clientForAuthorization(authorization, s.restConfig.QPS, s.restConfig.Burst)
+	} else {
+		_, clients, err = s.clientForAuthorization(authorization, 5, 10)
+	}
 	if err != nil {
 		return nil, err
 	}
