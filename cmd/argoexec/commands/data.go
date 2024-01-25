@@ -12,7 +12,7 @@ func NewDataCommand() *cobra.Command {
 		Use:   "data",
 		Short: "Process data",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx := context.Background()
+			ctx := cmd.Context()
 			err := execData(ctx)
 			if err != nil {
 				log.Fatalf("%+v", err)
@@ -26,9 +26,11 @@ func execData(ctx context.Context) error {
 	wfExecutor := initExecutor()
 	defer wfExecutor.HandleError(ctx)
 
+	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
+	bgCtx := context.Background()
 	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
-	wfExecutor.InitializeOutput(ctx)
-	defer wfExecutor.FinalizeOutput(ctx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+	wfExecutor.InitializeOutput(bgCtx)
+	defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
 
 	err := wfExecutor.Data(ctx)
 	if err != nil {
