@@ -21,7 +21,7 @@ func NewResourceCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			ctx := cmd.Context()
+			ctx := context.Background()
 			err := execResource(ctx, args[0])
 			if err != nil {
 				log.Fatalf("%+v", err)
@@ -34,6 +34,8 @@ func NewResourceCommand() *cobra.Command {
 func execResource(ctx context.Context, action string) error {
 	wfExecutor := initExecutor()
 	defer wfExecutor.HandleError(ctx)
+
+	wfExecutor.InitializeOutput(ctx)
 	defer wfExecutor.FinalizeOutput(ctx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
 	err := wfExecutor.StageFiles()
 	if err != nil {

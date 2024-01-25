@@ -12,7 +12,7 @@ func NewDataCommand() *cobra.Command {
 		Use:   "data",
 		Short: "Process data",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx := cmd.Context()
+			ctx := context.Background()
 			err := execData(ctx)
 			if err != nil {
 				log.Fatalf("%+v", err)
