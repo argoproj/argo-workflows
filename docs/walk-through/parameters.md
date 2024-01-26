@@ -89,3 +89,34 @@ spec:
 ```
 
 In this workflow, both steps `A` and `B` would have the same log-level set to `INFO` and can easily be changed between workflow submissions using the `-p` flag.
+
+If using the UI, the `enum` parameter type may also be used to restrict the parameter to certain values.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-enum-parameters-
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      default: hello
+      enum:
+      - hello
+      - goodbye
+
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message       # parameter declaration
+    container:
+      # run cowsay with that message input parameter as args
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+```
+
+`enum` may also be used to create [Intermediate Parameters](../intermediate-inputs.md).
