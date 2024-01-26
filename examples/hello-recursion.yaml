@@ -1,0 +1,43 @@
+# The following workflow executes a workflow which the number of next level depends on the output of the previous step.
+# A is the first step. After a is executed, b is executed (b generates n b based on the result of a),
+# and after b is executed, c is executed (c generates n c based on the result of each b).
+#           A
+#         /   \
+#      B1      B2
+#    / | \    / |
+#  C1  C2 C3 C4 C5
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-recursive-
+spec:
+  entrypoint: hello-entrypoint
+  templates:
+    - name: hello-entrypoint
+      steps:
+        - - name: hello-a
+            template: hello
+        - - name: hello-b
+            template: hello-hello
+            withSequence:
+              start: "1"
+              end: "{{steps.hello-a.outputs.result}}"
+
+    - name: hello-hello
+      steps:
+        - - name: hello-b
+            template: hello
+        - - name: hello-c
+            template: hello
+            withSequence:
+              start: "1"
+              end: "{{steps.hello-b.outputs.result}}"
+
+    - name: hello
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          import random
+          result = random.randint(0,5)
+          print(result)

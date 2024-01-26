@@ -155,6 +155,8 @@ Workflow is the definition of a workflow resource
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
 
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
+
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
@@ -590,6 +592,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
+
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
@@ -1027,6 +1031,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
+
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
@@ -3003,6 +3009,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
 
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
+
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-success-condition.yaml)
@@ -4673,6 +4681,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
 
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
+
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
@@ -5292,6 +5302,8 @@ A single application container that you want to run within a pod.
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
+
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
@@ -6001,6 +6013,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
+
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
