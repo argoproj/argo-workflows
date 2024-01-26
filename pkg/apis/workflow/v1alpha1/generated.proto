@@ -608,7 +608,7 @@ message DataSource {
 }
 
 message Event {
-  // Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+  // Selector (https://github.com/expr-lang/expr) that we must must match the event. E.g. `payload.message == "test"`
   optional string selector = 1;
 }
 
@@ -1766,7 +1766,7 @@ message ValueFrom {
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
 
-  // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  // Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
   optional string event = 7;
 
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
