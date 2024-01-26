@@ -1140,7 +1140,7 @@ spec:
 	pod, _ := podcs.Get(ctx, "hook-running", metav1.GetOptions{})
 	pod.Status.Phase = apiv1.PodSucceeded
 	updatedPod, _ := podcs.Update(ctx, pod, metav1.UpdateOptions{})
-	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(&pod))
+	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(pod))
 	_ = woc.controller.podInformer.GetStore().Update(updatedPod)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
