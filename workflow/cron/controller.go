@@ -204,26 +204,45 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 }
 
 func (cc *Controller) addCronWorkflowInformerHandler() {
-	cc.cronWfInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-		UpdateFunc: func(old, new interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(new)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-		DeleteFunc: func(obj interface{}) {
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-	})
+	cc.cronWfInformer.Informer().AddEventHandler(
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				un, ok := obj.(*unstructured.Unstructured)
+				if !ok {
+					log.Warnf("Cron Workflow FilterFunc: '%v' is not an unstructured", obj)
+					return false
+				}
+				return !isCompleted(un)
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(obj)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+				UpdateFunc: func(old, new interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(new)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+				DeleteFunc: func(obj interface{}) {
+					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+			},
+		})
+}
+
+func isCompleted(wf v1.Object) bool {
+	completed, ok := wf.GetLabels()[common.LabelKeyCronWorkflowCompleted]
+	if !ok {
+		return false
+	}
+	return completed == "true"
 }
 
 func (cc *Controller) syncAll(ctx context.Context) {

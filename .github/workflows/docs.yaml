@@ -18,8 +18,6 @@ permissions:
 jobs:
   docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # for publishing the docs to GH Pages
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,20 +32,13 @@ jobs:
       # Use the same make target both locally and on CI to make it easier to debug failures.
       - name: Build & Lint docs
         run: make docs
-      # If markdownlint fixes issues, files will be changed. If so, fail the build.
-      - name: Check if markdownlint --fix made changes
+      # If linters auto-fix issues, files will be changed. If so, fail the build.
+      - name: Check if linters made changes
         run: git diff --exit-code
       # Upload the site so reviewers see it.
       - name: Upload Docs Site
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: docs
           path: site
           if-no-files-found: error
-      - name: Publish to GH Pages (when on main)
-        if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./site

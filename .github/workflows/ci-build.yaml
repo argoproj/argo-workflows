@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 50 # assume PRs are less than 50 commits
       - name: Get relevant files changed per group
         id: changed-files
-        uses: tj-actions/changed-files@v40
+        uses: tj-actions/changed-files@v41
         with:
           files_yaml: |
             common: &common
@@ -159,7 +159,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: argoexec
           path: /tmp/argoexec_image.tar
@@ -243,7 +243,7 @@ jobs:
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
       - name: Download argoexec image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: argoexec
           path: /tmp
@@ -401,6 +401,14 @@ jobs:
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
       - run: yarn --cwd ui deduplicate
+      # Deduplicate UI deps for dependabot PRs
+      - if: github.actor == 'dependabot[bot]'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add ui/yarn.lock
+          git commit -s -m 'chore: deduplicate yarn.lock'
+          git push
       - run: git diff --exit-code
       # check to see if it'll start (but not if it'll render)
       - run: yarn --cwd ui start &

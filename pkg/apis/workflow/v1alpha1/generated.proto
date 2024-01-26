@@ -496,6 +496,9 @@ message CronWorkflowSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be run
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
+
+  // StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+  optional StopStrategy stopStrategy = 10;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
@@ -508,6 +511,15 @@ message CronWorkflowStatus {
 
   // Conditions is a list of conditions the CronWorkflow may have
   repeated Condition conditions = 3;
+
+  // Succeeded is a counter of how many times the child workflows had success
+  optional int64 succeeded = 4;
+
+  // Failed is a counter of how many times a child workflow terminated in failed or errored state
+  optional int64 failed = 5;
+
+  // Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running
+  optional string phase = 6;
 }
 
 // DAGTask represents a node in the graph during DAG execution
@@ -1460,6 +1472,13 @@ message Sequence {
   optional string format = 4;
 }
 
+// StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+message StopStrategy {
+  // Condition defines a condition that stops scheduling workflows when evaluates to true. Use the
+  // keywords `failed` or `succeeded` to access the number of failed or successful child workflows.
+  optional string condition = 1;
+}
+
 message Submit {
   // WorkflowTemplateRef the workflow template to submit
   optional WorkflowTemplateRef workflowTemplateRef = 1;
@@ -2118,8 +2137,8 @@ message WorkflowStatus {
   // ArtifactGCStatus maintains the status of Artifact Garbage Collection
   optional ArtGCStatus artifactGCStatus = 19;
 
-  // Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
-  map<string, bool> taskResultsCompleted = 20;
+  // TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.
+  map<string, bool> taskResultsCompletionStatus = 20;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

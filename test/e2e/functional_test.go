@@ -898,7 +898,7 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		Workflow("@testdata/data-transformation.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(90 * time.Second).
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
@@ -908,6 +908,9 @@ func (s *FunctionalSuite) TestDataTransformation() {
 			}
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
+			for _, value := range status.TaskResultsCompletionStatus {
+				assert.True(t, value)
+			}
 		})
 }
 
