@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/file"
-	"github.com/antonmedv/expr/parser/lexer"
 	"github.com/doublerebel/bellows"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/file"
+	"github.com/expr-lang/expr/parser/lexer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -41,7 +41,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 
 	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
 	// when `workflow.status` and `workflow.failures` don't exist in the env.
-	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/antonmedv/expr/issues/330
+	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
 	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
 	// when the exit handlers complete.
 	if ((hasWorkflowStatus(unmarshalledExpression) && !hasVarInEnv(env, "workflow.status")) ||

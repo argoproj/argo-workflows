@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antonmedv/expr"
+	"github.com/expr-lang/expr"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"

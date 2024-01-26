@@ -3,7 +3,7 @@ package template
 import (
 	"strings"
 
-	"github.com/antonmedv/expr"
+	"github.com/expr-lang/expr"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 )
