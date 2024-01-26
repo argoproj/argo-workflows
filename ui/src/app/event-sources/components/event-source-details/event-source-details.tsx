@@ -1,8 +1,11 @@
-import {NotificationType, Page} from 'argo-ui';
-import {SlidingPanel, Tabs} from 'argo-ui/src/index';
+import type {NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
+import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+
 import {EventSource} from '../../../../models';
 import {ID} from '../../../event-flow/components/event-flow-details/id';
 import {uiUrl} from '../../../shared/base';

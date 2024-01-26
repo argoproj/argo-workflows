@@ -1,10 +1,11 @@
-import {Page} from 'argo-ui/src/index';
+import {Page} from 'argo-ui/src/components/page/page';
 import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Bar, ChartData} from 'react-chartjs-2';
 import {RouteComponentProps} from 'react-router-dom';
+
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {InfoIcon} from '../../shared/components/fa-icons';

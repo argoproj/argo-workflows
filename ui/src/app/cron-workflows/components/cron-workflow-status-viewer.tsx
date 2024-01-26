@@ -1,5 +1,6 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import * as React from 'react';
+
 import {CronWorkflowSpec, CronWorkflowStatus} from '../../../models';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';

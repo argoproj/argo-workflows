@@ -1,7 +1,8 @@
-import {Page} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
+
 import {uiUrl} from '../../../shared/base';
 import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';

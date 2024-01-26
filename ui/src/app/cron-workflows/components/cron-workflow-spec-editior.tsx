@@ -1,5 +1,7 @@
-import {Checkbox, Select} from 'argo-ui';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
+import {Select} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
+
 import {ConcurrencyPolicy, CronWorkflowSpec} from '../../../models';
 import {NumberInput} from '../../shared/components/number-input';
 import {TextInput} from '../../shared/components/text-input';

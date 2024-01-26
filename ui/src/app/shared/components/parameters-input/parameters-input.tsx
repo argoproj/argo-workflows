@@ -1,5 +1,7 @@
-import {Select, Tooltip} from 'argo-ui';
+import {Select} from 'argo-ui/src/components/select/select';
+import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import React from 'react';
+
 import {Parameter} from '../../../../models';
 import {Utils} from '../../utils';
 

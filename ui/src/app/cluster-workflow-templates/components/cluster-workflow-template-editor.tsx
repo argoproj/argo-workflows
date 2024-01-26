@@ -1,6 +1,6 @@
 import * as React from 'react';
+import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 
-import {Tabs} from 'argo-ui';
 import {WorkflowTemplate} from '../../../models';
 import {LabelsAndAnnotationsEditor} from '../../shared/components/editors/labels-and-annotations-editor';
 import {MetadataEditor} from '../../shared/components/editors/metadata-editor';

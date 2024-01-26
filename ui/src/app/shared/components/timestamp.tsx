@@ -1,5 +1,6 @@
-import {Ticker} from 'argo-ui';
+import {Ticker} from 'argo-ui/src/components/ticker';
 import * as React from 'react';
+
 import {ago} from '../duration';
 
 export const Timestamp = ({date}: {date: Date | string | number}) => {

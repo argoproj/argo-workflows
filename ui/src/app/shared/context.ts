@@ -1,4 +1,4 @@
-import {AppContext as ArgoAppContext, NavigationApi, NotificationsApi, PopupApi} from 'argo-ui';
+import type {AppContext as ArgoAppContext, NavigationApi, NotificationsApi, PopupApi} from 'argo-ui';
 import {History} from 'history';
 import * as React from 'react';
 

@@ -1,4 +1,5 @@
-import {DataLoader, Select, SelectOption} from 'argo-ui';
+import {DataLoader} from 'argo-ui/src/components/data-loader';
+import {Select, SelectOption} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
 import {useState} from 'react';
 
