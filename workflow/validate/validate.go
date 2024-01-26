@@ -862,15 +862,14 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 			}
 		}
-		// check for valid valueFrom sub-parameters
 		if param.ValueFrom != nil {
-			// INFO: default needs to be accompanied by with ConfigMapKeyRef.
-			// TODO: check if ValueFrom.Expression is valid!
-			if param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.Expression == "" {
+			// check for valid valueFrom sub-parameters
+			// INFO: default needs to be accompanied by ConfigMapKeyRef.
+			if param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.Event == "" {
 				return errors.Errorf(errors.CodeBadRequest, "only default, configMapKeyRef and supplied allowed for valueFrom '%s'", param.Name)
 			}
 			// check for invalid valueFrom sub-parameters
-			if param.ValueFrom.Path != "" || param.ValueFrom.JSONPath != "" || param.ValueFrom.Parameter != "" || param.ValueFrom.Supplied != nil {
+			if param.ValueFrom.Path != "" || param.ValueFrom.JSONPath != "" || param.ValueFrom.Parameter != "" || param.ValueFrom.Supplied != nil || param.ValueFrom.Expression != "" {
 				return errors.Errorf(errors.CodeBadRequest, "only default, configMapKeyRef and supplied allowed for valueFrom '%s'", param.Name)
 			}
 		}
