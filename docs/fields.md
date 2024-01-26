@@ -2884,6 +2884,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
 
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
+
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-param-result.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/map-reduce.yaml)
@@ -3913,6 +3915,8 @@ DataSource sources external data into a data template
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
 
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
+
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-param-result.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/map-reduce.yaml)
@@ -4076,6 +4080,8 @@ Sequence expands a workflow step into numeric range
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
+
+- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
 
@@ -5302,8 +5308,6 @@ A single application container that you want to run within a pod.
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
-
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
