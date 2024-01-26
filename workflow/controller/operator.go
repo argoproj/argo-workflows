@@ -1124,18 +1124,11 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err == nil {
 			if newState := woc.assessNodeStatus(pod, node); newState != nil {
-				if newState.Succeeded() {
-					tmpl, err := woc.GetNodeTemplate(node)
-					if err != nil {
-						woc.log.WithFields(log.Fields{"nodeID": newState.ID}).WithError(err).Error("Failed to get template by node ID")
-						return
-					}
-					// Check whether the node has output and whether its taskresult is in an incompleted state.
-					if tmpl.HasOutputs() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
-						woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
-						needReconcileTaskResult = true
-						return
-					}
+				// Check whether its taskresult is in an incompleted state.
+				if newState.Succeeded() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
+					woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
+					needReconcileTaskResult = true
+					return
 				}
 				woc.addOutputsToGlobalScope(newState.Outputs)
 				if newState.MemoizationStatus != nil {
