@@ -343,8 +343,6 @@ Workflow is the definition of a workflow resource
 
 - [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
-- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
-
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
@@ -1914,8 +1912,6 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
-- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
-
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
 
@@ -2032,8 +2028,6 @@ Artifact indicates an artifact to place at a specified path
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/output-artifact-s3.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
-
-- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
@@ -2783,8 +2777,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
-- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
-
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
@@ -2913,6 +2905,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
@@ -3104,6 +3098,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -3941,6 +3937,8 @@ DataSource sources external data into a data template
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
 
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
 
@@ -4084,6 +4082,8 @@ Sequence expands a workflow step into numeric range
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
@@ -5460,8 +5460,6 @@ A single application container that you want to run within a pod.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
-
-- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
