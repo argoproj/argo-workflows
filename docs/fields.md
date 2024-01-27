@@ -155,8 +155,6 @@ Workflow is the definition of a workflow resource
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
 
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
-
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
@@ -342,6 +340,10 @@ Workflow is the definition of a workflow resource
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -593,8 +595,6 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
 
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
-
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
@@ -766,6 +766,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -1032,8 +1034,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
 
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
-
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
@@ -1205,6 +1205,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -1912,6 +1914,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
 
@@ -2028,6 +2032,8 @@ Artifact indicates an artifact to place at a specified path
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/output-artifact-s3.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
@@ -2777,6 +2783,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
@@ -2883,8 +2891,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
-
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-param-result.yaml)
 
@@ -3010,8 +3016,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
-
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
@@ -3915,8 +3919,6 @@ DataSource sources external data into a data template
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
 
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
-
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-param-result.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/map-reduce.yaml)
@@ -4080,8 +4082,6 @@ Sequence expands a workflow step into numeric range
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
-
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
 
@@ -4687,8 +4687,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
 
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
-
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
@@ -4860,6 +4858,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -5461,6 +5461,8 @@ A single application container that you want to run within a pod.
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
@@ -6018,8 +6020,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
 
-- [`hello-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-recursion.yaml)
-
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
@@ -6191,6 +6191,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-recursion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-recursion.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
