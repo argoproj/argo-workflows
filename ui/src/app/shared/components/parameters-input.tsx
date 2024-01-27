@@ -10,11 +10,12 @@ interface ParametersInputProps {
 }
 
 export function ParametersInput(props: ParametersInputProps) {
-    function onParameterChange(parameter: Parameter, value: string) {
+    function onParameterChange(parameter: Parameter, value: string | string[]) {
         const newParameters: Parameter[] = props.parameters.map(p => ({
             name: p.name,
             value: p.name === parameter.name ? value : Utils.getValueFromParameter(p),
-            enum: p.enum
+            enum: p.enum,
+            multi: p.multi
         }));
         props.onChange(newParameters);
     }
@@ -28,7 +29,14 @@ export function ParametersInput(props: ParametersInputProps) {
                     value,
                     title: value
                 }))}
+                multiSelect={!!parameter.multi}
                 onChange={e => onParameterChange(parameter, e.value)}
+                onMultiChange={e =>
+                    onParameterChange(
+                        parameter,
+                        e.map(v => v.value)
+                    )
+                }
             />
         );
     }

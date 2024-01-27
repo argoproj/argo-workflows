@@ -190,7 +190,7 @@ export interface Parameter {
     /**
      * Default is the default value to use for an input parameter if a value was not supplied
      */
-    default?: string;
+    default?: string | string[];
     /**
      * Name is the parameter name
      */
@@ -198,7 +198,7 @@ export interface Parameter {
     /**
      * Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values
      */
-    value?: string;
+    value?: string | string[];
     /**
      * ValueFrom is the source for the output parameter's value
      */
@@ -211,6 +211,10 @@ export interface Parameter {
      * Description is the parameter description
      */
     description?: string;
+    /**
+     * Multi is a boolean which decides whether value should be interpreted as a multi-select, or as a single-select
+     */
+    multi?: boolean;
 }
 
 /**
