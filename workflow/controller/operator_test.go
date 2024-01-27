@@ -9953,9 +9953,9 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
-	err, needReconcile := woc.podReconciliation(ctx)
+	err, podReconciliationCompleted := woc.podReconciliation(ctx)
 	assert.Nil(t, err)
-	assert.True(t, needReconcile)
+	assert.True(t, podReconciliationCompleted)
 
 	for idx, node := range woc.wf.Status.Nodes {
 		if strings.Contains(node.Name, ".hello1") {
@@ -9971,9 +9971,9 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
-	err, needReconcile = woc.podReconciliation(ctx)
+	err, podReconciliationCompleted = woc.podReconciliation(ctx)
 	assert.Nil(t, err)
-	assert.False(t, needReconcile)
+	assert.False(t, podReconciliationCompleted)
 	woc.operate(ctx)
 
 	// complete the second pod

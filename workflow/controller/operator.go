@@ -307,12 +307,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
-		err, needReconcileTaskResult := woc.podReconciliation(ctx)
+		err, podReconciliationCompleted := woc.podReconciliation(ctx)
 		if err == nil {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 
-		if needReconcileTaskResult {
+		if podReconciliationCompleted {
 			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info("need reconcile workflowtaskresults")
 			woc.requeue()
 			return
@@ -1105,7 +1105,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 	podRunningCondition := wfv1.Condition{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionFalse}
-	needReconcileTaskResult := false
+	podReconciliationCompleted := false
 	performAssessment := func(pod *apiv1.Pod) {
 		if pod == nil {
 			return
@@ -1127,7 +1127,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				// Check whether its taskresult is in an incompleted state.
 				if newState.Succeeded() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
 					woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
-					needReconcileTaskResult = true
+					podReconciliationCompleted = true
 					return
 				}
 				woc.addOutputsToGlobalScope(newState.Outputs)
@@ -1175,8 +1175,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 
 	// If true, it means there are some nodes which have outputs we wanted to be marked succeed, but the node's taskresults didn't completed.
 	// We should make sure the taskresults processing is complete as it will be possible to reference it in the next step.
-	if needReconcileTaskResult {
-		return nil, needReconcileTaskResult
+	if podReconciliationCompleted {
+		return nil, podReconciliationCompleted
 	}
 
 	woc.wf.Status.Conditions.UpsertCondition(podRunningCondition)
@@ -1220,7 +1220,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
 		}
 	}
-	return nil, needReconcileTaskResult
+	return nil, podReconciliationCompleted
 }
 
 func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
