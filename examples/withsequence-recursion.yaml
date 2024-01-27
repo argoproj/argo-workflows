@@ -1,6 +1,6 @@
-# The following workflow executes a workflow which the number of next level depends on the output of the previous step.
-# A is the first step. After a is executed, b is executed (b generates n b based on the result of a),
-# and after b is executed, c is executed (c generates n c based on the result of each b).
+# This example shows how to use recursion in a Workflow.
+# A is the first step. A's output determines how many times B is executed.
+# B's output then determines how many times C is executed.
 #           A
 #         /   \
 #      B1      B2
@@ -9,7 +9,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-recursive-
+  generateName: withsequence-recursion-
 spec:
   entrypoint: hello-entrypoint
   templates:
