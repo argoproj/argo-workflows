@@ -1,8 +1,7 @@
 import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
-import {useMemo, useState} from 'react';
+import {useState} from 'react';
 import {Link} from 'react-router-dom';
-import type {Plugin} from 'unified';
 
 import * as models from '../../../../models';
 import {isArchivedWorkflow, Workflow} from '../../../../models';
