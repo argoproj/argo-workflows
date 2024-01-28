@@ -1176,8 +1176,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 
 	// If true, it means there are some nodes which have outputs we wanted to be marked succeed, but the node's taskresults didn't completed.
 	// We should make sure the taskresults processing is complete as it will be possible to reference it in the next step.
-	if podReconciliationCompleted {
-		return nil, podReconciliationCompleted
+	if taskResultIncomplete {
+		return nil, false
 	}
 
 	woc.wf.Status.Conditions.UpsertCondition(podRunningCondition)
