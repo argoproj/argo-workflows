@@ -1096,6 +1096,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 // pods and update the node state before continuing the evaluation of the workflow.
 // Records all pods which were observed completed, which will be labeled completed=true
 // after successful persist of the workflow.
+// returns whether pod reconciliation successfully completed
 func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) {
 	podList, err := woc.getAllWorkflowPods()
 	if err != nil {
