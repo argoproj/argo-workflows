@@ -1128,7 +1128,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				// Check whether its taskresult is in an incompleted state.
 				if newState.Succeeded() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
 					woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
-					podReconciliationCompleted = true
+					taskResultIncomplete = true
 					return
 				}
 				woc.addOutputsToGlobalScope(newState.Outputs)
