@@ -312,8 +312,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 
-		if podReconciliationCompleted {
-			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info("need reconcile workflowtaskresults")
+		if !podReconciliationCompleted {
+			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info("pod reconciliation didn't complete, will retry")
 			woc.requeue()
 			return
 		}
