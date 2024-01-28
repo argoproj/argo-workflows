@@ -510,6 +510,10 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			if err != nil {
 				panic(err)
 			}
+			if phase == apiv1.PodSucceeded {
+				nodeID := woc.nodeID(&pod)
+				woc.wf.Status.MarkTaskResultComplete(nodeID)
+			}
 		}
 	}
 }
