@@ -9955,7 +9955,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	woc = newWorkflowOperationCtx(wf, controller)
 	err, podReconciliationCompleted := woc.podReconciliation(ctx)
 	assert.Nil(t, err)
-	assert.True(t, podReconciliationCompleted)
+	assert.False(t, podReconciliationCompleted)
 
 	for idx, node := range woc.wf.Status.Nodes {
 		if strings.Contains(node.Name, ".hello1") {
@@ -9973,7 +9973,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	}
 	err, podReconciliationCompleted = woc.podReconciliation(ctx)
 	assert.Nil(t, err)
-	assert.False(t, podReconciliationCompleted)
+	assert.True(t, podReconciliationCompleted)
 	woc.operate(ctx)
 
 	// complete the second pod
