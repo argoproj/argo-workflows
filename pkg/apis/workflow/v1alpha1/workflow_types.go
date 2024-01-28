@@ -1944,7 +1944,7 @@ type WorkflowStatus struct {
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 
-	// TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.
+	// TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
 }
 
@@ -1969,6 +1969,14 @@ func (ws *WorkflowStatus) TaskResultsInProgress() bool {
 		}
 	}
 	return false
+}
+
+func (ws *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
+	value, found := ws.TaskResultsCompletionStatus[name]
+	if found {
+		return !value
+	}
+	return true
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

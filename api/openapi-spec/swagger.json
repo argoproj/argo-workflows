@@ -11568,7 +11568,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SynchronizationStatus"
         },
         "taskResultsCompletionStatus": {
-          "description": "TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.",
+          "description": "TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.",
           "type": "object",
           "additionalProperties": {
             "type": "boolean"

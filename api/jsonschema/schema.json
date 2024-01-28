@@ -7648,7 +7648,7 @@
           "additionalProperties": {
             "type": "boolean"
           },
-          "description": "TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.",
+          "description": "TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.",
           "type": "object"
         }
       },
