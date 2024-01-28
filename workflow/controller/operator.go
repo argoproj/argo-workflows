@@ -312,16 +312,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 
-		if !podReconciliationCompleted {
-			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info("pod reconciliation didn't complete, will retry")
-			woc.requeue()
-			return
-		}
-
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow timed out")
 			// TODO: we need to re-add to the workqueue, but should happen in caller
+			return
+		}
+
+		if !podReconciliationCompleted {
+			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info("pod reconciliation didn't complete, will retry")
+			woc.requeue()
 			return
 		}
 	}
