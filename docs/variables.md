@@ -49,7 +49,7 @@ args: [ "{{ inputs.parameters.message }}" ]
 
 ### Expression
 
-> Since v3.1
+> v3.1 and after
 
 The tag is substituted with the result of evaluating the tag as an expression.
 
@@ -170,7 +170,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 
 ### HTTP Templates
 
-> Since v3.3
+> v3.3 and after
 
 Only available for `successCondition`
 
