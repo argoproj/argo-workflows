@@ -1221,7 +1221,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
 		}
 	}
-	return nil, podReconciliationCompleted
+	return nil, !taskResultIncomplete
 }
 
 func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
