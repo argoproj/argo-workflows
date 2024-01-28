@@ -55,7 +55,7 @@ type Gatekeeper interface {
 	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
 
-type ClientForAuthorization func(authorization string, qps float32, burst int) (*rest.Config, *servertypes.Clients, error)
+type ClientForAuthorization func(authorization string, config *rest.Config) (*rest.Config, *servertypes.Clients, error)
 
 type gatekeeper struct {
 	Modes Modes
@@ -194,7 +194,7 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 	}
 	switch mode {
 	case Client:
-		restConfig, clients, err := s.clientForAuthorization(authorization, s.restConfig.QPS, s.restConfig.Burst)
+		restConfig, clients, err := s.clientForAuthorization(authorization, s.restConfig)
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
@@ -286,7 +286,7 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *ty
 	if err != nil {
 		return nil, err
 	}
-	_, clients, err := s.clientForAuthorization(authorization, s.restConfig.QPS, s.restConfig.Burst)
+	_, clients, err := s.clientForAuthorization(authorization, s.restConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -337,13 +337,13 @@ func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {
 	return fields
 }
 
-func DefaultClientForAuthorization(authorization string, qps float32, burst int) (*rest.Config, *servertypes.Clients, error) {
+func DefaultClientForAuthorization(authorization string, config *rest.Config) (*rest.Config, *servertypes.Clients, error) {
 	restConfig, err := kubeconfig.GetRestConfig(authorization)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create REST config: %w", err)
 	}
-	restConfig.QPS = qps
-	restConfig.Burst = burst
+	restConfig.QPS = config.QPS
+	restConfig.Burst = config.Burst
 	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)
