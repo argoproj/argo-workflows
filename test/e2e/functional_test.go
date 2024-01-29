@@ -43,6 +43,15 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).
+		// patch the pod to remove the finalizer
+		Exec("kubectl", []string{"-n", "argo", "patch", "pod", func() string {
+			podList, err := s.KubeClient.CoreV1().Pods("argo").List(context.Background(), metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+			if err != nil {
+				panic(err)
+			}
+			return podList.Items[0].Name
+		}(), "-p", `{"metadata":{"finalizers":[]}}`, "--type", "merge"}, fixtures.OutputRegexp(`pod/.* patched`)).
+		Wait(time.Second).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
 		Wait(time.Duration(3*fixtures.EnvFactor)*time.Second). // allow 3s for reconciliation, we'll create a new pod
 		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
