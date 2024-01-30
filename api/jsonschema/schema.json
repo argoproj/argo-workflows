@@ -4738,7 +4738,7 @@
     "io.argoproj.workflow.v1alpha1.Event": {
       "properties": {
         "selector": {
-          "description": "Selector (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
+          "description": "Selector (https://github.com/expr-lang/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
           "type": "string"
         }
       },
@@ -6964,7 +6964,7 @@
           "type": "string"
         },
         "event": {
-          "description": "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
+          "description": "Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
           "type": "string"
         },
         "expression": {

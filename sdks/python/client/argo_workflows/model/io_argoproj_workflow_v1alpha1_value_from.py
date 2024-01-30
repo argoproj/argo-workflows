@@ -158,7 +158,7 @@ class IoArgoprojWorkflowV1alpha1ValueFrom(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             config_map_key_ref (ConfigMapKeySelector): [optional]  # noqa: E501
             default (str): Default specifies a value to be used if retrieving the value from the specified source fails. [optional]  # noqa: E501
-            event (str): Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`. [optional]  # noqa: E501
+            event (str): Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`. [optional]  # noqa: E501
             expression (str): Expression, if defined, is evaluated to specify the value for the parameter. [optional]  # noqa: E501
             jq_filter (str): JQFilter expression against the resource object in resource templates. [optional]  # noqa: E501
             json_path (str): JSONPath of a resource to retrieve an output parameter value from in resource templates. [optional]  # noqa: E501
@@ -248,7 +248,7 @@ class IoArgoprojWorkflowV1alpha1ValueFrom(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             config_map_key_ref (ConfigMapKeySelector): [optional]  # noqa: E501
             default (str): Default specifies a value to be used if retrieving the value from the specified source fails. [optional]  # noqa: E501
-            event (str): Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`. [optional]  # noqa: E501
+            event (str): Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`. [optional]  # noqa: E501
             expression (str): Expression, if defined, is evaluated to specify the value for the parameter. [optional]  # noqa: E501
             jq_filter (str): JQFilter expression against the resource object in resource templates. [optional]  # noqa: E501
             json_path (str): JSONPath of a resource to retrieve an output parameter value from in resource templates. [optional]  # noqa: E501
