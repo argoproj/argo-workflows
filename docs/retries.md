@@ -86,7 +86,7 @@ spec:
 > v3.2 and after
 
 You can also use `expression` to control retries. The `expression` field
-accepts an [expr](https://github.com/antonmedv/expr) expression and has
+accepts an [expr](https://github.com/expr-lang/expr) expression and has
 access to the following variables:
 
 - `lastRetry.exitCode`: The exit code of the last retry, or "-1" if not available
