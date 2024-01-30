@@ -564,7 +564,11 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 
 		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
 		for n, f := range md.LabelsFrom {
-			r, err := expr.Eval(f.Expression, env)
+			program, err := expr.Compile(f.Expression, expr.Env(env))
+			if err != nil {
+				return fmt.Errorf("Failed to compile function for expression %q: %w", f.Expression, err)
+			}
+			r, err := expr.Run(program, env)
 			if err != nil {
 				return fmt.Errorf("failed to evaluate label %q expression %q: %w", n, f.Expression, err)
 			}

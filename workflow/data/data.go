@@ -56,5 +56,10 @@ func processTransformation(data interface{}, transformation *wfv1.Transformation
 }
 
 func processExpression(expression string, data interface{}) (interface{}, error) {
-	return expr.Eval(expression, map[string]interface{}{"data": data})
+	env := map[string]interface{}{"data": data}
+	program, err := expr.Compile(expression, expr.Env(env))
+	if err != nil {
+		return nil, err
+	}
+	return expr.Run(program, env)
 }

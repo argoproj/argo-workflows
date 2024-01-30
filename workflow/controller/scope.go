@@ -77,7 +77,11 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
 	}
 	if p.Expression != "" {
 		env := env.GetFuncMap(s.scope)
-		return expr.Eval(p.Expression, env)
+		program, err := expr.Compile(p.Expression, expr.Env(env))
+		if err != nil {
+			return nil, err
+		}
+		return expr.Run(program, env)
 	} else {
 		return s.resolveVar(p.Parameter)
 	}
@@ -93,7 +97,12 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 
 	if art.FromExpression != "" {
 		env := env.GetFuncMap(s.scope)
-		val, err = expr.Eval(art.FromExpression, env)
+		program, err := expr.Compile(art.FromExpression, expr.Env(env))
+		if err != nil {
+			return nil, err
+		}
+		val, err = expr.Run(program, env)
+
 	} else {
 		val, err = s.resolveVar(art.From)
 	}

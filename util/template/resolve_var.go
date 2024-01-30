@@ -13,7 +13,11 @@ func ResolveVar(s string, m map[string]interface{}) (interface{}, error) {
 	kind, expression := parseTag(tag)
 	switch kind {
 	case kindExpression:
-		result, err := expr.Eval(expression, m)
+		program, err := expr.Compile(expression, expr.Env(m))
+		if err != nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "Unable to compile: %q", expression)
+		}
+		result, err := expr.Run(program, m)
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "Invalid expression: %q", expression)
 		}
