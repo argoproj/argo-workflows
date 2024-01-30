@@ -8,16 +8,16 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/Masterminds/sprig/v3 v3.2.3
-	github.com/TwiN/go-color v1.4.0
-	github.com/aliyun/aliyun-oss-go-sdk v2.2.7+incompatible
-	github.com/antonmedv/expr v1.12.6
+	github.com/TwiN/go-color v1.4.1
+	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/argoproj/argo-events v1.7.3
 	github.com/argoproj/pkg v0.13.6
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
-	github.com/evanphx/json-patch v5.6.0+incompatible
+	github.com/evanphx/json-patch v5.8.0+incompatible
+	github.com/expr-lang/expr v1.16.0
 	github.com/gavv/httpexpect/v2 v2.10.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/go-jose/go-jose/v3 v3.0.1
