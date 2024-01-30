@@ -53,12 +53,12 @@ spec:
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-			return strings.Contains(status.name, ".split")
+			return strings.Contains(status.Name, ".split")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-			return strings.Contains(status.name, ".map")
+			return strings.Contains(status.Name, ".map")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})
