@@ -101,6 +101,17 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
     useEffect(() => {
         setError(null);
         setLoaded(false);
+
+        if (archived) {
+            // replace nodeId with a nodeId which is associated with the podName, so we can also switch bewteen archived logs if a differnet node was selected.
+            nodeId = podNamesToNodeIDs.get(podName);
+
+            // if a podName is provided but no valid nodeId is found, clear the podName. So the selector is automatically set to 'All'
+            if (podName && !nodeId) {
+                setPodName('');
+            }
+        }
+
         const source = services.workflows.getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
             // extract message from LogEntry
             map(e => {
