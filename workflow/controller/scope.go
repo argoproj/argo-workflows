@@ -102,6 +102,9 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 			return nil, err
 		}
 		val, err = expr.Run(program, env)
+		if err != nil {
+			return nil, err
+		}
 
 	} else {
 		val, err = s.resolveVar(art.From)
