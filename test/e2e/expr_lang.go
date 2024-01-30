@@ -7,12 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 type ExprSuite struct {
