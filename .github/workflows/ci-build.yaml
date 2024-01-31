@@ -180,12 +180,12 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
-            e2e-parallel: 10
+            e2e-parallel: 5
           - test: test-corefunctional
             profile: minimal
           - test: test-functional
             profile: minimal
-            e2e-parallel: 10
+            e2e-parallel: 5
           - test: test-api
             profile: mysql
           - test: test-cli
@@ -203,14 +203,14 @@ jobs:
           - test: test-executor
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
-            e2e-parallel: 10
+            e2e-parallel: 5
           - test: test-corefunctional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
           - test: test-functional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
-            e2e-parallel: 10
+            e2e-parallel: 5
     steps:
       - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
