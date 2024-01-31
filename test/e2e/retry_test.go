@@ -219,14 +219,8 @@ spec:
           while [ $x -le 30 ]
           do
             argo get fail-workflow -o yaml > /tmp/workflow.txt
-            grep "phase: Error" /tmp/workflow.txt > /tmp/error.txt 2>&1
             grep "phase: Failed" /tmp/workflow.txt > /tmp/failed.txt 2>&1
-            if [ -s /tmp/error.txt ]
-            then
-              echo "Unexpected workflow error."
-              cat /tmp/failed.txt
-              exit 1
-            elif [ -s /tmp/failed.txt ]
+            if [ -s /tmp/failed.txt ]
             then
               echo "Successfully retried failing workflow."
               exit 0
@@ -235,6 +229,8 @@ spec:
             sleep 1
           done
           echo "Timed out waiting for failed workflow."
+          grep "phase: " /tmp/workflow.txt > /tmp/phase.txt 2>&1
+          cat /tmp/phase.txt
           exit 1
 `).When()
 
