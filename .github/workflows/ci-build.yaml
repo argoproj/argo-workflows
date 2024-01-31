@@ -180,10 +180,12 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
+            e2e-parallel: 10
           - test: test-corefunctional
             profile: minimal
           - test: test-functional
             profile: minimal
+            e2e-parallel: 10
           - test: test-api
             profile: mysql
           - test: test-cli
@@ -201,12 +203,14 @@ jobs:
           - test: test-executor
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
+            e2e-parallel: 10
           - test: test-corefunctional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
           - test: test-functional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
+            e2e-parallel: 10
     steps:
       - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
@@ -270,6 +274,7 @@ jobs:
             LOG_LEVEL=info \
             API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} \
             UI=false \
+            E2E_PARALLEL=${{ matrix.e2e-parallel }}
             POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
       - name: Wait for controller to be up
         run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
