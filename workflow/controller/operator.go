@@ -761,7 +761,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			return
 		}
 		if !apierr.IsConflict(err) {
-			woc.persistWorkflowConflictErr(ctx, wfClient, err)
 			return
 		}
 		woc.log.Info("Re-applying updates on latest version and retrying update")
@@ -853,16 +852,6 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow with size error: %v", err)
-	}
-}
-
-// persistWorkflowConflictErr will fail the workflow with an error when there is a conflict in updating it.
-func (woc *wfOperationCtx) persistWorkflowConflictErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
-	woc.wf = woc.orig.DeepCopy()
-	woc.markWorkflowError(ctx, err)
-	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
-	if err != nil {
-		woc.log.Warnf("Error updating workflow with conflict error: %v", err)
 	}
 }
 
