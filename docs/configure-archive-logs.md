@@ -1,7 +1,8 @@
 # Configuring Archive Logs
 
 !!! Warning "Not recommended"
-    We [do not recommend](#why-doesnt-argo-workflows-recommend-using-this-feature) you rely on Argo Workflows to archive logs. Instead, use a dedicated Kubernetes capable logging facility.
+    We do not recommend relying on Argo to archive logs as it is naive and not purpose-built for indexing, searching, and storing logs.
+    This feature is provided as a convenience to quickly view logs of garbage collected Pods in the Argo UI, but we [recommend](#suggested-alternatives) you integrate a dedicated, Kubernetes-aware logging facility.
 
 To enable automatic pipeline logging, you need to configure `archiveLogs` at workflow-controller config-map, workflow spec, or template level. You also need to configure [Artifact Repository](configure-artifact-repository.md) to define where this logging artifact is stored.
 
@@ -61,13 +62,24 @@ spec:
       archiveLogs: true
 ```
 
-## Why doesn't Argo Workflows recommend using this feature?
+## Suggested alternatives
 
-Argo Workflows log storage facilities are quite basic. It is recommended that you use a combination of:
+Argo Workflows log storage facilities are quite basic.
 
-* A fully featured Kubernetes capable logging facility which will provide you with facilities for indexing, searching and managing of log storage.
-* Use [links](links.md) to connect from the Argo Workflows user interface to your logging facility
-    * Use the `scope: workflow` link to get all the logs for a workflow, using the workflow name in the link `${metadata.name}` and the namespace `${metadata.namespace}`
-    * Use `scope: pod-logs` for those from a specific pod of name `${metadata.name}`
+We recommend using a fully featured Kubernetes aware logging facility which will provide you with facilities for indexing, searching and managing of log storage.
 
-There is no intention to substantially improve the logging facilities provided by Argo Workflows, this is considered best implemented in a separate product.
+We also recommend adding [links](links.md) to connect from the Argo UI to your logging facility's UI. Examples are given in the [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml).
+
+* Link `scope: workflow` to the logs of a Workflow
+* Link `scope: pod-logs` to the logs of a specific Pod of a Workflow
+* Parametrize the link with `${metadata.name}`, `${metadata.namespace}`, `${metadata.labels}`, and other available metadata
+
+We do not plan to reach feature parity with purpose built-logging facilities within workflows as there are more optimized tools available in the ecosystem. Some open-source products which are known to work and you could consider are
+
+* [`fluentd`](https://github.com/fluent/fluentd) for collection
+* [ELK](https://www.elastic.co/elastic-stack/) as storage, querying and a UI
+* [`promtail`](https://grafana.com/docs/loki/latest/send-data/promtail/) for collection
+* [`loki`](https://grafana.com/docs/loki/latest/) for storage and querying
+* [`grafana`](https://grafana.com/docs/grafana/latest/) for a UI
+
+Almost any logging system which integrates with kubernetes should be able to be used however.
