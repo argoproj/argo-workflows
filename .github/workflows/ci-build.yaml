@@ -176,7 +176,7 @@ jobs:
       E2E_ENV_FACTOR: 2
     strategy:
       fail-fast: false
-      max-parallel: 10
+      max-parallel: 6
       matrix:
         include:
           - test: test-executor
