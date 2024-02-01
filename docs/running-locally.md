@@ -33,7 +33,7 @@ Note:
     * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
 
 * For **Windows File System**
-    * Make sure git symbolic link is set to True when cloning the repo, clone the repo with `git clone -c core.symlinks=true core.autocrlf=false <URL>`
+    * Clone the repo with `git clone -c core.symlinks=true core.autocrlf=false https://github.com/<my-fork>/argo-workflows.git`
 
 * For **Linux**
     * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d.
