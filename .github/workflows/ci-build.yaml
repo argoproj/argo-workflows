@@ -176,16 +176,15 @@ jobs:
       E2E_ENV_FACTOR: 2
     strategy:
       fail-fast: false
+      max-parallel: 10
       matrix:
         include:
           - test: test-executor
             profile: minimal
-            e2e-parallel: 5
           - test: test-corefunctional
             profile: minimal
           - test: test-functional
             profile: minimal
-            e2e-parallel: 5
           - test: test-api
             profile: mysql
           - test: test-cli
@@ -203,14 +202,12 @@ jobs:
           - test: test-executor
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
-            e2e-parallel: 5
           - test: test-corefunctional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
           - test: test-functional
             install_k3s_version: v1.25.11-k3s1
             profile: minimal
-            e2e-parallel: 5
     steps:
       - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
@@ -279,7 +276,7 @@ jobs:
         run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         timeout-minutes: 5
       - name: Run tests ${{matrix.test}}
-        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false E2E_PARALLEL=${{ matrix.e2e-parallel || '20' }}
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
 
       # failure debugging below
       - name: Failure debug - describe MinIO/MySQL deployment

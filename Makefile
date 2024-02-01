@@ -34,7 +34,7 @@ KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 
 # Timeout for wait conditions
-E2E_WAIT_TIMEOUT      ?= 120s
+E2E_WAIT_TIMEOUT      ?= 90s
 
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
