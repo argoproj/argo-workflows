@@ -1689,6 +1689,8 @@ func TestWorkflowStepRetry(t *testing.T) {
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
+	nodeID := woc.nodeID(&pods.Items[0])
+	woc.wf.Status.MarkTaskResultComplete(nodeID)
 	woc.operate(ctx)
 
 	// fail the second pod
@@ -10081,4 +10083,118 @@ status:
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
+}
+
+var needReconcileWorklfow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-need-reconcile
+spec:
+  entrypoint: hello-hello-hello
+  arguments:
+    parameters:
+    - name: message1
+      value: hello world
+    - name: message2
+      value: foobar
+  # This spec contains two templates: hello-hello-hello and whalesay
+  templates:
+  - name: hello-hello-hello
+    # Instead of just running a container
+    # This template has a sequence of steps
+    steps:
+    - - name: hello1            # hello1 is run before the following steps
+        continueOn: {}
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+          - name: workflow_artifact_key
+            value: "{{ workflow.parameters.message2}}"
+    - - name: hello2a           # double dash => run after previous step
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{=steps['hello1'].outputs.parameters['workflow_artifact_key']}}"
+
+  # This is the same template as from the previous example
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    outputs:
+      parameters:
+      - name: workflow_artifact_key
+        value: '{{workflow.name}}'
+    script:
+      image: python:alpine3.6
+      command: [python]
+      env:  
+      - name: message
+        value: "{{inputs.parameters.message}}"
+      source: |
+        import random
+        i = random.randint(1, 100)
+        print(i)`
+
+// TestWorkflowNeedReconcile test whether a workflow need reconcile taskresults.
+func TestWorkflowNeedReconcile(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(needReconcileWorklfow)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+
+	// complete the first pod
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	err, podReconciliationCompleted := woc.podReconciliation(ctx)
+	assert.Nil(t, err)
+	assert.False(t, podReconciliationCompleted)
+
+	for idx, node := range woc.wf.Status.Nodes {
+		if strings.Contains(node.Name, ".hello1") {
+			node.Outputs = &wfv1.Outputs{
+				Parameters: []wfv1.Parameter{
+					{
+						Name:  "workflow_artifact_key",
+						Value: wfv1.AnyStringPtr("steps-need-reconcile"),
+					},
+				},
+			}
+			woc.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
+		}
+	}
+	err, podReconciliationCompleted = woc.podReconciliation(ctx)
+	assert.Nil(t, err)
+	assert.True(t, podReconciliationCompleted)
+	woc.operate(ctx)
+
+	// complete the second pod
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err = listPods(woc)
+	assert.Nil(t, err)
+	if assert.Equal(t, 2, len(pods.Items)) {
+		assert.Equal(t, "hello1", pods.Items[0].Spec.Containers[1].Env[0].Value)
+		assert.Equal(t, "steps-need-reconcile", pods.Items[1].Spec.Containers[1].Env[0].Value)
+	}
 }
