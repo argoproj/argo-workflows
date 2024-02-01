@@ -1,3 +1,4 @@
+// disabled on windows because colorized output is not supported - go-color will return just the text without colors.
 //go:build !windows
 
 package lint
