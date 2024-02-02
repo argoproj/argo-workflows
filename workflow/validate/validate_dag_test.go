@@ -1075,7 +1075,7 @@ spec:
 func TestDAGMissingParamValueInTask(t *testing.T) {
 	err := validate(dagMissingParamValueInTask)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "only default, configMapKeyRef and supplied allowed for valueFrom 'data'")
+		assert.Contains(t, err.Error(), ".valueFrom only allows: default, configMapKeyRef and supplied")
 	}
 }
 
@@ -1110,4 +1110,36 @@ spec:
 func TestDAGArgParamValueFromConfigMapInTask(t *testing.T) {
 	err := validate(dagArgParamValueFromConfigMapInTask)
 	assert.NoError(t, err)
+}
+
+var failDagArgParamValueFromPathInTask = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  entrypoint: root
+  templates:
+    - name: template
+      inputs:
+        parameters:
+          - name: data
+      container:
+        name: main
+        image: alpine
+    - name: root
+      dag:
+        tasks:
+          - name: task
+            template: template
+            arguments:
+              parameters:
+                - name: data
+                  valueFrom:
+                    path: /tmp/my-path
+`
+
+func TestFailDAGArgParamValueFromPathInTask(t *testing.T) {
+	err := validate(failDagArgParamValueFromPathInTask)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "valueFrom only allows: default, configMapKeyRef and supplied")
+	}
 }
