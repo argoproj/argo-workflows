@@ -865,11 +865,11 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 		if param.ValueFrom != nil {
 			// check for valid valueFrom sub-parameters
 			// INFO: default needs to be accompanied by ConfigMapKeyRef.
-			if param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.Event == "" {
+			if param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.Event == "" && param.ValueFrom.Supplied == nil {
 				return errors.Errorf(errors.CodeBadRequest, "only default, configMapKeyRef and supplied allowed for valueFrom '%s'", param.Name)
 			}
 			// check for invalid valueFrom sub-parameters
-			if param.ValueFrom.Path != "" || param.ValueFrom.JSONPath != "" || param.ValueFrom.Parameter != "" || param.ValueFrom.Supplied != nil || param.ValueFrom.Expression != "" {
+			if param.ValueFrom.Path != "" || param.ValueFrom.JSONPath != "" || param.ValueFrom.Parameter != "" || param.ValueFrom.Expression != "" {
 				return errors.Errorf(errors.CodeBadRequest, "only default, configMapKeyRef and supplied allowed for valueFrom '%s'", param.Name)
 			}
 		}
