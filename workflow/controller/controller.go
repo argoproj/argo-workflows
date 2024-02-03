@@ -553,11 +553,13 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				Value:     "true",
 			}
 			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
+			logCtx.Info("enablePodForDeletion on labelPodCompleted")
 			if err := wfc.enablePodForDeletion(ctx, pods, namespace, podName, patch); err != nil {
 				return err
 			}
 		case deletePod:
 			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
+			logCtx.Info("enablePodForDeletion on deletePod")
 			if err := wfc.enablePodForDeletion(ctx, pods, namespace, podName); err != nil {
 				return err
 			}
