@@ -156,7 +156,7 @@ requirements](https://kubernetes.io/docs/concepts/overview/working-with-objects/
 
 Because the endpoint accepts any JSON data, it is the user's responsibility to write a suitable expression to correctly filter the events they are interested in. Therefore, DO NOT assume the existence of any fields, and guard against them using a nil check.
 
-[Learn more about expression syntax](https://github.com/antonmedv/expr).
+[Learn more about expression syntax](https://github.com/expr-lang/expr).
 
 ### Expression Environment
 

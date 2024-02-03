@@ -210,7 +210,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             stored_templates ({str: (IoArgoprojWorkflowV1alpha1Template,)}): StoredTemplates is a mapping between a template ref and the node's status.. [optional]  # noqa: E501
             stored_workflow_template_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1SynchronizationStatus): [optional]  # noqa: E501
-            task_results_completion_status ({str: (bool,)}): TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.. [optional]  # noqa: E501
+            task_results_completion_status ({str: (bool,)}): TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -310,7 +310,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             stored_templates ({str: (IoArgoprojWorkflowV1alpha1Template,)}): StoredTemplates is a mapping between a template ref and the node's status.. [optional]  # noqa: E501
             stored_workflow_template_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1SynchronizationStatus): [optional]  # noqa: E501
-            task_results_completion_status ({str: (bool,)}): TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.. [optional]  # noqa: E501
+            task_results_completion_status ({str: (bool,)}): TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

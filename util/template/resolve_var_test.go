@@ -31,11 +31,11 @@ func Test_ResolveVar(t *testing.T) {
 		})
 		t.Run("Unresolved", func(t *testing.T) {
 			_, err := ResolveVar("{{=foo}}", nil)
-			assert.EqualError(t, err, "Unable to resolve: \"=foo\"")
+			assert.EqualError(t, err, "Unable to compile: \"foo\"")
 		})
 		t.Run("Error", func(t *testing.T) {
 			_, err := ResolveVar("{{=!}}", nil)
-			assert.EqualError(t, err, "Invalid expression: \"!\"")
+			assert.EqualError(t, err, "Unable to compile: \"!\"")
 		})
 	})
 }

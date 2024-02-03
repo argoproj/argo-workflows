@@ -104,7 +104,7 @@ class IoArgoprojWorkflowV1alpha1Event(ModelNormal):
         """IoArgoprojWorkflowV1alpha1Event - a model defined in OpenAPI
 
         Args:
-            selector (str): Selector (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`
+            selector (str): Selector (https://github.com/expr-lang/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -189,7 +189,7 @@ class IoArgoprojWorkflowV1alpha1Event(ModelNormal):
         """IoArgoprojWorkflowV1alpha1Event - a model defined in OpenAPI
 
         Args:
-            selector (str): Selector (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`
+            selector (str): Selector (https://github.com/expr-lang/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

@@ -4837,7 +4837,7 @@ Cannot be updated.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
 | default | [AnyString](#any-string)| `AnyString` |  | |  |  |
-| event | string| `string` |  | | Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` |  |
+| event | string| `string` |  | | Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` |  |
 | expression | string| `string` |  | | Expression, if defined, is evaluated to specify the value for the parameter |  |
 | jqFilter | string| `string` |  | | JQFilter expression against the resource object in resource templates |  |
 | jsonPath | string| `string` |  | | JSONPath of a resource to retrieve an output parameter value from in resource templates |  |

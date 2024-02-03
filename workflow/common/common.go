@@ -171,6 +171,9 @@ const (
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
 
+	// Finalizer blocks the deletion of pods until the controller captures their status.
+	FinalizerPodStatus = workflow.WorkflowFullName + "/status"
+
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field

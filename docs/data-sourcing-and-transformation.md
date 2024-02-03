@@ -53,6 +53,6 @@ A `data` template must always contain a `source`. Current available sources:
 
 A `data` template may contain any number of transformations (or zero). The transformations will be applied serially in order. Current available transformations:
 
-* `expression`: an [`expr`](https://github.com/antonmedv/expr) expression. See language definition [here](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md). When defining `expr` expressions Argo will pass the available data to the environment as a variable called `data` (see example above).
+* `expression`: an [`expr`](https://github.com/expr-lang/expr) expression. See language definition [here](https://github.com/expr-lang/expr/blob/master/docs/Language-Definition.md). When defining `expr` expressions Argo will pass the available data to the environment as a variable called `data` (see example above).
 
     We understand that the `expression` transformation is limited. We intend to greatly expand the functionality of this template with our community's feedback. Please see the link at the top of this document to submit ideas or use cases for this feature.

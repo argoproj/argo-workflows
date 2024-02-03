@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -184,6 +185,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
 		},
+	}
+
+	if os.Getenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") == "true" {
+		pod.ObjectMeta.Finalizers = append(pod.ObjectMeta.Finalizers, common.FinalizerPodStatus)
 	}
 
 	if opts.onExitPod {

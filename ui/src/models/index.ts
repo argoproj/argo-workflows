@@ -6,6 +6,6 @@ export * from './workflow-templates';
 export * from './cron-workflows';
 export * from './cluster-workflow-templates';
 export * from './submit-opts';
-export {EventSource} from './event-source';
-export {Sensor, SensorList} from './sensor';
+export type {EventSource} from './event-source';
+export type {Sensor, SensorList} from './sensor';
 export {models as kubernetes} from 'argo-ui';

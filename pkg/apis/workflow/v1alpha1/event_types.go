@@ -32,7 +32,7 @@ type WorkflowEventBindingSpec struct {
 }
 
 type Event struct {
-	// Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+	// Selector (https://github.com/expr-lang/expr) that we must must match the event. E.g. `payload.message == "test"`
 	Selector string `json:"selector" protobuf:"bytes,1,opt,name=selector"`
 }
 

@@ -4,9 +4,11 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -58,6 +60,71 @@ func (s *ArtifactsSuite) TestArtifactPassing() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+type expectedArtifact struct {
+	key        string
+	bucketName string
+	value      string
+}
+
+func (s *ArtifactsSuite) TestGlobalArtifactPassing() {
+	for _, tt := range []struct {
+		workflowFile     string
+		expectedArtifact expectedArtifact
+	}{
+		{
+			workflowFile: "@testdata/global-artifact-passing.yaml",
+			expectedArtifact: expectedArtifact{
+				key:        "globalArtifact",
+				bucketName: "my-bucket-3",
+				value:      "01",
+			},
+		},
+		{
+			workflowFile: "@testdata/complex-global-artifact-passing.yaml",
+			expectedArtifact: expectedArtifact{
+				key:        "finalTestUpdate",
+				bucketName: "my-bucket-3",
+				value:      "Updated testUpdate",
+			},
+		},
+	} {
+		then := s.Given().
+			Workflow(tt.workflowFile).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*2).
+			Then().
+			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				// Check the global artifact value and see if it equals the expected value.
+				c, err := minio.New("localhost:9000", &minio.Options{
+					Creds: credentials.NewStaticV4("admin", "password", ""),
+				})
+
+				if err != nil {
+					t.Error(err)
+				}
+
+				object, err := c.GetObject(context.Background(), tt.expectedArtifact.bucketName, tt.expectedArtifact.key, minio.GetObjectOptions{})
+				if err != nil {
+					t.Error(err)
+				}
+
+				buf := new(bytes.Buffer)
+				_, err = buf.ReadFrom(object)
+				if err != nil {
+					t.Error(err)
+				}
+				value := buf.String()
+
+				assert.Equal(t, tt.expectedArtifact.value, value)
+			})
+
+		then.
+			When().
+			RemoveFinalizers(false)
+	}
 }
 
 type artifactState struct {
@@ -155,6 +222,26 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 		// Remove the finalizers so the workflow gets deleted in case the test failed.
 		when.RemoveFinalizers(false)
 	}
+}
+
+func (s *ArtifactsSuite) TestDeleteWorkflow() {
+	when := s.Given().
+		Workflow("@testdata/artifactgc/artgc-dag-wf-self-delete.yaml").
+		When().
+		SubmitWorkflow()
+
+	then := when.
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
+		ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+		})
+
+	when = then.When()
+
+	when.WaitForWorkflowDeletion()
+
+	when.RemoveFinalizers(false)
 }
 
 func (s *ArtifactsSuite) TestArtifactGC() {

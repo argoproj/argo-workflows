@@ -78,7 +78,7 @@ func Test_Replace(t *testing.T) {
 			})
 			t.Run("Disallowed", func(t *testing.T) {
 				_, err := Replace(toJsonString("{{=foo}}"), nil, false)
-				assert.EqualError(t, err, "failed to evaluate expression \"foo\"")
+				assert.EqualError(t, err, "failed to evaluate expression: unknown name foo (1:1)\n | foo\n | ^")
 			})
 			t.Run("DisallowedWorkflowStatus", func(t *testing.T) {
 				_, err := Replace(toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, false)

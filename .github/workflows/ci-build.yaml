@@ -264,7 +264,13 @@ jobs:
         run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
       - name: Start controller/API
-        run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
+        run: |
+          make start PROFILE=${{matrix.profile}} \
+            AUTH_MODE=client STATIC_FILES=false \
+            LOG_LEVEL=info \
+            API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} \
+            UI=false \
+            POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
       - name: Wait for controller to be up
         run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         timeout-minutes: 5

@@ -414,7 +414,7 @@ func (w *When) WaitForPod(condition PodCondition) *When {
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
-		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: pointer.Int64Ptr(int64(timeout.Seconds()))},
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: pointer.Int64(int64(timeout.Seconds()))},
 	)
 	if err != nil {
 		w.t.Fatal(err)
