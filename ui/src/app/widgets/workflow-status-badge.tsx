@@ -2,7 +2,7 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {NodePhase} from '../../models';
+import type {NodePhase} from '../../models';
 import {uiUrl} from '../shared/base';
 import {historyUrl} from '../shared/history';
 import {RetryWatch} from '../shared/retry-watch';
