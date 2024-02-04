@@ -358,7 +358,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
 		if err != nil {
 			woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-			woc.markNodeError(nodeName, err)
+			node.Phase = wfv1.NodeError
 		}
 	}
 
