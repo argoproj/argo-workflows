@@ -645,14 +645,14 @@ func createFinalizerRemovalPatchIfExists(pod *apiv1.Pod, targetFinalizer string)
 
 func applyPatches(ctx context.Context, pods typedv1.PodInterface, podName string, patches []PatchOperation) error {
 	if len(patches) == 0 {
-		log.WithField("podName", podName).Info("not patching pod")
+		log.WithField("podName", podName).Debug("not patching pod")
 		return nil
 	}
 	data, err := json.Marshal(patches)
 	if err != nil {
 		return fmt.Errorf("failed to marshal patch: %w", err)
 	}
-	log.WithFields(log.Fields{"podName": podName, "data": string(data)}).Info("patching pod")
+	log.WithFields(log.Fields{"podName": podName, "data": string(data)}).Debug("patching pod")
 	_, err = pods.Patch(ctx, podName, types.JSONPatchType, data, metav1.PatchOptions{})
 	return err
 }
