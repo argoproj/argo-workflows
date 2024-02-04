@@ -1,5 +1,7 @@
 # NOTE: all dependencies changed here must also be changed in the Makefile. 
 
+# This field is updated automatically.
+# This relies on vendorHash for the controller being on line 195
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
@@ -190,7 +192,7 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorSha256 = "sha256-Ytl+++KUrFveoKRoSccwjCgozw4tFhjHxk8yDPQFRqo=";
+              vendorHash = "sha256-StYeoLXGy8HpTh2kCM/F2NSK1yQVm7H+V32EnWm8X2o=";
               doCheck = false;
             };
 

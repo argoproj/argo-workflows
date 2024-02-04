@@ -261,6 +261,7 @@ codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/a
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 	make --directory sdks/python USE_NIX=$(USE_NIX) generate
 
+
 .PHONY: check-pwd
 check-pwd:
 
@@ -459,6 +460,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 	# Deduplicate Node modules
 	if [ -e ui/node_modules ]; then yarn --cwd ui deduplicate ; fi
+	./hack/patch-nix-hash.sh
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
