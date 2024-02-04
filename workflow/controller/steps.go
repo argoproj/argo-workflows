@@ -44,12 +44,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	}
 
 	defer func() {
-		nodePhase, err := woc.wf.Status.Nodes.GetPhase(node.ID)
-		if err != nil {
-			woc.log.Fatalf("was unable to obtain nodePhase for %s", node.ID)
-			panic(fmt.Sprintf("unable to obtain nodePhase for %s", node.ID))
-		}
-		if nodePhase.Fulfilled() {
+		if node.Phase.Fulfilled() {
 			woc.killDaemonedChildren(node.ID)
 		}
 	}()
