@@ -191,14 +191,14 @@ func (woc *wfOperationCtx) updateOutboundNodes(node *wfv1.NodeStatus, tmpl *wfv1
 	// Find the last, initialized stepgroup node
 	var lastSGNode *wfv1.NodeStatus
 	for i := len(tmpl.Steps) - 1; i >= 0; i-- {
-		sgNode, err := woc.wf.GetNodeByName(fmt.Sprintf("%s[%d]", node.name, i))
+		sgNode, err := woc.wf.GetNodeByName(fmt.Sprintf("%s[%d]", node.Name, i))
 		if err == nil {
 			lastSGNode = sgNode
 			break
 		}
 	}
 	if lastSGNode == nil {
-		woc.log.Warnf("node '%s' had no initialized StepGroup nodes", node.name)
+		woc.log.Warnf("node '%s' had no initialized StepGroup nodes", node.Name)
 		return
 	}
 
