@@ -342,8 +342,7 @@ func DefaultClientForAuthorization(authorization string, config *rest.Config) (*
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create REST config: %w", err)
 	}
-	restConfig.QPS = config.QPS
-	restConfig.Burst = config.Burst
+	restConfig = mergeFromServerRestConfig(restConfig)
 	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)
@@ -371,4 +370,9 @@ func DefaultClientForAuthorization(authorization string, config *rest.Config) (*
 		EventSource: eventSourceClient,
 		Kubernetes:  kubeClient,
 	}, nil
+}
+
+func mergeFromServerRestConfig(config *rest.Config) (*rest.Config) {
+
+
 }
