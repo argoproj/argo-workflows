@@ -2,8 +2,8 @@ package controller
 
 import (
 	"context"
-	"testing"
 	gosync "sync"
+	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
