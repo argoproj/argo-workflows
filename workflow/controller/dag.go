@@ -271,13 +271,13 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			task := dagCtx.GetTask(taskName)
 			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
 			if err != nil {
-				woc.markNodeError(nodeName, err)
+				node = woc.markNodeError(nodeName, err)
 				return node, err
 			}
 			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(taskNode.Phase))
 			_, err = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 			if err != nil {
-				woc.markNodeError(nodeName, err)
+				node = woc.markNodeError(nodeName, err)
 				return node, err
 			}
 			if taskNode.Fulfilled() {
@@ -306,7 +306,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		return node, nil
 	case wfv1.NodeError, wfv1.NodeFailed:
 		woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, node)
-		woc.markNodePhase(nodeName, dagPhase)
+		node = woc.markNodePhase(nodeName, dagPhase)
 		return node, nil
 	}
 
@@ -363,7 +363,8 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, node)
-	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
+	node = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	return node, nil
 }
 
 func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, node *wfv1.NodeStatus) {

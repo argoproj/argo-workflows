@@ -115,7 +115,8 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode.ID, sgNode.Message)
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(node, tmpl)
-			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message), nil
+			node = woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
+			return node, nil
 		}
 
 		// Add all outputs of each step in the group to the scope
@@ -181,7 +182,8 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			node.Phase = wfv1.NodeError
 		}
 	}
-	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
+	node = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	return node, nil
 }
 
 // updateOutboundNodes set the outbound nodes from the last step group
