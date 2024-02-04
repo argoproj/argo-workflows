@@ -81,7 +81,6 @@ See %s`, help.ArgoServer),
 			config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-server", version.Version))
 			config.Burst = kubeAPIBurst
 			config.QPS = kubeAPIQPS
-			config.
 
 			namespace := client.Namespace()
 			clients := &types.Clients{
