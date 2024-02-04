@@ -56,7 +56,7 @@ The tag is substituted with the result of evaluating the tag as an expression.
 Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
 indexing into the parameter or step map, e.g. `inputs.parameters['my-param']` or `steps['my-step'].outputs.result`.
 
-[Learn about the expression syntax](https://github.com/antonmedv/expr/blob/master/docs/language-definition.md).
+[Learn about the expression syntax](https://github.com/expr-lang/expr/blob/master/docs/language-definition.md).
 
 #### Examples
 

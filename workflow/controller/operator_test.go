@@ -1689,6 +1689,8 @@ func TestWorkflowStepRetry(t *testing.T) {
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
+	nodeID := woc.nodeID(&pods.Items[0])
+	woc.wf.Status.MarkTaskResultComplete(nodeID)
 	woc.operate(ctx)
 
 	// fail the second pod
@@ -5337,6 +5339,215 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 	}
+}
+
+var workflowStepCachedWithRetryStrategy = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: memoized-workflow-test
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hi-there-world
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    retryStrategy:
+      limit: "10"
+    memoize:
+      key: "{{inputs.parameters.message}}"
+      cache:
+        configMap:
+          name: whalesay-cache
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+var workflowDagCachedWithRetryStrategy = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-workflow-test
+spec:
+  entrypoint: main
+#  podGC:
+#    strategy: OnPodCompletion
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: regular-1
+        template: run
+        arguments:
+          parameters:
+          - name: id
+            value: 1
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: regular-2
+        template: run
+        depends: regular-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 2
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-retries-1
+        template: run-with-retries
+        arguments:
+          parameters:
+          - name: id
+            value: 3
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-retries-2
+        template: run-with-retries
+        depends: with-retries-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 4
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-dag-1
+        template: run-with-dag
+        arguments:
+          parameters:
+          - name: id
+            value: 5
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-dag-2
+        template: run-with-dag
+        depends: with-dag-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 6
+          - name: cache-key
+            value: '{{workflow.name}}'
+
+  - name: run
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+    memoize:
+      key: "regular-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache
+
+  - name: run-with-retries
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+    memoize:
+      key: "retry-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache
+    retryStrategy:
+      limit: '1'
+      retryPolicy: Always
+
+  - name: run-raw
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+
+  - name: run-with-dag
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    dag:
+      tasks:
+      - name: run-raw-step
+        template: run-raw
+        arguments:
+          parameters:
+          - name: id
+            value: '{{inputs.parameters.id}}'
+          - name: cache-key
+            value: '{{inputs.parameters.cache-key}}'
+    memoize:
+      key: "dag-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache`
+
+func TestStepConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowStepCachedWithRetryStrategy)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Contains(t, cm.Labels, common.LabelKeyConfigMapType)
+	assert.Equal(t, common.LabelValueTypeConfigMapCache, cm.Labels[common.LabelKeyConfigMapType])
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestDAGConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowDagCachedWithRetryStrategy)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "memoization-test-cache", metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Contains(t, cm.Labels, common.LabelKeyConfigMapType)
+	assert.Equal(t, common.LabelValueTypeConfigMapCache, cm.Labels[common.LabelKeyConfigMapType])
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 func TestConfigMapCacheLoadNoLabels(t *testing.T) {
@@ -9872,4 +10083,118 @@ status:
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
+}
+
+var needReconcileWorklfow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-need-reconcile
+spec:
+  entrypoint: hello-hello-hello
+  arguments:
+    parameters:
+    - name: message1
+      value: hello world
+    - name: message2
+      value: foobar
+  # This spec contains two templates: hello-hello-hello and whalesay
+  templates:
+  - name: hello-hello-hello
+    # Instead of just running a container
+    # This template has a sequence of steps
+    steps:
+    - - name: hello1            # hello1 is run before the following steps
+        continueOn: {}
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+          - name: workflow_artifact_key
+            value: "{{ workflow.parameters.message2}}"
+    - - name: hello2a           # double dash => run after previous step
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{=steps['hello1'].outputs.parameters['workflow_artifact_key']}}"
+
+  # This is the same template as from the previous example
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    outputs:
+      parameters:
+      - name: workflow_artifact_key
+        value: '{{workflow.name}}'
+    script:
+      image: python:alpine3.6
+      command: [python]
+      env:  
+      - name: message
+        value: "{{inputs.parameters.message}}"
+      source: |
+        import random
+        i = random.randint(1, 100)
+        print(i)`
+
+// TestWorkflowNeedReconcile test whether a workflow need reconcile taskresults.
+func TestWorkflowNeedReconcile(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(needReconcileWorklfow)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+
+	// complete the first pod
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	err, podReconciliationCompleted := woc.podReconciliation(ctx)
+	assert.Nil(t, err)
+	assert.False(t, podReconciliationCompleted)
+
+	for idx, node := range woc.wf.Status.Nodes {
+		if strings.Contains(node.Name, ".hello1") {
+			node.Outputs = &wfv1.Outputs{
+				Parameters: []wfv1.Parameter{
+					{
+						Name:  "workflow_artifact_key",
+						Value: wfv1.AnyStringPtr("steps-need-reconcile"),
+					},
+				},
+			}
+			woc.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
+		}
+	}
+	err, podReconciliationCompleted = woc.podReconciliation(ctx)
+	assert.Nil(t, err)
+	assert.True(t, podReconciliationCompleted)
+	woc.operate(ctx)
+
+	// complete the second pod
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err = listPods(woc)
+	assert.Nil(t, err)
+	if assert.Equal(t, 2, len(pods.Items)) {
+		assert.Equal(t, "hello1", pods.Items[0].Spec.Containers[1].Env[0].Value)
+		assert.Equal(t, "steps-need-reconcile", pods.Items[1].Spec.Containers[1].Env[0].Value)
+	}
 }

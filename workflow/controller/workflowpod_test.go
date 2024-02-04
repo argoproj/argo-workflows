@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -1397,7 +1396,7 @@ func TestPodSpecPatchPodName(t *testing.T) {
 		{"v2", "hello-world-whalesay-3731220306", helloWorldStepWfWithPatch},
 	}
 	for _, tt := range tests {
-		os.Setenv("POD_NAMES", tt.podNameVersion)
+		t.Setenv("POD_NAMES", tt.podNameVersion)
 		ctx := context.Background()
 		wf := wfv1.MustUnmarshalWorkflow(tt.workflowYaml)
 		woc := newWoc(*wf)
@@ -1787,6 +1786,42 @@ func TestPodExists(t *testing.T) {
 	assert.NotNil(t, existingPod)
 	assert.True(t, doesExist)
 	assert.EqualValues(t, pod, existingPod)
+}
+
+func TestPodFinalizerExits(t *testing.T) {
+	t.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "true")
+	cancel, controller := newController()
+	defer cancel()
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.NoError(t, err)
+	assert.NotNil(t, pod)
+
+	assert.Equal(t, []string{common.FinalizerPodStatus}, pod.GetFinalizers())
+}
+
+func TestPodFinalizerDoesNotExist(t *testing.T) {
+	t.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "false")
+	cancel, controller := newController()
+	defer cancel()
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.NoError(t, err)
+	assert.NotNil(t, pod)
+
+	assert.Equal(t, []string(nil), pod.GetFinalizers())
 }
 
 func TestProgressEnvVars(t *testing.T) {
