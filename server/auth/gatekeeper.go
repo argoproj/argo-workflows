@@ -342,7 +342,7 @@ func DefaultClientForAuthorization(authorization string, config *rest.Config) (*
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create REST config: %w", err)
 	}
-	restConfig = mergeFromServerRestConfig(restConfig)
+	restConfig = mergeServerRestConfig(config, restConfig)
 	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)
@@ -372,7 +372,9 @@ func DefaultClientForAuthorization(authorization string, config *rest.Config) (*
 	}, nil
 }
 
-func mergeFromServerRestConfig(config *rest.Config) (*rest.Config) {
-
-
+func mergeServerRestConfig(argoServerConfig *rest.Config, newConfig *rest.Config) (*rest.Config) {
+	newConfig.Burst = argoServerConfig.Burst
+	newConfig.QPS = argoServerConfig.QPS
+	// TO DO: Merge other common configurations，such as RateLimiter.
+	return newConfig
 }
