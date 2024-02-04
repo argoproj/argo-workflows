@@ -555,13 +555,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				Value:     "true",
 			}
 			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
-			logCtx.Info("enablePodForDeletion on labelPodCompleted")
 			if err := wfc.enablePodForDeletion(ctx, pods, namespace, podName, patch); err != nil {
 				return err
 			}
 		case deletePod:
 			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
-			logCtx.Info("enablePodForDeletion on deletePod")
 			if err := wfc.enablePodForDeletion(ctx, pods, namespace, podName); err != nil {
 				return err
 			}
@@ -1076,7 +1074,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						log.WithError(err).Error("Failed to list pods")
 					}
 					for _, p := range podList.Items {
-						log.WithField("podName", p.Name).Info("enablePodForDeletion on DeleteFunc")
 						if err := wfc.enablePodForDeletion(ctx, pods, p.Namespace, p.Name); err != nil {
 							log.WithError(err).Error("Failed to enable pod for deletion")
 						}
