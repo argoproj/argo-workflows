@@ -190,7 +190,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 }
 
 // updateOutboundNodes set the outbound nodes from the last step group
-func (woc *wfOperationCtx) updateOutboundNodes(node, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) updateOutboundNodes(node *wfv1.NodeStatus, tmpl *wfv1.Template) {
 	outbound := make([]string, 0)
 
 	// Find the last, initialized stepgroup node
