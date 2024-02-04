@@ -250,7 +250,7 @@ func TestSpecError(t *testing.T) {
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
 	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
-	assert.Contains(t, submissionErrorCond.Message, "cron schedule CRON_TZ=America/Los_Angeles 10 * * 12737123 * is malformed: end of range (12737123) above maximum (12): 12737123")
+	assert.Contains(t, submissionErrorCond.Message, "cron schedule 10 * * 12737123 * is malformed: end of range (12737123) above maximum (12): 12737123")
 }
 
 func TestScheduleTimeParam(t *testing.T) {
