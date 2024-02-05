@@ -929,7 +929,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 			ResourceKind: "workflowtemplate",
 			ResourceName: "workflow-template-whalesay-template",
 		})
-		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = spec.arguments.message.value is required")
+		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = spec.arguments.message.value or spec.arguments.message.valueFrom is required")
 	})
 	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
 		opts := v1alpha1.SubmitOpts{
