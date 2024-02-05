@@ -38,8 +38,9 @@ func TestController(t *testing.T) {
 		assert.EqualError(t, err, "rpc error: code = Unavailable desc = operation queue full", "backpressure when queue is full")
 
 		stopCh := make(chan struct{}, 1)
-		stopCh <- struct{}{}
-		s.Run(stopCh, nil)
+		eventStopCh := make(chan struct{}, 1)
+		eventStopCh <- struct{}{}
+		s.Run(eventStopCh, stopCh)
 
 		assert.Len(t, s.operationQueue, 0, "all events were processed")
 	})
