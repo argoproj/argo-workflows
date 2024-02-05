@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antonmedv/expr"
+	"github.com/expr-lang/expr"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
@@ -121,7 +121,11 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 				if p.ValueFrom == nil {
 					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": valueFrom is nil", p.Name)
 				}
-				result, err := expr.Eval(p.ValueFrom.Event, o.env)
+				program, err := expr.Compile(p.ValueFrom.Event, expr.Env(o.env))
+				if err != nil {
+					return nil, fmt.Errorf("failed to compile workflow template parameter %s expression: %w", p.Name, err)
+				}
+				result, err := expr.Run(program, o.env)
 				if err != nil {
 					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
 				}
@@ -183,7 +187,12 @@ func (o *Operation) populateWorkflowMetadata(wf *wfv1.Workflow, metadata *metav1
 }
 
 func (o *Operation) evaluateStringExpression(statement string, errorInfo string) (string, error) {
-	result, err := expr.Eval(statement, exprenv.GetFuncMap(o.env))
+	env := exprenv.GetFuncMap(o.env)
+	program, err := expr.Compile(statement, expr.Env(env))
+	if err != nil {
+		return "", fmt.Errorf("failed to evaluate workflow %s expression: %w", errorInfo, err)
+	}
+	result, err := expr.Run(program, env)
 	if err != nil {
 		return "", fmt.Errorf("failed to evaluate workflow %s expression: %w", errorInfo, err)
 	}

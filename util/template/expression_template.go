@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/file"
-	"github.com/antonmedv/expr/parser/lexer"
 	"github.com/doublerebel/bellows"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/file"
+	"github.com/expr-lang/expr/parser/lexer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -41,7 +41,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 
 	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
 	// when `workflow.status` and `workflow.failures` don't exist in the env.
-	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/antonmedv/expr/issues/330
+	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
 	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
 	// when the exit handlers complete.
 	if ((hasWorkflowStatus(unmarshalledExpression) && !hasVarInEnv(env, "workflow.status")) ||
@@ -50,7 +50,14 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 
-	result, err := expr.Eval(unmarshalledExpression, env)
+	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
+	// This allowUnresolved check is not great
+	// it allows for errors that are obviously
+	// not failed reference checks to also pass
+	if err != nil && !allowUnresolved {
+		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+	result, err := expr.Run(program, env)
 	if (err != nil || result == nil) && allowUnresolved {
 		//  <nil> result is also un-resolved, and any error can be unresolved
 		log.WithError(err).Debug("Result and error are unresolved")
