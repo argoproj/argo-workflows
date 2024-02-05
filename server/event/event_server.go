@@ -43,7 +43,7 @@ func NewController(instanceIDService instanceid.Service, eventRecorderManager ev
 	}
 }
 
-func (s *Controller) Run(stopCh <-chan struct{}) {
+func (s *Controller) Run(eventStopCh <-chan struct{}, stopCh chan<- struct{}) {
 	// this `WaitGroup` allows us to wait for all events to dispatch before exiting
 	wg := sync.WaitGroup{}
 
@@ -57,7 +57,7 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		wg.Add(1)
 	}
 
-	<-stopCh
+	<-eventStopCh
 
 	// stop accepting new events
 	close(s.operationQueue)
@@ -66,6 +66,8 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 
 	// no more new events, process the existing events
 	wg.Wait()
+	// stop the server
+	stopCh <- struct{}{}
 }
 
 func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {

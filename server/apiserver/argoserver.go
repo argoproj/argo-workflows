@@ -4,6 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/sethvargo/go-limiter"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	clientcache "k8s.io/client-go/tools/cache"
+	apiwatch "k8s.io/client-go/tools/watch"
 	"net"
 	"net/http"
 	"os"
@@ -64,7 +71,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 
-	"github.com/sethvargo/go-limiter"
 	"github.com/sethvargo/go-limiter/httplimit"
 	"github.com/sethvargo/go-limiter/memorystore"
 )
@@ -86,6 +92,7 @@ type argoServer struct {
 	eventQueueSize           int
 	eventWorkerCount         int
 	eventAsyncDispatch       bool
+	eventStopCh              chan struct{}
 	xframeOptions            string
 	accessControlAllowOrigin string
 	apiRateLimiter           limiter.Store
@@ -178,6 +185,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventQueueSize:           opts.EventOperationQueueSize,
 		eventWorkerCount:         opts.EventWorkerCount,
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
+		eventStopCh:              make(chan struct{}),
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
 		apiRateLimiter:           store,
@@ -259,7 +267,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	httpL := tcpm.Match(cmux.HTTP1Fast())
 	grpcL := tcpm.Match(cmux.Any())
 
-	go eventServer.Run(as.stopCh)
+	go as.runConfigMapWatcher(as.stopCh)
+	go eventServer.Run(as.eventStopCh, as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
@@ -439,5 +448,38 @@ func (as *argoServer) checkServeErr(name string, err error) {
 		}
 	} else {
 		log.WithFields(nameField).Info("graceful shutdown")
+	}
+}
+
+func (as *argoServer) runConfigMapWatcher(stopCh <-chan struct{}) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	ctx := context.Background()
+	retryWatcher, err := apiwatch.NewRetryWatcher("1", &clientcache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			return as.clients.Kubernetes.CoreV1().ConfigMaps(as.managedNamespace).Watch(ctx, metav1.ListOptions{})
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer retryWatcher.Stop()
+
+	for {
+		select {
+		case event := <-retryWatcher.ResultChan():
+			cm, ok := event.Object.(*apiv1.ConfigMap)
+			if !ok {
+				log.Errorf("invalid config map object received in config watcher. Ignored processing")
+				continue
+			}
+			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
+			if cm.GetName() == as.configController.GetName() && as.namespace == cm.GetNamespace() && (event.Type == watch.Modified || event.Type == watch.Deleted) {
+				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
+				as.eventStopCh <- struct{}{}
+			}
+		case <-stopCh:
+			return
+		}
 	}
 }
