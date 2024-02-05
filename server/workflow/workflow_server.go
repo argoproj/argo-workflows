@@ -371,15 +371,6 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.Wo
 	return &workflowpkg.WorkflowDeleteResponse{}, nil
 }
 
-func errorFromChannel(errCh <-chan error) error {
-	select {
-	case err := <-errCh:
-		return err
-	default:
-	}
-	return nil
-}
-
 func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.WorkflowRetryRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
@@ -420,7 +411,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	}
 	wg.Wait()
 
-	err = errorFromChannel(errCh)
+	err = util.ErrorFromChannel(errCh)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

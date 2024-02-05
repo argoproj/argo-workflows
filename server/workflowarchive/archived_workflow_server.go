@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -291,12 +292,25 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
+		errCh := make(chan error, len(podsToDelete))
+		var wg sync.WaitGroup
+		wg.Add(len(podsToDelete))
 		for _, podName := range podsToDelete {
 			log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
-			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				return nil, sutils.ToStatusError(err, codes.Internal)
-			}
+			go func(podName string) {
+				defer wg.Done()
+				err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+				if err != nil && !apierr.IsNotFound(err) {
+					errCh <- err
+					return
+				}
+			}(podName)
+		}
+		wg.Wait()
+
+		err = util.ErrorFromChannel(errCh)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
 		wf.ObjectMeta.ResourceVersion = ""

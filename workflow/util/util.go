@@ -1321,3 +1321,12 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 	}
 	return waitCtrIndex, nil
 }
+
+func ErrorFromChannel(errCh <-chan error) error {
+	select {
+	case err := <-errCh:
+		return err
+	default:
+	}
+	return nil
+}
