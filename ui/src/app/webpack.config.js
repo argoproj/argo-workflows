@@ -5,7 +5,6 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const webpack = require('webpack');
-const path = require('path');
 
 const isProd = process.env.NODE_ENV === 'production';
 const proxyConf = {
@@ -25,7 +24,7 @@ const config = {
         path: __dirname + '/../../dist/app'
     },
 
-    devtool: 'source-map',
+    devtool: isProd ? 'source-map' : 'eval',
 
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.json', '.ttf'],
@@ -36,16 +35,13 @@ const config = {
         rules: [
             {
                 test: /\.tsx?$/,
-                use: [
-                    ...(isProd ? [] : ['react-hot-loader/webpack']),
-                    `ts-loader?transpileOnly=${!isProd}&allowTsInNodeModules=true&configFile=${path.resolve('./src/app/tsconfig.json')}`
-                ]
+                loader: 'esbuild-loader'
             },
             {
                 enforce: 'pre',
-                exclude: [/node_modules\/react-paginate/, /node_modules\/monaco-editor/],
+                exclude: [/node_modules\/monaco-editor/],
                 test: /\.js$/,
-                use: [...(isProd ? ['babel-loader'] : ['source-map-loader'])]
+                use: ['esbuild-loader']
             },
             {
                 test: /\.scss$/,
