@@ -12,7 +12,6 @@ require (
 	github.com/alibabacloud-go/tea v1.2.1
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/aliyun/credentials-go v1.3.2
-	github.com/antonmedv/expr v1.15.5
 	github.com/argoproj/argo-events v1.7.3
 	github.com/argoproj/pkg v0.13.7-0.20230901113346-235a5432ec98
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
@@ -20,6 +19,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.9.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/evanphx/json-patch v5.8.0+incompatible
+	github.com/expr-lang/expr v1.16.0
 	github.com/gavv/httpexpect/v2 v2.10.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/go-jose/go-jose/v3 v3.0.1

@@ -312,7 +312,7 @@ metadata:
 			func(t *testing.T, e []corev1.Event) {
 				assert.Equal(t, "argo", e[0].InvolvedObject.Namespace)
 				assert.Equal(t, "WorkflowEventBindingError", e[0].Reason)
-				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unable to evaluate expression '': unexpected token EOF (1:1)", e[0].Message)
+				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", e[0].Message)
 			},
 		)
 }
@@ -1075,12 +1075,20 @@ func (s *ArgoServerSuite) TestArtifactServerArchivedStoppedWorkflow() {
 			nodeID = status.Nodes.FindByDisplayName("create-artifact").ID
 		})
 
-	s.Run("GetArtifactByNodeID", func() {
-		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{nodeID}/outputs/artifact-creator", uid, nodeID).
+	s.Run("GetLocalArtifactByNodeID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{nodeID}/outputs/local-artifact", uid, nodeID).
 			Expect().
 			Status(200).
 			Body().
 			Contains("testing")
+	})
+
+	s.Run("GetGlobalArtifactByNodeID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{nodeID}/outputs/global-artifact", uid, nodeID).
+			Expect().
+			Status(200).
+			Body().
+			Contains("testing global")
 	})
 }
 

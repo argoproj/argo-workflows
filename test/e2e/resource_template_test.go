@@ -159,6 +159,9 @@ func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
 					assert.Equal(t, "my-pod", parameters[1].Value.String(), "metadata.name is capture for jq")
 				}
 			}
+			for _, value := range status.TaskResultsCompletionStatus {
+				assert.True(t, value)
+			}
 		})
 }
 
