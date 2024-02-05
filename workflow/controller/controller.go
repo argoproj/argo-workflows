@@ -150,6 +150,7 @@ type WorkflowController struct {
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
 	recentCompletions recentCompletions
+	podNameLocks      *gosync.Map
 }
 
 type PatchOperation struct {
@@ -209,6 +210,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		podNameLocks:               &gosync.Map{},
 	}
 
 	if executorPlugins {
@@ -605,6 +607,15 @@ func (wfc *WorkflowController) getPodFromCache(namespace string, podName string)
 }
 
 func (wfc *WorkflowController) enablePodForDeletion(ctx context.Context, pods typedv1.PodInterface, namespace string, podName string, extraPatches ...PatchOperation) error {
+	podNameLock, _ := wfc.podNameLocks.LoadOrStore(podName, &gosync.Mutex{})
+	podNameMutex := podNameLock.(*gosync.Mutex)
+
+	podNameMutex.Lock()
+	defer func() {
+		podNameMutex.Unlock()
+		wfc.podNameLocks.Delete(podName)
+	}()
+
 	var patches []PatchOperation
 	pod, err := wfc.getPodFromAPI(ctx, namespace, podName)
 	if err != nil {
