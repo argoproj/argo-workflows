@@ -39,7 +39,7 @@ func TestController(t *testing.T) {
 
 		stopCh := make(chan struct{}, 1)
 		stopCh <- struct{}{}
-		s.Run(stopCh)
+		s.Run(stopCh, nil)
 
 		assert.Len(t, s.operationQueue, 0, "all events were processed")
 	})
