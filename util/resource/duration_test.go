@@ -44,7 +44,7 @@ func TestDurationForPod(t *testing.T) {
 			corev1.ResourceCPU:    wfv1.NewResourceDuration(2 * time.Minute),
 			corev1.ResourceMemory: wfv1.NewResourceDuration(1 * time.Minute),
 		}},
-		{"ContainerWithCPURequest", &corev1.Pod{
+		{"ContainerWithGPULimit", &corev1.Pod{
 			Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "main", Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("2000m"),
