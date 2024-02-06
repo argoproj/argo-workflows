@@ -2,13 +2,12 @@ package controller
 
 import (
 	"context"
-	gosync "sync"
 	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	syncpkg "github.com/argoproj/pkg/sync"
+	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -284,7 +283,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		kubeclientset:             kube,
 		dynamicInterface:          dynamicClient,
 		wfclientset:               wfclientset,
-		workflowKeyLock:           syncpkg.NewKeyLock(),
+		workflowKeyLock:           sync.NewKeyLock(),
 		wfArchive:                 sqldb.NullWorkflowArchive,
 		hydrator:                  hydratorfake.Noop,
 		estimatorFactory:          estimation.DummyEstimatorFactory,
@@ -294,7 +293,6 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
-		podNameLocks:              &gosync.Map{},
 	}
 
 	for _, opt := range options {
