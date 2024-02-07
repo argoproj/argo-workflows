@@ -945,7 +945,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeError)
 
 	// Add a third node that has failed.
-	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
 	woc.addChildNode(nodeName, childNode)
