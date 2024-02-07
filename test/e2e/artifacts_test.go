@@ -710,10 +710,6 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func TestArtifactsSuite(t *testing.T) {
-	suite.Run(t, new(ArtifactsSuite))
-}
-
 func (s *ArtifactsSuite) TestArtifactEphemeralVolume() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
@@ -722,34 +718,30 @@ metadata:
   generateName: artifact-ephemeral-
 spec:
   entrypoint: artifact-ephemeral
+  volumeClaimTemplates:
+    - metadata:
+        name: vol
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Mi
   templates:
   - name: artifact-ephemeral
     inputs:
       artifacts:
       - name: artifact-ephemeral
-		path: /tmp/input/input.txt
-		raw:
-			data: abc
+        path: /tmp/input/input.txt
+        raw:
+          data: abc
     container:
       image: argoproj/argosay:v2
       command: [sh, -c]
       args: ["ls -l"]
-      workingDir: /tmp/input
-	  volumeMounts:
-	  - name: wf-workdir
-		mountPath: /tmp
-	volumes:
-		- name: wf-workdir
-		ephemeral:
-			volumeClaimTemplate:
-			metadata:
-				creationTimestamp: null
-			spec:
-				accessModes:
-				- ReadWriteOnce
-				resources:
-				requests:
-					storage: 1Mi
+      workingDir: /tmp
+      volumeMounts:
+      - name: vol
+        mountPath: /tmp
 `).
 		When().
 		SubmitWorkflow().
