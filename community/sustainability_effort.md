@@ -11,6 +11,7 @@ Help is needed for:
 * [triaging](../docs/CONTRIBUTING.md#triaging-bugs) new bugs by prioritizing them with `P0`, `P1`, `P2`, and `P3` labels
 * responding to questions in [Github Discussions](https://github.com/argoproj/argo-workflows/discussions)
 * responding to questions in [CNCF Slack](https://argoproj.github.io/community/join-slack) in the `#argo-workflows` and `#argo-wf-contributors` channels 
+* releasing new versions
 
 ## Commitment
 
@@ -19,9 +20,9 @@ Any code contributor in a designated role or with an open Membership request can
 
 Participants are expected to try to advance in roles.
 There are different expectations depending on the role:
-- Member and non-member: should average a minimum of 6 hours per week of either [authoring PRs](../docs/CONTRIBUTING.md#authoring-prs) or performing any activities listed above in the ["Where is help needed?"](#where-is-help-needed) section
+- Member and non-member: should average a minimum of 6 hours per week of either [authoring PRs](../docs/CONTRIBUTING.md#authoring-prs) or performing any activities listed above in the ["Where is help needed?"](#where-is-help-needed) section (where permissions allow)
   - Note that more time is required in this role in order to learn the codebase and processes to make sufficient progress
-- Reviewer and above: should average a minimum of 2 hours per week performing any activities listed above in ["Where is help needed?"](#where-is-help-needed) section 
+- Reviewer and above: should average a minimum of 2 hours per week performing any activities listed above in ["Where is help needed?"](#where-is-help-needed) section (where permissions allow)
   - Highest priority is to ensure that all PRs labeled `prioritized-review` [have an Assignee](#reviewing-prs)
 
 Note that the hours per week listed above is an average over time; it's fine to have weeks of no activity so long as the average meets expectations.

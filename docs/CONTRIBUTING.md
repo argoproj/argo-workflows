@@ -111,6 +111,7 @@ If you are a Reviewer or below, then once you have approved a PR, request a revi
 #### Triaging Bugs
 
 New bugs need to be triaged to identify the highest priority ones.
+Any Member can triage bugs.
 
 Apply the labels `P0`, `P1`, `P2`, and `P3`, where `P0` is highest priority and needs immediate attention, followed by `P1`, `P2`, and then `P3`.
 If there's a new `P0` bug, notify the [`#argo-wf-contributors`](https://cloud-native.slack.com/archives/C0510EUH90V) Slack channel.
