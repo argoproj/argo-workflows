@@ -922,6 +922,12 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
+	// Mark lastChild Pending.
+	woc.markNodePhase(lastChild.Name, wfv1.NodePending)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
