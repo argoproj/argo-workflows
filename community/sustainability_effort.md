@@ -60,4 +60,5 @@ If you'd like to participate, add yourself here in a PR.
 | Julie Vogelman            | [`juliev0`](https://github.com/juliev0)                   |
 | Saravanan Balasubramanian | [`sarabala1979`](https://github.com/sarabala1979)         |
 | Shuangkun Tian            | [`shuangkun`](https://github.com/shuangkun)               |
+| Tianchu Zhao              | [`tczhao`](https://github.com/tczhao)                     |
 | Yuan Tang                 | [`terrytangyuan`](https://github.com/terrytangyuan)       |
