@@ -35,7 +35,6 @@ import (
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -308,7 +307,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal(err)
 	}
 
-	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -413,40 +411,6 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-	ctx := context.Background()
-	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	defer retryWatcher.Stop()
-
-	for {
-		select {
-		case event := <-retryWatcher.ResultChan():
-			cm, ok := event.Object.(*apiv1.ConfigMap)
-			if !ok {
-				log.Errorf("invalid config map object received in config watcher. Ignored processing")
-				continue
-			}
-			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
-			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
-				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
-				wfc.UpdateConfig(ctx)
-			}
-			wfc.notifySemaphoreConfigUpdate(cm)
-		case <-stopCh:
-			return
-		}
-	}
 }
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
@@ -1259,42 +1223,62 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 }
 
 func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
-	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
-		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
-	}, func(opts *metav1.ListOptions) {
-		opts.LabelSelector = common.LabelKeyConfigMapType
+
+	indexInformer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
 	})
-	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
-	if wfc.executorPlugins != nil {
-		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
-				cm, err := meta.Accessor(obj)
-				if err != nil {
-					return false
+
+	isPluginCM := true
+	ctx := context.Background()
+
+	indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			cm, err := meta.Accessor(obj)
+			if err != nil {
+				log.WithError(err).
+					Error("failed to get configmap")
+
+				return false
+			}
+
+			if cm.GetName() == wfc.configController.GetName() {
+				isPluginCM = false
+			} else {
+				isPluginCM = true
+				log.WithField("executorPlugins", wfc.executorPlugins != nil).
+					Info("Plugins")
+			}
+
+			return (cm.GetName() == wfc.configController.GetName()) ||
+				(cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin)
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				if !isPluginCM {
+					return
 				}
-				return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
-			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
-					cm := obj.(*apiv1.ConfigMap)
-					p, err := plugin.FromConfigMap(cm)
-					if err != nil {
-						log.WithField("namespace", cm.GetNamespace()).
-							WithField("name", cm.GetName()).
-							WithError(err).
-							Error("failed to convert configmap to plugin")
-						return
-					}
-					if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
-						wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
-					}
-					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
+
+				cm := obj.(*apiv1.ConfigMap)
+				p, err := plugin.FromConfigMap(cm)
+				if err != nil {
 					log.WithField("namespace", cm.GetNamespace()).
 						WithField("name", cm.GetName()).
-						Info("Executor plugin added")
-				},
-				UpdateFunc: func(_, obj interface{}) {
-					cm := obj.(*apiv1.ConfigMap)
+						WithError(err).
+						Error("failed to convert configmap to plugin")
+					return
+				}
+				if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
+					wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
+				}
+				wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
+				log.WithField("namespace", cm.GetNamespace()).
+					WithField("name", cm.GetName()).
+					Info("Executor plugin added")
+			},
+			UpdateFunc: func(_, obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+
+				if isPluginCM {
 					p, err := plugin.FromConfigMap(cm)
 					if err != nil {
 						log.WithField("namespace", cm.GetNamespace()).
@@ -1308,17 +1292,26 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 					log.WithField("namespace", cm.GetNamespace()).
 						WithField("name", cm.GetName()).
 						Info("Executor plugin updated")
-				},
-				DeleteFunc: func(obj interface{}) {
-					key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
-					delete(wfc.executorPlugins[namespace], name)
-					log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
-				},
+				} else {
+					log.Infof("Received Workflow Controller config map %s/%s update", cm.GetNamespace(), cm.GetName())
+					wfc.UpdateConfig(ctx)
+					wfc.notifySemaphoreConfigUpdate(cm)
+				}
 			},
-		})
+			DeleteFunc: func(obj interface{}) {
+				if !isPluginCM {
+					return
+				}
 
-	}
+				key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+				namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+				delete(wfc.executorPlugins[namespace], name)
+				log.WithField("namespace", namespace).WithField("name", name).
+					Info("Executor plugin removed")
+			},
+		},
+	})
+
 	return indexInformer
 }
 
