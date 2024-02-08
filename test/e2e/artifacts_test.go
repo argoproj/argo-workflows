@@ -715,9 +715,9 @@ func (s *ArtifactsSuite) TestArtifactEphemeralVolume() {
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-ephemeral-
+  generateName: artifact-volume-claim-
 spec:
-  entrypoint: artifact-ephemeral
+  entrypoint: artifact-volume-claim
   volumeClaimTemplates:
     - metadata:
         name: vol
@@ -727,10 +727,10 @@ spec:
           requests:
             storage: 1Mi
   templates:
-  - name: artifact-ephemeral
+  - name: artifact-volume-claim
     inputs:
       artifacts:
-      - name: artifact-ephemeral
+      - name: artifact-volume-claim
         path: /tmp/input/input.txt
         raw:
           data: abc
