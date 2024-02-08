@@ -460,7 +460,10 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 	# Deduplicate Node modules
 	if [ -e ui/node_modules ]; then yarn --cwd ui deduplicate ; fi
-	./hack/patch-nix-hash.sh
+	
+ifneq ($(USE_NIX), true)
+	echo "DEBUG: USE NIX WAS TRUE"
+endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test

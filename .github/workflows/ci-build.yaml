@@ -378,6 +378,7 @@ jobs:
     timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
     env:
       GOPATH: /home/runner/go
+      USE_NIX: true
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
@@ -386,6 +387,7 @@ jobs:
           go-version: "1.21"
           cache: true
       - uses: cachix/install-nix-action@v22
+      - run: bash -x ./hack/patch-nix-hash.sh
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
       - name: Check if lint made changes not present in the PR

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-#This script is a hack to automatically update the Nix hash.
-# This is because dependabot will automatically 
-# update go dependencies.
+# This script automatically updates the Nix hash.
+# Needed because dependabot automatically updates Go deps.
 
 # this is reliant on the vendorHash being on line 195
 sed -i '195s/vendorHash = \"\([^\"]*\)\"/vendorHash = ""/g' ./dev/nix/flake.nix
