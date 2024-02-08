@@ -385,7 +385,7 @@ jobs:
         with:
           go-version: "1.21"
           cache: true
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@6004951b182f8860210c8d6f0d808ec5b1a33d28 #v25 -> nix 2.19.2
       - run: bash -x ./hack/patch-nix-hash.sh
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
