@@ -74,15 +74,9 @@ jobs:
               - examples/** # examples are used within the fields lists
               - manifests/** # a few of these are generated and committed
               # generation scripts
-              - hack/cli/**
-              - hack/jsonschema/**
-              - hack/swagger/**
-              - hack/auto-gen-msg.sh
-              - hack/crdgen.sh
-              - hack/crds.go
-              - hack/docgen.go
-              - hack/parse_examples.go
-              - hack/swaggify.sh
+              - hack/api/**
+              - hack/docs/**
+              - hack/manifests/**
               - .clang-format
             lint:
               - *tests
@@ -99,8 +93,8 @@ jobs:
               # proposals live only on GH as pure markdown
               - '!docs/proposals/**'
               # docs scripts & tools from `make docs`
-              - hack/copy-readme.sh
-              - hack/check-env-doc.sh
+              - hack/docs/copy-readme.sh
+              - hack/docs/check-env-doc.sh
               - .markdownlint.yaml
               - .mlc_config.json
               - .spelling

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu -o pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.." # up to repo root
 
 add_header() {
   cat "$1" | ./hack/auto-gen-msg.sh >tmp

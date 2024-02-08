@@ -10,8 +10,6 @@ func main() {
 		cleanCRD(os.Args[2])
 	case "removecrdvalidation":
 		removeCRDValidation(os.Args[2])
-	case "docgen":
-		generateDocs()
 	default:
 		panic(os.Args[1])
 	}
