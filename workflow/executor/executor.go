@@ -204,6 +204,11 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		// the file is a tarball or not. If it is, it is first extracted then renamed to
 		// the desired location. If not, it is simply renamed to the location.
 		tempArtPath := artPath + ".tmp"
+		// Ensure parent directory exist, create if missing
+		tempArtDir := filepath.Dir(tempArtPath)
+		if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
+			return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
+		}
 		err = artDriver.Load(driverArt, tempArtPath)
 		if err != nil {
 			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
