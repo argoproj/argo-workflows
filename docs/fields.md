@@ -857,7 +857,7 @@ WorkflowStatus contains overall status information about a workflow
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
-|`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.|
+|`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.|
 
 ## CronWorkflowSpec
 
@@ -1230,6 +1230,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 |`failedJobsHistoryLimit`|`integer`|FailedJobsHistoryLimit is the number of failed jobs to be kept at a time|
 |`schedule`|`string`|Schedule is a schedule to run the Workflow in Cron format|
 |`startingDeadlineSeconds`|`integer`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
+|`stopStrategy`|[`StopStrategy`](#stopstrategy)|StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow|
 |`successfulJobsHistoryLimit`|`integer`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`suspend`|`boolean`|Suspend is a flag that will stop new CronWorkflows from running if set to true|
 |`timezone`|`string`|Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.|
@@ -1245,7 +1246,10 @@ CronWorkflowStatus is the status of a CronWorkflow
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
+|`failed`|`integer`|Failed is a counter of how many times a child workflow terminated in failed or errored state|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
+|`phase`|`string`|Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running|
+|`succeeded`|`integer`|Succeeded is a counter of how many times the child workflows had success|
 
 ## Arguments
 
@@ -1929,6 +1933,15 @@ SynchronizationStatus stores the status of semaphore and mutex.
 |:----------:|:----------:|---------------|
 |`mutex`|[`MutexStatus`](#mutexstatus)|Mutex stores this workflow's mutex holder details|
 |`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|Semaphore stores this workflow's Semaphore holder details|
+
+## StopStrategy
+
+StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`condition`|`string`|Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.|
 
 ## Artifact
 
@@ -3539,7 +3552,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |:----------:|:----------:|---------------|
 |`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for input parameter configuration|
 |`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
-|`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
+|`event`|`string`|Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`expression`|`string`|Expression, if defined, is evaluated to specify the value for the parameter|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|

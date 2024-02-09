@@ -886,7 +886,7 @@ type ValueFrom struct {
 	// JQFilter expression against the resource object in resource templates
 	JQFilter string `json:"jqFilter,omitempty" protobuf:"bytes,3,opt,name=jqFilter"`
 
-	// Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+	// Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
 	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
 
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
@@ -1944,7 +1944,7 @@ type WorkflowStatus struct {
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 
-	// TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.
+	// TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
 }
 
@@ -1969,6 +1969,14 @@ func (ws *WorkflowStatus) TaskResultsInProgress() bool {
 		}
 	}
 	return false
+}
+
+func (ws *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
+	value, found := ws.TaskResultsCompletionStatus[name]
+	if found {
+		return !value
+	}
+	return true
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -3024,6 +3032,8 @@ func (tmpl *Template) GetNodeType() NodeType {
 		return NodeTypeSteps
 	case TemplateTypeSuspend:
 		return NodeTypeSuspend
+	case TemplateTypeHTTP:
+		return NodeTypeHTTP
 	case TemplateTypePlugin:
 		return NodeTypePlugin
 	}

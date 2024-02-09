@@ -127,6 +127,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef":                  schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreStatus":               schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence":                      schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy":                  schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Submit":                        schema_pkg_apis_workflow_v1alpha1_Submit(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SubmitOpts":                    schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom":             schema_pkg_apis_workflow_v1alpha1_SuppliedValueFrom(ref),
@@ -2234,12 +2235,18 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
+					"stopStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy"),
+						},
+					},
 				},
 				Required: []string{"workflowSpec", "schedule"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -2284,8 +2291,32 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 							},
 						},
 					},
+					"succeeded": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Succeeded is a counter of how many times the child workflows had success",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"failed": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Failed is a counter of how many times a child workflow terminated in failed or errored state",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"active", "lastScheduledTime", "conditions"},
+				Required: []string{"active", "lastScheduledTime", "conditions", "succeeded", "failed", "phase"},
 			},
 		},
 		Dependencies: []string{
@@ -2543,7 +2574,7 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"selector": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == \"test\"`",
+							Description: "Selector (https://github.com/expr-lang/expr) that we must must match the event. E.g. `payload.message == \"test\"`",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -5769,6 +5800,28 @@ func schema_pkg_apis_workflow_v1alpha1_Sequence(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"condition": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"condition"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -6738,7 +6791,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					},
 					"event": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
+							Description: "Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7842,7 +7895,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					},
 					"taskResultsCompletionStatus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.",
+							Description: "TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,

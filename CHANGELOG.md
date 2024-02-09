@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.5.4 (2024-01-13)
+
+* [960af331a](https://github.com/argoproj/argo-workflows/commit/960af331a8c0a3f2e263c8b90f1daf4303816ba8) fix: autolink dep in yarn.lock is incorrect
+* [ec7d1f698](https://github.com/argoproj/argo-workflows/commit/ec7d1f698360242dd28f6be5b227c415da63d473) fix: Resolve vulnerabilities in axios (#12470)
+* [f5fee5661](https://github.com/argoproj/argo-workflows/commit/f5fee5661b29441e5dae78e44d8b6fc05ffd6565) fix: Switch to upstream go-git. Fixes CVE-2023-49569 (#12515)
+
+### Contributors
+
+* Yuan Tang
+
 ## v3.5.3 (2024-01-10)
 
 * [46efafea3](https://github.com/argoproj/argo-workflows/commit/46efafea3fbd1ed26ceb92948caf7f9fde1cfa41) chore(deps): bump tj-actions/changed-files from 39 to 40 (#12090)
@@ -618,6 +628,15 @@
 * vanny96
 * yeicandoit
 * younggil
+
+## v3.4.16 (2024-01-14)
+
+* [910a9aabc](https://github.com/argoproj/argo-workflows/commit/910a9aabce5de6568b54350c181a431f8263605a) fix: Fix lint build
+* [65befdeec](https://github.com/argoproj/argo-workflows/commit/65befdeecd871f965fc5b5213f269b6eb1fbce09) fix: Switch to upstream go-git. Fixes CVE-2023-49569 (#12515)
+
+### Contributors
+
+* Yuan Tang
 
 ## v3.4.15 (2024-01-13)
 

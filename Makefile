@@ -96,6 +96,7 @@ RUN_MODE              := kubernetes
 endif
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
+POD_STATUS_CAPTURE_FINALIZER ?= true
 
 $(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
 $(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH))
@@ -558,7 +559,7 @@ endif
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) PROFILE=$(PROFILE) kit $(TASKS)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) PROFILE=$(PROFILE) kit $(TASKS)
 endif
 
 .PHONY: wait
@@ -581,7 +582,7 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
-	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
 
 .PHONY: test-examples
 test-examples:
@@ -592,7 +593,7 @@ test-%-sdk:
 	make --directory sdks/$* install test -B
 
 Test%:
-	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,corefunctional,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,corefunctional,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
 
 
 # clean
@@ -678,18 +679,20 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 /usr/local/bin/mdspell:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm i -g markdown-spellcheck@1.3.1
+	npm list -g markdown-spellcheck@1.3.1 > /dev/null || npm i -g markdown-spellcheck@1.3.1
 endif
 
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell
 	# check docs for spelling mistakes
 	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
+	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
+	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "sort" }' | uniq | tee .spelling > /dev/null)
 
 /usr/local/bin/markdown-link-check:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm i -g markdown-link-check@3.11.1
+	npm list -g markdown-link-check@3.11.1 > /dev/null || npm i -g markdown-link-check@3.11.1
 endif
 
 .PHONY: docs-linkcheck
@@ -700,7 +703,7 @@ docs-linkcheck: /usr/local/bin/markdown-link-check
 /usr/local/bin/markdownlint:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm i -g markdownlint-cli@0.33.0
+	npm list -g markdownlint-cli@0.33.0 > /dev/null || npm i -g markdownlint-cli@0.33.0
 endif
 
 
@@ -723,10 +726,8 @@ docs: /usr/local/bin/mkdocs \
 	# docs-linkcheck
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/check-env-doc.sh
-	# check all docs are listed in mkdocs.yml
-	./hack/check-mkdocs.sh
 	# build the docs
-	mkdocs build
+	mkdocs build --strict
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 

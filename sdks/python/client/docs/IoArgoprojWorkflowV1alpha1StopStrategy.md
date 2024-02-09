@@ -1,10 +1,11 @@
-# IoArgoprojWorkflowV1alpha1Event
+# IoArgoprojWorkflowV1alpha1StopStrategy
 
+StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**selector** | **str** | Selector (https://github.com/expr-lang/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. &#x60;payload.message &#x3D;&#x3D; \&quot;test\&quot;&#x60; | 
+**condition** | **str** | Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords &#x60;failed&#x60; or &#x60;succeeded&#x60; to access the number of failed or successful child workflows. | 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
