@@ -375,6 +375,7 @@ func DefaultClientForAuthorization(authorization string, config *rest.Config) (*
 func mergeServerRestConfig(argoServerConfig *rest.Config, newConfig *rest.Config) *rest.Config {
 	newConfig.Burst = argoServerConfig.Burst
 	newConfig.QPS = argoServerConfig.QPS
+	newConfig.UserAgent = argoServerConfig.UserAgent
 	// TO DO: Merge other common configurations，such as RateLimiter.
 	return newConfig
 }
