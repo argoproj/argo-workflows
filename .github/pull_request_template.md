@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD041 -->
+<!-- markdownlint-disable MD041 -- this is rendered within existing HTML, so allow starting without an H1 -->
 
 <!--
 
@@ -30,7 +30,6 @@ Fixes #TODO
 ### Modifications
 
 <!-- TODO: Say what changes you made. -->
-
 <!-- TODO: Attach screenshots if you changed the UI. -->
 
 ### Verification
