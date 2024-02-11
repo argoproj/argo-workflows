@@ -192,7 +192,7 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorHash = "sha256-pmBErmGUeBdYrM/arS3GweF67st+1r+u5ZyY709l/bM=";
+              vendorHash = "";
               doCheck = false;
             };
 
