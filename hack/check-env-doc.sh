@@ -4,10 +4,9 @@ echo "Checking docs/environment-variables.md for completeness..."
 
 # Directories to check. For cmd/, only check Controller, Executor, and Server. The CLI has generated docs
 dirs=(./workflow ./persist ./util ./server ./cmd/argo/commands/server.go ./cmd/argoexec ./cmd/workflow-controller)
+not_found="false"
 
 function check-used {
-  not_found="false"
-
   mapfile -t check < <(grep "| \`" < ./docs/environment-variables.md \
     | awk '{gsub(/\`/, "", $2);  print $2; }')
 
@@ -19,15 +18,9 @@ function check-used {
       not_found="true";
     fi
   done
-
-  if [[ "$not_found" == "true" ]]; then
-    exit 1;
-  fi
 }
 
 function check-documented {
-  not_found="false"
-
   mapfile -t check < <(grep -REh --exclude="*_test.go" "Getenv.*?\(|LookupEnv.*?\(|env.Get*?\(" "${dirs[@]}" \
     | grep -Eo "\"[A-Z_]+?\"" \
     | sort \
@@ -41,10 +34,10 @@ function check-documented {
       not_found="true";
     fi
   done
-
-  if [[ "$not_found" == "true" ]]; then
-    exit 1;
-  fi
 }
 
-check-used && check-documented && echo "✅ Success - all environment variables appear to be documented"
+check-used && check-documented;
+if [[ "$not_found" == "true" ]]; then
+  exit 1;
+fi
+echo "✅ Success - all environment variables appear to be documented"
