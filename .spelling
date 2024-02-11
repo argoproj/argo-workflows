@@ -38,6 +38,8 @@ CloudSQL
 ClusterRoleBinding
 ClusterRoles
 Codespaces
+ConfigMap
+ConfigMaps
 Couler
 CronWorkflow
 CronWorkflows
