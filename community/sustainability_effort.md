@@ -31,7 +31,7 @@ Participants should join the [`#argo-wf-contributors`](https://cloud-native.slac
 
 ### Reviewing PRs
 
-First priority is to review any PRs which have the [`prioritized-review` label](https://github.com/argoproj/argo-workflows/labels/prioritized-review), meaning they were authored by a participant of this system (verified by GitHub ID).
+First priority is to review any PRs which have the [`prioritized-review` label](https://github.com/argoproj/argo-workflows/labels/prioritized-review), meaning a participant of this system (verified by GitHub ID) either authored the PR or added the label to a PR that they did not author.
 Each of these should have an Assignee: a Reviewer, Approver, or Lead who "owns" reviewing the PR.<br />
 These PRs should be given an initial review within a week.
 The Assignee should then respond to each question or requested modification from the author within a week.
@@ -42,7 +42,8 @@ For general guidance regarding PR Reviews, see [the Contributing docs](../CONTRI
 
 ### Authoring PRs
 
-Participants can apply a `prioritized-review` label to any PRs they author.
+Participants can apply a `prioritized-review` label to any PRs they author and any PRs they feel are important. 
+Use judgment when adding this label, so as to not overwhelm this system.
 If you do not have permissions to add labels yet, you can request the label in the `#argo-wf-sustainability` channel.
 
 If a PR has reached a week without an Assignee, you can request an assignment in the channel.
