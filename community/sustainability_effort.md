@@ -42,8 +42,8 @@ For general guidance regarding PR Reviews, see [the Contributing docs](../CONTRI
 
 ### Authoring PRs
 
-Participants can apply a `prioritized-review` label to any PRs they author, or in some cases to any PRs that they feel are critically important. 
-Participants should also use judgment when adding this label, so as to not overwhelm this system.
+Participants can apply a `prioritized-review` label to any PRs they author and any PRs they feel are important. 
+Use judgment when adding this label, so as to not overwhelm this system.
 If you do not have permissions to add labels yet, you can request the label in the `#argo-wf-sustainability` channel.
 
 If a PR has reached a week without an Assignee, you can request an assignment in the channel.
