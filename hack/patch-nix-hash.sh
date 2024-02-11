@@ -9,4 +9,3 @@ NIX_HASH=$(nix --log-format raw build ./dev/nix 2>&1 | grep  "got: " | awk '{ sp
 sed -i '195s|vendorHash = \"\([^\"]*\)\"|vendorHash = "'$NIX_HASH'"|g' ./dev/nix/flake.nix
 echo "Changed Nix hash to : $NIX_HASH"
 rm -rf result
-rm ./dev/nix/flake.nix.bak
