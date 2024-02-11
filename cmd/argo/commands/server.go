@@ -4,10 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"net/http"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -188,18 +186,6 @@ See %s`, help.ArgoServer),
 				return err
 			}
 
-			// disabled by default, for security
-			if x, enabled := os.LookupEnv("ARGO_SERVER_PPROF"); enabled {
-				port, err := strconv.Atoi(x)
-				if err != nil {
-					return err
-				}
-				go func() {
-					log.Infof("starting server for pprof on :%d, see https://golang.org/pkg/net/http/pprof/", port)
-					log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
-				}()
-			}
-
 			server.Run(ctx, port, browserOpenFunc)
 			return nil
 		},
@@ -232,7 +218,7 @@ See %s`, help.ArgoServer),
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
 	command.Flags().Uint64Var(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
-	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", defaultAllowedLinkProtocol, "Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL")
+	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", defaultAllowedLinkProtocol, "Allowed protocols for links feature. Defaults to the environment variable ALLOWED_LINK_PROTOCOL: http,https")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.Flags().Float32Var(&kubeAPIQPS, "kube-api-qps", 20.0, "QPS to use while talking with kube-apiserver.")
 	command.Flags().IntVar(&kubeAPIBurst, "kube-api-burst", 30, "Burst to use while talking with kube-apiserver.")
