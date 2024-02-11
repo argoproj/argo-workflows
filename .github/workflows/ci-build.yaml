@@ -87,6 +87,8 @@ jobs:
               - *tests
               # plus lint config
               - .golangci.yml
+              # nix hack
+              - hack/patch-nix-hash.sh
               # all GH workflows / actions
               - .github/workflows/**
               # docs files below
@@ -103,7 +105,6 @@ jobs:
               - .mlc_config.json
               - .spelling
               - mkdocs.yml
-              - hack/patch-nix-hash.sh
             ui:
               - *common
               - ui/**
@@ -386,7 +387,14 @@ jobs:
           go-version: "1.21"
           cache: true
       - uses: cachix/install-nix-action@6004951b182f8860210c8d6f0d808ec5b1a33d28 #v25 -> nix 2.19.2
-      - run: bash -x ./hack/patch-nix-hash.sh
+      - run: bash ./hack/patch-nix-hash.sh
+      - if: github.actor == 'dependabot[bot]'
+        run: |
+          git config --global user.name1 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add ./dev/nix
+          git commit -s -m 'chore: update nix hash'
+          git push
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
       - name: Check if lint made changes not present in the PR
