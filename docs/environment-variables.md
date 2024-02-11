@@ -14,7 +14,7 @@ This document outlines environment variables that can be used to customize behav
 | `ALL_POD_CHANGES_SIGNIFICANT`            | `bool`              | `false`                                                                                     | Whether to consider all pod changes as significant during pod reconciliation.                                                                                                                                                                                            |
 | `ALWAYS_OFFLOAD_NODE_STATUS`             | `bool`              | `false`                                                                                     | Whether to always offload the node status.                                                                                                                                                                                                                               |
 | `ARCHIVED_WORKFLOW_GC_PERIOD`            | `time.Duration`     | `24h`                                                                                       | The periodicity for GC of archived workflows.                                                                                                                                                                                                                            |
-| `ARGO_PPROF`                             | `bool`              | `false`                                                                                     | Enable `pprof` endpoints                                                                                                                                                                                                                                                 |
+| `ARGO_PPROF`                             | `bool`              | `false`                                                                                     | Enable [`pprof`](https://go.dev/blog/pprof) endpoints                                                                                                                                                                                                                                                 |
 | `ARGO_PROGRESS_PATCH_TICK_DURATION`      | `time.Duration`     | `1m`                                                                                        | How often self reported progress is patched into the pod annotations which means how long it takes until the controller picks up the progress change. Set to 0 to disable self reporting progress.                                                                       |
 | `ARGO_PROGRESS_FILE_TICK_DURATION`       | `time.Duration`     | `3s`                                                                                        | How often the progress file is read by the executor. Set to 0 to disable self reporting progress.                                                                                                                                                                        |
 | `ARGO_REMOVE_PVC_PROTECTION_FINALIZER`   | `bool`              | `true`                                                                                      | Remove the `kubernetes.io/pvc-protection` finalizer from persistent volume claims (PVC) after marking PVCs created for the workflow for deletion, so deleted is not blocked until the pods are deleted.  [#6629](https://github.com/argoproj/argo-workflows/issues/6629) |
@@ -94,6 +94,8 @@ spec:
 
 | Name                                   | Type            | Default | Description                                                                                            |
 |----------------------------------------|-----------------|---------|--------------------------------------------------------------------------------------------------------|
+| `ARGO_DEBUG_PAUSE_AFTER`               | `bool`          | `false` | Enable [Debug Pause](debug-pause.md) after step execution
+| `ARGO_DEBUG_PAUSE_BEFORE`              | `bool`          | `false` | Enable [Debug Pause](debug-pause.md) before step execution
 | `EXECUTOR_RETRY_BACKOFF_DURATION`      | `time.Duration` | `1s`    | The retry back-off duration when the workflow executor performs retries.                               |
 | `EXECUTOR_RETRY_BACKOFF_FACTOR`        | `float`         | `1.6`   | The retry back-off factor when the workflow executor performs retries.                                 |
 | `EXECUTOR_RETRY_BACKOFF_JITTER`        | `float`         | `0.5`   | The retry back-off jitter when the workflow executor performs retries.                                 |
@@ -121,13 +123,19 @@ data:
 
 | Name                                       | Type     | Default | Description                                                                                                             |
 |--------------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------------------------------|
+| `ALLOWED_LINK_PROTOCOL`                    | `string` | `http,https` | List of comma separated protocols allowed for the [Links feature](links.md)
+| `ARGO_ARTIFACT_SERVER`                     | `bool`   | `true`  | Enable [Workflow Archive](workflow-archive.md) endpoints
+| `ARGO_PPROF`                               | `bool`   | `false` | Enable [`pprof`](https://go.dev/blog/pprof) endpoints
+| `ARGO_SERVER_METRICS_AUTH`                 | `bool`   | `true`  | Enable auth on the `/metrics` endpoint
+| `BASE_HREF`                                | `string` | `/`     | [Base HREF](argo-server.md#base-href) of the Server
 | `DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN` | `string` | `""`    | Disable the retrieval of the list of label values for keys based on this regular expression.                            |
 | `FIRST_TIME_USER_MODAL`                    | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `FEEDBACK_MODAL`                           | `bool`   | `true`  | Show this modal.                                                                                                        |
+| `GRPC_MESSAGE_SIZE`                        | `string` | `104857600` | Use different GRPC Max message size for Server (supporting huge workflows).                                         |
 | `IP_KEY_FUNC_HEADERS`                      | `string` | `""`    | List of comma separated request headers containing IPs to use for rate limiting. For example, "X-Forwarded-For,X-Real-IP". By default, uses the request's remote IP address.          |
 | `NEW_VERSION_MODAL`                        | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `POD_NAMES`                                | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller |
-| `GRPC_MESSAGE_SIZE`                        | `string` | `104857600` | Use different GRPC Max message size for Server (supporting huge workflows).                                         |
+| `SSO_DELEGATE_RBAC_TO_NAMESPACE`           | `bool`   | `false` | Enable [SSO RBAC Namespace Delegation](argo-server-sso.md#sso-rbac-namespace-delegation)
 
 CLI parameters of the Server can be specified as environment variables with the `ARGO_` prefix.
 For example:
