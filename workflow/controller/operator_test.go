@@ -4453,7 +4453,7 @@ func TestUnsuppliedArgValue(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
-	assert.Equal(t, woc.wf.Status.Message, "invalid spec: spec.arguments.missing.value is required")
+	assert.Equal(t, woc.wf.Status.Message, "invalid spec: spec.arguments.missing.value or spec.arguments.missing.valueFrom is required")
 }
 
 var suppliedArgValue = `

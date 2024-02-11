@@ -679,38 +679,38 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 /usr/local/bin/mdspell:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm i -g markdown-spellcheck@1.3.1
+	npm list -g markdown-spellcheck@1.3.1 > /dev/null || npm i -g markdown-spellcheck@1.3.1
 endif
 
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell
 	# check docs for spelling mistakes
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name swagger.md -not -name executor_swagger.md -not -path '*/cli/*')
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "sort" }' | uniq | tee .spelling > /dev/null)
 
 /usr/local/bin/markdown-link-check:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm i -g markdown-link-check@3.11.1
+	npm list -g markdown-link-check@3.11.1 > /dev/null || npm i -g markdown-link-check@3.11.1
 endif
 
 .PHONY: docs-linkcheck
 docs-linkcheck: /usr/local/bin/markdown-link-check
 	# check docs for broken links
-	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name swagger.md -not -name executor_swagger.md)
+	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
 
 /usr/local/bin/markdownlint:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm i -g markdownlint-cli@0.33.0
+	npm list -g markdownlint-cli@0.33.0 > /dev/null || npm i -g markdownlint-cli@0.33.0
 endif
 
 
 .PHONY: docs-lint
 docs-lint: /usr/local/bin/markdownlint
 	# lint docs
-	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
+	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
 
 /usr/local/bin/mkdocs:
 # update this in Nix when upgrading it here
@@ -726,10 +726,8 @@ docs: /usr/local/bin/mkdocs \
 	# docs-linkcheck
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/check-env-doc.sh
-	# check all docs are listed in mkdocs.yml
-	./hack/check-mkdocs.sh
 	# build the docs
-	mkdocs build
+	mkdocs build --strict
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
