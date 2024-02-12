@@ -17,7 +17,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
 
 ```
       --access-control-allow-origin string   Set Access-Control-Allow-Origin header in HTTP responses.
-      --allowed-link-protocol stringArray    Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL (default [http,https])
+      --allowed-link-protocol stringArray    Allowed protocols for links feature. Defaults to the environment variable ALLOWED_LINK_PROTOCOL: http,https (default [http,https])
       --api-rate-limit uint                  Set limit per IP for api ratelimiter (default 1000)
       --auth-mode stringArray                API server authentication mode. Any 1 or more length permutation of: client,server,sso (default [client])
       --basehref string                      Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF. (default "/")
@@ -42,7 +42,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
 ### Options inherited from parent commands
 
 ```
-      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          Path to use with HTTP client due to BASE_HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
