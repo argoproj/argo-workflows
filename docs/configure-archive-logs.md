@@ -66,15 +66,9 @@ spec:
 
 Argo Workflows log storage facilities are quite basic.
 
-We recommend using a fully featured Kubernetes aware logging facility which will provide you with facilities for indexing, searching and managing of log storage.
+We recommend using a fully featured Kubernetes-aware logging facility which will provide you with indexing, searching and managing of log storage.
 
-We also recommend adding [links](links.md) to connect from the Argo UI to your logging facility's UI. Examples are given in the [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml).
-
-* Link `scope: workflow` to the logs of a Workflow
-* Link `scope: pod-logs` to the logs of a specific Pod of a Workflow
-* Parametrize the link with `${metadata.name}`, `${metadata.namespace}`, `${metadata.labels}`, and other available metadata
-
-We do not plan to reach feature parity with purpose built-logging facilities within workflows as there are more optimized tools available in the ecosystem. Some open-source products which are known to work and you could consider are
+We do not plan to reach feature parity with purpose built-logging facilities as there are more optimized tools available in the ecosystem. Some open-source tools which are known to work:
 
 * [`fluentd`](https://github.com/fluent/fluentd) for collection
 * [ELK](https://www.elastic.co/elastic-stack/) as storage, querying and a UI
@@ -82,4 +76,8 @@ We do not plan to reach feature parity with purpose built-logging facilities wit
 * [`loki`](https://grafana.com/docs/loki/latest/) for storage and querying
 * [`grafana`](https://grafana.com/docs/grafana/latest/) for a UI
 
-Almost any logging system which integrates with kubernetes should be able to be used however.
+You can add [links](links.md) to connect from the Argo UI to your logging facility's UI. See examples in the [`workflow-controller-configmap.yaml`](workflow-controller-configmap.yaml).
+
+* Link `scope: workflow` to the logs of a Workflow
+* Link `scope: pod-logs` to the logs of a specific Pod of a Workflow
+* Parametrize the link with `${metadata.name}`, `${metadata.namespace}`, `${metadata.labels}`, and other available metadata
