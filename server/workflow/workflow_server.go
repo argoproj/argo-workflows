@@ -16,6 +16,7 @@ import (
 	"k8s.io/klog/v2"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -24,7 +25,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	argoutil "github.com/argoproj/argo-workflows/v3/util"
@@ -397,6 +397,13 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	var backoff = wait.Backoff{
+		Steps:    5,
+		Duration: 500 * time.Millisecond,
+		Factor:   1.0,
+		Jitter:   0.1,
+	}
+
 	errCh := make(chan error, len(podsToDelete))
 	var wg sync.WaitGroup
 	parallelPodNum := make(chan string, 500)
@@ -404,7 +411,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
 		wg.Add(1)
 		go func(podName string) {
-			err := wait.ExponentialBackoff(apiserver.Backoff, func() (bool, error) {
+			err := wait.ExponentialBackoff(backoff, func() (bool, error) {
 				err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 				if err != nil && !apierr.IsNotFound(err) {
 					klog.Errorf("Failed to delete pod %s: %v", podName, err)

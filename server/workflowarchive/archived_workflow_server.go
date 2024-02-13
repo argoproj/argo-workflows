@@ -25,7 +25,6 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -294,6 +293,13 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
+		var backoff = wait.Backoff{
+			Steps:    5,
+			Duration: 500 * time.Millisecond,
+			Factor:   1.0,
+			Jitter:   0.1,
+		}
+
 		errCh := make(chan error, len(podsToDelete))
 		var wg sync.WaitGroup
 		parallelPodNum := make(chan string, 500)
@@ -303,7 +309,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			wg.Add(1)
 			go func(podName string) {
 				defer wg.Done()
-				err := wait.ExponentialBackoff(apiserver.Backoff, func() (bool, error) {
+				err := wait.ExponentialBackoff(backoff, func() (bool, error) {
 					err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 					if err != nil && !apierr.IsNotFound(err) {
 						klog.Errorf("Failed to delete pod %s: %v", podName, err)
