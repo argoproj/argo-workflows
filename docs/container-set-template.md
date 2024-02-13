@@ -2,7 +2,7 @@
 
 > v3.1 and after
 
-A container set templates is similar to a normal container or script template, but allows you to specify multiple
+A container set template is similar to a normal container or script template, but allows you to specify multiple
 containers to run within a single pod.
 
 Because you have multiple containers within a pod, they will be scheduled on the same host. You can use cheap and fast
