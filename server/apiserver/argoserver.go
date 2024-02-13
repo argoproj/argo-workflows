@@ -186,7 +186,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	}, nil
 }
 
-var backoff = wait.Backoff{
+var Backoff = wait.Backoff{
 	Steps:    5,
 	Duration: 500 * time.Millisecond,
 	Factor:   1.0,
@@ -237,7 +237,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	var conn net.Listener
 	var listerErr error
 	address := fmt.Sprintf(":%d", port)
-	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
+	err = wait.ExponentialBackoff(Backoff, func() (bool, error) {
 		conn, listerErr = net.Listen("tcp", address)
 		if listerErr != nil {
 			log.WithError(err).Warn("failed to listen")

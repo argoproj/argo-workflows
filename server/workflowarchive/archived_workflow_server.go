@@ -3,6 +3,8 @@ package workflowarchive
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog/v2"
 	"os"
 	"regexp"
 	"sort"
@@ -23,10 +25,10 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/apiserver"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 const disableValueListRetrievalKeyPattern = "DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN"
@@ -294,16 +296,25 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 		errCh := make(chan error, len(podsToDelete))
 		var wg sync.WaitGroup
-		wg.Add(len(podsToDelete))
+		parallelPodNum := make(chan string, 500)
 		for _, podName := range podsToDelete {
 			log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
+			parallelPodNum <- podName
+			wg.Add(1)
 			go func(podName string) {
 				defer wg.Done()
-				err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-				if err != nil && !apierr.IsNotFound(err) {
+				err := wait.ExponentialBackoff(apiserver.Backoff, func() (bool, error) {
+					err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+					if err != nil && !apierr.IsNotFound(err) {
+						klog.Errorf("Failed to delete pod %s: %v", podName, err)
+						return false, nil
+					}
+					return true, nil
+				})
+				if err != nil {
 					errCh <- err
-					return
 				}
+				<-parallelPodNum
 			}(podName)
 		}
 		wg.Wait()
