@@ -66,7 +66,7 @@ All container set templates that have artifacts must/should have a container nam
 
 If you want to use base-layer artifacts, `main` must be last to finish, so it must be the root node in the graph.
 
-That is may not be practical.
+That may not be practical.
 
 Instead, have a workspace volume and make sure all artifacts paths are on that volume.
 
