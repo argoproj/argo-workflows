@@ -97,7 +97,7 @@ argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 
 You can get ingress working as follows:
 
-Add `BASE_HREF` as environment variable to `deployment/argo-server`. Do not forget to add a trailing '/' character.
+Add `ARGO_BASE_HREF` as environment variable to `deployment/argo-server`. Do not forget to add a trailing '/' character.
 
 ```yaml
 ---
@@ -118,7 +118,7 @@ spec:
       - args:
         - server
         env:
-          - name: BASE_HREF
+          - name: ARGO_BASE_HREF
             value: /argo/
         image: argoproj/argocli:latest
         name: argo-server
