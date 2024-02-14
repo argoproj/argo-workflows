@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
@@ -286,7 +287,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 
-		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
+		wf, podsToDelete, podsToReset, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -294,6 +295,20 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		for _, podName := range podsToDelete {
 			log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
 			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+			if err != nil && !apierr.IsNotFound(err) {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
+		}
+
+		for _, podName := range podsToReset {
+			log.WithFields(log.Fields{"podReset": podName}).Info("Resetting pod")
+			_, err := kubeClient.CoreV1().Pods(wf.Namespace).Patch(
+				ctx,
+				podName,
+				types.MergePatchType,
+				[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "false"}}}`),
+				metav1.PatchOptions{},
+			)
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}

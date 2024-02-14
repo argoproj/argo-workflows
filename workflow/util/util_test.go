@@ -921,7 +921,7 @@ func TestDeepDeleteNodes(t *testing.T) {
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		newWf, _, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -1052,7 +1052,7 @@ func TestRetryExitHandler(t *testing.T) {
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		newWf, _, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -1086,7 +1086,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		wf, _, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
@@ -1123,7 +1123,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		wf, _, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 1) {
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
@@ -1158,7 +1158,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
+		wf, _, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 3) {
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
@@ -1190,7 +1190,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
+		wf, _, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
 		if assert.NoError(t, err) {
 			// Node #3, #4 are deleted and will be recreated so only 3 nodes left in wf.Status.Nodes
 			if assert.Len(t, wf.Status.Nodes, 3) {
@@ -1219,7 +1219,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
+		wf, _, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
 		if assert.NoError(t, err) {
 			// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
 			if assert.Len(t, wf.Status.Nodes, 4) {
@@ -1248,7 +1248,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
 				}},
 		}
-		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+		wf, _, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
@@ -1276,7 +1276,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					}},
 				}},
 		}
-		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+		wf, _, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 			assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
@@ -1296,7 +1296,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		_, _, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		assert.Error(t, err)
 	})
 
@@ -1313,7 +1313,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		_, _, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		assert.Error(t, err)
 	})
 
@@ -1333,7 +1333,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		_, _, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		assert.Error(t, err)
 	})
 
@@ -1355,7 +1355,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=4", nil)
+		wf, _, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=4", nil)
 		if assert.NoError(t, err) {
 			// Node #4 is deleted and will be recreated so only 4 nodes left in wf.Status.Nodes
 			if assert.Len(t, wf.Status.Nodes, 4) {
@@ -1908,25 +1908,27 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 
 	// Retry top individual pod node
-	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step1", nil)
+	wf, podsToDelete, podsToReset, err := FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step1", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, 6, len(podsToDelete))
+	assert.Equal(t, 0, len(podsToReset))
 
 	// Retry top individual suspend node
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step2", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step2", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	assert.Equal(t, 5, len(podsToDelete))
+	assert.Equal(t, 1, len(podsToReset))
 
 	// Retry the starting on first DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 12, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
@@ -1944,10 +1946,11 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Equal(t, 3, len(podsToDelete))
+	assert.Equal(t, 3, len(podsToReset))
 
 	// Retry the starting on second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 12, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
@@ -1965,10 +1968,11 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Equal(t, 3, len(podsToDelete))
+	assert.Equal(t, 3, len(podsToReset))
 
 	// Retry the first individual node (suspended node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 12, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
@@ -1986,10 +1990,11 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Equal(t, 3, len(podsToDelete))
+	assert.Equal(t, 3, len(podsToReset))
 
 	// Retry the second individual node (pod node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 12, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
@@ -2008,10 +2013,11 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	// The suspended node remains succeeded
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Equal(t, 3, len(podsToDelete))
+	assert.Equal(t, 3, len(podsToReset))
 
 	// Retry the third individual node (pod node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step3", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step3", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 13, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
@@ -2031,10 +2037,11 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
 	assert.Equal(t, 2, len(podsToDelete))
+	assert.Equal(t, 4, len(podsToReset))
 
 	// Retry the last individual node (suspend node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 15, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
@@ -2055,10 +2062,11 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
 	assert.Equal(t, 1, len(podsToDelete))
+	assert.Equal(t, 5, len(podsToReset))
 
 	// Retry the node that connects the two branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step4", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step4", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 16, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
@@ -2078,10 +2086,11 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
 	assert.Equal(t, 1, len(podsToDelete))
+	assert.Equal(t, 5, len(podsToReset))
 
 	// Retry the last node (failing node)
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
-	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step5-tofail", nil)
+	wf, podsToDelete, podsToReset, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step5-tofail", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 16, len(wf.Status.Nodes))
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
@@ -2101,4 +2110,5 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
 	assert.Equal(t, 1, len(podsToDelete))
+	assert.Equal(t, 5, len(podsToReset))
 }
