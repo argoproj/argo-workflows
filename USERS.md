@@ -144,6 +144,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Orchest](https://www.orchest.io/)
 1. [OVH](https://www.ovh.com/)
 1. [PathAI](https://www.pathai.com)
+1. [PayIt](https://payitgov.com/)
 1. [PDOK](https://www.pdok.nl/)
 1. [Peak AI](https://www.peak.ai/)
 1. [Phrase](https://phrase.com)
