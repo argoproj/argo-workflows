@@ -72,6 +72,7 @@ jobs:
               - pkg/**
               - cmd/**
               - examples/** # examples are used within the fields lists
+              - manifests/** # a few of these are generated and committed
               # generation scripts
               - hack/cli/**
               - hack/jsonschema/**

@@ -30,22 +30,6 @@ kubectl create namespace argo
 kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v<<ARGO_WORKFLOWS_VERSION>>/quick-start-minimal.yaml
 ```
 
-### Patch argo-server authentication
-
-The argo-server (and thus the UI) defaults to client authentication, which requires clients to provide their Kubernetes bearer token to authenticate. For more information, refer to the [Argo Server Auth Mode documentation](argo-server-auth-mode.md). We will switch the authentication mode to `server` so that we can bypass the UI login for now:
-
-```bash
-kubectl patch deployment \
-  argo-server \
-  --namespace argo \
-  --type='json' \
-  -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": [
-  "server",
-  "--auth-mode=server"
-]}]'
-
-```
-
 ## Install the Argo Workflows CLI
 
 You can more easily interact with Argo Workflows with the [Argo CLI](walk-through/argo-cli.md).
