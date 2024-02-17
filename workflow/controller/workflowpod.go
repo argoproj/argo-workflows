@@ -686,6 +686,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Env:             woc.createEnvVars(),
 		Resources:       woc.controller.Config.GetExecutor().Resources,
 		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
+		Args:            woc.controller.Config.GetExecutor().Args,
 	}
 	// lock down resource pods by default
 	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {
