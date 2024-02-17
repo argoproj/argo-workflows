@@ -288,7 +288,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
 		setWfPodNamesAnnotation(woc.wf)
-		if woc.wf.Spec.WorkflowTemplateRef != nil {
+		if woc.execWf.Spec.WorkflowTemplateRef != nil {
 			setWfTemplateLabel(woc.wf)
 		}
 		err := woc.createPDBResource(ctx)
