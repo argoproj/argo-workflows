@@ -148,8 +148,8 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                                             <i className='fa fa-clone' />
                                         </div>
                                         <div className='columns small-5'>
-                                            {(t.metadata.annotations && t.metadata.annotations[ANNOTATION_TITLE]) || t.metadata.name}
-                                            {t.metadata.annotations && t.metadata.annotations[ANNOTATION_DESCRIPTION] ? (
+                                            {(t.metadata.annotations?.[ANNOTATION_TITLE]) ?? t.metadata.name}
+                                            {t.metadata.annotations?.[ANNOTATION_DESCRIPTION] ? (
                                                 <p>{t.metadata.annotations[ANNOTATION_DESCRIPTION]}</p>
                                             ) : null}
                                         </div>

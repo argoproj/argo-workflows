@@ -147,8 +147,8 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                         to={uiUrl(`cron-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
                                         <div className='columns small-1'>{w.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
                                         <div className='columns small-3'>
-                                            {(w.metadata.annotations && w.metadata.annotations[ANNOTATION_TITLE]) || w.metadata.name}
-                                            {w.metadata.annotations && w.metadata.annotations[ANNOTATION_DESCRIPTION] ? (
+                                            {(w.metadata.annotations?.[ANNOTATION_TITLE]) ?? w.metadata.name}
+                                            {w.metadata.annotations?.[ANNOTATION_DESCRIPTION] ? (
                                                 <p>{w.metadata.annotations[ANNOTATION_DESCRIPTION]}</p>
                                             ) : null}
                                         </div>
