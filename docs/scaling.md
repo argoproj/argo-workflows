@@ -6,7 +6,7 @@ For running large workflows, you'll typically need to scale the controller to ma
 
 You cannot horizontally scale the controller.
 
-> v3.0
+> v3.0 and after
 
 As of v3.0, the controller supports having a hot-standby for [High Availability](high-availability.md#workflow-controller).
 

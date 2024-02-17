@@ -962,7 +962,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		if err != nil {
 			return nil, false, err
 		}
-		if !shouldContinue {
+		if !shouldContinue && lastChildNode.Fulfilled() {
 			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
 		}
 	}

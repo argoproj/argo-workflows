@@ -1,6 +1,3 @@
-#######
-# NEW URL FOR THIS FILE: https://argo-workflows.readthedocs.io/en/latest/workflow-controller-configmap.yaml
-#######
 # This file describes the config settings available in the workflow controller configmap
 apiVersion: v1
 kind: ConfigMap

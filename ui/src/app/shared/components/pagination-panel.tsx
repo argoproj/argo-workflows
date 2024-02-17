@@ -39,7 +39,7 @@ export function PaginationPanel(props: {pagination: Pagination; onChange: (pagin
                         // we should not skip any by setting an offset.
                         // The offset must be initialized whenever the pagination limit is changed.
                         if (limit) {
-                            newValue.offset = '';
+                            newValue.offset = undefined;
                         }
 
                         props.onChange(newValue);
