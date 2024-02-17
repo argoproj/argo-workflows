@@ -54,9 +54,9 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
-        const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || 0;
+        const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
         return {
-            offset: queryParams.get('name'),
+            offset: queryParams.get('offset') || undefined,
             limit: parseLimit(queryParams.get('limit')) || savedPaginationLimit || 50
         };
     });
@@ -155,7 +155,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, pagination.nextOffset]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
