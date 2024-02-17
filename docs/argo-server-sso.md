@@ -197,7 +197,7 @@ workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
 
 ## Filtering groups
 
-> v3.5 and above
+> v3.5 and after
 
 You can configure `filterGroupsRegex` to filter the groups returned by the OIDC provider. Some use-cases for this include:
 

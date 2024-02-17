@@ -1,6 +1,6 @@
 # Artifact Visualization
 
-> since v3.4
+> v3.4 and after
 
 Artifacts can be viewed in the UI.
 
