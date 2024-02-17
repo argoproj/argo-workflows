@@ -265,6 +265,7 @@ var indexers = cache.Indexers{
 	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
 	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
 	indexes.UIDIndex:                     indexes.MetaUIDFunc,
+	cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
 }
 
 // Run starts an Workflow resource controller
