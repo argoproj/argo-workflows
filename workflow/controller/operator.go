@@ -288,7 +288,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
 		setWfPodNamesAnnotation(woc.wf)
-
+		if woc.wf.Spec.WorkflowTemplateRef != nil {
+			setWfTemplateLabel(woc.wf)
+		}
 		err := woc.createPDBResource(ctx)
 		if err != nil {
 			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
@@ -4048,6 +4050,19 @@ func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
 	}
 
 	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
+}
+
+func setWfTemplateLabel(wf *wfv1.Workflow) {
+	if wf.Spec.WorkflowTemplateRef != nil {
+		if wf.ObjectMeta.Labels == nil {
+			wf.ObjectMeta.Labels = map[string]string{}
+		}
+		if wf.Spec.WorkflowTemplateRef.ClusterScope {
+			wf.ObjectMeta.Labels[common.LabelKeyClusterWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
+		} else {
+			wf.ObjectMeta.Labels[common.LabelKeyWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
+		}
+	}
 }
 
 // getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node, which are marked as `NodeStatus.NodeFlag.Retried=true`.
