@@ -336,7 +336,7 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 			log.Debug("Received event")
 			e, ok := event.Object.(*corev1.Event)
 			if !ok {
-				// object is probably probably metav1.Status, `FromObject` can deal with anything
+				// object is probably metav1.Status, `FromObject` can deal with anything
 				return sutils.ToStatusError(apierr.FromObject(event.Object), codes.Internal)
 			}
 			log.Debug("Sending event")
@@ -688,7 +688,7 @@ func getLatestWorkflow(ctx context.Context, wfClient versioned.Interface, namesp
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	if len(wfList.Items) < 1 {
-		return nil, sutils.ToStatusError(fmt.Errorf("No workflows found."), codes.NotFound)
+		return nil, sutils.ToStatusError(fmt.Errorf("no workflows found"), codes.NotFound)
 	}
 	latest := wfList.Items[0]
 	for _, wf := range wfList.Items {
