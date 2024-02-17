@@ -288,9 +288,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
 		setWfPodNamesAnnotation(woc.wf)
-		if woc.execWf.Spec.WorkflowTemplateRef != nil {
-			setWfTemplateLabel(woc.wf)
-		}
 		err := woc.createPDBResource(ctx)
 		if err != nil {
 			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
@@ -3843,6 +3840,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		}
 		woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
 		woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
+		setWfTemplateLabel(woc.wf)
 	} else if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
 		err := fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		woc.markWorkflowError(ctx, err)
