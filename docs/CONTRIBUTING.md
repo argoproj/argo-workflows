@@ -123,7 +123,7 @@ Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues
 If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
 If more information is needed from the author to diagnose the issue, then apply the `more information needed` label.
 
-Please only assign issues to regular contributors and maintainers.
+Please only assign issues to regular contributors and maintainers. New contributors are encouraged to work on a PR directly without being assigned.
 
 ##### Staleness
 
