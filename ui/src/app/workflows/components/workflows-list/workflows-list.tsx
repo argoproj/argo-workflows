@@ -2,6 +2,7 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
 
 import * as models from '../../../../models';
 import {isArchivedWorkflow, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
@@ -81,6 +82,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
     const [error, setError] = useState<Error>();
+    const {t} = useTranslation();
 
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
         const nowDisabled: any = {...allBatchActionsEnabled};
@@ -170,7 +172,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                 actionMenu: {
                     items: [
                         {
-                            title: 'Submit New Workflow',
+                            title: t('submitNewWorkflow'),
                             iconClassName: 'fa fa-plus',
                             action: () => navigation.goto('.', {sidePanel: 'submit-new-workflow'})
                         },

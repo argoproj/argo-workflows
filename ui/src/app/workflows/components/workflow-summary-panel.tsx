@@ -1,5 +1,6 @@
 import {Ticker} from 'argo-ui';
 import * as React from 'react';
+import {useTranslation} from 'react-i18next';
 
 import {labels, NODE_PHASE, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
@@ -17,6 +18,7 @@ import {WorkflowLabels} from './workflow-labels/workflow-labels';
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>
         {() => {
+            const {t} = useTranslation();
             const attributes: {title: string; value: any}[] = [
                 {title: 'Status', value: <Phase value={props.workflow.status.phase} />},
                 {title: 'Message', value: props.workflow.status.message},
@@ -83,7 +85,7 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                     <div className='white-box__details'>
                         {attributes.map(attr => (
                             <div className='row white-box__details-row' key={attr.title}>
-                                <div className='columns small-3'>{attr.title}</div>
+                                <div className='columns small-3'>{t(attr.title)}</div>
                                 <div className='columns small-9'>{attr.value}</div>
                             </div>
                         ))}

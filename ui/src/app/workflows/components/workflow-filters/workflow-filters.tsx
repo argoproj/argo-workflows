@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useMemo} from 'react';
 import DatePicker from 'react-datepicker';
+import {useTranslation} from 'react-i18next';
 import 'react-datepicker/dist/react-datepicker.css';
 
 import * as models from '../../../../models';
@@ -56,20 +57,21 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
         });
         return results;
     }, [props.workflows, props.phaseItems]);
+    const {t} = useTranslation();
 
     return (
         <div className='wf-filters-container'>
             <div className='row'>
                 <div className='columns small-2 xlarge-12'>
-                    <p className='wf-filters-container__title'>Namespace</p>
+                    <p className='wf-filters-container__title'>{t('namespace')}</p>
                     <NamespaceFilter value={props.namespace} onChange={props.setNamespace} />
                 </div>
                 <div className='columns small-2 xlarge-12'>
-                    <p className='wf-filters-container__title'>Labels</p>
+                    <p className='wf-filters-container__title'>{t('labels')}</p>
                     <TagsInput placeholder='' autocomplete={labelSuggestion} tags={props.labels} onChange={props.setLabels} />
                 </div>
                 <div className='columns small-2 xlarge-12'>
-                    <p className='wf-filters-container__title'>Workflow Template</p>
+                    <p className='wf-filters-container__title'>{t('workflowTemplate')}</p>
                     <DataLoaderDropdown
                         load={async () => {
                             const list = await services.workflowTemplate.list(props.namespace, []);
@@ -79,7 +81,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     />
                 </div>
                 <div className='columns small-2 xlarge-12'>
-                    <p className='wf-filters-container__title'>Cron Workflow</p>
+                    <p className='wf-filters-container__title'>{t('cronWorkflow')}</p>
                     <DataLoaderDropdown
                         load={async () => {
                             const list = await services.cronWorkflows.list(props.namespace);
@@ -89,11 +91,11 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     />
                 </div>
                 <div className='columns small-4 xlarge-12'>
-                    <p className='wf-filters-container__title'>Phases</p>
+                    <p className='wf-filters-container__title'>{t('phases')}</p>
                     <CheckboxFilter selected={props.phases} onChange={props.setPhases} items={phaseItems} type='phase' />
                 </div>
                 <div className='columns small-5 xlarge-12'>
-                    <p className='wf-filters-container__title'>Created Since</p>
+                    <p className='wf-filters-container__title'>{t('createdSince')}</p>
                     <div className='wf-filters-container__content'>
                         <DatePicker
                             selected={props.createdAfter}
@@ -107,7 +109,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                             <i className='fa fa-times-circle' />
                         </a>
                     </div>
-                    <p className='wf-filters-container__title'>Finished Before</p>
+                    <p className='wf-filters-container__title'>{t('finishedBefore')}</p>
                     <div className='wf-filters-container__content'>
                         <DatePicker
                             selected={props.finishedBefore}
