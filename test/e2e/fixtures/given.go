@@ -23,6 +23,7 @@ type Given struct {
 	client            v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
@@ -223,6 +224,7 @@ func (g *Given) When() *When {
 		client:            g.client,
 		wfebClient:        g.wfebClient,
 		wfTemplateClient:  g.wfTemplateClient,
+		wftsClient:        g.wftsClient,
 		cwfTemplateClient: g.cwfTemplateClient,
 		cronClient:        g.cronClient,
 		hydrator:          g.hydrator,
