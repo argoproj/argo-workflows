@@ -252,14 +252,14 @@ export const WorkflowsService = {
     },
 
     getContainerLogsFromArtifacts(workflow: Workflow, container: string, grep: string, archived: boolean): Observable<LogEntry> {
-        const nodeIds: string[] = [];
-
-        //itrerate workflow and get all node ids and check if node is a pod
-        Object.keys(workflow.status.nodes).find(key => {
-            if (workflow.status.nodes[key].type === 'Pod') {
-                nodeIds.push(workflow.status.nodes[key].id);
-            }
-        });
+        // Itterate workflow and get all node ids and check if node is a pod. Then sort nodes by startedAt
+        const nodeIds: string[] = Object.keys(workflow.status.nodes)
+            .filter(nodeId => {
+                return workflow.status.nodes[nodeId].type === 'Pod';
+            })
+            .sort((a, b) => {
+                return new Date(workflow.status.nodes[a].startedAt).getTime() - new Date(workflow.status.nodes[b].startedAt).getTime();
+            });
 
         // Itterate over all nodes and get the logs
         return from(nodeIds).pipe(
