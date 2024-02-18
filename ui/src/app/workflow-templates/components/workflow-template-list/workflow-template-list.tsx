@@ -4,6 +4,7 @@ import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {WorkflowTemplate} from '../../../../models';
+import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
@@ -146,7 +147,10 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                                         <div className='columns small-1'>
                                             <i className='fa fa-clone' />
                                         </div>
-                                        <div className='columns small-5'>{t.metadata.name}</div>
+                                        <div className='columns small-5'>
+                                            {t.metadata.annotations?.[ANNOTATION_TITLE] ?? t.metadata.name}
+                                            {t.metadata.annotations?.[ANNOTATION_DESCRIPTION] ? <p>{t.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
+                                        </div>
                                         <div className='columns small-3'>{t.metadata.namespace}</div>
                                         <div className='columns small-3'>
                                             <Timestamp date={t.metadata.creationTimestamp} />

@@ -3,6 +3,7 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {CronWorkflow} from '../../../../models';
+import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
@@ -145,7 +146,10 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                         key={`${w.metadata.namespace}/${w.metadata.name}`}
                                         to={uiUrl(`cron-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
                                         <div className='columns small-1'>{w.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
-                                        <div className='columns small-3'>{w.metadata.name}</div>
+                                        <div className='columns small-3'>
+                                            {w.metadata.annotations?.[ANNOTATION_TITLE] ?? w.metadata.name}
+                                            {w.metadata.annotations?.[ANNOTATION_DESCRIPTION] ? <p>{w.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
+                                        </div>
                                         <div className='columns small-2'>{w.metadata.namespace}</div>
                                         <div className='columns small-1'>{w.spec.timezone}</div>
                                         <div className='columns small-1'>{w.spec.schedule}</div>
