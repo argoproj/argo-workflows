@@ -197,6 +197,15 @@ export const Utils = {
     },
 
     getValueFromParameter(p: Parameter) {
+        const value = Utils.getValue(p);
+        if (p.multi && typeof value === 'string') {
+            return value.split(',');
+        }
+
+        return value;
+    },
+
+    getValue(p: Parameter) {
         if (p.value === undefined) {
             return p.default;
         } else {

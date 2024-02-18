@@ -373,9 +373,46 @@ spec:
       - name: message
         value: one
         enum:
-          -   one
-          -   two
-          -   three
+          - one
+          - two
+          - three
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+```
+
+In case the user would like to use a multi-select dropdown, the same setup as above remains, you just need to:
+
+- Add a field named `multi: true`
+- Using the value still as a string, but with a `,` delimiter with the options you choose, without spaces before or after the delimiter.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-with-enum-values
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        multi: true
+        value: one,two
+        enum:
+          - one
+          - two
+          - three
   templates:
     - name: argosay
       inputs:
