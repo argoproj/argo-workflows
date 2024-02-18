@@ -2366,7 +2366,10 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 			woc.updated = true
 		}
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		hasPluginNodes
+		if woc.hasPluginNodes() {
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		}
 	}
 }
 
@@ -2384,6 +2387,15 @@ func (woc *wfOperationCtx) estimateWorkflowDuration() wfv1.EstimatedDuration {
 
 func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
 	return woc.getEstimator().EstimateNodeDuration(nodeName)
+}
+
+func (woc *wfOperationCtx) hasPluginNodes() bool {
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePlugin {
+			return true
+		}
+	}
+	return false
 }
 
 func (woc *wfOperationCtx) hasDaemonNodes() bool {
