@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	gosync "sync"
@@ -264,6 +265,7 @@ var indexers = cache.Indexers{
 	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
 	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
 	indexes.UIDIndex:                     indexes.MetaUIDFunc,
+	cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
 }
 
 // Run starts an Workflow resource controller
@@ -308,7 +310,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal(err)
 	}
 
-	go wfc.runConfigMapWatcher(ctx.Done())
+	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
+		go wfc.runConfigMapWatcher(ctx.Done())
+	}
+
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -878,12 +883,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	startTime := time.Now()
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
-	if woc.wf.Status.Fulfilled() {
-		err := woc.completeTaskSet(ctx)
-		if err != nil {
-			log.WithError(err).Warn("error to complete the taskset")
-		}
-	}
 
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time

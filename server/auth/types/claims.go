@@ -65,19 +65,19 @@ func (c *Claims) UnmarshalJSON(data []byte) error {
 func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	groups, ok := c.RawClaim[customKeyName]
 	if !ok {
-		return nil, fmt.Errorf("No claim found for key: %v", customKeyName)
+		return nil, fmt.Errorf("no claim found for key: %v", customKeyName)
 	}
 
 	sliceInterface, ok := groups.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("Expected an array, got %v", groups)
+		return nil, fmt.Errorf("expected an array, got %v", groups)
 	}
 
 	newSlice := []string{}
 	for _, a := range sliceInterface {
 		val, ok := a.(string)
 		if !ok {
-			return nil, fmt.Errorf("Group name %v was not a string", a)
+			return nil, fmt.Errorf("group name %v was not a string", a)
 		}
 		newSlice = append(newSlice, val)
 	}
