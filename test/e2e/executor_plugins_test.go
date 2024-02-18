@@ -14,6 +14,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type ExecutorPluginsSuite struct {
@@ -76,6 +77,12 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 					}
 				}
 			}
+		}).
+		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
+			assert.NotNil(t, wfts)
+			assert.Len(t, wfts.Spec.Tasks, 0)
+			assert.Len(t, wfts.Status.Nodes, 0)
+			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
 		})
 }
 
