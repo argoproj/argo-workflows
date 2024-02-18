@@ -883,12 +883,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	startTime := time.Now()
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
-	if woc.wf.Status.Fulfilled() {
-		err := woc.completeTaskSet(ctx)
-		if err != nil {
-			log.WithError(err).Warn("error to complete the taskset")
-		}
-	}
 
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time
