@@ -83,7 +83,7 @@ metadata:
     # Must evaluate to a boolean.
     # If you want an account to be the default to use, this rule can be "true".
     # Details of the expression language are available in
-    # https://github.com/expr-lang/expr/blob/master/docs/language-definition.md.
+    # https://expr-lang.org/docs/language-definition.
     workflows.argoproj.io/rbac-rule: "'admin' in groups"
     # The precedence is used to determine which service account to use whe
     # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
@@ -197,7 +197,7 @@ workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
 
 ## Filtering groups
 
-> v3.5 and above
+> v3.5 and after
 
 You can configure `filterGroupsRegex` to filter the groups returned by the OIDC provider. Some use-cases for this include:
 

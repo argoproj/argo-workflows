@@ -636,14 +636,6 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 				},
 			},
 		},
-		// This flag was introduced in Go 15 and will be removed in Go 16.
-		// x509: cannot validate certificate for ... because it doesn't contain any IP SANs
-		// https://github.com/argoproj/argo-workflows/issues/5563 - Upgrade to Go 16
-		// https://github.com/golang/go/issues/39568
-		{
-			Name:  "GODEBUG",
-			Value: "x509ignoreCN=0",
-		},
 		{
 			Name:  common.EnvVarWorkflowName,
 			Value: woc.wf.Name,
@@ -694,6 +686,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Env:             woc.createEnvVars(),
 		Resources:       woc.controller.Config.GetExecutor().Resources,
 		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
+		Args:            woc.controller.Config.GetExecutor().Args,
 	}
 	// lock down resource pods by default
 	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {

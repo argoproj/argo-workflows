@@ -2,7 +2,7 @@
 
 > v3.1 and after
 
-A container set templates is similar to a normal container or script template, but allows you to specify multiple
+A container set template is similar to a normal container or script template, but allows you to specify multiple
 containers to run within a single pod.
 
 Because you have multiple containers within a pod, they will be scheduled on the same host. You can use cheap and fast
@@ -66,7 +66,7 @@ All container set templates that have artifacts must/should have a container nam
 
 If you want to use base-layer artifacts, `main` must be last to finish, so it must be the root node in the graph.
 
-That is may not be practical.
+That may not be practical.
 
 Instead, have a workspace volume and make sure all artifacts paths are on that volume.
 
