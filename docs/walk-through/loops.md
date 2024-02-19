@@ -9,6 +9,7 @@ There are three basic ways of running a template multiple times.
     - a JSON object where each element in the object can be addressed by it's key as '{{item.key}}'
 - `withParam` takes a JSON array of items, and iterates over it - again the items can be objects like with `withItems`. This is very powerful, as you can generate the JSON in another step in your workflow, so creating a dynamic workflow.
 - `withSequence` take a Sequence, and convert it into a numeric sequence.
+
 ## `withItems` basic example
 
 This example is the simplest. We are taking a basic list of items and iterating over it with `withItems`. It is limited to one varying field for each of the workflow templates instantiated.
