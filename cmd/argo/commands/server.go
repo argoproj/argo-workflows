@@ -191,7 +191,7 @@ See %s`, help.ArgoServer),
 	}
 
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
-	command.Flags().StringVar(&baseHRef, "basehref", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /.")
+	command.Flags().StringVar(&baseHRef, "base-href", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
