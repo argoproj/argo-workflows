@@ -3,8 +3,6 @@ package workflowarchive
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog/v2"
 	"os"
 	"regexp"
 	"sort"
@@ -12,6 +10,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog/v2"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"

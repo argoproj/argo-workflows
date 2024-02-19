@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+
 	"math/rand"
 	"net/http"
 	"os"
@@ -14,7 +15,12 @@ import (
 	nruntime "runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -1013,6 +1019,46 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 
 	return newWF, podsToDelete, nil
+}
+
+// DeletePodsInParallel delete all pods counted in the FormulaRetryWorkflow function
+func DeletePodsInParallel(ctx context.Context, podsToDelete []string, kubeClient kubernetes.Interface, namespace string) error {
+	var backoff = wait.Backoff{
+		Steps:    5,
+		Duration: 500 * time.Millisecond,
+		Factor:   1.0,
+		Jitter:   0.1,
+	}
+
+	errCh := make(chan error, len(podsToDelete))
+	var wg sync.WaitGroup
+	parallelPodNum := make(chan string, 500)
+	for _, podName := range podsToDelete {
+		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
+		wg.Add(1)
+		go func(podName string) {
+			defer wg.Done()
+			err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+				err := kubeClient.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+				if err != nil && !apierr.IsNotFound(err) {
+					klog.Errorf("Failed to delete pod %s: %v", podName, err)
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				errCh <- err
+			}
+			<-parallelPodNum
+		}(podName)
+	}
+	wg.Wait()
+
+	err := ErrorFromChannel(errCh)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
