@@ -9,6 +9,8 @@ import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {openLinkWithKey} from '../shared/components/links';
 import {Loading} from '../shared/components/loading';
+import {Pagination, parseLimit} from '../shared/pagination';
+import {ScopedLocalStorage} from '../shared/scoped-local-storage';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -22,12 +24,21 @@ import {CronWorkflowEditor} from './cron-workflow-editor';
 import '../workflows/components/workflow-details/workflow-details.scss';
 import './cron-workflow-details.scss';
 
+const storage = new ScopedLocalStorage('ListOptions');
+
 export function CronWorkflowDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     const [namespace] = useState(match.params.namespace);
+    const [pagination] = useState<Pagination>(() => {
+        const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
+        return {
+            offset: queryParams.get('offset') || undefined,
+            limit: parseLimit(queryParams.get('limit')) || savedPaginationLimit || 50
+        };
+    });
     const [name] = useState(match.params.name);
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState(queryParams.get('tab'));
@@ -72,7 +83,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
 
     useEffect(() => {
         (async () => {
-            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.cronWorkflow}=${name}`], null);
+            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.cronWorkflow}=${name}`], pagination);
             const workflowsInfo = await services.info.getInfo();
 
             setWorkflows(workflowList.items);
