@@ -1120,6 +1120,11 @@ func (in *CronWorkflowSpec) DeepCopyInto(out *CronWorkflowSpec) {
 		*out = new(StopStrategy)
 		**out = **in
 	}
+	if in.Schedules != nil {
+		in, out := &in.Schedules, &out.Schedules
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

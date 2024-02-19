@@ -2,7 +2,7 @@ import {Page, SlidingPanel, Ticker} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {CronWorkflow} from '../../../../models';
+import {CronWorkflow, CronWorkflowSpec} from '../../../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -152,19 +152,35 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                         </div>
                                         <div className='columns small-2'>{w.metadata.namespace}</div>
                                         <div className='columns small-1'>{w.spec.timezone}</div>
-                                        <div className='columns small-1'>{w.spec.schedule}</div>
+                                        <div className='columns small-1'>
+                                            {w.spec.schedule != ''
+                                                ? w.spec.schedule
+                                                : w.spec.schedules.map(schedule => (
+                                                      <>
+                                                          {schedule}
+                                                          <br />
+                                                      </>
+                                                  ))}
+                                        </div>
                                         <div className='columns small-2'>
-                                            <PrettySchedule schedule={w.spec.schedule} />
+                                            {w.spec.schedule != '' ? (
+                                                <PrettySchedule schedule={w.spec.schedule} />
+                                            ) : (
+                                                <>
+                                                    {w.spec.schedules.map(schedule => (
+                                                        <>
+                                                            <PrettySchedule schedule={schedule} />
+                                                            <br />
+                                                        </>
+                                                    ))}
+                                                </>
+                                            )}
                                         </div>
                                         <div className='columns small-1'>
                                             <Timestamp date={w.metadata.creationTimestamp} />
                                         </div>
                                         <div className='columns small-1'>
-                                            {w.spec.suspend ? (
-                                                ''
-                                            ) : (
-                                                <Ticker intervalMs={1000}>{() => <Timestamp date={getNextScheduledTime(w.spec.schedule, w.spec.timezone)} />}</Ticker>
-                                            )}
+                                            {w.spec.suspend ? '' : <Ticker intervalMs={1000}>{() => <Timestamp date={getCronNextScheduledTime(w.spec)} />}</Ticker>}
                                         </div>
                                     </Link>
                                 ))}
@@ -182,4 +198,19 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
             </SlidingPanel>
         </Page>
     );
+}
+
+function getCronNextScheduledTime(spec: CronWorkflowSpec): Date {
+    if (spec.schedule != '') {
+        return getNextScheduledTime(spec.schedule, spec.timezone);
+    }
+
+    let out: Date;
+    spec.schedules.forEach(schedule => {
+        const next = getNextScheduledTime(schedule, spec.timezone);
+        if (!out || next.getTime() < out.getTime()) {
+            out = next;
+        }
+    });
+    return out;
 }

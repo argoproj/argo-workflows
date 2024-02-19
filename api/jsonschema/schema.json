@@ -4514,6 +4514,13 @@
           "description": "Schedule is a schedule to run the Workflow in Cron format",
           "type": "string"
         },
+        "schedules": {
+          "description": "Schedules is a list of schedules to run the Workflow in Cron format",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "startingDeadlineSeconds": {
           "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
           "type": "integer"

@@ -34,6 +34,10 @@ spec:
                 type: integer
               schedule:
                 type: string
+              schedules:
+                items:
+                  type: string
+                type: array
               startingDeadlineSeconds:
                 format: int64
                 type: integer

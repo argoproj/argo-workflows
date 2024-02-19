@@ -12,8 +12,22 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                 <div className='row white-box__details-row'>
                     <div className='columns small-3'>Schedule</div>
                     <div className='columns small-9'>
-                        <TextInput value={spec.schedule} onChange={schedule => onChange({...spec, schedule})} />
-                        <ScheduleValidator schedule={spec.schedule} />
+                        {spec.schedule != '' ? (
+                            <>
+                                <TextInput value={spec.schedule} onChange={schedule => onChange({...spec, schedule})} />
+                                <ScheduleValidator schedule={spec.schedule} />
+                            </>
+                        ) : (
+                            spec.schedules.map((schedule, index) => (
+                                <>
+                                    <TextInput
+                                        value={schedule}
+                                        onChange={newSchedule => onChange({...spec, schedules: updateScheduleAtIndex(spec.schedules, index, newSchedule)})}
+                                    />
+                                    <ScheduleValidator schedule={schedule} />
+                                </>
+                            ))
+                        )}
                     </div>
                 </div>
                 <div className='row white-box__details-row'>
@@ -89,4 +103,11 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
             </div>
         </div>
     );
+}
+
+function updateScheduleAtIndex(schedules: string[], index: number, newSchedule: string): string[] {
+    const newSchedules = [...schedules];
+    newSchedules[index] = newSchedule;
+
+    return newSchedules;
 }

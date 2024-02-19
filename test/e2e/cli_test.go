@@ -1327,6 +1327,13 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
+	s.Run("Create Multiple Schedules", func() {
+		s.Given().RunCli([]string{"cron", "create", "cron/multiple-schedules.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Schedule:                      * * * * *,*/2 * * * *")
+			}
+		})
+	})
 }
 
 func (s *CLISuite) TestClusterTemplateCommands() {

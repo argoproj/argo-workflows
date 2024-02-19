@@ -367,6 +367,9 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 
 // ValidateCronWorkflow validates a CronWorkflow
 func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow) error {
+	if len(cronWf.Spec.Schedules) > 0 && cronWf.Spec.Schedule != "" {
+		return fmt.Errorf("cron workflow cant be configured with both Spec.Schedule and Spec.Schedules")
+	}
 	// CronWorkflows have fewer max chars allowed in their name because when workflows are created from them, they
 	// are appended with the unix timestamp (`-1615836720`). This lower character allowance allows for that timestamp
 	// to still fit within the 63 character maximum.
@@ -374,8 +377,10 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 		return fmt.Errorf("cron workflow name %q must not be more than 52 characters long (currently %d)", cronWf.Name, len(cronWf.Name))
 	}
 
-	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
+	for _, schedule := range cronWf.Spec.GetSchedules() {
+		if _, err := cron.ParseStandard(schedule); err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "cron schedule %s is malformed: %s", schedule, err)
+		}
 	}
 
 	switch cronWf.Spec.ConcurrencyPolicy {
