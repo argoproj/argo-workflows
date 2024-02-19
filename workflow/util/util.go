@@ -20,7 +20,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/klog/v2"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -1035,13 +1034,14 @@ func DeletePodsInParallel(ctx context.Context, podsToDelete []string, kubeClient
 	parallelPodNum := make(chan string, 500)
 	for _, podName := range podsToDelete {
 		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
+		parallelPodNum <- podName
 		wg.Add(1)
 		go func(podName string) {
 			defer wg.Done()
 			err := wait.ExponentialBackoff(backoff, func() (bool, error) {
 				err := kubeClient.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 				if err != nil && !apierr.IsNotFound(err) {
-					klog.Errorf("Failed to delete pod %s: %v", podName, err)
+					log.Errorf("Failed to delete pod %s: %v", podName, err)
 					return false, nil
 				}
 				return true, nil

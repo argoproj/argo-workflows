@@ -8,11 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog/v2"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -294,39 +290,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
-		var backoff = wait.Backoff{
-			Steps:    5,
-			Duration: 500 * time.Millisecond,
-			Factor:   1.0,
-			Jitter:   0.1,
-		}
-
-		errCh := make(chan error, len(podsToDelete))
-		var wg sync.WaitGroup
-		parallelPodNum := make(chan string, 500)
-		for _, podName := range podsToDelete {
-			log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
-			parallelPodNum <- podName
-			wg.Add(1)
-			go func(podName string) {
-				defer wg.Done()
-				err := wait.ExponentialBackoff(backoff, func() (bool, error) {
-					err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-					if err != nil && !apierr.IsNotFound(err) {
-						klog.Errorf("Failed to delete pod %s: %v", podName, err)
-						return false, nil
-					}
-					return true, nil
-				})
-				if err != nil {
-					errCh <- err
-				}
-				<-parallelPodNum
-			}(podName)
-		}
-		wg.Wait()
-
-		err = util.ErrorFromChannel(errCh)
+		err = util.DeletePodsInParallel(ctx, podsToDelete, kubeClient, wf.Namespace)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
