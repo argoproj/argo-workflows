@@ -64,11 +64,7 @@ spec:
 
 ## Suggested alternatives
 
-Argo Workflows log storage facilities are quite basic.
-
-We recommend using a fully featured Kubernetes-aware logging facility which will provide you with indexing, searching and managing of log storage.
-
-We do not plan to reach feature parity with purpose built-logging facilities as there are more optimized tools available in the ecosystem. Some open-source tools which are known to work:
+Argo's log storage is naive and will not reach feature parity with purpose-built facilities optimized for indexing, searching, and storing logs. Some open-source tools include:
 
 * [`fluentd`](https://github.com/fluent/fluentd) for collection
 * [ELK](https://www.elastic.co/elastic-stack/) as storage, querying and a UI
