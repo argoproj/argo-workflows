@@ -4,11 +4,38 @@ When writing workflows, it is often very useful to be able to iterate over a set
 
 There are three basic ways of running a template multiple times.
 
+- `withSequence` iterates over a sequence of numbers.
 - `withItems` takes a list of things to work on. Either
     - plain, single values, which are then usable in your template as '{{item}}'
     - a JSON object where each element in the object can be addressed by it's key as '{{item.key}}'
 - `withParam` takes a JSON array of items, and iterates over it - again the items can be objects like with `withItems`. This is very powerful, as you can generate the JSON in another step in your workflow, so creating a dynamic workflow.
-- `withSequence` take a Sequence, and convert it into a numeric sequence.
+
+## `withSequence` example
+
+This runs a template multiple times using `withSequence`.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loop-sequence-
+spec:
+  entrypoint: loop-sequence-example
+
+  templates:
+  - name: loop-sequence-example
+    steps:
+    - - name: hello-world-x5
+        template: hello-world
+        withSequence:
+          count: "5"
+
+  - name: run-pod
+    container:
+      image: argoproj/argosay:v2
+      command: ["sh", -c]
+      args: ["echo hello world!"]
+```
 
 ## `withItems` basic example
 
@@ -178,31 +205,6 @@ spec:
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
 ```
 
-## `withSequence` example
-
-This example run a simple template multiple times using `withSequence`.
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: loop-sequence-
-spec:
-  entrypoint: loop-sequence-example
-
-  templates:
-  - name: loop-sequence-example
-    steps:
-    - - name: run-pod
-        template: run-pod
-        withSequence:
-          count: "5"
-
-  - name: run-pod
-    container:
-      image: argoproj/argosay:v2
-      args: [sleep, 1s]
-```
 
 ## Accessing the aggregate results of a loop
 

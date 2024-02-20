@@ -1,4 +1,4 @@
-# This example shows how to use recursion in a Workflow.
+# This example shows how to nested withSequence loops in a Workflow.
 # A is the first step. A's output determines how many times B is executed.
 # B's output then determines how many times C is executed.
 #           A
