@@ -72,7 +72,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
 
     useEffect(() => {
         (async () => {
-            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.cronWorkflow}=${name}`], null);
+            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.cronWorkflow}=${name}`], {limit: 50});
             const workflowsInfo = await services.info.getInfo();
 
             setWorkflows(workflowList.items);
