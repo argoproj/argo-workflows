@@ -205,7 +205,6 @@ spec:
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
 ```
 
-
 ## Accessing the aggregate results of a loop
 
 The output of all iterations can be accessed as a JSON array, once the loop is done.
