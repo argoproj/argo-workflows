@@ -199,3 +199,10 @@ func parseHeaders(headerStrings []string) (http.Header, error) {
 	}
 	return headers, nil
 }
+
+func (h *Facade) proxyFunc() func(*http.Request) (*url.URL, error) {
+	if h.proxy != nil {
+		return h.proxy
+	}
+	return http.ProxyFromEnvironment
+}
