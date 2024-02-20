@@ -252,43 +252,44 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, err
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		var now time.Time
-		var cronSchedule cron.Schedule
-		if woc.cronWf.Spec.Timezone != "" {
-			loc, err := time.LoadLocation(woc.cronWf.Spec.Timezone)
-			if err != nil {
-				return time.Time{}, fmt.Errorf("invalid timezone '%s': %s", woc.cronWf.Spec.Timezone, err)
-			}
-			now = time.Now().In(loc)
+		for _, schedule := range woc.cronWf.Spec.GetSchedules() {
+			var now time.Time
+			var cronSchedule cron.Schedule
+			if woc.cronWf.Spec.Timezone != "" {
+				loc, err := time.LoadLocation(woc.cronWf.Spec.Timezone)
+				if err != nil {
+					return time.Time{}, fmt.Errorf("invalid timezone '%s': %s", woc.cronWf.Spec.Timezone, err)
+				}
+				now = time.Now().In(loc)
 
-			cronScheduleString := woc.cronWf.Spec.GetScheduleString()
-			cronSchedule, err = cron.ParseStandard(cronScheduleString)
-			if err != nil {
-				return time.Time{}, fmt.Errorf("unable to form timezone schedule '%s': %s", cronScheduleString, err)
+				cronSchedule, err = cron.ParseStandard(schedule)
+				if err != nil {
+					return time.Time{}, fmt.Errorf("unable to form timezone schedule '%s': %s", schedule, err)
+				}
+			} else {
+				var err error
+				now = time.Now()
+				cronSchedule, err = cron.ParseStandard(schedule)
+				if err != nil {
+					return time.Time{}, err
+				}
 			}
-		} else {
-			var err error
-			now = time.Now()
-			cronSchedule, err = cron.ParseStandard(woc.cronWf.Spec.Schedule)
-			if err != nil {
-				return time.Time{}, err
+
+			var missedExecutionTime time.Time
+			nextScheduledRunTime := cronSchedule.Next(woc.cronWf.Status.LastScheduledTime.Time)
+			// Workflow should have ran
+			for nextScheduledRunTime.Before(now) {
+				missedExecutionTime = nextScheduledRunTime
+				nextScheduledRunTime = cronSchedule.Next(missedExecutionTime)
 			}
-		}
 
-		var missedExecutionTime time.Time
-		nextScheduledRunTime := cronSchedule.Next(woc.cronWf.Status.LastScheduledTime.Time)
-		// Workflow should have ran
-		for nextScheduledRunTime.Before(now) {
-			missedExecutionTime = nextScheduledRunTime
-			nextScheduledRunTime = cronSchedule.Next(missedExecutionTime)
-		}
-
-		// We missed the latest execution time
-		if !missedExecutionTime.IsZero() {
-			// if missedExecutionTime is within StartDeadlineSeconds, We are still within the deadline window, run the Workflow
-			if woc.cronWf.Spec.StartingDeadlineSeconds != nil && now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
-				woc.log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
-				return missedExecutionTime, nil
+			// We missed the latest execution time
+			if !missedExecutionTime.IsZero() {
+				// if missedExecutionTime is within StartDeadlineSeconds, We are still within the deadline window, run the Workflow
+				if woc.cronWf.Spec.StartingDeadlineSeconds != nil && now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
+					woc.log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
+					return missedExecutionTime, nil
+				}
 			}
 		}
 	}

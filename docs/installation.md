@@ -37,6 +37,7 @@ Determine your base installation option.
 
 Review the following:
 
+* [Workflow RBAC](workflow-rbac.md)
 * [Security](security.md).
 * [Scaling](scaling.md) and [running at massive scale](running-at-massive-scale.md).
 * [High-availability](high-availability.md)

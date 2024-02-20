@@ -499,6 +499,9 @@ message CronWorkflowSpec {
 
   // StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
   optional StopStrategy stopStrategy = 10;
+
+  // Schedules is a list of schedules to run the Workflow in Cron format
+  repeated string schedules = 11;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow

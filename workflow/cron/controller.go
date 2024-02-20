@@ -190,13 +190,14 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	// The job is currently scheduled, remove it and re add it.
 	cc.cron.Delete(key.(string))
 
-	lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), cronWf.Spec.GetScheduleString(), cronWorkflowOperationCtx)
-	if err != nil {
-		logCtx.WithError(err).Error("could not schedule CronWorkflow")
-		return true
+	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone() {
+		lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), schedule, cronWorkflowOperationCtx)
+		if err != nil {
+			logCtx.WithError(err).Error("could not schedule CronWorkflow")
+			return true
+		}
+		cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 	}
-
-	cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 
 	logCtx.Infof("CronWorkflow %s added", key.(string))
 

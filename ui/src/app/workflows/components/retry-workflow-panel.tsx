@@ -3,7 +3,7 @@ import React, {useState} from 'react';
 import {Parameter, RetryOpts, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
-import {ParametersInput} from '../../shared/components/parameters-input/parameters-input';
+import {ParametersInput} from '../../shared/components/parameters-input';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 

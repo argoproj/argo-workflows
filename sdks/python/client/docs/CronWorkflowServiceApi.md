@@ -111,6 +111,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
+                schedules=[
+                    "schedules_example",
+                ],
                 starting_deadline_seconds=1,
                 stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
                     condition="condition_example",
@@ -11124,6 +11127,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
+                schedules=[
+                    "schedules_example",
+                ],
                 starting_deadline_seconds=1,
                 stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
                     condition="condition_example",
@@ -22222,6 +22228,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
+                schedules=[
+                    "schedules_example",
+                ],
                 starting_deadline_seconds=1,
                 stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
                     condition="condition_example",

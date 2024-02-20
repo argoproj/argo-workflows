@@ -325,8 +325,8 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
 }
 
-// TestTmplLevelExecutorServiceAccountName verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
-func TestTmplLevelExecutorSecurityContext(t *testing.T) {
+// TestCtrlLevelExecutorSecurityContext verifies the ability to carry forward Controller level SecurityContext to Podspec.
+func TestCtrlLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
 	ctx := context.Background()
 	woc := newWoc()
@@ -1487,6 +1487,26 @@ func TestMainContainerCustomization(t *testing.T) {
 		assert.Equal(t, "1", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 		assert.Equal(t, "128974848", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 	})
+}
+
+func TestExecutorContainerCustomization(t *testing.T) {
+	woc := newWoc()
+	woc.controller.Config.Executor = &apiv1.Container{
+		Args: []string{"foo"},
+		Resources: apiv1.ResourceRequirements{
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.900"),
+				apiv1.ResourceMemory: resource.MustParse("512Mi"),
+			},
+		},
+	}
+
+	pod, err := woc.createWorkflowPod(context.Background(), "", nil, &wfv1.Template{}, &createWorkflowPodOpts{})
+	assert.NoError(t, err)
+	waitCtr := pod.Spec.Containers[0]
+	assert.Equal(t, []string{"foo"}, waitCtr.Args)
+	assert.Equal(t, "0.900", waitCtr.Resources.Limits.Cpu().AsDec().String())
+	assert.Equal(t, "536870912", waitCtr.Resources.Limits.Memory().AsDec().String())
 }
 
 var helloWindowsWf = `
