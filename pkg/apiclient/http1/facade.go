@@ -27,10 +27,18 @@ type Facade struct {
 	insecureSkipVerify bool
 	headers            []string
 	httpClient         *http.Client
+	proxy              func(*http.Request) (*url.URL, error)
 }
 
-func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
-	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient}
+func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client, proxy func(*http.Request) (*url.URL, error)) Facade {
+	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient, proxy}
+}
+
+func (h Facade) proxyFunc() func(*http.Request) (*url.URL, error) {
+	if h.proxy != nil {
+		return h.proxy
+	}
+	return http.ProxyFromEnvironment
 }
 
 func (h Facade) Get(ctx context.Context, in, out any, path string) error {
@@ -68,10 +76,15 @@ func (h Facade) EventStreamReader(ctx context.Context, in any, path string) (*bu
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.WithField("url", u).Debug(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******'")
+	proxyURL, err := h.proxyFunc()(req)
+	if err != nil {
+		return nil, err
+	}
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
 			Transport: &http.Transport{
+				Proxy: http.ProxyURL(proxyURL),
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: h.insecureSkipVerify,
 				},
@@ -115,10 +128,15 @@ func (h Facade) do(ctx context.Context, in any, out any, method string, path str
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
 	log.WithFields(logging.Fields{"url": u, "method": method, "data": string(data)}).Debug(ctx, "curl -X")
+	proxyURL, err := h.proxyFunc()(req)
+	if err != nil {
+		return err
+	}
 	client := h.httpClient
 	if h.httpClient == nil {
 		client = &http.Client{
 			Transport: &http.Transport{
+				Proxy: http.ProxyURL(proxyURL),
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: h.insecureSkipVerify,
 				},
