@@ -9,7 +9,7 @@ import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-pan
 import {GiveFeedbackLink} from '../../../shared/components/give-feedback-link';
 import {LinkButton} from '../../../shared/components/link-button';
 import {SuspenseMonacoEditor} from '../../../shared/components/suspense-monaco-editor';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
+import {useCollectEvent} from '../../../shared/use-collect-event';
 import {services} from '../../../shared/services';
 import requests from '../../../shared/services/requests';
 
