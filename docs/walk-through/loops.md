@@ -30,16 +30,16 @@ spec:
         withSequence:
           count: "5"
 
-  - name: run-pod
+  - name: hello-world
     container:
-      image: argoproj/argosay:v2
-      command: ["sh", -c]
-      args: ["echo hello world!"]
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world!"]
 ```
 
 ## `withItems` basic example
 
-This example is the simplest. We are taking a basic list of items and iterating over it with `withItems`. It is limited to one varying field for each of the workflow templates instantiated.
+This iterates over a list of items with `withItems`, substituting a string for each instantiated template.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
