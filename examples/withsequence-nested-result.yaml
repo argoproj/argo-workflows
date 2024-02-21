@@ -1,0 +1,43 @@
+# This example shows how to nest withSequence loops in a Workflow.
+# A is the first step. A's output determines how many times B is executed.
+# B's output then determines how many times C is executed.
+#           A
+#         /   \
+#      B1      B2
+#    / | \    / |
+#  C1  C2 C3 C4 C5
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: withsequence-nested-result-
+spec:
+  entrypoint: hello-entrypoint
+  templates:
+    - name: hello-entrypoint
+      steps:
+        - - name: hello-a
+            template: hello
+        - - name: hello-b
+            template: hello-hello
+            withSequence:
+              start: "1"
+              end: "{{steps.hello-a.outputs.result}}"
+
+    - name: hello-hello
+      steps:
+        - - name: hello-b
+            template: hello
+        - - name: hello-c
+            template: hello
+            withSequence:
+              start: "1"
+              end: "{{steps.hello-b.outputs.result}}"
+
+    - name: hello
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          import random
+          result = random.randint(0,5)
+          print(result)
