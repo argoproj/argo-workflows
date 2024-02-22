@@ -66,7 +66,8 @@ func TestFindRetryNode(t *testing.T) {
 			BoundaryID: "A1",
 			Children:   []string{},
 			TemplateRef: &wfv1.TemplateRef{
-				Name: "tmpl1",
+				Name:     "tmpl1",
+				Template: "tmpl3",
 			},
 		},
 		"E2": wfv1.NodeStatus{
