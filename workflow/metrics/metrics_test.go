@@ -13,9 +13,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-func write(metric prometheus.Metric) dto.Metric {
-	var m dto.Metric
-	err := metric.Write(&m)
+func write(metric prometheus.Metric) *dto.Metric {
+	m := &dto.Metric{}
+	err := metric.Write(m)
 	if err != nil {
 		panic(err)
 	}
