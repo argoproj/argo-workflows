@@ -2,8 +2,9 @@ package template
 
 import (
 	"bytes"
-	"github.com/valyala/fasttemplate"
 	"io"
+
+	"github.com/valyala/fasttemplate"
 
 	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 )
