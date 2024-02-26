@@ -3,6 +3,7 @@ package template
 import (
 	"bytes"
 	"io"
+	"strings"
 
 	"github.com/valyala/fasttemplate"
 
@@ -37,6 +38,10 @@ func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (stri
 		switch kind {
 		case kindExpression:
 			env := exprenv.GetFuncMap(EnvMap(replaceMap))
+			if isTernaryExpression(expression) {
+				cond := strings.SplitN(expression, "?", 2)
+				expressionReplace(w, expression, env, allowUnresolved)
+			}
 			return expressionReplace(w, expression, env, allowUnresolved)
 		default:
 			return simpleReplace(w, tag, replaceMap, allowUnresolved)

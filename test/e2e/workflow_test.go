@@ -85,6 +85,37 @@ spec:
 		})
 }
 
+func (s *WorkflowSuite) TestWorkflowArgsUseTernaryExpression() {
+	s.Given().Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-workflow-
+  labels:
+    name: test-workflow
+spec:
+  arguments:
+    parameters:
+      - name: succeed
+        value: true
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: "alpine:3.18"
+        imagePullPolicy: "Always"
+        command: 
+            - "{{= workflow.parameters['succeed'] ? 'true' : 'false' }}"
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*11).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestWorkflowSuite(t *testing.T) {
 	suite.Run(t, new(WorkflowSuite))
 }
