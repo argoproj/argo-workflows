@@ -27,25 +27,13 @@ kubectl create namespace argo
 kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v<<ARGO_WORKFLOWS_VERSION>>/quick-start-minimal.yaml
 ```
 
-### Port-forward the UI
-
-Open a port-forward so you can access the UI:
-
-```bash
-kubectl -n argo port-forward deployment/argo-server 2746:2746
-```
-
-This will serve the UI on <https://localhost:2746>. Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.
-
-> Pay close attention to the URI. It uses `https` and not `http`. Navigating to `http://localhost:2746` results in a server-side error that breaks the port forwarding.
-
 ## Install the Argo Workflows CLI
 
 You can more easily interact with Argo Workflows with the [Argo CLI](walk-through/argo-cli.md).
 
-## Submitting an example workflow
+## Submit an example workflow
 
-### Submit an example workflow (CLI)
+### Submit via the CLI
 
 ```bash
 argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-world.yaml
@@ -79,16 +67,16 @@ You can also observe the logs of the Workflow run by running the following:
 argo logs -n argo @latest
 ```
 
-### Submit an example workflow (GUI)
+### Submit via the UI
 
-* Open a port-forward so you can access the UI:
+1. Forward the Server's port to access the UI:
 
-```bash
-kubectl -n argo port-forward service/argo-server 2746:2746
-```
+    ```bash
+    kubectl -n argo port-forward service/argo-server 2746:2746
+    ```
 
-* Navigate your browser to <https://localhost:2746>.
-
-* Click `+ Submit New Workflow` and then `Edit using full workflow options`
-
-* You can find an example workflow already in the text field. Press `+ Create` to start the workflow.
+1. Navigate your browser to <https://localhost:2746>.
+    * **Note**: The URL uses `https` and not `http`. Navigating to `http` will result in a server-side error.
+    * Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.
+1. Click `+ Submit New Workflow` and then `Edit using full workflow options`
+1. You can find an example workflow already in the text field. Press `+ Create` to start the workflow.
