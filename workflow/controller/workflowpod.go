@@ -834,6 +834,9 @@ func (woc *wfOperationCtx) GetBoundaryTemplate(nodeName string) (*wfv1.Template,
 		return nil, err
 	}
 	boundaryNode, err := woc.wf.Status.Nodes.Get(node.BoundaryID)
+	if err != nil {
+		return nil, err
+	}
 	tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
 	if err != nil {
 		return nil, err
