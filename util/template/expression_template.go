@@ -24,14 +24,14 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if isTernaryExpression(expression) {
 		splits := strings.SplitN(expression, "?", 2)
 		cond := splits[0]
-		result, err := runExpression(cond, env, allowUnresolved)
+		result, err := resolveExpression(cond, env, allowUnresolved)
 		if err != nil {
 			return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 		}
 		expression = fmt.Sprintf("%s?%s", result, splits[1])
 	}
 
-	result, err := runExpression(expression, env, allowUnresolved)
+	result, err := resolveExpression(expression, env, allowUnresolved)
 	if err != nil {
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
@@ -126,7 +126,7 @@ func isTernaryExpression(expression string) bool {
 	return false
 }
 
-func runExpression(expression string, env map[string]interface{}, allowUnresolved bool) (string, error) {
+func resolveExpression(expression string, env map[string]interface{}, allowUnresolved bool) (string, error) {
 	var unmarshalledExpression string
 	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
 	if err != nil && allowUnresolved {
