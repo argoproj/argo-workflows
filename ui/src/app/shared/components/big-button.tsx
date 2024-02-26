@@ -1,7 +1,8 @@
 import * as React from 'react';
+
 import {Icon} from './icon';
 
-export const BigButton = ({icon, title, onClick, href}: {icon: Icon; title: string; onClick?: () => void; href?: string}) => {
+export function BigButton({icon, title, onClick, href}: {icon: Icon; title: string; onClick?: () => void; href?: string}) {
     return (
         <a
             style={{
@@ -27,4 +28,4 @@ export const BigButton = ({icon, title, onClick, href}: {icon: Icon; title: stri
             <div style={{fontSize: '14pt'}}>{title}</div>
         </a>
     );
-};
+}

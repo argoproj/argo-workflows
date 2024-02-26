@@ -67,3 +67,36 @@ func TestNextRuntime(t *testing.T) {
 		assert.Greater(t, next.Unix(), time.Now().Unix())
 	}
 }
+
+var cronMultipleSchedules = `
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  creationTimestamp: "2020-05-19T16:47:25Z"
+  generation: 98
+  name: wonderful-tiger
+  namespace: argo
+  resourceVersion: "465179"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/wonderful-tiger
+  uid: c4ea2e84-ec58-4638-bf1d-5d543e7cc86a
+spec:
+  schedules: 
+  - '* * * * *'
+  - '*/2 * * * *'
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        command: [/argosay]
+`
+
+func TestNextRuntimeWithMultipleSchedules(t *testing.T) {
+	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(cronMultipleSchedules)
+	next, err := GetNextRuntime(cronWf)
+	if assert.NoError(t, err) {
+		assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
+		assert.Greater(t, next.Unix(), time.Now().Unix())
+	}
+}

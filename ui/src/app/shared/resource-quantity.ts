@@ -17,7 +17,7 @@ const units: {[key: string]: number} = {
     'E': Math.pow(10, 18)
 };
 
-export const parseResourceQuantity = (x: string): number => {
+export function parseResourceQuantity(x: string): number {
     const y = /^([.0-9]+)([^0-9]*)$/.exec(x); // we tolerate a decimal point, just because historically rate was a float, but this probably can be removed some day
     return parseFloat(y[1]) * units[y[2]];
-};
+}

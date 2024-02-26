@@ -1,0 +1,14 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflows-cron-list .workflows-list {
+  &__status {
+    max-width: 80px;
+    display: flex;
+    align-items: center;
+
+    /* checkboxes are not visible and are unused on this page */
+    &--checkbox {
+      appearance: none;
+    }
+  }
+}
