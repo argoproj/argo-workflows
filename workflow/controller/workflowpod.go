@@ -773,7 +773,7 @@ func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1
 	// Set nodeSelector (if specified)
 	if len(tmpl.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = tmpl.NodeSelector
-	} else if len(boundaryTemplate.NodeSelector) > 0 {
+	} else if boundaryTemplate != nil && len(boundaryTemplate.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = boundaryTemplate.NodeSelector
 	} else if len(wfSpec.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = wfSpec.NodeSelector
@@ -781,7 +781,7 @@ func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1
 	// Set affinity (if specified)
 	if tmpl.Affinity != nil {
 		pod.Spec.Affinity = tmpl.Affinity
-	} else if boundaryTemplate.Affinity != nil {
+	} else if boundaryTemplate != nil && boundaryTemplate.Affinity != nil {
 		pod.Spec.Affinity = boundaryTemplate.Affinity
 	} else if wfSpec.Affinity != nil {
 		pod.Spec.Affinity = wfSpec.Affinity
@@ -789,7 +789,7 @@ func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1
 	// Set tolerations (if specified)
 	if len(tmpl.Tolerations) > 0 {
 		pod.Spec.Tolerations = tmpl.Tolerations
-	} else if len(boundaryTemplate.Tolerations) > 0 {
+	} else if boundaryTemplate != nil && len(boundaryTemplate.Tolerations) > 0 {
 		pod.Spec.Tolerations = boundaryTemplate.Tolerations
 	} else if len(wfSpec.Tolerations) > 0 {
 		pod.Spec.Tolerations = wfSpec.Tolerations
