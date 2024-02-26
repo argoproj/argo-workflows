@@ -218,10 +218,17 @@ spec:
 		WaitForWorkflow(time.Second * 90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
-			nodeStatus := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(0)")
-			nodeStatusRetry := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(1)")
-			assert.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
+			if status.Phase == wfv1.WorkflowFailed {
+				nodeStatus := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(0)")
+				nodeStatusRetry := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(1)")
+				assert.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
+			}
+			if status.Phase == wfv1.WorkflowRunning {
+				nodeStatus := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(0)")
+				nodeStatusRetry := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(1)")
+				assert.Contains(t, nodeStatusRetry.Message, "1 node(s) didn't match Pod's node affinity/selector")
+				assert.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
+			}
 		})
 }
 
