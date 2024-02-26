@@ -603,6 +603,8 @@ func (wfc *WorkflowController) getPodFromCache(namespace string, podName string)
 }
 
 func (wfc *WorkflowController) enablePodForDeletion(ctx context.Context, pods typedv1.PodInterface, namespace string, podName string, isCompleted bool) error {
+	// Get current Pod from K8S and update it to remove finalizer, and if the Pod was completed, set the Label
+	// In the case that the Pod changed in between Get and Update, we'll get a conflict error and can try again
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		currentPod, err := wfc.getPodFromAPI(ctx, namespace, podName)
 		if err != nil {
