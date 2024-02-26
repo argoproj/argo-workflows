@@ -4054,6 +4054,11 @@ definitions:
           pods created by those templates will not be counted towards this total.
         format: int64
         type: integer
+      pendingTimeout:
+        description: |-
+          PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+          This duration may not be applied to Step or DAG templates.
+        type: string
       plugin:
         $ref: '#/definitions/Plugin'
       podSpecPatch:
