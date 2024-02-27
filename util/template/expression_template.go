@@ -174,5 +174,5 @@ func resolveExpression(expression string, env map[string]interface{}, allowUnres
 	if result == nil {
 		return expression, fmt.Errorf("failed to evaluate expression %q", expression)
 	}
-	return fmt.Sprintf("%s", result), nil
+	return fmt.Sprintf("%v", result), nil
 }
