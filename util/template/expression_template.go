@@ -26,6 +26,9 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		cond := splits[0]
 		result, err := resolveExpression(cond, env, allowUnresolved)
 		if err != nil {
+			if strings.Contains(err.Error(), "failed to evaluate expression") {
+				return 0, err
+			}
 			return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 		}
 		expression = fmt.Sprintf("%s?%s", result, splits[1])
@@ -33,6 +36,9 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 
 	result, err := resolveExpression(expression, env, allowUnresolved)
 	if err != nil {
+		if strings.Contains(err.Error(), "failed to evaluate expression") {
+			return 0, err
+		}
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 	resultMarshaled, err := json.Marshal(fmt.Sprintf("%v", result))
@@ -141,7 +147,7 @@ func resolveExpression(expression string, env map[string]interface{}, allowUnres
 		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
 		// See https://github.com/argoproj/argo-workflows/issues/5388
 		log.WithError(err).Debug("Retries are present and unresolved is allowed")
-		return expression, err
+		return expression, fmt.Errorf("retries are present and unresolved is allowed: %v", err)
 	}
 
 	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
@@ -160,13 +166,13 @@ func resolveExpression(expression string, env map[string]interface{}, allowUnres
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
 	if err != nil && !allowUnresolved {
-		log.WithError(err).Debug("failed to evaluate expression: %w", err)
+		return expression, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	result, err := expr.Run(program, env)
 	if (err != nil || result == nil) && allowUnresolved {
 		//  <nil> result is also un-resolved, and any error can be unresolved
 		log.WithError(err).Debug("Result and error are unresolved")
-		return expression, err
+		return expression, fmt.Errorf("result and error are unresolved: %w", err)
 	}
 	if err != nil {
 		return expression, fmt.Errorf("failed to evaluate expression: %w", err)
