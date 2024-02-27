@@ -215,7 +215,8 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(time.Second * 30).
+		WaitForWorkflow(fixtures.ToHaveFailedPod).
+		Wait(5 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			if status.Phase == wfv1.WorkflowFailed {
