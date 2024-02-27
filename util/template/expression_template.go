@@ -155,7 +155,14 @@ func resolveExpression(expression string, env map[string]interface{}, allowUnres
 		return expression, fmt.Errorf("wait exit handlers complete")
 	}
 
-	result, err := expr.Eval(unmarshalledExpression, env)
+	program, err := expr.Compile(unmarshalledExpression, expr.Env(env), expr.DisableBuiltin("string"))
+	// This allowUnresolved check is not great
+	// it allows for errors that are obviously
+	// not failed reference checks to also pass
+	if err != nil && !allowUnresolved {
+		return expression, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+	result, err := expr.Run(program, env)
 	if (err != nil || result == nil) && allowUnresolved {
 		//  <nil> result is also un-resolved, and any error can be unresolved
 		log.WithError(err).Debug("Result and error are unresolved")
