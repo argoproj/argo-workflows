@@ -160,7 +160,7 @@ func resolveExpression(expression string, env map[string]interface{}, allowUnres
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
 	if err != nil && !allowUnresolved {
-		return expression, fmt.Errorf("failed to evaluate expression: %w", err)
+		log.WithError(err).Debug("failed to evaluate expression: %w", err)
 	}
 	result, err := expr.Run(program, env)
 	if (err != nil || result == nil) && allowUnresolved {
