@@ -21,25 +21,56 @@ func init() {
 }
 
 func expressionReplace(w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
-	if isTernaryExpression(expression) {
-		splits := strings.SplitN(expression, "?", 2)
-		cond := splits[0]
-		result, err := resolveExpression(cond, env, allowUnresolved)
-		if err != nil {
-			if strings.Contains(err.Error(), "failed to evaluate expression") {
-				return 0, err
-			}
-			return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
-		}
-		expression = fmt.Sprintf("%s?%s", result, splits[1])
+	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
+	var unmarshalledExpression string
+	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
+	if err != nil && allowUnresolved {
+		log.WithError(err).Debug("unresolved is allowed ")
+		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+	if err != nil {
+		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
-	result, err := resolveExpression(expression, env, allowUnresolved)
-	if err != nil {
-		if strings.Contains(err.Error(), "failed to evaluate expression") {
-			return 0, err
+	if _, ok := env["retries"]; !ok && hasRetries(unmarshalledExpression) && allowUnresolved {
+		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
+		// See https://github.com/argoproj/argo-workflows/issues/5388
+		log.WithError(err).Debug("Retries are present and unresolved is allowed")
+		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+
+	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
+	// when `workflow.status` and `workflow.failures` don't exist in the env.
+	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
+	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
+	// when the exit handlers complete.
+	if ((hasWorkflowStatus(unmarshalledExpression) && !hasVarInEnv(env, "workflow.status")) ||
+		(hasWorkflowFailures(unmarshalledExpression) && !hasVarInEnv(env, "workflow.failures"))) &&
+		allowUnresolved {
+		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+
+	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
+	// This allowUnresolved check is not great
+	// it allows for errors that are obviously
+	// not failed reference checks to also pass
+	if err != nil && !allowUnresolved {
+		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+	result, err := expr.Run(program, env)
+	if (err != nil || result == nil) && allowUnresolved {
+		//  <nil> result is also un-resolved, and any error can be unresolved
+		log.WithError(err).Debug("Result and error are unresolved")
+		if err != nil && strings.Contains(err.Error(), "interface conversion") {
+			return 0, fmt.Errorf("failed to evaluate expression: %w", err)
 		}
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+	if err != nil {
+		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+	if result == nil {
+		return 0, fmt.Errorf("failed to evaluate expression %q", expression)
 	}
 	resultMarshaled, err := json.Marshal(fmt.Sprintf("%v", result))
 	if (err != nil || resultMarshaled == nil) && allowUnresolved {
@@ -122,63 +153,4 @@ func hasVarInEnv(env map[string]interface{}, parameter string) bool {
 	flattenEnv := bellows.Flatten(env)
 	_, ok := flattenEnv[parameter]
 	return ok
-}
-
-// isTernaryExpression check if the expression is a ternary expression
-func isTernaryExpression(expression string) bool {
-	if strings.Contains(expression, "?") && strings.Contains(expression, ":") && len(expression) >= 5 {
-		return true
-	}
-	return false
-}
-
-func resolveExpression(expression string, env map[string]interface{}, allowUnresolved bool) (string, error) {
-	var unmarshalledExpression string
-	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
-	if err != nil && allowUnresolved {
-		log.WithError(err).Debug("unresolved is allowed ")
-		return expression, err
-	}
-	if err != nil {
-		return expression, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
-	}
-
-	if _, ok := env["retries"]; !ok && hasRetries(unmarshalledExpression) && allowUnresolved {
-		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
-		// See https://github.com/argoproj/argo-workflows/issues/5388
-		log.WithError(err).Debug("Retries are present and unresolved is allowed")
-		return expression, fmt.Errorf("retries are present and unresolved is allowed: %v", err)
-	}
-
-	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
-	// when `workflow.status` and `workflow.failures` don't exist in the env.
-	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
-	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
-	// when the exit handlers complete.
-	if ((hasWorkflowStatus(unmarshalledExpression) && !hasVarInEnv(env, "workflow.status")) ||
-		(hasWorkflowFailures(unmarshalledExpression) && !hasVarInEnv(env, "workflow.failures"))) &&
-		allowUnresolved {
-		return expression, fmt.Errorf("wait exit handlers complete")
-	}
-
-	program, err := expr.Compile(unmarshalledExpression, expr.Env(env), expr.DisableBuiltin("string"))
-	// This allowUnresolved check is not great
-	// it allows for errors that are obviously
-	// not failed reference checks to also pass
-	if err != nil && !allowUnresolved {
-		return expression, fmt.Errorf("failed to evaluate expression: %w", err)
-	}
-	result, err := expr.Run(program, env)
-	if (err != nil || result == nil) && allowUnresolved {
-		//  <nil> result is also un-resolved, and any error can be unresolved
-		log.WithError(err).Debug("Result and error are unresolved")
-		return expression, fmt.Errorf("result and error are unresolved: %w", err)
-	}
-	if err != nil {
-		return expression, fmt.Errorf("failed to evaluate expression: %w", err)
-	}
-	if result == nil {
-		return expression, fmt.Errorf("failed to evaluate expression %q", expression)
-	}
-	return fmt.Sprintf("%v", result), nil
 }
