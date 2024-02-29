@@ -4,9 +4,9 @@ set -eu
 
 br="$1" # branch name, e.g. release-3.3
 commitPrefix="$2" # prefix to use to filter commits, e.g. fix, chore(deps), build, ci
-# whether this is dry-run. If set to `true`, this script will only print out the list
-# of commits. Otherwise, this script will automatically cherry-pick the commits to the branch.
-dryRun="$3"
+# If dryRun is unset or `true`, only print the list of commits to be cherry-picked.
+# Otherwise, cherry-pick the commits to the specified branch.
+dryRun="${3:-"true"}"
 
 commitGrepPattern="^${commitPrefix}(*.*)*:.*(#"
 
