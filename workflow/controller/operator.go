@@ -2222,6 +2222,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
 
 		// Inject lastRetry variables
+		// the first node will not have "lastRetry" variables so they must have default values
+		// for the expression to resolve
 		lastRetryExitCode, lastRetryDuration := "0", "0"
 		var lastRetryStatus, lastRetryMessage string
 		if lastChildNode != nil {
