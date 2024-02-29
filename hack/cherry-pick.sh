@@ -8,6 +8,13 @@ commitPrefix="$2" # prefix to use to filter commits, e.g. fix, chore(deps), buil
 # Otherwise, cherry-pick the commits to the specified branch.
 dryRun="${3:-"true"}"
 
+# unfortunately, cherry-picking to another branch is not possible, so error out if not on the branch (c.f. https://stackoverflow.com/q/13878904/3431180)
+curr_branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$curr_branch" != "$branch" ]]; then
+  echo "Current branch is '$curr_branch', but trying to cherry-pick to branch '$branch'. You must have branch '$branch' checked out in order to cherry-pick"
+  exit 1
+fi
+
 commitGrepPattern="^${commitPrefix}(*.*)*:.*(#"
 
 # find the branch point
