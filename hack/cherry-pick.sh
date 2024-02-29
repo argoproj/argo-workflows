@@ -38,7 +38,7 @@ diff "/tmp/$branch" /tmp/main | grep "^> " | cut -c 3- > /tmp/prs
 
 # print all the commits that need cherry-picking
 git log --oneline --grep "${commitGrepPattern}" "$base...main" | tac | while read -r m; do
-  if grep -q "$(echo "$m" | getPRNum)" /tmp/prs ; then
+  if grep -q -v "$(echo "$m" | getPRNum)" /tmp/prs ; then
     continue
   fi
 
