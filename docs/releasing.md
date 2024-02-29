@@ -7,7 +7,10 @@
 Get a list of commits you may want to cherry-pick:
 
 ```bash
-./hack/what-to-cherry-pick.sh release-3.3
+./hack/cherry-pick.sh release-3.3 "fix"
+./hack/cherry-pick.sh release-3.3 "chore(deps)"
+./hack/cherry-pick.sh release-3.3 "build"
+./hack/cherry-pick.sh release-3.3 "ci"
 ```
 
 Ignore:
