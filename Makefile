@@ -296,7 +296,7 @@ endif
 $(GOPATH)/bin/controller-gen:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
 endif
 $(GOPATH)/bin/go-to-protobuf:
 # update this in Nix when upgrading it here
