@@ -33,10 +33,13 @@ diff "/tmp/$br" /tmp/main | grep "^> " | cut -c 3- > /tmp/prs
 
 # print all the commits that need cherry-picking
 git log --oneline --grep "${commitGrepPattern}" "$base...main" | tac | while read -r m; do
+  if grep -q "$(echo "$m" | prNo)" /tmp/prs ; then
+    continue
+  fi
   if [[ "$dryRun" == "true" ]]; then
-    grep -q "$(echo "$m" | prNo)" /tmp/prs && echo "$m"
+    echo "$m"
   else
-    commit=$(grep -q "$(echo "$m" | prNo)" /tmp/prs && echo "${m:0:9}")
+    commit=${m:0:9}
     echo "cherry-picking: $commit"
     if ! git cherry-pick "$commit"; then
       echo "failed to cherry-pick $commit"
