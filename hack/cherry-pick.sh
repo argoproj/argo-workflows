@@ -32,7 +32,7 @@ prs "$base" main
 diff "/tmp/$br" /tmp/main | grep "^> " | cut -c 3- > /tmp/prs
 
 # print all the commits that need cherry-picking
-git log --oneline --grep "${commitGrepPattern}" "$base...main" | while read -r m; do
+git log --oneline --grep "${commitGrepPattern}" "$base...main" | tac | while read -r m; do
   if [[ "$dryRun" == "true" ]]; then
     grep -q "$(echo "$m" | prNo)" /tmp/prs && echo "$m"
   else
