@@ -49,7 +49,7 @@ git log --oneline --grep "${commitGrepPattern}" "$base...main" | tac | while rea
 
   commit=${m:0:9}
   echo "cherry-picking: $commit"
-  if ! git cherry-pick "$commit" -x ; then
+  if ! git cherry-pick "$commit" -x -Xpatience ; then
     echo "failed to cherry-pick $commit"
     git cherry-pick --abort
   fi
