@@ -1951,7 +1951,7 @@ SynchronizationStatus stores the status of semaphore and mutex.
 
 ## StopStrategy
 
-StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 
 ### Fields
 | Field Name | Field Type | Description   |

@@ -10804,7 +10804,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.StopStrategy": {
-      "description": "StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+      "description": "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
       "type": "object",
       "required": [
         "condition"

@@ -5820,7 +5820,7 @@ func schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+				Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"condition": {

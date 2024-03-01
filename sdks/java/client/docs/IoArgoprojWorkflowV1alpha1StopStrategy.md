@@ -2,7 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1StopStrategy
 
-StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 
 ## Properties
 

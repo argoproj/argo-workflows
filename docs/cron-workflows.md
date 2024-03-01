@@ -48,7 +48,7 @@ The resulting `Workflow` name will be a generated name based on the `CronWorkflo
 | `startingDeadlineSeconds`    |           `0`          | Number of seconds after the last successful run during which a missed `Workflow` will be run                                                                                                                                            |
 | `successfulJobsHistoryLimit` |           `3`          | Number of successful `Workflows` that will be persisted at a time                                                                                                                                                                       |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` that will be persisted at a time                                                                                                                                                                           |
-| `stopStrategy`     |         `nil`            | Defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow                                                                                                                                                                           |
+| `stopStrategy`               |         `nil`          | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition                                                                                                                                                                      |
 
 ### Cron Schedule Syntax
 
@@ -119,14 +119,14 @@ For example, if you want a workflow to be executed only once you can define the 
 
 ```yaml
 stopStrategy:
-  condition: succeeded >= 1
+  condition: "succeeded >= 1"
 ```
 
 It is also possible to stop scheduling new workflows after three failures with:
 
 ```yaml
 stopStrategy:
-  condition: failed >= 3
+  condition: "failed >= 3"
 ```
 
 **NOTE:** Depending on the time it takes to schedule and run a workflow, it is possible that the total number of executions of a `CronWorkflow` is higher than the configured max executions. For example, if you configure the `CronWorkflow` to execute every minute with a stopping condition: `succeeded >= 1` and the `Workflow` executes in 90 seconds, the `CronWorkflow` will be completed with 2 executions, because when the stopping condition is achieved, there is another workflow running and the controller is not canceling running workflows. For that reason, it is advisable to have conditions like `succeeded  >= 1` instead of `succeeded == 1`.
