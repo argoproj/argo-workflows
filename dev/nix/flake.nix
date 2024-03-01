@@ -190,13 +190,13 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorSha256 = "sha256-Ytl+++KUrFveoKRoSccwjCgozw4tFhjHxk8yDPQFRqo=";
+              vendorSha256 = "sha256-DHqQigUi31GdCFsjvAu1jU1PRNuPW/f3ECrgVd6bvuk=";
               doCheck = false;
             };
 
             mockery = pkgs.buildGoModule rec { 
               pname = "mockery";
-              version = "2.26.0"; # upgrade this in the Makefile if upgraded here
+              version = "2.42.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
