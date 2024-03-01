@@ -108,7 +108,7 @@ For example, with timezone set at `America/Los_Angeles`, we have daylight saving
 
 > v3.6 and after
 
-It is possible to stop the execution of new workflows from a `CronWorkflow` based on the number of previous successes or failures. The spec field `stopStrategy` accepts a `condition` that stops triggering new workflows when it evaluates to true.
+It is possible to stop the execution of new workflows from a `CronWorkflow` based on the number of previous successes or failures. The spec field `stopStrategy` accepts a `condition` which is an [expression](variables.md#expression) that stops triggering new workflows when it evaluates to true.
 
 Keywords allowed for stopping conditions are `failed` and `succeeded`:
 
