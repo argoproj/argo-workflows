@@ -122,6 +122,13 @@ stopStrategy:
   condition: succeeded >= 1
 ```
 
+It is also possible to stop scheduling new workflows after three failures with:
+
+```yaml
+stopStrategy:
+  condition: failed >= 3
+```
+
 **NOTE:** Depending on the time it takes to schedule and run a workflow, it is possible that the total number of executions of a `CronWorkflow` is higher than the configured max executions. For example, if you configure the `CronWorkflow` to execute every minute with a stopping condition: `succeeded >= 1` and the `Workflow` executes in 90 seconds, the `CronWorkflow` will be completed with 2 executions, because when the stopping condition is achieved, there is another workflow running and the controller is not canceling running workflows. For that reason, it is advisable to have conditions like `succeeded  >= 1` instead of `succeeded == 1`.
 
 ## Managing `CronWorkflow`
