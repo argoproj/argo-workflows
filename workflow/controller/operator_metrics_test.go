@@ -237,7 +237,7 @@ func getMetricStringValue(metric prometheus.Metric) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%v", metricString), nil
+	return fmt.Sprintf("%v", metricString.String()), nil
 }
 
 func getMetricGaugeValue(metric prometheus.Metric) (*float64, error) {
