@@ -827,18 +827,30 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 	return newWF, resetParentGroupNodes
 }
 
-// FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
-func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
+// RteryWorkflow retry a workflow by setting spec.retry and controller will retry it.
+func RetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, error) {
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	case wfv1.WorkflowSucceeded:
 		if !(restartSuccessful && len(nodeFieldSelector) > 0) {
-			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
+			return nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
 		}
 	default:
-		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
 	}
 
+	wf.Spec.Retry = &wfv1.RetryConfig{
+		Retried: false,
+		RestartSuccessful: restartSuccessful,
+		NodeFieldSelector: nodeFieldSelector,
+		Parameters: parameters,
+	}
+
+	return wf, nil
+}
+
+// FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
+func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 	newWF := wf.DeepCopy()
 
 	// Delete/reset fields which indicate workflow completed

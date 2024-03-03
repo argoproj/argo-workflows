@@ -39,6 +39,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_metadata import IoArgoprojWorkflowV1alpha1Metadata
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_metrics import IoArgoprojWorkflowV1alpha1Metrics
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_pod_gc import IoArgoprojWorkflowV1alpha1PodGC
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_retry_config import IoArgoprojWorkflowV1alpha1RetryConfig
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_retry_strategy import IoArgoprojWorkflowV1alpha1RetryStrategy
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_synchronization import IoArgoprojWorkflowV1alpha1Synchronization
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
@@ -63,6 +64,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1Metadata'] = IoArgoprojWorkflowV1alpha1Metadata
     globals()['IoArgoprojWorkflowV1alpha1Metrics'] = IoArgoprojWorkflowV1alpha1Metrics
     globals()['IoArgoprojWorkflowV1alpha1PodGC'] = IoArgoprojWorkflowV1alpha1PodGC
+    globals()['IoArgoprojWorkflowV1alpha1RetryConfig'] = IoArgoprojWorkflowV1alpha1RetryConfig
     globals()['IoArgoprojWorkflowV1alpha1RetryStrategy'] = IoArgoprojWorkflowV1alpha1RetryStrategy
     globals()['IoArgoprojWorkflowV1alpha1Synchronization'] = IoArgoprojWorkflowV1alpha1Synchronization
     globals()['IoArgoprojWorkflowV1alpha1TTLStrategy'] = IoArgoprojWorkflowV1alpha1TTLStrategy
@@ -159,6 +161,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             'pod_priority_class_name': (str,),  # noqa: E501
             'pod_spec_patch': (str,),  # noqa: E501
             'priority': (int,),  # noqa: E501
+            'retry': (IoArgoprojWorkflowV1alpha1RetryConfig,),  # noqa: E501
             'retry_strategy': (IoArgoprojWorkflowV1alpha1RetryStrategy,),  # noqa: E501
             'scheduler_name': (str,),  # noqa: E501
             'security_context': (PodSecurityContext,),  # noqa: E501
@@ -209,6 +212,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
         'pod_priority_class_name': 'podPriorityClassName',  # noqa: E501
         'pod_spec_patch': 'podSpecPatch',  # noqa: E501
         'priority': 'priority',  # noqa: E501
+        'retry': 'retry',  # noqa: E501
         'retry_strategy': 'retryStrategy',  # noqa: E501
         'scheduler_name': 'schedulerName',  # noqa: E501
         'security_context': 'securityContext',  # noqa: E501
@@ -294,6 +298,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501
+            retry (IoArgoprojWorkflowV1alpha1RetryConfig): [optional]  # noqa: E501
             retry_strategy (IoArgoprojWorkflowV1alpha1RetryStrategy): [optional]  # noqa: E501
             scheduler_name (str): Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.. [optional]  # noqa: E501
             security_context (PodSecurityContext): [optional]  # noqa: E501
@@ -417,6 +422,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501
+            retry (IoArgoprojWorkflowV1alpha1RetryConfig): [optional]  # noqa: E501
             retry_strategy (IoArgoprojWorkflowV1alpha1RetryStrategy): [optional]  # noqa: E501
             scheduler_name (str): Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.. [optional]  # noqa: E501
             security_context (PodSecurityContext): [optional]  # noqa: E501

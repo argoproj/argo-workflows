@@ -819,6 +819,7 @@ WorkflowSpec is the specification of a Workflow.
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
+|`retry`|[`RetryConfig`](#retryconfig)|Retry will retry the workflow according to its RetryConfig|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty. See type description for default values of each field.|
@@ -1569,6 +1570,18 @@ Pod metdata
 |:----------:|:----------:|---------------|
 |`annotations`|`Map< string , string >`|_No description available_|
 |`labels`|`Map< string , string >`|_No description available_|
+
+## RetryConfig
+
+RetryConfig defines how to retry a workflow
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`nodeFieldSelector`|`string`|NodeFieldSelector selects nodes to reset|
+|`parameters`|`Array< string >`|Parameters are a list of parameters passed|
+|`restartSuccessful`|`boolean`|RestartSuccessful defines whether or not to retry succeeded node|
+|`retried`|`boolean`|Retried tracks whether or not this workflow was retried by RetryConfig|
 
 ## RetryStrategy
 
