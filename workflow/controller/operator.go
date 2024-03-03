@@ -510,7 +510,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.markWorkflowError(ctx, err)
 	}
 
-	if woc.execWf.Spec.Metrics != nil {
+	if woc.execWf.Spec.Metrics != nil && woc.wf.Status.Fulfilled() {
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		localScope, realTimeScope := woc.prepareMetricScope(node)
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
