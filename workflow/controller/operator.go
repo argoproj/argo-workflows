@@ -1706,7 +1706,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 
 	switch gcStrategy {
 	case wfv1.VolumeClaimGCOnSuccess:
-		if woc.wf.Status.Phase == wfv1.WorkflowError || woc.wf.Status.Phase == wfv1.WorkflowFailed {
+		if woc.wf.Status.Phase == wfv1.WorkflowError || woc.wf.Status.Phase == wfv1.WorkflowFailed || woc.wf.Status.Phase == wfv1.WorkflowRunning {
 			// Skip deleting PVCs to reuse them for retried failed/error workflows.
 			// PVCs are automatically deleted when corresponded owner workflows get deleted.
 			return nil
