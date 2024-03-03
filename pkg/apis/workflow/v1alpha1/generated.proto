@@ -1333,6 +1333,21 @@ message RetryAffinity {
   optional RetryNodeAntiAffinity nodeAntiAffinity = 1;
 }
 
+// RetryConfig defines how to retry a workflow
+message RetryConfig {
+  // Retried tracks whether or not this workflow was retried by RetryConfig
+  optional bool retried = 1;
+
+  // RestartSuccessful defines whether or not to retry succeeded node
+  optional bool restartSuccessful = 2;
+
+  // NodeFieldSelector selects nodes to reset
+  optional string nodeFieldSelector = 3;
+
+  // Parameters are a list of parameters passed
+  repeated string parameters = 4;
+}
+
 // RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
 // In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
 message RetryNodeAntiAffinity {
@@ -2080,6 +2095,9 @@ message WorkflowSpec {
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
   optional WorkflowLevelArtifactGC artifactGC = 43;
+
+  // Retry will retry the workflow according to its RetryConfig
+  optional RetryConfig retry = 44;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -2144,6 +2162,9 @@ message WorkflowStatus {
 
   // TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
   map<string, bool> taskResultsCompletionStatus = 20;
+
+  // RetryStatus tracks RetryStatus
+  optional bool retryStatus = 21;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

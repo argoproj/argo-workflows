@@ -1843,6 +1843,19 @@ spec:
               priority:
                 format: int32
                 type: integer
+              retry:
+                properties:
+                  nodeFieldSelector:
+                    type: string
+                  parameters:
+                    items:
+                      type: string
+                    type: array
+                  restartSuccessful:
+                    type: boolean
+                  retried:
+                    type: boolean
+                type: object
               retryStrategy:
                 properties:
                   affinity:
@@ -22750,6 +22763,8 @@ spec:
                   format: int64
                   type: integer
                 type: object
+              retryStatus:
+                type: boolean
               startedAt:
                 format: date-time
                 type: string
@@ -33044,6 +33059,19 @@ spec:
                   priority:
                     format: int32
                     type: integer
+                  retry:
+                    properties:
+                      nodeFieldSelector:
+                        type: string
+                      parameters:
+                        items:
+                          type: string
+                        type: array
+                      restartSuccessful:
+                        type: boolean
+                      retried:
+                        type: boolean
+                    type: object
                   retryStrategy:
                     properties:
                       affinity:

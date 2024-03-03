@@ -4,17 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"sort"
-	"sync"
-
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"io"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sort"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -382,7 +380,6 @@ func errorFromChannel(errCh <-chan error) error {
 
 func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.WorkflowRetryRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	kubeClient := auth.GetKubeClient(ctx)
 
 	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
@@ -394,38 +391,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	err = s.hydrator.Hydrate(wf)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-
-	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-
-	errCh := make(chan error, len(podsToDelete))
-	var wg sync.WaitGroup
-	wg.Add(len(podsToDelete))
-	for _, podName := range podsToDelete {
-		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
-		go func(podName string) {
-			defer wg.Done()
-			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				errCh <- err
-				return
-			}
-		}(podName)
-	}
-	wg.Wait()
-
-	err = errorFromChannel(errCh)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-
-	err = s.hydrator.Dehydrate(wf)
+	wf, err = util.RetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
