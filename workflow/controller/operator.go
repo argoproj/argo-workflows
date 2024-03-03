@@ -814,9 +814,9 @@ func (woc *wfOperationCtx) checkReconciliationComplete() bool {
 	return woc.wf.Status.Phase.Completed() && !woc.wf.Status.TaskResultsInProgress()
 }
 
-func (woc *wfOperationCtx) checkTaskResultsComplete() bool {
+func (woc *wfOperationCtx) checkTaskResultsInProgress() bool {
 	woc.log.Debugf("Task results completion status: %v", woc.wf.Status.TaskResultsCompletionStatus)
-	return !woc.wf.Status.TaskResultsInProgress()
+	return woc.wf.Status.TaskResultsInProgress()
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
@@ -2292,7 +2292,7 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.WorkflowPhase, message string) {
 	// Check whether or not the workflow needs to continue processing when it is completed
-	if phase.Completed() && (!woc.checkTaskResultsComplete() || woc.hasDaemonNodes()) {
+	if phase.Completed() && (woc.checkTaskResultsInProgress() || woc.hasDaemonNodes()) {
 		woc.log.WithFields(log.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
 			Debug("taskresults of workflow are incomplete or still have daemon nodes, so can't mark workflow completed")
 		woc.killDaemonedChildren("")
