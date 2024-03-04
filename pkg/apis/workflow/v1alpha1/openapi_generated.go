@@ -7980,6 +7980,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							},
 						},
 					},
+					"retryStatus": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetryStatus tracks RetryStatus for this workflow",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

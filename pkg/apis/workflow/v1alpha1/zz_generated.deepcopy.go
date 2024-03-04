@@ -4021,6 +4021,11 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 			(*out)[key] = val
 		}
 	}
+	if in.RetryStatus != nil {
+		in, out := &in.RetryStatus, &out.RetryStatus
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

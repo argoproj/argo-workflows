@@ -117,6 +117,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             'phase': (str,),  # noqa: E501
             'progress': (str,),  # noqa: E501
             'resources_duration': ({str: (int,)},),  # noqa: E501
+            'retry_status': (bool,),  # noqa: E501
             'started_at': (datetime,),  # noqa: E501
             'stored_templates': ({str: (IoArgoprojWorkflowV1alpha1Template,)},),  # noqa: E501
             'stored_workflow_template_spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
@@ -144,6 +145,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
         'phase': 'phase',  # noqa: E501
         'progress': 'progress',  # noqa: E501
         'resources_duration': 'resourcesDuration',  # noqa: E501
+        'retry_status': 'retryStatus',  # noqa: E501
         'started_at': 'startedAt',  # noqa: E501
         'stored_templates': 'storedTemplates',  # noqa: E501
         'stored_workflow_template_spec': 'storedWorkflowTemplateSpec',  # noqa: E501
@@ -206,6 +208,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             phase (str): Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \"\" (Unknown), \"Pending\", or \"Running\" before the workflow is completed, and \"Succeeded\", \"Failed\" or \"Error\" once the workflow has completed.. [optional]  # noqa: E501
             progress (str): Progress to completion. [optional]  # noqa: E501
             resources_duration ({str: (int,)}): ResourcesDuration is the total for the workflow. [optional]  # noqa: E501
+            retry_status (bool): RetryStatus tracks RetryStatus for this workflow. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             stored_templates ({str: (IoArgoprojWorkflowV1alpha1Template,)}): StoredTemplates is a mapping between a template ref and the node's status.. [optional]  # noqa: E501
             stored_workflow_template_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
@@ -306,6 +309,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             phase (str): Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \"\" (Unknown), \"Pending\", or \"Running\" before the workflow is completed, and \"Succeeded\", \"Failed\" or \"Error\" once the workflow has completed.. [optional]  # noqa: E501
             progress (str): Progress to completion. [optional]  # noqa: E501
             resources_duration ({str: (int,)}): ResourcesDuration is the total for the workflow. [optional]  # noqa: E501
+            retry_status (bool): RetryStatus tracks RetryStatus for this workflow. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             stored_templates ({str: (IoArgoprojWorkflowV1alpha1Template,)}): StoredTemplates is a mapping between a template ref and the node's status.. [optional]  # noqa: E501
             stored_workflow_template_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
