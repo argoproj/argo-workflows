@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -237,7 +238,11 @@ func getMetricStringValue(metric prometheus.Metric) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%v", metricString.String()), nil
+
+	// Workaround for https://github.com/prometheus/client_model/issues/83
+	space := regexp.MustCompile(`\s+`)
+	normalizedString := space.ReplaceAllString(metricString.String(), " ")
+	return normalizedString, nil
 }
 
 func getMetricGaugeValue(metric prometheus.Metric) (*float64, error) {
