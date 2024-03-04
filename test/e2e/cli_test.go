@@ -854,7 +854,6 @@ func (s *CLISuite) TestWorkflowRetry() {
 			}
 		}).
 		ToBeRunning
-		WaitForWorkflow(fixtures.ToBeRunning).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.AnyActiveSuspendNode(), "suspended node"
 		}), time.Second*90).
