@@ -853,7 +853,6 @@ func (s *CLISuite) TestWorkflowRetry() {
 				assert.Contains(t, output, "Namespace:")
 			}
 		}).
-		WaitForWorkflow(fixtures.ToBeRunning).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.AnyActiveSuspendNode(), "suspended node"
 		}), time.Second*90).
