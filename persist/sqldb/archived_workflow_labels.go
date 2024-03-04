@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/upper/db/v4"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // ListWorkflowsLabelKeys returns distinct name from argo_archived_workflows_labels table
