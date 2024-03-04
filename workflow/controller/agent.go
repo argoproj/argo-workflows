@@ -252,7 +252,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	if err != nil {
 		log.WithError(err).Info("Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
-			return created, nil
+			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
+				return existing, nil
+			}
 		}
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}
