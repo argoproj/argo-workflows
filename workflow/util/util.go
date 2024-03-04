@@ -840,10 +840,10 @@ func RetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful boo
 	}
 
 	wf.Spec.Retry = &wfv1.RetryConfig{
-		Retried: false,
+		Retried:           false,
 		RestartSuccessful: restartSuccessful,
 		NodeFieldSelector: nodeFieldSelector,
-		Parameters: parameters,
+		Parameters:        parameters,
 	}
 
 	delete(wf.Labels, common.LabelKeyCompleted)
