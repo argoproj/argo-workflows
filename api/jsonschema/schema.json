@@ -8098,6 +8098,10 @@
           "description": "ResourcesDuration is the total for the workflow",
           "type": "object"
         },
+        "retryStatus": {
+          "description": "RetryStatus tracks RetryStatus for this workflow",
+          "type": "boolean"
+        },
         "startedAt": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "description": "Time at which this workflow started"

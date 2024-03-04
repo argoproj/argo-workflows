@@ -12021,6 +12021,10 @@
             "format": "int64"
           }
         },
+        "retryStatus": {
+          "description": "RetryStatus tracks RetryStatus for this workflow",
+          "type": "boolean"
+        },
         "startedAt": {
           "description": "Time at which this workflow started",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"

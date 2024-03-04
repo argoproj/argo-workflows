@@ -22,6 +22,7 @@ Name | Type | Description | Notes
 **phase** | **String** | Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \&quot;\&quot; (Unknown), \&quot;Pending\&quot;, or \&quot;Running\&quot; before the workflow is completed, and \&quot;Succeeded\&quot;, \&quot;Failed\&quot; or \&quot;Error\&quot; once the workflow has completed. |  [optional]
 **progress** | **String** | Progress to completion |  [optional]
 **resourcesDuration** | **Map&lt;String, Long&gt;** | ResourcesDuration is the total for the workflow |  [optional]
+**retryStatus** | **Boolean** | RetryStatus tracks RetryStatus for this workflow |  [optional]
 **startedAt** | **java.time.Instant** |  |  [optional]
 **storedTemplates** | [**Map&lt;String, IoArgoprojWorkflowV1alpha1Template&gt;**](IoArgoprojWorkflowV1alpha1Template.md) | StoredTemplates is a mapping between a template ref and the node&#39;s status. |  [optional]
 **storedWorkflowTemplateSpec** | [**IoArgoprojWorkflowV1alpha1WorkflowSpec**](IoArgoprojWorkflowV1alpha1WorkflowSpec.md) |  |  [optional]

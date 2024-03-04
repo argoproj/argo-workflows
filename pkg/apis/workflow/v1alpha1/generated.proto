@@ -2163,7 +2163,7 @@ message WorkflowStatus {
   // TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
   map<string, bool> taskResultsCompletionStatus = 20;
 
-  // RetryStatus tracks RetryStatus
+  // RetryStatus tracks RetryStatus for this workflow
   optional bool retryStatus = 21;
 }
 

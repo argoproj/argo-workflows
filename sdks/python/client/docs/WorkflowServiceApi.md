@@ -12136,6 +12136,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 resources_duration={
                     "key": 1,
                 },
+                retry_status=True,
                 started_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
                 stored_templates={
                     "key": IoArgoprojWorkflowV1alpha1Template(
@@ -39706,6 +39707,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 resources_duration={
                     "key": 1,
                 },
+                retry_status=True,
                 started_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
                 stored_templates={
                     "key": IoArgoprojWorkflowV1alpha1Template(

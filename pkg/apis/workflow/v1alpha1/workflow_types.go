@@ -1950,7 +1950,7 @@ type WorkflowStatus struct {
 	// TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
 
-	// RetryStatus tracks RetryStatus
+	// RetryStatus tracks RetryStatus for this workflow
 	RetryStatus *bool `json:"retryStatus,omitempty" protobuf:"varint,21,opt,name=retryStatus"`
 }
 

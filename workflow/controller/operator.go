@@ -2404,6 +2404,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 		}
 		woc.updated = true
+		woc.wf.Status.RetryStatus = nil
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
 	}
 }
