@@ -37,6 +37,7 @@ require (
 	github.com/itchyny/gojq v0.12.14
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/klauspost/pgzip v1.2.6
+	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/minio/minio-go/v7 v7.0.66
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.18.0

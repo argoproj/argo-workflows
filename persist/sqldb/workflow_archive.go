@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/upper/db/v4"
-	"google.golang.org/grpc/codes"
-	"k8s.io/apimachinery/pkg/labels"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	log "github.com/sirupsen/logrus"
+	"github.com/upper/db/v4"
+	"google.golang.org/grpc/codes"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
@@ -144,32 +143,17 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowRecord
 
-	// If we were passed 0 as the limit, then we should load all available archived workflows
-	// to match the behavior of the `List` operations in the Kubernetes API
-	if limit == 0 {
-		limit = -1
-		offset = -1
-	}
-
 	selector := r.session.SQL().
 		Select("workflow").
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(namespace)).
-		And(nameEqual(name)).
-		And(namePrefixClause(namePrefix)).
-		And(startedAtFromClause(minStartedAt)).
-		And(startedAtToClause(maxStartedAt))
+		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	selector, err := BuildWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, true, r.dbType, namespace, name, namePrefix, minStartedAt, maxStartedAt, labelRequirements, limit, offset)
 	if err != nil {
 		return nil, err
 	}
-	err = selector.
-		OrderBy("-startedat").
-		Limit(limit).
-		Offset(offset).
-		All(&archivedWfs)
+
+	err = selector.All(&archivedWfs)
 	if err != nil {
 		return nil, err
 	}
@@ -195,14 +179,9 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 	selector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(namespace)).
-		And(nameEqual(name)).
-		And(namePrefixClause(namePrefix)).
-		And(startedAtFromClause(minStartedAt)).
-		And(startedAtToClause(maxStartedAt))
+		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	selector, err := BuildWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, true, r.dbType, namespace, name, namePrefix, minStartedAt, maxStartedAt, labelRequirements, 0, 0)
 	if err != nil {
 		return 0, err
 	}

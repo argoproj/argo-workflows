@@ -7,14 +7,7 @@ import (
 	"io"
 	"sort"
 	"sync"
-
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	corev1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"time"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -25,6 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	argoutil "github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/fields"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -35,6 +29,23 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	log "github.com/sirupsen/logrus"
+	"github.com/upper/db/v4"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
+)
+
+const (
+	latestAlias    = "@latest"
+	reSyncDuration = 20 * time.Minute
 )
 
 type workflowServer struct {
@@ -42,13 +53,34 @@ type workflowServer struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchiveServer       workflowarchivepkg.ArchivedWorkflowServiceServer
+	wfReflector           *cache.Reflector
+	wfSession             db.Session
+	wfStore               store.WorkflowStore
 }
 
-const latestAlias = "@latest"
+var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 
-// NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer) workflowpkg.WorkflowServiceServer {
-	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfArchiveServer}
+// NewWorkflowServer returns a new WorkflowServer
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, wfClientSet versioned.Interface) *workflowServer {
+	ctx := context.Background()
+	lw := &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).List(ctx, options)
+		},
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).Watch(ctx, options)
+		},
+	}
+	session, wfStore, err := store.NewSqliteStore(instanceIDService)
+	if err != nil {
+		log.Fatal(err)
+	}
+	wfReflector := cache.NewReflector(lw, &wfv1.Workflow{}, wfStore, reSyncDuration)
+	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfArchiveServer, wfReflector, session, wfStore}
+}
+
+func (s *workflowServer) Run(stopCh <-chan struct{}) {
+	s.wfReflector.Run(stopCh)
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*wfv1.Workflow, error) {
@@ -166,17 +198,30 @@ func mergeWithArchivedWorkflows(liveWfs wfv1.WorkflowList, archivedWfs wfv1.Work
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
-	wfClient := auth.GetWfClient(ctx)
-
 	listOption := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		listOption = req.ListOptions
 	}
 	s.instanceIDService.With(listOption)
-	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(ctx, *listOption)
+
+	options, err := sutils.BuildListOptions(req.ListOptions, req.Namespace, "")
+	if err != nil {
+		return nil, err
+	}
+	// verify if we have permission to list Workflows
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	if !allowed {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", options.Namespace, options.Namespace))
+	}
+	wfList, err := s.wfStore.ListWorkflows(options.Namespace, options.Name, options.NamePrefix, options.MinStartedAt, options.MaxStartedAt, options.LabelRequirements, options.Limit, options.Offset, options.ShowRemainingItemCount)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	wfList.ListMeta.ResourceVersion = s.wfReflector.LastSyncResourceVersion()
+
 	archivedWfList, err := s.wfArchiveServer.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{
 		ListOptions: listOption,
 		NamePrefix:  "",

@@ -10,6 +10,7 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -604,11 +605,25 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	archivedRepo.On("GetWorkflow", "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "latest").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
-	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, wfaServer)
-	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet := &fake.Clientset{}
+	kubeClientSet.AddReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+	kubeClientSet.AddReactor("create", "selfsubjectrulesreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		var rules []authorizationv1.ResourceRule
+		rules = append(rules, authorizationv1.ResourceRule{})
+		return true, &authorizationv1.SelfSubjectRulesReview{
+			Status: authorizationv1.SubjectRulesReviewStatus{
+				ResourceRules: rules,
+			},
+		}, nil
+	})
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, wfaServer, wfClientset)
 	return server, ctx
 }
 
