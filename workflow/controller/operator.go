@@ -216,7 +216,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Check whether it is a workflow that requires retry
 	if woc.shouldRetry() {
-		woc.log.Info("workflow retryed")
+		woc.log.Info("workflow retried")
 		err := woc.retryWorkflow(ctx)
 		if err != nil {
 			woc.log.WithError(err).Errorf("Retry workflow failed")
@@ -3868,8 +3868,7 @@ func (woc *wfOperationCtx) shouldRetry() bool {
 		return false
 	}
 	if woc.IsRetried() {
-		_, quit := woc.controller.podCleanupQueue.Get()
-		if quit {
+		if woc.controller.podCleanupQueue.Len() == 0 {
 			woc.wf.Status.RetryStatus = pointer.BoolPtr(true)
 			woc.updated = true
 			return false
@@ -3895,6 +3894,7 @@ func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
 	for _, podName := range podsToDelete {
 		woc.controller.queuePodForCleanup(wf.Namespace, podName, deletePod)
 	}
+	woc.wf = wf
 	woc.wf.Status.RetryStatus = pointer.BoolPtr(true)
 	woc.updated = true
 	return nil
