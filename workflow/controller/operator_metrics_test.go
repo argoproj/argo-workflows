@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -14,6 +15,8 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
+
+var space = regexp.MustCompile(`\s+`)
 
 var basicMetric = `
 apiVersion: argoproj.io/v1alpha1
@@ -237,7 +240,10 @@ func getMetricStringValue(metric prometheus.Metric) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%v", metricString.String()), nil
+
+	// Workaround for https://github.com/prometheus/client_model/issues/83
+	normalizedString := space.ReplaceAllString(metricString.String(), " ")
+	return normalizedString, nil
 }
 
 func getMetricGaugeValue(metric prometheus.Metric) (*float64, error) {
