@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -48,6 +49,8 @@ func TestHTTPTemplate(t *testing.T) {
 		pod, err = controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).UpdateStatus(ctx, pod, metav1.UpdateOptions{})
 		assert.Nil(t, err)
 		assert.Equal(t, v1.PodFailed, pod.Status.Phase)
+		// sleep 1 second to wait for informer getting pod info
+		time.Sleep(time.Second)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Equal(t, `agent pod failed with reason:"manual termination"`, woc.wf.Status.Message)
