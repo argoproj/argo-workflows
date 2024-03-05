@@ -16,6 +16,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
+var space = regexp.MustCompile(`\s+`)
+
 var basicMetric = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -240,7 +242,6 @@ func getMetricStringValue(metric prometheus.Metric) (string, error) {
 	}
 
 	// Workaround for https://github.com/prometheus/client_model/issues/83
-	space := regexp.MustCompile(`\s+`)
 	normalizedString := space.ReplaceAllString(metricString.String(), " ")
 	return normalizedString, nil
 }
