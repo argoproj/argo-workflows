@@ -261,7 +261,7 @@
                 owner = "kubernetes-sigs";
                 repo = "controller-tools";
                 rev = "v${version}";
-                sha256 = "sha256-NQlSP9hRLXr+iZo0OeyF1MQs3PourQZN0I0v4Wv5dkE=";
+                sha256 = "sha256-G0jBQ12cpjfWGhXYppV9dB2n68bExi6ME9QbxXsUWvw=";
               };
               vendorHash = "sha256-89hzPiqP++tQpPkcSvzc1tHxHcj5PI71RxxxUCgm0BI=";
               doCheck = false;
