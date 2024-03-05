@@ -23,6 +23,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
@@ -31,12 +32,15 @@ import (
 const disableValueListRetrievalKeyPattern = "DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN"
 
 type archivedWorkflowServer struct {
-	wfArchive sqldb.WorkflowArchive
+	wfArchive             sqldb.WorkflowArchive
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	hydrator              hydrator.Interface
+
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
-func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) workflowarchivepkg.ArchivedWorkflowServiceServer {
-	return &archivedWorkflowServer{wfArchive: wfArchive}
+func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowarchivepkg.ArchivedWorkflowServiceServer {
+	return &archivedWorkflowServer{wfArchive, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
 }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
@@ -282,6 +286,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	oriUid := wf.UID
 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
@@ -298,13 +303,21 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}
 		}
+		log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
+		err = w.hydrator.Dehydrate(wf)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
 
+		
 		wf.ObjectMeta.ResourceVersion = ""
 		wf.ObjectMeta.UID = ""
 		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
+		offloadVersion, _ := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
+		_, _ = w.offloadNodeStatusRepo.Save(string(result.UID), wf.Namespace, offloadVersion)
 
 		return result, nil
 	}
