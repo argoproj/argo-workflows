@@ -99,6 +99,7 @@ jobs:
               # proposals live only on GH as pure markdown
               - '!docs/proposals/**'
               # docs scripts & tools from `make docs`
+              - hack/copy-readme.sh
               - hack/check-env-doc.sh
               - .markdownlint.yaml
               - .mlc_config.json
