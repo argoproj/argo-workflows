@@ -798,7 +798,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
-		if apierr.IsForbidden(err) {
+		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
 			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
