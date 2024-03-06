@@ -62,6 +62,10 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 		return nil, err
 	}
 	req.Header = headers
+	host := headers.Get("Host")
+	if host != "" {
+		req.Host = strings.TrimSpace(host)
+	}
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
@@ -108,7 +112,7 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	req.Header = headers
 	host := headers.Get("Host")
 	if host != "" {
-		req.Host = host
+		req.Host = strings.TrimSpace(host)
 	}
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
