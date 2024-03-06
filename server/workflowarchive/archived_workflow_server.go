@@ -314,8 +314,14 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
-		offloadVersion, _ := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
-		_, _ = w.offloadNodeStatusRepo.Save(string(result.UID), wf.Namespace, offloadVersion)
+		offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+		_, err = w.offloadNodeStatusRepo.Save(string(result.UID), wf.Namespace, offloadedNodes)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
 
 		return result, nil
 	}
