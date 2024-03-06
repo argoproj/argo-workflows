@@ -1,14 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
-cp README.md docs/README.md
+target="docs/README.md"
+cp README.md $target
+
+replaceTarget() {
+  # cross-platform for Linux and Mac, based off https://unix.stackexchange.com/a/381201/152866
+  sed -i.bak -e "$1" "$target" && rm $target.bak
+}
 
 # replace absolute links with relative links
-sed -i '' 's/(https:\/\/argo-workflows\.readthedocs\.io\/en\/latest\/\(.*\)\/)/(\1\.md)/' docs/README.md
-sed -i '' 's/walk-through\.md/walk-through\/index\.md/' docs/README.md # index routes need special handling
+replaceTarget 's/(https:\/\/argo-workflows\.readthedocs\.io\/en\/latest\/\(.*\)\/)/(\1\.md)/'
+replaceTarget 's/walk-through\.md/walk-through\/index\.md/' # index routes need special handling
 # adjust existing relative links
-sed -i '' 's/(docs\//(/' docs/README.md # remove `docs/` prefix
-sed -i '' 's/(USERS\.md/(https:\/\/github\.com\/argoproj\/argo-workflows\/blob\/main\/USERS\.md/' docs/README.md # replace non-docs link with an absolute link
+replaceTarget 's/(docs\//(/' # remove `docs/` prefix
+replaceTarget 's/(USERS\.md/(https:\/\/github\.com\/argoproj\/argo-workflows\/blob\/main\/USERS\.md/' # replace non-docs link with an absolute link
 
 # change text for docs self-link
-sed -i '' 's/.*View the docs.*/You'\''re here!/' docs/README.md
+replaceTarget 's/.*View the docs.*/You'\''re here!/'
