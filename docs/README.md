@@ -24,11 +24,11 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 ## Use Cases
 
-* [Machine Learning pipelines](https://argo-workflows.readthedocs.io/en/latest/use-cases/machine-learning/)
-* [Data and batch processing](https://argo-workflows.readthedocs.io/en/latest/use-cases/data-processing/)
-* [Infrastructure automation](https://argo-workflows.readthedocs.io/en/latest/use-cases/infrastructure-automation/)
-* [CI/CD](https://argo-workflows.readthedocs.io/en/latest/use-cases/ci-cd/)
-* [Other use cases](https://argo-workflows.readthedocs.io/en/latest/use-cases/other/)
+* [Machine Learning pipelines](use-cases/machine-learning.md)
+* [Data and batch processing](use-cases/data-processing.md)
+* [Infrastructure automation](use-cases/infrastructure-automation.md)
+* [CI/CD](use-cases/ci-cd.md)
+* [Other use cases](use-cases/other.md)
 
 ## Why Argo Workflows?
 
@@ -47,7 +47,7 @@ You can try Argo Workflows via one of the following:
 1. [Interactive Training Material](https://killercoda.com/argoproj/course/argo-workflows/)
 1. [Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo)
 
-![Screenshot](https://github.com/argoproj/argo-workflows/raw/main/docs/assets/screenshot.png)
+![Screenshot](assets/screenshot.png)
 
 ## Who uses Argo Workflows?
 
@@ -82,7 +82,7 @@ Check out our [Java, Golang and Python clients](client-libraries.md).
 
 ## Documentation
 
-[View the docs](README.md)
+You're here!
 
 ## Features
 
@@ -161,4 +161,4 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Security
 
-See [SECURITY.md](https://github.com/argoproj/argo-workflows/blob/main/SECURITY.md).
+See [SECURITY.md](SECURITY.md).
