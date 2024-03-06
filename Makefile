@@ -9,6 +9,10 @@ USE_NIX := false
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
+# parallelize jobs by number of CPUs available
+NPROCS = $(shell nproc || printf 1)
+MAKEFLAGS += -j$(NPROCS)
+
 BUILD_DATE            := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 # copied verbatim to release.yaml
 GIT_COMMIT            := $(shell git rev-parse HEAD || echo unknown)
