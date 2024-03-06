@@ -246,6 +246,7 @@ argoexec-image:
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg GIT_TAG=$(GIT_TAG) \
 		--build-arg GIT_TREE_STATE=$(GIT_TREE_STATE) \
+  		--platform linux/amd64,linux/arm64 \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
 		--target $* \
 		--load \
