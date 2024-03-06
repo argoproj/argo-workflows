@@ -311,6 +311,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}
 		}
+
 		wf.ObjectMeta.ResourceVersion = ""
 		wf.ObjectMeta.UID = ""
 		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
