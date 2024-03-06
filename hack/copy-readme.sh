@@ -15,6 +15,7 @@ replaceTarget 's/walk-through\.md/walk-through\/index\.md/' # index routes need 
 # adjust existing relative links
 replaceTarget 's/(docs\//(/' # remove `docs/` prefix
 replaceTarget 's/(USERS\.md/(https:\/\/github\.com\/argoproj\/argo-workflows\/blob\/main\/USERS\.md/' # replace non-docs link with an absolute link
+replaceTarget 's/SECURITY\.md/security\.md/' # case-sensitive -- the file is docs/security.md vs. SECURITY.md
 
 # change text for docs self-link
 replaceTarget 's/.*View the docs.*/You'\''re here!/'
