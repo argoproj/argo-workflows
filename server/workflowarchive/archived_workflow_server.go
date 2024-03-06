@@ -35,7 +35,6 @@ type archivedWorkflowServer struct {
 	wfArchive             sqldb.WorkflowArchive
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
-
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
@@ -308,7 +307,6 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
-
 		
 		wf.ObjectMeta.ResourceVersion = ""
 		wf.ObjectMeta.UID = ""
