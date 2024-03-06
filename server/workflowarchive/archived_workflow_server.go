@@ -24,6 +24,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
@@ -302,25 +303,29 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}
 		}
-		log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
-		err = w.hydrator.Dehydrate(wf)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		large, _ := packer.IsLargeWorkflow(wf)
+		if large {
+			log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
+			err = w.hydrator.Dehydrate(wf)
+			if err != nil {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
 		}
-		
 		wf.ObjectMeta.ResourceVersion = ""
 		wf.ObjectMeta.UID = ""
 		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
-		offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
-		}
-		_, err = w.offloadNodeStatusRepo.Save(string(result.UID), wf.Namespace, offloadedNodes)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		if large {
+			offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
+			_, err = w.offloadNodeStatusRepo.Save(string(result.UID), wf.Namespace, offloadedNodes)
+			if err != nil {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
 		}
 
 		return result, nil
