@@ -5,10 +5,12 @@ metadata:
   labels:
     workflows.argoproj.io/archive-strategy: "false"
   annotations:
-    workflows.argoproj.io/title: "**Test Title**"
+    # both annotations are available since v3.4.4
+    # embedded markdown is available since v3.6
+    workflows.argoproj.io/title: "**Test Title**" # defaults to `metadata.name` if not specified
     workflows.argoproj.io/description: |
       `This is a simple hello world example.`
-      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
+      This is an embedded link to the docs: https://argo-workflows.readthedocs.io/en/latest/title-and-description/
 spec:
   entrypoint: whalesay
   templates:

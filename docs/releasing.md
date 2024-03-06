@@ -9,10 +9,10 @@ to work well with our versioned website.
 Then get a list of commits you may want to cherry-pick:
 
 ```bash
-./hack/cherry-pick.sh release-3.3 "fix" true
-./hack/cherry-pick.sh release-3.3 "chore(deps)" true
-./hack/cherry-pick.sh release-3.3 "build" true
-./hack/cherry-pick.sh release-3.3 "ci" true
+./hack/cherry-pick.sh release-3.3 "fix"
+./hack/cherry-pick.sh release-3.3 "chore(deps)"
+./hack/cherry-pick.sh release-3.3 "build"
+./hack/cherry-pick.sh release-3.3 "ci"
 ```
 
 To automatically cherry-pick, run the following:
