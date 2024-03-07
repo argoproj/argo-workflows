@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 	"github.com/upper/db/v4/adapter/sqlite"
