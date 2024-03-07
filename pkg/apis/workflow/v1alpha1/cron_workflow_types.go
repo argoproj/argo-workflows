@@ -70,7 +70,7 @@ type CronWorkflowSpec struct {
 // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 type StopStrategy struct {
 	// v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the
-	// keywords `failed` or `succeeded` to access the number of failed or successful child workflows.
+	// variables `failed` or `succeeded` to access the number of failed or successful child workflows.
 	Condition string `json:"condition" protobuf:"bytes,1,opt,name=condition"`
 }
 
