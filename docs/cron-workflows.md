@@ -104,18 +104,15 @@ For example, with timezone set at `America/Los_Angeles`, we have daylight saving
     |            | 2        | 2020-11-02 02:01:00 -0800 PST |
     |            | 3        | 2020-11-03 02:01:00 -0800 PST |
 
-### Stopping a `CronWorkflow`
+### Automatically Stopping a `CronWorkflow`
 
 > v3.6 and after
 
-You can stop the execution of new workflows from a `CronWorkflow` based on the number of previous successes or failures. The spec field `stopStrategy` accepts a `condition` which is an [expression](variables.md#expression) that stops triggering new workflows when it evaluates to true.
+You can configure a `CronWorkflow` to automatically stop based on an [expression](variables.md#expression) with `stopStrategy.condition`.
 
-Keywords allowed for stopping conditions are `failed` and `succeeded`:
+You can use the variables `failed` and `succeeded`.
 
-- `failed` - counts how many times the child workflows failed
-- `succeeded` - counts how many times the child workflows succeeded
-
-For example, if you want a workflow to be executed only once you can define the spec as:
+For example, if you want to stop scheduling new workflows after a successful child `Workflow`, you can define the spec as:
 
 ```yaml
 stopStrategy:
@@ -129,7 +126,12 @@ stopStrategy:
   condition: "failed >= 3"
 ```
 
-**NOTE:** Depending on the time it takes to schedule and run a workflow, it is possible that the total number of executions of a `CronWorkflow` is higher than the configured max executions. For example, if you configure the `CronWorkflow` to execute every minute with a stopping condition: `succeeded >= 1` and the `Workflow` executes in 90 seconds, the `CronWorkflow` will be completed with 2 executions, because when the stopping condition is achieved, there is another workflow running and the controller is not canceling active workflows. For that reason, it is advisable to have conditions like `succeeded  >= 1` instead of `succeeded == 1`.
+!!! Warning "Scheduling vs. Completions"
+    Depending on the time it takes to schedule and run a workflow, the number of completions can exceed the configured maximum.
+    For example, if you configure the `CronWorkflow` to schedule every minute (`* * * * *`) and stop after one success (`succeeded >= 1`).
+    If the `Workflow` takes 90 seconds to run, the `CronWorkflow` will actually stop after two completions.
+    This is because when the stopping condition is achieved, there is _already_ another `Workflow` running.
+    For that reason, prefer conditions like `succeeded  >= 1` over `succeeded == 1`.
 
 ## Managing `CronWorkflow`
 

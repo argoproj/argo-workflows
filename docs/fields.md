@@ -1956,7 +1956,7 @@ v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`condition`|`string`|v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.|
+|`condition`|`string`|v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.|
 
 ## Artifact
 

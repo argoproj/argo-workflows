@@ -5825,7 +5825,7 @@ func schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"condition": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.",
+							Description: "v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
