@@ -611,7 +611,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	instanceIdSvc := instanceid.NewService("my-instanceid")
 	instanceIdSvc.With(listOptions)
 	requirements, _ := labels.ParseToRequirements(listOptions.LabelSelector)
-	archivedRepo.On("ListWorkflows", "workflows", "", "", time.Time{}, time.Time{}, labels.Requirements(requirements), 0, 0).Return(v1alpha1.Workflows{wfObj1, wfObj2}, nil)
+	archivedRepo.On("ListWorkflows", "workflows", "", "", time.Time{}, time.Time{}, labels.Requirements(requirements), 0, 0).Return(v1alpha1.Workflows{wfObj1, wfObj2, failedWfObj}, nil)
 	archivedRepo.On("ListWorkflows", "test", "", "", time.Time{}, time.Time{}, labels.Requirements(requirements), 0, 0).Return(v1alpha1.Workflows{wfObj3, wfObj4}, nil)
 	kubeClientSet := fake.NewSimpleClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -629,10 +629,10 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	if err = wfStore.Add(&wfObj2); err != nil {
 		panic(err)
 	}
-	if err = wfStore.Add(&wfObj5); err != nil {
+	if err = wfStore.Add(&wfObj3); err != nil {
 		panic(err)
 	}
-	if err = wfStore.Add(&wfObj3); err != nil {
+	if err = wfStore.Add(&wfObj5); err != nil {
 		panic(err)
 	}
 	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, wfaServer, wfClientset, wfStore)
@@ -779,11 +779,15 @@ func TestValidateWorkflow(t *testing.T) {
 func TestListWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wfl, err := getWorkflowList(ctx, server, "workflows")
-	assert.NoError(t, err)
-	assert.Equal(t, 3, len(wfl.Items))
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wfl)
+		assert.Equal(t, 4, len(wfl.Items))
+	}
 	wfl, err = getWorkflowList(ctx, server, "test")
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(wfl.Items))
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wfl)
+		assert.Equal(t, 2, len(wfl.Items))
+	}
 }
 
 func TestDeleteWorkflow(t *testing.T) {
