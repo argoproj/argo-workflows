@@ -13,6 +13,7 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
@@ -26,6 +27,7 @@ import (
 	v1alpha "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -137,7 +139,7 @@ const wf2 = `
         "namespace": "workflows",
         "resourceVersion": "52919656",
         "selfLink": "/apis/argoproj.io/v1alpha1/namespaces/workflows/workflows/hello-world-b6h5m",
-        "uid": "91066a6c-1ddc-11ea-b443-42010aa80075"
+        "uid": "91066a6c-1ddc-11ea-b443-42010aa80074"
     },
     "spec": {
         
@@ -200,7 +202,7 @@ const wf3 = `
         "namespace": "test",
         "resourceVersion": "53020772",
         "selfLink": "/apis/argoproj.io/v1alpha1/namespaces/workflows/workflows/hello-world-9tql2",
-        "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
+        "uid": "6522aff1-1e01-11ea-b443-42010aa80074"
     },
     "spec": {
         
@@ -326,7 +328,7 @@ const wf5 = `
         "namespace": "workflows",
         "resourceVersion": "53020772",
         "selfLink": "/apis/argoproj.io/v1alpha1/namespaces/workflows/workflows/hello-world-9tql2",
-        "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
+        "uid": "6522aff1-1e01-11ea-b443-42010aa80073"
     },
     "spec": {
         
@@ -575,7 +577,6 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
 	v1alpha1.MustUnmarshal(wf1, &wfObj1)
-	v1alpha1.MustUnmarshal(wf1, &wfObj1)
 	v1alpha1.MustUnmarshal(wf2, &wfObj2)
 	v1alpha1.MustUnmarshal(wf3, &wfObj3)
 	v1alpha1.MustUnmarshal(wf4, &wfObj4)
@@ -605,25 +606,36 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	archivedRepo.On("GetWorkflow", "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "latest").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
-	kubeClientSet := &fake.Clientset{}
-	kubeClientSet.AddReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+
+	listOptions := &metav1.ListOptions{}
+	instanceIdSvc := instanceid.NewService("my-instanceid")
+	instanceIdSvc.With(listOptions)
+	requirements, _ := labels.ParseToRequirements(listOptions.LabelSelector)
+	archivedRepo.On("ListWorkflows", "workflows", "", "", time.Time{}, time.Time{}, labels.Requirements(requirements), 0, 0).Return(v1alpha1.Workflows{wfObj1, wfObj2}, nil)
+	archivedRepo.On("ListWorkflows", "test", "", "", time.Time{}, time.Time{}, labels.Requirements(requirements), 0, 0).Return(v1alpha1.Workflows{wfObj3, wfObj4}, nil)
+	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
-		}, nil
-	})
-	kubeClientSet.AddReactor("create", "selfsubjectrulesreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-		var rules []authorizationv1.ResourceRule
-		rules = append(rules, authorizationv1.ResourceRule{})
-		return true, &authorizationv1.SelfSubjectRulesReview{
-			Status: authorizationv1.SubjectRulesReviewStatus{
-				ResourceRules: rules,
-			},
 		}, nil
 	})
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, wfaServer, wfClientset)
+	wfStore, err := store.NewSQLiteStore(instanceIdSvc)
+	if err != nil {
+		panic(err)
+	}
+	if err = wfStore.Add(&wfObj2); err != nil {
+		panic(err)
+	}
+	if err = wfStore.Add(&wfObj5); err != nil {
+		panic(err)
+	}
+	if err = wfStore.Add(&wfObj3); err != nil {
+		panic(err)
+	}
+	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, wfaServer, wfClientset, wfStore)
 	return server, ctx
 }
 
@@ -767,15 +779,11 @@ func TestValidateWorkflow(t *testing.T) {
 func TestListWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wfl, err := getWorkflowList(ctx, server, "workflows")
-	if assert.NoError(t, err) {
-		assert.NotNil(t, wfl)
-		assert.Equal(t, 4, len(wfl.Items))
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(wfl.Items))
 	wfl, err = getWorkflowList(ctx, server, "test")
-	if assert.NoError(t, err) {
-		assert.NotNil(t, wfl)
-		assert.Equal(t, 2, len(wfl.Items))
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(wfl.Items))
 }
 
 func TestDeleteWorkflow(t *testing.T) {

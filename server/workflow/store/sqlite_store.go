@@ -121,12 +121,12 @@ type sqliteStore struct {
 
 var _ WorkflowStore = &sqliteStore{}
 
-func NewSqliteStore(instanceService instanceid.Service) (db.Session, WorkflowStore, error) {
+func NewSQLiteStore(instanceService instanceid.Service) (WorkflowStore, error) {
 	session, err := initDB()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return session, &sqliteStore{session: session, instanceService: instanceService}, nil
+	return &sqliteStore{session: session, instanceService: instanceService}, nil
 }
 
 func (s *sqliteStore) ListWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int, showRemainingItemCount bool) (*wfv1.WorkflowList, error) {

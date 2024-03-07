@@ -55,6 +55,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
+	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
@@ -231,7 +232,11 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
 	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive)
-	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchiveServer, as.clients.Workflow)
+	wfStore, err := store.NewSQLiteStore(instanceIDService)
+	if err != nil {
+		log.Fatal(err)
+	}
+	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchiveServer, as.clients.Workflow, wfStore)
 	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 

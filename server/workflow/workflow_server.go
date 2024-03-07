@@ -10,7 +10,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/upper/db/v4"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -55,14 +54,13 @@ type workflowServer struct {
 	hydrator              hydrator.Interface
 	wfArchiveServer       workflowarchivepkg.ArchivedWorkflowServiceServer
 	wfReflector           *cache.Reflector
-	wfSession             db.Session
 	wfStore               store.WorkflowStore
 }
 
 var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, wfClientSet versioned.Interface) *workflowServer {
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, wfClientSet versioned.Interface, wfStore store.WorkflowStore) *workflowServer {
 	ctx := context.Background()
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
@@ -72,12 +70,8 @@ func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRe
 			return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).Watch(ctx, options)
 		},
 	}
-	session, wfStore, err := store.NewSqliteStore(instanceIDService)
-	if err != nil {
-		log.Fatal(err)
-	}
 	wfReflector := cache.NewReflector(lw, &wfv1.Workflow{}, wfStore, reSyncDuration)
-	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfArchiveServer, wfReflector, session, wfStore}
+	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfArchiveServer, wfReflector, wfStore}
 }
 
 func (s *workflowServer) Run(stopCh <-chan struct{}) {
