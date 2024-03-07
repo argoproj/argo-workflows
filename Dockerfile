@@ -13,7 +13,8 @@ RUN apk update && apk add --no-cache \
     curl \
     gcc \
     bash \
-    mailcap
+    mailcap \
+    build-base
 
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
