@@ -97,6 +97,7 @@ endif
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
 POD_STATUS_CAPTURE_FINALIZER ?= true
+TARGETPLATFORM := linux/amd64
 
 $(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
 $(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH))
@@ -243,6 +244,7 @@ argoexec-image:
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
 	docker buildx build \
+		--platform $(TARGETPLATFORM) \
 		--platform linux/amd64,linux/arm64 \
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg GIT_TAG=$(GIT_TAG) \
