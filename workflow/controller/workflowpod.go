@@ -826,26 +826,35 @@ func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1
 	}
 }
 
-// GetBoundaryTemplate get a template through the node's BoundaryID.
+// GetBoundaryTemplate get a template through the nodeName
 func (woc *wfOperationCtx) GetBoundaryTemplate(nodeName string) (*wfv1.Template, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		woc.log.Warnf("couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
 		return nil, err
 	}
-	boundaryNode, err := woc.wf.Status.Nodes.Get(node.BoundaryID)
-	if err != nil {
-		return nil, err
-	}
-	tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
-	if err != nil {
-		return nil, err
-	}
-	_, boundaryTmpl, _, err := tmplCtx.ResolveTemplate(boundaryNode)
+	boundaryTmpl, _, err := woc.GetTemplateByBoundaryID(node.BoundaryID)
 	if err != nil {
 		return nil, err
 	}
 	return boundaryTmpl, nil
+}
+
+// GetTemplateByBoundaryID get a template through the node's BoundaryID.
+func (woc *wfOperationCtx) GetTemplateByBoundaryID(boundaryID string) (*wfv1.Template, bool, error) {
+	boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID)
+	if err != nil {
+		return nil, false, err
+	}
+	tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
+	if err != nil {
+		return nil, false, err
+	}
+	_, boundaryTmpl, templateStored, err := tmplCtx.ResolveTemplate(boundaryNode)
+	if err != nil {
+		return nil, templateStored, err
+	}
+	return boundaryTmpl, templateStored, nil
 }
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
