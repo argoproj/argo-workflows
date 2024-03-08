@@ -3420,14 +3420,14 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 }
 
 // SetStoredInlineTemplate stores a inline template in stored templates of the workflow.
-func (wf *Workflow) SetStoredInlineTemplate(scope ResourceScope, resourceName string, tmpl *Template) (bool, error) {
+func (wf *Workflow) SetStoredInlineTemplate(scope ResourceScope, resourceName string, tmpl *Template) error {
 	// Store inline templates in steps.
 	for _, steps := range tmpl.Steps {
 		for _, step := range steps.Steps {
 			if step.GetTemplate() != nil {
 				_, err := wf.SetStoredTemplate(scope, resourceName, &step, step.GetTemplate())
 				if err != nil {
-					return false, nil
+					return err
 				}
 			}
 		}
@@ -3438,13 +3438,13 @@ func (wf *Workflow) SetStoredInlineTemplate(scope ResourceScope, resourceName st
 			if task.GetTemplate() != nil {
 				_, err := wf.SetStoredTemplate(scope, resourceName, &task, task.GetTemplate())
 				if err != nil {
-					return false, nil
+					return err
 				}
 			}
 		}
 	}
 
-	return true, nil
+	return nil
 }
 
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines

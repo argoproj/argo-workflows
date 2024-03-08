@@ -211,12 +211,9 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder)
 				ctx.log.Debug("Stored the template")
 				templateStored = true
 			}
-			storedInline, err := ctx.workflow.SetStoredInlineTemplate(scope, resourceName, newTmpl)
+			err = ctx.workflow.SetStoredInlineTemplate(scope, resourceName, newTmpl)
 			if err != nil {
 				ctx.log.Errorf("Failed to store the inline template: %v", err)
-			}
-			if storedInline {
-				ctx.log.Debug("Stored the inline template")
 			}
 		}
 		tmpl = newTmpl

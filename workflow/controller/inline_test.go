@@ -119,7 +119,7 @@ spec:
         parameters:
           - name: arg
       steps:
-        - - name: inline
+        - - name: inline-a
             arguments:
               parameters:
                 - name: arg
@@ -132,7 +132,25 @@ spec:
                 image: docker/whalesay
                 command: [echo]
                 args:
-                  - "{{ inputs.parameters.arg }}"
+                  - "{{ inputs.parameters.arg }} a"
+              outputs:
+                parameters:
+                  - name: arg-out
+                    value: "{{ inputs.parameters.arg }}"
+          - name: inline-b
+            arguments:
+              parameters:
+                - name: arg
+                  value: "{{ inputs.parameters.arg }}"
+            inline:
+              inputs:
+                parameters:
+                  - name: arg
+              container:
+                image: docker/whalesay
+                command: [echo]
+                args:
+                  - "{{ inputs.parameters.arg }} b"
               outputs:
                 parameters:
                   - name: arg-out
@@ -150,14 +168,25 @@ func TestCallTemplateWithInlineSteps(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Equal(t, 4, len(pods.Items))
+	count := 0
 	for _, pod := range pods.Items {
 		nodeName := pod.Annotations["workflows.argoproj.io/node-name"]
 		if strings.Contains(nodeName, "foo") {
-			assert.Contains(t, pod.Spec.Containers[1].Args, "foo")
+			count++
+			assert.Contains(t, pod.Spec.Containers[1].Args[0], "foo")
 		}
 		if strings.Contains(nodeName, "bar") {
-			assert.Contains(t, pod.Spec.Containers[1].Args, "bar")
+			assert.Contains(t, pod.Spec.Containers[1].Args[0], "bar")
+		}
+	}
+	assert.Equal(t, 2, count)
+	for name, storedTemplate := range woc.wf.Status.StoredTemplates {
+		if strings.Contains(name, "inline-a") {
+			assert.Equal(t, storedTemplate.Container.Args[0], "{{ inputs.parameters.arg }} a")
+		}
+		if strings.Contains(name, "inline-b") {
+			assert.Equal(t, storedTemplate.Container.Args[0], "{{ inputs.parameters.arg }} b")
 		}
 	}
 }
@@ -189,7 +218,7 @@ spec:
           - name: arg
       dag:
         tasks:
-          - name: inline
+          - name: inline-a
             arguments:
               parameters:
               - name: arg
@@ -197,7 +226,27 @@ spec:
             inline:
               container:
                 args:
-                - '{{ inputs.parameters.arg }}'
+                - '{{ inputs.parameters.arg }} a'
+                command:
+                - echo
+                image: docker/whalesay
+              inputs:
+                parameters:
+                - name: arg
+              outputs:
+                parameters:
+                - name: arg-out
+                  value: '{{ inputs.parameters.arg }}'
+
+          - name: inline-b
+            arguments:
+              parameters:
+              - name: arg
+                value: '{{ inputs.parameters.arg }}'
+            inline:
+              container:
+                args:
+                - '{{ inputs.parameters.arg }} b'
                 command:
                 - echo
                 image: docker/whalesay
@@ -221,14 +270,25 @@ func TestCallTemplateWithInlineDAG(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Equal(t, 4, len(pods.Items))
+	count := 0
 	for _, pod := range pods.Items {
 		nodeName := pod.Annotations["workflows.argoproj.io/node-name"]
 		if strings.Contains(nodeName, "foo") {
-			assert.Contains(t, pod.Spec.Containers[1].Args, "foo")
+			count++
+			assert.Contains(t, pod.Spec.Containers[1].Args[0], "foo")
 		}
 		if strings.Contains(nodeName, "bar") {
-			assert.Contains(t, pod.Spec.Containers[1].Args, "bar")
+			assert.Contains(t, pod.Spec.Containers[1].Args[0], "bar")
+		}
+	}
+	assert.Equal(t, 2, count)
+	for name, storedTemplate := range woc.wf.Status.StoredTemplates {
+		if strings.Contains(name, "inline-a") {
+			assert.Equal(t, storedTemplate.Container.Args[0], "{{ inputs.parameters.arg }} a")
+		}
+		if strings.Contains(name, "inline-b") {
+			assert.Equal(t, storedTemplate.Container.Args[0], "{{ inputs.parameters.arg }} b")
 		}
 	}
 }
