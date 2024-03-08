@@ -724,6 +724,8 @@ docs: /usr/local/bin/mkdocs \
 	docs-lint \
 	# TODO: This is temporarily disabled to unblock merging PRs.
 	# docs-linkcheck
+	# copy README.md to docs/README.md
+	./hack/copy-readme.sh
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/check-env-doc.sh
 	# build the docs
