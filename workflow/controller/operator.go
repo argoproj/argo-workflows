@@ -237,7 +237,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.taskResultReconciliation()
 
 	// Do artifact GC if task result reconciliation is complete.
-	if woc.checkReconciliationComplete() {
+	if woc.wf.Status.Fulfilled() {
 		if err := woc.garbageCollectArtifacts(ctx); err != nil {
 			woc.log.WithError(err).Error("failed to GC artifacts")
 			return
@@ -800,8 +800,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithError(err).Warn("error updating taskset")
 	}
 
-	// Make sure the TaskResults are incorporated into WorkflowStatus before we delete them.
-	if woc.checkReconciliationComplete() {
+	// Make sure the workflow completed.
+	if woc.wf.Status.Fulfilled() {
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
@@ -811,11 +811,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be be labeled multiple times.
 	woc.queuePodsForCleanup()
-}
-
-func (woc *wfOperationCtx) checkReconciliationComplete() bool {
-	woc.log.Debugf("Task results completion status: %v", woc.wf.Status.TaskResultsCompletionStatus)
-	return woc.wf.Status.Phase.Completed() && !woc.wf.Status.TaskResultsInProgress()
 }
 
 func (woc *wfOperationCtx) checkTaskResultsInProgress() bool {
@@ -1710,7 +1705,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 
 	switch gcStrategy {
 	case wfv1.VolumeClaimGCOnSuccess:
-		if woc.wf.Status.Phase == wfv1.WorkflowError || woc.wf.Status.Phase == wfv1.WorkflowFailed {
+		if woc.wf.Status.Phase != wfv1.WorkflowSucceeded {
 			// Skip deleting PVCs to reuse them for retried failed/error workflows.
 			// PVCs are automatically deleted when corresponded owner workflows get deleted.
 			return nil
@@ -1738,6 +1733,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 				newPVClist = append(newPVClist, pvc)
 				if firstErr == nil {
 					firstErr = err
+				}
 				}
 			}
 		}

@@ -1543,7 +1543,7 @@ spec:
 // A test can simply reproduce the problem mentioned in the link https://github.com/argoproj/argo-workflows/pull/12574
 // First, add the code to func "taskResultReconciliation".You can adjust this time to be larger for better reproduction.
 //
-//	if woc.checkReconciliationComplete() {
+//	if !woc.checkTaskResultsInProgress() {
 //		time.Sleep(time.Second * 2)
 //	}
 //
