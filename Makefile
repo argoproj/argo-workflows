@@ -725,9 +725,9 @@ docs: /usr/local/bin/mkdocs \
 	# TODO: This is temporarily disabled to unblock merging PRs.
 	# docs-linkcheck
 	# copy README.md to docs/README.md
-	./hack/copy-readme.sh
+	./hack/docs/copy-readme.sh
 	# check environment-variables.md contains all variables mentioned in the code
-	./hack/check-env-doc.sh
+	./hack/docs/check-env-doc.sh
 	# build the docs
 	mkdocs build --strict
 	# tell the user the fastest way to edit docs
