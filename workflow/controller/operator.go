@@ -510,7 +510,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.markWorkflowError(ctx, err)
 	}
 
-	if woc.execWf.Spec.Metrics != nil && woc.wf.Status.Fulfilled() {
+	if !woc.wf.Status.Fulfilled() {
+		return
+	}
+
+	if woc.execWf.Spec.Metrics != nil {
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		localScope, realTimeScope := woc.prepareMetricScope(node)
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
@@ -1706,7 +1710,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 
 	switch gcStrategy {
 	case wfv1.VolumeClaimGCOnSuccess:
-		if woc.wf.Status.Phase == wfv1.WorkflowError || woc.wf.Status.Phase == wfv1.WorkflowFailed || woc.wf.Status.Phase == wfv1.WorkflowRunning {
+		if woc.wf.Status.Phase == wfv1.WorkflowError || woc.wf.Status.Phase == wfv1.WorkflowFailed {
 			// Skip deleting PVCs to reuse them for retried failed/error workflows.
 			// PVCs are automatically deleted when corresponded owner workflows get deleted.
 			return nil
