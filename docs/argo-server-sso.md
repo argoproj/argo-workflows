@@ -110,7 +110,7 @@ The precedence must be the lowest of all your service accounts.
 
 As of Kubernetes v1.24, secrets for a service account token are no longer automatically created.
 Therefore, service account secrets for SSO RBAC must be created manually.
-See [Manually create secrets](manually-create-secrets.md) for detailed instructions.
+See [Service Account Secrets](service-account-secrets.md) for detailed instructions.
 
 ## SSO RBAC Namespace Delegation
 
