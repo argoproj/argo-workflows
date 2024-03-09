@@ -749,6 +749,10 @@ type Template struct {
 	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
+
+	// PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+	// This duration may not be applied to Step or DAG templates.
+	PendingTimeout string `json:"pendingTimeout,omitempty" protobuf:"bytes,44,opt,name=pendingTimeout"`
 }
 
 // SetType will set the template object based on template type.

@@ -4495,6 +4495,8 @@ run on the selected node(s). Overrides the selector set at the workflow level. |
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the
 boundaries of this template invocation. If additional steps/dag templates are invoked, the
 pods created by those templates will not be counted towards this total. |  |
+| pendingTimeout | string| `string` |  | | PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+This duration may not be applied to Step or DAG templates. |  |
 | plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 container fields which are not strings (e.g. resource limits). |  |

@@ -7531,6 +7531,8 @@ spec:
                   parallelism:
                     format: int64
                     type: integer
+                  pendingTimeout:
+                    type: string
                   plugin:
                     type: object
                   podSpecPatch:
@@ -15717,6 +15719,8 @@ spec:
                     parallelism:
                       format: int64
                       type: integer
+                    pendingTimeout:
+                      type: string
                     plugin:
                       type: object
                     podSpecPatch:
