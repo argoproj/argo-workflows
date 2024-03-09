@@ -169,6 +169,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
+				common.LabelKeyTemplate:  tmpl.Name,              // Allows filtering by pods related to specific template
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
 			},
 			Annotations: map[string]string{
