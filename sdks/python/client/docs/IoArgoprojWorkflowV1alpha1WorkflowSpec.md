@@ -31,6 +31,7 @@ Name | Type | Description | Notes
 **pod_priority_class_name** | **str** | PriorityClassName to apply to workflow pods. | [optional] 
 **pod_spec_patch** | **str** | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | [optional] 
 **priority** | **int** | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. | [optional] 
+**retry** | [**IoArgoprojWorkflowV1alpha1RetryConfig**](IoArgoprojWorkflowV1alpha1RetryConfig.md) |  | [optional] 
 **retry_strategy** | [**IoArgoprojWorkflowV1alpha1RetryStrategy**](IoArgoprojWorkflowV1alpha1RetryStrategy.md) |  | [optional] 
 **scheduler_name** | **str** | Set scheduler name for all pods. Will be overridden if container/script template&#39;s scheduler name is set. Default scheduler will be used if neither specified. | [optional] 
 **security_context** | [**PodSecurityContext**](PodSecurityContext.md) |  | [optional] 

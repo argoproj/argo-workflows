@@ -217,6 +217,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
+	// Check whether it is a workflow that requires retry
+	if woc.shouldRetry() {
+		woc.log.Info("workflow retried")
+		err := woc.retryWorkflow(ctx)
+		if err != nil {
+			woc.log.WithError(err).Errorf("Retry workflow failed")
+		}
+		return
+	}
+
 	if woc.wf.Status.ArtifactRepositoryRef == nil {
 		ref, err := woc.controller.artifactRepositories.Resolve(ctx, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
 		if err != nil {
@@ -2364,6 +2374,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 					woc.log.Info("Doesn't match with archive label selector. Skipping Archive")
 				}
 			}
+			woc.wf.Status.RetryStatus = nil
 			woc.updated = true
 		}
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
@@ -3830,6 +3841,44 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 		return tmpl.RetryStrategy
 	}
 	return woc.execWf.Spec.RetryStrategy
+}
+
+func (woc *wfOperationCtx) shouldRetry() bool {
+	retryConfig := woc.execWf.Spec.Retry
+	if retryConfig == nil {
+		return false
+	}
+	if woc.IsRetried() {
+		if woc.controller.podCleanupQueue.Len() == 0 {
+			woc.wf.Status.RetryStatus = pointer.BoolPtr(true)
+			woc.updated = true
+			return false
+		}
+	}
+	return true
+}
+
+func (woc *wfOperationCtx) IsRetried() bool {
+	return woc.wf.Status.RetryStatus != nil && *woc.wf.Status.RetryStatus
+}
+
+func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
+	if woc.IsRetried() {
+		return nil
+	}
+	retryConfig := woc.execWf.Spec.Retry
+	// Clean up remaining pods in the workflow
+	wf, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf, retryConfig.RestartSuccessful, retryConfig.NodeFieldSelector, retryConfig.Parameters)
+	if err != nil {
+		return fmt.Errorf("fail to FormulateRetryWorkflow")
+	}
+	for _, podName := range podsToDelete {
+		woc.controller.queuePodForCleanup(wf.Namespace, podName, deletePod)
+	}
+	woc.wf = wf
+	woc.wf.Status.RetryStatus = pointer.BoolPtr(true)
+	woc.updated = true
+	return nil
 }
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
