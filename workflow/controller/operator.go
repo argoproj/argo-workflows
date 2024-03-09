@@ -1734,7 +1734,6 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 				if firstErr == nil {
 					firstErr = err
 				}
-				}
 			}
 		}
 	}
