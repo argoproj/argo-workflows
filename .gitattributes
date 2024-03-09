@@ -4,3 +4,4 @@ manifests/base/crds/*/argoproj.io*.yaml linguist-generated
 manifests/quick-start-*.yaml linguist-generated
 api/jsonschema/schema.json linguist-generated
 api/openapi-spec/swagger.json linguist-generated
+pkg/client/** linguist-generated
