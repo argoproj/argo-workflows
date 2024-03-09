@@ -10,7 +10,7 @@ import (
 	"github.com/blushft/go-diagrams/nodes/saas"
 )
 
-func main() {
+func generateDiagram() {
 	d, err := diagram.New(diagram.Filename("diagram"), diagram.Label("Argo Workflows"), diagram.Direction("LR"))
 	if err != nil {
 		panic(err)

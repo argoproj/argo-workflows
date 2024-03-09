@@ -662,17 +662,17 @@ api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/api/jsonschema/ma
 
 go-diagrams/diagram.dot: ./hack/docs/diagram.go
 	rm -Rf go-diagrams
-	go run ./hack/docs/diagram
+	go run ./hack/docs diagram
 
 docs/assets/diagram.png: go-diagrams/diagram.dot
 	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
 
-docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docs/docgen.go
-	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack/docs/docgen
+docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docs/fields.go
+	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack/docs fields
 
 # generates several other files
 docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/docs/cli.go
-	go run ./hack/docs/cli
+	go run ./hack/docs cli
 
 # docs
 
