@@ -64,13 +64,17 @@ func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wf
 				Name:         templateName,
 				ClusterScope: clusterScope,
 			},
+			PodMetadata: &wfv1.Metadata{
+				Labels: map[string]string{},
+			},
 		},
 	}
-
 	if clusterScope {
 		wf.Labels[LabelKeyClusterWorkflowTemplate] = templateName
+		wf.Spec.PodMetadata.Labels[LabelKeyClusterWorkflowTemplate] = templateName
 	} else {
 		wf.Labels[LabelKeyWorkflowTemplate] = templateName
+		wf.Spec.PodMetadata.Labels[LabelKeyWorkflowTemplate] = templateName
 	}
 	return wf
 }

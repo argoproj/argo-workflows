@@ -755,6 +755,19 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	for k, v := range tmpl.Metadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
 	}
+
+	log.Infof("woc.execWf.Spec.WorkflowTemplateRef: %v", woc.execWf.Spec.WorkflowTemplateRef)
+	if woc.execWf.Spec.WorkflowTemplateRef != nil {
+		templateRef := woc.execWf.Spec.WorkflowTemplateRef
+		if pod.ObjectMeta.Labels == nil {
+			pod.ObjectMeta.Labels = make(map[string]string)
+		}
+		if templateRef.ClusterScope {
+			pod.ObjectMeta.Labels[common.LabelKeyClusterWorkflowTemplate] = templateRef.Name
+		} else {
+			pod.ObjectMeta.Labels[common.LabelKeyWorkflowTemplate] = templateRef.Name
+		}
+	}
 }
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
