@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-retry-stopped-
+spec:
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+      workflows.argoproj.io/workflow: "wf-retry-stopped"
+  entrypoint: wf-retry-stopped-main
+  serviceAccountName: argo
+  executor:
+    serviceAccountName: default
+  templates:
+    - name: wf-retry-stopped-main
+      steps:
+        - - name: create
+            template: create
+          - name: sleep
+            template: sleep
+          - name: stop
+            template: stop
+
+    - name: sleep
+      container:
+        image: alpine:latest
+        command: [ sleep, "10" ]
+
+    - name: stop
+      container:
+        image: quay.io/argoproj/argocli:latest
+        args:
+          - stop
+          - -l
+          - workflows.argoproj.io/workflow=wf-retry-stopped
+          - --namespace=argo
+          - --loglevel=debug
+
+    - name: create
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "hello world" > /tmp/message
+            sleep 999
+      outputs:
+        artifacts:
+          - name: my-artifact
+            path: /tmp/message
+            s3:
+              key: my-artifact
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            archive:
+              none: {}
