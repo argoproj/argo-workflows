@@ -78,5 +78,5 @@ func BuildWorkflowSelectorForRawQuery(in string, inArgs []any, tableName, labelT
 	outArgs = append(outArgs, limit)
 	out += " offset ?"
 	outArgs = append(outArgs, offset)
-	return
+	return out, outArgs, nil
 }
