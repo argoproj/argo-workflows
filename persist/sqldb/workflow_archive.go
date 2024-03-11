@@ -202,39 +202,39 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
 	)
 }
 
-func startedAtFromClause(from time.Time) *db.RawExpr {
+func startedAtFromClause(from time.Time) db.Cond {
 	if !from.IsZero() {
-		return db.Raw("startedat > ?", from)
+		return db.Cond{"startedat >": from}
 	}
-	return &db.RawExpr{}
+	return db.Cond{}
 }
 
-func startedAtToClause(to time.Time) *db.RawExpr {
+func startedAtToClause(to time.Time) db.Cond {
 	if !to.IsZero() {
-		return db.Raw("startedat < ?", to)
+		return db.Cond{"startedat <": to}
 	}
-	return &db.RawExpr{}
+	return db.Cond{}
 }
 
-func namespaceEqual(namespace string) *db.RawExpr {
+func namespaceEqual(namespace string) db.Cond {
 	if namespace != "" {
-		return db.Raw("namespace = ?", namespace)
+		return db.Cond{"namespace": namespace}
 	}
-	return &db.RawExpr{}
+	return db.Cond{}
 }
 
-func nameEqual(name string) *db.RawExpr {
+func nameEqual(name string) db.Cond {
 	if name != "" {
-		return db.Raw("name = ?", name)
+		return db.Cond{"name": name}
 	}
-	return &db.RawExpr{}
+	return db.Cond{}
 }
 
-func namePrefixClause(namePrefix string) *db.RawExpr {
+func namePrefixClause(namePrefix string) db.Cond {
 	if namePrefix != "" {
-		return db.Raw("name LIKE ?", namePrefix+"%")
+		return db.Cond{"name like": namePrefix + "%"}
 	}
-	return &db.RawExpr{}
+	return db.Cond{}
 }
 
 func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error) {

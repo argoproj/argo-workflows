@@ -33,12 +33,21 @@ func BuildWorkflowSelector(selector db.Selector, tableName, labelTableName strin
 }
 
 func BuildWorkflowSelectorForRawQuery(in string, inArgs []any, tableName, labelTableName string, hasClusterName bool, t dbType, namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit, offset int) (out string, outArgs []any, err error) {
-	clauses := []*db.RawExpr{
-		namespaceEqual(namespace),
-		nameEqual(name),
-		namePrefixClause(namePrefix),
-		startedAtFromClause(minStartedAt),
-		startedAtToClause(maxStartedAt),
+	var clauses []*db.RawExpr
+	if namespace != "" {
+		clauses = append(clauses, db.Raw("namespace = ?", namespace))
+	}
+	if name != "" {
+		clauses = append(clauses, db.Raw("name = ?", name))
+	}
+	if namePrefix != "" {
+		clauses = append(clauses, db.Raw("name like ?", namePrefix+"%"))
+	}
+	if !minStartedAt.IsZero() {
+		clauses = append(clauses, db.Raw("startedat > ?", minStartedAt))
+	}
+	if !maxStartedAt.IsZero() {
+		clauses = append(clauses, db.Raw("startedat < ?", maxStartedAt))
 	}
 	for _, r := range labelRequirements {
 		q, err := requirementToCondition(t, r, tableName, labelTableName, hasClusterName)
@@ -53,11 +62,11 @@ func BuildWorkflowSelectorForRawQuery(in string, inArgs []any, tableName, labelT
 		if c == nil || c.Empty() {
 			continue
 		}
-		out += " AND " + c.Raw()
+		out += " and " + c.Raw()
 		outArgs = append(outArgs, c.Arguments()...)
 	}
 
-	out += " ORDER BY startedat DESC"
+	out += " order by startedat desc"
 
 	// If we were passed 0 as the limit, then we should load all available archived workflows
 	// to match the behavior of the `List` operations in the Kubernetes API
@@ -65,9 +74,9 @@ func BuildWorkflowSelectorForRawQuery(in string, inArgs []any, tableName, labelT
 		limit = -1
 		offset = -1
 	}
-	out += " LIMIT ?"
+	out += " limit ?"
 	outArgs = append(outArgs, limit)
-	out += " OFFSET ?"
+	out += " offset ?"
 	outArgs = append(outArgs, offset)
 	return
 }
