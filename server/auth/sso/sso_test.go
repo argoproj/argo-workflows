@@ -2,6 +2,11 @@ package sso
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"os"
 	"testing"
 	"time"
 
@@ -32,7 +37,7 @@ func fakeOidcFactory(ctx context.Context, issuer string) (providerInterface, err
 	return fakeOidcProvider{ctx, issuer}, nil
 }
 
-func getSecretKeySelector(secret, key string) apiv1.SecretKeySelector {
+func getSecretKeySelector(secret string, key string) apiv1.SecretKeySelector {
 	return apiv1.SecretKeySelector{
 		LocalObjectReference: apiv1.LocalObjectReference{
 			Name: secret,
@@ -152,4 +157,69 @@ func TestGetSessionExpiry(t *testing.T) {
 		SessionExpiry: metav1.Duration{Duration: 5 * time.Hour},
 	}
 	assert.Equal(t, config.GetSessionExpiry(), 5*time.Hour)
+}
+
+func TestLoadSsoClientIdAndSecretFromEnv(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+
+	os.Setenv("ARGO_CLIENT_ID", "sso-client-id-value")
+	os.Setenv("ARGO_CLIENT_SECRET", "sso-client-secret-value")
+
+	config := Config{
+		Issuer:               "https://test-issuer",
+		IssuerAlias:          "",
+		ClientIDEnvName:      "ARGO_CLIENT_ID",
+		ClientSecretEnvName:  "ARGO_CLIENT_SECRET",
+		RedirectURL:          "https://dummy",
+		CustomGroupClaimName: "argo_groups",
+	}
+	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	assert.NoError(t, err)
+	ssoObject := ssoInterface.(*sso)
+	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
+	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
+	assert.Equal(t, "argo_groups", ssoObject.customClaimName)
+	assert.Equal(t, "", config.IssuerAlias)
+	assert.Equal(t, 10*time.Hour, ssoObject.expiry)
+}
+
+func TestLoadSsoPrivateKeyFromEnv(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+
+	generatedKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, generatedKey)
+
+	privateKeyBlob := x509.MarshalPKCS1PrivateKey(generatedKey)
+	assert.NotEmpty(t, privateKeyBlob)
+
+	privateKeyBlobEncoded := base64.StdEncoding.EncodeToString(privateKeyBlob)
+	assert.NotEmpty(t, privateKeyBlobEncoded)
+
+	os.Setenv("ARGO_PRIVATE_KEY", privateKeyBlobEncoded)
+
+	ctx := context.Background()
+	_, err = fakeClient.Create(ctx, &apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: secretName},
+		Data:       map[string][]byte{},
+	}, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	config := Config{
+		Issuer:               "https://test-issuer",
+		IssuerAlias:          "",
+		ClientID:             getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret:         getSecretKeySelector("argo-sso-secret", "client-secret"),
+		RedirectURL:          "https://dummy",
+		CustomGroupClaimName: "argo_groups",
+		PrivateKeyEnvName:    "ARGO_PRIVATE_KEY",
+	}
+	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	assert.NoError(t, err)
+	ssoObject := ssoInterface.(*sso)
+	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
+	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
+	assert.Equal(t, "argo_groups", ssoObject.customClaimName)
+	assert.Equal(t, "", config.IssuerAlias)
+	assert.Equal(t, 10*time.Hour, ssoObject.expiry)
 }

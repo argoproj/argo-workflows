@@ -107,6 +107,44 @@ data:
     redirectUrl: https://argo-workflows.mydomain.com/oauth2/callback
 ```
 
+## Example SSO config with Secrets from environment variable
+
+The following example shows how you can use environment variables to get your secrets. This is
+especially useful if you use CSI driver to get your secrets from, say, Azure Key Vault.
+
+```yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  # SSO Configuration for the Argo server.
+  # You must also start argo server with `--auth-mode sso`.
+  # https://argoproj.github.io/argo-workflows/argo-server-auth-mode/
+  sso: |
+    # This is the root URL of the OIDC provider (required).
+    issuer: https://argo-cd.mydomain.com/api/dex
+    # This is the redirect URL supplied to the provider (required). It must
+    # be in the form <argo-server-root-url>/oauth2/callback. It must be
+    # browser-accessible.
+    redirectUrl: https://argo-workflows.mydomain.com/oauth2/callback
+    # This is the environment variable name that will contain the Client ID; this is equivalent to
+    # what is in the secret `argo-workflows-sso.client-id`. If this is not provided, then we
+    # default to using kube Secret above.
+    # (required if clientId is not provided).
+    clientIdEnvName: ARGO_OIDC_CLIENT_ID
+    # This is the environment variable name that contains OIDC client
+    # secret issued to the application by the provider; this is equivalent to
+    # what is in the secret `argo-workflows-sso.client-secret`. If this is not provided, then we
+    # default to using kube Secret above.
+    # (required if clientSecret is not provided).
+    clientSecretEnvName: ARGO_OIDC_CLIENT_SECRET
+    # This is the environment variable name that contains PKCS1 private key, if this is not
+    # provided, then Argo will create one dynamically and store in Kube Secret.
+    privateKeyEnvName: ARGO_OIDC_PRIVATE_KEY
+```
+
 ## Example Helm chart configuration for authenticating against Argo CD's Dex
 
 `argo-cd/values.yaml`:
