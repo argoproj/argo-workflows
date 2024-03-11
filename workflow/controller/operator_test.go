@@ -10335,3 +10335,250 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 		assert.Equal(t, "steps-need-reconcile", pods.Items[1].Spec.Containers[1].Env[0].Value)
 	}
 }
+
+func TestWorkflowRunningButLabelCompleted(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-02-04T08:43:42Z"
+  generateName: wf-retry-stopped-
+  generation: 11
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Running
+    workflows.argoproj.io/test: "true"
+    workflows.argoproj.io/workflow: wf-retry-stopped
+    workflows.argoproj.io/workflow-archiving-status: Archived
+  name: wf-retry-stopped-pn6mm
+  namespace: argo
+  resourceVersion: "307888"
+  uid: 6c14e28b-1c31-4bd5-a10b-f4799971448f
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: wf-retry-stopped-main
+  executor:
+    serviceAccountName: default
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  serviceAccountName: argo
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: wf-retry-stopped-main
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: create
+        template: create
+      - arguments: {}
+        name: sleep
+        template: sleep
+      - arguments: {}
+        name: stop
+        template: stop
+  - container:
+      command:
+      - sleep
+      - "10"
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: sleep
+    outputs: {}
+  - container:
+      args:
+      - stop
+      - -l
+      - workflows.argoproj.io/workflow=wf-retry-stopped
+      - --namespace=argo
+      - --loglevel=debug
+      image: argoproj/argocli:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: stop
+    outputs: {}
+  - container:
+      args:
+      - |
+        echo "hello world" > /tmp/message
+        sleep 999
+      command:
+      - sh
+      - -c
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: create
+    outputs:
+      artifacts:
+      - archive:
+          none: {}
+        name: my-artifact
+        path: /tmp/message
+        s3:
+          accessKeySecret:
+            key: accesskey
+            name: my-minio-cred
+          bucket: my-bucket
+          endpoint: minio:9000
+          insecure: true
+          key: my-artifact
+          secretKeySecret:
+            key: secretkey
+            name: my-minio-cred
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+      workflows.argoproj.io/workflow: wf-retry-stopped
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-02-04T08:44:20Z"
+  message: Stopped with strategy 'Stop'
+  nodes:
+    wf-retry-stopped-pn6mm:
+      children:
+      - wf-retry-stopped-pn6mm-4109534602
+      displayName: wf-retry-stopped-pn6mm
+      finishedAt: null
+      id: wf-retry-stopped-pn6mm
+      name: wf-retry-stopped-pn6mm
+      phase: Running
+      progress: 0/3
+      startedAt: "2024-02-04T08:44:03Z"
+      templateName: wf-retry-stopped-main
+      templateScope: local/wf-retry-stopped-pn6mm
+      type: Steps
+    wf-retry-stopped-pn6mm-1672493720:
+      finishedAt: null
+      id: ""
+      name: ""
+      outputs:
+        artifacts:
+        - archive:
+            none: {}
+          name: my-artifact
+          path: /tmp/message
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: my-artifact
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        - name: main-logs
+          s3:
+            key: wf-retry-stopped-pn6mm/wf-retry-stopped-pn6mm-create-1672493720/main.log
+      startedAt: null
+      type: ""
+    wf-retry-stopped-pn6mm-4109534602:
+      boundaryID: wf-retry-stopped-pn6mm
+      displayName: '[0]'
+      finishedAt: null
+      id: wf-retry-stopped-pn6mm-4109534602
+      name: wf-retry-stopped-pn6mm[0]
+      nodeFlag: {}
+      phase: Running
+      progress: 0/3
+      startedAt: "2024-02-04T08:44:03Z"
+      templateScope: local/wf-retry-stopped-pn6mm
+      type: StepGroup
+    wf-retry-stopped-pn6mm-4140492335:
+      finishedAt: null
+      id: ""
+      name: ""
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: wf-retry-stopped-pn6mm/wf-retry-stopped-pn6mm-sleep-4140492335/main.log
+      startedAt: null
+      type: ""
+  phase: Running
+  progress: 0/3
+  startedAt: "2024-02-04T08:44:03Z"
+  taskResultsCompletionStatus:
+    wf-retry-stopped-pn6mm-1672493720: true
+    wf-retry-stopped-pn6mm-2766965604: true
+    wf-retry-stopped-pn6mm-4140492335: true
+`)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	reconceilNeeded := reconciliationNeeded(wf)
+	assert.False(t, reconceilNeeded)
+
+	delete(wf.Labels, common.LabelKeyCompleted)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.True(t, len(woc.wf.Status.Nodes) > 0)
+	nodeId := "wf-retry-stopped-pn6mm-1672493720"
+
+	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+
+	delete(wf.Labels, common.LabelKeyCompleted)
+	woc = newWorkflowOperationCtx(wf, controller)
+	n := woc.markNodePhase(wf.Name, wfv1.NodeError)
+	assert.Equal(t, n.Phase, wfv1.NodeError)
+	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+
+	delete(wf.Labels, common.LabelKeyCompleted)
+	woc = newWorkflowOperationCtx(wf, controller)
+	n = woc.markNodePhase(wf.Name, wfv1.NodeSucceeded)
+	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	woc.wf.Status.MarkTaskResultComplete(nodeId)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
