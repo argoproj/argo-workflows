@@ -1,5 +1,4 @@
 import {Tabs, Ticker, Tooltip} from 'argo-ui';
-import moment from 'moment';
 import * as React from 'react';
 import {useState} from 'react';
 
@@ -20,9 +19,9 @@ import {getResolvedTemplates} from '../../../shared/template-resolution';
 
 import './workflow-node-info.scss';
 
-function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
-    const endTime = node.finishedAt ? moment(node.finishedAt) : now;
-    return endTime.diff(moment(node.startedAt)) / 1000;
+function nodeDuration(node: models.NodeStatus, now: Date): number {
+    const endTime = node.finishedAt ? new Date(node.finishedAt) : now;
+    return (endTime.valueOf() - new Date(node.startedAt).valueOf()) / 1000; // ms to seconds
 }
 
 // Iterate over the node's subtree and find pod in error or fail
