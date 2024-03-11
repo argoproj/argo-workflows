@@ -249,12 +249,12 @@ argoexec-image:
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
 		--platform=linux/amd64,linux/arm64 \
 		--target $* \
-		--push \
+		--load \
 		 .
-#	[ ! -e $* ] || mv $* dist/
-#	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
-#	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
-#	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
+	[ ! -e $* ] || mv $* dist/
+	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
+	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
+	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 .PHONY: codegen
 codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
