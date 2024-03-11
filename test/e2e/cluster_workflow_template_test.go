@@ -5,9 +5,10 @@ package e2e
 
 import (
 	"context"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"strings"
 	"testing"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

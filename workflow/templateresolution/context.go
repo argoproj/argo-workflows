@@ -226,7 +226,6 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder)
 	}
 
 	templateRef := tmplHolder.GetTemplateRef()
-	log.Infof("templateRef: %v", templateRef)
 	if templateRef != nil {
 		if tmpl.Metadata.Labels == nil {
 			tmpl.Metadata.Labels = make(map[string]string)

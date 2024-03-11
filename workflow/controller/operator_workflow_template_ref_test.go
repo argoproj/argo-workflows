@@ -2,8 +2,9 @@ package controller
 
 import (
 	"context"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"testing"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
