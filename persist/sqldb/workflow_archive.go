@@ -202,42 +202,39 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
 	)
 }
 
-func startedAtFromClause(from time.Time) db.Cond {
+func startedAtFromClause(from time.Time) *db.RawExpr {
 	if !from.IsZero() {
-		return db.Cond{"startedat > ": from}
+		return db.Raw("startedat > ?", from)
 	}
-	return db.Cond{}
+	return &db.RawExpr{}
 }
 
-func startedAtToClause(to time.Time) db.Cond {
+func startedAtToClause(to time.Time) *db.RawExpr {
 	if !to.IsZero() {
-		return db.Cond{"startedat < ": to}
+		return db.Raw("startedat < ?", to)
 	}
-	return db.Cond{}
+	return &db.RawExpr{}
 }
 
-func namespaceEqual(namespace string) db.Cond {
-	if namespace == "" {
-		return db.Cond{}
-	} else {
-		return db.Cond{"namespace": namespace}
+func namespaceEqual(namespace string) *db.RawExpr {
+	if namespace != "" {
+		return db.Raw("namespace = ?", namespace)
 	}
+	return &db.RawExpr{}
 }
 
-func nameEqual(name string) db.Cond {
-	if name == "" {
-		return db.Cond{}
-	} else {
-		return db.Cond{"name": name}
+func nameEqual(name string) *db.RawExpr {
+	if name != "" {
+		return db.Raw("name = ?", name)
 	}
+	return &db.RawExpr{}
 }
 
-func namePrefixClause(namePrefix string) db.Cond {
-	if namePrefix == "" {
-		return db.Cond{}
-	} else {
-		return db.Cond{"name LIKE ": namePrefix + "%"}
+func namePrefixClause(namePrefix string) *db.RawExpr {
+	if namePrefix != "" {
+		return db.Raw("name LIKE ?", namePrefix+"%")
 	}
+	return &db.RawExpr{}
 }
 
 func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error) {

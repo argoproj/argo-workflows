@@ -5,105 +5,64 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/upper/db/v4"
-	"github.com/upper/db/v4/adapter/sqlite"
-	"google.golang.org/grpc/codes"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/cache"
+	"zombiezen.com/go/sqlite"
+	"zombiezen.com/go/sqlite/sqlitex"
 )
 
 const (
-	workflowTableName       = "argo_workflows"
-	workflowLabelsTableName = "argo_workflows_labels"
+	workflowTableName        = "argo_workflows"
+	workflowLabelsTableName  = "argo_workflows_labels"
+	tableInitializationQuery = `create table if not exists argo_workflows (
+  uid varchar(128) not null,
+  instanceid varchar(64),
+  name varchar(256),
+  namespace varchar(256),
+  phase varchar(25),
+  startedat timestamp,
+  finishedat timestamp,
+  workflow text,
+  primary key (uid)
+);
+create index if not exists idx_instanceid on argo_workflows (instanceid);
+create table if not exists argo_workflows_labels (
+  name varchar(317) not null,
+  uid varchar(128) not null,
+  value varchar(63) not null,
+  primary key (uid, name, value),
+  foreign key (uid) references argo_workflows (uid) on delete cascade
+);
+create index if not exists idx_name_value on argo_workflows_labels (name, value);
+`
+	insertWorkflowQuery      = `insert into argo_workflows (uid, instanceid, name, namespace, phase, startedat, finishedat, workflow) values (?, ?, ?, ?, ?, ?, ?, ?)`
+	insertWorkflowLabelQuery = `insert into argo_workflows_labels (uid, name, value) values (?, ?, ?)`
+	deleteWorkflowQuery      = `delete from argo_workflows where uid = ?`
 )
 
-type workflowMetadata struct {
-	UID        string             `db:"uid"`
-	InstanceID string             `db:"instanceid"`
-	Name       string             `db:"name"`
-	Namespace  string             `db:"namespace"`
-	Phase      wfv1.WorkflowPhase `db:"phase"`
-	StartedAt  time.Time          `db:"startedat"`
-	FinishedAt time.Time          `db:"finishedat"`
-}
-
-type workflowRecord struct {
-	workflowMetadata
-	Workflow string `db:"workflow"`
-}
-
-type workflowLabelRecord struct {
-	UID string `db:"uid"`
-	// Why is this called "name" not "key"? Key is an SQL reserved word.
-	Key   string `db:"name"`
-	Value string `db:"value"`
-}
-
-type workflowCount struct {
-	Total uint64 `db:"total,omitempty" json:"total"`
-}
-
-func initDB() (db.Session, error) {
-	sess, err := sqlite.Open(sqlite.ConnectionURL{
-		Database: `:memory:`,
-		Options: map[string]string{
-			"mode": "memory",
-		},
-	})
+func initDB() (*sqlite.Conn, error) {
+	conn, err := sqlite.OpenConn(":memory:", sqlite.OpenReadWrite)
+	//conn, err := sqlite.OpenConn("./memory.db", sqlite.OpenReadWrite)
 	if err != nil {
 		return nil, err
 	}
-	_, err = sess.SQL().Exec("pragma foreign_keys = on")
+	err = sqlitex.ExecuteTransient(conn, "pragma foreign_keys = on", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to enable foreign key support: %w", err)
 	}
 
-	_, err = sess.SQL().Exec(`create table if not exists argo_workflows (
-uid varchar(128) not null,
-instanceid varchar(64),
-name varchar(256),
-namespace varchar(256),
-phase varchar(25),
-startedat timestamp,
-finishedat timestamp,
-workflow text,
-primary key (uid)
-)`)
+	err = sqlitex.ExecuteScript(conn, tableInitializationQuery, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	// create index for instanceid
-	_, err = sess.SQL().Exec(`create index if not exists idx_instanceid on argo_workflows (instanceid)`)
-	if err != nil {
-		return nil, err
-	}
-
-	// create table for labels
-	_, err = sess.SQL().Exec(`create table if not exists argo_workflows_labels (
-name varchar(317) not null,
-uid varchar(128) not null,
-value varchar(63) not null,
-primary key (uid, name, value),
-foreign key (uid) references argo_workflows (uid) on delete cascade 
-)`)
-	if err != nil {
-		return nil, err
-	}
-	// create index for name, value
-	_, err = sess.SQL().Exec(`create index if not exists idx_name_value on argo_workflows_labels (name, value)`)
-	if err != nil {
-		return nil, err
-	}
-
-	return sess, nil
+	return conn, nil
 }
 
 type WorkflowStore interface {
@@ -114,47 +73,48 @@ type WorkflowStore interface {
 
 // sqliteStore is a sqlite-based store.
 type sqliteStore struct {
-	session         db.Session
+	conn            *sqlite.Conn
 	instanceService instanceid.Service
 }
 
 var _ WorkflowStore = &sqliteStore{}
 
 func NewSQLiteStore(instanceService instanceid.Service) (WorkflowStore, error) {
-	session, err := initDB()
+	conn, err := initDB()
 	if err != nil {
 		return nil, err
 	}
-	return &sqliteStore{session: session, instanceService: instanceService}, nil
+	return &sqliteStore{conn: conn, instanceService: instanceService}, nil
 }
 
 func (s *sqliteStore) ListWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int, showRemainingItemCount bool) (*wfv1.WorkflowList, error) {
-	var wfs []workflowRecord
+	query := `select workflow from argo_workflows
+where instanceid = ?
+`
+	args := []any{s.instanceService.InstanceID()}
 
-	selector := s.session.SQL().
-		Select("workflow").
-		From(workflowTableName).
-		Where(db.Cond{"instanceid": s.instanceService.InstanceID()})
-
-	selector, err := sqldb.BuildWorkflowSelector(selector, workflowTableName, workflowLabelsTableName, false, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
+	query, args, err := sqldb.BuildWorkflowSelectorForRawQuery(query, args, workflowTableName, workflowLabelsTableName, false, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	err = selector.All(&wfs)
+	var workflows = wfv1.Workflows{}
+	err = sqlitex.Execute(s.conn, query, &sqlitex.ExecOptions{
+		Args: args,
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			wf := stmt.ColumnText(0)
+			w := wfv1.Workflow{}
+			err := json.Unmarshal([]byte(wf), &w)
+			if err != nil {
+				log.WithFields(log.Fields{"workflow": wf}).Errorln("unable to unmarshal workflow from database")
+			} else {
+				workflows = append(workflows, w)
+			}
+			return nil
+		},
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	workflows := make(wfv1.Workflows, 0)
-	for _, wf := range wfs {
-		w := wfv1.Workflow{}
-		err := json.Unmarshal([]byte(wf.Workflow), &w)
-		if err != nil {
-			log.WithFields(log.Fields{"workflowUID": wf.UID, "workflowName": wf.Name}).Errorln("unable to unmarshal workflow from database")
-		} else {
-			workflows = append(workflows, w)
-		}
 	}
 
 	meta := metav1.ListMeta{}
@@ -177,23 +137,28 @@ func (s *sqliteStore) ListWorkflows(namespace string, name string, namePrefix st
 }
 
 func (s *sqliteStore) CountWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error) {
-	total := &workflowCount{}
+	query := `select count(*) as total from argo_workflows
+where instanceid = ?
+`
+	args := []any{s.instanceService.InstanceID()}
 
-	selector := s.session.SQL().
-		Select(db.Raw("count(*) as total")).
-		From(workflowTableName).
-		Where(db.Cond{"instanceid": s.instanceService.InstanceID()})
-
-	selector, err := sqldb.BuildWorkflowSelector(selector, workflowTableName, workflowLabelsTableName, false, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, 0, 0)
+	query, args, err := sqldb.BuildWorkflowSelectorForRawQuery(query, args, workflowTableName, workflowLabelsTableName, false, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, 0, 0)
 	if err != nil {
 		return 0, err
 	}
 
-	err = selector.One(total)
+	var total int64
+	err = sqlitex.Execute(s.conn, query, &sqlitex.ExecOptions{
+		Args: args,
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			total = stmt.ColumnInt64(0)
+			return nil
+		},
+	})
 	if err != nil {
 		return 0, err
 	}
-	return int64(total.Total), nil
+	return total, nil
 }
 
 func (s *sqliteStore) Add(obj interface{}) error {
@@ -201,60 +166,10 @@ func (s *sqliteStore) Add(obj interface{}) error {
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
 	}
-	workflow, err := json.Marshal(wf)
-	if err != nil {
-		return err
-	}
-	return s.session.Tx(func(sess db.Session) error {
-		_, err := sess.SQL().
-			DeleteFrom(workflowTableName).
-			Where("uid", string(wf.UID)).
-			Exec()
-		if err != nil {
-			return err
-		}
-		_, err = sess.Collection(workflowTableName).
-			Insert(&workflowRecord{
-				workflowMetadata: workflowMetadata{
-					InstanceID: s.instanceService.InstanceID(),
-					UID:        string(wf.UID),
-					Name:       wf.Name,
-					Namespace:  wf.Namespace,
-					Phase:      wf.Status.Phase,
-					StartedAt:  wf.Status.StartedAt.Time,
-					FinishedAt: wf.Status.FinishedAt.Time,
-				},
-				Workflow: string(workflow),
-			})
-		if err != nil {
-			return err
-		}
-
-		_, err = sess.SQL().
-			DeleteFrom(workflowLabelsTableName).
-			Where("uid", string(wf.UID)).
-			Exec()
-		if err != nil {
-			return err
-		}
-
-		labelBatch := sess.SQL().
-			InsertInto(workflowLabelsTableName).
-			Batch(len(wf.GetLabels()))
-		for key, value := range wf.GetLabels() {
-			labelBatch.Values(&workflowLabelRecord{
-				UID:   string(wf.UID),
-				Key:   key,
-				Value: value,
-			})
-		}
-		labelBatch.Done()
-		err = labelBatch.Wait()
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	done := sqlitex.Transaction(s.conn)
+	err := s.upsertWorkflow(wf)
+	defer done(&err)
+	return err
 }
 
 func (s *sqliteStore) Update(obj interface{}) error {
@@ -262,49 +177,10 @@ func (s *sqliteStore) Update(obj interface{}) error {
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
 	}
-	workflow, err := json.Marshal(wf)
-	if err != nil {
-		return err
-	}
-
-	return s.session.Tx(func(sess db.Session) error {
-		_, err = sess.SQL().
-			Update(workflowTableName).
-			Where("uid", string(wf.UID)).
-			Set("workflow", workflow).
-			Set("phase", wf.Status.Phase).
-			Set("startedat", wf.Status.StartedAt.Time).
-			Set("finishedat", wf.Status.FinishedAt.Time).
-			Exec()
-		if err != nil {
-			return err
-		}
-
-		_, err = sess.SQL().
-			DeleteFrom(workflowLabelsTableName).
-			Where("uid", string(wf.UID)).
-			Exec()
-		if err != nil {
-			return err
-		}
-
-		labelBatch := sess.SQL().
-			InsertInto(workflowLabelsTableName).
-			Batch(len(wf.GetLabels()))
-		for key, value := range wf.GetLabels() {
-			labelBatch.Values(&workflowLabelRecord{
-				UID:   string(wf.UID),
-				Key:   key,
-				Value: value,
-			})
-		}
-		labelBatch.Done()
-		err = labelBatch.Wait()
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	done := sqlitex.Transaction(s.conn)
+	err := s.upsertWorkflow(wf)
+	defer done(&err)
+	return err
 }
 
 func (s *sqliteStore) Delete(obj interface{}) error {
@@ -312,92 +188,22 @@ func (s *sqliteStore) Delete(obj interface{}) error {
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
 	}
-	return s.session.Tx(func(sess db.Session) error {
-		_, err := sess.SQL().
-			DeleteFrom(workflowTableName).
-			Where("uid", string(wf.UID)).
-			Exec()
-		if err != nil {
-			return err
-		}
-		_, err = sess.SQL().
-			DeleteFrom(workflowLabelsTableName).
-			Where("uid", string(wf.UID)).
-			Exec()
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	return sqlitex.Execute(s.conn, deleteWorkflowQuery, &sqlitex.ExecOptions{Args: []any{string(wf.UID)}})
 }
 
 func (s *sqliteStore) Replace(list []interface{}, resourceVersion string) error {
-	wfLists := make([]*workflowRecord, len(list))
-	wfLabels := make([]*workflowLabelRecord, 0)
-	for i, obj := range list {
+	wfs := make([]*wfv1.Workflow, 0, len(list))
+	for _, obj := range list {
 		wf, ok := obj.(*wfv1.Workflow)
 		if !ok {
 			return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
 		}
-		workflow, err := json.Marshal(wf)
-		if err != nil {
-			return err
-		}
-		wfLists[i] = &workflowRecord{
-			workflowMetadata: workflowMetadata{
-				InstanceID: s.instanceService.InstanceID(),
-				UID:        string(wf.UID),
-				Name:       wf.Name,
-				Namespace:  wf.Namespace,
-				Phase:      wf.Status.Phase,
-				StartedAt:  wf.Status.StartedAt.Time,
-				FinishedAt: wf.Status.FinishedAt.Time,
-			},
-			Workflow: string(workflow),
-		}
-		for key, value := range wf.GetLabels() {
-			wfLabels = append(wfLabels, &workflowLabelRecord{
-				UID:   string(wf.UID),
-				Key:   key,
-				Value: value,
-			})
-		}
+		wfs = append(wfs, wf)
 	}
-	return s.session.Tx(func(sess db.Session) error {
-		if err := sess.Collection(workflowTableName).Truncate(); err != nil {
-			return err
-		}
-		if len(wfLists) == 0 {
-			return nil
-		}
-		batch := sess.SQL().
-			InsertInto(workflowTableName).
-			Batch(len(wfLists))
-		for _, wf := range wfLists {
-			batch.Values(wf)
-		}
-		batch.Done()
-		err := batch.Wait()
-		if err != nil {
-			return err
-		}
-
-		if err := sess.Collection(workflowLabelsTableName).Truncate(); err != nil {
-			return err
-		}
-		labelBatch := sess.SQL().
-			InsertInto(workflowLabelsTableName).
-			Batch(len(wfLabels))
-		for _, label := range wfLabels {
-			labelBatch.Values(label)
-		}
-		labelBatch.Done()
-		err = labelBatch.Wait()
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	done := sqlitex.Transaction(s.conn)
+	err := s.replaceWorkflows(wfs)
+	defer done(&err)
+	return err
 }
 
 func (s *sqliteStore) Resync() error {
@@ -418,4 +224,89 @@ func (s *sqliteStore) Get(obj interface{}) (item interface{}, exists bool, err e
 
 func (s *sqliteStore) GetByKey(key string) (item interface{}, exists bool, err error) {
 	panic("not implemented")
+}
+
+func (s *sqliteStore) upsertWorkflow(wf *wfv1.Workflow) error {
+	err := sqlitex.Execute(s.conn, deleteWorkflowQuery, &sqlitex.ExecOptions{Args: []any{string(wf.UID)}})
+	if err != nil {
+		return err
+	}
+	workflow, err := json.Marshal(wf)
+	if err != nil {
+		return err
+	}
+	err = sqlitex.Execute(s.conn, insertWorkflowQuery,
+		&sqlitex.ExecOptions{
+			Args: []any{string(wf.UID), s.instanceService.InstanceID(), wf.Name, wf.Namespace, wf.Status.Phase, wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time, string(workflow)},
+		},
+	)
+	if err != nil {
+		return err
+	}
+	stmt, err := s.conn.Prepare(insertWorkflowLabelQuery)
+	if err != nil {
+		return err
+	}
+	for key, value := range wf.GetLabels() {
+		if err = stmt.Reset(); err != nil {
+			return err
+		}
+		stmt.BindText(1, string(wf.UID))
+		stmt.BindText(2, key)
+		stmt.BindText(3, value)
+		if _, err = stmt.Step(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *sqliteStore) replaceWorkflows(workflows []*wfv1.Workflow) error {
+	err := sqlitex.Execute(s.conn, `delete from argo_workflows`, nil)
+	if err != nil {
+		return err
+	}
+	// add all workflows to argo_workflows table
+	stmt, err := s.conn.Prepare(insertWorkflowQuery)
+	if err != nil {
+		return err
+	}
+	for _, wf := range workflows {
+		if err = stmt.Reset(); err != nil {
+			return err
+		}
+		stmt.BindText(1, string(wf.UID))
+		stmt.BindText(2, s.instanceService.InstanceID())
+		stmt.BindText(3, wf.Name)
+		stmt.BindText(4, wf.Namespace)
+		stmt.BindText(5, string(wf.Status.Phase))
+		stmt.BindText(6, wf.Status.StartedAt.String())
+		stmt.BindText(7, wf.Status.FinishedAt.String())
+		workflow, err := json.Marshal(wf)
+		if err != nil {
+			return err
+		}
+		stmt.BindText(8, string(workflow))
+		if _, err = stmt.Step(); err != nil {
+			return err
+		}
+	}
+	stmt, err = s.conn.Prepare(insertWorkflowLabelQuery)
+	if err != nil {
+		return err
+	}
+	for _, wf := range workflows {
+		for key, val := range wf.GetLabels() {
+			if err = stmt.Reset(); err != nil {
+				return err
+			}
+			stmt.BindText(1, string(wf.UID))
+			stmt.BindText(2, key)
+			stmt.BindText(3, val)
+			if _, err = stmt.Step(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
