@@ -283,7 +283,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := os.WriteFile(filePath, body, 0o644)
+	err := os.WriteFile(filePath, body, 0o755)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
