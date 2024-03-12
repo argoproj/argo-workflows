@@ -295,15 +295,11 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
                         <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)}>logs from the artifacts</a>.
                     </>
                 )}
-                {execSpec(workflow).podGC && !execSpec(workflow).podGC.deleteDelayDuration && (
+                {execSpec(workflow).podGC && (
                     <>
-                        <WarningIcon /> Your pod GC settings will delete pods and their logs immediately on completion.
+                        <WarningIcon /> Your pod GC settings will delete pods and their logs {execSpec(workflow).podGC.deleteDelayDuration ? "after ${execSpec(workflow).podGC.deleteDelayDuration}" : "immediately"} on completion.
                     </>
                 )}
-                {execSpec(workflow).podGC && execSpec(workflow).podGC.deleteDelayDuration && (
-                    <>
-                        <WarningIcon /> Your pod GC settings will delete pods and their logs after {execSpec(workflow).podGC.deleteDelayDuration} on completion.
-                    </>
                 )}{' '}
                 Logs may not appear for pods that are deleted.{' '}
                 {podName ? (
