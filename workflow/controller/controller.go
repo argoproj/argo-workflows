@@ -266,7 +266,7 @@ var indexers = cache.Indexers{
 	cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
 }
 
-// Run starts an Workflow resource controller
+// Run starts a Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
@@ -291,15 +291,38 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
-	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
-	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
-	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 
-	wfc.addWorkflowInformerHandlers(ctx)
-	wfc.podInformer = wfc.newPodInformer(ctx)
+	var err error
+	wfc.wfTaskSetInformer, err = wfc.newWorkflowTaskSetInformer()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	wfc.artGCTaskInformer, err = wfc.newArtGCTaskInformer()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	wfc.taskResultInformer, err = wfc.newWorkflowTaskResultInformer()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = wfc.addWorkflowInformerHandlers(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	wfc.podInformer, err = wfc.newPodInformer(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 	wfc.updateEstimatorFactory()
 
-	wfc.configMapInformer = wfc.newConfigMapInformer()
+	wfc.configMapInformer, err = wfc.newConfigMapInformer()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
@@ -989,8 +1012,8 @@ func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
 	return recent
 }
 
-func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) {
-	wfc.wfInformer.AddEventHandler(
+func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) error {
+	_, err := wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			// FilterFunc is called for every operation affecting the
 			// informer cache and can be used to reject things from
@@ -1067,7 +1090,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			},
 		},
 	)
-	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+	if err != nil {
+		return err
+	}
+	_, err = wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un, ok := obj.(*unstructured.Unstructured)
 			// no need to check the `common.LabelKeyCompleted` as we already know it must be complete
@@ -1081,9 +1107,11 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				wfc.archiveWorkflow(ctx, obj)
 			},
 		},
-	},
-	)
-	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	})
+	if err != nil {
+		return err
+	}
+	_, err = wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			wf, ok := obj.(*unstructured.Unstructured)
 			if ok { // maybe cache.DeletedFinalStateUnknown
@@ -1091,6 +1119,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			}
 		},
 	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj interface{}) {
@@ -1187,14 +1219,14 @@ func (wfc *WorkflowController) newWorkflowPodWatch(ctx context.Context) *cache.L
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedIndexInformer {
+func (wfc *WorkflowController) newPodInformer(ctx context.Context) (cache.SharedIndexInformer, error) {
 	source := wfc.newWorkflowPodWatch(ctx)
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 	})
-	informer.AddEventHandler(
+	_, err := informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				err := wfc.enqueueWfFromPodLabel(obj)
@@ -1232,10 +1264,13 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 			},
 		},
 	)
-	return informer
+	if err != nil {
+		return nil, err
+	}
+	return informer, nil
 }
 
-func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
+func (wfc *WorkflowController) newConfigMapInformer() (cache.SharedIndexInformer, error) {
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
@@ -1243,7 +1278,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	})
 	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
 	if wfc.executorPlugins != nil {
-		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		_, err := indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				cm, err := meta.Accessor(obj)
 				if err != nil {
@@ -1294,9 +1329,12 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 				},
 			},
 		})
+		if err != nil {
+			return nil, err
+		}
 
 	}
-	return indexInformer
+	return indexInformer, nil
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
@@ -1421,7 +1459,7 @@ func (wfc *WorkflowController) syncPodPhaseMetrics() {
 	}
 }
 
-func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
+func (wfc *WorkflowController) newWorkflowTaskSetInformer() (wfextvv1alpha1.WorkflowTaskSetInformer, error) {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
 		workflowTaskSetResyncPeriod,
@@ -1430,7 +1468,7 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			x.LabelSelector = r.String()
 		})).Argoproj().V1alpha1().WorkflowTaskSets()
-	informer.Informer().AddEventHandler(
+	_, err := informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
@@ -1439,10 +1477,13 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 				}
 			},
 		})
-	return informer
+	if err != nil {
+		return nil, err
+	}
+	return informer, nil
 }
 
-func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArtifactGCTaskInformer {
+func (wfc *WorkflowController) newArtGCTaskInformer() (wfextvv1alpha1.WorkflowArtifactGCTaskInformer, error) {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
 		workflowTaskSetResyncPeriod,
@@ -1451,7 +1492,7 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			x.LabelSelector = r.String()
 		})).Argoproj().V1alpha1().WorkflowArtifactGCTasks()
-	informer.Informer().AddEventHandler(
+	_, err := informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
@@ -1460,5 +1501,8 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 				}
 			},
 		})
-	return informer
+	if err != nil {
+		return nil, err
+	}
+	return informer, nil
 }

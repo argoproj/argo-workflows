@@ -246,7 +246,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		controller.Config.WorkflowDefaults = wfDefault
 
 		ttlStrategy := wfv1.TTLStrategy{
-			SecondsAfterCompletion: pointer.Int32Ptr(10),
+			SecondsAfterCompletion: pointer.Int32(10),
 		}
 
 		wf := wfv1.Workflow{
@@ -282,7 +282,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		}
 
 		ttlStrategy := wfv1.TTLStrategy{
-			SecondsAfterCompletion: pointer.Int32Ptr(10),
+			SecondsAfterCompletion: pointer.Int32(10),
 		}
 
 		wf := wfv1.Workflow{
