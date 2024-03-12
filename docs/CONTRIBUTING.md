@@ -118,7 +118,7 @@ If there's a new `P0` bug, notify the [`#argo-wf-contributors`](https://cloud-na
 
 Any bugs with >= 5 "👍" reactions should be labeled at least `P1`.
 Any bugs with 3-4 "👍" reactions should be labeled at least `P2`.
-Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-+1-desc+label%3Atype%2Fbug).
+Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Atype%2Fbug).
 
 If the issue is determined to be a user error and not a bug, remove the `type/bug` label (and the `type/regression` label, if applicable) and replace it with the `type/support` label.
 If more information is needed from the author to diagnose the issue, then apply the `problem/more information needed` label.
