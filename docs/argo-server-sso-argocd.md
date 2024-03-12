@@ -136,9 +136,9 @@ data:
 
 ```yaml
      server:
-       extraArgs:
-         - --auth-mode=sso
+       authModes: ['sso']
        sso:
+         enabled: true
          issuer: https://argo-cd.mydomain.com/api/dex
          # sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)
          sessionExpiry: 240h
