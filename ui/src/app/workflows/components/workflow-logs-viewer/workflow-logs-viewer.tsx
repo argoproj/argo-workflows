@@ -299,7 +299,6 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
                     <>
                         <WarningIcon /> Your pod GC settings will delete pods and their logs {execSpec(workflow).podGC.deleteDelayDuration ? `after ${execSpec(workflow).podGC.deleteDelayDuration}` : "immediately"} on completion.
                     </>
-                )}
                 )}{' '}
                 Logs may not appear for pods that are deleted.{' '}
                 {podName ? (
