@@ -303,13 +303,11 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 				return nil, sutils.ToStatusError(err, codes.Internal)
 			}
 		}
-		large, _ := packer.IsLargeWorkflow(wf)
-		if large {
-			log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
-			err = w.hydrator.Dehydrate(wf)
-			if err != nil {
-				return nil, sutils.ToStatusError(err, codes.Internal)
-			}
+
+		log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
+		err = w.hydrator.Dehydrate(wf)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
 		wf.ObjectMeta.ResourceVersion = ""
@@ -318,7 +316,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
-		if large {
+		if !w.hydrator.IsHydrated(wf) {
 			offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
 			if err != nil {
 				return nil, sutils.ToStatusError(err, codes.Internal)
