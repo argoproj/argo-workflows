@@ -136,7 +136,9 @@ data:
 
 ```yaml
      server:
-       authModes: ['sso']
+       # Chart version 0.39.0 and after
+       authModes:
+         - sso
        sso:
          enabled: true
          issuer: https://argo-cd.mydomain.com/api/dex
