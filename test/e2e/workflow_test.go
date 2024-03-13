@@ -149,6 +149,7 @@ spec:
 				if c.Name == common.WaitContainerName && c.State.Terminated == nil {
 					assert.NotNil(t, c.State.Waiting)
 					assert.Contains(t, c.State.Waiting.Reason, "PodInitializing")
+					assert.Nil(t, c.State.Running)
 				}
 			}
 		}).
@@ -159,6 +160,7 @@ spec:
 				if c.Name == common.WaitContainerName && c.State.Terminated == nil {
 					assert.NotNil(t, c.State.Waiting)
 					assert.Contains(t, c.State.Waiting.Reason, "PodInitializing")
+					assert.Nil(t, c.State.Running)
 				}
 			}
 		})).
@@ -169,6 +171,7 @@ spec:
 				if c.Name == common.WaitContainerName && c.State.Terminated == nil {
 					assert.NotNil(t, c.State.Waiting)
 					assert.Contains(t, c.State.Waiting.Reason, "PodInitializing")
+					assert.Nil(t, c.State.Running)
 				}
 			}
 		}).
@@ -179,6 +182,7 @@ spec:
 				if c.Name == common.WaitContainerName && c.State.Terminated == nil {
 					assert.NotNil(t, c.State.Waiting)
 					assert.Contains(t, c.State.Waiting.Reason, "PodInitializing")
+					assert.Nil(t, c.State.Running)
 				}
 			}
 		})
