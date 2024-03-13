@@ -61,6 +61,9 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if (err != nil || result == nil) && allowUnresolved {
 		//  <nil> result is also un-resolved, and any error can be unresolved
 		log.WithError(err).Debug("Result and error are unresolved")
+		if err != nil && strings.Contains(err.Error(), "interface conversion") {
+			return 0, fmt.Errorf("failed to evaluate expression: %w", err)
+		}
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 	if err != nil {
