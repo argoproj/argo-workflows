@@ -267,7 +267,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 func (we *WorkflowExecutor) StageFiles() error {
 	var filePath string
 	var body []byte
-	mode := 0o644
+	mode := os.FileMode(0o644)
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
 		log.Infof("Loading script source to %s", common.ExecutorScriptSourcePath)
