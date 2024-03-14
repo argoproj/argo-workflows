@@ -292,7 +292,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			tmplHolder = &wfv1.WorkflowStep{TemplateRef: hook.TemplateRef}
 		}
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
-		_, err = ctx.validateTemplateHolder(tmplHolder, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
+		_, err = ctx.validateTemplateHolder(tmplHolder, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
 		if err != nil {
 			return err
 		}
