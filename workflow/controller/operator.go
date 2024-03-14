@@ -1441,7 +1441,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		}
 	}
 
-	// We cannot fail the node until the wait container is finished (unless wait contain is still Pending) because it may be busy saving outputs, and these
+	// We cannot fail the node if the wait container is still running because it may be busy saving outputs, and these
 	// would not get captured successfully.
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.WaitContainerName && c.State.Running != nil && new.Phase.Completed() {
