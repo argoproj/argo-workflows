@@ -40,6 +40,12 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
       permalink: true
+plugins:
+  - redirects:
+      redirect_maps:
+        use-cases/webhdfs.md: webhdfs.md
+        manually-create-secrets.md: service-account-secrets.md
+  - search # re-include the default: https://www.mkdocs.org/user-guide/configuration/#plugins,
 validation:
   omitted_files: warn
   absolute_links: warn
@@ -131,6 +137,7 @@ nav:
           - workflow-of-workflows.md
           - workflow-notifications.md
           - work-avoidance.md
+          - webhdfs.md
       - UI Features:
           - artifact-visualization.md
           - widgets.md
@@ -164,7 +171,6 @@ nav:
           - use-cases/infrastructure-automation.md
           - use-cases/machine-learning.md
           - use-cases/stream-processing.md
-          - use-cases/webhdfs.md
           - use-cases/other.md # other should always be last
       - FAQ: faq.md
       - kubectl.md
@@ -242,7 +248,7 @@ nav:
           - workflow-executors.md
           - workflow-restrictions.md
           - sidecar-injection.md
-          - manually-create-secrets.md
+          - service-account-secrets.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md
