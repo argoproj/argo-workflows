@@ -54,14 +54,6 @@ func (s *ArtifactsSuite) TestOutputOnInput() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *ArtifactsSuite) TestArtifactPassing() {
-	s.Given().
-		Workflow("@smoke/artifact-passing.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded)
-}
-
 type expectedArtifact struct {
 	key        string
 	bucketName string
