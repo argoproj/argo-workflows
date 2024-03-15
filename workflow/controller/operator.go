@@ -267,11 +267,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					phase = wfv1.WorkflowPending
 				}
 				woc.markWorkflowPhase(ctx, phase, msg)
-				// re-enqueue parallelism when block my workflow level synchronization
 				key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
-				woc.controller.throttler.Remove(key)
-				priority, creation := getWfPriority(woc.wf)
-				woc.controller.throttler.Add(key, priority, creation)
+				woc.controller.throttler.RemoveParallelismLimit(key)
 				return
 			}
 		}

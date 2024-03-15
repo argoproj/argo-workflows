@@ -53,6 +53,11 @@ func (_m *Throttler) Remove(key string) {
 	_m.Called(key)
 }
 
+// RemoveParallelismLimit provides a mock function with given fields: key
+func (_m *Throttler) RemoveParallelismLimit(key string) {
+	_m.Called(key)
+}
+
 type mockConstructorTestingTNewThrottler interface {
 	mock.TestingT
 	Cleanup(func())
