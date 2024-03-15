@@ -25,7 +25,7 @@ Scroll down to the `Controller and Server` section and execute the `kubectl` com
 
 Below is an example of the install commands (substitute `<<ARGO_WORKFLOWS_VERSION>>` with the version number):
 
-```yaml
+```bash
 kubectl create namespace argo
 kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v<<ARGO_WORKFLOWS_VERSION>>/quick-start-minimal.yaml
 ```
