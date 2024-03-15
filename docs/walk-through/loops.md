@@ -37,6 +37,11 @@ spec:
       args: ["hello world!"]
 ```
 
+You can optionally specify a `start` and use `end` instead of `count`.
+And even supply a `format` string to customize the sequence value passed
+to the template. You do not have to define the `item` as an input parameter
+if you do not need it. For more details see the [Sequence Field Definition](../fields.md#sequence).
+
 ## `withItems` basic example
 
 This iterates over a list of items with `withItems`, substituting a string for each instantiated template.
