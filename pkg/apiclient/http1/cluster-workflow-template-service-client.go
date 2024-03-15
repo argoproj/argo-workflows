@@ -11,22 +11,22 @@ import (
 
 type ClusterWorkflowTemplateServiceClient = Facade
 
-func (h ClusterWorkflowTemplateServiceClient) CreateClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
+func (h ClusterWorkflowTemplateServiceClient) CreateClusterWorkflowTemplate(ctx context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
 	out := &wfv1.ClusterWorkflowTemplate{}
-	return out, h.Post(in, out, "/api/v1/cluster-workflow-templates")
+	return out, h.Post(ctx, in, out, "/api/v1/cluster-workflow-templates")
 }
 
-func (h ClusterWorkflowTemplateServiceClient) GetClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
+func (h ClusterWorkflowTemplateServiceClient) GetClusterWorkflowTemplate(ctx context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
 	out := &wfv1.ClusterWorkflowTemplate{}
-	return out, h.Get(in, out, "/api/v1/cluster-workflow-templates/{name}")
+	return out, h.Get(ctx, in, out, "/api/v1/cluster-workflow-templates/{name}")
 }
 
-func (h ClusterWorkflowTemplateServiceClient) ListClusterWorkflowTemplates(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateListRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplateList, error) {
+func (h ClusterWorkflowTemplateServiceClient) ListClusterWorkflowTemplates(ctx context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateListRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplateList, error) {
 	out := &wfv1.ClusterWorkflowTemplateList{}
-	return out, h.Get(in, out, "/api/v1/cluster-workflow-templates")
+	return out, h.Get(ctx, in, out, "/api/v1/cluster-workflow-templates")
 }
 
-func (h ClusterWorkflowTemplateServiceClient) UpdateClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateUpdateRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
+func (h ClusterWorkflowTemplateServiceClient) UpdateClusterWorkflowTemplate(ctx context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateUpdateRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
 	out := &wfv1.ClusterWorkflowTemplate{}
-	return out, h.Put(in, out, "/api/v1/cluster-workflow-templates/{name}")
+	return out, h.Put(ctx, in, out, "/api/v1/cluster-workflow-templates/{name}")
 }
