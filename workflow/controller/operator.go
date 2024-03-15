@@ -2742,14 +2742,10 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 	if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
 		boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", boundaryID)
-			return errors.InternalError("boundaryNode not found")
-		}
-		tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
-		if err != nil {
 			return err
 		}
-		_, boundaryTemplate, templateStored, err := tmplCtx.ResolveTemplate(boundaryNode)
+
+		boundaryTemplate, templateStored, err := woc.GetTemplateByBoundaryID(boundaryID)
 		if err != nil {
 			return err
 		}
@@ -3782,17 +3778,8 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 	if boundaryID == "" {
 		return false, nil
 	}
-	boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID)
-	if err != nil {
-		woc.log.Errorf("was unable to obtain node for %s", boundaryID)
-		return false, err
-	}
 
-	tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
-	if err != nil {
-		return false, err
-	}
-	_, parentTemplate, templateStored, err := tmplCtx.ResolveTemplate(boundaryNode)
+	parentTemplate, templateStored, err := woc.GetTemplateByBoundaryID(boundaryID)
 	if err != nil {
 		return false, err
 	}
