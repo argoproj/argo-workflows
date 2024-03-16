@@ -241,7 +241,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	tmpl := &wfv1.Template{}
-	addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl)
+	woc.addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
 	woc.addMetadata(pod, tmpl)
 
 	if woc.execWf.Spec.HasPodSpecPatch() {
