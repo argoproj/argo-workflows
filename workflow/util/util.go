@@ -772,6 +772,18 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	return descendantNodeIDs
 }
 
+func isDescendantNodeSuccessfully(wf *wfv1.Workflow, node wfv1.NodeStatus) bool {
+	for _, child := range node.Children {
+		childStatus, err := wf.Status.Nodes.Get(child)
+		if err != nil {
+			log.Fatalf("Couldn't get child, panicking")
+			panic("Was not able to obtain child")
+		}
+		return childStatus.Phase == wfv1.NodeSucceeded || isDescendantNodeSuccessfully(wf, *childStatus)
+	}
+	return false
+}
+
 func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
 	templateName := GetTemplateFromNode(node)
 	version := GetWorkflowPodNameVersion(wf)
@@ -960,6 +972,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
+				if isDescendantNodeSuccessfully(wf, node) {
+					log.Debugf("Node %s remains as is since it has succeed nodes.", node.Name)
+					newWF.Status.Nodes.Set(node.ID, node)
+					continue
+				}
 				log.Debugf("Deleted %s node %s since it's not a group node", node.Name, string(node.Phase))
 				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
 				log.Debugf("Deleted pod node: %s", node.Name)
