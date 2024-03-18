@@ -740,7 +740,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.True(t, status.Fulfilled())
-			for _, node :=range status.Nodes {
+			for _, node := range status.Nodes {
 				if node.Type == v1alpha1.NodeTypeRetry {
 					if node.Phase == v1alpha1.NodeSucceeded {
 						assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
