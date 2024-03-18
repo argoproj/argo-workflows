@@ -778,9 +778,10 @@ func isDescendantNodeSuccessfully(wf *wfv1.Workflow, node wfv1.NodeStatus) bool 
 		if err != nil {
 			log.Fatalf("Couldn't get child, panicking")
 			panic("Was not able to obtain child")
-			return false
 		}
-		return childStatus.Phase == wfv1.NodeSucceeded || isDescendantNodeSuccessfully(wf, *childStatus)
+		if childStatus.Phase == wfv1.NodeSucceeded || isDescendantNodeSuccessfully(wf, *childStatus) {
+			return true
+		}
 	}
 	return false
 }
