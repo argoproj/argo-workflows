@@ -1733,7 +1733,7 @@ func (s *CLISuite) TestPluginStruct() {
 		})
 }
 
-func (s *HooksSuite) TestTemplateLevelHooksWithRetry() {
+func (s *CLISuite) TestTemplateLevelHooksWithRetry() {
 	var children []string
 	var workflowName string
 	var podName string
