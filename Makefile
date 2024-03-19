@@ -296,7 +296,7 @@ endif
 $(GOPATH)/bin/controller-gen:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
 endif
 $(GOPATH)/bin/go-to-protobuf:
 # update this in Nix when upgrading it here
@@ -724,6 +724,8 @@ docs: /usr/local/bin/mkdocs \
 	docs-lint \
 	# TODO: This is temporarily disabled to unblock merging PRs.
 	# docs-linkcheck
+	# copy README.md to docs/README.md
+	./hack/copy-readme.sh
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/check-env-doc.sh
 	# build the docs

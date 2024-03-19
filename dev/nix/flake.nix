@@ -190,7 +190,7 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorSha256 = "sha256-Ytl+++KUrFveoKRoSccwjCgozw4tFhjHxk8yDPQFRqo=";
+              vendorHash = "sha256-DHqQigUi31GdCFsjvAu1jU1PRNuPW/f3ECrgVd6bvuk=";
               doCheck = false;
             };
 
@@ -255,13 +255,13 @@
 
             controller-tools = pkgs.buildGoModule rec {
               pname = "controller-tools";
-              version = "0.4.1"; # upgrade this in the Makefile if upgraded here
+              version = "0.14.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes-sigs";
                 repo = "controller-tools";
                 rev = "v${version}";
-                sha256 = "sha256-NQlSP9hRLXr+iZo0OeyF1MQs3PourQZN0I0v4Wv5dkE=";
+                sha256 = "sha256-G0jBQ12cpjfWGhXYppV9dB2n68bExi6ME9QbxXsUWvw=";
               };
               vendorHash = "sha256-89hzPiqP++tQpPkcSvzc1tHxHcj5PI71RxxxUCgm0BI=";
               doCheck = false;

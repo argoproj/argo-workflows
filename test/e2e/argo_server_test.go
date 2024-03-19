@@ -1540,6 +1540,38 @@ spec:
 
 }
 
+// A test can simply reproduce the problem mentioned in the link https://github.com/argoproj/argo-workflows/pull/12574
+// First, add the code to func "taskResultReconciliation".You can adjust this time to be larger for better reproduction.
+//
+//	if !woc.checkTaskResultsInProgress() {
+//		time.Sleep(time.Second * 2)
+//	}
+//
+// Second, run the test.
+// Finally, you will get a workflow in Running status but its labelCompleted is true.
+func (s *ArgoServerSuite) TestRetryStoppedButIncompleteWorkflow() {
+	var workflowName string
+	s.Given().
+		Workflow(`@testdata/retry-on-stopped.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			workflowName = metadata.Name
+		})
+
+	time.Sleep(1 * time.Second)
+	s.Run("Retry", func() {
+		s.e().PUT("/api/v1/workflows/argo/{workflowName}/retry", workflowName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull()
+	})
+}
+
 func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	s.Run("Lint", func() {
 		s.e().POST("/api/v1/workflow-templates/argo/lint").

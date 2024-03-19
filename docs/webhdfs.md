@@ -4,7 +4,7 @@
 
 ## Input Artifacts
 
-You can use [HTTP artifacts](../walk-through/hardwired-artifacts.md) to connect to webHDFS, where the URL will be the webHDFS endpoint including the file path and any query parameters.
+You can use [HTTP artifacts](walk-through/hardwired-artifacts.md) to connect to webHDFS, where the URL will be the webHDFS endpoint including the file path and any query parameters.
 Suppose your webHDFS endpoint is available under `https://mywebhdfsprovider.com/webhdfs/v1/` and you have a file `my-art.txt` located in a `data` folder, which you want to use as an input artifact. To construct the URL, you append the file path to the base webHDFS endpoint and set the [OPEN operation](https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Open_and_Read_a_File) via query parameter. The result is: `https://mywebhdfsprovider.com/webhdfs/v1/data/my-art.txt?op=OPEN`.
 See the below Workflow which will download the specified webHDFS artifact into the specified `path`:
 
