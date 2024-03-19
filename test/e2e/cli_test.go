@@ -6,6 +6,7 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1825,7 +1826,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
 			assert.True(t, status.Fulfilled())
 			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
@@ -1836,21 +1837,21 @@ spec:
 				}
 			}
 		}).
-		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
 			return status.Name == "retries-with-hooks-and-artifact[0].build(0)"
-		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
 			assert.Contains(t, children, status.ID)
 			assert.Equal(t, false, status.NodeFlag.Hooked)
 		}).
-		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
 			return status.Name == "retries-with-hooks-and-artifact[0].build.hooks.started"
-		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
 			assert.Contains(t, children, status.ID)
 			assert.Equal(t, true, status.NodeFlag.Hooked)
 		})).
-		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
 			return status.Name == "retries-with-hooks-and-artifact[1].print"
-		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
 			podName = pod.GetName()
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})
