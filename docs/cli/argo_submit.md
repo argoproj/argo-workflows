@@ -32,7 +32,7 @@ argo submit [FILE... | --from `kind/name] [flags]
 # Submit multiple workflows from stdin:
 
   cat my-wf.yaml | argo submit -
-  
+
 ```
 
 ### Options
