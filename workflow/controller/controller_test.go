@@ -548,7 +548,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 func deletePods(ctx context.Context, woc *wfOperationCtx) {
 	for _, obj := range woc.controller.podInformer.GetStore().List() {
 		pod := obj.(*apiv1.Pod)
-		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64Ptr(0)})
 		if err != nil {
 			panic(err)
 		}
