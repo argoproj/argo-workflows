@@ -1829,10 +1829,10 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
 			assert.True(t, status.Fulfilled())
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			for _, node := range status.Nodes {
-				if node.Type == v1alpha1.NodeTypeRetry {
-					assert.Equal(t, v1alpha1.NodeSucceeded, node.Phase)
+				if node.Type == wfv1.NodeTypeRetry {
+					assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 					children = node.Children
 				}
 			}
@@ -1853,7 +1853,7 @@ spec:
 			return status.Name == "retries-with-hooks-and-artifact[1].print"
 		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
 			podName = pod.GetName()
-			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 
 	s.Run("ContainerLogs", func() {
