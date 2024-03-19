@@ -116,3 +116,11 @@ Example B: Lopsided requests, e.g. `a -> b` where `a` is cheap and `b` is expens
 Can you see the problem here? `a` only has small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.
 
 Solution: do not use container set when you have lopsided requests.
+
+## Container Set Retries
+
+Container Set Retry policies describes how to retry a container nodes in the container set if it fails.
+
+Number of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
+
+The shell command should be normal otherwise it will not be retried.
