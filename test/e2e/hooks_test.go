@@ -652,7 +652,9 @@ spec:
 
 func (s *HooksSuite) TestTemplateLevelHooksWithRetry() {
 	var children []string
-	s.Given().
+	var workflowName string
+	var podName string
+	(s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -695,13 +697,15 @@ spec:
         source: |
           import time
           import random
-          time.sleep(random.randint(0,20)) # lifecycle hook for running won't trigger unless it runs for more than "a few seconds"
+          import sys
+          time.sleep(random.randint(0,5)) # lifecycle hook for running won't trigger unless it runs for more than "a few seconds"
           with open("result.txt", "w") as f:
             f.write("Welcome")
-          # sys.exit("fail!")
-      timeout: 10s
+          if {{retries}} == 2:
+          	sys.exit(0)
+          sys.exit(1)
       retryStrategy: 
-        limit: 4
+        limit: 2
       outputs:
         artifacts:
           - name: result
@@ -739,15 +743,12 @@ spec:
 		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			workflowName = metadata.Name
 			assert.True(t, status.Fulfilled())
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 			for _, node := range status.Nodes {
 				if node.Type == v1alpha1.NodeTypeRetry {
-					if node.Phase == v1alpha1.NodeSucceeded {
-						assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
-					}
-					if node.Phase == v1alpha1.NodeFailed {
-						assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
-					}
+					assert.Equal(t, v1alpha1.NodeSucceeded, node.Phase)
 					children = node.Children
 				}
 			}
@@ -763,7 +764,22 @@ spec:
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Contains(t, children, status.ID)
 			assert.Equal(t, true, status.NodeFlag.Hooked)
+		})).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.Name == "retries-with-hooks-and-artifact[1].print"
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			podName = pod.GetName()
+			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})
+
+	s.Run("ContainerLogs", func() {
+		s.Given().
+			RunCli([]string{"logs", workflowName, podName, "-c", "main"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Welcome")
+				}
+			})
+	})
 }
 
 func TestHooksSuite(t *testing.T) {
