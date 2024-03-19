@@ -50,7 +50,6 @@ create index if not exists idx_name_value on argo_workflows_labels (name, value)
 
 func initDB() (*sqlite.Conn, error) {
 	conn, err := sqlite.OpenConn(":memory:", sqlite.OpenReadWrite)
-	//conn, err := sqlite.OpenConn("./memory.db", sqlite.OpenReadWrite)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +93,7 @@ where instanceid = ?
 `
 	args := []any{s.instanceService.InstanceID()}
 
-	query, args, err := sqldb.BuildWorkflowSelectorForRawQuery(query, args, workflowTableName, workflowLabelsTableName, false, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
+	query, args, err := sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +142,7 @@ where instanceid = ?
 `
 	args := []any{s.instanceService.InstanceID()}
 
-	query, args, err := sqldb.BuildWorkflowSelectorForRawQuery(query, args, workflowTableName, workflowLabelsTableName, false, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, 0, 0)
+	query, args, err := sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, 0, 0)
 	if err != nil {
 		return 0, err
 	}

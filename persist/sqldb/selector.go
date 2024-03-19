@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func BuildWorkflowSelector(selector db.Selector, tableName, labelTableName string, hasClusterName bool, t dbType, namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit, offset int) (db.Selector, error) {
+func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t dbType, namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit, offset int) (db.Selector, error) {
 	// If we were passed 0 as the limit, then we should load all available archived workflows
 	// to match the behavior of the `List` operations in the Kubernetes API
 	if limit == 0 {
@@ -22,7 +22,7 @@ func BuildWorkflowSelector(selector db.Selector, tableName, labelTableName strin
 		And(startedAtFromClause(minStartedAt)).
 		And(startedAtToClause(maxStartedAt))
 
-	selector, err := labelsClause(selector, t, labelRequirements, tableName, labelTableName, hasClusterName)
+	selector, err := labelsClause(selector, t, labelRequirements, tableName, labelTableName, true)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func BuildWorkflowSelector(selector db.Selector, tableName, labelTableName strin
 		Offset(offset), nil
 }
 
-func BuildWorkflowSelectorForRawQuery(in string, inArgs []any, tableName, labelTableName string, hasClusterName bool, t dbType, namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit, offset int) (out string, outArgs []any, err error) {
+func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName string, t dbType, namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit, offset int) (out string, outArgs []any, err error) {
 	var clauses []*db.RawExpr
 	if namespace != "" {
 		clauses = append(clauses, db.Raw("namespace = ?", namespace))
@@ -50,7 +50,7 @@ func BuildWorkflowSelectorForRawQuery(in string, inArgs []any, tableName, labelT
 		clauses = append(clauses, db.Raw("startedat < ?", maxStartedAt))
 	}
 	for _, r := range labelRequirements {
-		q, err := requirementToCondition(t, r, tableName, labelTableName, hasClusterName)
+		q, err := requirementToCondition(t, r, tableName, labelTableName, false)
 		if err != nil {
 			return "", nil, err
 		}

@@ -149,7 +149,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err := BuildWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, true, r.dbType, namespace, name, namePrefix, minStartedAt, maxStartedAt, labelRequirements, limit, offset)
+	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, namespace, name, namePrefix, minStartedAt, maxStartedAt, labelRequirements, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err := BuildWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, true, r.dbType, namespace, name, namePrefix, minStartedAt, maxStartedAt, labelRequirements, 0, 0)
+	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, namespace, name, namePrefix, minStartedAt, maxStartedAt, labelRequirements, 0, 0)
 	if err != nil {
 		return 0, err
 	}
