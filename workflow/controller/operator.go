@@ -1232,7 +1232,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 					continue
 				}
 				if childNode.Type == wfv1.NodeTypeContainer {
-					woc.markNodeError(childNode.Name, errors.New("","container deleted"))
+					woc.markNodeError(childNode.Name, errors.New("", "container deleted"))
 				}
 			}
 		}
