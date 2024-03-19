@@ -1733,6 +1733,62 @@ func (s *CLISuite) TestPluginStruct() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowTemplateWithRetryStrategyInContainerSet() {
+	var name string
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-with-containerset.yaml").
+		Workflow(`
+metadata:
+  generateName: workflow-template-containerset-
+spec:
+  workflowTemplateRef:
+    name: containerset-with-retrystrategy
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, wfv1.WorkflowFailed)
+			name = metadata.Name
+		})
+	// Success, no need retry
+	s.Run("ContainerLogs", func() {
+		s.Given().
+			RunCli([]string{"logs", name, name, "-c", "c1"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					count := strings.Count(output, "capturing logs")
+					assert.Equal(t, 1, count)
+					assert.Contains(t, output, "hi")
+				}
+			})
+	})
+	// Command err. No retry logic is entered.
+	s.Run("ContainerLogs", func() {
+		s.Given().
+			RunCli([]string{"logs", name, name, "-c", "c2"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					count := strings.Count(output, "capturing logs")
+					assert.Equal(t, 0, count)
+					assert.Contains(t, output, "executable file not found in $PATH")
+				}
+			})
+	})
+	// Retry when err.
+	s.Run("ContainerLogs", func() {
+		s.Given().
+			RunCli([]string{"logs", name, name, "-c", "c3"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					count := strings.Count(output, "capturing logs")
+					assert.Equal(t, 2, count)
+					countFailureInfo := strings.Count(output, "intentional failure")
+					assert.Equal(t, 2, countFailureInfo)
+				}
+			})
+	})
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }
