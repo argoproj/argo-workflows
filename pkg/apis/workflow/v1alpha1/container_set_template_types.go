@@ -14,7 +14,7 @@ type ContainerSetTemplate struct {
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
 	// RetryStrategy describes how to retry a container nodes in the container set if it fails.
 	// Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
-	// The shell command should work fine otherwise it won't be retried.
+	// The container won't retry if it's unable to locate the command.
 	RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
 }
 
