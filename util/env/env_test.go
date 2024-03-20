@@ -49,3 +49,16 @@ func TestLookupEnvStringOr(t *testing.T) {
 	_ = os.Setenv("FOO", "")
 	assert.Equal(t, "a", LookupEnvStringOr("FOO", "a"), "empty var value; default value")
 }
+
+func TestLookupEnvBoolOr(t *testing.T) {
+	defer func() { _ = os.Unsetenv("FOO") }()
+	assert.Equal(t, true, LookupEnvBoolOr("", true), "default value")
+	_ = os.Setenv("FOO", "not-bool")
+	assert.Panics(t, func() { LookupEnvBoolOr("FOO", true) }, "bad value")
+	_ = os.Setenv("FOO", "true")
+	assert.Equal(t, true, LookupEnvBoolOr("FOO", false), "env var value")
+	_ = os.Setenv("FOO", "")
+	assert.Equal(t, false, LookupEnvBoolOr("FOO", false), "empty var value; default value")
+	_ = os.Setenv("FOO", "false")
+	assert.Equal(t, false, LookupEnvBoolOr("FOO", true), "env var value")
+}

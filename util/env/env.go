@@ -34,6 +34,19 @@ func LookupEnvIntOr(key string, o int) int {
 	return o
 }
 
+func LookupEnvBoolOr(key string, defaultVal bool) bool {
+	v, found := os.LookupEnv(key)
+	if found && v != "" {
+		d, err := strconv.ParseBool(v)
+		if err != nil {
+			log.WithField(key, v).WithError(err).Panic("failed to convert to bool")
+		} else {
+			return d
+		}
+	}
+	return defaultVal
+}
+
 func LookupEnvFloatOr(key string, o float64) float64 {
 	v, found := os.LookupEnv(key)
 	if found && v != "" {

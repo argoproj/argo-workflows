@@ -62,7 +62,7 @@ const (
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
-	// Who created this workflow.
+	// LabelKeyCreator Who created this workflow.
 	LabelKeyCreator                  = workflow.WorkflowFullName + "/creator"
 	LabelKeyCreatorEmail             = workflow.WorkflowFullName + "/creator-email"
 	LabelKeyCreatorPreferredUsername = workflow.WorkflowFullName + "/creator-preferred-username"
@@ -167,8 +167,12 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
+	// EnvVarGrpcMessageSize is the maximum message size for gRPC
+	EnvVarGrpcMessageSize = "GRPC_MESSAGE_SIZE"
+	// EnvVarMetricsAuth Whether to enable authentication for metrics requests
+	EnvVarMetricsAuth = "ARGO_SERVER_METRICS_AUTH"
 
-	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
+	// FinalizerArtifactGC Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
 
 	// Finalizer blocks the deletion of pods until the controller captures their status.
