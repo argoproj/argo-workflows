@@ -139,4 +139,3 @@ Here is an example of a Container Set Template with `retryStrategy`:
             command: [ sh, -c ]
             args: [ "echo intentional failure; exit 1" ]
 ```
-
