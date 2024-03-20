@@ -190,7 +190,7 @@ spec:
 		count := strings.Count(output, "capturing logs")
 		assert.Equal(s.T(), 2, count)
 		countFailureInfo := strings.Count(output, "intentional failure")
-		assert.Equal(s.T(), 1, countFailureInfo)
+		assert.Equal(s.T(), 2, countFailureInfo)
 	})
 }
 
