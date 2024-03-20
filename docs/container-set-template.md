@@ -119,8 +119,24 @@ Solution: do not use container set when you have lopsided requests.
 
 ## Container Set Retries
 
+> v3.3 and after
+
 Container Set Retry policies describes how to retry a container nodes in the container set if it fails.
 
 Number of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
 
-The shell command should be normal otherwise it will not be retried.
+The container won't retry if it's unable to locate the command.
+
+Here is an example of a Container Set Template with `retryStrategy`:
+
+```yaml
+      containerSet:
+        containers:
+          - name: retry-containerset
+            image: alpine:latest
+            retryStrategy:
+              limit: "3"
+            command: [ sh, -c ]
+            args: [ "echo intentional failure; exit 1" ]
+```
+
