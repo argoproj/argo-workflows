@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"math"
 	"os"
 	"reflect"
@@ -805,6 +806,10 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
+	}
+	// If FinalizerArtifactGC exists, requeue to make sure artifact GC can execute.
+	if woc.wf.Status.Fulfilled() && slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC) {
+		woc.requeue()
 	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
