@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/slices"
+
 	"math"
 	"os"
 	"reflect"
@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
