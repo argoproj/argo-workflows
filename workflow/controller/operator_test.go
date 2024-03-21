@@ -5495,13 +5495,16 @@ func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 
+	hitCache := 0
 	for _, node := range woc.wf.Status.Nodes {
 		if node.DisplayName == "hello-steps" {
+			hitCache ++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
 			assert.Equal(t, 1, len(node.Children))
 		}
 	}
+	assert.Equal(t, 1, hitCache)
 }
 
 func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
@@ -5539,13 +5542,16 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 
+	hitCache := 0
 	for _, node := range woc.wf.Status.Nodes {
 		if node.DisplayName == "hello-dag" {
+			hitCache ++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
 			assert.Equal(t, 1, len(node.Children))
 		}
 	}
+	assert.Equal(t, 1, hitCache)
 }
 
 var workflowCachedMaxAge = `
