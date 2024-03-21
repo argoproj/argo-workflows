@@ -3100,6 +3100,11 @@ func (tmpl *Template) HasOutput() bool {
 	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil || tmpl.Plugin != nil
 }
 
+// HasArguments returns true if the template can have arguments.
+func (tmpl *Template) HasArguments() bool {
+	return tmpl.Steps != nil || tmpl.DAG != nil
+}
+
 func (t *Template) IsDaemon() bool {
 	return t != nil && t.Daemon != nil && *t.Daemon
 }
