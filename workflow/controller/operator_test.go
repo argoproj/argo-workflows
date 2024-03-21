@@ -5498,7 +5498,7 @@ func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 	hitCache := 0
 	for _, node := range woc.wf.Status.Nodes {
 		if node.DisplayName == "hello-steps" {
-			hitCache ++
+			hitCache++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
 			assert.Equal(t, 1, len(node.Children))
@@ -5545,7 +5545,7 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 	hitCache := 0
 	for _, node := range woc.wf.Status.Nodes {
 		if node.DisplayName == "hello-dag" {
-			hitCache ++
+			hitCache++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
 			assert.Equal(t, 1, len(node.Children))
