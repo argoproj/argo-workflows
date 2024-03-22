@@ -13,6 +13,7 @@ spec:
   workflowMetadata:
     labels:
       workflows.argoproj.io/test: "true"
+  # template main -> whalesay
   workflowSpec:
     entrypoint: whalesay
     arguments:

@@ -1296,7 +1296,7 @@ func (s *CLISuite) TestCronCommands() {
 	})
 	s.Run("Update", func() {
 		s.Given().
-			RunCli([]string{"cron", "update", "cron/basic-update-changetemplate.yaml"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"cron", "update", "cron/basic-update-change-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Schedule:                      5 5 5 * *")
 				}
@@ -1447,7 +1447,7 @@ func (s *CLISuite) TestClusterTemplateCommands() {
 	})
 	s.Run("Update", func() {
 		s.Given().
-			RunCli([]string{"cluster-template", "update", "smoke/cluster-workflow-template-whalesay-template-updateparameters.yaml"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"cluster-template", "update", "smoke/cluster-workflow-template-whalesay-template-update-parameters.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
 				}
