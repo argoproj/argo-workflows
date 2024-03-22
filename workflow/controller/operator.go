@@ -747,7 +747,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 
-	// Remove completed taskset status before mark workflow completed.
+	// Remove completed taskset status before update workflow.
 	err = woc.removeCompletedTaskSetStatus(ctx)
 	if err != nil {
 		woc.log.WithError(err).Warn("error updating taskset")
