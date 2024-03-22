@@ -1001,7 +1001,7 @@ status:
 		assert.Len(t, taskSets.Items, 0)
 	}
 	woc.operate(ctx)
-	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowRunning)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 func TestStepsTemplateOnExitStatusArgument(t *testing.T) {
