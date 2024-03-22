@@ -17,5 +17,6 @@ spec:
           - name: message
       container:
         image: argoproj/argosay:v2
+        # {{inputs.parameters.message}} -> Updated: {{inputs.parameters.message}}
         args: ["echo", "Updated: {{inputs.parameters.message}}"]
         imagePullPolicy: IfNotPresent

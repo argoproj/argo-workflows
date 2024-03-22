@@ -9,7 +9,7 @@ spec:
   arguments:
     parameters:
       - name: message
-        value: thanks
+        value: thanks # message -> thanks
   templates:
     - name: whalesay-template
       inputs:
@@ -17,5 +17,5 @@ spec:
           - name: message
       container:
         image: argoproj/argosay:v2
-        args: ["echo", "{{inputs.parameters.message}}"]
+        args: ["echo", "Updated: {{inputs.parameters.message}}"]
         imagePullPolicy: IfNotPresent
