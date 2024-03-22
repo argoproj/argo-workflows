@@ -77,6 +77,23 @@ func (s *MetricsSuite) TestRetryMetrics() {
 		})
 }
 
+func (s *MetricsSuite) TestDAGMetrics() {
+	s.Given().
+		Workflow(`@testdata/workflow-dag-metrics.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`argo_workflows_result_counter{status="Succeeded"} 5`)
+		})
+}
+
 func TestMetricsSuite(t *testing.T) {
 	suite.Run(t, new(MetricsSuite))
 }

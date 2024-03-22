@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+spec:
+  entrypoint: diamond
+  templateDefaults:
+    metrics:
+      prometheus:
+        - name: result_counter
+          help: "Count of step execution by result status"
+          labels:
+            - key: status
+              value: "{{status}}"
+          counter:
+            value: "1"
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: A
+            template: echo
+            arguments:
+              parameters: [{name: message, value: A}]
+          - name: B
+            depends: "A"
+            template: echo
+            arguments:
+              parameters: [{name: message, value: B}]
+          - name: C
+            depends: "A"
+            template: echo
+            arguments:
+              parameters: [{name: message, value: C}]
+          - name: D
+            depends: "B && C"
+            template: echo
+            arguments:
+              parameters: [{name: message, value: D}]
+
+    - name: echo
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: alpine:3.7
+        command: [echo, "{{inputs.parameters.message}}"]
