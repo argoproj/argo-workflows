@@ -326,7 +326,7 @@ type WorkflowSpec struct {
 	// Host networking requested for this workflow pod. Default to false.
 	HostNetwork *bool `json:"hostNetwork,omitempty" protobuf:"bytes,14,opt,name=hostNetwork"`
 
-	// Set DNS policy for the pod.
+	// Set DNS policy for workflow pods.
 	// Defaults to "ClusterFirst".
 	// Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
 	// DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
