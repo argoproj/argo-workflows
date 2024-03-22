@@ -118,18 +118,18 @@ If there's a new `P0` bug, notify the [`#argo-wf-contributors`](https://cloud-na
 
 Any bugs with >= 5 "👍" reactions should be labeled at least `P1`.
 Any bugs with 3-4 "👍" reactions should be labeled at least `P2`.
-Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Abug).
+Bugs can be [sorted by "👍"](https://github.com/argoproj/argo-workflows/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Atype%2Fbug).
 
-If the issue is determined to be a user error and not a bug, remove the `bug` label (and the `regression` label, if applicable) and replace it with the `support` label.
-If more information is needed from the author to diagnose the issue, then apply the `more information needed` label.
+If the issue is determined to be a user error and not a bug, remove the `type/bug` label (and the `type/regression` label, if applicable) and replace it with the `type/support` label.
+If more information is needed from the author to diagnose the issue, then apply the `problem/more information needed` label.
 
 Please only assign issues to members. New contributors are encouraged to work on a PR directly without being assigned.
 
 ##### Staleness
 
-Only issues and PRs that have the [`more information needed` label](https://github.com/argoproj/argo-workflows/labels/more%20information%20needed) will be considered for staleness.
+Only issues and PRs that have the [`problem/more information needed` label](https://github.com/argoproj/argo-workflows/labels/problem%2Fmore%20information%20needed) will be considered for staleness.
 
-If the author does not respond timely to a request for more information, the issue or PR will be automatically marked with the `stale` label and a bot message.
+If the author does not respond timely to a request for more information, the issue or PR will be automatically marked with the `problem/stale` label and a bot message.
 Subsequently, if there is still no response, it will be automatically closed as "not planned".
 
 See the [Stale Action configuration](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/stale.yaml) for more details.

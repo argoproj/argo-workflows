@@ -1588,6 +1588,32 @@ func TestAssessNodeStatus(t *testing.T) {
 		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeFailed,
 	}, {
+		name: "pod failed - wait container waiting but pod was set failed",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				InitContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+					},
+				},
+				ContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.WaitContainerName,
+						State: apiv1.ContainerState{Terminated: nil, Waiting: &apiv1.ContainerStateWaiting{Reason: "PodInitializing"}},
+					},
+					{
+						Name:  common.MainContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+				},
+				Message: "failed since wait contain waiting",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
+		want: wfv1.NodeFailed,
+	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{
@@ -2784,6 +2810,201 @@ func TestWorkflowSpecParam(t *testing.T) {
 	assert.True(t, found)
 
 	assert.Equal(t, "my-host", pod.Spec.NodeSelector["kubernetes.io/hostname"])
+}
+
+var workflowSchedulingConstraintsTemplateDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: benchmarks-dag
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        name: benchmark1
+        template: benchmark
+      - arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        name: benchmark2
+        template: benchmark
+    name: main
+    nodeSelector:
+      pool: workflows
+    tolerations:
+    - key: pool
+      operator: Equal
+      value: workflows
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node_group
+                  operator: In
+                  values:
+                    - argo-workflow
+  - inputs:
+      parameters:
+      - name: msg
+    name: benchmark
+    script:
+      command:
+      - python
+      image: python:latest
+      source: |
+        print("{{inputs.parameters.msg}}")
+`
+
+var workflowSchedulingConstraintsTemplateSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: benchmarks-steps
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: benchmark1
+        arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        template: benchmark
+      - name: benchmark2
+        arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        template: benchmark
+    nodeSelector:
+      pool: workflows
+    tolerations:
+    - key: pool
+      operator: Equal
+      value: workflows
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node_group
+                  operator: In
+                  values:
+                    - argo-workflow
+  - inputs:
+      parameters:
+      - name: msg
+    name: benchmark
+    script:
+      command:
+      - python
+      image: python:latest
+      source: |
+        print("{{inputs.parameters.msg}}")
+`
+
+var workflowSchedulingConstraintsDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-wf-scheduling-constraints-dag-
+  namespace: argo
+spec:
+  entrypoint: hello
+  templates:
+    - name: hello
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: benchmarks-dag
+              template: main
+`
+
+var workflowSchedulingConstraintsSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-wf-scheduling-constraints-steps-
+  namespace: argo
+spec:
+  entrypoint: hello
+  templates:
+    - name: hello
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: benchmarks-steps
+              template: main
+`
+
+func TestWokflowSchedulingConstraintsDAG(t *testing.T) {
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowSchedulingConstraintsTemplateDAG)
+	wf := wfv1.MustUnmarshalWorkflow(workflowSchedulingConstraintsDAG)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+	for _, pod := range pods.Items {
+		assert.Equal(t, "workflows", pod.Spec.NodeSelector["pool"])
+		found := false
+		value := ""
+		for _, toleration := range pod.Spec.Tolerations {
+			if toleration.Key == "pool" {
+				found = true
+				value = toleration.Value
+			}
+		}
+		assert.True(t, found)
+		assert.Equal(t, "workflows", value)
+		assert.NotNil(t, pod.Spec.Affinity)
+		assert.Equal(t, "node_group", pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Key)
+		assert.Contains(t, pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Values, "argo-workflow")
+	}
+}
+
+func TestWokflowSchedulingConstraintsSteps(t *testing.T) {
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowSchedulingConstraintsTemplateSteps)
+	wf := wfv1.MustUnmarshalWorkflow(workflowSchedulingConstraintsSteps)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+	for _, pod := range pods.Items {
+		assert.Equal(t, "workflows", pod.Spec.NodeSelector["pool"])
+		found := false
+		value := ""
+		for _, toleration := range pod.Spec.Tolerations {
+			if toleration.Key == "pool" {
+				found = true
+				value = toleration.Value
+			}
+		}
+		assert.True(t, found)
+		assert.Equal(t, "workflows", value)
+		assert.NotNil(t, pod.Spec.Affinity)
+		assert.Equal(t, "node_group", pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Key)
+		assert.Contains(t, pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Values, "argo-workflow")
+	}
 }
 
 func TestAddGlobalParamToScope(t *testing.T) {
