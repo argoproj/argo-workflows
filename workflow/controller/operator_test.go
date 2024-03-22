@@ -10843,8 +10843,8 @@ spec:
   podGC:
     strategy: OnPodCompletion`
 
-// TestContainerSetDoesNotStopContainerWhenPodRemoved test whether a workflow has ContainerSet error when pod removed.
-func TestContainerSetDoesNotStopContainerWhenPodRemoved(t *testing.T) {
+// TestContainerSetDeleteContainerWhenPodDeleted test whether a workflow has ContainerSet error when pod deleted.
+func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	cancel, controller := newController()
 	defer cancel()
@@ -10890,4 +10890,5 @@ func TestContainerSetDoesNotStopContainerWhenPodRemoved(t *testing.T) {
 			assert.Equal(t, "container deleted", node.Message)
 		}
 	}
+	_ = os.Unsetenv("RECENTLY_STARTED_POD_DURATION")
 }

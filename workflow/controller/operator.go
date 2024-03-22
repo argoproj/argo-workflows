@@ -1223,7 +1223,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				node.Daemoned = nil
 				woc.updated = true
 			}
-			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
+			woc.markNodeError(node.Name, errors.New("", "pod deleted"))
 			// Set pod's child(container) error if pod deleted
 			for _, childNodeID := range node.Children {
 				childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
