@@ -84,6 +84,11 @@ func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	var options []oss.ClientOption
+
+	if proxy, ok := os.LookupEnv("https_proxy"); ok {
+		options = append(options, oss.Proxy(proxy))
+	}
+
 	if token := ossDriver.SecurityToken; token != "" {
 		options = append(options, oss.SecurityToken(token))
 	}
