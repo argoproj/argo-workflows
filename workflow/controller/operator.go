@@ -267,6 +267,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					phase = wfv1.WorkflowPending
 				}
 				woc.markWorkflowPhase(ctx, phase, msg)
+				key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
+				woc.controller.throttler.RemoveParallelismLimit(key)
 				return
 			}
 		}
