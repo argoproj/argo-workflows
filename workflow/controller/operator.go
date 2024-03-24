@@ -15,8 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/argoproj/pkg/humanize"
@@ -808,8 +806,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
 	}
-	// If FinalizerArtifactGC exists, requeue to make sure artifact GC can execute.
-	if woc.wf.Status.Fulfilled() && slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC) {
+	// If Finalizer exists, requeue to make sure Finalizer can be removed.
+	if len(wf.GetFinalizers()) > 0 {
 		woc.requeue()
 	}
 
