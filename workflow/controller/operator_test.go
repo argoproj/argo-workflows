@@ -10871,7 +10871,7 @@ func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 	}
 
 	// delete pod
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 	deletePods(ctx, woc)
 	pods, err = listPods(woc)
 	assert.Nil(t, err)
