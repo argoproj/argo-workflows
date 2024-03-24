@@ -27,4 +27,3 @@ func generateWorkflowTemplates(filePaths []string, strict bool) []wfv1.WorkflowT
 
 	return workflowTemplates
 }
-
