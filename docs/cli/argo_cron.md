@@ -60,4 +60,5 @@ argo cron [flags]
 * [argo cron list](argo_cron_list.md)	 - list cron workflows
 * [argo cron resume](argo_cron_resume.md)	 - resume zero or more cron workflows
 * [argo cron suspend](argo_cron_suspend.md)	 - suspend zero or more cron workflows
+* [argo cron update](argo_cron_update.md)	 - update a cron workflow
 
