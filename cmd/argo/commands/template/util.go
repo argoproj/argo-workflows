@@ -2,9 +2,10 @@ package template
 
 import (
 	"log"
+	"os"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	"os"
 )
 
 func generateWorkflowTemplates(filePaths []string, strict bool) []wfv1.WorkflowTemplate {

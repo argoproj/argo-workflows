@@ -3,9 +3,10 @@ package cron
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
-	"log"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"

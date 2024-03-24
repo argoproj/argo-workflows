@@ -6,6 +6,20 @@ update a workflow template
 argo template update FILE1 FILE2... [flags]
 ```
 
+### Examples
+
+```
+# Update a Workflow Template:
+  argo template update FILE1
+	
+# Update a Workflow Template and print it as YAML:
+  argo template update FILE1 --output yaml
+  
+# Update a Workflow Template with relaxed validation:
+  argo template update FILE1 --strict false
+
+```
+
 ### Options
 
 ```

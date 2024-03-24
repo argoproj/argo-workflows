@@ -1,10 +1,11 @@
 package clustertemplate
 
 import (
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"log"
 	"os"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func generateClusterWorkflowTemplates(filePaths []string, strict bool) []wfv1.ClusterWorkflowTemplate {

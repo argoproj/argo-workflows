@@ -6,6 +6,20 @@ update a cron workflow
 argo cron update FILE1 FILE2... [flags]
 ```
 
+### Examples
+
+```
+# Update a Cron Workflow Template:
+  argo cron update FILE1
+	
+# Update a Cron Workflow Template and print it as YAML:
+  argo cron update FILE1 --output yaml
+  
+# Update a Cron Workflow Template with relaxed validation:
+  argo cron update FILE1 --strict false
+
+```
+
 ### Options
 
 ```
