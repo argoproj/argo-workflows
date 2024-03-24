@@ -3,9 +3,10 @@ package template
 import (
 	"log"
 
+	"github.com/spf13/cobra"
+
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	"github.com/spf13/cobra"
 )
 
 func NewGetCommand() *cobra.Command {

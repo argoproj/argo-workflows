@@ -3,9 +3,10 @@ package clustertemplate
 import (
 	"log"
 
+	"github.com/spf13/cobra"
+
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/spf13/cobra"
 )
 
 func NewGetCommand() *cobra.Command {
