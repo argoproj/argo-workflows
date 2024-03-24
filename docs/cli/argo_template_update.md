@@ -1,15 +1,31 @@
-## argo template
+## argo template update
 
-manipulate workflow templates
+update a workflow template
 
 ```
-argo template [flags]
+argo template update FILE1 FILE2... [flags]
+```
+
+### Examples
+
+```
+# Update a Workflow Template:
+  argo template update FILE1
+	
+# Update a Workflow Template and print it as YAML:
+  argo template update FILE1 --output yaml
+  
+# Update a Workflow Template with relaxed validation:
+  argo template update FILE1 --strict false
+
 ```
 
 ### Options
 
 ```
-  -h, --help   help for template
+  -h, --help            help for update
+  -o, --output string   Output format. One of: name|json|yaml|wide
+      --strict          perform strict workflow validation (default true)
 ```
 
 ### Options inherited from parent commands
@@ -48,11 +64,5 @@ argo template [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo template create](argo_template_create.md)	 - create a workflow template
-* [argo template delete](argo_template_delete.md)	 - delete a workflow template
-* [argo template get](argo_template_get.md)	 - display details about a workflow template
-* [argo template lint](argo_template_lint.md)	 - validate a file or directory of workflow template manifests
-* [argo template list](argo_template_list.md)	 - list workflow templates
-* [argo template update](argo_template_update.md)	 - update a workflow template
+* [argo template](argo_template.md)	 - manipulate workflow templates
 

@@ -196,13 +196,13 @@
 
             mockery = pkgs.buildGoModule rec { 
               pname = "mockery";
-              version = "2.26.0"; # upgrade this in the Makefile if upgraded here
+              version = "2.42.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
                 repo = "mockery";
                 rev = "v${version}";
-                sha256 = "sha256-3wJ7XY/wfVXB4nEHLqEtNRscow/KrAo79sr2OgJisSY=";
+                sha256 = "sha256-wwt7rhHWPlYtvudWKb8vk8t19MeN7AMfMugs0XeBDVk=";
               };
               doCheck = false;
               vendorHash = "sha256-J7eL2AQ6v5nG2lZOSSZQOTKBhfk7GtDtqZ7Felo0l54=";

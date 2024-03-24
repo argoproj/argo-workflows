@@ -6,7 +6,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands"
 )
 
-func main() {
+func generateCLIDocs() {
 	println("generating docs/cli")
 	cmd := commands.NewCommand()
 	cmd.DisableAutoGenTag = true

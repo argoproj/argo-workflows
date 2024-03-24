@@ -2838,6 +2838,10 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 		if numChildren > 0 {
 			return []string{node.Children[numChildren-1]}
 		}
+	case wfv1.NodeTypeSteps, wfv1.NodeTypeDAG:
+		if node.MemoizationStatus != nil && node.MemoizationStatus.Hit {
+			return []string{node.ID}
+		}
 	}
 	outbound := make([]string, 0)
 	for _, outboundNodeID := range node.OutboundNodes {
