@@ -4,12 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"log"
-	"os"
-
-	"github.com/argoproj/pkg/errors"
-
 	"github.com/spf13/cobra"
+	"log"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
@@ -31,16 +27,17 @@ func NewUpdateCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "update FILE1 FILE2...",
 		Short: "update a cron workflow",
+		Example: `# Update a Cron Workflow Template:
+  argo cron update FILE1
+	
+# Update a Cron Workflow Template and print it as YAML:
+  argo cron update FILE1 --output yaml
+  
+# Update a Cron Workflow Template with relaxed validation:
+  argo cron update FILE1 --strict false
+`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-
-			if parametersFile != "" {
-				err := util.ReadParametersFile(parametersFile, &submitOpts)
-				errors.CheckError(err)
-			}
+			checkArgs(cmd, args, parametersFile, &submitOpts)
 
 			updateCronWorkflows(cmd.Context(), args, &cliUpdateOpts, &submitOpts)
 		},
@@ -59,24 +56,9 @@ func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUp
 		log.Fatal(err)
 	}
 
-	fileContents, err := util.ReadManifest(filePaths...)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var cronWorkflows []wfv1.CronWorkflow
-	for _, body := range fileContents {
-		cronWfs := unmarshalCronWorkflows(body, cliOpts.strict)
-		cronWorkflows = append(cronWorkflows, cronWfs...)
-	}
-
-	if len(cronWorkflows) == 0 {
-		log.Println("No CronWorkflows found in given files")
-		os.Exit(1)
-	}
+	cronWorkflows := generateCronWorkflows(filePaths, cliOpts.strict)
 
 	for _, cronWf := range cronWorkflows {
-
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}
 		err := util.ApplySubmitOpts(&newWf, submitOpts)
 		if err != nil {

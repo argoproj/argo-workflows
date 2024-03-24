@@ -3,12 +3,9 @@ package cron
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
-
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
+	"log"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
@@ -33,15 +30,7 @@ func NewCreateCommand() *cobra.Command {
 		Use:   "create FILE1 FILE2...",
 		Short: "create a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-
-			if parametersFile != "" {
-				err := util.ReadParametersFile(parametersFile, &submitOpts)
-				errors.CheckError(err)
-			}
+			checkArgs(cmd, args, parametersFile, &submitOpts)
 
 			CreateCronWorkflows(cmd.Context(), args, &cliCreateOpts, &submitOpts)
 		},
@@ -61,24 +50,9 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		log.Fatal(err)
 	}
 
-	fileContents, err := util.ReadManifest(filePaths...)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var cronWorkflows []wfv1.CronWorkflow
-	for _, body := range fileContents {
-		cronWfs := unmarshalCronWorkflows(body, cliOpts.strict)
-		cronWorkflows = append(cronWorkflows, cronWfs...)
-	}
-
-	if len(cronWorkflows) == 0 {
-		log.Println("No CronWorkflows found in given files")
-		os.Exit(1)
-	}
+	cronWorkflows := generateCronWorkflows(filePaths, cliOpts.strict)
 
 	for _, cronWf := range cronWorkflows {
-
 		if cliOpts.schedule != "" {
 			cronWf.Spec.Schedule = cliOpts.schedule
 		}

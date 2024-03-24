@@ -1,6 +1,11 @@
 package cron
 
 import (
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/pkg/errors"
+	"github.com/spf13/cobra"
+	"log"
+	"os"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -25,4 +30,36 @@ func GetNextRuntime(cwf *v1alpha1.CronWorkflow) (time.Time, error) {
 	}
 
 	return nextRunTime, nil
+}
+
+func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkflow {
+	fileContents, err := util.ReadManifest(filePaths...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var cronWorkflows []v1alpha1.CronWorkflow
+	for _, body := range fileContents {
+		cronWfs := unmarshalCronWorkflows(body, strict)
+		cronWorkflows = append(cronWorkflows, cronWfs...)
+	}
+
+	if len(cronWorkflows) == 0 {
+		log.Println("No CronWorkflows found in given files")
+		os.Exit(1)
+	}
+
+	return cronWorkflows
+}
+
+func checkArgs(cmd *cobra.Command, args []string, parametersFile string, submitOpts *v1alpha1.SubmitOpts) {
+	if len(args) == 0 {
+		cmd.HelpFunc()(cmd, args)
+		os.Exit(1)
+	}
+
+	if parametersFile != "" {
+		err := util.ReadParametersFile(parametersFile, submitOpts)
+		errors.CheckError(err)
+	}
 }

@@ -9,8 +9,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type cliUpdateOpts struct {
@@ -23,6 +21,15 @@ func NewUpdateCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "update FILE1 FILE2...",
 		Short: "update a workflow template",
+		Example: `# Update a Workflow Template:
+  argo template update FILE1
+	
+# Update a Workflow Template and print it as YAML:
+  argo template update FILE1 --output yaml
+  
+# Update a Workflow Template with relaxed validation:
+  argo template update FILE1 --strict false
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
@@ -47,21 +54,7 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 		log.Fatal(err)
 	}
 
-	fileContents, err := util.ReadManifest(filePaths...)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var workflowTemplates []wfv1.WorkflowTemplate
-	for _, body := range fileContents {
-		wftmpls := unmarshalWorkflowTemplates(body, cliOpts.strict)
-		workflowTemplates = append(workflowTemplates, wftmpls...)
-	}
-
-	if len(workflowTemplates) == 0 {
-		log.Println("No workflow template found in given files")
-		os.Exit(1)
-	}
+	workflowTemplates := generateWorkflowTemplates(filePaths, cliOpts.strict)
 
 	for _, wftmpl := range workflowTemplates {
 		if wftmpl.Namespace == "" {
