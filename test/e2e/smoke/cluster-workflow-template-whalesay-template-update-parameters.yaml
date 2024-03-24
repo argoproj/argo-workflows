@@ -9,7 +9,7 @@ spec:
   arguments:
     parameters:
       - name: message
-        value: thanks # message -> thanks
+        value: thanks # hello world -> thanks
   templates:
     - name: whalesay-template
       inputs:

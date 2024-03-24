@@ -6,10 +6,8 @@ spec:
   workflowMetadata:
     labels:
       workflows.argoproj.io/test: "true"
-  # main -> main-2
-  entrypoint: main-2
+  entrypoint: main-2 # main -> main-2
   templates:
-    # main -> main-2
-    - name: main-2
+    - name: main-2 # main -> main-2
       container:
         image: argoproj/argosay:v1

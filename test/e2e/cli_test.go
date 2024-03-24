@@ -1296,7 +1296,7 @@ func (s *CLISuite) TestCronCommands() {
 	})
 	s.Run("Update", func() {
 		s.Given().
-			RunCli([]string{"cron", "update", "cron/basic-update-change-template.yaml"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"cron", "update", "cron/basic-update-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Schedule:                      5 5 5 * *")
 				}
