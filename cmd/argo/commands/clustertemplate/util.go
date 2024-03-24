@@ -8,10 +8,11 @@ import (
 	argoJson "github.com/argoproj/pkg/json"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/pkg/humanize"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	"github.com/argoproj/pkg/humanize"
 )
 
 func generateClusterWorkflowTemplates(filePaths []string, strict bool) []wfv1.ClusterWorkflowTemplate {
