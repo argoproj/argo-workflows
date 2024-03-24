@@ -2,7 +2,6 @@ package template
 
 import (
 	"log"
-	"os"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -21,8 +20,7 @@ func generateWorkflowTemplates(filePaths []string, strict bool) []wfv1.WorkflowT
 	}
 
 	if len(workflowTemplates) == 0 {
-		log.Println("No workflow template found in given files")
-		os.Exit(1)
+		log.Fatalln("No workflow template found in given files")
 	}
 
 	return workflowTemplates

@@ -47,8 +47,7 @@ func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkf
 	}
 
 	if len(cronWorkflows) == 0 {
-		log.Println("No CronWorkflows found in given files")
-		os.Exit(1)
+		log.Fatalln("No CronWorkflows found in given files")
 	}
 
 	return cronWorkflows
