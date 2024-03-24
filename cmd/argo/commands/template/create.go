@@ -5,13 +5,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type cliCreateOpts struct {
@@ -63,23 +60,4 @@ func CreateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 		}
 		printWorkflowTemplate(created, cliOpts.output)
 	}
-}
-
-// unmarshalWorkflowTemplates unmarshals the input bytes as either json or yaml
-func unmarshalWorkflowTemplates(wfBytes []byte, strict bool) []wfv1.WorkflowTemplate {
-	var wf wfv1.WorkflowTemplate
-	var jsonOpts []json.JSONOpt
-	if strict {
-		jsonOpts = append(jsonOpts, json.DisallowUnknownFields)
-	}
-	err := json.Unmarshal(wfBytes, &wf, jsonOpts...)
-	if err == nil {
-		return []wfv1.WorkflowTemplate{wf}
-	}
-	yamlWfs, err := common.SplitWorkflowTemplateYAMLFile(wfBytes, strict)
-	if err == nil {
-		return yamlWfs
-	}
-	log.Fatalf("Failed to parse workflow template: %v", err)
-	return nil
 }
