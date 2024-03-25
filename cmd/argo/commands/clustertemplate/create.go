@@ -12,7 +12,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type cliCreateOpts struct {
@@ -59,24 +58,7 @@ func createClusterWorkflowTemplates(ctx context.Context, filePaths []string, cli
 		log.Fatal(err)
 	}
 
-	fileContents, err := util.ReadManifest(filePaths...)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var clusterWorkflowTemplates []wfv1.ClusterWorkflowTemplate
-	for _, body := range fileContents {
-		cwftmpls, err := unmarshalClusterWorkflowTemplates(body, cliOpts.strict)
-		if err != nil {
-			log.Fatalf("Failed to parse cluster workflow template: %v", err)
-		}
-		clusterWorkflowTemplates = append(clusterWorkflowTemplates, cwftmpls...)
-	}
-
-	if len(clusterWorkflowTemplates) == 0 {
-		log.Println("No cluster workflow template found in given files")
-		os.Exit(1)
-	}
+	clusterWorkflowTemplates := generateClusterWorkflowTemplates(filePaths, cliOpts.strict)
 
 	for _, wftmpl := range clusterWorkflowTemplates {
 		created, err := serviceClient.CreateClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest{

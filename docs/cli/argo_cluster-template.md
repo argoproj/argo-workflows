@@ -54,4 +54,5 @@ argo cluster-template [flags]
 * [argo cluster-template get](argo_cluster-template_get.md)	 - display details about a cluster workflow template
 * [argo cluster-template lint](argo_cluster-template_lint.md)	 - validate files or directories of cluster workflow template manifests
 * [argo cluster-template list](argo_cluster-template_list.md)	 - list cluster workflow templates
+* [argo cluster-template update](argo_cluster-template_update.md)	 - update a cluster workflow template
 
