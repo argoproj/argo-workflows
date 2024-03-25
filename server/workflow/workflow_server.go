@@ -187,10 +187,9 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
-		if len(lastLiveWf) == 0 {
-			return nil, sutils.ToStatusError(fmt.Errorf("no workflows found"), codes.Internal)
+		if len(lastLiveWf) != 0 {
+			archivedMaxStartedAt = lastLiveWf[0].Status.StartedAt.Time
 		}
-		archivedMaxStartedAt = lastLiveWf[0].Status.StartedAt.Time
 	}
 	archivedCount, err := s.wfArchive.CountWorkflows(options.WithMaxStartedAt(archivedMaxStartedAt))
 	if err != nil {
