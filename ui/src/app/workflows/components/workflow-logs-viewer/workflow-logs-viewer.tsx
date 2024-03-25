@@ -83,6 +83,7 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
     const {popup} = useContext(Context);
     const [podName, setPodName] = useState(initialPodName || '');
     const [selectedContainer, setContainer] = useState(container);
+    const [selectedNodeId, setNodeId] = useState(nodeId);
     const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
     const [loaded, setLoaded] = useState(false);
@@ -102,17 +103,7 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
         setError(null);
         setLoaded(false);
 
-        if (archived) {
-            // replace nodeId with a nodeId which is associated with the podName, so we can also switch bewteen archived logs if a differnet node was selected.
-            nodeId = podNamesToNodeIDs.get(podName);
-
-            // if a podName is provided but no valid nodeId is found, clear the podName. So the selector is automatically set to 'All'
-            if (podName && !nodeId) {
-                setPodName('');
-            }
-        }
-
-        const source = services.workflows.getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
+        const source = services.workflows.getContainerLogs(workflow, podName, selectedNodeId, selectedContainer, grep, archived).pipe(
             // extract message from LogEntry
             map(e => {
                 const values: string[] = [];
@@ -186,7 +177,12 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
             })
     );
 
-    const node = workflow.status.nodes[nodeId];
+    // if no node id is set (for example, when no node is selected), then use the node id of of the pod.
+    if (archived && !selectedNodeId && podNamesToNodeIDs.get(podName)) {
+        setNodeId(podNamesToNodeIDs.get(podName));
+    }
+
+    const node = workflow.status.nodes[selectedNodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 
     const containers = [
@@ -233,6 +229,7 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
                     value={(podNames.find(x => x.value === podName) || {label: ''}).label}
                     onSelect={(_, item) => {
                         setPodName(item.value);
+                        setNodeId(podNamesToNodeIDs.get(item.value)); // set the correct node id to be able to fetch archived logs
                     }}
                 />{' '}
                 /{' '}

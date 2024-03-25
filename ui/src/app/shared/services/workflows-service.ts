@@ -244,16 +244,15 @@ export const WorkflowsService = {
                 return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
             }),
             mergeMap(r => r.text.split('\n')),
-            //check for empty content
-            filter(x => !!x),
+            filter(x => !!x), //check for empty content
             map(content => ({content, podName: workflow.status.nodes[nodeId].displayName}) as LogEntry),
             filter(x => !!x.content.match(grep))
         );
     },
 
     getContainerLogsFromArtifacts(workflow: Workflow, container: string, grep: string, archived: boolean): Observable<LogEntry> {
-        // Iterate workflow and get all node ids and check if node is a pod. Then sort nodes by startedAt
-        const nodeIds: string[] = Object.keys(workflow.status.nodes)
+        // Iterate over all nodes and check if node is a pod. Then sort nodes by startedAt.
+        const podNodeIds: string[] = Object.keys(workflow.status.nodes)
             .filter(nodeId => {
                 return workflow.status.nodes[nodeId].type === 'Pod';
             })
@@ -261,22 +260,10 @@ export const WorkflowsService = {
                 return new Date(workflow.status.nodes[a].startedAt).getTime() - new Date(workflow.status.nodes[b].startedAt).getTime();
             });
 
-        // Iterate over all nodes and get the logs
-        return from(nodeIds).pipe(
+        // Iterate over pod node ids and get their logs
+        return from(podNodeIds).pipe(
             concatMap(nodeId => {
-                return of(hasArtifactLogs(workflow, nodeId, container)).pipe(
-                    switchMap(isArtifactLogs => {
-                        if (!isArtifactLogs) {
-                            throw new Error('no artifact logs are available');
-                        }
-                        return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
-                    }),
-                    mergeMap(r => r.text.split('\n')),
-                    //check for empty content
-                    filter(x => !!x),
-                    map(content => ({content, podName: workflow.status.nodes[nodeId].displayName}) as LogEntry),
-                    filter(x => !!x.content.match(grep))
-                );
+                return this.getContainerLogs(workflow, container, nodeId, container, grep, archived);
             })
         );
     },
@@ -288,7 +275,7 @@ export const WorkflowsService = {
 
         // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely
         // that the Workflow and associated pods have been deleted
-        // If we have a node ID, then we can assume that we are looking for logs for a specific node, if not we wan´t the logs from all nodes
+        // If we don't have a node id, then we want the logs from all nodes
         if (archived && !nodeId) {
             return getLogsFromArtifacts();
         }
