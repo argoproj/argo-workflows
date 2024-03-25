@@ -326,7 +326,7 @@ type WorkflowSpec struct {
 	// Host networking requested for this workflow pod. Default to false.
 	HostNetwork *bool `json:"hostNetwork,omitempty" protobuf:"bytes,14,opt,name=hostNetwork"`
 
-	// Set DNS policy for the pod.
+	// Set DNS policy for workflow pods.
 	// Defaults to "ClusterFirst".
 	// Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
 	// DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
@@ -3421,6 +3421,34 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 		return true, nil
 	}
 	return false, nil
+}
+
+// SetStoredInlineTemplate stores a inline template in stored templates of the workflow.
+func (wf *Workflow) SetStoredInlineTemplate(scope ResourceScope, resourceName string, tmpl *Template) error {
+	// Store inline templates in steps.
+	for _, steps := range tmpl.Steps {
+		for _, step := range steps.Steps {
+			if step.GetTemplate() != nil {
+				_, err := wf.SetStoredTemplate(scope, resourceName, &step, step.GetTemplate())
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	// Store inline templates in DAG tasks.
+	if tmpl.DAG != nil {
+		for _, task := range tmpl.DAG.Tasks {
+			if task.GetTemplate() != nil {
+				_, err := wf.SetStoredTemplate(scope, resourceName, &task, task.GetTemplate())
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
