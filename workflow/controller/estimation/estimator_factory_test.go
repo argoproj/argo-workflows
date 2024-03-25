@@ -3,10 +3,11 @@ package estimation
 import (
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/argoproj/argo-workflows/v3/server/utils"
 
 	sqldbmocks "github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
