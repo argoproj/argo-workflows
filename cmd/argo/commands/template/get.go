@@ -1,17 +1,12 @@
 package template
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 
-	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -42,28 +37,4 @@ func NewGetCommand() *cobra.Command {
 
 	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	return command
-}
-
-func printWorkflowTemplate(wf *wfv1.WorkflowTemplate, outFmt string) {
-	switch outFmt {
-	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
-	case "json":
-		outBytes, _ := json.MarshalIndent(wf, "", "    ")
-		fmt.Println(string(outBytes))
-	case "yaml":
-		outBytes, _ := yaml.Marshal(wf)
-		fmt.Print(string(outBytes))
-	case "wide", "":
-		printWorkflowTemplateHelper(wf)
-	default:
-		log.Fatalf("Unknown output format: %s", outFmt)
-	}
-}
-
-func printWorkflowTemplateHelper(wf *wfv1.WorkflowTemplate) {
-	const fmtStr = "%-20s %v\n"
-	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
-	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 }
