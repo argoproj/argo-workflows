@@ -1,55 +1,56 @@
 package sqldb
 
 import (
-	"time"
-
 	"github.com/upper/db/v4"
-	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/argoproj/argo-workflows/v3/server/utils"
 )
 
-func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t dbType, namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit, offset int) (db.Selector, error) {
-	// If we were passed 0 as the limit, then we should load all available archived workflows
-	// to match the behavior of the `List` operations in the Kubernetes API
-	if limit == 0 {
-		limit = -1
-		offset = -1
-	}
-
+func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t dbType, options utils.ListOptions, count bool) (db.Selector, error) {
 	selector = selector.
-		And(namespaceEqual(namespace)).
-		And(nameEqual(name)).
-		And(namePrefixClause(namePrefix)).
-		And(startedAtFromClause(minStartedAt)).
-		And(startedAtToClause(maxStartedAt))
+		And(namespaceEqual(options.Namespace)).
+		And(nameEqual(options.Name)).
+		And(namePrefixClause(options.NamePrefix)).
+		And(startedAtFromClause(options.MinStartedAt)).
+		And(startedAtToClause(options.MaxStartedAt))
 
-	selector, err := labelsClause(selector, t, labelRequirements, tableName, labelTableName, true)
+	selector, err := labelsClause(selector, t, options.LabelRequirements, tableName, labelTableName, true)
 	if err != nil {
 		return nil, err
 	}
+	if count {
+		return selector, nil
+	}
+	// If we were passed 0 as the limit, then we should load all available archived workflows
+	// to match the behavior of the `List` operations in the Kubernetes API
+	if options.Limit == 0 {
+		options.Limit = -1
+		options.Offset = -1
+	}
 	return selector.
 		OrderBy("-startedat").
-		Limit(limit).
-		Offset(offset), nil
+		Limit(options.Limit).
+		Offset(options.Offset), nil
 }
 
-func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName string, t dbType, namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit, offset int) (out string, outArgs []any, err error) {
+func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName string, t dbType, options utils.ListOptions, count bool) (out string, outArgs []any, err error) {
 	var clauses []*db.RawExpr
-	if namespace != "" {
-		clauses = append(clauses, db.Raw("namespace = ?", namespace))
+	if options.Namespace != "" {
+		clauses = append(clauses, db.Raw("namespace = ?", options.Namespace))
 	}
-	if name != "" {
-		clauses = append(clauses, db.Raw("name = ?", name))
+	if options.Name != "" {
+		clauses = append(clauses, db.Raw("name = ?", options.Name))
 	}
-	if namePrefix != "" {
-		clauses = append(clauses, db.Raw("name like ?", namePrefix+"%"))
+	if options.NamePrefix != "" {
+		clauses = append(clauses, db.Raw("name like ?", options.NamePrefix+"%"))
 	}
-	if !minStartedAt.IsZero() {
-		clauses = append(clauses, db.Raw("startedat > ?", minStartedAt))
+	if !options.MinStartedAt.IsZero() {
+		clauses = append(clauses, db.Raw("startedat > ?", options.MinStartedAt))
 	}
-	if !maxStartedAt.IsZero() {
-		clauses = append(clauses, db.Raw("startedat < ?", maxStartedAt))
+	if !options.MaxStartedAt.IsZero() {
+		clauses = append(clauses, db.Raw("startedat < ?", options.MaxStartedAt))
 	}
-	for _, r := range labelRequirements {
+	for _, r := range options.LabelRequirements {
 		q, err := requirementToCondition(t, r, tableName, labelTableName, false)
 		if err != nil {
 			return "", nil, err
@@ -65,18 +66,24 @@ func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName st
 		out += " and " + c.Raw()
 		outArgs = append(outArgs, c.Arguments()...)
 	}
-
-	out += " order by startedat desc"
+	if count {
+		return out, outArgs, nil
+	}
+	if options.StartedAtAscending {
+		out += " order by startedat asc"
+	} else {
+		out += " order by startedat desc"
+	}
 
 	// If we were passed 0 as the limit, then we should load all available archived workflows
 	// to match the behavior of the `List` operations in the Kubernetes API
-	if limit == 0 {
-		limit = -1
-		offset = -1
+	if options.Limit == 0 {
+		options.Limit = -1
+		options.Offset = -1
 	}
 	out += " limit ?"
-	outArgs = append(outArgs, limit)
+	outArgs = append(outArgs, options.Limit)
 	out += " offset ?"
-	outArgs = append(outArgs, offset)
+	outArgs = append(outArgs, options.Offset)
 	return out, outArgs, nil
 }

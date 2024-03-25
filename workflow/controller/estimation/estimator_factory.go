@@ -2,11 +2,12 @@ package estimation
 
 import (
 	"fmt"
-	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/argoproj/argo-workflows/v3/server/utils"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -76,7 +77,13 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-			workflows, err := f.wfArchive.ListWorkflows(wf.Namespace, "", "", time.Time{}, time.Time{}, requirements, 1, 0)
+			workflows, err := f.wfArchive.ListWorkflows(
+				utils.ListOptions{
+					Namespace:         wf.Namespace,
+					LabelRequirements: requirements,
+					Limit:             1,
+					Offset:            0,
+				})
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to list archived workflows: %v", err)
 			}

@@ -3,12 +3,8 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
@@ -67,8 +63,8 @@ func initDB() (*sqlite.Conn, error) {
 
 type WorkflowStore interface {
 	cache.Store
-	ListWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int, showRemainingItemCount bool) (*wfv1.WorkflowList, error)
-	CountWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error)
+	ListWorkflows(options sutils.ListOptions) ([]wfv1.Workflow, error)
+	CountWorkflows(options sutils.ListOptions) (int64, error)
 }
 
 // sqliteStore is a sqlite-based store.
@@ -87,13 +83,13 @@ func NewSQLiteStore(instanceService instanceid.Service) (WorkflowStore, error) {
 	return &sqliteStore{conn: conn, instanceService: instanceService}, nil
 }
 
-func (s *sqliteStore) ListWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int, showRemainingItemCount bool) (*wfv1.WorkflowList, error) {
+func (s *sqliteStore) ListWorkflows(options sutils.ListOptions) ([]wfv1.Workflow, error) {
 	query := `select workflow from argo_workflows
 where instanceid = ?
 `
 	args := []any{s.instanceService.InstanceID()}
 
-	query, args, err := sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
+	query, args, err := sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, false)
 	if err != nil {
 		return nil, err
 	}
@@ -117,32 +113,18 @@ where instanceid = ?
 		return nil, err
 	}
 
-	meta := metav1.ListMeta{}
-	if showRemainingItemCount || limit != 0 {
-		total, err := s.CountWorkflows(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
-		}
-		count := total - int64(offset) - int64(len(workflows))
-		if count < 0 {
-			count = 0
-		}
-		meta.RemainingItemCount = &count
-		if count > 0 {
-			meta.Continue = fmt.Sprintf("%v", offset+limit)
-		}
-	}
-
-	return &wfv1.WorkflowList{Items: workflows, ListMeta: meta}, nil
+	return workflows, nil
 }
 
-func (s *sqliteStore) CountWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error) {
+func (s *sqliteStore) CountWorkflows(options sutils.ListOptions) (int64, error) {
 	query := `select count(*) as total from argo_workflows
 where instanceid = ?
 `
 	args := []any{s.instanceService.InstanceID()}
 
-	query, args, err := sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, 0, 0)
+	options.Limit = 0
+	options.Offset = 0
+	query, args, err := sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, true)
 	if err != nil {
 		return 0, err
 	}

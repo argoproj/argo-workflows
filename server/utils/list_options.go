@@ -18,9 +18,40 @@ type ListOptions struct {
 	LabelRequirements           labels.Requirements
 	Limit, Offset               int
 	ShowRemainingItemCount      bool
+	StartedAtAscending          bool
 }
 
-func BuildListOptions(options *metav1.ListOptions, ns, namePrefix string) (*ListOptions, error) {
+func (l ListOptions) WithLimit(limit int) ListOptions {
+	l.Limit = limit
+	return l
+}
+
+func (l ListOptions) WithOffset(offset int) ListOptions {
+	l.Offset = offset
+	return l
+}
+
+func (l ListOptions) WithShowRemainingItemCount(showRemainingItemCount bool) ListOptions {
+	l.ShowRemainingItemCount = showRemainingItemCount
+	return l
+}
+
+func (l ListOptions) WithMaxStartedAt(maxStartedAt time.Time) ListOptions {
+	l.MaxStartedAt = maxStartedAt
+	return l
+}
+
+func (l ListOptions) WithMinStartedAt(minStartedAt time.Time) ListOptions {
+	l.MinStartedAt = minStartedAt
+	return l
+}
+
+func (l ListOptions) WithStartedAtAscending(ascending bool) ListOptions {
+	l.StartedAtAscending = ascending
+	return l
+}
+
+func BuildListOptions(options *metav1.ListOptions, ns, namePrefix string) (ListOptions, error) {
 	if options == nil {
 		options = &metav1.ListOptions{}
 	}
@@ -32,11 +63,11 @@ func BuildListOptions(options *metav1.ListOptions, ns, namePrefix string) (*List
 	offset, err := strconv.Atoi(options.Continue)
 	if err != nil {
 		// no need to use sutils here
-		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
+		return ListOptions{}, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
 	}
 	if offset < 0 {
 		// no need to use sutils here
-		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
+		return ListOptions{}, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
 
 	// namespace is now specified as its own query parameter
@@ -60,7 +91,7 @@ func BuildListOptions(options *metav1.ListOptions, ns, namePrefix string) (*List
 			case fieldSelectedNamespace:
 				break
 			default:
-				return nil, status.Errorf(codes.InvalidArgument,
+				return ListOptions{}, status.Errorf(codes.InvalidArgument,
 					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
 			}
 		} else if strings.HasPrefix(selector, "metadata.name=") {
@@ -69,29 +100,29 @@ func BuildListOptions(options *metav1.ListOptions, ns, namePrefix string) (*List
 			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
 			if err != nil {
 				// startedAt is populated by us, it should therefore be valid.
-				return nil, ToStatusError(err, codes.Internal)
+				return ListOptions{}, ToStatusError(err, codes.Internal)
 			}
 		} else if strings.HasPrefix(selector, "spec.startedAt<") {
 			maxStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt<"))
 			if err != nil {
 				// no need to use sutils here
-				return nil, ToStatusError(err, codes.Internal)
+				return ListOptions{}, ToStatusError(err, codes.Internal)
 			}
 		} else if strings.HasPrefix(selector, "ext.showRemainingItemCount") {
 			showRemainingItemCount, err = strconv.ParseBool(strings.TrimPrefix(selector, "ext.showRemainingItemCount="))
 			if err != nil {
 				// populated by us, it should therefore be valid.
-				return nil, ToStatusError(err, codes.Internal)
+				return ListOptions{}, ToStatusError(err, codes.Internal)
 			}
 		} else {
-			return nil, ToStatusError(fmt.Errorf("unsupported requirement %s", selector), codes.InvalidArgument)
+			return ListOptions{}, ToStatusError(fmt.Errorf("unsupported requirement %s", selector), codes.InvalidArgument)
 		}
 	}
 	requirements, err := labels.ParseToRequirements(options.LabelSelector)
 	if err != nil {
-		return nil, ToStatusError(err, codes.InvalidArgument)
+		return ListOptions{}, ToStatusError(err, codes.InvalidArgument)
 	}
-	return &ListOptions{
+	return ListOptions{
 		Namespace:              namespace,
 		Name:                   name,
 		NamePrefix:             namePrefix,

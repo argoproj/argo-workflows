@@ -57,15 +57,14 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	// When the zero value is passed, we should treat this as returning all results
 	// to align ourselves with the behavior of the `List` endpoints in the Kubernetes API
 	loadAll := limit == 0
-	limitWithMore := 0
 
 	if !loadAll {
 		// Attempt to load 1 more record than we actually need as an easy way to determine whether or not more
 		// records exist than we're currently requesting
-		limitWithMore = limit + 1
+		options.Limit += 1
 	}
 
-	items, err := w.wfArchive.ListWorkflows(options.Namespace, options.Name, options.NamePrefix, options.MinStartedAt, options.MaxStartedAt, options.LabelRequirements, limitWithMore, offset)
+	items, err := w.wfArchive.ListWorkflows(options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -73,7 +72,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	meta := metav1.ListMeta{}
 
 	if options.ShowRemainingItemCount && !loadAll {
-		total, err := w.wfArchive.CountWorkflows(options.Namespace, options.Name, options.NamePrefix, options.MinStartedAt, options.MaxStartedAt, options.LabelRequirements)
+		total, err := w.wfArchive.CountWorkflows(options)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}

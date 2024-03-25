@@ -13,11 +13,12 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
+
+	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
@@ -28,7 +29,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -592,7 +592,6 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	archivedRepo := &mocks.WorkflowArchive{}
 
-	wfaServer := workflowarchive.NewWorkflowArchiveServer(archivedRepo)
 	archivedRepo.On("GetWorkflow", "", "test", "hello-world-9tql2-test").Return(&v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "hello-world-9tql2-test", Namespace: "test"},
 		Spec: v1alpha1.WorkflowSpec{
@@ -606,13 +605,13 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	archivedRepo.On("GetWorkflow", "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "latest").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
+	maxStartAt, _ := time.Parse(time.RFC3339, "2019-12-13T23:36:32Z")
+	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "workflows", MaxStartedAt: maxStartAt.Local()}).Return(int64(2), nil)
+	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "workflows", MaxStartedAt: maxStartAt.Local(), Limit: -2}).Return(v1alpha1.Workflows{wfObj2, failedWfObj}, nil)
+	maxStartAt, _ = time.Parse(time.RFC3339, "2019-12-13T23:36:32Z")
+	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "test", MaxStartedAt: maxStartAt.Local()}).Return(int64(1), nil)
+	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "test", MaxStartedAt: maxStartAt.Local(), Limit: -1}).Return(v1alpha1.Workflows{wfObj4}, nil)
 
-	listOptions := &metav1.ListOptions{}
-	instanceIdSvc := instanceid.NewService("my-instanceid")
-	instanceIdSvc.With(listOptions)
-	requirements, _ := labels.ParseToRequirements(listOptions.LabelSelector)
-	archivedRepo.On("ListWorkflows", "workflows", "", "", time.Time{}, time.Time{}, labels.Requirements(requirements), 0, 0).Return(v1alpha1.Workflows{wfObj1, wfObj2, failedWfObj}, nil)
-	archivedRepo.On("ListWorkflows", "test", "", "", time.Time{}, time.Time{}, labels.Requirements(requirements), 0, 0).Return(v1alpha1.Workflows{wfObj3, wfObj4}, nil)
 	kubeClientSet := fake.NewSimpleClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{
@@ -622,11 +621,14 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	listOptions := &metav1.ListOptions{}
+	instanceIdSvc := instanceid.NewService("my-instanceid")
+	instanceIdSvc.With(listOptions)
 	wfStore, err := store.NewSQLiteStore(instanceIdSvc)
 	if err != nil {
 		panic(err)
 	}
-	if err = wfStore.Add(&wfObj2); err != nil {
+	if err = wfStore.Add(&wfObj1); err != nil {
 		panic(err)
 	}
 	if err = wfStore.Add(&wfObj3); err != nil {
@@ -635,7 +637,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	if err = wfStore.Add(&wfObj5); err != nil {
 		panic(err)
 	}
-	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, wfaServer, wfClientset, wfStore)
+	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore)
 	return server, ctx
 }
 
@@ -675,26 +677,6 @@ type testWatchWorkflowServer struct {
 
 func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 	panic("implement me")
-}
-
-func TestMergeWithArchivedWorkflows(t *testing.T) {
-	timeNow := time.Now()
-	wf1Live := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
-			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Archived"}}}
-	wf1Archived := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
-			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Persisted"}}}
-	wf2 := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "2", CreationTimestamp: metav1.Time{Time: timeNow.Add(2 * time.Second)}}}
-	wf3 := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "3", CreationTimestamp: metav1.Time{Time: timeNow.Add(3 * time.Second)}}}
-	liveWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Live, wf2}}
-	archivedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Archived, wf3, wf2}}
-	expectedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2, wf1Live}}
-	expectedShortWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2}}
-	assert.Equal(t, expectedWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 0).Items)
-	assert.Equal(t, expectedShortWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 2).Items)
 }
 
 func TestWatchWorkflows(t *testing.T) {
