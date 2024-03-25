@@ -1367,6 +1367,37 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Retry failed workflow with only nodeFieldSelector", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-nested-dag-3",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-nested-dag-3": {ID: "my-nested-dag-3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-3", Children: []string{"2", "4"}},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
+					"3":               {ID: "3", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "id=3", nil)
+		if assert.NoError(t, err) {
+			// restartSuccessful is false, only retry Node #3 , so Node #4 is fail
+			if assert.Len(t, wf.Status.Nodes, 4) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-3"].Phase)
+				// The parent group nodes should be running.
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
+				assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes["4"].Phase)
+			}
+		}
+	})
 }
 
 func TestFromUnstructuredObj(t *testing.T) {
@@ -2101,4 +2132,503 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
 	assert.Equal(t, 1, len(podsToDelete))
+}
+
+var retryWorkflowWithDAGWithSelectedFailNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-28kv6
+  generateName: dag-
+  namespace: argo
+  uid: f0299c99-8505-49b7-861c-dd59d0e6b220
+  resourceVersion: '433764'
+  generation: 68
+  creationTimestamp: '2024-02-17T08:18:49Z'
+  labels:
+    workflows.argoproj.io/completed: 'true'
+    workflows.argoproj.io/phase: Failed
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  managedFields:
+    - manager: argo
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      time: '2024-02-17T08:27:58Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:generateName: {}
+    - manager: ___1controller
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      time: '2024-02-17T09:09:08Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:workflows.argoproj.io/pod-name-format: {}
+          f:labels:
+            .: {}
+            f:workflows.argoproj.io/completed: {}
+            f:workflows.argoproj.io/phase: {}
+        f:spec: {}
+        f:status: {}
+spec:
+  templates:
+    - name: workflow
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      dag:
+        tasks:
+          - name: A
+            template: whalesay
+            arguments: {}
+          - name: B
+            template: intentional-fail
+            arguments: {}
+            depends: A
+          - name: C
+            template: intentional-fail
+            arguments: {}
+            depends: A
+    - name: whalesay
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      container:
+        name: ''
+        image: docker/whalesay:latest
+        command:
+          - cowsay
+        args:
+          - hello world
+        resources: {}
+    - name: intentional-fail
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      container:
+        name: ''
+        image: alpine:latest
+        command:
+          - sh
+          - '-c'
+        args:
+          - echo intentional failure; exit 1
+        resources: {}
+  entrypoint: workflow
+  arguments: {}
+  activeDeadlineSeconds: 300
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+status:
+  phase: Failed
+  startedAt: '2024-02-17T08:44:34Z'
+  finishedAt: '2024-02-17T09:09:08Z'
+  progress: 1/3
+  nodes:
+    dag-28kv6:
+      id: dag-28kv6
+      name: dag-28kv6
+      displayName: dag-28kv6
+      type: DAG
+      templateName: workflow
+      templateScope: local/dag-28kv6
+      phase: Failed
+      startedAt: '2024-02-17T09:09:07Z'
+      finishedAt: '2024-02-17T09:09:08Z'
+      progress: 1/3
+      resourcesDuration:
+        cpu: 0
+        memory: 5
+      children:
+        - dag-28kv6-3469774652
+      outboundNodes:
+        - dag-28kv6-3520107509
+        - dag-28kv6-3503329890
+    dag-28kv6-3469774652:
+      id: dag-28kv6-3469774652
+      name: dag-28kv6.A
+      displayName: A
+      type: Pod
+      templateName: whalesay
+      templateScope: local/dag-28kv6
+      phase: Succeeded
+      boundaryID: dag-28kv6
+      startedAt: '2024-02-17T08:18:49Z'
+      finishedAt: '2024-02-17T08:18:59Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 5
+      outputs:
+        artifacts:
+          - name: main-logs
+            s3:
+              key: dag-28kv6/dag-28kv6-whalesay-3469774652/main.log
+        exitCode: '0'
+      children:
+        - dag-28kv6-3520107509
+        - dag-28kv6-3503329890
+      hostNodeName: k3d-miocluster-server-0
+    dag-28kv6-3503329890:
+      id: dag-28kv6-3503329890
+      name: dag-28kv6.C
+      displayName: C
+      type: Pod
+      templateName: intentional-fail
+      templateScope: local/dag-28kv6
+      phase: Failed
+      boundaryID: dag-28kv6
+      message: Step exceeded its deadline
+      startedAt: '2024-02-17T09:09:07Z'
+      finishedAt: '2024-02-17T09:09:08Z'
+      progress: 0/1
+    dag-28kv6-3520107509:
+      id: dag-28kv6-3520107509
+      name: dag-28kv6.B
+      displayName: B
+      type: Pod
+      templateName: intentional-fail
+      templateScope: local/dag-28kv6
+      phase: Failed
+      boundaryID: dag-28kv6
+      message: Step exceeded its deadline
+      startedAt: '2024-02-17T09:09:07Z'
+      finishedAt: '2024-02-17T09:09:08Z'
+      progress: 0/1
+  conditions:
+    - type: PodRunning
+      status: 'False'
+    - type: Completed
+      status: 'True'
+  resourcesDuration:
+    cpu: 0
+    memory: 5
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        endpoint: minio:9000
+        bucket: my-bucket
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey
+  artifactGCStatus:
+    notSpecified: true
+  taskResultsCompletionStatus:
+    dag-28kv6-3469774652: true
+    dag-28kv6-3503329890: true
+    dag-28kv6-3520107509: true
+
+`
+
+func TestRetryWorkflowWithDAGWithSelectedFailNodes(t *testing.T) {
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithDAGWithSelectedFailNodes)
+
+	// just retry B node, not retry C node
+	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "name=dag-28kv6.B", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(wf.Status.Nodes))
+	assert.Equal(t, 1, len(podsToDelete))
+	assert.Equal(t, "dag-28kv6-intentional-fail-3520107509", podsToDelete[0])
+
+	//retry all failed nodes
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithDAGWithSelectedFailNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(wf.Status.Nodes))
+	assert.Equal(t, 2, len(podsToDelete))
+}
+
+var retryWorkflowWithStepsWithSelectedFailNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-retry-kbttp
+  generateName: steps-retry-
+  namespace: argo
+  uid: 8083c6f8-a208-49e6-9db3-a48fc64da8fb
+  resourceVersion: '437327'
+  generation: 14
+  creationTimestamp: '2024-02-17T11:49:44Z'
+  labels:
+    workflows.argoproj.io/completed: 'true'
+    workflows.argoproj.io/phase: Failed
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  managedFields:
+    - manager: argo
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      time: '2024-02-17T11:49:44Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:generateName: {}
+    - manager: workflow-controller
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      time: '2024-02-17T11:50:06Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:workflows.argoproj.io/pod-name-format: {}
+          f:labels:
+            .: {}
+            f:workflows.argoproj.io/completed: {}
+            f:workflows.argoproj.io/phase: {}
+        f:spec: {}
+        f:status: {}
+spec:
+  templates:
+    - name: workflow
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      steps:
+        - - name: A
+            template: whalesay
+            arguments: {}
+        - - name: B
+            template: intentional-fail
+            arguments: {}
+          - name: C
+            template: intentional-fail
+            arguments: {}
+    - name: whalesay
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      container:
+        name: ''
+        image: docker/whalesay:latest
+        command:
+          - cowsay
+        args:
+          - hello world
+        resources: {}
+    - name: intentional-fail
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      container:
+        name: ''
+        image: alpine:latest
+        command:
+          - sh
+          - '-c'
+        args:
+          - echo intentional failure; exit 1
+        resources: {}
+  entrypoint: workflow
+  arguments: {}
+  activeDeadlineSeconds: 300
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+status:
+  phase: Failed
+  startedAt: '2024-02-17T11:49:44Z'
+  finishedAt: '2024-02-17T11:50:06Z'
+  progress: 1/3
+  message: child 'steps-retry-kbttp-3439989872' failed
+  nodes:
+    steps-retry-kbttp:
+      id: steps-retry-kbttp
+      name: steps-retry-kbttp
+      displayName: steps-retry-kbttp
+      type: Steps
+      templateName: workflow
+      templateScope: local/steps-retry-kbttp
+      phase: Failed
+      message: child 'steps-retry-kbttp-3439989872' failed
+      startedAt: '2024-02-17T11:49:44Z'
+      finishedAt: '2024-02-17T11:50:06Z'
+      progress: 1/3
+      resourcesDuration:
+        cpu: 0
+        memory: 12
+      children:
+        - steps-retry-kbttp-3464761789
+      outboundNodes:
+        - steps-retry-kbttp-3439989872
+        - steps-retry-kbttp-3456767491
+    steps-retry-kbttp-1487985912:
+      id: steps-retry-kbttp-1487985912
+      name: steps-retry-kbttp[0].A
+      displayName: A
+      type: Pod
+      templateName: whalesay
+      templateScope: local/steps-retry-kbttp
+      phase: Succeeded
+      boundaryID: steps-retry-kbttp
+      startedAt: '2024-02-17T11:49:44Z'
+      finishedAt: '2024-02-17T11:49:54Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      outputs:
+        artifacts:
+          - name: main-logs
+            s3:
+              key: steps-retry-kbttp/steps-retry-kbttp-whalesay-1487985912/main.log
+        exitCode: '0'
+      children:
+        - steps-retry-kbttp-2324030792
+      hostNodeName: k3d-miocluster-server-0
+    steps-retry-kbttp-2324030792:
+      id: steps-retry-kbttp-2324030792
+      name: steps-retry-kbttp[1]
+      displayName: '[1]'
+      type: StepGroup
+      templateScope: local/steps-retry-kbttp
+      phase: Failed
+      boundaryID: steps-retry-kbttp
+      message: child 'steps-retry-kbttp-3439989872' failed
+      startedAt: '2024-02-17T11:49:57Z'
+      finishedAt: '2024-02-17T11:50:06Z'
+      progress: 0/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      nodeFlag: {}
+      children:
+        - steps-retry-kbttp-3439989872
+        - steps-retry-kbttp-3456767491
+    steps-retry-kbttp-3439989872:
+      id: steps-retry-kbttp-3439989872
+      name: steps-retry-kbttp[1].B
+      displayName: B
+      type: Pod
+      templateName: intentional-fail
+      templateScope: local/steps-retry-kbttp
+      phase: Failed
+      boundaryID: steps-retry-kbttp
+      message: Error (exit code 1)
+      startedAt: '2024-02-17T11:49:57Z'
+      finishedAt: '2024-02-17T11:50:03Z'
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      outputs:
+        artifacts:
+          - name: main-logs
+            s3:
+              key: >-
+                steps-retry-kbttp/steps-retry-kbttp-intentional-fail-3439989872/main.log
+        exitCode: '1'
+      hostNodeName: k3d-miocluster-server-0
+    steps-retry-kbttp-3456767491:
+      id: steps-retry-kbttp-3456767491
+      name: steps-retry-kbttp[1].C
+      displayName: C
+      type: Pod
+      templateName: intentional-fail
+      templateScope: local/steps-retry-kbttp
+      phase: Failed
+      boundaryID: steps-retry-kbttp
+      message: Error (exit code 1)
+      startedAt: '2024-02-17T11:49:57Z'
+      finishedAt: '2024-02-17T11:50:03Z'
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      outputs:
+        artifacts:
+          - name: main-logs
+            s3:
+              key: >-
+                steps-retry-kbttp/steps-retry-kbttp-intentional-fail-3456767491/main.log
+        exitCode: '1'
+      hostNodeName: k3d-miocluster-server-0
+    steps-retry-kbttp-3464761789:
+      id: steps-retry-kbttp-3464761789
+      name: steps-retry-kbttp[0]
+      displayName: '[0]'
+      type: StepGroup
+      templateScope: local/steps-retry-kbttp
+      phase: Succeeded
+      boundaryID: steps-retry-kbttp
+      startedAt: '2024-02-17T11:49:44Z'
+      finishedAt: '2024-02-17T11:49:57Z'
+      progress: 1/3
+      resourcesDuration:
+        cpu: 0
+        memory: 12
+      nodeFlag: {}
+      children:
+        - steps-retry-kbttp-1487985912
+  conditions:
+    - type: PodRunning
+      status: 'False'
+    - type: Completed
+      status: 'True'
+  resourcesDuration:
+    cpu: 0
+    memory: 12
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        endpoint: minio:9000
+        bucket: my-bucket
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey
+  artifactGCStatus:
+    notSpecified: true
+  taskResultsCompletionStatus:
+    steps-retry-kbttp-1487985912: true
+    steps-retry-kbttp-3439989872: true
+    steps-retry-kbttp-3456767491: true
+
+`
+
+func TestRetryWorkflowWithStepsWithSelectedFailNodes(t *testing.T) {
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithStepsWithSelectedFailNodes)
+
+	// just retry B node, not retry C node
+	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "name=steps-retry-kbttp[1].B", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 5, len(wf.Status.Nodes))
+	assert.Equal(t, 1, len(podsToDelete))
+	assert.Equal(t, "steps-retry-kbttp-intentional-fail-3439989872", podsToDelete[0])
+
+	// retry group steps-retry-kbttp[1]
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithStepsWithSelectedFailNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, false, "name=steps-retry-kbttp[1]", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 4, len(wf.Status.Nodes))
+	assert.Equal(t, 2, len(podsToDelete))
+
+	//retry all failed nodes
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithStepsWithSelectedFailNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 4, len(wf.Status.Nodes))
+	assert.Equal(t, 2, len(podsToDelete))
 }
