@@ -10870,6 +10870,7 @@ func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 		}
 	}
 
+	// TODO: Enable use local variables in the test to avoid long wait. See https://github.com/argoproj/argo-workflows/pull/12756#discussion_r1530245007
 	// delete pod
 	time.Sleep(10 * time.Second)
 	deletePods(ctx, woc)
