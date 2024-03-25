@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -87,23 +85,4 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		}
 		fmt.Print(getCronWorkflowGet(created))
 	}
-}
-
-// unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
-func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
-	var cronWf wfv1.CronWorkflow
-	var jsonOpts []json.JSONOpt
-	if strict {
-		jsonOpts = append(jsonOpts, json.DisallowUnknownFields)
-	}
-	err := json.Unmarshal(wfBytes, &cronWf, jsonOpts...)
-	if err == nil {
-		return []wfv1.CronWorkflow{cronWf}
-	}
-	yamlWfs, err := common.SplitCronWorkflowYAMLFile(wfBytes, strict)
-	if err == nil {
-		return yamlWfs
-	}
-	log.Fatalf("Failed to parse cron workflow: %v", err)
-	return nil
 }

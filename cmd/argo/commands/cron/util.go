@@ -8,10 +8,12 @@ import (
 	"strings"
 	"time"
 
+	argoJson "github.com/argoproj/pkg/json"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 
 	"github.com/argoproj/pkg/errors"
@@ -69,6 +71,25 @@ func checkArgs(cmd *cobra.Command, args []string, parametersFile string, submitO
 		err := util.ReadParametersFile(parametersFile, submitOpts)
 		errors.CheckError(err)
 	}
+}
+
+// unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
+func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
+	var cronWf wfv1.CronWorkflow
+	var jsonOpts []argoJson.JSONOpt
+	if strict {
+		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
+	}
+	err := argoJson.Unmarshal(wfBytes, &cronWf, jsonOpts...)
+	if err == nil {
+		return []wfv1.CronWorkflow{cronWf}
+	}
+	yamlWfs, err := common.SplitCronWorkflowYAMLFile(wfBytes, strict)
+	if err == nil {
+		return yamlWfs
+	}
+	log.Fatalf("Failed to parse cron workflow: %v", err)
+	return nil
 }
 
 func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
