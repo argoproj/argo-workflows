@@ -1586,6 +1586,37 @@ metadata:
 ---
 apiVersion: v1
 data:
+  minio.server: |
+    minio:53 {
+      errors
+      health {
+         lameduck 5s
+      }
+      ready
+      kubernetes cluster.local in-addr.arpa ip6.arpa {
+         pods insecure
+         fallthrough in-addr.arpa ip6.arpa
+      }
+      prometheus :9153
+      forward . /etc/resolv.conf {
+         max_concurrent 1000
+      }
+      cache 30
+      loop
+      reload
+      loadbalance
+
+      rewrite stop {
+        name regex (.*)\.minio minio.argo.svc.cluster.local
+      }
+    }
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+---
+apiVersion: v1
+data:
   default-v1: |
     archiveLogs: true
     s3:
@@ -2011,6 +2042,8 @@ spec:
           value: admin
         - name: MINIO_SECRET_KEY
           value: password
+        - name: MINIO_DOMAIN
+          value: minio
         image: minio/minio:RELEASE.2022-11-17T23-20-09Z
         lifecycle:
           postStart:
