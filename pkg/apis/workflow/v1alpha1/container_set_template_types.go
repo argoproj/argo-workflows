@@ -17,7 +17,7 @@ type ContainerSetTemplate struct {
 	RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
 }
 
-// ContainerSetRetryStrategy provides controls on how to retry a container set
+// ContainerSetRetryStrategy provides controls on how to retry a container set.
 type ContainerSetRetryStrategy struct {
 	// Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
 	// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
