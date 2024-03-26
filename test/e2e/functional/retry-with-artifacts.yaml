@@ -1,4 +1,4 @@
-# Verifies that retries with artifacts will propogate artifacts
+# Verifies that retries with artifacts will propagate artifacts
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
