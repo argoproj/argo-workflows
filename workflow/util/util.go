@@ -772,14 +772,15 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	return descendantNodeIDs
 }
 
-func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus) bool {
+func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {
 	for _, child := range node.Children {
 		childStatus, err := wf.Status.Nodes.Get(child)
 		if err != nil {
 			log.Fatalf("Couldn't get child, panicking")
 			panic("Was not able to obtain child")
 		}
-		if childStatus.Phase == wfv1.NodeSucceeded || isDescendantNodeSucceeded(wf, *childStatus) {
+		_, present := nodeIDsToReset[child]
+		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(wf, *childStatus, nodeIDsToReset) {
 			return true
 		}
 	}
@@ -974,7 +975,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
-				if isDescendantNodeSucceeded(wf, node) {
+				if isDescendantNodeSucceeded(wf, node, nodeIDsToReset) {
 					log.Debugf("Node %s remains as is since it has succeed child nodes.", node.Name)
 					newWF.Status.Nodes.Set(node.ID, node)
 					continue

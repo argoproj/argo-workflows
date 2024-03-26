@@ -2102,3 +2102,367 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
 	assert.Equal(t, 1, len(podsToDelete))
 }
+
+var failedWorkflowWithContinueOn = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-03-26T05:57:14Z"
+  generateName: dag-to-retry-
+  generation: 17
+  labels:
+    submit-from-ui: "true"
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+    workflows.argoproj.io/workflow-template: dag-to-retry
+  name: dag-to-retry-tb7r7
+  namespace: argo
+  resourceVersion: "963828"
+  uid: 4b30d313-c6f4-4f53-b9df-aaab4b227a0b
+spec:
+  arguments: {}
+  workflowTemplateRef:
+    name: dag-to-retry
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-03-26T05:57:43Z"
+  nodes:
+    dag-to-retry-tb7r7:
+      children:
+      - dag-to-retry-tb7r7-1819567448
+      displayName: dag-to-retry-tb7r7
+      finishedAt: "2024-03-26T05:57:43Z"
+      id: dag-to-retry-tb7r7
+      name: dag-to-retry-tb7r7
+      outboundNodes:
+      - dag-to-retry-tb7r7-1987291523
+      - dag-to-retry-tb7r7-2726225416
+      phase: Failed
+      progress: 2/4
+      resourcesDuration:
+        cpu: 0
+        memory: 13
+      startedAt: "2024-03-26T05:57:14Z"
+      templateName: dag
+      templateScope: local/
+      type: DAG
+    dag-to-retry-tb7r7-1325528633:
+      boundaryID: dag-to-retry-tb7r7
+      children:
+      - dag-to-retry-tb7r7-2726225416
+      displayName: failure
+      finishedAt: "2024-03-26T05:57:32Z"
+      hostNodeName: kind-control-plane
+      id: dag-to-retry-tb7r7-1325528633
+      inputs:
+        parameters:
+        - name: exitCode
+          value: "1"
+      message: Error (exit code 1)
+      name: dag-to-retry-tb7r7.failure
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-to-retry-tb7r7/dag-to-retry-tb7r7-step-1325528633/main.log
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-03-26T05:57:27Z"
+      templateName: step
+      templateScope: local/
+      type: Pod
+    dag-to-retry-tb7r7-1670055836:
+      boundaryID: dag-to-retry-tb7r7
+      children:
+      - dag-to-retry-tb7r7-1987291523
+      displayName: continue
+      finishedAt: "2024-03-26T05:57:32Z"
+      hostNodeName: kind-control-plane
+      id: dag-to-retry-tb7r7-1670055836
+      inputs:
+        parameters:
+        - name: exitCode
+          value: "2"
+      message: Error (exit code 2)
+      name: dag-to-retry-tb7r7.continue
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-to-retry-tb7r7/dag-to-retry-tb7r7-step-1670055836/main.log
+        exitCode: "2"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-03-26T05:57:27Z"
+      templateName: step
+      templateScope: local/
+      type: Pod
+    dag-to-retry-tb7r7-1819567448:
+      boundaryID: dag-to-retry-tb7r7
+      children:
+      - dag-to-retry-tb7r7-1670055836
+      - dag-to-retry-tb7r7-1325528633
+      displayName: success
+      finishedAt: "2024-03-26T05:57:23Z"
+      hostNodeName: kind-control-plane
+      id: dag-to-retry-tb7r7-1819567448
+      inputs:
+        parameters:
+        - name: exitCode
+          value: "0"
+      name: dag-to-retry-tb7r7.success
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-to-retry-tb7r7/dag-to-retry-tb7r7-step-1819567448/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2024-03-26T05:57:14Z"
+      templateName: step
+      templateScope: local/
+      type: Pod
+    dag-to-retry-tb7r7-1987291523:
+      boundaryID: dag-to-retry-tb7r7
+      displayName: task-after-continue
+      finishedAt: "2024-03-26T05:57:40Z"
+      hostNodeName: kind-control-plane
+      id: dag-to-retry-tb7r7-1987291523
+      inputs:
+        parameters:
+        - name: exitCode
+          value: "0"
+      name: dag-to-retry-tb7r7.task-after-continue
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-to-retry-tb7r7/dag-to-retry-tb7r7-step-1987291523/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2024-03-26T05:57:35Z"
+      templateName: step
+      templateScope: local/
+      type: Pod
+    dag-to-retry-tb7r7-2726225416:
+      boundaryID: dag-to-retry-tb7r7
+      displayName: task-after-failure
+      finishedAt: "2024-03-26T05:57:35Z"
+      id: dag-to-retry-tb7r7-2726225416
+      message: 'omitted: depends condition not met'
+      name: dag-to-retry-tb7r7.task-after-failure
+      nodeFlag: {}
+      phase: Omitted
+      startedAt: "2024-03-26T05:57:35Z"
+      templateName: step
+      templateScope: local/
+      type: Skipped
+  phase: Failed
+  progress: 2/4
+  resourcesDuration:
+    cpu: 0
+    memory: 13
+  startedAt: "2024-03-26T05:57:14Z"
+  storedTemplates:
+    namespaced/dag-to-retry/dag:
+      dag:
+        failFast: false
+        tasks:
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "0"
+          name: success
+          template: step
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "1"
+          dependencies:
+          - success
+          name: failure
+          template: step
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "0"
+          dependencies:
+          - failure
+          name: task-after-failure
+          template: step
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "2"
+          continueOn:
+            failed: true
+          dependencies:
+          - success
+          name: continue
+          template: step
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "0"
+          dependencies:
+          - continue
+          name: task-after-continue
+          template: step
+      inputs: {}
+      metadata: {}
+      name: dag
+      outputs: {}
+    namespaced/dag-to-retry/step:
+      container:
+        command:
+        - sh
+        - -c
+        - exit {{inputs.parameters.exitCode}}
+        image: alpine:3.7
+        name: ""
+        resources: {}
+      inputs:
+        parameters:
+        - name: exitCode
+      metadata: {}
+      name: step
+      outputs: {}
+  storedWorkflowTemplateSpec:
+    activeDeadlineSeconds: 300
+    arguments: {}
+    entrypoint: dag
+    podMetadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+    podSpecPatch: |
+      terminationGracePeriodSeconds: 3
+    templates:
+    - container:
+        command:
+        - sh
+        - -c
+        - exit {{inputs.parameters.exitCode}}
+        image: alpine:3.7
+        name: ""
+        resources: {}
+      inputs:
+        parameters:
+        - name: exitCode
+      metadata: {}
+      name: step
+      outputs: {}
+    - dag:
+        failFast: false
+        tasks:
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "0"
+          name: success
+          template: step
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "1"
+          dependencies:
+          - success
+          name: failure
+          template: step
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "0"
+          dependencies:
+          - failure
+          name: task-after-failure
+          template: step
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "2"
+          continueOn:
+            failed: true
+          dependencies:
+          - success
+          name: continue
+          template: step
+        - arguments:
+            parameters:
+            - name: exitCode
+              value: "0"
+          dependencies:
+          - continue
+          name: task-after-continue
+          template: step
+      inputs: {}
+      metadata: {}
+      name: dag
+      outputs: {}
+    workflowTemplateRef:
+      name: dag-to-retry
+  taskResultsCompletionStatus:
+    dag-to-retry-tb7r7-1325528633: true
+    dag-to-retry-tb7r7-1670055836: true
+    dag-to-retry-tb7r7-1819567448: true
+    dag-to-retry-tb7r7-1987291523: true`
+
+func TestRetryWorkflowWithContinurOnSucceedNodes(t *testing.T) {
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(failedWorkflowWithContinueOn)
+
+	// Retry workflow
+	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 4, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByName("dag-to-retry-tb7r7.continue").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("dag-to-retry-tb7r7.task-after-continue").Phase)
+	assert.Equal(t, 2, len(podsToDelete))
+
+	// Retry task-after-continue node
+	wf = wfv1.MustUnmarshalWorkflow(failedWorkflowWithContinueOn)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=dag-to-retry-tb7r7.task-after-continue", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("dag-to-retry-tb7r7.success").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("dag-to-retry-tb7r7").Phase)
+	assert.Equal(t, 4, len(podsToDelete))
+}
