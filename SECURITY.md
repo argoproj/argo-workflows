@@ -6,9 +6,10 @@ If you find a security related bug in Argo Workflows, we kindly ask you for resp
 disclosure and for giving us appropriate time to react, analyze and develop a
 fix to mitigate the found security vulnerability.
 
-Please report vulnerabilities by e-mail to the following address:
+Please report vulnerabilities by:
 
-* cncf-argo-security@lists.cncf.io
+* Opening a draft GitHub Security Advisory: https://github.com/argoproj/argo-workflows/security/advisories/new
+* Sending an e-mail to the following address: cncf-argo-security@lists.cncf.io
 
 All vulnerabilities and associated information will be treated with full confidentiality.
 
