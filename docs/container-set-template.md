@@ -164,5 +164,6 @@ spec:
 ```
 
 !!! Note
+
     A container set will not be retried if a container's `command` cannot be located. 
     As it will fail each time, the retry logic is short-circuited.
