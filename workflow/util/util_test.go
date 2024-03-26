@@ -2445,7 +2445,7 @@ status:
     dag-to-retry-tb7r7-1819567448: true
     dag-to-retry-tb7r7-1987291523: true`
 
-func TestRetryWorkflowWithContinurOnSucceedNodes(t *testing.T) {
+func TestRetryWorkflowWithContinurOnSucceededNodes(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(failedWorkflowWithContinueOn)
 
