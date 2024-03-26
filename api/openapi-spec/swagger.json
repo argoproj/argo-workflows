@@ -8283,6 +8283,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
+      "description": "ContainerSetRetryStrategy provides controls on how to retry a container set",
       "type": "object",
       "required": [
         "retries"
@@ -8293,7 +8294,7 @@
           "type": "string"
         },
         "retries": {
-          "description": "Nbr of retries",
+          "description": "Retries is the number of retry attempts when retrying a container.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         }
       }
@@ -8311,7 +8312,7 @@
           }
         },
         "retryStrategy": {
-          "description": "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set. The container won't retry if it's unable to locate the command.",
+          "description": "RetryStrategy describes how to retry container nodes if the container set fails. Note that the container set will not be retried if a container's `command` cannot be located, as it will fail each time.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy"
         },
         "volumeMounts": {
