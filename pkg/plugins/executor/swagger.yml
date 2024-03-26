@@ -1012,8 +1012,6 @@ definitions:
         type: string
       retries:
         $ref: '#/definitions/IntOrString'
-    title: ContainerSetRetryStrategy provides controls on how to retry a container
-      set
     type: object
   ContainerSetTemplate:
     properties:
