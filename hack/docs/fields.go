@@ -357,7 +357,7 @@ func (c *DocGeneratorContext) generate() string {
 	return out
 }
 
-func generateDocs() {
+func generateFieldsDocs() {
 	println("generating docs/fields.md")
 	c := NewDocGeneratorContext()
 	err := os.WriteFile("docs/fields.md", []byte(c.generate()), 0o600)

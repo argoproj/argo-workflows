@@ -12,6 +12,9 @@ updates:
       - dependency-name: google.golang.org/grpc
     # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
     open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - go
 
   - package-ecosystem: "npm"
     directory: "/ui"
@@ -25,6 +28,9 @@ updates:
       - dependency-name: "@types/react-router-dom"
     # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
     open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - javascript
 
   # build / CI dependencies
   - package-ecosystem: "pip"
@@ -34,6 +40,9 @@ updates:
       day: "saturday"
     # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
     open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - python
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -46,3 +55,6 @@ updates:
       - dependency-name: "actions/upload-artifact"
     # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
     open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - github_actions
