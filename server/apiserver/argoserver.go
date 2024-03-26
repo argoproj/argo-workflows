@@ -308,7 +308,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
-	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive)
+	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadNodeStatusRepo)
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links, columns, navColor))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
