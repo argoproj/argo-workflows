@@ -51,7 +51,7 @@ data:
     - python
     - -c
     image: python:alpine
-    name: hello-executor-plugin
+    name: hello
     ports:
     - containerPort: 4355
     resources:
