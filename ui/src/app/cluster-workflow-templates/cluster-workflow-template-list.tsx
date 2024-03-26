@@ -1,7 +1,7 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
+import {RouteComponentProps, Link} from 'react-router-dom';
 
 import * as models from '../../models';
 import {uiUrl} from '../shared/base';
@@ -9,14 +9,16 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
-import {Timestamp} from '../shared/components/timestamp';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {useQueryParams} from '../shared/use-query-params';
 import {Footnote} from '../shared/footnote';
 import {services} from '../shared/services';
+import {Timestamp} from '../shared/components/timestamp';
+
 import {ClusterWorkflowTemplateCreator} from './cluster-workflow-template-creator';
+import {ClusterWorkflowTemplateMarkdown} from './cluster-workflow-template-markdown';
 
 import './cluster-workflow-template-list.scss';
 
@@ -77,15 +79,19 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                         <div className='columns small-3'>CREATED</div>
                     </div>
                     {templates.map(t => (
-                        <Link className='row argo-table-list__row' key={t.metadata.uid} to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
-                            <div className='columns small-1'>
-                                <i className='fa fa-clone' />
+                        <div className='cluster-workflow-templates-list__row-container' key={`${t.metadata.namespace}/${t.metadata.name}`}>
+                            <div className='row argo-table-list__row'>
+                                <div className='columns small-1'>
+                                    <i className='fa fa-clone' />
+                                </div>
+                                <Link to={{pathname: uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}} className='columns small-5'>
+                                    <ClusterWorkflowTemplateMarkdown workflow={t} key={`${t.metadata.namespace}/${t.metadata.name}`} />
+                                </Link>
+                                <div className='columns small-3'>
+                                    <Timestamp date={t.metadata.creationTimestamp} />
+                                </div>
                             </div>
-                            <div className='columns small-5'>{t.metadata.name}</div>
-                            <div className='columns small-3'>
-                                <Timestamp date={t.metadata.creationTimestamp} />
-                            </div>
-                        </Link>
+                        </div>
                     ))}
                 </div>
                 <Footnote>

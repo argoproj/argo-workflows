@@ -1,17 +1,15 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
+import {RouteComponentProps} from 'react-router-dom';
 
 import {WorkflowTemplate} from '../../models';
-import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../shared/annotations';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
 import {PaginationPanel} from '../shared/components/pagination-panel';
-import {Timestamp} from '../shared/components/timestamp';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -24,6 +22,7 @@ import {useQueryParams} from '../shared/use-query-params';
 import {Utils} from '../shared/utils';
 import {WorkflowTemplateCreator} from './workflow-template-creator';
 import {WorkflowTemplateFilters} from './workflow-template-filters';
+import {WorkflowTemplateRow} from './workflow-template-row';
 
 import './workflow-template-list.scss';
 
@@ -139,24 +138,9 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                                     <div className='columns small-3'>NAMESPACE</div>
                                     <div className='columns small-3'>CREATED</div>
                                 </div>
-                                {templates.map(t => (
-                                    <Link
-                                        className='row argo-table-list__row'
-                                        key={`${t.metadata.namespace}/${t.metadata.name}`}
-                                        to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
-                                        <div className='columns small-1'>
-                                            <i className='fa fa-clone' />
-                                        </div>
-                                        <div className='columns small-5'>
-                                            {t.metadata.annotations?.[ANNOTATION_TITLE] ?? t.metadata.name}
-                                            {t.metadata.annotations?.[ANNOTATION_DESCRIPTION] ? <p>{t.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
-                                        </div>
-                                        <div className='columns small-3'>{t.metadata.namespace}</div>
-                                        <div className='columns small-3'>
-                                            <Timestamp date={t.metadata.creationTimestamp} />
-                                        </div>
-                                    </Link>
-                                ))}
+                                {templates.map(t => {
+                                    return <WorkflowTemplateRow workflow={t} key={`${t.metadata.namespace}/${t.metadata.name}`} />;
+                                })}
                             </div>
                             <Footnote>
                                 <InfoIcon /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.

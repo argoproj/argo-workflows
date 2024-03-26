@@ -1,8 +1,9 @@
+// Use the lazy loaded suspense variant instead
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import {openLinkWithKey} from '../../../shared/components/links';
+import {openLinkWithKey} from './links';
 
 export function ReactMarkdownGfm({markdown}: {markdown: string}) {
     return (
