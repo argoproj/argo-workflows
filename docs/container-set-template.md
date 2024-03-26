@@ -117,7 +117,7 @@ Can you see the problem here? `a` only has small requests, but the container set
 
 Solution: do not use container set when you have lopsided requests.
 
-## Container Set Retries
+## `retryStrategy` usage
 
 > v3.3 and after
 
