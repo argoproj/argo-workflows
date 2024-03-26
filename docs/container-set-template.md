@@ -129,14 +129,38 @@ You can only set the `duration` between each retry and the total number of `retr
 See an example below:
 
 ```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: containerset-with-retrystrategy
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflow template is used to create a workflow with containerset with retrystrategy.
+spec:
+  entrypoint: containerset-retrystrategy-example
+  templates:
+    - name: containerset-retrystrategy-example
       containerSet:
         retryStrategy:
           retries: "2"
         containers:
-          - name: retry-containerset
+          - name: success
+            image: python:alpine3.6
+            command:
+              - python
+              - -c
+            args:
+              - |
+                print("hi")
+          - name: fail-retry
             image: alpine:latest
             command: [ sh, -c ]
             args: [ "echo intentional failure; exit 1" ]
+          - name: invalic-command
+            image: python:alpine3.6
+            command:
+              - invalid
+              - command
 ```
 
 !!! Note
