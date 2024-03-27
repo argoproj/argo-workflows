@@ -3780,7 +3780,7 @@ ContainerSetRetryStrategy provides controls on how to retry a container set
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the time between each retry, examples values are "300ms", "1s" or "5m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".|
-|`retries`|[`IntOrString`](#intorstring)|Retries is the number of retry attempts when retrying a container.|
+|`retries`|[`IntOrString`](#intorstring)|Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`.|
 
 ## DAGTask
 
