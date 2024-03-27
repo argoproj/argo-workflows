@@ -135,15 +135,17 @@ metadata:
   name: containerset-with-retrystrategy
   annotations:
     workflows.argoproj.io/description: |
-      This workflow template is used to create a workflow with containerset with retrystrategy.
+      This workflow creates a container set with a retryStrategy.
 spec:
   entrypoint: containerset-retrystrategy-example
   templates:
     - name: containerset-retrystrategy-example
       containerSet:
         retryStrategy:
-          retries: "2"
+          retries: "10" # if fails, retry at most ten times
+          duration: 30s # retry for at most 30s
         containers:
+          # this container completes successfully, it won't retried.
           - name: success
             image: python:alpine3.6
             command:
@@ -152,16 +154,13 @@ spec:
             args:
               - |
                 print("hi")
+          # if fails, it will retry at most ten times.    
           - name: fail-retry
-            image: alpine:latest
-            command: [ sh, -c ]
-            args: [ "echo intentional failure; exit 1" ]
-          - name: invalic-command
             image: python:alpine3.6
-            command:
-              - invalid
-              - command
+            command: ["python", -c]
+            args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
 ```
 
-!!! NOTE
-    A container set will not be retried if a container's `command` cannot be located. As it will fail each time, the retry logic is short-circuited.
+!!! Note
+    A container set will not be retried if a container's `command` cannot be located. 
+    As it will fail each time, the retry logic is short-circuited.

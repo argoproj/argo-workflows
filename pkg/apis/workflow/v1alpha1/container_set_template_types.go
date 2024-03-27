@@ -22,7 +22,8 @@ type ContainerSetRetryStrategy struct {
 	// Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
 	// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
-	// Retries is the number of retry attempts when retrying a container.
+	// Retries is the maximum number of retry attempts for each container. It does not include the
+	// first, original attempt; the maximum number of total attempts will be `retries + 1`.
 	Retries *intstr.IntOrString `json:"retries" protobuf:"bytes,2,rep,name=retries"`
 }
 
