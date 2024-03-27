@@ -26,20 +26,20 @@ export class RetryObservable<E, V> {
 
     public start(v?: V) {
         this.stop();
-        this.subscription = this.watch(v).subscribe(
-            next => {
+        this.subscription = this.watch(v).subscribe({
+            next: next => {
                 if (next) {
                     this.onItem(next);
                 } else {
                     this.onOpen();
                 }
             },
-            e => {
+            error: e => {
                 this.stop();
                 this.onError(e);
                 this.reconnect();
             }
-        );
+        });
     }
 
     // Must invoke on component unload.
