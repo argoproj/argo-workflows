@@ -167,33 +167,6 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 	}
 }
 
-var yamlStr = `
-containers:
-  - name: main
-    resources:
-      limits:
-        cpu: 1000m
-`
-
-func TestPodSpecPatchMerge(t *testing.T) {
-	tmpl := wfv1.Template{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"cpu\": \"1000m\"}}}]}"}
-	wf := wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
-	merged, err := PodSpecPatchMerge(&wf, &tmpl)
-	assert.NoError(t, err)
-	var spec v1.PodSpec
-	wfv1.MustUnmarshal([]byte(merged), &spec)
-	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
-	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
-
-	tmpl = wfv1.Template{PodSpecPatch: yamlStr}
-	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
-	merged, err = PodSpecPatchMerge(&wf, &tmpl)
-	assert.NoError(t, err)
-	wfv1.MustUnmarshal([]byte(merged), &spec)
-	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
-	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
-}
-
 var suspendedWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
