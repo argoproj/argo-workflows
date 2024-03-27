@@ -4342,7 +4342,7 @@
         },
         "retries": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Retries is the number of retry attempts when retrying a container."
+          "description": "Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`."
         }
       },
       "required": [

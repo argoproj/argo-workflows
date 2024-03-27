@@ -1942,7 +1942,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.Refe
 					},
 					"retries": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Retries is the number of retry attempts when retrying a container.",
+							Description: "Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`.",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
