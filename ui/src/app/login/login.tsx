@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import {uiUrl, uiUrlWithParams} from '../shared/base';
 import {useCollectEvent} from '../shared/use-collect-event';
+import {useTranslation} from 'react-i18next';
 
 import './login.scss';
 
@@ -24,9 +25,11 @@ function getRedirect(): string {
 }
 
 export function Login() {
+    const {t} = useTranslation();
+
     useCollectEvent('openedLogin');
     return (
-        <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
+        <Page title={t('login')} toolbar={{breadcrumbs: [{title: 'Login'}]}}>
             <div className='argo-container'>
                 <div className='white-box'>
                     <h3>
@@ -49,7 +52,7 @@ export function Login() {
                                 onClick={() => {
                                     document.location.href = uiUrlWithParams('oauth2/redirect', [getRedirect()]);
                                 }}>
-                                <i className='fa fa-sign-in-alt' /> Login
+                                <i className='fa fa-sign-in-alt' /> {t('login')}
                             </button>
                         </div>
                     </div>
@@ -63,7 +66,7 @@ export function Login() {
                         </div>
                         <div>
                             <button className='argo-button argo-button--base-o' onClick={() => user((document.getElementById('token') as HTMLInputElement).value)}>
-                                <i className='fa fa-sign-in-alt' /> Login
+                                <i className='fa fa-sign-in-alt' /> {t('login')}
                             </button>
                         </div>
                     </div>

@@ -2,6 +2,7 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
 
 import {WorkflowTemplate} from '../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../shared/annotations';
@@ -83,10 +84,11 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     }, [pagination.limit]);
 
     useCollectEvent('openedWorkflowTemplateList');
+    const {t} = useTranslation();
 
     return (
         <Page
-            title='Workflow Templates'
+            title={t('workflowTemplates')}
             toolbar={{
                 breadcrumbs: [
                     {title: 'Workflow Templates', path: uiUrl('workflow-templates')},
