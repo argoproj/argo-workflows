@@ -210,6 +210,11 @@ var (
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning
 		}), "to have running pod"
 	}
+	ToHaveFailedPod Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeFailed
+		}), "to have failed pod"
+	}
 )
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
