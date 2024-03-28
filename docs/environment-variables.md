@@ -123,11 +123,9 @@ data:
 
 | Name                                       | Type     | Default | Description                                                                                                             |
 |--------------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------------------------------|
-| `ALLOWED_LINK_PROTOCOL`                    | `string` | `http,https` | List of comma separated protocols allowed for the [Links feature](links.md)
 | `ARGO_ARTIFACT_SERVER`                     | `bool`   | `true`  | Enable [Workflow Archive](workflow-archive.md) endpoints
 | `ARGO_PPROF`                               | `bool`   | `false` | Enable [`pprof`](https://go.dev/blog/pprof) endpoints
 | `ARGO_SERVER_METRICS_AUTH`                 | `bool`   | `true`  | Enable auth on the `/metrics` endpoint
-| `BASE_HREF`                                | `string` | `/`     | [Base HREF](argo-server.md#base-href) of the Server
 | `DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN` | `string` | `""`    | Disable the retrieval of the list of label values for keys based on this regular expression.                            |
 | `FIRST_TIME_USER_MODAL`                    | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `FEEDBACK_MODAL`                           | `bool`   | `true`  | Show this modal.                                                                                                        |

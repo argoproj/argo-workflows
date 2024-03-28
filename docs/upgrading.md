@@ -3,6 +3,18 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.6
+
+### Fixed Server `--basehref` inconsistency
+
+For consistency, the Server now uses `--base-href` and `ARGO_BASE_HREF`.
+Previously it was `--basehref` (no dash in between) and `ARGO_BASEHREF` (no underscore in between).
+
+### Removed redundant Server environment variables
+
+`ALLOWED_LINK_PROTOCOL` and `BASE_HREF` have been removed as redundant.
+Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
+
 ## Upgrading to v3.5
 
 There are no known breaking changes in this release. Please file an issue if you encounter any unexpected problems after upgrading.
