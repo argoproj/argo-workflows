@@ -164,7 +164,7 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
         with:
-          cosign-release: 'v1.13.0'
+          cosign-release: 'v2.2.3'
 
       - name: Push Multiarch Image
         env:
@@ -196,7 +196,7 @@ jobs:
             docker manifest push $image_name
             docker manifest push quay.io/$image_name
 
-            cosign sign --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
 
           done
 
@@ -299,7 +299,7 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
         with:
-          cosign-release: 'v1.13.0'
+          cosign-release: 'v2.2.3'
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
       - run: |
           if [ ${GITHUB_REF##*/} = main ]; then
@@ -331,7 +331,7 @@ jobs:
       - run: make checksums
       - name: Sign checksums and create public key for release assets
         run: |
-          cosign sign-blob --key env://COSIGN_PRIVATE_KEY ./dist/argo-workflows-cli-checksums.txt > ./dist/argo-workflows-cli-checksums.sig
+          cosign sign-blob -y --key env://COSIGN_PRIVATE_KEY ./dist/argo-workflows-cli-checksums.txt > ./dist/argo-workflows-cli-checksums.sig
           # Retrieves the public key to release as an asset
           cosign public-key --key env://COSIGN_PRIVATE_KEY > ./dist/argo-workflows-cosign.pub
 
