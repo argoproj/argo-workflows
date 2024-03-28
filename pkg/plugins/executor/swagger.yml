@@ -711,12 +711,12 @@ definitions:
         type: string
       ports:
         description: |-
-          List of ports to expose from the container. Exposing a port here gives
-          the system additional information about the network connections a
-          container uses, but is primarily informational. Not specifying a port here
+          List of ports to expose from the container. Not specifying a port here
           DOES NOT prevent that port from being exposed. Any port which is
           listening on the default "0.0.0.0" address inside a container will be
           accessible from the network.
+          Modifying this array with strategic merge patch may corrupt the data.
+          For more information See https://github.com/kubernetes/kubernetes/issues/108255.
           Cannot be updated.
           +optional
           +patchMergeKey=containerPort
@@ -879,12 +879,12 @@ definitions:
         type: string
       ports:
         description: |-
-          List of ports to expose from the container. Exposing a port here gives
-          the system additional information about the network connections a
-          container uses, but is primarily informational. Not specifying a port here
+          List of ports to expose from the container. Not specifying a port here
           DOES NOT prevent that port from being exposed. Any port which is
           listening on the default "0.0.0.0" address inside a container will be
           accessible from the network.
+          Modifying this array with strategic merge patch may corrupt the data.
+          For more information See https://github.com/kubernetes/kubernetes/issues/108255.
           Cannot be updated.
           +optional
           +patchMergeKey=containerPort
@@ -2513,16 +2513,6 @@ definitions:
           More info: http://kubernetes.io/docs/user-guide/annotations
           +optional
         type: object
-      clusterName:
-        description: |-
-          Deprecated: ClusterName is a legacy field that was always cleared by
-          the system and never used; it will be removed completely in 1.25.
-
-          The name in the go struct is changed to help clients detect
-          accidental use.
-
-          +optional
-        type: string
       creationTimestamp:
         $ref: '#/definitions/Time'
       deletionGracePeriodSeconds:
@@ -3051,8 +3041,11 @@ definitions:
     description: |-
       The serialization format is:
 
+      ```
       <quantity>        ::= <signedNumber><suffix>
+
       (Note that <suffix> may be empty, from the "" case in <decimalSI>.)
+
       <digit>           ::= 0 | 1 | ... | 9
       <digits>          ::= <digit> | <digit><digits>
       <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits>
@@ -3060,10 +3053,15 @@ definitions:
       <signedNumber>    ::= <number> | <sign><number>
       <suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI>
       <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei
+
       (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)
+
       <decimalSI>       ::= m | "" | k | M | G | T | P | E
+
       (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)
+
       <decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>
+      ```
 
       No matter which of the three exponent forms is used, no quantity may represent
       a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal
@@ -3077,12 +3075,15 @@ definitions:
       Before serializing, Quantity will be put in "canonical form".
       This means that Exponent/suffix will be adjusted up or down (with a
       corresponding increase or decrease in Mantissa) such that:
-      a. No precision is lost
-      b. No fractional digits will be emitted
-      c. The exponent (or suffix) is as large as possible.
+
+      No precision is lost
+      No fractional digits will be emitted
+      The exponent (or suffix) is as large as possible.
+
       The sign will be omitted unless the number is negative.
 
       Examples:
+
       1.5 will be serialized as "1500m"
       1.5Gi will be serialized as "1536Mi"
 
@@ -3522,12 +3523,12 @@ definitions:
         type: string
       ports:
         description: |-
-          List of ports to expose from the container. Exposing a port here gives
-          the system additional information about the network connections a
-          container uses, but is primarily informational. Not specifying a port here
+          List of ports to expose from the container. Not specifying a port here
           DOES NOT prevent that port from being exposed. Any port which is
           listening on the default "0.0.0.0" address inside a container will be
           accessible from the network.
+          Modifying this array with strategic merge patch may corrupt the data.
+          For more information See https://github.com/kubernetes/kubernetes/issues/108255.
           Cannot be updated.
           +optional
           +patchMergeKey=containerPort
@@ -4316,12 +4317,12 @@ definitions:
         type: string
       ports:
         description: |-
-          List of ports to expose from the container. Exposing a port here gives
-          the system additional information about the network connections a
-          container uses, but is primarily informational. Not specifying a port here
+          List of ports to expose from the container. Not specifying a port here
           DOES NOT prevent that port from being exposed. Any port which is
           listening on the default "0.0.0.0" address inside a container will be
           accessible from the network.
+          Modifying this array with strategic merge patch may corrupt the data.
+          For more information See https://github.com/kubernetes/kubernetes/issues/108255.
           Cannot be updated.
           +optional
           +patchMergeKey=containerPort

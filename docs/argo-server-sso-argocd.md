@@ -54,6 +54,7 @@ data:
   dex.config: |
     # Setting staticClients allows Argo Workflows to use Argo CD's Dex installation for authentication
     staticClients:
+      # This is the OIDC client ID in plaintext
       - id: argo-workflows-sso
         name: Argo Workflow
         redirectURIs:

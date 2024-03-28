@@ -692,10 +692,22 @@ spec:
       container:
         image: my-image
 `),
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-2
+spec:
+  shutdown: Terminate
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
 				f,
 			)
 			defer cancel()
 			ctx := context.Background()
+			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 
@@ -708,6 +720,11 @@ spec:
 				if assert.NotNil(t, wf) {
 					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
 					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+				}
+			})
+			expectWorkflow(ctx, controller, "my-wf-2", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowSucceeded, wf.Status.Phase)
 				}
 			})
 		})
@@ -1162,6 +1179,25 @@ spec:
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 0)
+}
+
+func TestPendingPodWhenTerminate(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+	wf.Status.Phase = wfv1.WorkflowPending
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Equal(t, wfv1.NodeSkipped, node.Phase)
+	}
 }
 
 func TestWorkflowReferItselfFromExpression(t *testing.T) {
