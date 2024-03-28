@@ -563,13 +563,13 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			pod, err := wfc.getPodFromCache(namespace, podName)
 			if err == nil && pod != nil && pod.Status.Phase == apiv1.PodPending {
 				wfc.queuePodForCleanup(namespace, podName, deletePod)
-			} else if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
+			} else if terminationGracePeriod, err := wfc.signalContainers(ctx, namespace, podName, syscall.SIGTERM); err != nil {
 				return err
 			} else if terminationGracePeriod > 0 {
 				wfc.queuePodForCleanupAfter(namespace, podName, killContainers, terminationGracePeriod)
 			}
 		case killContainers:
-			if _, err := wfc.signalContainers(namespace, podName, syscall.SIGKILL); err != nil {
+			if _, err := wfc.signalContainers(ctx, namespace, podName, syscall.SIGKILL); err != nil {
 				return err
 			}
 		case labelPodCompleted:
@@ -663,7 +663,7 @@ func removeFinalizer(finalizers []string, targetFinalizer string) []string {
 	return updatedFinalizers
 }
 
-func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
+func (wfc *WorkflowController) signalContainers(ctx context.Context, namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
 	pod, err := wfc.getPodFromCache(namespace, podName)
 	if pod == nil || err != nil {
 		return 0, err
@@ -674,7 +674,7 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 			continue
 		}
 		// problems are already logged at info level, so we just ignore errors here
-		_ = signal.SignalContainer(wfc.restConfig, pod, c.Name, sig)
+		_ = signal.SignalContainer(ctx, wfc.restConfig, pod, c.Name, sig)
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
 		return 30 * time.Second, nil
