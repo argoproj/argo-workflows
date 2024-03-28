@@ -747,6 +747,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 
+	err = woc.removeCompletedTaskSetStatus(ctx)
+
+	if err != nil {
+		woc.log.WithError(err).Warn("error updating taskset")
+	}
+
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
@@ -782,6 +788,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
+	woc.log.Infof("woc.controller.wfQueue.Len() is %v", woc.controller.wfQueue.Len())
+
 	switch os.Getenv("INFORMER_WRITE_BACK") {
 	// By default we write back (as per v2.11), this does not reduce errors, but does reduce
 	// conflicts and therefore we log fewer warning messages.
@@ -792,12 +800,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	case "false":
 		time.Sleep(1 * time.Second)
-	}
-
-	err = woc.removeCompletedTaskSetStatus(ctx)
-
-	if err != nil {
-		woc.log.WithError(err).Warn("error updating taskset")
 	}
 
 	// Make sure the workflow completed.
