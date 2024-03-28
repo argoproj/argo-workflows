@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 	"google.golang.org/grpc/codes"
-	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
@@ -54,8 +53,8 @@ type archivedWorkflowCount struct {
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
-	ListWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
-	CountWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error)
+	ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error)
+	CountWorkflows(options sutils.ListOptions) (int64, error)
 	GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 	DeleteExpiredWorkflows(ttl time.Duration) error
@@ -141,35 +140,20 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	})
 }
 
-func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
+func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowRecord
-
-	// If we were passed 0 as the limit, then we should load all available archived workflows
-	// to match the behavior of the `List` operations in the Kubernetes API
-	if limit == 0 {
-		limit = -1
-		offset = -1
-	}
 
 	selector := r.session.SQL().
 		Select("workflow").
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(namespace)).
-		And(nameEqual(name)).
-		And(namePrefixClause(namePrefix)).
-		And(startedAtFromClause(minStartedAt)).
-		And(startedAtToClause(maxStartedAt))
+		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
 	if err != nil {
 		return nil, err
 	}
-	err = selector.
-		OrderBy("-startedat").
-		Limit(limit).
-		Offset(offset).
-		All(&archivedWfs)
+
+	err = selector.All(&archivedWfs)
 	if err != nil {
 		return nil, err
 	}
@@ -189,20 +173,15 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 	return wfs, nil
 }
 
-func (r *workflowArchive) CountWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements) (int64, error) {
+func (r *workflowArchive) CountWorkflows(options sutils.ListOptions) (int64, error) {
 	total := &archivedWorkflowCount{}
 
 	selector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(namespace)).
-		And(nameEqual(name)).
-		And(namePrefixClause(namePrefix)).
-		And(startedAtFromClause(minStartedAt)).
-		And(startedAtToClause(maxStartedAt))
+		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, true)
 	if err != nil {
 		return 0, err
 	}
@@ -224,40 +203,37 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
 
 func startedAtFromClause(from time.Time) db.Cond {
 	if !from.IsZero() {
-		return db.Cond{"startedat > ": from}
+		return db.Cond{"startedat >": from}
 	}
 	return db.Cond{}
 }
 
 func startedAtToClause(to time.Time) db.Cond {
 	if !to.IsZero() {
-		return db.Cond{"startedat < ": to}
+		return db.Cond{"startedat <": to}
 	}
 	return db.Cond{}
 }
 
 func namespaceEqual(namespace string) db.Cond {
-	if namespace == "" {
-		return db.Cond{}
-	} else {
+	if namespace != "" {
 		return db.Cond{"namespace": namespace}
 	}
+	return db.Cond{}
 }
 
 func nameEqual(name string) db.Cond {
-	if name == "" {
-		return db.Cond{}
-	} else {
+	if name != "" {
 		return db.Cond{"name": name}
 	}
+	return db.Cond{}
 }
 
 func namePrefixClause(namePrefix string) db.Cond {
-	if namePrefix == "" {
-		return db.Cond{}
-	} else {
-		return db.Cond{"name LIKE ": namePrefix + "%"}
+	if namePrefix != "" {
+		return db.Cond{"name like": namePrefix + "%"}
 	}
+	return db.Cond{}
 }
 
 func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error) {
