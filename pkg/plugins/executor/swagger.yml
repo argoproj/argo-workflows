@@ -1002,6 +1002,8 @@ definitions:
     title: ContainerPort represents a network port in a single container.
     type: object
   ContainerSetRetryStrategy:
+    description: ContainerSetRetryStrategy provides controls on how to retry a container
+      set
     properties:
       duration:
         description: |-

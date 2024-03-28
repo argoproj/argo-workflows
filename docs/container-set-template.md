@@ -116,3 +116,51 @@ Example B: Lopsided requests, e.g. `a -> b` where `a` is cheap and `b` is expens
 Can you see the problem here? `a` only has small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.
 
 Solution: do not use container set when you have lopsided requests.
+
+## `retryStrategy` usage
+
+> v3.3 and after
+
+You can set a `retryStrategy` to apply to all containers of a container set.
+
+This currently works differently from [retries](retries.md) for other template types.
+You can only set the `duration` between each retry and the total number of `retries`.
+
+See an example below:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: containerset-with-retrystrategy
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflow creates a container set with a retryStrategy.
+spec:
+  entrypoint: containerset-retrystrategy-example
+  templates:
+    - name: containerset-retrystrategy-example
+      containerSet:
+        retryStrategy:
+          retries: "10" # if fails, retry at most ten times
+          duration: 30s # retry for at most 30s
+        containers:
+          # this container completes successfully, it won't retried.
+          - name: success
+            image: python:alpine3.6
+            command:
+              - python
+              - -c
+            args:
+              - |
+                print("hi")
+          # if fails, it will retry at most ten times.    
+          - name: fail-retry
+            image: python:alpine3.6
+            command: ["python", -c]
+            args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
+```
+
+!!! Note
+    A container set will not be retried if a container's `command` cannot be located.
+    As it will fail each time, the retry logic is short-circuited.

@@ -12,16 +12,18 @@ import (
 type ContainerSetTemplate struct {
 	Containers   []ContainerNode      `json:"containers" protobuf:"bytes,4,rep,name=containers"`
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
-	// RetryStrategy describes how to retry a container nodes in the container set if it fails.
-	// Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
+	// RetryStrategy describes how to retry container nodes if the container set fails.
+	// Note that the container set will not be retried if a container's `command` cannot be located, as it will fail each time.
 	RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
 }
 
+// ContainerSetRetryStrategy provides controls on how to retry a container set
 type ContainerSetRetryStrategy struct {
 	// Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
 	// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
-	// Nbr of retries
+	// Retries is the maximum number of retry attempts for each container. It does not include the
+	// first, original attempt; the maximum number of total attempts will be `retries + 1`.
 	Retries *intstr.IntOrString `json:"retries" protobuf:"bytes,2,rep,name=retries"`
 }
 
