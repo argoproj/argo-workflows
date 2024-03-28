@@ -365,7 +365,7 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
-			wf.Spec.Suspend = pointer.BoolPtr(true)
+			wf.Spec.Suspend = pointer.Bool(true)
 			_, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 			if apierr.IsConflict(err) {
 				return false, nil

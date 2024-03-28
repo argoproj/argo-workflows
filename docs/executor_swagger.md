@@ -2903,7 +2903,7 @@ and allows a Source for provider-specific attributes
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
 +optional |  |
 | dataSource | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
-| dataSourceRef | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
+| dataSourceRef | [TypedObjectReference](#typed-object-reference)| `TypedObjectReference` |  | |  |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | selector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
 | storageClassName | string| `string` |  | | storageClassName is the name of the StorageClass required by the claim.
@@ -3261,8 +3261,11 @@ Note that this field cannot be set when spec.os.name is windows.
 | seLinuxOptions | [SELinuxOptions](#s-e-linux-options)| `SELinuxOptions` |  | |  |  |
 | seccompProfile | [SeccompProfile](#seccomp-profile)| `SeccompProfile` |  | |  |  |
 | supplementalGroups | []int64 (formatted integer)| `[]int64` |  | | A list of groups applied to the first process run in each container, in addition
-to the container's primary GID.  If unspecified, no groups will be added to
-any container.
+to the container's primary GID, the fsGroup (if specified), and group memberships
+defined in the container image for the uid of the container process. If unspecified,
+no additional groups are added to any container. Note that group memberships
+defined in the container image for the uid of the container process are still effective,
+even if they are not included in this list.
 Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | sysctls | [][Sysctl](#sysctl)| `[]*Sysctl` |  | | Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
@@ -3637,6 +3640,23 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 
 
+### <span id="resource-claim"></span> ResourceClaim
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| name | string| `string` |  | | Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container. |  |
+
+
+
 ### <span id="resource-field-selector"></span> ResourceFieldSelector
 
 
@@ -3677,6 +3697,18 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| claims | [][ResourceClaim](#resource-claim)| `[]*ResourceClaim` |  | | Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
++listType=map
++listMapKey=name
++featureGate=DynamicResourceAllocation
++optional |  |
 | limits | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 | requests | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 
@@ -4674,6 +4706,31 @@ For any other third-party types, APIGroup is required.
 +optional |  |
 | kind | string| `string` |  | | Kind is the type of resource being referenced |  |
 | name | string| `string` |  | | Name is the name of resource being referenced |  |
+
+
+
+### <span id="typed-object-reference"></span> TypedObjectReference
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| apiGroup | string| `string` |  | | APIGroup is the group for the resource being referenced.
+If APIGroup is not specified, the specified Kind must be in the core API group.
+For any other third-party types, APIGroup is required.
++optional |  |
+| kind | string| `string` |  | | Kind is the type of resource being referenced |  |
+| name | string| `string` |  | | Name is the name of resource being referenced |  |
+| namespace | string| `string` |  | | Namespace is the namespace of resource being referenced
+Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.
+(Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
++featureGate=CrossNamespaceVolumeDataSource
++optional |  |
 
 
 
