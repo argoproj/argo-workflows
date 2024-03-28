@@ -544,7 +544,7 @@ func TestSaveLogs(t *testing.T) {
 	t.Run("Simple Pod node", func(t *testing.T) {
 		templateWithArchiveLogs := wfv1.Template{
 			ArchiveLocation: &wfv1.ArtifactLocation{
-				ArchiveLogs: pointer.BoolPtr(true),
+				ArchiveLogs: pointer.Bool(true),
 			},
 		}
 		we := WorkflowExecutor{

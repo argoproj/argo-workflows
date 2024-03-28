@@ -6170,7 +6170,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 		Parameters: []wfv1.Parameter{
 			{Name: "hello", Value: wfv1.AnyStringPtr("foobar")},
 		},
-		ExitCode: pointer.StringPtr("0"),
+		ExitCode: pointer.String("0"),
 	}
 
 	ctx := context.Background()

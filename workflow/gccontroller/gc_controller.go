@@ -57,7 +57,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 		retentionPolicy: retentionPolicy,
 	}
 
-	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+	_, err := wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un, ok := obj.(*unstructured.Unstructured)
 			return ok && common.IsDone(un)
@@ -69,8 +69,11 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 			},
 		},
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+	_, err = wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un, ok := obj.(*unstructured.Unstructured)
 			return ok && common.IsDone(un)
@@ -84,6 +87,9 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 			},
 		},
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
 	return controller
 }
 

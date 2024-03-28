@@ -57,7 +57,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 				Name: "foo",
 			},
 			Spec: v1.PodSpec{
-				ShareProcessNamespace: pointer.BoolPtr(true),
+				ShareProcessNamespace: pointer.Bool(true),
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{

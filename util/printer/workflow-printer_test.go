@@ -22,7 +22,7 @@ func TestPrintWorkflows(t *testing.T) {
 				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
 					{Name: "my-param", Value: wfv1.AnyStringPtr("my-value")},
 				}},
-				Priority: pointer.Int32Ptr(2),
+				Priority: pointer.Int32(2),
 				Templates: []wfv1.Template{
 					{Name: "t0", Container: &corev1.Container{}},
 				},

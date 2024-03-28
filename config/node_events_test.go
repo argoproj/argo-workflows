@@ -9,6 +9,6 @@ import (
 
 func TestNodeEvents_IsEnabled(t *testing.T) {
 	assert.True(t, NodeEvents{}.IsEnabled())
-	assert.False(t, NodeEvents{Enabled: pointer.BoolPtr(false)}.IsEnabled())
-	assert.True(t, NodeEvents{Enabled: pointer.BoolPtr(true)}.IsEnabled())
+	assert.False(t, NodeEvents{Enabled: pointer.Bool(false)}.IsEnabled())
+	assert.True(t, NodeEvents{Enabled: pointer.Bool(true)}.IsEnabled())
 }

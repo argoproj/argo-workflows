@@ -1352,7 +1352,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 				}
 				// proceed to mark node as running and daemoned
 				new.Phase = wfv1.NodeRunning
-				new.Daemoned = pointer.BoolPtr(true)
+				new.Daemoned = pointer.Bool(true)
 				if !old.IsDaemoned() {
 					woc.log.WithField("nodeId", old.ID).Info("Node became daemoned")
 				}
@@ -1442,7 +1442,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		if new.Outputs == nil {
 			new.Outputs = &wfv1.Outputs{}
 		}
-		new.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(*exitCode))
+		new.Outputs.ExitCode = pointer.String(fmt.Sprint(*exitCode))
 	}
 
 	for _, c := range pod.Status.InitContainerStatuses {
@@ -1491,7 +1491,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 func getExitCode(pod *apiv1.Pod) *int32 {
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.MainContainerName && c.State.Terminated != nil {
-			return pointer.Int32Ptr(c.State.Terminated.ExitCode)
+			return pointer.Int32(c.State.Terminated.ExitCode)
 		}
 	}
 	return nil

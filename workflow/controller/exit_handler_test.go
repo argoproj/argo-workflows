@@ -356,7 +356,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: pointer.StringPtr("ok"), Parameters: []wfv1.Parameter{{}}}))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: pointer.String("ok"), Parameters: []wfv1.Parameter{{}}}))
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)

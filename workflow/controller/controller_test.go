@@ -318,11 +318,11 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
-		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+		wfc.taskResultInformer, _ = wfc.newWorkflowTaskResultInformer()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
-		wfc.addWorkflowInformerHandlers(ctx)
-		wfc.podInformer = wfc.newPodInformer(ctx)
-		wfc.configMapInformer = wfc.newConfigMapInformer()
+		_ = wfc.addWorkflowInformerHandlers(ctx)
+		wfc.podInformer, _ = wfc.newPodInformer(ctx)
+		wfc.configMapInformer, _ = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
@@ -356,7 +356,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
 	cancel, controller := newController(func(controller *WorkflowController) {
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
-			Spec: wfv1.WorkflowSpec{HostNetwork: pointer.BoolPtr(true)},
+			Spec: wfv1.WorkflowSpec{HostNetwork: pointer.Bool(true)},
 		}
 	})
 	return cancel, controller
@@ -374,13 +374,13 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 				},
 			},
 			Spec: wfv1.WorkflowSpec{
-				HostNetwork:        pointer.BoolPtr(true),
+				HostNetwork:        pointer.Bool(true),
 				Entrypoint:         "good_entrypoint",
 				ServiceAccountName: "my_service_account",
 				TTLStrategy: &wfv1.TTLStrategy{
-					SecondsAfterCompletion: pointer.Int32Ptr(10),
-					SecondsAfterSuccess:    pointer.Int32Ptr(10),
-					SecondsAfterFailure:    pointer.Int32Ptr(10),
+					SecondsAfterCompletion: pointer.Int32(10),
+					SecondsAfterSuccess:    pointer.Int32(10),
+					SecondsAfterFailure:    pointer.Int32(10),
 				},
 			},
 		}

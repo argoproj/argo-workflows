@@ -2479,7 +2479,7 @@ definitions:
       dataSource:
         $ref: '#/definitions/TypedLocalObjectReference'
       dataSourceRef:
-        $ref: '#/definitions/TypedLocalObjectReference'
+        $ref: '#/definitions/TypedObjectReference'
       resources:
         $ref: '#/definitions/ResourceRequirements'
       selector:
@@ -2855,8 +2855,11 @@ definitions:
       supplementalGroups:
         description: |-
           A list of groups applied to the first process run in each container, in addition
-          to the container's primary GID.  If unspecified, no groups will be added to
-          any container.
+          to the container's primary GID, the fsGroup (if specified), and group memberships
+          defined in the container image for the uid of the container process. If unspecified,
+          no additional groups are added to any container. Note that group memberships
+          defined in the container image for the uid of the container process are still effective,
+          even if they are not included in this list.
           Note that this field cannot be set when spec.os.name is windows.
           +optional
         items:
@@ -3212,6 +3215,16 @@ definitions:
         description: Data is the string contents of the artifact
         type: string
     type: object
+  ResourceClaim:
+    properties:
+      name:
+        description: |-
+          Name must match the name of one entry in pod.spec.resourceClaims of
+          the Pod where this field is used. It makes that resource available
+          inside a container.
+        type: string
+    title: ResourceClaim references one entry in PodSpec.ResourceClaims.
+    type: object
   ResourceFieldSelector:
     description: |-
       ResourceFieldSelector represents container resources (cpu, memory) and their output format
@@ -3235,6 +3248,23 @@ definitions:
     type: object
   ResourceRequirements:
     properties:
+      claims:
+        description: |-
+          Claims lists the names of resources, defined in spec.resourceClaims,
+          that are used by this container.
+
+          This is an alpha field and requires enabling the
+          DynamicResourceAllocation feature gate.
+
+          This field is immutable. It can only be set for containers.
+
+          +listType=map
+          +listMapKey=name
+          +featureGate=DynamicResourceAllocation
+          +optional
+        items:
+          $ref: '#/definitions/ResourceClaim'
+        type: array
       limits:
         $ref: '#/definitions/ResourceList'
       requests:
@@ -4223,6 +4253,30 @@ definitions:
         type: string
       name:
         description: Name is the name of resource being referenced
+        type: string
+    type: object
+  TypedObjectReference:
+    properties:
+      apiGroup:
+        description: |-
+          APIGroup is the group for the resource being referenced.
+          If APIGroup is not specified, the specified Kind must be in the core API group.
+          For any other third-party types, APIGroup is required.
+          +optional
+        type: string
+      kind:
+        description: Kind is the type of resource being referenced
+        type: string
+      name:
+        description: Name is the name of resource being referenced
+        type: string
+      namespace:
+        description: |-
+          Namespace is the namespace of resource being referenced
+          Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.
+          (Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
+          +featureGate=CrossNamespaceVolumeDataSource
+          +optional
         type: string
     type: object
   UID:

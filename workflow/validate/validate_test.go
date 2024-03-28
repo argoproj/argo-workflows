@@ -1711,7 +1711,7 @@ spec:
       image: docker/whalesay
 `)
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-	assert.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid pod selector operator")
+	assert.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid label selector operator")
 }
 
 var allowPlaceholderInVariableTakenFromInputs = `

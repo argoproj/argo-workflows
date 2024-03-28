@@ -317,7 +317,7 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		wf1 := woc.wf.DeepCopy()
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
-		wf1.Spec.Suspend = pointer.BoolPtr(true)
+		wf1.Spec.Suspend = pointer.Bool(true)
 		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
 		assert.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Suspend)

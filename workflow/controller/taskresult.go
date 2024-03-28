@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
-func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndexInformer {
+func (wfc *WorkflowController) newWorkflowTaskResultInformer() (cache.SharedIndexInformer, error) {
 	labelSelector := labels.NewSelector().
 		Add(*workflowReq).
 		Add(wfc.instanceIDReq()).
@@ -36,7 +36,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 			options.ResourceVersion = ""
 		},
 	)
-	informer.AddEventHandler(
+	_, err := informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(new interface{}) {
 				result := new.(*wfv1.WorkflowTaskResult)
@@ -49,7 +49,10 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
 			},
 		})
-	return informer
+	if err != nil {
+		return nil, err
+	}
+	return informer, nil
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
