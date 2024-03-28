@@ -55,4 +55,4 @@ Otherwise, we typically release every two weeks:
 
 Argo versions may be compatible with newer and older versions than what it is listed but only three minor versions are supported per Argo release unless otherwise noted.
 
-The main branch of `Argo Workflows` is currently tested on `Kubernetes` 1.27.
+The main branch of `Argo Workflows` is currently tested on `Kubernetes` 1.29.
