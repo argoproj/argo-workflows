@@ -443,7 +443,7 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay"]
+        args: ["/bin/sleep 1; /argosay"]
     - name: argosay-sleep-2seconds
       container:
         image: argoproj/argosay:v2
