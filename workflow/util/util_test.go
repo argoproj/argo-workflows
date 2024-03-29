@@ -2129,21 +2129,8 @@ status:
   artifactGCStatus:
     notSpecified: true
   artifactRepositoryRef:
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        accessKeySecret:
-          key: accesskey
-          name: my-minio-cred
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        secretKeySecret:
-          key: secretkey
-          name: my-minio-cred
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
+    artifactRepository: {}
+    default: true
   conditions:
   - status: "False"
     type: PodRunning
@@ -2185,10 +2172,6 @@ status:
       message: Error (exit code 1)
       name: dag-to-retry-tb7r7.failure
       outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: dag-to-retry-tb7r7/dag-to-retry-tb7r7-step-1325528633/main.log
         exitCode: "1"
       phase: Failed
       progress: 0/1
@@ -2214,10 +2197,6 @@ status:
       message: Error (exit code 2)
       name: dag-to-retry-tb7r7.continue
       outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: dag-to-retry-tb7r7/dag-to-retry-tb7r7-step-1670055836/main.log
         exitCode: "2"
       phase: Failed
       progress: 0/1
@@ -2243,10 +2222,6 @@ status:
           value: "0"
       name: dag-to-retry-tb7r7.success
       outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: dag-to-retry-tb7r7/dag-to-retry-tb7r7-step-1819567448/main.log
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
@@ -2269,10 +2244,6 @@ status:
           value: "0"
       name: dag-to-retry-tb7r7.task-after-continue
       outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: dag-to-retry-tb7r7/dag-to-retry-tb7r7-step-1987291523/main.log
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
@@ -2370,9 +2341,6 @@ status:
     activeDeadlineSeconds: 300
     arguments: {}
     entrypoint: dag
-    podMetadata:
-      annotations:
-        sidecar.istio.io/inject: "false"
     podSpecPatch: |
       terminationGracePeriodSeconds: 3
     templates:

@@ -1582,6 +1582,7 @@ func (s *ArgoServerSuite) TestRetryWorkflowWithContinueOn() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
+			assert.Equal(t, 6, len(status.Nodes))
 		})
 
 	s.Run("Retry", func() {
@@ -1603,7 +1604,7 @@ func (s *ArgoServerSuite) TestRetryWorkflowWithContinueOn() {
 			assert.Equal(t, 6, len(status.Nodes))
 		}).
 		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
-			return strings.Contains(status.Name, "dag-to-retry.success")
+			return strings.Contains(status.Name, "retry-workflow-with-continueon.success")
 		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
 			assert.Equal(t, 2, len(status.Children))
 		})
