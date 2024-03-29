@@ -145,7 +145,7 @@ spec:
           retries: "10" # if fails, retry at most ten times
           duration: 30s # retry for at most 30s
         containers:
-          # this container completes successfully, it won't retried.
+          # this container completes successfully, so it won't be retried.
           - name: success
             image: python:alpine3.6
             command:
