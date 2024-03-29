@@ -95,6 +95,7 @@ class IoArgoprojEventsV1alpha1Trigger(ModelNormal):
         """
         lazy_import()
         return {
+            'at_least_once': (bool,),  # noqa: E501
             'parameters': ([IoArgoprojEventsV1alpha1TriggerParameter],),  # noqa: E501
             'policy': (IoArgoprojEventsV1alpha1TriggerPolicy,),  # noqa: E501
             'rate_limit': (IoArgoprojEventsV1alpha1RateLimit,),  # noqa: E501
@@ -108,6 +109,7 @@ class IoArgoprojEventsV1alpha1Trigger(ModelNormal):
 
 
     attribute_map = {
+        'at_least_once': 'atLeastOnce',  # noqa: E501
         'parameters': 'parameters',  # noqa: E501
         'policy': 'policy',  # noqa: E501
         'rate_limit': 'rateLimit',  # noqa: E501
@@ -156,6 +158,7 @@ class IoArgoprojEventsV1alpha1Trigger(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            at_least_once (bool): [optional]  # noqa: E501
             parameters ([IoArgoprojEventsV1alpha1TriggerParameter]): [optional]  # noqa: E501
             policy (IoArgoprojEventsV1alpha1TriggerPolicy): [optional]  # noqa: E501
             rate_limit (IoArgoprojEventsV1alpha1RateLimit): [optional]  # noqa: E501
@@ -242,6 +245,7 @@ class IoArgoprojEventsV1alpha1Trigger(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            at_least_once (bool): [optional]  # noqa: E501
             parameters ([IoArgoprojEventsV1alpha1TriggerParameter]): [optional]  # noqa: E501
             policy (IoArgoprojEventsV1alpha1TriggerPolicy): [optional]  # noqa: E501
             rate_limit (IoArgoprojEventsV1alpha1RateLimit): [optional]  # noqa: E501

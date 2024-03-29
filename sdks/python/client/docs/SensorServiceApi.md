@@ -160,7 +160,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 error_on_failed_round=True,
                 event_bus_name="event_bus_name_example",
+                logging_fields={
+                    "key": "key_example",
+                },
                 replicas=1,
+                revision_history_limit=1,
                 template=IoArgoprojEventsV1alpha1Template(
                     affinity=Affinity(
                         node_affinity=NodeAffinity(
@@ -1073,6 +1077,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ),
                 triggers=[
                     IoArgoprojEventsV1alpha1Trigger(
+                        at_least_once=True,
                         parameters=[
                             IoArgoprojEventsV1alpha1TriggerParameter(
                                 dest="dest_example",
@@ -1083,6 +1088,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     data_key="data_key_example",
                                     data_template="data_template_example",
                                     dependency_name="dependency_name_example",
+                                    use_raw_data=True,
                                     value="value_example",
                                 ),
                             ),
@@ -1148,6 +1154,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1207,6 +1214,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             key="key_example",
                                             name="name_example",
                                         ),
+                                        ca_certificate=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         endpoint="endpoint_example",
                                         events=[
                                             "events_example",
@@ -1250,6 +1262,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1264,6 +1277,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1289,6 +1303,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1303,6 +1318,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1317,6 +1333,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                            ),
+                            azure_service_bus=IoArgoprojEventsV1alpha1AzureServiceBusTrigger(
+                                connection_string=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                parameters=[
+                                    IoArgoprojEventsV1alpha1TriggerParameter(
+                                        dest="dest_example",
+                                        operation="operation_example",
+                                        src=IoArgoprojEventsV1alpha1TriggerParameterSource(
+                                            context_key="context_key_example",
+                                            context_template="context_template_example",
+                                            data_key="data_key_example",
+                                            data_template="data_template_example",
+                                            dependency_name="dependency_name_example",
+                                            use_raw_data=True,
+                                            value="value_example",
+                                        ),
+                                    ),
+                                ],
+                                payload=[
+                                    IoArgoprojEventsV1alpha1TriggerParameter(
+                                        dest="dest_example",
+                                        operation="operation_example",
+                                        src=IoArgoprojEventsV1alpha1TriggerParameterSource(
+                                            context_key="context_key_example",
+                                            context_template="context_template_example",
+                                            data_key="data_key_example",
+                                            data_template="data_template_example",
+                                            dependency_name="dependency_name_example",
+                                            use_raw_data=True,
+                                            value="value_example",
+                                        ),
+                                    ),
+                                ],
+                                queue_name="queue_name_example",
+                                subscription_name="subscription_name_example",
+                                tls=IoArgoprojEventsV1alpha1TLSConfig(
+                                    ca_cert_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_cert_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    insecure_skip_verify=True,
+                                ),
+                                topic_name="topic_name_example",
                             ),
                             conditions="conditions_example",
                             conditions_reset=[
@@ -1343,6 +1417,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1357,6 +1432,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1367,6 +1443,37 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 spec={
                                     "key": "key_example",
                                 },
+                            ),
+                            email=IoArgoprojEventsV1alpha1EmailTrigger(
+                                body="body_example",
+                                _from="_from_example",
+                                host="host_example",
+                                parameters=[
+                                    IoArgoprojEventsV1alpha1TriggerParameter(
+                                        dest="dest_example",
+                                        operation="operation_example",
+                                        src=IoArgoprojEventsV1alpha1TriggerParameterSource(
+                                            context_key="context_key_example",
+                                            context_template="context_template_example",
+                                            data_key="data_key_example",
+                                            data_template="data_template_example",
+                                            dependency_name="dependency_name_example",
+                                            use_raw_data=True,
+                                            value="value_example",
+                                        ),
+                                    ),
+                                ],
+                                port=1,
+                                smtp_password=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                subject="subject_example",
+                                to=[
+                                    "to_example",
+                                ],
+                                username="username_example",
                             ),
                             http=IoArgoprojEventsV1alpha1HTTPTrigger(
                                 basic_auth=IoArgoprojEventsV1alpha1BasicAuth(
@@ -1395,6 +1502,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1409,6 +1517,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1464,6 +1573,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1524,6 +1634,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             key="key_example",
                                             name="name_example",
                                         ),
+                                        ca_certificate=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         endpoint="endpoint_example",
                                         events=[
                                             "events_example",
@@ -1562,6 +1677,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1578,6 +1694,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1585,16 +1702,32 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 required_acks=1,
                                 sasl=IoArgoprojEventsV1alpha1SASLConfig(
                                     mechanism="mechanism_example",
-                                    password=SecretKeySelector(
+                                    password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
-                                    user=SecretKeySelector(
+                                    user_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
+                                ),
+                                schema_registry=IoArgoprojEventsV1alpha1SchemaRegistryConfig(
+                                    auth=IoArgoprojEventsV1alpha1BasicAuth(
+                                        password=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    schema_id=1,
+                                    url="url_example",
                                 ),
                                 tls=IoArgoprojEventsV1alpha1TLSConfig(
                                     ca_cert_secret=SecretKeySelector(
@@ -1633,6 +1766,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1647,6 +1781,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1691,6 +1826,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1705,6 +1841,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1712,6 +1849,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 version="version_example",
                             ),
                             pulsar=IoArgoprojEventsV1alpha1PulsarTrigger(
+                                auth_athenz_params={
+                                    "key": "key_example",
+                                },
+                                auth_athenz_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
                                 auth_token_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -1741,6 +1886,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1755,6 +1901,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -1788,6 +1935,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 url="url_example",
                             ),
                             slack=IoArgoprojEventsV1alpha1SlackTrigger(
+                                attachments="attachments_example",
+                                blocks="blocks_example",
                                 channel="channel_example",
                                 message="message_example",
                                 parameters=[
@@ -1800,14 +1949,23 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
                                 ],
+                                sender=IoArgoprojEventsV1alpha1SlackSender(
+                                    icon="icon_example",
+                                    username="username_example",
+                                ),
                                 slack_token=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
+                                ),
+                                thread=IoArgoprojEventsV1alpha1SlackThread(
+                                    broadcast_message_to_channel=True,
+                                    message_aggregation_key="message_aggregation_key_example",
                                 ),
                             ),
                         ),
@@ -2414,7 +2572,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 error_on_failed_round=True,
                 event_bus_name="event_bus_name_example",
+                logging_fields={
+                    "key": "key_example",
+                },
                 replicas=1,
+                revision_history_limit=1,
                 template=IoArgoprojEventsV1alpha1Template(
                     affinity=Affinity(
                         node_affinity=NodeAffinity(
@@ -3327,6 +3489,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ),
                 triggers=[
                     IoArgoprojEventsV1alpha1Trigger(
+                        at_least_once=True,
                         parameters=[
                             IoArgoprojEventsV1alpha1TriggerParameter(
                                 dest="dest_example",
@@ -3337,6 +3500,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     data_key="data_key_example",
                                     data_template="data_template_example",
                                     dependency_name="dependency_name_example",
+                                    use_raw_data=True,
                                     value="value_example",
                                 ),
                             ),
@@ -3402,6 +3566,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3461,6 +3626,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             key="key_example",
                                             name="name_example",
                                         ),
+                                        ca_certificate=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         endpoint="endpoint_example",
                                         events=[
                                             "events_example",
@@ -3504,6 +3674,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3518,6 +3689,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3543,6 +3715,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3557,6 +3730,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3571,6 +3745,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                            ),
+                            azure_service_bus=IoArgoprojEventsV1alpha1AzureServiceBusTrigger(
+                                connection_string=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                parameters=[
+                                    IoArgoprojEventsV1alpha1TriggerParameter(
+                                        dest="dest_example",
+                                        operation="operation_example",
+                                        src=IoArgoprojEventsV1alpha1TriggerParameterSource(
+                                            context_key="context_key_example",
+                                            context_template="context_template_example",
+                                            data_key="data_key_example",
+                                            data_template="data_template_example",
+                                            dependency_name="dependency_name_example",
+                                            use_raw_data=True,
+                                            value="value_example",
+                                        ),
+                                    ),
+                                ],
+                                payload=[
+                                    IoArgoprojEventsV1alpha1TriggerParameter(
+                                        dest="dest_example",
+                                        operation="operation_example",
+                                        src=IoArgoprojEventsV1alpha1TriggerParameterSource(
+                                            context_key="context_key_example",
+                                            context_template="context_template_example",
+                                            data_key="data_key_example",
+                                            data_template="data_template_example",
+                                            dependency_name="dependency_name_example",
+                                            use_raw_data=True,
+                                            value="value_example",
+                                        ),
+                                    ),
+                                ],
+                                queue_name="queue_name_example",
+                                subscription_name="subscription_name_example",
+                                tls=IoArgoprojEventsV1alpha1TLSConfig(
+                                    ca_cert_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_cert_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    insecure_skip_verify=True,
+                                ),
+                                topic_name="topic_name_example",
                             ),
                             conditions="conditions_example",
                             conditions_reset=[
@@ -3597,6 +3829,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3611,6 +3844,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3621,6 +3855,37 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 spec={
                                     "key": "key_example",
                                 },
+                            ),
+                            email=IoArgoprojEventsV1alpha1EmailTrigger(
+                                body="body_example",
+                                _from="_from_example",
+                                host="host_example",
+                                parameters=[
+                                    IoArgoprojEventsV1alpha1TriggerParameter(
+                                        dest="dest_example",
+                                        operation="operation_example",
+                                        src=IoArgoprojEventsV1alpha1TriggerParameterSource(
+                                            context_key="context_key_example",
+                                            context_template="context_template_example",
+                                            data_key="data_key_example",
+                                            data_template="data_template_example",
+                                            dependency_name="dependency_name_example",
+                                            use_raw_data=True,
+                                            value="value_example",
+                                        ),
+                                    ),
+                                ],
+                                port=1,
+                                smtp_password=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                subject="subject_example",
+                                to=[
+                                    "to_example",
+                                ],
+                                username="username_example",
                             ),
                             http=IoArgoprojEventsV1alpha1HTTPTrigger(
                                 basic_auth=IoArgoprojEventsV1alpha1BasicAuth(
@@ -3649,6 +3914,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3663,6 +3929,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3718,6 +3985,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3778,6 +4046,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             key="key_example",
                                             name="name_example",
                                         ),
+                                        ca_certificate=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                         endpoint="endpoint_example",
                                         events=[
                                             "events_example",
@@ -3816,6 +4089,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3832,6 +4106,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3839,16 +4114,32 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 required_acks=1,
                                 sasl=IoArgoprojEventsV1alpha1SASLConfig(
                                     mechanism="mechanism_example",
-                                    password=SecretKeySelector(
+                                    password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
-                                    user=SecretKeySelector(
+                                    user_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
+                                ),
+                                schema_registry=IoArgoprojEventsV1alpha1SchemaRegistryConfig(
+                                    auth=IoArgoprojEventsV1alpha1BasicAuth(
+                                        password=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    schema_id=1,
+                                    url="url_example",
                                 ),
                                 tls=IoArgoprojEventsV1alpha1TLSConfig(
                                     ca_cert_secret=SecretKeySelector(
@@ -3887,6 +4178,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3901,6 +4193,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3945,6 +4238,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3959,6 +4253,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -3966,6 +4261,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 version="version_example",
                             ),
                             pulsar=IoArgoprojEventsV1alpha1PulsarTrigger(
+                                auth_athenz_params={
+                                    "key": "key_example",
+                                },
+                                auth_athenz_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
                                 auth_token_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -3995,6 +4298,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -4009,6 +4313,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
@@ -4042,6 +4347,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 url="url_example",
                             ),
                             slack=IoArgoprojEventsV1alpha1SlackTrigger(
+                                attachments="attachments_example",
+                                blocks="blocks_example",
                                 channel="channel_example",
                                 message="message_example",
                                 parameters=[
@@ -4054,14 +4361,23 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             data_key="data_key_example",
                                             data_template="data_template_example",
                                             dependency_name="dependency_name_example",
+                                            use_raw_data=True,
                                             value="value_example",
                                         ),
                                     ),
                                 ],
+                                sender=IoArgoprojEventsV1alpha1SlackSender(
+                                    icon="icon_example",
+                                    username="username_example",
+                                ),
                                 slack_token=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
+                                ),
+                                thread=IoArgoprojEventsV1alpha1SlackThread(
+                                    broadcast_message_to_channel=True,
+                                    message_aggregation_key="message_aggregation_key_example",
                                 ),
                             ),
                         ),
