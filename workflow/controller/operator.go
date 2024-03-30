@@ -1764,6 +1764,8 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 // Check if we have a retry node which wasn't memoized and return that if we do
 func (woc *wfOperationCtx) possiblyGetRetryChildNode(node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	if node.Type == wfv1.NodeTypeRetry && !(node.MemoizationStatus != nil && node.MemoizationStatus.Hit) {
+		// If a retry node has hooks, the hook nodes will also become its children,
+		// so we need to filter out the hook nodes when finding the last child node of the retry node.
 		for i := len(node.Children) - 1; i >= 0; i-- {
 			childNode := getChildNodeIndex(node, woc.wf.Status.Nodes, i)
 			if childNode == nil {
