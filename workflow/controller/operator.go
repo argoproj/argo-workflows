@@ -3868,11 +3868,8 @@ func (woc *wfOperationCtx) shouldRetry() bool {
 		return false
 	}
 	if woc.IsRetried() {
-		if woc.controller.podCleanupQueue.Len() == 0 {
-			woc.wf.Status.RetryStatus = pointer.BoolPtr(true)
-			woc.updated = true
-			return false
-		}
+		// TODO make sure all pod in podsToDelete deleted, avoid "create pod exists"
+		return false
 	}
 	return true
 }
