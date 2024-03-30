@@ -32,11 +32,9 @@ import (
 	"k8s.io/client-go/dynamic"
 	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
-	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -151,12 +149,6 @@ type WorkflowController struct {
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
 	recentCompletions recentCompletions
-}
-
-type PatchOperation struct {
-	Operation string      `json:"op"`
-	Path      string      `json:"path"`
-	Value     interface{} `json:"value,omitempty"`
 }
 
 const (
@@ -368,6 +360,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.runCronController(ctx, cronWorkflowWorkers)
 	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
+	go wait.Until(wfc.syncPodFinalizer, 15*time.Second, ctx.Done())
 
 	go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
 
@@ -542,6 +535,75 @@ func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
 	}
 }
 
+func (wfc *WorkflowController) podHasStatusFinalizer(pod *apiv1.Pod) bool {
+	for _, f := range pod.ObjectMeta.Finalizers {
+		if f == common.FinalizerPodStatus {
+			return true
+		}
+	}
+	return false
+}
+
+func (wfc *WorkflowController) getPodCleanupPatch(pod *apiv1.Pod, labelPodCompleted bool) ([]byte, error) {
+	needPatch := false
+	metadata := map[string]interface{}{}
+	if labelPodCompleted {
+		if pod.Labels != nil || pod.Labels[common.LabelKeyCompleted] != "true" {
+			metadata["labels"] = map[string]string{common.LabelKeyCompleted: "true"}
+			needPatch = true
+		}
+	}
+	finalizerEnabled := os.Getenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") == "true"
+	if finalizerEnabled {
+		if wfc.podHasStatusFinalizer(pod) {
+			finalizers := make([]string, 0)
+			for _, f := range pod.ObjectMeta.Finalizers {
+				if f != common.FinalizerPodStatus {
+					finalizers = append(finalizers, f)
+				}
+			}
+			metadata["finalizers"] = finalizers
+			metadata["resourceVersion"] = pod.ObjectMeta.ResourceVersion
+			needPatch = true
+		}
+	}
+	if !needPatch {
+		return nil, nil
+	}
+	patch := map[string]interface{}{
+		"metadata": metadata,
+	}
+	return json.Marshal(patch)
+}
+
+func (wfc *WorkflowController) patchPodForCleanup(ctx context.Context, namespace, podName string, labelPodCompleted bool) error {
+	pod, err := wfc.getPod(namespace, podName)
+	// err is always nil in all kind of caches for now
+	if err != nil {
+		return err
+	}
+	// if pod is nil, it must have been deleted
+	if pod != nil {
+		patch, err := wfc.getPodCleanupPatch(pod, labelPodCompleted)
+		if err != nil {
+			return err
+		}
+		if patch != nil {
+			// merge patch is idempotent
+			if _, err := wfc.kubeclientset.CoreV1().Pods(namespace).Patch(
+				ctx,
+				podName,
+				types.MergePatchType,
+				patch,
+				metav1.PatchOptions{},
+			); err != nil && !apierr.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // all pods will ultimately be cleaned up by either deleting them, or labelling them
 func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bool {
 	key, quit := wfc.podCleanupQueue.Get()
@@ -558,9 +620,10 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
+		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
 		case terminateContainers:
-			pod, err := wfc.getPodFromCache(namespace, podName)
+			pod, err := wfc.getPod(namespace, podName)
 			if err == nil && pod != nil && pod.Status.Phase == apiv1.PodPending {
 				wfc.queuePodForCleanup(namespace, podName, deletePod)
 			} else if terminationGracePeriod, err := wfc.signalContainers(ctx, namespace, podName, syscall.SIGTERM); err != nil {
@@ -573,15 +636,14 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case labelPodCompleted:
-			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
-			if err := wfc.enablePodForDeletion(ctx, pods, namespace, podName, true); err != nil {
+			if err := wfc.patchPodForCleanup(ctx, namespace, podName, true); err != nil {
 				return err
 			}
 		case deletePod:
-			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
-			if err := wfc.enablePodForDeletion(ctx, pods, namespace, podName, false); err != nil {
+			if err := wfc.patchPodForCleanup(ctx, namespace, podName, false); err != nil {
 				return err
 			}
+
 			propagation := metav1.DeletePropagationBackground
 			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
 				PropagationPolicy:  &propagation,
@@ -590,27 +652,23 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
+		case removeFinalizer:
+			if err := wfc.patchPodForCleanup(ctx, namespace, podName, false); err != nil {
+				return err
+			}
 		}
 		return nil
 	}()
 	if err != nil {
 		logCtx.WithError(err).Warn("failed to clean-up pod")
-		if errorsutil.IsTransientErr(err) {
+		if errorsutil.IsTransientErr(err) || apierr.IsConflict(err) {
 			wfc.podCleanupQueue.AddRateLimited(key)
 		}
 	}
 	return true
 }
 
-func (wfc *WorkflowController) getPodFromAPI(ctx context.Context, namespace string, podName string) (*apiv1.Pod, error) {
-	pod, err := wfc.kubeclientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return pod, nil
-}
-
-func (wfc *WorkflowController) getPodFromCache(namespace string, podName string) (*apiv1.Pod, error) {
+func (wfc *WorkflowController) getPod(namespace string, podName string) (*apiv1.Pod, error) {
 	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
 		return nil, err
@@ -625,46 +683,8 @@ func (wfc *WorkflowController) getPodFromCache(namespace string, podName string)
 	return pod, nil
 }
 
-func (wfc *WorkflowController) enablePodForDeletion(ctx context.Context, pods typedv1.PodInterface, namespace string, podName string, isCompleted bool) error {
-	// Get current Pod from K8S and update it to remove finalizer, and if the Pod was completed, set the Label
-	// In the case that the Pod changed in between Get and Update, we'll get a conflict error and can try again
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		currentPod, err := wfc.getPodFromAPI(ctx, namespace, podName)
-		if err != nil {
-			return err
-		}
-		updatedPod := currentPod.DeepCopy()
-
-		if isCompleted {
-			if updatedPod.Labels == nil {
-				updatedPod.Labels = make(map[string]string)
-			}
-			updatedPod.Labels[common.LabelKeyCompleted] = "true"
-		}
-
-		updatedPod.Finalizers = removeFinalizer(updatedPod.Finalizers, common.FinalizerPodStatus)
-
-		_, err = pods.Update(ctx, updatedPod, metav1.UpdateOptions{})
-		return err
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func removeFinalizer(finalizers []string, targetFinalizer string) []string {
-	var updatedFinalizers []string
-	for _, finalizer := range finalizers {
-		if finalizer != targetFinalizer {
-			updatedFinalizers = append(updatedFinalizers, finalizer)
-		}
-	}
-	return updatedFinalizers
-}
-
 func (wfc *WorkflowController) signalContainers(ctx context.Context, namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
-	pod, err := wfc.getPodFromCache(namespace, podName)
+	pod, err := wfc.getPod(namespace, podName)
 	if pod == nil || err != nil {
 		return 0, err
 	}
@@ -1064,21 +1084,20 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				DeleteFunc: func(obj interface{}) {
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
-
-					// Remove finalizers from Pods if they exist before deletion
-					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
-					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
-					})
+					wf := obj.(*unstructured.Unstructured)
+					wfName := types.NamespacedName{Namespace: wf.GetNamespace(), Name: wf.GetName()}.String()
+					pods, err := wfc.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, wfName)
 					if err != nil {
-						log.WithError(err).Error("Failed to list pods")
-					}
-					for _, p := range podList.Items {
-						if err := wfc.enablePodForDeletion(ctx, pods, p.Namespace, p.Name, false); err != nil {
-							log.WithError(err).Error("Failed to enable pod for deletion")
+						log.Errorf("get workflow pods failed during handling workflow %s deletion, pods"+
+							" will be cleaned up (remove finalizer) in a cron", wfName)
+					} else {
+						for _, p := range pods {
+							pod := p.(*apiv1.Pod)
+							if wfc.podHasStatusFinalizer(pod) {
+								wfc.queuePodForCleanup(pod.GetNamespace(), pod.GetName(), removeFinalizer)
+							}
 						}
 					}
-
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
@@ -1456,6 +1475,45 @@ func (wfc *WorkflowController) syncPodPhaseMetrics() {
 			return
 		}
 		wfc.metrics.SetPodPhaseGauge(phase, len(objs))
+	}
+}
+
+func (wfc *WorkflowController) syncPodFinalizer() {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	if os.Getenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") != "true" {
+		return
+	}
+
+	timeout, _ := time.ParseDuration("10m")
+	if timeoutEnv, ok := os.LookupEnv("ARGO_POD_STATUS_CAPTURE_TIMEOUT"); ok {
+		if t, err := time.ParseDuration(timeoutEnv); err != nil {
+			timeout = t
+		}
+	}
+
+	objs := wfc.podInformer.GetStore().List()
+	now := metav1.Now()
+
+	for _, obj := range objs {
+		pod := obj.(*apiv1.Pod)
+		// skipping if it is not a workflow pod
+		if pod.Labels == nil || pod.Labels[common.LabelKeyWorkflow] == "" {
+			continue
+		}
+		// remove finalizer anyway if it is finished for a configured timeout time
+		if (pod.Status.Phase == apiv1.PodSucceeded || pod.Status.Phase == apiv1.PodFailed) && wfc.podHasStatusFinalizer(pod) {
+			if getLatestFinishedAt(pod).Add(timeout).Before(now.Time) {
+				wfc.queuePodForCleanup(pod.Namespace, pod.Name, removeFinalizer)
+			}
+		}
+		wfName := types.NamespacedName{Namespace: pod.Namespace, Name: pod.Labels[common.LabelKeyWorkflow]}.String()
+		if _, exists, err := wfc.wfInformer.GetStore().GetByKey(wfName); err != nil {
+			log.WithError(err).Errorf("failed to get workflow %s from informer", wfName)
+			continue
+		} else if !exists && wfc.podHasStatusFinalizer(pod) {
+			wfc.queuePodForCleanup(pod.Namespace, pod.Name, removeFinalizer)
+		}
 	}
 }
 

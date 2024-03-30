@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -1255,4 +1257,53 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestGetPodCleaupCache(t *testing.T) {
+	wfc := &WorkflowController{}
+
+	pod := &apiv1.Pod{}
+	pod.SetLabels(map[string]string{common.LabelKeyCompleted: "false"})
+	pod.SetFinalizers([]string{common.FinalizerPodStatus})
+	pod.SetResourceVersion("123456")
+
+	// pod finalizer enabled, patch label
+	os.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "true")
+	expected := &map[string]interface{}{}
+	err := json.Unmarshal([]byte(`{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`), expected)
+	assert.Nil(t, err)
+	patch, err := wfc.getPodCleanupPatch(pod, true)
+	assert.Nil(t, err)
+	actual := &map[string]interface{}{}
+	err = json.Unmarshal(patch, actual)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual)
+
+	// pod finalizer enabled, not patch label
+	expected = &map[string]interface{}{}
+	err = json.Unmarshal([]byte(`{"metadata":{"resourceVersion":"123456","finalizers":[]}}`), expected)
+	assert.Nil(t, err)
+	patch, err = wfc.getPodCleanupPatch(pod, false)
+	assert.Nil(t, err)
+	actual = &map[string]interface{}{}
+	err = json.Unmarshal(patch, actual)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual)
+
+	// pod finalizer disabled, patch both
+	os.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "false")
+	expected = &map[string]interface{}{}
+	err = json.Unmarshal([]byte(`{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`), expected)
+	assert.Nil(t, err)
+	patch, err = wfc.getPodCleanupPatch(pod, true)
+	assert.Nil(t, err)
+	actual = &map[string]interface{}{}
+	err = json.Unmarshal(patch, actual)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual)
+
+	// pod finalizer disabled, not patch label
+	patch, err = wfc.getPodCleanupPatch(pod, false)
+	assert.Nil(t, err)
+	assert.Nil(t, patch)
 }
