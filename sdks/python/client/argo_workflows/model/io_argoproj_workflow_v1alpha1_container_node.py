@@ -31,6 +31,7 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.container_port import ContainerPort
+    from argo_workflows.model.container_resize_policy import ContainerResizePolicy
     from argo_workflows.model.env_from_source import EnvFromSource
     from argo_workflows.model.env_var import EnvVar
     from argo_workflows.model.lifecycle import Lifecycle
@@ -40,6 +41,7 @@ def lazy_import():
     from argo_workflows.model.volume_device import VolumeDevice
     from argo_workflows.model.volume_mount import VolumeMount
     globals()['ContainerPort'] = ContainerPort
+    globals()['ContainerResizePolicy'] = ContainerResizePolicy
     globals()['EnvFromSource'] = EnvFromSource
     globals()['EnvVar'] = EnvVar
     globals()['Lifecycle'] = Lifecycle
@@ -115,6 +117,7 @@ class IoArgoprojWorkflowV1alpha1ContainerNode(ModelNormal):
             'liveness_probe': (Probe,),  # noqa: E501
             'ports': ([ContainerPort],),  # noqa: E501
             'readiness_probe': (Probe,),  # noqa: E501
+            'resize_policy': ([ContainerResizePolicy],),  # noqa: E501
             'resources': (ResourceRequirements,),  # noqa: E501
             'security_context': (SecurityContext,),  # noqa: E501
             'startup_probe': (Probe,),  # noqa: E501
@@ -146,6 +149,7 @@ class IoArgoprojWorkflowV1alpha1ContainerNode(ModelNormal):
         'liveness_probe': 'livenessProbe',  # noqa: E501
         'ports': 'ports',  # noqa: E501
         'readiness_probe': 'readinessProbe',  # noqa: E501
+        'resize_policy': 'resizePolicy',  # noqa: E501
         'resources': 'resources',  # noqa: E501
         'security_context': 'securityContext',  # noqa: E501
         'startup_probe': 'startupProbe',  # noqa: E501
@@ -214,6 +218,7 @@ class IoArgoprojWorkflowV1alpha1ContainerNode(ModelNormal):
             liveness_probe (Probe): [optional]  # noqa: E501
             ports ([ContainerPort]): List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.. [optional]  # noqa: E501
             readiness_probe (Probe): [optional]  # noqa: E501
+            resize_policy ([ContainerResizePolicy]): Resources resize policy for the container.. [optional]  # noqa: E501
             resources (ResourceRequirements): [optional]  # noqa: E501
             security_context (SecurityContext): [optional]  # noqa: E501
             startup_probe (Probe): [optional]  # noqa: E501
@@ -321,6 +326,7 @@ class IoArgoprojWorkflowV1alpha1ContainerNode(ModelNormal):
             liveness_probe (Probe): [optional]  # noqa: E501
             ports ([ContainerPort]): List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.. [optional]  # noqa: E501
             readiness_probe (Probe): [optional]  # noqa: E501
+            resize_policy ([ContainerResizePolicy]): Resources resize policy for the container.. [optional]  # noqa: E501
             resources (ResourceRequirements): [optional]  # noqa: E501
             security_context (SecurityContext): [optional]  # noqa: E501
             startup_probe (Probe): [optional]  # noqa: E501

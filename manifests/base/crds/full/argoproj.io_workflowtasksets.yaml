@@ -1254,6 +1254,19 @@ spec:
                               format: int32
                               type: integer
                           type: object
+                        resizePolicy:
+                          items:
+                            properties:
+                              resourceName:
+                                type: string
+                              restartPolicy:
+                                type: string
+                            required:
+                            - resourceName
+                            - restartPolicy
+                            type: object
+                          type: array
+                          x-kubernetes-list-type: atomic
                         resources:
                           properties:
                             claims:
@@ -1864,6 +1877,19 @@ spec:
                                     format: int32
                                     type: integer
                                 type: object
+                              resizePolicy:
+                                items:
+                                  properties:
+                                    resourceName:
+                                      type: string
+                                    restartPolicy:
+                                      type: string
+                                  required:
+                                  - resourceName
+                                  - restartPolicy
+                                  type: object
+                                type: array
+                                x-kubernetes-list-type: atomic
                               resources:
                                 properties:
                                   claims:
@@ -4377,6 +4403,19 @@ spec:
                                 format: int32
                                 type: integer
                             type: object
+                          resizePolicy:
+                            items:
+                              properties:
+                                resourceName:
+                                  type: string
+                                restartPolicy:
+                                  type: string
+                              required:
+                              - resourceName
+                              - restartPolicy
+                              type: object
+                            type: array
+                            x-kubernetes-list-type: atomic
                           resources:
                             properties:
                               claims:
@@ -6853,6 +6892,19 @@ spec:
                               format: int32
                               type: integer
                           type: object
+                        resizePolicy:
+                          items:
+                            properties:
+                              resourceName:
+                                type: string
+                              restartPolicy:
+                                type: string
+                            required:
+                            - resourceName
+                            - restartPolicy
+                            type: object
+                          type: array
+                          x-kubernetes-list-type: atomic
                         resources:
                           properties:
                             claims:
@@ -7528,6 +7580,19 @@ spec:
                                 format: int32
                                 type: integer
                             type: object
+                          resizePolicy:
+                            items:
+                              properties:
+                                resourceName:
+                                  type: string
+                                restartPolicy:
+                                  type: string
+                              required:
+                              - resourceName
+                              - restartPolicy
+                              type: object
+                            type: array
+                            x-kubernetes-list-type: atomic
                           resources:
                             properties:
                               claims:

@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **mirror_volume_mounts** | **bool** | MirrorVolumeMounts will mount the same volumes specified in the main container to the container (including artifacts), at the same mountPaths. This enables dind daemon to partially see the same filesystem as the main container in order to use features such as docker volume binding | [optional] 
 **ports** | [**[ContainerPort]**](ContainerPort.md) | List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \&quot;0.0.0.0\&quot; address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated. | [optional] 
 **readiness_probe** | [**Probe**](Probe.md) |  | [optional] 
+**resize_policy** | [**[ContainerResizePolicy]**](ContainerResizePolicy.md) | Resources resize policy for the container. | [optional] 
 **resources** | [**ResourceRequirements**](ResourceRequirements.md) |  | [optional] 
 **security_context** | [**SecurityContext**](SecurityContext.md) |  | [optional] 
 **startup_probe** | [**Probe**](Probe.md) |  | [optional] 

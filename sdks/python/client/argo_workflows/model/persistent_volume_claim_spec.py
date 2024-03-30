@@ -33,9 +33,11 @@ def lazy_import():
     from argo_workflows.model.label_selector import LabelSelector
     from argo_workflows.model.resource_requirements import ResourceRequirements
     from argo_workflows.model.typed_local_object_reference import TypedLocalObjectReference
+    from argo_workflows.model.typed_object_reference import TypedObjectReference
     globals()['LabelSelector'] = LabelSelector
     globals()['ResourceRequirements'] = ResourceRequirements
     globals()['TypedLocalObjectReference'] = TypedLocalObjectReference
+    globals()['TypedObjectReference'] = TypedObjectReference
 
 
 class PersistentVolumeClaimSpec(ModelNormal):
@@ -93,7 +95,7 @@ class PersistentVolumeClaimSpec(ModelNormal):
         return {
             'access_modes': ([str],),  # noqa: E501
             'data_source': (TypedLocalObjectReference,),  # noqa: E501
-            'data_source_ref': (TypedLocalObjectReference,),  # noqa: E501
+            'data_source_ref': (TypedObjectReference,),  # noqa: E501
             'resources': (ResourceRequirements,),  # noqa: E501
             'selector': (LabelSelector,),  # noqa: E501
             'storage_class_name': (str,),  # noqa: E501
@@ -158,14 +160,14 @@ class PersistentVolumeClaimSpec(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            access_modes ([str]): AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
+            access_modes ([str]): accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
             data_source (TypedLocalObjectReference): [optional]  # noqa: E501
-            data_source_ref (TypedLocalObjectReference): [optional]  # noqa: E501
+            data_source_ref (TypedObjectReference): [optional]  # noqa: E501
             resources (ResourceRequirements): [optional]  # noqa: E501
             selector (LabelSelector): [optional]  # noqa: E501
-            storage_class_name (str): Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1. [optional]  # noqa: E501
+            storage_class_name (str): storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1. [optional]  # noqa: E501
             volume_mode (str): volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.. [optional]  # noqa: E501
-            volume_name (str): VolumeName is the binding reference to the PersistentVolume backing this claim.. [optional]  # noqa: E501
+            volume_name (str): volumeName is the binding reference to the PersistentVolume backing this claim.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -247,14 +249,14 @@ class PersistentVolumeClaimSpec(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            access_modes ([str]): AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
+            access_modes ([str]): accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
             data_source (TypedLocalObjectReference): [optional]  # noqa: E501
-            data_source_ref (TypedLocalObjectReference): [optional]  # noqa: E501
+            data_source_ref (TypedObjectReference): [optional]  # noqa: E501
             resources (ResourceRequirements): [optional]  # noqa: E501
             selector (LabelSelector): [optional]  # noqa: E501
-            storage_class_name (str): Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1. [optional]  # noqa: E501
+            storage_class_name (str): storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1. [optional]  # noqa: E501
             volume_mode (str): volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.. [optional]  # noqa: E501
-            volume_name (str): VolumeName is the binding reference to the PersistentVolume backing this claim.. [optional]  # noqa: E501
+            volume_name (str): volumeName is the binding reference to the PersistentVolume backing this claim.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

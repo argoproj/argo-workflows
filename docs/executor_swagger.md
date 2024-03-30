@@ -840,6 +840,10 @@ Cannot be updated.
 +listMapKey=containerPort
 +listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.
++featureGate=InPlacePodVerticalScaling
++optional
++listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
@@ -951,6 +955,10 @@ Cannot be updated.
 +listMapKey=containerPort
 +listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.
++featureGate=InPlacePodVerticalScaling
++optional
++listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
@@ -1020,6 +1028,22 @@ named port in a pod must have a unique name. Name for the port that can be
 referred to by services.
 +optional |  |
 | protocol | [Protocol](#protocol)| `Protocol` |  | |  |  |
+
+
+
+### <span id="container-resize-policy"></span> ContainerResizePolicy
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| resourceName | [ResourceName](#resource-name)| `ResourceName` |  | |  |  |
+| restartPolicy | [ResourceResizeRestartPolicy](#resource-resize-restart-policy)| `ResourceResizeRestartPolicy` |  | |  |  |
 
 
 
@@ -2830,7 +2854,7 @@ otherwise 422 (Unprocessable Entity) will be returned.
 | kind | string| `string` |  | | Kind of the referent.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  |
 | name | string| `string` |  | | Name of the referent.
-More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names |  |
 | uid | [UID](#uid)| `UID` |  | |  |  |
 
 
@@ -2933,7 +2957,7 @@ PersistentVolumeClaim objects as part of an EphemeralVolumeSource.
 | annotations | map of string| `map[string]string` |  | | Annotations is an unstructured key value map stored with a resource that may be
 set by external tools to store and retrieve arbitrary metadata. They are not
 queryable and should be preserved when modifying objects.
-More info: http://kubernetes.io/docs/user-guide/annotations
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
 +optional |  |
 | creationTimestamp | [Time](#time)| `Time` |  | |  |  |
 | deletionGracePeriodSeconds | int64 (formatted integer)| `int64` |  | | Number of seconds allowed for this object to gracefully terminate before
@@ -2976,7 +3000,7 @@ Populated by the system. Read-only.
 | labels | map of string| `map[string]string` |  | | Map of string keys and values that can be used to organize and categorize
 (scope and select) objects. May match selectors of replication controllers
 and services.
-More info: http://kubernetes.io/docs/user-guide/labels
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
 +optional |  |
 | managedFields | [][ManagedFieldsEntry](#managed-fields-entry)| `[]*ManagedFieldsEntry` |  | | ManagedFields maps workflow-id and version to the set of fields
 that are managed by that workflow. This is mostly for internal
@@ -2992,7 +3016,7 @@ some resources may allow a client to request the generation of an appropriate na
 automatically. Name is primarily intended for creation idempotence and configuration
 definition.
 Cannot be updated.
-More info: http://kubernetes.io/docs/user-guide/identifiers#names
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
 +optional |  |
 | namespace | string| `string` |  | | Namespace defines the space within which each name must be unique. An empty namespace is
 equivalent to the "default" namespace, but "default" is the canonical representation.
@@ -3001,7 +3025,7 @@ those objects will be empty.
 
 Must be a DNS_LABEL.
 Cannot be updated.
-More info: http://kubernetes.io/docs/user-guide/namespaces
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces
 +optional |  |
 | ownerReferences | [][OwnerReference](#owner-reference)| `[]*OwnerReference` |  | | List of objects depended by this object. If ALL objects in the list have
 been deleted, this object will be garbage collected. If this object is managed by a controller,
@@ -3686,6 +3710,17 @@ inside a container. |  |
 
 [ResourceList](#resource-list)
 
+### <span id="resource-name"></span> ResourceName
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ResourceName | string| string | |  |  |
+
+
+
 ### <span id="resource-requirements"></span> ResourceRequirements
 
 
@@ -3711,6 +3746,17 @@ This field is immutable. It can only be set for containers.
 +optional |  |
 | limits | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 | requests | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
+
+
+
+### <span id="resource-resize-restart-policy"></span> ResourceResizeRestartPolicy
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ResourceResizeRestartPolicy | string| string | |  |  |
 
 
 
@@ -3989,6 +4035,10 @@ Cannot be updated.
 +listMapKey=containerPort
 +listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.
++featureGate=InPlacePodVerticalScaling
++optional
++listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | source | string| `string` |  | | Source contains the source code of the script to execute |  |
@@ -4838,6 +4888,10 @@ Cannot be updated.
 +listMapKey=containerPort
 +listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.
++featureGate=InPlacePodVerticalScaling
++optional
++listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |

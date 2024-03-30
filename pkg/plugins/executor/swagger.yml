@@ -729,6 +729,15 @@ definitions:
         type: array
       readinessProbe:
         $ref: '#/definitions/Probe'
+      resizePolicy:
+        description: |-
+          Resources resize policy for the container.
+          +featureGate=InPlacePodVerticalScaling
+          +optional
+          +listType=atomic
+        items:
+          $ref: '#/definitions/ContainerResizePolicy'
+        type: array
       resources:
         $ref: '#/definitions/ResourceRequirements'
       securityContext:
@@ -897,6 +906,15 @@ definitions:
         type: array
       readinessProbe:
         $ref: '#/definitions/Probe'
+      resizePolicy:
+        description: |-
+          Resources resize policy for the container.
+          +featureGate=InPlacePodVerticalScaling
+          +optional
+          +listType=atomic
+        items:
+          $ref: '#/definitions/ContainerResizePolicy'
+        type: array
       resources:
         $ref: '#/definitions/ResourceRequirements'
       securityContext:
@@ -1000,6 +1018,14 @@ definitions:
       protocol:
         $ref: '#/definitions/Protocol'
     title: ContainerPort represents a network port in a single container.
+    type: object
+  ContainerResizePolicy:
+    properties:
+      resourceName:
+        $ref: '#/definitions/ResourceName'
+      restartPolicy:
+        $ref: '#/definitions/ResourceResizeRestartPolicy'
+    title: ContainerResizePolicy represents resource resize policy for the container.
     type: object
   ContainerSetRetryStrategy:
     properties:
@@ -2425,7 +2451,7 @@ definitions:
       name:
         description: |-
           Name of the referent.
-          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
         type: string
       uid:
         $ref: '#/definitions/UID'
@@ -2510,7 +2536,7 @@ definitions:
           Annotations is an unstructured key value map stored with a resource that may be
           set by external tools to store and retrieve arbitrary metadata. They are not
           queryable and should be preserved when modifying objects.
-          More info: http://kubernetes.io/docs/user-guide/annotations
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
           +optional
         type: object
       creationTimestamp:
@@ -2576,7 +2602,7 @@ definitions:
           Map of string keys and values that can be used to organize and categorize
           (scope and select) objects. May match selectors of replication controllers
           and services.
-          More info: http://kubernetes.io/docs/user-guide/labels
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
           +optional
         type: object
       managedFields:
@@ -2600,7 +2626,7 @@ definitions:
           automatically. Name is primarily intended for creation idempotence and configuration
           definition.
           Cannot be updated.
-          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
           +optional
         type: string
       namespace:
@@ -2612,7 +2638,7 @@ definitions:
 
           Must be a DNS_LABEL.
           Cannot be updated.
-          More info: http://kubernetes.io/docs/user-guide/namespaces
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces
           +optional
         type: string
       ownerReferences:
@@ -3246,6 +3272,9 @@ definitions:
       $ref: '#/definitions/Quantity'
     title: ResourceList is a set of (resource name, quantity) pairs.
     type: object
+  ResourceName:
+    title: ResourceName is the name identifying various resources in a ResourceList.
+    type: string
   ResourceRequirements:
     properties:
       claims:
@@ -3271,6 +3300,10 @@ definitions:
         $ref: '#/definitions/ResourceList'
     title: ResourceRequirements describes the compute resource requirements.
     type: object
+  ResourceResizeRestartPolicy:
+    title: ResourceResizeRestartPolicy specifies how to handle container resource
+      resize.
+    type: string
   ResourceTemplate:
     description: ResourceTemplate is a template subtype to manipulate kubernetes resources
     properties:
@@ -3571,6 +3604,15 @@ definitions:
         type: array
       readinessProbe:
         $ref: '#/definitions/Probe'
+      resizePolicy:
+        description: |-
+          Resources resize policy for the container.
+          +featureGate=InPlacePodVerticalScaling
+          +optional
+          +listType=atomic
+        items:
+          $ref: '#/definitions/ContainerResizePolicy'
+        type: array
       resources:
         $ref: '#/definitions/ResourceRequirements'
       securityContext:
@@ -4389,6 +4431,15 @@ definitions:
         type: array
       readinessProbe:
         $ref: '#/definitions/Probe'
+      resizePolicy:
+        description: |-
+          Resources resize policy for the container.
+          +featureGate=InPlacePodVerticalScaling
+          +optional
+          +listType=atomic
+        items:
+          $ref: '#/definitions/ContainerResizePolicy'
+        type: array
       resources:
         $ref: '#/definitions/ResourceRequirements'
       securityContext:

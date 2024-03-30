@@ -224,7 +224,7 @@ class Volume(ModelNormal):
         """Volume - a model defined in OpenAPI
 
         Args:
-            name (str): Volume's name. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+            name (str): name of the volume. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -338,7 +338,7 @@ class Volume(ModelNormal):
         """Volume - a model defined in OpenAPI
 
         Args:
-            name (str): Volume's name. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+            name (str): name of the volume. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
