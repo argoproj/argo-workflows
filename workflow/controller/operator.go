@@ -3892,7 +3892,7 @@ func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
 		woc.controller.queuePodForCleanup(wf.Namespace, podName, deletePod)
 	}
 	woc.wf = wf
-	woc.wf.Status.RetryStatus = pointer.BoolPtr(true)
+	woc.wf.Status.RetryStatus = pointer.Bool(true)
 	woc.updated = true
 	return nil
 }
