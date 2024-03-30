@@ -32,12 +32,15 @@ from argo_workflows.exceptions import ApiAttributeError
 def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_amqp_event_source import IoArgoprojEventsV1alpha1AMQPEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_azure_events_hub_event_source import IoArgoprojEventsV1alpha1AzureEventsHubEventSource
+    from argo_workflows.model.io_argoproj_events_v1alpha1_azure_queue_storage_event_source import IoArgoprojEventsV1alpha1AzureQueueStorageEventSource
+    from argo_workflows.model.io_argoproj_events_v1alpha1_azure_service_bus_event_source import IoArgoprojEventsV1alpha1AzureServiceBusEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_bitbucket_event_source import IoArgoprojEventsV1alpha1BitbucketEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_bitbucket_server_event_source import IoArgoprojEventsV1alpha1BitbucketServerEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_calendar_event_source import IoArgoprojEventsV1alpha1CalendarEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_emitter_event_source import IoArgoprojEventsV1alpha1EmitterEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_file_event_source import IoArgoprojEventsV1alpha1FileEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_generic_event_source import IoArgoprojEventsV1alpha1GenericEventSource
+    from argo_workflows.model.io_argoproj_events_v1alpha1_gerrit_event_source import IoArgoprojEventsV1alpha1GerritEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_github_event_source import IoArgoprojEventsV1alpha1GithubEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_gitlab_event_source import IoArgoprojEventsV1alpha1GitlabEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_hdfs_event_source import IoArgoprojEventsV1alpha1HDFSEventSource
@@ -52,6 +55,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_resource_event_source import IoArgoprojEventsV1alpha1ResourceEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_s3_artifact import IoArgoprojEventsV1alpha1S3Artifact
     from argo_workflows.model.io_argoproj_events_v1alpha1_service import IoArgoprojEventsV1alpha1Service
+    from argo_workflows.model.io_argoproj_events_v1alpha1_sftp_event_source import IoArgoprojEventsV1alpha1SFTPEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_slack_event_source import IoArgoprojEventsV1alpha1SlackEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_sns_event_source import IoArgoprojEventsV1alpha1SNSEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_sqs_event_source import IoArgoprojEventsV1alpha1SQSEventSource
@@ -61,12 +65,15 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_webhook_event_source import IoArgoprojEventsV1alpha1WebhookEventSource
     globals()['IoArgoprojEventsV1alpha1AMQPEventSource'] = IoArgoprojEventsV1alpha1AMQPEventSource
     globals()['IoArgoprojEventsV1alpha1AzureEventsHubEventSource'] = IoArgoprojEventsV1alpha1AzureEventsHubEventSource
+    globals()['IoArgoprojEventsV1alpha1AzureQueueStorageEventSource'] = IoArgoprojEventsV1alpha1AzureQueueStorageEventSource
+    globals()['IoArgoprojEventsV1alpha1AzureServiceBusEventSource'] = IoArgoprojEventsV1alpha1AzureServiceBusEventSource
     globals()['IoArgoprojEventsV1alpha1BitbucketEventSource'] = IoArgoprojEventsV1alpha1BitbucketEventSource
     globals()['IoArgoprojEventsV1alpha1BitbucketServerEventSource'] = IoArgoprojEventsV1alpha1BitbucketServerEventSource
     globals()['IoArgoprojEventsV1alpha1CalendarEventSource'] = IoArgoprojEventsV1alpha1CalendarEventSource
     globals()['IoArgoprojEventsV1alpha1EmitterEventSource'] = IoArgoprojEventsV1alpha1EmitterEventSource
     globals()['IoArgoprojEventsV1alpha1FileEventSource'] = IoArgoprojEventsV1alpha1FileEventSource
     globals()['IoArgoprojEventsV1alpha1GenericEventSource'] = IoArgoprojEventsV1alpha1GenericEventSource
+    globals()['IoArgoprojEventsV1alpha1GerritEventSource'] = IoArgoprojEventsV1alpha1GerritEventSource
     globals()['IoArgoprojEventsV1alpha1GithubEventSource'] = IoArgoprojEventsV1alpha1GithubEventSource
     globals()['IoArgoprojEventsV1alpha1GitlabEventSource'] = IoArgoprojEventsV1alpha1GitlabEventSource
     globals()['IoArgoprojEventsV1alpha1HDFSEventSource'] = IoArgoprojEventsV1alpha1HDFSEventSource
@@ -80,6 +87,7 @@ def lazy_import():
     globals()['IoArgoprojEventsV1alpha1RedisStreamEventSource'] = IoArgoprojEventsV1alpha1RedisStreamEventSource
     globals()['IoArgoprojEventsV1alpha1ResourceEventSource'] = IoArgoprojEventsV1alpha1ResourceEventSource
     globals()['IoArgoprojEventsV1alpha1S3Artifact'] = IoArgoprojEventsV1alpha1S3Artifact
+    globals()['IoArgoprojEventsV1alpha1SFTPEventSource'] = IoArgoprojEventsV1alpha1SFTPEventSource
     globals()['IoArgoprojEventsV1alpha1SNSEventSource'] = IoArgoprojEventsV1alpha1SNSEventSource
     globals()['IoArgoprojEventsV1alpha1SQSEventSource'] = IoArgoprojEventsV1alpha1SQSEventSource
     globals()['IoArgoprojEventsV1alpha1Service'] = IoArgoprojEventsV1alpha1Service
@@ -145,6 +153,8 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
         return {
             'amqp': ({str: (IoArgoprojEventsV1alpha1AMQPEventSource,)},),  # noqa: E501
             'azure_events_hub': ({str: (IoArgoprojEventsV1alpha1AzureEventsHubEventSource,)},),  # noqa: E501
+            'azure_queue_storage': ({str: (IoArgoprojEventsV1alpha1AzureQueueStorageEventSource,)},),  # noqa: E501
+            'azure_service_bus': ({str: (IoArgoprojEventsV1alpha1AzureServiceBusEventSource,)},),  # noqa: E501
             'bitbucket': ({str: (IoArgoprojEventsV1alpha1BitbucketEventSource,)},),  # noqa: E501
             'bitbucketserver': ({str: (IoArgoprojEventsV1alpha1BitbucketServerEventSource,)},),  # noqa: E501
             'calendar': ({str: (IoArgoprojEventsV1alpha1CalendarEventSource,)},),  # noqa: E501
@@ -152,6 +162,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             'event_bus_name': (str,),  # noqa: E501
             'file': ({str: (IoArgoprojEventsV1alpha1FileEventSource,)},),  # noqa: E501
             'generic': ({str: (IoArgoprojEventsV1alpha1GenericEventSource,)},),  # noqa: E501
+            'gerrit': ({str: (IoArgoprojEventsV1alpha1GerritEventSource,)},),  # noqa: E501
             'github': ({str: (IoArgoprojEventsV1alpha1GithubEventSource,)},),  # noqa: E501
             'gitlab': ({str: (IoArgoprojEventsV1alpha1GitlabEventSource,)},),  # noqa: E501
             'hdfs': ({str: (IoArgoprojEventsV1alpha1HDFSEventSource,)},),  # noqa: E501
@@ -167,6 +178,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             'replicas': (int,),  # noqa: E501
             'resource': ({str: (IoArgoprojEventsV1alpha1ResourceEventSource,)},),  # noqa: E501
             'service': (IoArgoprojEventsV1alpha1Service,),  # noqa: E501
+            'sftp': ({str: (IoArgoprojEventsV1alpha1SFTPEventSource,)},),  # noqa: E501
             'slack': ({str: (IoArgoprojEventsV1alpha1SlackEventSource,)},),  # noqa: E501
             'sns': ({str: (IoArgoprojEventsV1alpha1SNSEventSource,)},),  # noqa: E501
             'sqs': ({str: (IoArgoprojEventsV1alpha1SQSEventSource,)},),  # noqa: E501
@@ -184,6 +196,8 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
     attribute_map = {
         'amqp': 'amqp',  # noqa: E501
         'azure_events_hub': 'azureEventsHub',  # noqa: E501
+        'azure_queue_storage': 'azureQueueStorage',  # noqa: E501
+        'azure_service_bus': 'azureServiceBus',  # noqa: E501
         'bitbucket': 'bitbucket',  # noqa: E501
         'bitbucketserver': 'bitbucketserver',  # noqa: E501
         'calendar': 'calendar',  # noqa: E501
@@ -191,6 +205,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
         'event_bus_name': 'eventBusName',  # noqa: E501
         'file': 'file',  # noqa: E501
         'generic': 'generic',  # noqa: E501
+        'gerrit': 'gerrit',  # noqa: E501
         'github': 'github',  # noqa: E501
         'gitlab': 'gitlab',  # noqa: E501
         'hdfs': 'hdfs',  # noqa: E501
@@ -206,6 +221,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
         'replicas': 'replicas',  # noqa: E501
         'resource': 'resource',  # noqa: E501
         'service': 'service',  # noqa: E501
+        'sftp': 'sftp',  # noqa: E501
         'slack': 'slack',  # noqa: E501
         'sns': 'sns',  # noqa: E501
         'sqs': 'sqs',  # noqa: E501
@@ -258,6 +274,8 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             amqp ({str: (IoArgoprojEventsV1alpha1AMQPEventSource,)}): [optional]  # noqa: E501
             azure_events_hub ({str: (IoArgoprojEventsV1alpha1AzureEventsHubEventSource,)}): [optional]  # noqa: E501
+            azure_queue_storage ({str: (IoArgoprojEventsV1alpha1AzureQueueStorageEventSource,)}): [optional]  # noqa: E501
+            azure_service_bus ({str: (IoArgoprojEventsV1alpha1AzureServiceBusEventSource,)}): [optional]  # noqa: E501
             bitbucket ({str: (IoArgoprojEventsV1alpha1BitbucketEventSource,)}): [optional]  # noqa: E501
             bitbucketserver ({str: (IoArgoprojEventsV1alpha1BitbucketServerEventSource,)}): [optional]  # noqa: E501
             calendar ({str: (IoArgoprojEventsV1alpha1CalendarEventSource,)}): [optional]  # noqa: E501
@@ -265,6 +283,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             event_bus_name (str): [optional]  # noqa: E501
             file ({str: (IoArgoprojEventsV1alpha1FileEventSource,)}): [optional]  # noqa: E501
             generic ({str: (IoArgoprojEventsV1alpha1GenericEventSource,)}): [optional]  # noqa: E501
+            gerrit ({str: (IoArgoprojEventsV1alpha1GerritEventSource,)}): [optional]  # noqa: E501
             github ({str: (IoArgoprojEventsV1alpha1GithubEventSource,)}): [optional]  # noqa: E501
             gitlab ({str: (IoArgoprojEventsV1alpha1GitlabEventSource,)}): [optional]  # noqa: E501
             hdfs ({str: (IoArgoprojEventsV1alpha1HDFSEventSource,)}): [optional]  # noqa: E501
@@ -280,6 +299,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             replicas (int): [optional]  # noqa: E501
             resource ({str: (IoArgoprojEventsV1alpha1ResourceEventSource,)}): [optional]  # noqa: E501
             service (IoArgoprojEventsV1alpha1Service): [optional]  # noqa: E501
+            sftp ({str: (IoArgoprojEventsV1alpha1SFTPEventSource,)}): [optional]  # noqa: E501
             slack ({str: (IoArgoprojEventsV1alpha1SlackEventSource,)}): [optional]  # noqa: E501
             sns ({str: (IoArgoprojEventsV1alpha1SNSEventSource,)}): [optional]  # noqa: E501
             sqs ({str: (IoArgoprojEventsV1alpha1SQSEventSource,)}): [optional]  # noqa: E501
@@ -370,6 +390,8 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             amqp ({str: (IoArgoprojEventsV1alpha1AMQPEventSource,)}): [optional]  # noqa: E501
             azure_events_hub ({str: (IoArgoprojEventsV1alpha1AzureEventsHubEventSource,)}): [optional]  # noqa: E501
+            azure_queue_storage ({str: (IoArgoprojEventsV1alpha1AzureQueueStorageEventSource,)}): [optional]  # noqa: E501
+            azure_service_bus ({str: (IoArgoprojEventsV1alpha1AzureServiceBusEventSource,)}): [optional]  # noqa: E501
             bitbucket ({str: (IoArgoprojEventsV1alpha1BitbucketEventSource,)}): [optional]  # noqa: E501
             bitbucketserver ({str: (IoArgoprojEventsV1alpha1BitbucketServerEventSource,)}): [optional]  # noqa: E501
             calendar ({str: (IoArgoprojEventsV1alpha1CalendarEventSource,)}): [optional]  # noqa: E501
@@ -377,6 +399,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             event_bus_name (str): [optional]  # noqa: E501
             file ({str: (IoArgoprojEventsV1alpha1FileEventSource,)}): [optional]  # noqa: E501
             generic ({str: (IoArgoprojEventsV1alpha1GenericEventSource,)}): [optional]  # noqa: E501
+            gerrit ({str: (IoArgoprojEventsV1alpha1GerritEventSource,)}): [optional]  # noqa: E501
             github ({str: (IoArgoprojEventsV1alpha1GithubEventSource,)}): [optional]  # noqa: E501
             gitlab ({str: (IoArgoprojEventsV1alpha1GitlabEventSource,)}): [optional]  # noqa: E501
             hdfs ({str: (IoArgoprojEventsV1alpha1HDFSEventSource,)}): [optional]  # noqa: E501
@@ -392,6 +415,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
             replicas (int): [optional]  # noqa: E501
             resource ({str: (IoArgoprojEventsV1alpha1ResourceEventSource,)}): [optional]  # noqa: E501
             service (IoArgoprojEventsV1alpha1Service): [optional]  # noqa: E501
+            sftp ({str: (IoArgoprojEventsV1alpha1SFTPEventSource,)}): [optional]  # noqa: E501
             slack ({str: (IoArgoprojEventsV1alpha1SlackEventSource,)}): [optional]  # noqa: E501
             sns ({str: (IoArgoprojEventsV1alpha1SNSEventSource,)}): [optional]  # noqa: E501
             sqs ({str: (IoArgoprojEventsV1alpha1SQSEventSource,)}): [optional]  # noqa: E501
