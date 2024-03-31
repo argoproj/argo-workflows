@@ -41,11 +41,11 @@ Otherwise, we typically release every two weeks:
 
 ## Kubernetes Compatibility Matrix
 
-| Argo Workflows \ Kubernetes | 1.22 | 1.23 | 1.24 | 1.25 | 1.26 | 1.27 | 1.28 | 1.29 | 1.30 |
-|-----------------------|------|------|------|------|------|------|------|------|------|
-| **3.5**               | `?` | `?` | `?` | `✓` | `✓` | `✓` | `?` | `?` | `?` |
-| **3.4**               | `✓` | `✓` | `✓` | `✓` | `✓` | `✓` | `?` | `?` | `?` |
-| **3.3**               | `✓` | `✓` | `?` | `?` | `?` | `?` | `?` | `?` | `?` |
+| Argo Workflows \ Kubernetes | 1.26 | 1.27 | 1.28 | 1.29 | 1.30 |
+|-----------------------|------|------|------|------|------|
+| **3.5**               | `✓` | `✓` | `✓` | `✓` | `?` |
+| **3.4**               | `✓` | `✓` | `?` | `?` | `?` |
+| **3.3**               | `?` | `?` | `?` | `?` | `?` |
 
 * `✓` Fully supported versions.
 * `?` Due to breaking changes might not work. Also, we haven't thoroughly tested against this version.
@@ -55,4 +55,4 @@ Otherwise, we typically release every two weeks:
 
 Argo versions may be compatible with newer and older versions than what it is listed but only three minor versions are supported per Argo release unless otherwise noted.
 
-The main branch of `Argo Workflows` is currently tested on `Kubernetes` 1.27.
+The main branch of `Argo Workflows` is currently tested on `Kubernetes` 1.29.
