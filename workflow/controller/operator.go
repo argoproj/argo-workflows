@@ -807,7 +807,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 	// If Finalizer exists, requeue to make sure Finalizer can be removed.
-	if len(wf.GetFinalizers()) > 0 {
+	if woc.wf.Status.Fulfilled() && len(wf.GetFinalizers()) > 0 {
 		woc.requeue()
 	}
 
