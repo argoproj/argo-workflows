@@ -17,7 +17,7 @@ metadata:
       <= v3.1 you can configure a global limit to the total number of running workflows in the cluster. This is suitable
       for single-tenancy set-up.
 
-      For multi-tenancy set-up, where each tenant own a single namespace, then in >= v3.1 you can globaly configure a
+      For multi-tenancy set-up, where each tenant owns a single namespace, then in >= v3.1 you can globally configure a
       limit for the total number of running workflows within each namespace.
 spec:
   hard:

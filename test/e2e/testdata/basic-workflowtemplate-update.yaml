@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: basic
+spec:
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+  entrypoint: main-2 # main -> main-2
+  templates:
+    - name: main-2 # main -> main-2
+      container:
+        image: argoproj/argosay:v1

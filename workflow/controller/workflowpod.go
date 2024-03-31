@@ -200,13 +200,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.HostNetwork = *woc.execWf.Spec.HostNetwork
 	}
 
-	if woc.execWf.Spec.DNSPolicy != nil {
-		pod.Spec.DNSPolicy = *woc.execWf.Spec.DNSPolicy
-	}
-
-	if woc.execWf.Spec.DNSConfig != nil {
-		pod.Spec.DNSConfig = woc.execWf.Spec.DNSConfig
-	}
+	woc.addDNSConfig(pod)
 
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
@@ -694,12 +688,12 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 			Capabilities: &apiv1.Capabilities{
 				Drop: []apiv1.Capability{"ALL"},
 			},
-			RunAsNonRoot:             pointer.BoolPtr(true),
-			RunAsUser:                pointer.Int64Ptr(8737),
-			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+			RunAsNonRoot:             pointer.Bool(true),
+			RunAsUser:                pointer.Int64(8737),
+			AllowPrivilegeEscalation: pointer.Bool(false),
 		}
 		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
-			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.BoolPtr(true)
+			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
 		}
 	}
 	if woc.controller.Config.KubeConfig != nil {
@@ -753,6 +747,17 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	}
 	for k, v := range tmpl.Metadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
+	}
+}
+
+// addDNSConfig applies DNSConfig to the pod
+func (woc *wfOperationCtx) addDNSConfig(pod *apiv1.Pod) {
+	if woc.execWf.Spec.DNSPolicy != nil {
+		pod.Spec.DNSPolicy = *woc.execWf.Spec.DNSPolicy
+	}
+
+	if woc.execWf.Spec.DNSConfig != nil {
+		pod.Spec.DNSConfig = woc.execWf.Spec.DNSConfig
 	}
 }
 

@@ -294,7 +294,7 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", ossArtifact.Key, true, markInfrequentAccessAfterDays)
 	// Automatically delete the expired delete tag so we don't have to manage it ourselves.
 	expiration := oss.LifecycleExpiration{
-		ExpiredObjectDeleteMarker: pointer.BoolPtr(true),
+		ExpiredObjectDeleteMarker: pointer.Bool(true),
 	}
 	// Convert to Infrequent Access (IA) storage type for objects that are expired after a period of time.
 	versionTransition := oss.LifecycleVersionTransition{
