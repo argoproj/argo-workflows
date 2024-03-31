@@ -165,3 +165,5 @@ spec:
 !!! Note
     A container set will not be retried if a container's `command` cannot be located.
     As it will fail each time, the retry logic is short-circuited.
+    Since it is only a process-level retry, so won't create new node. 
+    You can confirm whether a retry has been performed by checking the container's log.
