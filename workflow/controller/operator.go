@@ -808,7 +808,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 	// If Finalizer exists, requeue to make sure Finalizer can be removed.
 	if woc.wf.Status.Fulfilled() && len(wf.GetFinalizers()) > 0 {
-		woc.requeue()
+		woc.requeueAfter(5 * time.Second)
 	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
