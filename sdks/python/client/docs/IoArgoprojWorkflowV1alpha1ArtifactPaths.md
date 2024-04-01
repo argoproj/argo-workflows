@@ -3,16 +3,16 @@
 ArtifactPaths expands a step from a collection of artifacts
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**name** | **str** | name of the artifact. must be unique within a template&#39;s inputs/outputs. | 
 **archive** | [**IoArgoprojWorkflowV1alpha1ArchiveStrategy**](IoArgoprojWorkflowV1alpha1ArchiveStrategy.md) |  | [optional] 
 **archive_logs** | **bool** | ArchiveLogs indicates if the container logs should be archived | [optional] 
 **artifact_gc** | [**IoArgoprojWorkflowV1alpha1ArtifactGC**](IoArgoprojWorkflowV1alpha1ArtifactGC.md) |  | [optional] 
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifact**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifact.md) |  | [optional] 
 **azure** | [**IoArgoprojWorkflowV1alpha1AzureArtifact**](IoArgoprojWorkflowV1alpha1AzureArtifact.md) |  | [optional] 
 **deleted** | **bool** | Has this been deleted? | [optional] 
-**_from** | **str** | From allows an artifact to reference an artifact from a previous step | [optional] 
+**var_from** | **str** | From allows an artifact to reference an artifact from a previous step | [optional] 
 **from_expression** | **str** | FromExpression, if defined, is evaluated to specify the value for the artifact | [optional] 
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifact**](IoArgoprojWorkflowV1alpha1GCSArtifact.md) |  | [optional] 
 **git** | [**IoArgoprojWorkflowV1alpha1GitArtifact**](IoArgoprojWorkflowV1alpha1GitArtifact.md) |  | [optional] 
@@ -20,6 +20,7 @@ Name | Type | Description | Notes
 **hdfs** | [**IoArgoprojWorkflowV1alpha1HDFSArtifact**](IoArgoprojWorkflowV1alpha1HDFSArtifact.md) |  | [optional] 
 **http** | [**IoArgoprojWorkflowV1alpha1HTTPArtifact**](IoArgoprojWorkflowV1alpha1HTTPArtifact.md) |  | [optional] 
 **mode** | **int** | mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts. | [optional] 
+**name** | **str** | name of the artifact. must be unique within a template&#39;s inputs/outputs. | 
 **optional** | **bool** | Make Artifacts optional, if Artifacts doesn&#39;t generate or exist | [optional] 
 **oss** | [**IoArgoprojWorkflowV1alpha1OSSArtifact**](IoArgoprojWorkflowV1alpha1OSSArtifact.md) |  | [optional] 
 **path** | **str** | Path is the container path to the artifact | [optional] 
@@ -27,8 +28,24 @@ Name | Type | Description | Notes
 **recurse_mode** | **bool** | If mode is set, apply the permission recursively into the artifact if it is a folder | [optional] 
 **s3** | [**IoArgoprojWorkflowV1alpha1S3Artifact**](IoArgoprojWorkflowV1alpha1S3Artifact.md) |  | [optional] 
 **sub_path** | **str** | SubPath allows an artifact to be sourced from a subpath within the specified source | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from argo_workflows.models.io_argoproj_workflow_v1alpha1_artifact_paths import IoArgoprojWorkflowV1alpha1ArtifactPaths
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of IoArgoprojWorkflowV1alpha1ArtifactPaths from a JSON string
+io_argoproj_workflow_v1alpha1_artifact_paths_instance = IoArgoprojWorkflowV1alpha1ArtifactPaths.from_json(json)
+# print the JSON string representation of the object
+print(IoArgoprojWorkflowV1alpha1ArtifactPaths.to_json())
+
+# convert the object into a dict
+io_argoproj_workflow_v1alpha1_artifact_paths_dict = io_argoproj_workflow_v1alpha1_artifact_paths_instance.to_dict()
+# create an instance of IoArgoprojWorkflowV1alpha1ArtifactPaths from a dict
+io_argoproj_workflow_v1alpha1_artifact_paths_form_dict = io_argoproj_workflow_v1alpha1_artifact_paths.from_dict(io_argoproj_workflow_v1alpha1_artifact_paths_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

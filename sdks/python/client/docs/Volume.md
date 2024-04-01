@@ -3,9 +3,9 @@
 Volume represents a named volume in a pod that may be accessed by any container in the pod.
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**name** | **str** | Volume&#39;s name. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names | 
 **aws_elastic_block_store** | [**AWSElasticBlockStoreVolumeSource**](AWSElasticBlockStoreVolumeSource.md) |  | [optional] 
 **azure_disk** | [**AzureDiskVolumeSource**](AzureDiskVolumeSource.md) |  | [optional] 
 **azure_file** | [**AzureFileVolumeSource**](AzureFileVolumeSource.md) |  | [optional] 
@@ -24,6 +24,7 @@ Name | Type | Description | Notes
 **glusterfs** | [**GlusterfsVolumeSource**](GlusterfsVolumeSource.md) |  | [optional] 
 **host_path** | [**HostPathVolumeSource**](HostPathVolumeSource.md) |  | [optional] 
 **iscsi** | [**ISCSIVolumeSource**](ISCSIVolumeSource.md) |  | [optional] 
+**name** | **str** | Volume&#39;s name. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names | 
 **nfs** | [**NFSVolumeSource**](NFSVolumeSource.md) |  | [optional] 
 **persistent_volume_claim** | [**PersistentVolumeClaimVolumeSource**](PersistentVolumeClaimVolumeSource.md) |  | [optional] 
 **photon_persistent_disk** | [**PhotonPersistentDiskVolumeSource**](PhotonPersistentDiskVolumeSource.md) |  | [optional] 
@@ -35,8 +36,24 @@ Name | Type | Description | Notes
 **secret** | [**SecretVolumeSource**](SecretVolumeSource.md) |  | [optional] 
 **storageos** | [**StorageOSVolumeSource**](StorageOSVolumeSource.md) |  | [optional] 
 **vsphere_volume** | [**VsphereVirtualDiskVolumeSource**](VsphereVirtualDiskVolumeSource.md) |  | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from argo_workflows.models.volume import Volume
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of Volume from a JSON string
+volume_instance = Volume.from_json(json)
+# print the JSON string representation of the object
+print(Volume.to_json())
+
+# convert the object into a dict
+volume_dict = volume_instance.to_dict()
+# create an instance of Volume from a dict
+volume_form_dict = volume.from_dict(volume_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

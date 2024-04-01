@@ -3,6 +3,7 @@
 SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **allow_privilege_escalation** | **bool** | AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN Note that this field cannot be set when spec.os.name is windows. | [optional] 
@@ -16,8 +17,24 @@ Name | Type | Description | Notes
 **se_linux_options** | [**SELinuxOptions**](SELinuxOptions.md) |  | [optional] 
 **seccomp_profile** | [**SeccompProfile**](SeccompProfile.md) |  | [optional] 
 **windows_options** | [**WindowsSecurityContextOptions**](WindowsSecurityContextOptions.md) |  | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from argo_workflows.models.security_context import SecurityContext
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of SecurityContext from a JSON string
+security_context_instance = SecurityContext.from_json(json)
+# print the JSON string representation of the object
+print(SecurityContext.to_json())
+
+# convert the object into a dict
+security_context_dict = security_context_instance.to_dict()
+# create an instance of SecurityContext from a dict
+security_context_form_dict = security_context.from_dict(security_context_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

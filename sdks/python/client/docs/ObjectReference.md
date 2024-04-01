@@ -3,6 +3,7 @@
 ObjectReference contains enough information to let you inspect or modify the referred object.
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **api_version** | **str** | API version of the referent. | [optional] 
@@ -12,8 +13,24 @@ Name | Type | Description | Notes
 **namespace** | **str** | Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/ | [optional] 
 **resource_version** | **str** | Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency | [optional] 
 **uid** | **str** | UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from argo_workflows.models.object_reference import ObjectReference
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of ObjectReference from a JSON string
+object_reference_instance = ObjectReference.from_json(json)
+# print the JSON string representation of the object
+print(ObjectReference.to_json())
+
+# convert the object into a dict
+object_reference_dict = object_reference_instance.to_dict()
+# create an instance of ObjectReference from a dict
+object_reference_form_dict = object_reference.from_dict(object_reference_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

@@ -2,6 +2,7 @@
 
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **branch** | **str** |  | [optional] 
@@ -14,8 +15,24 @@ Name | Type | Description | Notes
 **ssh_key_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **tag** | **str** |  | [optional] 
 **url** | **str** |  | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from argo_workflows.models.io_argoproj_events_v1alpha1_git_artifact import IoArgoprojEventsV1alpha1GitArtifact
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of IoArgoprojEventsV1alpha1GitArtifact from a JSON string
+io_argoproj_events_v1alpha1_git_artifact_instance = IoArgoprojEventsV1alpha1GitArtifact.from_json(json)
+# print the JSON string representation of the object
+print(IoArgoprojEventsV1alpha1GitArtifact.to_json())
+
+# convert the object into a dict
+io_argoproj_events_v1alpha1_git_artifact_dict = io_argoproj_events_v1alpha1_git_artifact_instance.to_dict()
+# create an instance of IoArgoprojEventsV1alpha1GitArtifact from a dict
+io_argoproj_events_v1alpha1_git_artifact_form_dict = io_argoproj_events_v1alpha1_git_artifact.from_dict(io_argoproj_events_v1alpha1_git_artifact_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

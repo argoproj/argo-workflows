@@ -2,6 +2,7 @@
 
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **build_date** | **str** |  | 
@@ -12,8 +13,24 @@ Name | Type | Description | Notes
 **go_version** | **str** |  | 
 **platform** | **str** |  | 
 **version** | **str** |  | 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from argo_workflows.models.io_argoproj_workflow_v1alpha1_version import IoArgoprojWorkflowV1alpha1Version
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of IoArgoprojWorkflowV1alpha1Version from a JSON string
+io_argoproj_workflow_v1alpha1_version_instance = IoArgoprojWorkflowV1alpha1Version.from_json(json)
+# print the JSON string representation of the object
+print(IoArgoprojWorkflowV1alpha1Version.to_json())
+
+# convert the object into a dict
+io_argoproj_workflow_v1alpha1_version_dict = io_argoproj_workflow_v1alpha1_version_instance.to_dict()
+# create an instance of IoArgoprojWorkflowV1alpha1Version from a dict
+io_argoproj_workflow_v1alpha1_version_form_dict = io_argoproj_workflow_v1alpha1_version.from_dict(io_argoproj_workflow_v1alpha1_version_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

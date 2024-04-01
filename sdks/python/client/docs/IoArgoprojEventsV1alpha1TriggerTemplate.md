@@ -3,6 +3,7 @@
 TriggerTemplate is the template that describes trigger specification.
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **argo_workflow** | [**IoArgoprojEventsV1alpha1ArgoWorkflowTrigger**](IoArgoprojEventsV1alpha1ArgoWorkflowTrigger.md) |  | [optional] 
@@ -10,7 +11,7 @@ Name | Type | Description | Notes
 **azure_event_hubs** | [**IoArgoprojEventsV1alpha1AzureEventHubsTrigger**](IoArgoprojEventsV1alpha1AzureEventHubsTrigger.md) |  | [optional] 
 **azure_service_bus** | [**IoArgoprojEventsV1alpha1AzureServiceBusTrigger**](IoArgoprojEventsV1alpha1AzureServiceBusTrigger.md) |  | [optional] 
 **conditions** | **str** |  | [optional] 
-**conditions_reset** | [**[IoArgoprojEventsV1alpha1ConditionsResetCriteria]**](IoArgoprojEventsV1alpha1ConditionsResetCriteria.md) |  | [optional] 
+**conditions_reset** | [**List[IoArgoprojEventsV1alpha1ConditionsResetCriteria]**](IoArgoprojEventsV1alpha1ConditionsResetCriteria.md) |  | [optional] 
 **custom** | [**IoArgoprojEventsV1alpha1CustomTrigger**](IoArgoprojEventsV1alpha1CustomTrigger.md) |  | [optional] 
 **email** | [**IoArgoprojEventsV1alpha1EmailTrigger**](IoArgoprojEventsV1alpha1EmailTrigger.md) |  | [optional] 
 **http** | [**IoArgoprojEventsV1alpha1HTTPTrigger**](IoArgoprojEventsV1alpha1HTTPTrigger.md) |  | [optional] 
@@ -22,8 +23,24 @@ Name | Type | Description | Notes
 **open_whisk** | [**IoArgoprojEventsV1alpha1OpenWhiskTrigger**](IoArgoprojEventsV1alpha1OpenWhiskTrigger.md) |  | [optional] 
 **pulsar** | [**IoArgoprojEventsV1alpha1PulsarTrigger**](IoArgoprojEventsV1alpha1PulsarTrigger.md) |  | [optional] 
 **slack** | [**IoArgoprojEventsV1alpha1SlackTrigger**](IoArgoprojEventsV1alpha1SlackTrigger.md) |  | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from argo_workflows.models.io_argoproj_events_v1alpha1_trigger_template import IoArgoprojEventsV1alpha1TriggerTemplate
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of IoArgoprojEventsV1alpha1TriggerTemplate from a JSON string
+io_argoproj_events_v1alpha1_trigger_template_instance = IoArgoprojEventsV1alpha1TriggerTemplate.from_json(json)
+# print the JSON string representation of the object
+print(IoArgoprojEventsV1alpha1TriggerTemplate.to_json())
+
+# convert the object into a dict
+io_argoproj_events_v1alpha1_trigger_template_dict = io_argoproj_events_v1alpha1_trigger_template_instance.to_dict()
+# create an instance of IoArgoprojEventsV1alpha1TriggerTemplate from a dict
+io_argoproj_events_v1alpha1_trigger_template_form_dict = io_argoproj_events_v1alpha1_trigger_template.from_dict(io_argoproj_events_v1alpha1_trigger_template_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

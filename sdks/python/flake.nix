@@ -13,9 +13,9 @@
       perSystem = { pkgs, lib, config, ... }:
         let
 
-          openapi_generator_cli_5_4_0 = pkgs.openapi-generator-cli.overrideAttrs (oldAttrs: rec {
+          openapi_generator_cli_7_4_0 = pkgs.openapi-generator-cli.overrideAttrs (oldAttrs: rec {
             pname = "openapi-generator-cli";
-            version = "5.4.0"; # update this when updating sdk Makefile
+            version = "7.4.0"; # update this when updating sdk Makefile
             jarfilename = "${pname}-${version}.jar";
             src = pkgs.fetchurl {
               url = "mirror://maven/org/openapitools/${pname}/${version}/${jarfilename}";
@@ -54,7 +54,7 @@
               pname = "argo-client-python-${version}";
 
               nativeBuildInputs = [
-                openapi_generator_cli_5_4_0
+                openapi_generator_cli_7_4_0
                 pkgs.gnused
                 pythonEnv
               ];
@@ -85,7 +85,7 @@
           devShells = {
             default = pkgs.mkShell {
               packages = with pkgs; [
-                openapi_generator_cli_5_4_0
+                openapi_generator_cli_7_4_0
                 openjdk8-bootstrap
                 gnused
               ];

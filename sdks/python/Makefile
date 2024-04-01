@@ -30,7 +30,7 @@ else
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> $(WD)/swagger.json
 	cp ../../LICENSE $(WD)/LICENSE
-	$(DOCKER) openapitools/openapi-generator-cli:v5.4.0 \
+	$(DOCKER) openapitools/openapi-generator-cli:v7.4.0 \
 		generate \
 		--input-spec /wd/swagger.json \
 		--generator-name python \
