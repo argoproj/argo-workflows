@@ -346,6 +346,7 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 				return w
 			}
 		}
+		time.Sleep(time.Second)
 	}
 }
 
