@@ -2,7 +2,7 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
     devenv.url = "github:cachix/devenv";
     nix-filter.url = "github:numtide/nix-filter";
@@ -179,8 +179,8 @@
             inherit system;
             overlays = [
               (self: super: {
-                go = super.go_1_20;
-                buildGoModule = super.buildGo120Module;
+                go = super.go_1_21;
+                buildGoModule = super.buildGo121Module;
               })
             ];
           };
@@ -190,7 +190,7 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorSha256 = "sha256-Ytl+++KUrFveoKRoSccwjCgozw4tFhjHxk8yDPQFRqo=";
+              vendorSha256 = "sha256-NyMIOVdxLfF8BqC+wATcxuIt5d6RJVkrkYQvGCgKbCw=";
               doCheck = false;
             };
 

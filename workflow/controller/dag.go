@@ -443,6 +443,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 		// Release acquired lock completed task.
 		if tmpl != nil {
+			woc.log.Infof("[HYPO-1] Releasing lock for workflow %s and node %s\n", woc.wf.Name, node.Name)
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 		}
 

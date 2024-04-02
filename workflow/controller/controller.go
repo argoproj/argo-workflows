@@ -1205,6 +1205,7 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 		return
 	}
 	if wf.Status.Synchronization != nil {
+		log.Infof("[HYPO-1] Releasing all workflow locks for workflow %s\n", wf.Name)
 		wfc.syncManager.ReleaseAll(wf)
 	}
 }

@@ -255,6 +255,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
+		woc.log.Infoln("[HYPO-1] Trying to acquire workflow level lock for ", woc.wf.Name)
 		acquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, "", woc.execWf.Spec.Synchronization)
 		if err != nil {
 			woc.log.Warn("Failed to acquire the lock")
@@ -518,6 +519,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
 	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
+
+		woc.log.Infof("[HYPO-1] Releasing all workflow locks for workflow %s\n", woc.execWf.Name)
 		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
 			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is being shutdown")
 			woc.markWorkflowSuccess(ctx)
@@ -729,6 +732,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// Release all acquired lock for completed workflow
 	if woc.wf.Status.Synchronization != nil && woc.wf.Status.Fulfilled() {
+
+		log.Infof("[HYPO-1] Releasing all workflow locks for workflow %s\n", woc.wf.Name)
 		if woc.controller.syncManager.ReleaseAll(woc.wf) {
 			woc.log.WithFields(log.Fields{"key": woc.wf.Name}).Info("Released all acquired locks")
 		}
@@ -1873,6 +1878,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// If so, release synchronization and return this node. No more logic will be executed.
 	if node != nil {
 		fulfilledNode := woc.handleNodeFulfilled(nodeName, node, processedTmpl)
+		woc.log.Infof("[HYPO-1] Releasing lock for workflow %s and node %s\n", woc.wf.Name, node.Name)
 		if fulfilledNode != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
@@ -1904,7 +1910,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	unlockedNode := false
 
 	if processedTmpl.Synchronization != nil {
+		woc.log.Infof("[HYPO-1] Trying to acquire lock for workflow %s and node %s\n", woc.wf, nodeName)
 		lockAcquired, wfUpdated, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
+		if lockAcquired {
+			woc.log.Infof("[HYPO-1] Lock acquired for workflow %s and node %s\n", woc.wf, nodeName)
+		} else {
+			woc.log.Infof("[HYPO-1] Unable to acquire lock for workflow %s and node %s wfUpdated: %t msg: %s err: %s", woc.wf, nodeName, wfUpdated, msg, err)
+		}
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
@@ -1999,6 +2011,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if node != nil {
 		fulfilledNode := woc.handleNodeFulfilled(nodeName, node, processedTmpl)
 		if fulfilledNode != nil {
+			woc.log.Infof("[HYPO-1] Releasing lock for workflow %s and node %s\n", woc.wf.Name, node.Name)
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
 		}
@@ -2058,6 +2071,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				}
 			}
 			if processedTmpl.Synchronization != nil {
+				woc.log.Infof("[HYPO-1] Releasing lock for workflow %s and node %s\n", woc.wf.Name, node.Name)
 				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			}
 			_, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
@@ -2144,12 +2158,14 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			}
 		}
 		if release {
+			woc.log.Infof("[HYPO-1] Releasing lock for workflow %s and node %s\n", woc.wf.Name, node.Name)
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}
 	}
 
 	if node.Fulfilled() {
+		woc.log.Infof("[HYPO-1] Releasing lock for workflow %s and node %s\n", woc.wf.Name, node.Name)
 		woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 	}
 

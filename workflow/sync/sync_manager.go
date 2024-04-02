@@ -87,6 +87,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 				for _, holders := range holding.Holders {
 					resourceKey := getResourceKey(wf.Namespace, wf.Name, holders)
+					log.Infof("HYPO-1 Acquiring key %s for workflow %s\n", resourceKey, wf.Name)
 					if semaphore != nil && semaphore.acquire(resourceKey) {
 						log.Infof("Lock acquired by %s from %s", resourceKey, holding.Semaphore)
 					}
@@ -102,6 +103,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 					mutex := cm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
 						resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
+						log.Infof("[HYPO-1] got resource key %s for workflow %s\n", resourceKey, wf.Name)
 						mutex.acquire(resourceKey)
 					}
 					cm.syncLockMap[holding.Mutex] = mutex
@@ -119,15 +121,20 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	defer cm.lock.Unlock()
 
 	if syncLockRef == nil {
+		log.Infof("[HYPO-1] syncLockRef was nil")
 		return false, false, "", fmt.Errorf("cannot acquire lock from nil Synchronization")
 	}
 
 	syncLockName, err := GetLockName(syncLockRef, wf.Namespace)
 	if err != nil {
+		log.Infof("[HYPO-1] unable to get syncLockName for workflow %s and nodeName %s\n", wf.Name, nodeName)
 		return false, false, "", fmt.Errorf("requested configuration is invalid: %w", err)
 	}
+	log.Infof("[HYPO-1] syncLockName: %+v for workflow %s and nodeName %s\n", syncLockName, wf.Name, nodeName)
 
 	lockKey := syncLockName.EncodeName()
+	log.Infof("[HYPO-1] lockKey: %s for workflow %s and nodeName %s\n", lockKey, wf.Name, nodeName)
+
 	lock, found := cm.syncLockMap[lockKey]
 	if !found {
 		switch syncLockRef.GetType() {
@@ -152,6 +159,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	}
 
 	holderKey := getHolderKey(wf, nodeName)
+	log.Infof("[HYPO-1] holderKey: %s for workflow %s and nodeName %s\n", holderKey, wf.Name, nodeName)
 	var priority int32
 	if wf.Spec.Priority != nil {
 		priority = *wf.Spec.Priority
@@ -175,6 +183,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 
 func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
 	if syncRef == nil {
+		log.Infof("Release called bu syncRef was nil")
 		return
 	}
 
@@ -182,10 +191,14 @@ func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 	defer cm.lock.Unlock()
 
 	holderKey := getHolderKey(wf, nodeName)
+	log.Infof("[HYPO-1] Got holder key %s for workflow %s and node %s\n", holderKey, wf.Name, nodeName)
 	lockName, err := GetLockName(syncRef, wf.Namespace)
+
 	if err != nil {
+		log.Infof("[HYPO-1] Error while getting lockname for workflow %s and node %s", wf.Name, nodeName)
 		return
 	}
+	log.Infof("[HYPO-1] Got lock name %+v for workflow %s and node %s", lockName, wf.Name, nodeName)
 
 	if syncLockHolder, ok := cm.syncLockMap[lockName.EncodeName()]; ok {
 		syncLockHolder.release(holderKey)
@@ -215,6 +228,7 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 
 			for _, holderKey := range holding.Holders {
 				resourceKey := getResourceKey(wf.Namespace, wf.Name, holderKey)
+				log.Infof("[HYPO-1] got resource key %s for workflow %s\n", resourceKey, wf.Name)
 				syncLockHolder.release(resourceKey)
 				wf.Status.Synchronization.Semaphore.LockReleased(holderKey, holding.Semaphore)
 				log.Infof("%s released a lock from %s", resourceKey, holding.Semaphore)
@@ -228,6 +242,8 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
+
+			log.Infof("[HYPO-1] removing resource key %s from queue for workflow %s\n", resourceKey, wf.Name)
 			syncLockHolder.removeFromQueue(resourceKey)
 		}
 		wf.Status.Synchronization.Semaphore = nil
@@ -241,6 +257,7 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			}
 
 			resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
+			log.Infof("[HYPO-1] releasing resource key %s from queue for workflow %s\n", resourceKey, wf.Name)
 			syncLockHolder.release(resourceKey)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
 			log.Infof("%s released a lock from %s", resourceKey, holding.Mutex)
@@ -253,6 +270,7 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
+			log.Infof("[HYPO-1] releasing resource key %s from queue for workflow %s\n", resourceKey, wf.Name)
 			syncLockHolder.removeFromQueue(resourceKey)
 		}
 		wf.Status.Synchronization.Mutex = nil
