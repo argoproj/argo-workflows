@@ -121,7 +121,7 @@ var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
-	ErrParallelismReached       = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
 	// ErrFailFastReached indicates that the workflow failed fast
 	ErrFailFastReached          = errors.New(errors.CodeForbidden, "Fail fast reached")
 	ErrResourceRateLimitReached = errors.New(errors.CodeForbidden, "resource creation rate-limit reached")
