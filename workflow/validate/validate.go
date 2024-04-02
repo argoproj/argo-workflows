@@ -526,8 +526,8 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	return nil
 }
 
-// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
-func verifyResolvedVariables(obj interface{}) error {
+// VerifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
+func VerifyResolvedVariables(obj interface{}) error {
 	str, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -551,8 +551,9 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		if tmplRef.Template == "" {
 			return nil, errors.New(errors.CodeBadRequest, "template name is required")
 		}
-		if err := verifyResolvedVariables(tmplRef); err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "tmplRef need to resolve: %v", err.Error())
+		if err := VerifyResolvedVariables(tmplRef); err != nil {
+			logrus.Infof("template reference need resolution: %w", err)
+			return nil, nil
 		}
 	} else if tmplName != "" {
 		_, err := tmplCtx.GetTemplateByName(tmplName)
@@ -957,7 +958,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 				return err
 			}
 			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
-			if err != nil && !strings.HasPrefix(err.Error(), "tmplRef need to resolve") {
+			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
 
@@ -998,7 +999,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 
 			// Validate the template again with actual arguments.
 			_, err = ctx.validateTemplateHolder(&step, tmplCtx, &step.Arguments, workflowTemplateValidation)
-			if err != nil && !strings.HasPrefix(err.Error(), "tmplRef need to resolve") {
+			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
 		}
@@ -1351,7 +1352,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
 
-		if err != nil && !strings.HasPrefix(err.Error(), "tmplRef need to resolve") {
+		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 
@@ -1443,7 +1444,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		}
 		// Validate the template again with actual arguments.
 		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments, workflowTemplateValidation)
-		if err != nil && !strings.HasPrefix(err.Error(), "tmplRef need to resolve") {
+		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 	}

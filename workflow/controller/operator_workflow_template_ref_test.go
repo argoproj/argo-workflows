@@ -584,14 +584,6 @@ metadata:
   namespace: default
 spec:
   entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: workflow-template
-        value: hello-world-template-global-arg
-      - name: template-name
-        value: hello-world
-      - name: global-parameter
-        value: hello
   templates:
     - name: whalesay
       inputs:
@@ -603,12 +595,6 @@ spec:
             templateRef:
               name: '{{item.workflow-template}}'
               template: '{{item.template-name}}'
-            arguments:
-              parameters:
-                - name: image
-                  value: "{{item.workflow-template}}"
-                - name: tag
-                  value: "{{item.template-name}}"
             withItems:
                 - { workflow-template: 'hello-world-template-global-arg', template-name: 'hello-world'}
           - name: hello-world-dag

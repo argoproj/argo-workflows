@@ -788,8 +788,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	woc.log.Infof("woc.controller.wfQueue.Len() is %v", woc.controller.wfQueue.Len())
-
 	switch os.Getenv("INFORMER_WRITE_BACK") {
 	// By default we write back (as per v2.11), this does not reduce errors, but does reduce
 	// conflicts and therefore we log fewer warning messages.
