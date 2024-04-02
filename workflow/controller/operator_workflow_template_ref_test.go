@@ -584,12 +584,12 @@ metadata:
   namespace: default
 spec:
   entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: global-parameter
+        value: hello
   templates:
     - name: whalesay
-      inputs:
-        parameters:
-        - name: workflow-template
-        - name: template-name
       steps:
         - - name: hello-world
             templateRef:
