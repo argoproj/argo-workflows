@@ -75,7 +75,7 @@ func (s *PrioritySemaphore) resize(n int) bool {
 	semaphore := sema.NewWeighted(int64(n))
 	status := semaphore.TryAcquire(int64(cur))
 	if status {
-		s.log.Infof("%s semaphore resized from %d to %d", s.name, cur, n)
+		s.log.Infof("[HYPO-2] %s semaphore resized from %d to %d", s.name, cur, n)
 		s.semaphore = semaphore
 		s.limit = n
 	}
@@ -95,7 +95,7 @@ func (s *PrioritySemaphore) release(key string) bool {
 
 		s.semaphore.Release(1)
 		availableLocks := s.limit - len(s.lockHolder)
-		s.log.Infof("Lock has been released by %s. Available locks: %d", key, availableLocks)
+		s.log.Infof("[HYPO-2] Lock %s has been released by %s. Available locks: %d", s.name, key, availableLocks)
 		if s.pending.Len() > 0 {
 			s.notifyWaiters()
 		}
@@ -175,12 +175,13 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 	defer s.lock.Unlock()
 
 	if _, ok := s.lockHolder[holderKey]; ok {
-		s.log.Debugf("%s is already holding a lock", holderKey)
+		s.log.Infof("[HYPO-2] %s is already holding a lock", holderKey)
 		return true, ""
 	}
 	var nextKey string
 
 	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d", s.name, s.limit-len(s.lockHolder), s.limit)
+	s.log.Infof("[HYPO-2] %s", waitingMsg)
 
 	// Check whether requested holdkey is in front of priority queue.
 	// If it is in front position, it will allow to acquire lock.
@@ -198,10 +199,10 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 
 	if s.acquire(holderKey) {
 		s.pending.pop()
-		s.log.Infof("%s acquired by %s. Lock availability: %d/%d", s.name, holderKey, s.limit-len(s.lockHolder), s.limit)
+		s.log.Infof("[HYPO-2] %s acquired by %s. Lock availability: %d/%d", s.name, holderKey, s.limit-len(s.lockHolder), s.limit)
 		s.notifyWaiters()
 		return true, ""
 	}
-	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
+	s.log.Infof("[HYPO-2] Current semaphore %s holders. %v", s.name, s.lockHolder)
 	return false, waitingMsg
 }

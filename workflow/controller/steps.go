@@ -194,6 +194,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 
 // updateOutboundNodes set the outbound nodes from the last step group
 func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Template) error {
+	woc.log.Warnf("[AC] updateOutboundNodes %s", nodeName)
 	outbound := make([]string, 0)
 	// Find the last, initialized stepgroup node
 	var lastSGNode *wfv1.NodeStatus
@@ -219,7 +220,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 	if err != nil {
 		return err
 	}
-	woc.log.Infof("Outbound nodes of %s is %s", node.ID, outbound)
+	woc.log.Warnf("[AC] Outbound nodes of %s is %s", node.ID, outbound)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes.Set(node.ID, *node)
 	return nil
