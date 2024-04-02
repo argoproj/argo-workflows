@@ -806,6 +806,10 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
 	}
+	// If Finalizer exists, requeue to make sure Finalizer can be removed.
+	if woc.wf.Status.Fulfilled() && len(wf.GetFinalizers()) > 0 {
+		woc.requeueAfter(5 * time.Second)
+	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
