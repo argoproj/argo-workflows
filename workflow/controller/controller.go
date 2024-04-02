@@ -12,6 +12,8 @@ import (
 
 	"github.com/upper/db/v4"
 
+	"github.com/argoproj/argo-workflows/v3"
+
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -39,7 +41,6 @@ import (
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -124,6 +125,7 @@ type WorkflowController struct {
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
 	configMapInformer     cache.SharedIndexInformer
+	configMapInformerMgmt cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
@@ -319,9 +321,16 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	wfc.updateEstimatorFactory()
 
-	wfc.configMapInformer, err = wfc.newConfigMapInformer()
+	wfc.configMapInformer, err = wfc.newConfigMapInformer(wfc.GetNamespace())
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if wfc.isManagedNamespaceDifferent() {
+		wfc.configMapInformerMgmt, err = wfc.newConfigMapInformer(wfc.GetManagedNamespace())
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// Create Synchronization Manager
@@ -339,6 +348,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
+
+	if wfc.isManagedNamespaceDifferent() {
+		go wfc.configMapInformerMgmt.Run(ctx.Done())
+	}
+
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
@@ -351,6 +365,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
 		wfc.configMapInformer.HasSynced,
+		wfc.isConfigMapInformerMgmtSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
@@ -1270,43 +1285,62 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) (cache.Shared
 	return informer, nil
 }
 
-func (wfc *WorkflowController) newConfigMapInformer() (cache.SharedIndexInformer, error) {
-	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+func (wfc *WorkflowController) newConfigMapInformer(ns string) (cache.SharedIndexInformer, error) {
+	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, ns, 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
+
 	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
-	if wfc.executorPlugins != nil {
-		_, err := indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
-				cm, err := meta.Accessor(obj)
-				if err != nil {
-					return false
+
+	ctx := context.Background()
+
+	_, err := indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			cm, err := meta.Accessor(obj)
+			if err != nil {
+				log.WithError(err).
+					Error("failed to get configmap")
+
+				return false
+			}
+			//return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
+			if wfc.isPluginCM(cm) {
+				log.WithField("executorPlugins", wfc.executorPlugins != nil).
+					Info("Plugins")
+			}
+
+			return wfc.isPluginCM(cm) || wfc.isControllerCM(cm) || wfc.isFromManagedNamespace(cm)
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+
+				if !wfc.isPluginCM(cm) {
+					return
 				}
-				return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
-			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
-					cm := obj.(*apiv1.ConfigMap)
-					p, err := plugin.FromConfigMap(cm)
-					if err != nil {
-						log.WithField("namespace", cm.GetNamespace()).
-							WithField("name", cm.GetName()).
-							WithError(err).
-							Error("failed to convert configmap to plugin")
-						return
-					}
-					if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
-						wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
-					}
-					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
+
+				p, err := plugin.FromConfigMap(cm)
+				if err != nil {
 					log.WithField("namespace", cm.GetNamespace()).
 						WithField("name", cm.GetName()).
-						Info("Executor plugin added")
-				},
-				UpdateFunc: func(_, obj interface{}) {
-					cm := obj.(*apiv1.ConfigMap)
+						WithError(err).
+						Error("failed to convert configmap to plugin")
+					return
+				}
+				if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
+					wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
+				}
+				wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
+				log.WithField("namespace", cm.GetNamespace()).
+					WithField("name", cm.GetName()).
+					Info("Executor plugin added")
+			},
+			UpdateFunc: func(_, obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+
+				if wfc.isPluginCM(cm) {
 					p, err := plugin.FromConfigMap(cm)
 					if err != nil {
 						log.WithField("namespace", cm.GetNamespace()).
@@ -1320,21 +1354,36 @@ func (wfc *WorkflowController) newConfigMapInformer() (cache.SharedIndexInformer
 					log.WithField("namespace", cm.GetNamespace()).
 						WithField("name", cm.GetName()).
 						Info("Executor plugin updated")
-				},
-				DeleteFunc: func(obj interface{}) {
-					key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
-					delete(wfc.executorPlugins[namespace], name)
-					log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
-				},
-			},
-		})
-		if err != nil {
-			return nil, err
-		}
 
+				} else if wfc.isControllerCM(cm) {
+					log.Infof("Received Workflow Controller config map %s/%s update", cm.GetNamespace(), cm.GetName())
+					wfc.UpdateConfig(ctx)
+				}
+
+				if wfc.isFromManagedNamespace(cm) {
+					wfc.notifySemaphoreConfigUpdate(cm)
+				}
+			},
+			DeleteFunc: func(obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+
+				if !wfc.isPluginCM(cm) {
+					return
+				}
+
+				key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+				namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+				delete(wfc.executorPlugins[namespace], name)
+				log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, err
 	}
 	return indexInformer, nil
+
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
@@ -1505,4 +1554,32 @@ func (wfc *WorkflowController) newArtGCTaskInformer() (wfextvv1alpha1.WorkflowAr
 		return nil, err
 	}
 	return informer, nil
+}
+
+func (wfc *WorkflowController) isManagedNamespaceDifferent() bool {
+	return wfc.GetNamespace() != wfc.GetManagedNamespace()
+}
+
+func (wfc *WorkflowController) GetNamespace() string {
+	return wfc.Config.Namespace
+}
+
+func (wfc *WorkflowController) isPluginCM(cm metav1.Object) bool {
+	return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
+}
+
+func (wfc *WorkflowController) isControllerCM(cm metav1.Object) bool {
+	return cm.GetName() == wfc.configController.GetName()
+}
+
+func (wfc *WorkflowController) isFromManagedNamespace(cm metav1.Object) bool {
+	return cm.GetNamespace() == wfc.GetManagedNamespace()
+}
+
+func (wfc *WorkflowController) isConfigMapInformerMgmtSynced() bool {
+	if wfc.isManagedNamespaceDifferent() {
+		return wfc.configMapInformerMgmt.HasSynced()
+	}
+
+	return true
 }
