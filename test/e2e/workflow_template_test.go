@@ -33,10 +33,6 @@ metadata:
   generateName: workflow-template-nested-
 spec:
   entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: log-level
-      value: "workflow-template-nested-template"
   templates:
   - name: whalesay
     steps:
@@ -48,8 +44,6 @@ spec:
             parameters:
             - name: message
               value: "hello from nested"
-            - name: templatename
-              value: "workflow-template-nested-template"
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow().
