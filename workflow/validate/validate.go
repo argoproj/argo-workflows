@@ -552,7 +552,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 			return nil, errors.New(errors.CodeBadRequest, "template name is required")
 		}
 		if err := VerifyResolvedVariables(tmplRef); err != nil {
-			logrus.Infof("template reference need resolution: %w", err)
+			logrus.Warnf("template reference need resolution: %v", err)
 			return nil, nil
 		}
 	} else if tmplName != "" {
