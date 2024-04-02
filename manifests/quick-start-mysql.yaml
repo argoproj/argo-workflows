@@ -1000,7 +1000,7 @@ kind: Role
 metadata:
   annotations:
     workflows.argoproj.io/description: |
-      Recomended minimum permissions for the `emissary` executor.
+      Recommended minimum permissions for the `emissary` executor.
   name: executor
 rules:
 - apiGroups:

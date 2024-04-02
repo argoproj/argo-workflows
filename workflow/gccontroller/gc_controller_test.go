@@ -22,7 +22,6 @@ var completedWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  clusterName: ""
   creationTimestamp: 2018-08-27T20:41:38Z
   generateName: hello-world-
   generation: 1
@@ -54,7 +53,6 @@ var succeededWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  clusterName: ""
   creationTimestamp: 2018-08-27T20:41:38Z
   generateName: hello-world-
   generation: 1
@@ -85,7 +83,6 @@ var failedWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  clusterName: ""
   creationTimestamp: 2018-08-27T20:41:38Z
   generateName: hello-world-
   generation: 1

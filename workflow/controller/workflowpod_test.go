@@ -510,7 +510,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 			},
 			KeyFormat: "path/in/bucket",
 		},
-		ArchiveLogs: pointer.BoolPtr(true),
+		ArchiveLogs: pointer.Bool(true),
 	})
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -582,19 +582,19 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			if tt.workflowArchiveLog != "" {
 				workflowArchiveLog, _ := strconv.ParseBool(tt.workflowArchiveLog)
-				wf.Spec.ArchiveLogs = pointer.BoolPtr(workflowArchiveLog)
+				wf.Spec.ArchiveLogs = pointer.Bool(workflowArchiveLog)
 			}
 			if tt.templateArchiveLog != "" {
 				templateArchiveLog, _ := strconv.ParseBool(tt.templateArchiveLog)
 				wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
-					ArchiveLogs: pointer.BoolPtr(templateArchiveLog),
+					ArchiveLogs: pointer.Bool(templateArchiveLog),
 				}
 			}
 			cancel, controller := newController(wf)
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
-				ArchiveLogs: pointer.BoolPtr(tt.controllerArchiveLog),
+				ArchiveLogs: pointer.Bool(tt.controllerArchiveLog),
 				S3: &wfv1.S3ArtifactRepository{
 					S3Bucket: wfv1.S3Bucket{
 						Bucket: "foo",

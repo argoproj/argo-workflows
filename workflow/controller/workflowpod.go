@@ -688,12 +688,12 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 			Capabilities: &apiv1.Capabilities{
 				Drop: []apiv1.Capability{"ALL"},
 			},
-			RunAsNonRoot:             pointer.BoolPtr(true),
-			RunAsUser:                pointer.Int64Ptr(8737),
-			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+			RunAsNonRoot:             pointer.Bool(true),
+			RunAsUser:                pointer.Int64(8737),
+			AllowPrivilegeEscalation: pointer.Bool(false),
 		}
 		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
-			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.BoolPtr(true)
+			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
 		}
 	}
 	if woc.controller.Config.KubeConfig != nil {

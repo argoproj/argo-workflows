@@ -37,10 +37,10 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			if assert.Len(t, pods, 1) {
 				pod := pods[0]
 				spec := pod.Spec
-				assert.Equal(t, pointer.BoolPtr(false), spec.AutomountServiceAccountToken)
+				assert.Equal(t, pointer.Bool(false), spec.AutomountServiceAccountToken)
 				assert.Equal(t, &apiv1.PodSecurityContext{
 					RunAsUser:    pointer.Int64(8737),
-					RunAsNonRoot: pointer.BoolPtr(true),
+					RunAsNonRoot: pointer.Bool(true),
 				}, spec.SecurityContext)
 				if assert.Len(t, spec.Volumes, 4) {
 					assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
@@ -68,9 +68,9 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 							}
 							assert.Equal(t, &apiv1.SecurityContext{
 								RunAsUser:                pointer.Int64(8737),
-								RunAsNonRoot:             pointer.BoolPtr(true),
-								AllowPrivilegeEscalation: pointer.BoolPtr(false),
-								ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+								RunAsNonRoot:             pointer.Bool(true),
+								AllowPrivilegeEscalation: pointer.Bool(false),
+								ReadOnlyRootFilesystem:   pointer.Bool(true),
 								Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
 							}, agent.SecurityContext)
 						}
