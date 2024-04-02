@@ -101,6 +101,17 @@ If you made changes to the executor, you need to build the image:
 make argoexec-image
 ```
 
+Or you can use parameters to compile images that support specific platforms or multiple platforms with `TARGET_PLATFORM`:
+
+```bash
+# only support arm64
+make argoexec-image TARGET_PLATFORM=linux/arm64
+# only support amd64
+make argoexec-image TARGET_PLATFORM=linux/amd64
+# support arm64 and amd64
+make argoexec-image TARGET_PLATFORM=linux/arm64,linux/amd64
+```
+
 To also start the API on <http://localhost:2746>:
 
 ```bash
