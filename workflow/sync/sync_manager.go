@@ -87,7 +87,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 				for _, holders := range holding.Holders {
 					resourceKey := getResourceKey(wf.Namespace, wf.Name, holders)
-					log.Infof("HYPO-1 Acquiring key %s for workflow %s\n", resourceKey, wf.Name)
+					log.Infof("[HYPO-1] Acquiring key %s for workflow %s\n", resourceKey, wf.Name)
 					if semaphore != nil && semaphore.acquire(resourceKey) {
 						log.Infof("Lock acquired by %s from %s", resourceKey, holding.Semaphore)
 					}
@@ -183,7 +183,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 
 func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
 	if syncRef == nil {
-		log.Infof("Release called bu syncRef was nil")
+		log.Infof("Release called but syncRef was nil")
 		return
 	}
 
