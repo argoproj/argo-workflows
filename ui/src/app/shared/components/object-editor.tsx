@@ -121,7 +121,6 @@ export function ObjectEditor<T>({type, value, buttons, onChange}: Props<T>) {
                     options={{
                         readOnly: onChange === null,
                         minimap: {enabled: false},
-                        lineNumbers: 'off',
                         guides: {
                             indentation: false
                         },
