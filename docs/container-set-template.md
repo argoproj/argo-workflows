@@ -176,5 +176,7 @@ time="2024-03-29T06:40:27 UTC" level=info msg="sub-process exited" argo=true err
 time="2024-03-29T06:40:27 UTC" level=info msg="not saving outputs - not main container" argo=true
 Error: exit status 1
 ```
+
+!!! Note
     1. If a container's `command` cannot be located, it will not be retried.
         - As it will fail each time, the retry logic is short-circuited.
