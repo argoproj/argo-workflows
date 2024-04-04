@@ -1487,7 +1487,7 @@ func (wfc *WorkflowController) syncPodFinalizer() {
 
 	timeout, _ := time.ParseDuration("10m")
 	if timeoutEnv, ok := os.LookupEnv("ARGO_POD_STATUS_CAPTURE_TIMEOUT"); ok {
-		if t, err := time.ParseDuration(timeoutEnv); err != nil {
+		if t, err := time.ParseDuration(timeoutEnv); err == nil {
 			timeout = t
 		}
 	}
