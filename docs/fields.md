@@ -2411,7 +2411,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`containers`|`Array<`[`ContainerNode`](#containernode)`>`|_No description available_|
-|`retryStrategy`|[`ContainerSetRetryStrategy`](#containersetretrystrategy)|RetryStrategy describes how to retry container nodes if the container set fails. Note that the container set will not be retried if a container's `command` cannot be located, as it will fail each time.|
+|`retryStrategy`|[`ContainerSetRetryStrategy`](#containersetretrystrategy)|RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.|
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|_No description available_|
 
 ## DAGTemplate
