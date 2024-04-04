@@ -977,7 +977,7 @@ func parseRetryMessage(message string) (int, error) {
 	return totalSeconds, nil
 }
 
-// TestProcessNodeRetries tests retrying when RetryOn.Error is disabled
+// TestProcessNodesNoRetryWithError tests retrying when RetryOn.Error is disabled
 func TestProcessNodesNoRetryWithError(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
