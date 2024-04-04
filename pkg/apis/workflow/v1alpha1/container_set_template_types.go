@@ -13,7 +13,7 @@ type ContainerSetTemplate struct {
 	Containers   []ContainerNode      `json:"containers" protobuf:"bytes,4,rep,name=containers"`
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
 	// RetryStrategy describes how to retry container nodes if the container set fails.
-	// Note that the container set will not be retried if a container's `command` cannot be located, as it will fail each time.
+	// Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.
 	RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
 }
 
