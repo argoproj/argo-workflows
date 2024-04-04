@@ -163,6 +163,7 @@ spec:
     `containerSet.retryStrategy` works differently from [template-level retries](retries.md):
     1. Your `command` will be re-ran by the Executor inside the same container if it fails.
         - As no new containers are created, the nodes in the UI remain the same, and the retried logs are appended to original container's logs. For example, your container logs may look like:
+
 ```text
 time="2024-03-29T06:40:25 UTC" level=info msg="capturing logs" argo=true
 intentional failure
@@ -179,4 +180,4 @@ Error: exit status 1
 
 !!! Note
     1. If a container's `command` cannot be located, it will not be retried.
-        - As it will fail each time, the retry logic is short-circuited.
+        - As it will fail each time, the retry logic is short-circuited. 
