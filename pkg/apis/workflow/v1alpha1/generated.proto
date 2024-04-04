@@ -405,12 +405,14 @@ message ContainerNode {
   repeated string dependencies = 2;
 }
 
+// ContainerSetRetryStrategy provides controls on how to retry a container set
 message ContainerSetRetryStrategy {
   // Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
   // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
   optional string duration = 1;
 
-  // Nbr of retries
+  // Retries is the maximum number of retry attempts for each container. It does not include the
+  // first, original attempt; the maximum number of total attempts will be `retries + 1`.
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString retries = 2;
 }
 
@@ -419,8 +421,8 @@ message ContainerSetTemplate {
 
   repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
 
-  // RetryStrategy describes how to retry a container nodes in the container set if it fails.
-  // Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
+  // RetryStrategy describes how to retry container nodes if the container set fails.
+  // Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.
   optional ContainerSetRetryStrategy retryStrategy = 5;
 }
 
