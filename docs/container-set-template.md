@@ -121,10 +121,7 @@ Solution: do not use container set when you have lopsided requests.
 
 > v3.3 and after
 
-You can set a `retryStrategy` to apply to all containers of a container set.
-
-This currently works differently from [retries](retries.md) for other template types.
-You can only set the `duration` between each retry and the total number of `retries`.
+You can set an inner `retryStrategy` to apply to all containers of a container set, including the `duration` between each retry and the total number of `retries`.
 
 See an example below:
 
