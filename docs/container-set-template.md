@@ -180,4 +180,4 @@ Error: exit status 1
 
 !!! Note
     1. If a container's `command` cannot be located, it will not be retried.
-        - As it will fail each time, the retry logic is short-circuited. 
+        - As it will fail each time, the retry logic is short-circuited.
