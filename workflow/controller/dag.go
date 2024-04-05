@@ -153,6 +153,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 		log.Warnf("[AC] ADP failed boundary node")
 		return "", err
 	}
+	log.Warnf("[AC] Got boundaryNode with phase %s name %s and id %s", boundaryNode.Phase, boundaryNode.Name, boundaryNode.ID)
 	// BFS over the children of the DAG
 	uniqueQueue := newUniquePhaseNodeQueue(generatePhaseNodes(boundaryNode.Children, wfv1.NodeSucceeded)...)
 	for !uniqueQueue.empty() {
@@ -165,6 +166,8 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 			log.Warnf("[AC] ADP still running")
 			return wfv1.NodeRunning, nil
 		}
+		log.Warnf("[AC] Phase %s for ancestor %s\n", node.Phase, node.Name)
+		log.Warnf("[AC] phaseNode is %+v", curr)
 		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes
 		branchPhase := curr.phase
 
@@ -173,9 +176,13 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 			return wfv1.NodeRunning, nil
 		}
 
-		// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
+		// Only overwrite the branchPhase if this node completed, inherit parents failure. (If it didn't we can just inherit our parent's branchPhase).
 		if node.Completed() {
-			branchPhase = node.Phase
+			if !curr.phase.FailedOrError() {
+
+				log.Warnf("[AC] updated branchPhase to %s\n", node.Phase)
+				branchPhase = node.Phase
+			}
 		}
 
 		// This node is a target task, so it will not have any children. Store or deduce its phase
@@ -185,6 +192,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 			// Note that if the target task is NOT omitted (i.e. it Completed), then this check is moot, because every time
 			// we arrive at said target task it will have the same branchPhase.
 			if !previousPhase.FailedOrError() {
+				log.Warnf("[AC] updated node %s to phase %s", node.Name, branchPhase)
 				targetTaskPhases[node.ID] = branchPhase
 			}
 		}
@@ -192,6 +200,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 		if node.Type == wfv1.NodeTypeRetry {
 			uniqueQueue.add(generatePhaseNodes(getRetryNodeChildrenIds(node, nodes), branchPhase)...)
 		} else {
+			log.Warnf("[AC] generating new children with phase %s", branchPhase)
 			uniqueQueue.add(generatePhaseNodes(node.Children, branchPhase)...)
 		}
 	}
@@ -329,6 +338,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			return nil, err
 		}
 		_ = woc.markNodePhase(nodeName, dagPhase)
+		log.Warnf("[AC] dagPhase updated for %s to %s", nodeName, dagPhase)
 		log.Warnf("[AC] dagPhase returns early after outbound")
 		return node, nil
 	}
@@ -392,6 +402,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	if err != nil {
 		return nil, err
 	}
+	log.Warnf("[AC-1] dagPhase updated for %s to %s", nodeName, dagPhase)
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
