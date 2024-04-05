@@ -1305,57 +1305,19 @@ func (wfc *WorkflowController) newConfigMapInformer(ns string) (cache.SharedInde
 
 				return false
 			}
-			//return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
-			if wfc.isPluginCM(cm) {
-				log.WithField("executorPlugins", wfc.executorPlugins != nil).
-					Info("Plugins")
-			}
 
 			return wfc.isPluginCM(cm) || wfc.isControllerCM(cm) || wfc.isFromManagedNamespace(cm)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				cm := obj.(*apiv1.ConfigMap)
-
-				if !wfc.isPluginCM(cm) {
-					return
-				}
-
-				p, err := plugin.FromConfigMap(cm)
-				if err != nil {
-					log.WithField("namespace", cm.GetNamespace()).
-						WithField("name", cm.GetName()).
-						WithError(err).
-						Error("failed to convert configmap to plugin")
-					return
-				}
-				if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
-					wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
-				}
-				wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
-				log.WithField("namespace", cm.GetNamespace()).
-					WithField("name", cm.GetName()).
-					Info("Executor plugin added")
+				wfc.applyPluginCM(cm, "added")
 			},
 			UpdateFunc: func(_, obj interface{}) {
 				cm := obj.(*apiv1.ConfigMap)
+				wfc.applyPluginCM(cm, "updated")
 
-				if wfc.isPluginCM(cm) {
-					p, err := plugin.FromConfigMap(cm)
-					if err != nil {
-						log.WithField("namespace", cm.GetNamespace()).
-							WithField("name", cm.GetName()).
-							WithError(err).
-							Error("failed to convert configmap to plugin")
-						return
-					}
-
-					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
-					log.WithField("namespace", cm.GetNamespace()).
-						WithField("name", cm.GetName()).
-						Info("Executor plugin updated")
-
-				} else if wfc.isControllerCM(cm) {
+				if wfc.isControllerCM(cm) {
 					log.Infof("Received Workflow Controller config map %s/%s update", cm.GetNamespace(), cm.GetName())
 					wfc.UpdateConfig(ctx)
 				}
@@ -1366,7 +1328,6 @@ func (wfc *WorkflowController) newConfigMapInformer(ns string) (cache.SharedInde
 			},
 			DeleteFunc: func(obj interface{}) {
 				cm := obj.(*apiv1.ConfigMap)
-
 				if !wfc.isPluginCM(cm) {
 					return
 				}
@@ -1410,6 +1371,28 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 	}
 	return wfc.Config.Namespace
 }
+
+func (wfc *WorkflowController) applyPluginCM(cm metav1.Object, verb string) {
+	if !wfc.isPluginCM(cm) {
+		return
+	}
+
+	p, err := plugin.FromConfigMap(cm)
+	if err != nil {
+		log.WithField("namespace", cm.GetNamespace()).
+			WithField("name", cm.GetName()).
+			WithError(err).
+			Error("failed to convert configmap to plugin")
+		return
+	}
+	if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
+		wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
+	}
+	wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
+	log.WithField("namespace", cm.GetNamespace()).
+		WithField("name", cm.GetName()).
+		Infof("Executor plugin %s", verb)
+ }
 
 func (wfc *WorkflowController) getMaxStackDepth() int {
 	return maxAllowedStackDepth
