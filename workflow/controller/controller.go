@@ -124,8 +124,8 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
-	configMapInformer     cache.SharedIndexInformer
-	configMapInformerMgmt cache.SharedIndexInformer
+	cmInformer            cache.SharedIndexInformer
+	cmInformerManaged     cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
@@ -321,13 +321,13 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	wfc.updateEstimatorFactory()
 
-	wfc.configMapInformer, err = wfc.newConfigMapInformer(wfc.GetNamespace())
+	wfc.cmInformer, err = wfc.newConfigMapInformer(wfc.GetNamespace())
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if wfc.isManagedNamespaceDifferent() {
-		wfc.configMapInformerMgmt, err = wfc.newConfigMapInformer(wfc.GetManagedNamespace())
+		wfc.cmInformerManaged, err = wfc.newConfigMapInformer(wfc.GetManagedNamespace())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -347,10 +347,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.configMapInformer.Run(ctx.Done())
-
+	go wfc.cmInformer.Run(ctx.Done())
 	if wfc.isManagedNamespaceDifferent() {
-		go wfc.configMapInformerMgmt.Run(ctx.Done())
+		go wfc.cmInformerManaged.Run(ctx.Done())
 	}
 
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
@@ -364,8 +363,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
-		wfc.configMapInformer.HasSynced,
-		wfc.isConfigMapInformerMgmtSynced,
+		wfc.cmInformer.HasSynced,
+		wfc.isCMInformerManagedSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
@@ -1306,7 +1305,7 @@ func (wfc *WorkflowController) newConfigMapInformer(ns string) (cache.SharedInde
 				return false
 			}
 
-			return wfc.isPluginCM(cm) || wfc.isControllerCM(cm) || wfc.isFromManagedNamespace(cm)
+			return wfc.isPluginCM(cm) || wfc.isControllerCM(cm) || wfc.isManagedNamespaceCM(cm)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -1322,7 +1321,7 @@ func (wfc *WorkflowController) newConfigMapInformer(ns string) (cache.SharedInde
 					wfc.UpdateConfig(ctx)
 				}
 
-				if wfc.isFromManagedNamespace(cm) {
+				if wfc.isManagedNamespaceCM(cm) {
 					wfc.notifySemaphoreConfigUpdate(cm)
 				}
 			},
@@ -1392,7 +1391,7 @@ func (wfc *WorkflowController) applyPluginCM(cm metav1.Object, verb string) {
 	log.WithField("namespace", cm.GetNamespace()).
 		WithField("name", cm.GetName()).
 		Infof("Executor plugin %s", verb)
- }
+}
 
 func (wfc *WorkflowController) getMaxStackDepth() int {
 	return maxAllowedStackDepth
@@ -1555,13 +1554,13 @@ func (wfc *WorkflowController) isControllerCM(cm metav1.Object) bool {
 	return cm.GetName() == wfc.configController.GetName()
 }
 
-func (wfc *WorkflowController) isFromManagedNamespace(cm metav1.Object) bool {
+func (wfc *WorkflowController) isManagedNamespaceCM(cm metav1.Object) bool {
 	return cm.GetNamespace() == wfc.GetManagedNamespace()
 }
 
-func (wfc *WorkflowController) isConfigMapInformerMgmtSynced() bool {
+func (wfc *WorkflowController) isCMInformerManagedSynced() bool {
 	if wfc.isManagedNamespaceDifferent() {
-		return wfc.configMapInformerMgmt.HasSynced()
+		return wfc.cmInformerManaged.HasSynced()
 	}
 
 	return true
