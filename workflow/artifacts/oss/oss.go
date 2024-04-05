@@ -339,20 +339,17 @@ func isTransientOSSErr(err error) bool {
 	return false
 }
 
-func putFile(bucket *oss.Bucket, objectName, path string) error {
-	log.Debugf("putFile from %s to %s", path, objectName)
-	fStat, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	// Determine upload method based on file size.
-	if fStat.Size() <= maxObjectSize {
-		log.Info("OSS Simple Uploading")
-		return bucket.PutObjectFromFile(objectName, path)
-	}
+// OSS simple upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/simple-upload?spm=a2c63.p38356.0.0.2c072398fh5k3W#section-ym8-svm-rmu
+func simpleUpload(bucket *oss.Bucket, objectName, path string) error {
+	log.Info("OSS Simple Uploading")
+	return bucket.PutObjectFromFile(objectName, path)
+}
+
+// OSS multipart upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/multipart-upload?spm=a2c63.p38356.0.0.4ebe423fzsaPiN#section-trz-mpy-tes
+func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int64) error {
 	log.Info("OSS Multipart Uploading")
 	// Calculate the number of chunks
-	chunkNum := int(math.Ceil(float64(fStat.Size())/float64(maxObjectSize))) + 1
+	chunkNum := int(math.Ceil(float64(objectSize)/float64(maxObjectSize))) + 1
 	chunks, err := oss.SplitFileByPartNum(path, chunkNum)
 	if err != nil {
 		return err
@@ -370,7 +367,10 @@ func putFile(bucket *oss.Bucket, objectName, path string) error {
 	// Upload the chunks.
 	var parts []oss.UploadPart
 	for _, chunk := range chunks {
-		fd.Seek(chunk.Offset, io.SeekStart)
+		_, err := fd.Seek(chunk.Offset, io.SeekStart)
+		if err != nil {
+			return err
+		}
 		// Call the UploadPart method to upload each chunck.
 		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
 		if err != nil {
@@ -386,6 +386,19 @@ func putFile(bucket *oss.Bucket, objectName, path string) error {
 		return err
 	}
 	return nil
+}
+
+func putFile(bucket *oss.Bucket, objectName, path string) error {
+	log.Debugf("putFile from %s to %s", path, objectName)
+	fStat, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	// Determine upload method based on file size.
+	if fStat.Size() <= maxObjectSize {
+		return simpleUpload(bucket, objectName, path)
+	}
+	return multipartUpload(bucket, objectName, path, fStat.Size())
 }
 
 func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
