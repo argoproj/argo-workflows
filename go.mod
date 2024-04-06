@@ -293,3 +293,6 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
+
+// Avoid CVE-2023-45288
+replace golang.org/x/net/http2 => golang.org/x/net/http2 v0.24.0
