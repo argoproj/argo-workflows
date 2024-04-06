@@ -1332,19 +1332,19 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 	return wfc.GetNamespace()
 }
 
-func (wfc *WorkflowController) isManagedNamespaceCM(cm metav1.Object) bool {
+func (wfc *WorkflowController) isManagedNamespaceCM(cm *apiv1.ConfigMap) bool {
 	return cm.GetNamespace() == wfc.GetManagedNamespace()
 }
 
-func (wfc *WorkflowController) isControllerCM(cm metav1.Object) bool {
+func (wfc *WorkflowController) isControllerCM(cm *apiv1.ConfigMap) bool {
 	return cm.GetName() == wfc.configController.GetName() && cm.GetNamespace() == wfc.GetNamespace()
 }
 
-func (wfc *WorkflowController) isPluginCM(cm metav1.Object) bool {
+func (wfc *WorkflowController) isPluginCM(cm *apiv1.ConfigMap) bool {
 	return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin && wfc.isManagedNamespaceCM(cm)
 }
 
-func (wfc *WorkflowController) applyPluginCM(cm metav1.Object, verb string) {
+func (wfc *WorkflowController) applyPluginCM(cm *apiv1.ConfigMap, verb string) {
 	if !wfc.isPluginCM(cm) {
 		return
 	}
@@ -1366,7 +1366,7 @@ func (wfc *WorkflowController) applyPluginCM(cm metav1.Object, verb string) {
 		Infof("Executor plugin %s", verb)
 }
 
-func (wfc *WorkflowController) deletePluginCM(cm metav1.Object, obj interface{}) {
+func (wfc *WorkflowController) deletePluginCM(cm *apiv1.ConfigMap, obj interface{}) {
 	if !wfc.isPluginCM(cm) {
 		return
 	}
