@@ -1572,44 +1572,6 @@ func (s *ArgoServerSuite) TestRetryStoppedButIncompleteWorkflow() {
 	})
 }
 
-func (s *ArgoServerSuite) TestRetryWorkflowWithContinueOn() {
-	var workflowName string
-	s.Given().
-		Workflow(`@testdata/retry-workflow-with-continueon.yaml`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeFailed).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			workflowName = metadata.Name
-			assert.Equal(t, 6, len(status.Nodes))
-		})
-
-	s.Run("Retry", func() {
-		s.e().PUT("/api/v1/workflows/argo/{workflowName}/retry", workflowName).
-			Expect().
-			Status(200).
-			JSON().
-			Path("$.metadata.name").
-			NotNull()
-	})
-
-	s.Given().
-		When().
-		WaitForWorkflow(fixtures.ToBeCompleted).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			workflowName = metadata.Name
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Equal(t, 6, len(status.Nodes))
-		}).
-		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
-			return strings.Contains(status.Name, "retry-workflow-with-continueon.success")
-		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
-			assert.Equal(t, 2, len(status.Children))
-		})
-}
-
 func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	s.Run("Lint", func() {
 		s.e().POST("/api/v1/workflow-templates/argo/lint").
