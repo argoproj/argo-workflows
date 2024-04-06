@@ -1380,11 +1380,11 @@ func (wfc *WorkflowController) isManagedNamespaceCM(cm metav1.Object) bool {
 }
 
 func (wfc *WorkflowController) isControllerCM(cm metav1.Object) bool {
-	return cm.GetName() == wfc.configController.GetName()
+	return cm.GetName() == wfc.configController.GetName() && cm.GetNamespace() == wfc.GetNamespace()
 }
 
 func (wfc *WorkflowController) isPluginCM(cm metav1.Object) bool {
-	return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
+	return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin && wfc.isManagedNamespaceCM(cm)
 }
 
 func (wfc *WorkflowController) applyPluginCM(cm metav1.Object, verb string) {
