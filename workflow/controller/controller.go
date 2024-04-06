@@ -1275,7 +1275,7 @@ func (wfc *WorkflowController) newConfigMapInformerManaged() (cache.SharedIndexI
 
 func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) (cache.SharedIndexInformer, error) {
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetNamespace(), 20*time.Minute, nil, func(opts *metav1.ListOptions) {
-		opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", wfc.configController.GetName()) // only the controller configmap
+		opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", wfc.configController.GetName()).String() // only the controller configmap
 	})
 
 	_, err := indexInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
