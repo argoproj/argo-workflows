@@ -124,8 +124,8 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
-	cmInformer            cache.SharedIndexInformer
-	cmInformerManaged     cache.SharedIndexInformer
+	cmInformer            cache.SharedIndexInformer // configmaps in own ns
+	cmInformerManaged     cache.SharedIndexInformer // configmaps in managed ns
 	wfQueue               workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
@@ -1300,7 +1300,7 @@ func (wfc *WorkflowController) newConfigMapInformer(ns string) (cache.SharedInde
 			cm, err := meta.Accessor(obj)
 			if err != nil {
 				log.WithError(err).
-					Error("failed to get configmap")
+					Error("failed to get configmap metadata")
 
 				return false
 			}
