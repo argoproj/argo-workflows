@@ -37,7 +37,6 @@ import (
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 
@@ -340,10 +339,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal(err)
 	}
 
-	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
-		go wfc.runConfigMapWatcher(ctx.Done())
-	}
-
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -453,40 +448,6 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-	ctx := context.Background()
-	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	defer retryWatcher.Stop()
-
-	for {
-		select {
-		case event := <-retryWatcher.ResultChan():
-			cm, ok := event.Object.(*apiv1.ConfigMap)
-			if !ok {
-				log.Errorf("invalid config map object received in config watcher. Ignored processing")
-				continue
-			}
-			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
-			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
-				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
-				wfc.UpdateConfig(ctx)
-			}
-			wfc.notifySemaphoreConfigUpdate(cm)
-		case <-stopCh:
-			return
-		}
-	}
 }
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
@@ -1316,13 +1277,16 @@ func (wfc *WorkflowController) newConfigMapInformer(ns string) (cache.SharedInde
 				cm := obj.(*apiv1.ConfigMap)
 				wfc.applyPluginCM(cm, "updated")
 
-				if wfc.isControllerCM(cm) {
-					log.Infof("Received Workflow Controller config map %s/%s update", cm.GetNamespace(), cm.GetName())
-					wfc.UpdateConfig(ctx)
-				}
+				if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
+					log.Debugf("received config map %s/%s update", cm.GetNamespace(), cm.GetName())
+					if wfc.isControllerCM(cm) {
+						log.Infof("Received Workflow Controller config map %s/%s update", cm.GetNamespace(), cm.GetName())
+						wfc.UpdateConfig(ctx)
+					}
 
-				if wfc.isManagedNamespaceCM(cm) {
-					wfc.notifySemaphoreConfigUpdate(cm)
+					if wfc.isManagedNamespaceCM(cm) {
+						wfc.notifySemaphoreConfigUpdate(cm)
+					}
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
