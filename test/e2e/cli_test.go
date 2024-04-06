@@ -866,6 +866,20 @@ func (s *CLISuite) TestWorkflowRetry() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowRetryFailedWorkflow() {
+	failFirstPassSecondWorkflowWhen := s.Given().
+		Workflow("@testdata/fail-first-pass-second.yaml").
+		When()
+
+	failFirstPassSecondWorkflowWhen.
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		RunCli([]string{"retry", "-l", "workflows.argoproj.io/workflow=fail-first-pass-second-workflow", "--namespace=argo"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err, output)
+		}).
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func (s *CLISuite) TestWorkflowRetryNestedDag() {
 	s.Given().
 		Workflow("@testdata/retry-nested-dag-test.yaml").
