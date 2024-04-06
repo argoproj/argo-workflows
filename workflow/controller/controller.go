@@ -1364,11 +1364,27 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 	return nil
 }
 
+func (wfc *WorkflowController) GetNamespace() string {
+	return wfc.Config.Namespace
+}
+
 func (wfc *WorkflowController) GetManagedNamespace() string {
 	if wfc.managedNamespace != "" {
 		return wfc.managedNamespace
 	}
-	return wfc.Config.Namespace
+	return wfc.GetNamespace()
+}
+
+func (wfc *WorkflowController) isManagedNamespaceCM(cm metav1.Object) bool {
+	return cm.GetNamespace() == wfc.GetManagedNamespace()
+}
+
+func (wfc *WorkflowController) isControllerCM(cm metav1.Object) bool {
+	return cm.GetName() == wfc.configController.GetName()
+}
+
+func (wfc *WorkflowController) isPluginCM(cm metav1.Object) bool {
+	return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
 }
 
 func (wfc *WorkflowController) applyPluginCM(cm metav1.Object, verb string) {
@@ -1540,22 +1556,6 @@ func (wfc *WorkflowController) newArtGCTaskInformer() (wfextvv1alpha1.WorkflowAr
 
 func (wfc *WorkflowController) isManagedNamespaceDifferent() bool {
 	return wfc.GetNamespace() != wfc.GetManagedNamespace()
-}
-
-func (wfc *WorkflowController) GetNamespace() string {
-	return wfc.Config.Namespace
-}
-
-func (wfc *WorkflowController) isPluginCM(cm metav1.Object) bool {
-	return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
-}
-
-func (wfc *WorkflowController) isControllerCM(cm metav1.Object) bool {
-	return cm.GetName() == wfc.configController.GetName()
-}
-
-func (wfc *WorkflowController) isManagedNamespaceCM(cm metav1.Object) bool {
-	return cm.GetNamespace() == wfc.GetManagedNamespace()
 }
 
 func (wfc *WorkflowController) isCMInformerManagedSynced() bool {
