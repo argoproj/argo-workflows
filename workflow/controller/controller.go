@@ -1327,14 +1327,7 @@ func (wfc *WorkflowController) newConfigMapInformer(ns string) (cache.SharedInde
 			},
 			DeleteFunc: func(obj interface{}) {
 				cm := obj.(*apiv1.ConfigMap)
-				if !wfc.isPluginCM(cm) {
-					return
-				}
-
-				key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				namespace, name, _ := cache.SplitMetaNamespaceKey(key)
-				delete(wfc.executorPlugins[namespace], name)
-				log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
+				wfc.deletePluginCM(cm, obj)
 			},
 		},
 	})
@@ -1407,6 +1400,17 @@ func (wfc *WorkflowController) applyPluginCM(cm metav1.Object, verb string) {
 	log.WithField("namespace", cm.GetNamespace()).
 		WithField("name", cm.GetName()).
 		Infof("Executor plugin %s", verb)
+}
+
+func (wfc *WorkflowController) deletePluginCM(cm metav1.Object, obj interface{}) {
+	if !wfc.isPluginCM(cm) {
+		return
+	}
+
+	key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+	delete(wfc.executorPlugins[namespace], name)
+	log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
 }
 
 func (wfc *WorkflowController) getMaxStackDepth() int {
