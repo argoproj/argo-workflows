@@ -1,0 +1,37 @@
+metadata:
+  name: fail-first-pass-second-workflow
+  labels:
+    workflows.argoproj.io/workflow: "fail-first-pass-second-workflow"
+spec:
+  entrypoint: main
+  volumeClaimTemplates:
+    - metadata:
+        name: artifacts
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 0.1Gi
+  templates:
+    - name: main
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        volumeMounts:
+          - name: artifacts
+            mountPath: /tmp
+        command: [sh, -c]
+        args:
+          - |
+            if [ -s /tmp/artifact.txt ]
+            then
+              echo "Successfully retried failing workflow."
+              exit 0
+            else
+              echo "test artifact" > /tmp/artifact.txt
+              exit 1
+            fi
+      outputs:
+        artifacts:
+          - name: artifact
+            path: /tmp/artifact.txt
