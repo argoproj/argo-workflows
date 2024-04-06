@@ -1332,15 +1332,15 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 	return wfc.GetNamespace()
 }
 
-func (wfc *WorkflowController) isManagedNamespaceCM(cm *apiv1.ConfigMap) bool {
+func (wfc *WorkflowController) isManagedNamespaceCM(cm metav1.Object) bool {
 	return cm.GetNamespace() == wfc.GetManagedNamespace()
 }
 
-func (wfc *WorkflowController) isControllerCM(cm *apiv1.ConfigMap) bool {
+func (wfc *WorkflowController) isControllerCM(cm metav1.Object) bool {
 	return cm.GetName() == wfc.configController.GetName() && cm.GetNamespace() == wfc.GetNamespace()
 }
 
-func (wfc *WorkflowController) isPluginCM(cm *apiv1.ConfigMap) bool {
+func (wfc *WorkflowController) isPluginCM(cm metav1.Object) bool {
 	return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin && wfc.isManagedNamespaceCM(cm)
 }
 
