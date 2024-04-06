@@ -25,7 +25,7 @@ func init() {
 
 // syncAllCacheForGC syncs all cache for GC
 func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
-	configMaps, err := wfc.cmInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, common.LabelValueTypeConfigMapCache)
+	configMaps, err := wfc.cmInformerManaged.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, common.LabelValueTypeConfigMapCache)
 	if err != nil {
 		log.WithError(err).Error("Failed to get configmaps from informer")
 		return
