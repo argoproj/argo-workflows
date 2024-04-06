@@ -415,15 +415,6 @@ jobs:
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
       - run: yarn --cwd ui deduplicate
-      # Deduplicate UI deps for dependabot PRs
-      - name: Commit deduplicated yarn.lock for Dependabot PRs
-        if: github.actor == 'dependabot[bot]'
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add ui/yarn.lock
-          git commit -s --allow-empty -m 'chore: deduplicate yarn.lock'
-          git push
       # if lint or deduplicate make changes that are not in the PR, fail the build
       - name: Check if lint & deduplicate made changes not present in the PR
         run: git diff --exit-code

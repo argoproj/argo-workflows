@@ -1868,7 +1868,7 @@ spec:
       args: ["echo {{inputs.parameters.parameter}}"]
 `
 
-// TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
+// TestRuntimeResolutionOfVariableNames verifies an error against a workflow of an invalid resource.
 func TestRuntimeResolutionOfVariableNames(t *testing.T) {
 	wf := unmarshalWf(runtimeResolutionOfVariableNames)
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
