@@ -1239,10 +1239,8 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) (cache.Shared
 }
 
 func (wfc *WorkflowController) newConfigMapInformerManaged() (cache.SharedIndexInformer, error) {
-	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+	indexInformer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
-	}, func(opts *metav1.ListOptions) {
-		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
 
 	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
