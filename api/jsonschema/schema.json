@@ -6297,6 +6297,10 @@
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
           "type": "string"
         },
+        "multi": {
+          "description": "Multi is a boolean which decides whether value should be interpreted as a multi-select, or as a single-select",
+          "type": "boolean"
+        },
         "name": {
           "description": "Name is the parameter name",
           "type": "string"

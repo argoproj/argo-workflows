@@ -626,6 +626,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "enum_example",
                                 ],
                                 global_name="global_name_example",
+                                multi=True,
                                 name="name_example",
                                 value="value_example",
                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -938,6 +939,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -2369,6 +2371,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "enum_example",
                                                 ],
                                                 global_name="global_name_example",
+                                                multi=True,
                                                 name="name_example",
                                                 value="value_example",
                                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -2651,6 +2654,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "enum_example",
                                                         ],
                                                         global_name="global_name_example",
+                                                        multi=True,
                                                         name="name_example",
                                                         value="value_example",
                                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -3514,6 +3518,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "enum_example",
                                     ],
                                     global_name="global_name_example",
+                                    multi=True,
                                     name="name_example",
                                     value="value_example",
                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -3839,6 +3844,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "enum_example",
                                     ],
                                     global_name="global_name_example",
+                                    multi=True,
                                     name="name_example",
                                     value="value_example",
                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -4965,6 +4971,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "enum_example",
                                                 ],
                                                 global_name="global_name_example",
+                                                multi=True,
                                                 name="name_example",
                                                 value="value_example",
                                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -5243,6 +5250,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "enum_example",
                                                         ],
                                                         global_name="global_name_example",
+                                                        multi=True,
                                                         name="name_example",
                                                         value="value_example",
                                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -6936,6 +6944,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "enum_example",
                                                     ],
                                                     global_name="global_name_example",
+                                                    multi=True,
                                                     name="name_example",
                                                     value="value_example",
                                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -7218,6 +7227,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "enum_example",
                                                             ],
                                                             global_name="global_name_example",
+                                                            multi=True,
                                                             name="name_example",
                                                             value="value_example",
                                                             value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -8081,6 +8091,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -8406,6 +8417,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -9532,6 +9544,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "enum_example",
                                                     ],
                                                     global_name="global_name_example",
+                                                    multi=True,
                                                     name="name_example",
                                                     value="value_example",
                                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -9810,6 +9823,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "enum_example",
                                                             ],
                                                             global_name="global_name_example",
+                                                            multi=True,
                                                             name="name_example",
                                                             value="value_example",
                                                             value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -11642,6 +11656,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "enum_example",
                                 ],
                                 global_name="global_name_example",
+                                multi=True,
                                 name="name_example",
                                 value="value_example",
                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -11954,6 +11969,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -13385,6 +13401,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "enum_example",
                                                 ],
                                                 global_name="global_name_example",
+                                                multi=True,
                                                 name="name_example",
                                                 value="value_example",
                                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -13667,6 +13684,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "enum_example",
                                                         ],
                                                         global_name="global_name_example",
+                                                        multi=True,
                                                         name="name_example",
                                                         value="value_example",
                                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -14530,6 +14548,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "enum_example",
                                     ],
                                     global_name="global_name_example",
+                                    multi=True,
                                     name="name_example",
                                     value="value_example",
                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -14855,6 +14874,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "enum_example",
                                     ],
                                     global_name="global_name_example",
+                                    multi=True,
                                     name="name_example",
                                     value="value_example",
                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -15981,6 +16001,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "enum_example",
                                                 ],
                                                 global_name="global_name_example",
+                                                multi=True,
                                                 name="name_example",
                                                 value="value_example",
                                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -16259,6 +16280,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "enum_example",
                                                         ],
                                                         global_name="global_name_example",
+                                                        multi=True,
                                                         name="name_example",
                                                         value="value_example",
                                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -17952,6 +17974,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "enum_example",
                                                     ],
                                                     global_name="global_name_example",
+                                                    multi=True,
                                                     name="name_example",
                                                     value="value_example",
                                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -18234,6 +18257,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "enum_example",
                                                             ],
                                                             global_name="global_name_example",
+                                                            multi=True,
                                                             name="name_example",
                                                             value="value_example",
                                                             value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -19097,6 +19121,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -19422,6 +19447,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -20548,6 +20574,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "enum_example",
                                                     ],
                                                     global_name="global_name_example",
+                                                    multi=True,
                                                     name="name_example",
                                                     value="value_example",
                                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -20826,6 +20853,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "enum_example",
                                                             ],
                                                             global_name="global_name_example",
+                                                            multi=True,
                                                             name="name_example",
                                                             value="value_example",
                                                             value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -22743,6 +22771,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "enum_example",
                                 ],
                                 global_name="global_name_example",
+                                multi=True,
                                 name="name_example",
                                 value="value_example",
                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -23055,6 +23084,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -24486,6 +24516,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "enum_example",
                                                 ],
                                                 global_name="global_name_example",
+                                                multi=True,
                                                 name="name_example",
                                                 value="value_example",
                                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -24768,6 +24799,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "enum_example",
                                                         ],
                                                         global_name="global_name_example",
+                                                        multi=True,
                                                         name="name_example",
                                                         value="value_example",
                                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -25631,6 +25663,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "enum_example",
                                     ],
                                     global_name="global_name_example",
+                                    multi=True,
                                     name="name_example",
                                     value="value_example",
                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -25956,6 +25989,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "enum_example",
                                     ],
                                     global_name="global_name_example",
+                                    multi=True,
                                     name="name_example",
                                     value="value_example",
                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -27082,6 +27116,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "enum_example",
                                                 ],
                                                 global_name="global_name_example",
+                                                multi=True,
                                                 name="name_example",
                                                 value="value_example",
                                                 value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -27360,6 +27395,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "enum_example",
                                                         ],
                                                         global_name="global_name_example",
+                                                        multi=True,
                                                         name="name_example",
                                                         value="value_example",
                                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -29053,6 +29089,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "enum_example",
                                                     ],
                                                     global_name="global_name_example",
+                                                    multi=True,
                                                     name="name_example",
                                                     value="value_example",
                                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -29335,6 +29372,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "enum_example",
                                                             ],
                                                             global_name="global_name_example",
+                                                            multi=True,
                                                             name="name_example",
                                                             value="value_example",
                                                             value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -30198,6 +30236,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -30523,6 +30562,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "enum_example",
                                         ],
                                         global_name="global_name_example",
+                                        multi=True,
                                         name="name_example",
                                         value="value_example",
                                         value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -31649,6 +31689,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "enum_example",
                                                     ],
                                                     global_name="global_name_example",
+                                                    multi=True,
                                                     name="name_example",
                                                     value="value_example",
                                                     value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
@@ -31927,6 +31968,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "enum_example",
                                                             ],
                                                             global_name="global_name_example",
+                                                            multi=True,
                                                             name="name_example",
                                                             value="value_example",
                                                             value_from=IoArgoprojWorkflowV1alpha1ValueFrom(

@@ -781,6 +781,8 @@ spec:
                       type: array
                     globalName:
                       type: string
+                    multi:
+                      type: boolean
                     name:
                       type: string
                     value:

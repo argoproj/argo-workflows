@@ -939,6 +939,8 @@ spec:
                           type: array
                         globalName:
                           type: string
+                        multi:
+                          type: boolean
                         name:
                           type: string
                         value:
@@ -1590,6 +1592,8 @@ spec:
                                 type: array
                               globalName:
                                 type: string
+                              multi:
+                                type: boolean
                               name:
                                 type: string
                               value:
@@ -4600,6 +4604,8 @@ spec:
                                         type: array
                                       globalName:
                                         type: string
+                                      multi:
+                                        type: boolean
                                       name:
                                         type: string
                                       value:
@@ -5199,6 +5205,8 @@ spec:
                                               type: array
                                             globalName:
                                               type: string
+                                            multi:
+                                              type: boolean
                                             name:
                                               type: string
                                             value:
@@ -7067,6 +7075,8 @@ spec:
                               type: array
                             globalName:
                               type: string
+                            multi:
+                              type: boolean
                             name:
                               type: string
                             value:
@@ -7759,6 +7769,8 @@ spec:
                               type: array
                             globalName:
                               type: string
+                            multi:
+                              type: boolean
                             name:
                               type: string
                             value:
@@ -13086,6 +13098,8 @@ spec:
                                           type: array
                                         globalName:
                                           type: string
+                                        multi:
+                                          type: boolean
                                         name:
                                           type: string
                                         value:
@@ -13685,6 +13699,8 @@ spec:
                                                 type: array
                                               globalName:
                                                 type: string
+                                              multi:
+                                                type: boolean
                                               name:
                                                 type: string
                                               value:
@@ -15553,6 +15569,8 @@ spec:
                                 type: array
                               globalName:
                                 type: string
+                              multi:
+                                type: boolean
                               name:
                                 type: string
                               value:
@@ -16245,6 +16263,8 @@ spec:
                                 type: array
                               globalName:
                                 type: string
+                              multi:
+                                type: boolean
                               name:
                                 type: string
                               value:

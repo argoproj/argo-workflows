@@ -1244,6 +1244,9 @@ message Parameter {
 
   // Description is the parameter description
   optional string description = 7;
+
+  // Multi is a boolean which decides whether value should be interpreted as a multi-select, or as a single-select
+  optional bool multi = 8;
 }
 
 // Plugin is an Object with exactly one key
