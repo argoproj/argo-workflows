@@ -1420,7 +1420,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 2) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow-2"].Phase)
 				assert.Equal(t, 4, len(podsToDelete))
 			}
 		}
