@@ -101,7 +101,7 @@ If you made changes to the executor, you need to build the image:
 make argoexec-image
 ```
 
-Or you can use parameters to compile images that support specific platforms or multiple platforms with `TARGET_PLATFORM`:
+You can use the `TARGET_PLATFORM` environment variable to compile images for specific platforms:
 
 ```bash
 # compile for both arm64 and amd64
