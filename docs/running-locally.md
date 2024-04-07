@@ -104,11 +104,7 @@ make argoexec-image
 Or you can use parameters to compile images that support specific platforms or multiple platforms with `TARGET_PLATFORM`:
 
 ```bash
-# only support arm64
-make argoexec-image TARGET_PLATFORM=linux/arm64
-# only support amd64
-make argoexec-image TARGET_PLATFORM=linux/amd64
-# support arm64 and amd64
+# compile for both arm64 and amd64
 make argoexec-image TARGET_PLATFORM=linux/arm64,linux/amd64
 ```
 
