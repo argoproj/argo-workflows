@@ -221,9 +221,32 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 	return err
 }
 
-// Delete is unsupported for the oss artifacts
-func (ossDriver *ArtifactDriver) Delete(s *wfv1.Artifact) error {
-	return common.ErrDeleteNotSupported
+// Delete deletes an artifact from an OSS compliant storage
+func (ossDriver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			log.Infof("OSS Delete artifact: key: %s", artifact.OSS.Key)
+			osscli, err := ossDriver.newOSSClient()
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucketName := artifact.OSS.Bucket
+			err = setBucketLogging(osscli, bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucket, err := osscli.Bucket(bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			objectName := artifact.OSS.Key
+			err = bucket.DeleteObject(objectName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			return true, nil
+		})
+	return err
 }
 
 func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
