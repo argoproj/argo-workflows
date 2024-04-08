@@ -439,7 +439,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			}
 		}
 
-		processedTmpl, err := common.ProcessArgs(tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.cmInformerManaged.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.cmInformer.GetIndexer())
 		if err != nil {
 			woc.markNodeError(node.Name, err)
 		}

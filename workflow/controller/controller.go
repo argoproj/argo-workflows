@@ -122,8 +122,8 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
-	cmInformer            cache.SharedIndexInformer // configmaps in own ns
-	cmInformerManaged     cache.SharedIndexInformer // configmaps in managed ns
+	cmInformer            cache.SharedIndexInformer // configmaps of plugins, parameters, memoizations, etc
+	cmCtrlInformer        cache.SharedIndexInformer // controller's own configmap
 	wfQueue               workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
@@ -319,11 +319,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	wfc.updateEstimatorFactory()
 
-	wfc.cmInformer, err = wfc.newConfigMapInformer(ctx)
+	wfc.cmInformer, err = wfc.newConfigMapInformer()
 	if err != nil {
 		log.Fatal(err)
 	}
-	wfc.cmInformerManaged, err = wfc.newConfigMapInformerManaged()
+	wfc.cmCtrlInformer, err = wfc.newConfigMapCtrlInformer(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -339,7 +339,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.cmInformer.Run(ctx.Done())
-	go wfc.cmInformerManaged.Run(ctx.Done())
+	go wfc.cmCtrlInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
@@ -1241,7 +1241,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) (cache.Shared
 
 var watchControllerSemaphoreConfigMaps = os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false"
 
-func (wfc *WorkflowController) newConfigMapInformerManaged() (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) newConfigMapInformer() (cache.SharedIndexInformer, error) {
 	indexInformer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	})
@@ -1275,7 +1275,7 @@ func (wfc *WorkflowController) newConfigMapInformerManaged() (cache.SharedIndexI
 	return indexInformer, nil
 }
 
-func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) newConfigMapCtrlInformer(ctx context.Context) (cache.SharedIndexInformer, error) {
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetNamespace(), 20*time.Minute, nil, func(opts *metav1.ListOptions) {
 		opts.FieldSelector = fields.OneTermEqualSelector(metav1.ObjectNameField, wfc.configController.GetName()).String() // only the controller configmap
 	})
