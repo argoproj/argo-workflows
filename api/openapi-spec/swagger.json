@@ -8719,6 +8719,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
+      "description": "ContainerSetRetryStrategy provides controls on how to retry a container set",
       "type": "object",
       "required": [
         "retries"
@@ -8729,7 +8730,7 @@
           "type": "string"
         },
         "retries": {
-          "description": "Nbr of retries",
+          "description": "Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         }
       }
@@ -8747,7 +8748,7 @@
           }
         },
         "retryStrategy": {
-          "description": "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.",
+          "description": "RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy"
         },
         "volumeMounts": {
