@@ -352,7 +352,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
 		wfc.cmInformer.HasSynced,
-		wfc.cmInformerManaged.HasSynced,
+		wfc.cmCtrlInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
