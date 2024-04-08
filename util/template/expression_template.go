@@ -51,7 +51,6 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 
-	fmt.Println("unmarshalledExpression", unmarshalledExpression)
 	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously
