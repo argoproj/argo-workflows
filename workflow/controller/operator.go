@@ -3888,7 +3888,6 @@ func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("fail to FormulateRetryWorkflow")
 	}
-	woc.getActivePodsCounter()
 	for _, podName := range podsToDelete {
 		woc.controller.queuePodForCleanup(wf.Namespace, podName, deletePod)
 	}

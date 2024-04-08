@@ -1582,7 +1582,6 @@ RetryConfig defines how to retry a workflow
 |`nodeFieldSelector`|`string`|NodeFieldSelector selects nodes to reset|
 |`parameters`|`Array< string >`|Parameters are a list of parameters passed|
 |`restartSuccessful`|`boolean`|RestartSuccessful defines whether or not to retry succeeded node|
-|`retried`|`boolean`|Retried tracks whether or not this workflow was retried by RetryConfig|
 
 ## RetryStrategy
 
