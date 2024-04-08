@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/doublerebel/bellows"
@@ -50,6 +51,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 
+	fmt.Println("unmarshalledExpression", unmarshalledExpression)
 	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously
@@ -69,7 +71,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if result == nil {
 		return 0, fmt.Errorf("failed to evaluate expression %q", expression)
 	}
-	resultMarshaled, err := json.Marshal(fmt.Sprintf("%v", result))
+	resultMarshaled, err := json.Marshal(result)
 	if (err != nil || resultMarshaled == nil) && allowUnresolved {
 		log.WithError(err).Debug("resultMarshaled is nil and unresolved is allowed ")
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
@@ -80,9 +82,20 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if resultMarshaled == nil {
 		return 0, fmt.Errorf("failed to marshal evaluated marshaled expression %q", expression)
 	}
-	// Trim leading and trailing quotes. The value is being inserted into something that's already a string.
 	marshaledLength := len(resultMarshaled)
-	return w.Write(resultMarshaled[1 : marshaledLength-1])
+
+	// Trim leading and trailing quotes. The value is being inserted into something that's already a string.
+	if len(resultMarshaled) > 1 && resultMarshaled[0] == '"' && resultMarshaled[marshaledLength-1] == '"' {
+		return w.Write(resultMarshaled[1 : marshaledLength-1])
+	}
+
+	// Check if the value contains any quotes by adding double quotes at the beginning and end of the value.
+	// If so then escape quotes.
+	if !json.Valid([]byte(`"` + string(resultMarshaled) + `"`)) {
+		resultQuoted := []byte(strconv.Quote(string(resultMarshaled)))
+		return w.Write(resultQuoted[1 : len(resultQuoted)-1])
+	}
+	return w.Write(resultMarshaled)
 }
 
 func EnvMap(replaceMap map[string]string) map[string]interface{} {
