@@ -5042,13 +5042,6 @@ func schema_pkg_apis_workflow_v1alpha1_RetryConfig(ref common.ReferenceCallback)
 				Description: "RetryConfig defines how to retry a workflow",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"retried": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Retried tracks whether or not this workflow was retried by RetryConfig",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"restartSuccessful": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RestartSuccessful defines whether or not to retry succeeded node",

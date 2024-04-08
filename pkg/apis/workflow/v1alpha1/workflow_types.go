@@ -3909,12 +3909,10 @@ type NodeFlag struct {
 
 // RetryConfig defines how to retry a workflow
 type RetryConfig struct {
-	// Retried tracks whether or not this workflow was retried by RetryConfig
-	Retried bool `json:"retried,omitempty" protobuf:"varint,1,opt,name=retried"`
 	// RestartSuccessful defines whether or not to retry succeeded node
-	RestartSuccessful bool `json:"restartSuccessful,omitempty" protobuf:"varint,2,opt,name=restartSuccessful"`
+	RestartSuccessful bool `json:"restartSuccessful,omitempty" protobuf:"varint,1,opt,name=restartSuccessful"`
 	// NodeFieldSelector selects nodes to reset
-	NodeFieldSelector string `json:"nodeFieldSelector,omitempty" protobuf:"bytes,3,opt,name=nodeFieldSelector"`
+	NodeFieldSelector string `json:"nodeFieldSelector,omitempty" protobuf:"bytes,2,opt,name=nodeFieldSelector"`
 	// Parameters are a list of parameters passed
-	Parameters []string `json:"parameters,omitempty" protobuf:"bytes,4,opt,name=parameters"`
+	Parameters []string `json:"parameters,omitempty" protobuf:"bytes,3,opt,name=parameters"`
 }

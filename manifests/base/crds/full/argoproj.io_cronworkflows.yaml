@@ -1871,8 +1871,6 @@ spec:
                         type: array
                       restartSuccessful:
                         type: boolean
-                      retried:
-                        type: boolean
                     type: object
                   retryStrategy:
                     properties:

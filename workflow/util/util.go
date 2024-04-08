@@ -840,7 +840,6 @@ func MarkWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, restartSuccess
 	}
 
 	wf.Spec.Retry = &wfv1.RetryConfig{
-		Retried:           false,
 		RestartSuccessful: restartSuccessful,
 		NodeFieldSelector: nodeFieldSelector,
 		Parameters:        parameters,

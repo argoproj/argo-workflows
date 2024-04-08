@@ -1335,17 +1335,14 @@ message RetryAffinity {
 
 // RetryConfig defines how to retry a workflow
 message RetryConfig {
-  // Retried tracks whether or not this workflow was retried by RetryConfig
-  optional bool retried = 1;
-
   // RestartSuccessful defines whether or not to retry succeeded node
-  optional bool restartSuccessful = 2;
+  optional bool restartSuccessful = 1;
 
   // NodeFieldSelector selects nodes to reset
-  optional string nodeFieldSelector = 3;
+  optional string nodeFieldSelector = 2;
 
   // Parameters are a list of parameters passed
-  repeated string parameters = 4;
+  repeated string parameters = 3;
 }
 
 // RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.

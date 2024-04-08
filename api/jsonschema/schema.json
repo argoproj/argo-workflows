@@ -6510,10 +6510,6 @@
         "restartSuccessful": {
           "description": "RestartSuccessful defines whether or not to retry succeeded node",
           "type": "boolean"
-        },
-        "retried": {
-          "description": "Retried tracks whether or not this workflow was retried by RetryConfig",
-          "type": "boolean"
         }
       },
       "type": "object"
