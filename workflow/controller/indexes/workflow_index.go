@@ -14,6 +14,7 @@ import (
 
 var (
 	indexWorkflowSemaphoreKeys = os.Getenv("INDEX_WORKFLOW_SEMAPHORE_KEYS") != "false"
+	semaphoreKeyMap            = make(map[string]struct{}) // set of all semaphore keys
 )
 
 func init() {
@@ -70,6 +71,16 @@ func WorkflowSemaphoreKeysIndexFunc() cache.IndexFunc {
 		if err != nil {
 			return nil, nil
 		}
-		return wf.GetSemaphoreKeys(), nil
+		keys := wf.GetSemaphoreKeys()
+		// store all keys while indexing as a side effect
+		for _, key := range keys {
+			semaphoreKeyMap[key] = struct{}{}
+		}
+		return keys, nil
 	}
+}
+
+func HasSemaphoreKey(key string) bool {
+	_, ok := semaphoreKeyMap[key]
+	return ok
 }

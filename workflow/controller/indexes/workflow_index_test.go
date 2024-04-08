@@ -87,6 +87,7 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 		result, err := WorkflowSemaphoreKeysIndexFunc()(un)
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
+		assert.True(t, HasSemaphoreKey(result))
 	})
 	t.Run("Incomplete", func(t *testing.T) {
 		un, _ := util.ToUnstructured(&wfv1.Workflow{
@@ -106,6 +107,7 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 		result, err := WorkflowSemaphoreKeysIndexFunc()(un)
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
+		assert.True(t, HasSemaphoreKey(result))
 	})
 	t.Run("Complete", func(t *testing.T) {
 		un, _ := util.ToUnstructured(&wfv1.Workflow{
@@ -118,5 +120,6 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 		result, err := WorkflowSemaphoreKeysIndexFunc()(un)
 		assert.NoError(t, err)
 		assert.Nil(t, result)
+		assert.False(t, HasSemaphoreKey(result))
 	})
 }
