@@ -1350,7 +1350,7 @@ func (wfc *WorkflowController) newConfigMapSemaphoreInformer() (cache.SharedInde
 	indexInformer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
 	})
-	indexInformer.SharedInformer.SetTransform(func(obj interface{}) (interface{}, error) {
+	indexInformer.SetTransform(func(obj interface{}) (interface{}, error) {
 		cm, ok := obj.(*apiv1.ConfigMap)
 		if !ok {
 			return obj, nil
