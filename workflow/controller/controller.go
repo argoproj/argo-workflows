@@ -321,18 +321,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	wfc.updateEstimatorFactory()
 
-	wfc.cmInformer, err = wfc.newConfigMapInformer()
-	if err != nil {
-		log.Fatal(err)
-	}
-	wfc.cmControllerInformer, err = wfc.newConfigMapControllerInformer(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	wfc.cmSemaphoreInformer, err = wfc.newConfigMapSemaphoreInformer()
-	if err != nil {
-		log.Fatal(err)
-	}
+	wfc.cmInformer = wfc.newConfigMapInformer()
+	wfc.cmControllerInformer = wfc.newConfigMapControllerInformer(ctx)
+	wfc.cmSemaphoreInformer = wfc.newConfigMapSemaphoreInformer()
 
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
@@ -1247,7 +1238,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) (cache.Shared
 	return informer, nil
 }
 
-func (wfc *WorkflowController) newConfigMapInformer() (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
@@ -1256,10 +1247,10 @@ func (wfc *WorkflowController) newConfigMapInformer() (cache.SharedIndexInformer
 
 	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
 	if wfc.executorPlugins == nil {
-		return indexInformer, nil
+		return indexInformer
 	}
 
-	_, err := indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+	indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			cmMeta, err := meta.Accessor(obj)
 			if err != nil {
@@ -1285,10 +1276,6 @@ func (wfc *WorkflowController) newConfigMapInformer() (cache.SharedIndexInformer
 			},
 		},
 	})
-
-	if err != nil {
-		return nil, err
-	}
 	return indexInformer, nil
 }
 
@@ -1323,30 +1310,26 @@ func (wfc *WorkflowController) deletePluginCM(cm *apiv1.ConfigMap) {
 
 var watchControllerSemaphoreConfigMaps = os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false"
 
-func (wfc *WorkflowController) newConfigMapControllerInformer(ctx context.Context) (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) newConfigMapControllerInformer(ctx context.Context) cache.SharedIndexInformer {
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetNamespace(), 20*time.Minute, nil, func(opts *metav1.ListOptions) {
 		opts.FieldSelector = fields.OneTermEqualSelector(metav1.ObjectNameField, wfc.configController.GetName()).String() // only the controller configmap
 	})
 
 	if !watchControllerSemaphoreConfigMaps {
-		return indexInformer, nil
+		return indexInformer
 	}
 
-	_, err := indexInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	indexInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(_, obj interface{}) {
 			cm := obj.(*apiv1.ConfigMap)
 			log.Infof("Received Workflow Controller config map %s/%s update", cm.GetNamespace(), cm.GetName())
 			wfc.UpdateConfig(ctx)
 		},
 	})
-
-	if err != nil {
-		return nil, err
-	}
-	return indexInformer, nil
+	return indexInformer
 }
 
-func (wfc *WorkflowController) newConfigMapSemaphoreInformer() (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) newConfigMapSemaphoreInformer() cache.SharedIndexInformer {
 	indexInformer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
 	})
@@ -1368,10 +1351,10 @@ func (wfc *WorkflowController) newConfigMapSemaphoreInformer() (cache.SharedInde
 	})
 
 	if !watchControllerSemaphoreConfigMaps {
-		return indexInformer, nil
+		return indexInformer
 	}
 
-	_, err := indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+	indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			cmMeta, err := meta.Accessor(obj)
 			if err != nil {
@@ -1389,11 +1372,7 @@ func (wfc *WorkflowController) newConfigMapSemaphoreInformer() (cache.SharedInde
 			},
 		},
 	})
-
-	if err != nil {
-		return nil, err
-	}
-	return indexInformer, nil
+	return indexInformer
 }
 
 func isSemaphoreCM(ns string, name string) bool {
