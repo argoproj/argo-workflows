@@ -1280,12 +1280,12 @@ func (wfc *WorkflowController) newConfigMapCtrlInformer(ctx context.Context) (ca
 		opts.FieldSelector = fields.OneTermEqualSelector(metav1.ObjectNameField, wfc.configController.GetName()).String() // only the controller configmap
 	})
 
+	if !watchControllerSemaphoreConfigMaps {
+		return indexInformer, nil
+	}
+
 	_, err := indexInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(_, obj interface{}) {
-			if !watchControllerSemaphoreConfigMaps {
-				return
-			}
-
 			cm := obj.(*apiv1.ConfigMap)
 			log.Infof("Received Workflow Controller config map %s/%s update", cm.GetNamespace(), cm.GetName())
 			wfc.UpdateConfig(ctx)
