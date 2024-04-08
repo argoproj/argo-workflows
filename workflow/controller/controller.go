@@ -1263,7 +1263,7 @@ func (wfc *WorkflowController) newConfigMapInformerManaged() (cache.SharedIndexI
 		},
 		DeleteFunc: func(obj interface{}) {
 			cm := obj.(*apiv1.ConfigMap)
-			wfc.deletePluginCM(cm, obj)
+			wfc.deletePluginCM(cm)
 		},
 	})
 
@@ -1351,12 +1351,12 @@ func (wfc *WorkflowController) applyPluginCM(cm *apiv1.ConfigMap, verb string) {
 		Infof("Executor plugin %s", verb)
 }
 
-func (wfc *WorkflowController) deletePluginCM(cm *apiv1.ConfigMap, obj interface{}) {
+func (wfc *WorkflowController) deletePluginCM(cm *apiv1.ConfigMap) {
 	if !wfc.isPluginCM(cm) {
 		return
 	}
 
-	key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(cm)
 	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 	delete(wfc.executorPlugins[namespace], name)
 	log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
