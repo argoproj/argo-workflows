@@ -156,8 +156,13 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		offset = -1
 	}
 
+	selectQuery, err := selectArchivedWorkflowQuery(r.dbType)
+	if err != nil {
+		return nil, err
+	}
+
 	selector := r.session.SQL().
-		Select(db.Raw("name, namespace, uid, phase, startedat, finishedat, (workflow::json)->'metadata'->>'labels' as labels, (workflow::json)->'metadata'->>'annotations' as annotations, (workflow::json)->'status'->>'progress' as progress")).
+		Select(selectQuery).
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(namespaceEqual(namespace)).
@@ -166,7 +171,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		And(startedAtFromClause(minStartedAt)).
 		And(startedAtToClause(maxStartedAt))
 
-	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	selector, err = labelsClause(selector, r.dbType, labelRequirements)
 	if err != nil {
 		return nil, err
 	}
@@ -370,4 +375,14 @@ func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	}
 	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Info("Deleted archived workflows")
 	return nil
+}
+
+func selectArchivedWorkflowQuery(t dbType) (*db.RawExpr, error) {
+	switch t {
+	case MySQL:
+		return db.Raw("name, namespace, uid, phase, startedat, finishedat, workflow->>'$.metadata.labels' as labels, workflow->>'$.metadata.annotations' as annotations, workflow->>'$.status.progress' as progress"), nil
+	case Postgres:
+		return db.Raw("name, namespace, uid, phase, startedat, finishedat, (workflow::json)->'metadata'->>'labels' as labels, (workflow::json)->'metadata'->>'annotations' as annotations, (workflow::json)->'status'->>'progress' as progress"), nil
+	}
+	return nil, fmt.Errorf("unsupported db type %s", t)
 }
