@@ -1350,6 +1350,7 @@ func (wfc *WorkflowController) newConfigMapSemaphoreInformer() (cache.SharedInde
 	indexInformer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
 	})
+	//nolint:errcheck // the error only happens if the informer has already started, which hasn't happened yet (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L446)
 	indexInformer.SetTransform(func(obj interface{}) (interface{}, error) {
 		cm, ok := obj.(*apiv1.ConfigMap)
 		if !ok {
