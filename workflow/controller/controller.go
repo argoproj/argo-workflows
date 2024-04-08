@@ -445,6 +445,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
 func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
+	log.Debugf("received semaphore config map %s/%s update", cm.GetNamespace(), cm.GetName())
 	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
 	if err != nil {
 		log.Errorf("failed get the workflow from informer. %v", err)
@@ -1238,6 +1239,8 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) (cache.Shared
 	return informer, nil
 }
 
+var watchControllerSemaphoreConfigMaps = os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false"
+
 func (wfc *WorkflowController) newConfigMapInformerManaged() (cache.SharedIndexInformer, error) {
 	indexInformer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
@@ -1254,11 +1257,10 @@ func (wfc *WorkflowController) newConfigMapInformerManaged() (cache.SharedIndexI
 			cm := obj.(*apiv1.ConfigMap)
 			wfc.applyPluginCM(cm, "updated")
 
-			if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") == "false" {
+			if !watchControllerSemaphoreConfigMaps {
 				return
 			}
 
-			log.Debugf("received config map %s/%s update", cm.GetNamespace(), cm.GetName())
 			wfc.notifySemaphoreConfigUpdate(cm)
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -1275,12 +1277,12 @@ func (wfc *WorkflowController) newConfigMapInformerManaged() (cache.SharedIndexI
 
 func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) (cache.SharedIndexInformer, error) {
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetNamespace(), 20*time.Minute, nil, func(opts *metav1.ListOptions) {
-		opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", wfc.configController.GetName()).String() // only the controller configmap
+		opts.FieldSelector = fields.OneTermEqualSelector(metav1.ObjectNameField, wfc.configController.GetName()).String() // only the controller configmap
 	})
 
 	_, err := indexInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(_, obj interface{}) {
-			if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") == "false" {
+			if !watchControllerSemaphoreConfigMaps {
 				return
 			}
 
