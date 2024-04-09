@@ -103,6 +103,11 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
         setError(null);
         setLoaded(false);
 
+        // if no node id is set (for example, when no node is selected), then use the node id of of the pod.
+        if (archived && !selectedNodeId && podNamesToNodeIDs.get(podName)) {
+            setNodeId(podNamesToNodeIDs.get(podName));
+        }
+
         const source = services.workflows.getContainerLogs(workflow, podName, selectedNodeId, selectedContainer, grep, archived).pipe(
             // extract message from LogEntry
             map(e => {
@@ -150,7 +155,7 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
         );
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived, selectedJsonFields, timezone]);
+    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedNodeId, selectedContainer, grep, archived, selectedJsonFields, timezone]);
 
     // filter allows us to introduce a short delay, before we actually change grep
     const [logFilter, setLogFilter] = useState('');
@@ -176,11 +181,6 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
                 return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
             })
     );
-
-    // if no node id is set (for example, when no node is selected), then use the node id of of the pod.
-    if (archived && !selectedNodeId && podNamesToNodeIDs.get(podName)) {
-        setNodeId(podNamesToNodeIDs.get(podName));
-    }
 
     const node = workflow.status.nodes[selectedNodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
