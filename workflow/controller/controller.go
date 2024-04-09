@@ -1309,7 +1309,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 			},
 		})
 	}
-	return indexInformer, nil
+	return indexInformer
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
