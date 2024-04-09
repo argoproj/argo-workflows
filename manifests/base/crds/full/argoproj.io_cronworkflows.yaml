@@ -1861,17 +1861,6 @@ spec:
                   priority:
                     format: int32
                     type: integer
-                  retry:
-                    properties:
-                      nodeFieldSelector:
-                        type: string
-                      parameters:
-                        items:
-                          type: string
-                        type: array
-                      restartSuccessful:
-                        type: boolean
-                    type: object
                   retryStrategy:
                     properties:
                       affinity:

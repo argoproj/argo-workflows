@@ -143,7 +143,6 @@ class IoArgoprojWorkflowV1alpha1RetryConfig(ModelNormal):
             node_field_selector (str): NodeFieldSelector selects nodes to reset. [optional]  # noqa: E501
             parameters ([str]): Parameters are a list of parameters passed. [optional]  # noqa: E501
             restart_successful (bool): RestartSuccessful defines whether or not to retry succeeded node. [optional]  # noqa: E501
-            retried (bool): Retried tracks whether or not this workflow was retried by RetryConfig. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,7 +227,6 @@ class IoArgoprojWorkflowV1alpha1RetryConfig(ModelNormal):
             node_field_selector (str): NodeFieldSelector selects nodes to reset. [optional]  # noqa: E501
             parameters ([str]): Parameters are a list of parameters passed. [optional]  # noqa: E501
             restart_successful (bool): RestartSuccessful defines whether or not to retry succeeded node. [optional]  # noqa: E501
-            retried (bool): Retried tracks whether or not this workflow was retried by RetryConfig. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

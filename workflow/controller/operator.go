@@ -3863,11 +3863,11 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 }
 
 func (woc *wfOperationCtx) shouldRetry() bool {
-	retryConfig := woc.execWf.Spec.Retry
-	if retryConfig == nil {
+	retried, ok := woc.wf.Labels[common.LabelKeyWorkflowRetried]
+	if !ok || retried == "true" {
 		return false
 	}
-	if woc.IsRetried() {
+	if retried == "false" {
 		// TODO make sure all pod in podsToDelete deleted, avoid "create pod exists"
 		return false
 	}
@@ -3875,16 +3875,24 @@ func (woc *wfOperationCtx) shouldRetry() bool {
 }
 
 func (woc *wfOperationCtx) IsRetried() bool {
-	return woc.wf.Status.RetryStatus != nil && *woc.wf.Status.RetryStatus
+	return woc.wf.Labels[common.LabelKeyWorkflowRetried] == "true"
 }
 
 func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
 	if woc.IsRetried() {
 		return nil
 	}
-	retryConfig := woc.execWf.Spec.Retry
+	nodeFiledSelector := woc.wf.Labels[common.LabelKeyRetryNodeFieldSelector]
+	parametersStr := woc.wf.Labels[common.LabelKeyRetryParameters]
+	var parameters []string
+	err := json.Unmarshal([]byte(parametersStr), &parameters)
+	if err != nil {
+		return fmt.Errorf("fail to unmarshaling parameters: %v", err)
+	}
+	restartSuccessful := woc.wf.Labels[common.LabelKeyRetryRestartSuccessful]
+
 	// Clean up remaining pods in the workflow
-	wf, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf, retryConfig.RestartSuccessful, retryConfig.NodeFieldSelector, retryConfig.Parameters)
+	wf, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf, restartSuccessful, nodeFiledSelector, parameters)
 	if err != nil {
 		return fmt.Errorf("fail to FormulateRetryWorkflow")
 	}

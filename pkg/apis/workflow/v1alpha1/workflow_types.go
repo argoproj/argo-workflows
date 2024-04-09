@@ -429,9 +429,6 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
-
-	// Retry will retry the workflow according to its RetryConfig
-	Retry *RetryConfig `json:"retry,omitempty" protobuf:"bytes,44,opt,name=retry"`
 }
 
 type LabelValueFrom struct {
@@ -1949,9 +1946,6 @@ type WorkflowStatus struct {
 
 	// TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
-
-	// RetryStatus tracks RetryStatus for this workflow
-	RetryStatus *bool `json:"retryStatus,omitempty" protobuf:"varint,21,opt,name=retryStatus"`
 }
 
 func (ws *WorkflowStatus) MarkTaskResultIncomplete(name string) {
@@ -3905,14 +3899,4 @@ type NodeFlag struct {
 	Hooked bool `json:"hooked,omitempty" protobuf:"varint,1,opt,name=hooked"`
 	// Retried tracks whether or not this node was retried by retryStrategy
 	Retried bool `json:"retried,omitempty" protobuf:"varint,2,opt,name=retried"`
-}
-
-// RetryConfig defines how to retry a workflow
-type RetryConfig struct {
-	// RestartSuccessful defines whether or not to retry succeeded node
-	RestartSuccessful bool `json:"restartSuccessful,omitempty" protobuf:"varint,1,opt,name=restartSuccessful"`
-	// NodeFieldSelector selects nodes to reset
-	NodeFieldSelector string `json:"nodeFieldSelector,omitempty" protobuf:"bytes,2,opt,name=nodeFieldSelector"`
-	// Parameters are a list of parameters passed
-	Parameters []string `json:"parameters,omitempty" protobuf:"bytes,3,opt,name=parameters"`
 }

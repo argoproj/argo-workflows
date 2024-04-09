@@ -6493,27 +6493,6 @@
       },
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.RetryConfig": {
-      "description": "RetryConfig defines how to retry a workflow",
-      "properties": {
-        "nodeFieldSelector": {
-          "description": "NodeFieldSelector selects nodes to reset",
-          "type": "string"
-        },
-        "parameters": {
-          "description": "Parameters are a list of parameters passed",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "restartSuccessful": {
-          "description": "RestartSuccessful defines whether or not to retry succeeded node",
-          "type": "boolean"
-        }
-      },
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.RetryNodeAntiAffinity": {
       "description": "RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed. In order to prevent running steps on the same host, it uses \"kubernetes.io/hostname\".",
       "type": "object"
@@ -7933,10 +7912,6 @@
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
           "type": "integer"
         },
-        "retry": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryConfig",
-          "description": "Retry will retry the workflow according to its RetryConfig"
-        },
         "retryStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy",
           "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1."
@@ -8093,10 +8068,6 @@
           },
           "description": "ResourcesDuration is the total for the workflow",
           "type": "object"
-        },
-        "retryStatus": {
-          "description": "RetryStatus tracks RetryStatus for this workflow",
-          "type": "boolean"
         },
         "startedAt": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",

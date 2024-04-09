@@ -819,7 +819,6 @@ WorkflowSpec is the specification of a Workflow.
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
-|`retry`|[`RetryConfig`](#retryconfig)|Retry will retry the workflow according to its RetryConfig|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty. See type description for default values of each field.|
@@ -858,7 +857,6 @@ WorkflowStatus contains overall status information about a workflow
 |`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded", "Failed" or "Error" once the workflow has completed.|
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
-|`retryStatus`|`boolean`|RetryStatus tracks RetryStatus for this workflow|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
@@ -1571,17 +1569,6 @@ Pod metdata
 |:----------:|:----------:|---------------|
 |`annotations`|`Map< string , string >`|_No description available_|
 |`labels`|`Map< string , string >`|_No description available_|
-
-## RetryConfig
-
-RetryConfig defines how to retry a workflow
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`nodeFieldSelector`|`string`|NodeFieldSelector selects nodes to reset|
-|`parameters`|`Array< string >`|Parameters are a list of parameters passed|
-|`restartSuccessful`|`boolean`|RestartSuccessful defines whether or not to retry succeeded node|
 
 ## RetryStrategy
 

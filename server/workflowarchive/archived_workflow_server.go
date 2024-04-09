@@ -296,6 +296,11 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
+		wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+
 		return result, nil
 	}
 

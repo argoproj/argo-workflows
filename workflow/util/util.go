@@ -839,14 +839,21 @@ func MarkWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, restartSuccess
 		return nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
 	}
 
-	wf.Spec.Retry = &wfv1.RetryConfig{
-		RestartSuccessful: restartSuccessful,
-		NodeFieldSelector: nodeFieldSelector,
-		Parameters:        parameters,
-	}
+	newWF := wf.DeepCopy()
+	delete(newWF.Labels, common.LabelKeyCompleted)
+	delete(newWF.Labels, common.LabelKeyWorkflowRetried)
+	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 
-	delete(wf.Labels, common.LabelKeyCompleted)
-	return wf, nil
+	// 设置Retry的参数
+	newWF.ObjectMeta.Labels[common.LabelKeyWorkflowRetried] = strconv.FormatBool(false)
+	newWF.ObjectMeta.Labels[common.LabelKeyRetryNodeFieldSelector] = nodeFieldSelector
+	parametersStr, err := json.Marshal(parameters)
+	if err != nil {
+		return nil, errors.Errorf(errors.CodeBadRequest, "Cannot marshalling retry parameters to json: %s", parameters)
+	}
+	newWF.ObjectMeta.Labels[common.LabelKeyRetryParameters] = string(parametersStr)
+	newWF.ObjectMeta.Labels[common.LabelKeyRetryRestartSuccessful] = strconv.FormatBool(restartSuccessful)
+	return newWF, nil
 }
 
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
