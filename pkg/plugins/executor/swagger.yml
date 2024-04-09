@@ -1,6 +1,6 @@
 basePath: /api/v1
 consumes:
-  - application/json
+- application/json
 definitions:
   AWSElasticBlockStoreVolumeSource:
     description: |-
@@ -1299,8 +1299,8 @@ definitions:
       workflow:
         $ref: '#/definitions/Workflow'
     required:
-      - workflow
-      - template
+    - workflow
+    - template
     type: object
   ExecuteTemplateReply:
     properties:
@@ -4702,7 +4702,7 @@ definitions:
       metadata:
         $ref: '#/definitions/ObjectMeta'
     required:
-      - metadata
+    - metadata
     type: object
   ZipStrategy:
     description: ZipStrategy will unzip zipped input artifacts
@@ -4716,21 +4716,21 @@ paths:
     post:
       operationId: executeTemplate
       parameters:
-        - in: body
-          name: Body
-          required: true
-          schema:
-            $ref: '#/definitions/ExecuteTemplateArgs'
+      - in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/ExecuteTemplateArgs'
       responses:
         "200":
           $ref: '#/responses/executeTemplate'
 produces:
-  - application/json
+- application/json
 responses:
   executeTemplate:
     description: ""
     schema:
       $ref: '#/definitions/ExecuteTemplateReply'
 schemes:
-  - http
+- http
 swagger: "2.0"
