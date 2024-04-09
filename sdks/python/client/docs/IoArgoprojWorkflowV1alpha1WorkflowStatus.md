@@ -19,7 +19,6 @@ Name | Type | Description | Notes
 **phase** | **str** | Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \&quot;\&quot; (Unknown), \&quot;Pending\&quot;, or \&quot;Running\&quot; before the workflow is completed, and \&quot;Succeeded\&quot;, \&quot;Failed\&quot; or \&quot;Error\&quot; once the workflow has completed. | [optional] 
 **progress** | **str** | Progress to completion | [optional] 
 **resources_duration** | **{str: (int,)}** | ResourcesDuration is the total for the workflow | [optional] 
-**retry_status** | **bool** | RetryStatus tracks RetryStatus for this workflow | [optional] 
 **started_at** | **datetime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. | [optional] 
 **stored_templates** | [**{str: (IoArgoprojWorkflowV1alpha1Template,)}**](IoArgoprojWorkflowV1alpha1Template.md) | StoredTemplates is a mapping between a template ref and the node&#39;s status. | [optional] 
 **stored_workflow_template_spec** | [**IoArgoprojWorkflowV1alpha1WorkflowSpec**](IoArgoprojWorkflowV1alpha1WorkflowSpec.md) |  | [optional] 

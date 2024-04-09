@@ -2335,7 +2335,12 @@ share the same name. For example, a status update will be distinct from a
 regular update using the same manager name.
 Note that the APIVersion field is not related to the Subresource field and
 it always corresponds to the version of the main resource. |  |
-| time | [Time](#time)| `Time` |  | |  |  |
+| time | string| `string` |  | | Time is the timestamp of when the ManagedFields entry was added. The
+timestamp will also be updated if a field is added, the manager
+changes any of the owned fields value or removes a field. The
+timestamp does not update when a field is removed from the entry
+because another manager took it over.
++optional |  |
 
 
 
@@ -2944,7 +2949,25 @@ it will be removed from the system. Only set when deletionTimestamp is also set.
 May only be shortened.
 Read-only.
 +optional |  |
-| deletionTimestamp | [Time](#time)| `Time` |  | |  |  |
+| deletionTimestamp | string| `string` |  | | DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+field is set by the server when a graceful deletion is requested by the user, and is not
+directly settable by a client. The resource is expected to be deleted (no longer visible
+from resource lists, and not reachable by name) after the time in this field, once the
+finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+Once the deletionTimestamp is set, this value may not be unset or be set further into the
+future, although it may be shortened or the resource may be deleted prior to this time.
+For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+remove the pod from the API. In the presence of network partitions, this object may still
+exist after this timestamp, until an administrator or automated process can determine the
+resource is fully terminated.
+If not set, graceful deletion of the object has not been requested.
+
+Populated by the system when a graceful deletion is requested.
+Read-only.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
++optional |  |
 | finalizers | []string| `[]string` |  | | Must be empty before the object is deleted from the registry. Each entry
 is an identifier for the responsible component that will remove the entry
 from the list. If the deletionTimestamp of the object is non-nil, entries
@@ -4596,18 +4619,6 @@ This duration also includes time in which the node spends in Pending state. This
 | TerminationMessagePolicy | string| string | | +enum |  |
 
 
-
-### <span id="time"></span> Time
-
-
-> +protobuf.options.marshal=false
-+protobuf.as=Timestamp
-+protobuf.options.(gogoproto.goproto_stringer)=false
-  
-
-
-
-[interface{}](#interface)
 
 ### <span id="toleration"></span> Toleration
 

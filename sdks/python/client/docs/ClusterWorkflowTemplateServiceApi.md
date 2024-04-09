@@ -1005,14 +1005,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
-                retry=IoArgoprojWorkflowV1alpha1RetryConfig(
-                    node_field_selector="node_field_selector_example",
-                    parameters=[
-                        "parameters_example",
-                    ],
-                    restart_successful=True,
-                    retried=True,
-                ),
                 retry_strategy=IoArgoprojWorkflowV1alpha1RetryStrategy(
                     affinity=IoArgoprojWorkflowV1alpha1RetryAffinity(
                         node_anti_affinity={},
@@ -11947,14 +11939,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
-                retry=IoArgoprojWorkflowV1alpha1RetryConfig(
-                    node_field_selector="node_field_selector_example",
-                    parameters=[
-                        "parameters_example",
-                    ],
-                    restart_successful=True,
-                    retried=True,
-                ),
                 retry_strategy=IoArgoprojWorkflowV1alpha1RetryStrategy(
                     affinity=IoArgoprojWorkflowV1alpha1RetryAffinity(
                         node_anti_affinity={},
@@ -22793,14 +22777,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
-                retry=IoArgoprojWorkflowV1alpha1RetryConfig(
-                    node_field_selector="node_field_selector_example",
-                    parameters=[
-                        "parameters_example",
-                    ],
-                    restart_successful=True,
-                    retried=True,
-                ),
                 retry_strategy=IoArgoprojWorkflowV1alpha1RetryStrategy(
                     affinity=IoArgoprojWorkflowV1alpha1RetryAffinity(
                         node_anti_affinity={},

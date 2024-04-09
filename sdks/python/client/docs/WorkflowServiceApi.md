@@ -1020,14 +1020,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
-                retry=IoArgoprojWorkflowV1alpha1RetryConfig(
-                    node_field_selector="node_field_selector_example",
-                    parameters=[
-                        "parameters_example",
-                    ],
-                    restart_successful=True,
-                    retried=True,
-                ),
                 retry_strategy=IoArgoprojWorkflowV1alpha1RetryStrategy(
                     affinity=IoArgoprojWorkflowV1alpha1RetryAffinity(
                         node_anti_affinity={},
@@ -12136,7 +12128,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 resources_duration={
                     "key": 1,
                 },
-                retry_status=True,
                 started_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
                 stored_templates={
                     "key": IoArgoprojWorkflowV1alpha1Template(
@@ -17607,14 +17598,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     pod_priority_class_name="pod_priority_class_name_example",
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
-                    retry=IoArgoprojWorkflowV1alpha1RetryConfig(
-                        node_field_selector="node_field_selector_example",
-                        parameters=[
-                            "parameters_example",
-                        ],
-                        restart_successful=True,
-                        retried=True,
-                    ),
                     retry_strategy=IoArgoprojWorkflowV1alpha1RetryStrategy(
                         affinity=IoArgoprojWorkflowV1alpha1RetryAffinity(
                             node_anti_affinity={},
@@ -28591,14 +28574,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 pod_priority_class_name="pod_priority_class_name_example",
                 pod_spec_patch="pod_spec_patch_example",
                 priority=1,
-                retry=IoArgoprojWorkflowV1alpha1RetryConfig(
-                    node_field_selector="node_field_selector_example",
-                    parameters=[
-                        "parameters_example",
-                    ],
-                    restart_successful=True,
-                    retried=True,
-                ),
                 retry_strategy=IoArgoprojWorkflowV1alpha1RetryStrategy(
                     affinity=IoArgoprojWorkflowV1alpha1RetryAffinity(
                         node_anti_affinity={},
@@ -39707,7 +39682,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 resources_duration={
                     "key": 1,
                 },
-                retry_status=True,
                 started_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
                 stored_templates={
                     "key": IoArgoprojWorkflowV1alpha1Template(
@@ -45178,14 +45152,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     pod_priority_class_name="pod_priority_class_name_example",
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
-                    retry=IoArgoprojWorkflowV1alpha1RetryConfig(
-                        node_field_selector="node_field_selector_example",
-                        parameters=[
-                            "parameters_example",
-                        ],
-                        restart_successful=True,
-                        retried=True,
-                    ),
                     retry_strategy=IoArgoprojWorkflowV1alpha1RetryStrategy(
                         affinity=IoArgoprojWorkflowV1alpha1RetryAffinity(
                             node_anti_affinity={},
