@@ -598,7 +598,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 			wf.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] = "Retried"
-			wf, err = wfClient.Update(ctx, wf, metav1.UpdateOptions{})
+			_, err = wfClient.Update(ctx, wf, metav1.UpdateOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}

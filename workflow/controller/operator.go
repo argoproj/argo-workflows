@@ -3870,14 +3870,14 @@ func (woc *wfOperationCtx) shouldRetry() bool {
 }
 
 func (woc *wfOperationCtx) IsRetried() bool {
-	return woc.wf.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] != "Retried"
+	return woc.wf.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] != "Pending"
 }
 
 func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
 	if woc.IsRetried() {
 		return nil
 	}
-	nodeFiledSelector := woc.wf.Labels[common.LabelKeyRetryNodeFieldSelector]
+	nodeFiledSelector := woc.wf.Annotations[common.LabelKeyRetryNodeFieldSelector]
 	parametersStr := woc.wf.Labels[common.LabelKeyRetryParameters]
 	var parameters []string
 	err := json.Unmarshal([]byte(parametersStr), &parameters)

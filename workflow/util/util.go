@@ -845,7 +845,7 @@ func MarkWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, restartSuccess
 
 	// 设置Retry的参数
 	newWF.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] = "Pending"
-	newWF.ObjectMeta.Labels[common.LabelKeyRetryNodeFieldSelector] = nodeFieldSelector
+	newWF.ObjectMeta.Annotations[common.LabelKeyRetryNodeFieldSelector] = nodeFieldSelector
 	parametersStr, err := json.Marshal(parameters)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Cannot marshalling retry parameters to json: %s", parameters)
