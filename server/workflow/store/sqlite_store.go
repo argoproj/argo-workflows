@@ -13,6 +13,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const (
@@ -31,8 +32,8 @@ const (
 );
 create index if not exists idx_instanceid on argo_workflows (instanceid);
 create table if not exists argo_workflows_labels (
-  name varchar(317) not null,
   uid varchar(128) not null,
+  name varchar(317) not null,
   value varchar(63) not null,
   primary key (uid, name, value),
   foreign key (uid) references argo_workflows (uid) on delete cascade
@@ -213,6 +214,10 @@ func (s *sqliteStore) upsertWorkflow(wf *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
+	// if workflow is archived, we don't need to store it in the sqlite store, we get if from the archive store instead
+	if wf.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Archived" {
+		return nil
+	}
 	workflow, err := json.Marshal(wf)
 	if err != nil {
 		return err
@@ -248,12 +253,19 @@ func (s *sqliteStore) replaceWorkflows(workflows []*wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
+	wfs := make([]*wfv1.Workflow, 0, len(workflows))
+	for _, wf := range workflows {
+		// if workflow is archived, we don't need to store it in the sqlite store, we get if from the archive store instead
+		if wf.GetLabels()[common.LabelKeyWorkflowArchivingStatus] != "Archived" {
+			wfs = append(wfs, wf)
+		}
+	}
 	// add all workflows to argo_workflows table
 	stmt, err := s.conn.Prepare(insertWorkflowQuery)
 	if err != nil {
 		return err
 	}
-	for _, wf := range workflows {
+	for _, wf := range wfs {
 		if err = stmt.Reset(); err != nil {
 			return err
 		}
@@ -277,7 +289,7 @@ func (s *sqliteStore) replaceWorkflows(workflows []*wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-	for _, wf := range workflows {
+	for _, wf := range wfs {
 		for key, val := range wf.GetLabels() {
 			if err = stmt.Reset(); err != nil {
 				return err
