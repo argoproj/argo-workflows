@@ -104,7 +104,7 @@ const (
 	// LabelKeyCronWorkflowCompleted is a label applied to the cron workflow when the configured stopping condition is achieved
 	LabelKeyCronWorkflowCompleted = workflow.CronWorkflowFullName + "/completed"
 	// LabelKeyRetryRule is a label applied to workflow used by the RetryRule feature
-	LabelKeyWorkflowRetried        = workflow.WorkflowFullName + "/retried"
+	LabelKeyWorkflowRetryStatus    = workflow.WorkflowFullName + "/workflow-retry-status"
 	LabelKeyRetryNodeFieldSelector = workflow.WorkflowFullName + "/retry-node-field-selector"
 	LabelKeyRetryParameters        = workflow.WorkflowFullName + "/retry-parameters"
 	LabelKeyRetryRestartSuccessful = workflow.WorkflowFullName + "/retry-restart-successful"

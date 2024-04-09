@@ -841,11 +841,10 @@ func MarkWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, restartSuccess
 
 	newWF := wf.DeepCopy()
 	delete(newWF.Labels, common.LabelKeyCompleted)
-	delete(newWF.Labels, common.LabelKeyWorkflowRetried)
 	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 
 	// 设置Retry的参数
-	newWF.ObjectMeta.Labels[common.LabelKeyWorkflowRetried] = strconv.FormatBool(false)
+	newWF.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] = "Pending"
 	newWF.ObjectMeta.Labels[common.LabelKeyRetryNodeFieldSelector] = nodeFieldSelector
 	parametersStr, err := json.Marshal(parameters)
 	if err != nil {

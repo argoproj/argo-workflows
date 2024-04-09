@@ -3863,11 +3863,11 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 }
 
 func (woc *wfOperationCtx) shouldRetry() bool {
-	retried, ok := woc.wf.Labels[common.LabelKeyWorkflowRetried]
-	if !ok || retried == "true" {
+	retryStatus, ok := woc.wf.Labels[common.LabelKeyWorkflowRetryStatus]
+	if !ok || retryStatus == "Retried" {
 		return false
 	}
-	if retried == "false" {
+	if retryStatus == "Retrying" {
 		// TODO make sure all pod in podsToDelete deleted, avoid "create pod exists"
 		return false
 	}
@@ -3875,7 +3875,7 @@ func (woc *wfOperationCtx) shouldRetry() bool {
 }
 
 func (woc *wfOperationCtx) IsRetried() bool {
-	return woc.wf.Labels[common.LabelKeyWorkflowRetried] == "true"
+	return woc.wf.Labels[common.LabelKeyWorkflowRetried] != "Retried"
 }
 
 func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
@@ -3899,8 +3899,9 @@ func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
 	for _, podName := range podsToDelete {
 		woc.controller.queuePodForCleanup(wf.Namespace, podName, deletePod)
 	}
+	woc.controller.queuePodForCleanup(wf.Namespace, wf.Name, deletedAllPodsFlag)
 	woc.wf = wf
-	woc.wf.Status.RetryStatus = pointer.Bool(true)
+	woc.wf.labels[common.LabelKeyWorkflowRetryStatus] = "Retrying"
 	woc.updated = true
 	return nil
 }
