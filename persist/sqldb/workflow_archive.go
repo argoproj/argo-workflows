@@ -380,9 +380,9 @@ func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 func selectArchivedWorkflowQuery(t dbType) (*db.RawExpr, error) {
 	switch t {
 	case MySQL:
-		return db.Raw("name, namespace, uid, phase, startedat, finishedat, workflow->>'$.metadata.labels' as labels, workflow->>'$.metadata.annotations' as annotations, workflow->>'$.status.progress' as progress"), nil
+		return db.Raw("name, namespace, uid, phase, startedat, finishedat, coalesce(workflow->>'$.metadata.labels', '{}') as labels,coalesce(workflow->>'$.metadata.annotations', '{}') as annotations, coalesce(workflow->>'$.status.progress', '') as progress"), nil
 	case Postgres:
-		return db.Raw("name, namespace, uid, phase, startedat, finishedat, (workflow::json)->'metadata'->>'labels' as labels, (workflow::json)->'metadata'->>'annotations' as annotations, (workflow::json)->'status'->>'progress' as progress"), nil
+		return db.Raw("name, namespace, uid, phase, startedat, finishedat, coalesce((workflow::json)->'metadata'->>'labels', '{}') as labels, coalesce((workflow::json)->'metadata'->>'annotations', '{}') as annotations, coalesce((workflow::json)->'status'->>'progress', '') as progress"), nil
 	}
 	return nil, fmt.Errorf("unsupported db type %s", t)
 }
