@@ -2404,7 +2404,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 		}
 		woc.updated = true
-		woc.wf.Status.RetryStatus = nil
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
 	}
 }
@@ -3867,15 +3866,11 @@ func (woc *wfOperationCtx) shouldRetry() bool {
 	if !ok || retryStatus == "Retried" {
 		return false
 	}
-	if retryStatus == "Retrying" {
-		// TODO make sure all pod in podsToDelete deleted, avoid "create pod exists"
-		return false
-	}
 	return true
 }
 
 func (woc *wfOperationCtx) IsRetried() bool {
-	return woc.wf.Labels[common.LabelKeyWorkflowRetried] != "Retried"
+	return woc.wf.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] != "Retried"
 }
 
 func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
@@ -3889,7 +3884,11 @@ func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("fail to unmarshaling parameters: %v", err)
 	}
-	restartSuccessful := woc.wf.Labels[common.LabelKeyRetryRestartSuccessful]
+	restartSuccessful := false
+	restartSuccessfulStr := woc.wf.Labels[common.LabelKeyRetryRestartSuccessful]
+	if restartSuccessfulStr == "true" {
+		restartSuccessful = true
+	}
 
 	// Clean up remaining pods in the workflow
 	wf, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf, restartSuccessful, nodeFiledSelector, parameters)
@@ -3899,9 +3898,9 @@ func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
 	for _, podName := range podsToDelete {
 		woc.controller.queuePodForCleanup(wf.Namespace, podName, deletePod)
 	}
-	woc.controller.queuePodForCleanup(wf.Namespace, wf.Name, deletedAllPodsFlag)
+	woc.controller.queuePodForCleanup(wf.Namespace, wf.Name, batchDeletePods)
 	woc.wf = wf
-	woc.wf.labels[common.LabelKeyWorkflowRetryStatus] = "Retrying"
+	woc.wf.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] = "Retrying"
 	woc.updated = true
 	return nil
 }

@@ -15,11 +15,11 @@ type (
 )
 
 const (
-	deletePod              podCleanupAction = "deletePod"
-	labelPodCompleted      podCleanupAction = "labelPodCompleted"
-	terminateContainers    podCleanupAction = "terminateContainers"
-	killContainers         podCleanupAction = "killContainers"
-	showDeletedAllPodsFlag podCleanupAction = "deletedAllPods"
+	deletePod           podCleanupAction = "deletePod"
+	labelPodCompleted   podCleanupAction = "labelPodCompleted"
+	terminateContainers podCleanupAction = "terminateContainers"
+	killContainers      podCleanupAction = "killContainers"
+	batchDeletePods     podCleanupAction = "batchDeletePods"
 )
 
 func newPodCleanupKey(namespace string, podName string, action podCleanupAction) podCleanupKey {

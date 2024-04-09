@@ -590,6 +590,18 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
+		case batchDeletePods:
+			workflowName := podName
+			wfClient := wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace)
+			wf, err := wfClient.Get(ctx, workflowName, metav1.GetOptions{})
+			if err != nil && !apierr.IsNotFound(err) {
+				return err
+			}
+			wf.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] = "Retried"
+			wf, err = wfClient.Update(ctx, wf, metav1.UpdateOptions{})
+			if err != nil && !apierr.IsNotFound(err) {
+				return err
+			}
 		}
 		return nil
 	}()
