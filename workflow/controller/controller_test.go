@@ -1278,6 +1278,7 @@ func TestGetPodCleaupCache(t *testing.T) {
 	err = json.Unmarshal(patch, actual)
 	assert.Nil(t, err)
 	assert.Equal(t, expected, actual)
+	assert.Len(t, pod.Finalizers, 1)
 
 	// pod finalizer enabled, not patch label
 	expected = &map[string]interface{}{}
