@@ -1028,6 +1028,8 @@ definitions:
     title: ContainerResizePolicy represents resource resize policy for the container.
     type: object
   ContainerSetRetryStrategy:
+    description: ContainerSetRetryStrategy provides controls on how to retry a container
+      set
     properties:
       duration:
         description: |-
