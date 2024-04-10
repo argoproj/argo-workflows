@@ -59,6 +59,15 @@ const (
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
+	// AnnotationKeyRetryNodeFieldSelector is the annotation that specifies the node field selector to use when retrying a node
+	AnnotationKeyRetryNodeFieldSelector = workflow.WorkflowFullName + "/retry-node-field-selector"
+	
+	// AnnotationKeyRetryParameters is the annotation that specifies the retry parameters to use when retrying a node
+	AnnotationKeyRetryParameters = workflow.WorkflowFullName + "/retry-parameters"
+
+	// AnnotationKeyRetryRestartSuccessful is the annotation that specifies if retry succeeded node or not
+	AnnotationKeyRetryRestartSuccessful = workflow.WorkflowFullName + "/retry-restart-successful"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
@@ -103,11 +112,12 @@ const (
 
 	// LabelKeyCronWorkflowCompleted is a label applied to the cron workflow when the configured stopping condition is achieved
 	LabelKeyCronWorkflowCompleted = workflow.CronWorkflowFullName + "/completed"
-	// LabelKeyRetryRule is a label applied to workflow used by the RetryRule feature
-	LabelKeyWorkflowRetryStatus    = workflow.WorkflowFullName + "/workflow-retry-status"
-	LabelKeyRetryNodeFieldSelector = workflow.WorkflowFullName + "/retry-node-field-selector"
-	LabelKeyRetryParameters        = workflow.WorkflowFullName + "/retry-parameters"
-	LabelKeyRetryRestartSuccessful = workflow.WorkflowFullName + "/retry-restart-successful"
+	// LabelKeyWorkflowRetryingStatus indicates if a workflow needs Retrying or not:
+	// * `` - does not need retrying ... yet
+	// * `Pending` - pending retrying
+	// * `Retrying` - retrying in progress
+	// * `Retried` - has been retried
+	LabelKeyWorkflowRetryingStatus = workflow.WorkflowFullName + "/workflow-retrying-status"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)

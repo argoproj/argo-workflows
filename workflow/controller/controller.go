@@ -590,16 +590,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
-		case batchDeletePods:
+		case labelBatchDeletePodsCompleted:
+			// When running here, means that all pods that need to be deleted for the retry operation have been completed.
 			workflowName := podName
-			wfClient := wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace)
-			wf, err := wfClient.Get(ctx, workflowName, metav1.GetOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				return err
-			}
-			wf.ObjectMeta.Labels[common.LabelKeyWorkflowRetryStatus] = "Retried"
-			_, err = wfClient.Update(ctx, wf, metav1.UpdateOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
+			err := wfc.labelWorkflowRetried(ctx, namespace, workflowName)
+			if err != nil {
 				return err
 			}
 		}
@@ -612,6 +607,37 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 	}
 	return true
+}
+
+func (wfc *WorkflowController) labelWorkflowRetried(ctx context.Context, namespace string, workflowName string) error {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		err := wfc.patchWorkflowLabels(ctx, namespace, workflowName, map[string]string{
+			common.LabelKeyWorkflowRetryingStatus: "Retried",
+		})
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (wfc *WorkflowController) patchWorkflowLabels(ctx context.Context, namespace string, workflowName string, labels map[string]string) error {
+	data, err := json.Marshal(&wfv1.WorkflowTaskResult{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: labels,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Patch(ctx,
+		workflowName,
+		types.MergePatchType,
+		data,
+		metav1.PatchOptions{},
+	)
+	return err
 }
 
 func (wfc *WorkflowController) getPodFromAPI(ctx context.Context, namespace string, podName string) (*apiv1.Pod, error) {

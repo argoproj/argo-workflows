@@ -1295,7 +1295,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		//_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		assert.Nil(t, err)
 	})
 
