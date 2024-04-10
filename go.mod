@@ -295,4 +295,4 @@ require (
 )
 
 // Avoid CVE-2023-45288
-replace golang.org/x/net/http2 => golang.org/x/net/http2 v0.24.0
+replace golang.org/x/net => golang.org/x/net v0.23.0
