@@ -61,7 +61,7 @@ const (
 
 	// AnnotationKeyRetryNodeFieldSelector is the annotation that specifies the node field selector to use when retrying a node
 	AnnotationKeyRetryNodeFieldSelector = workflow.WorkflowFullName + "/retry-node-field-selector"
-	
+
 	// AnnotationKeyRetryParameters is the annotation that specifies the retry parameters to use when retrying a node
 	AnnotationKeyRetryParameters = workflow.WorkflowFullName + "/retry-parameters"
 
