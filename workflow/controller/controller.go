@@ -1403,14 +1403,14 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 }
 
 func (wfc *WorkflowController) GetNamespace() string {
-	return wfc.Config.Namespace
+	return wfc.namespace
 }
 
 func (wfc *WorkflowController) GetManagedNamespace() string {
 	if wfc.managedNamespace != "" {
 		return wfc.managedNamespace
 	}
-	return wfc.GetNamespace()
+	return wfc.Config.Namespace // if not set, then empty string = cluster-scope. if set, then limit the watch
 }
 
 func (wfc *WorkflowController) getMaxStackDepth() int {
