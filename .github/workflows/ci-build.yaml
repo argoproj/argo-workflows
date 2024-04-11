@@ -119,9 +119,11 @@ jobs:
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
         with:
           fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   tests-windows:
     name: Windows Unit Tests
@@ -142,9 +144,11 @@ jobs:
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
         with:
           fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   argoexec-image:
     name: argoexec-image
