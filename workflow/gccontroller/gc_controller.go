@@ -41,7 +41,6 @@ type Controller struct {
 
 // NewController returns a new workflow ttl controller
 func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
-
 	orderedQueue := map[wfv1.WorkflowPhase]*gcHeap{
 		wfv1.WorkflowFailed:    NewHeap(),
 		wfv1.WorkflowError:     NewHeap(),
@@ -180,7 +179,6 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 
 // enqueueWF conditionally queues a workflow to the ttl queue if it is within the deletion period
 func (c *Controller) enqueueWF(obj interface{}) {
-
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		log.Warnf("'%v' is not an unstructured", obj)
