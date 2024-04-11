@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"testing"
-	"time"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
@@ -604,12 +603,10 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	archivedRepo.On("GetWorkflow", "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "latest").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
-	maxStartAt, _ := time.Parse(time.RFC3339, "2019-12-13T23:36:32Z")
-	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "workflows", MaxStartedAt: maxStartAt.Local()}).Return(int64(2), nil)
-	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "workflows", MaxStartedAt: maxStartAt.Local(), Limit: -2}).Return(v1alpha1.Workflows{wfObj2, failedWfObj}, nil)
-	maxStartAt, _ = time.Parse(time.RFC3339, "2019-12-13T23:36:32Z")
-	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "test", MaxStartedAt: maxStartAt.Local()}).Return(int64(1), nil)
-	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "test", MaxStartedAt: maxStartAt.Local(), Limit: -1}).Return(v1alpha1.Workflows{wfObj4}, nil)
+	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "workflows"}).Return(int64(2), nil)
+	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "workflows", Limit: -2}).Return(v1alpha1.Workflows{wfObj2, failedWfObj}, nil)
+	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "test"}).Return(int64(1), nil)
+	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "test", Limit: -1}).Return(v1alpha1.Workflows{wfObj4}, nil)
 
 	kubeClientSet := fake.NewSimpleClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {

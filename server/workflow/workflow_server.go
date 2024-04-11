@@ -180,18 +180,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	archivedMaxStartedAt := options.MaxStartedAt
-	if liveWfCount != 0 {
-		minStartedAt, _ := time.Parse(time.RFC3339, "1970-01-01T00:00:00Z")
-		lastLiveWf, err := s.wfStore.ListWorkflows(options.WithMinStartedAt(minStartedAt).WithStartedAtAscending(true).WithLimit(1).WithOffset(0))
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
-		}
-		if len(lastLiveWf) != 0 {
-			archivedMaxStartedAt = lastLiveWf[0].Status.StartedAt.Time
-		}
-	}
-	archivedCount, err := s.wfArchive.CountWorkflows(options.WithMaxStartedAt(archivedMaxStartedAt))
+	archivedCount, err := s.wfArchive.CountWorkflows(options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -216,7 +205,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 			archivedOffset = 0
 			archivedLimit = options.Limit - len(liveWfList)
 		}
-		archivedWfList, err := s.wfArchive.ListWorkflows(options.WithMaxStartedAt(archivedMaxStartedAt).WithLimit(archivedLimit).WithOffset(archivedOffset))
+		archivedWfList, err := s.wfArchive.ListWorkflows(options.WithLimit(archivedLimit).WithOffset(archivedOffset))
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
