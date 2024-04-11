@@ -141,7 +141,7 @@ func (s *SignalsSuite) TestSignaled() {
 		Workflow("@testdata/signaled-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
@@ -154,7 +154,7 @@ func (s *SignalsSuite) TestSignaledContainerSet() {
 		Workflow("@testdata/signaled-container-set-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
