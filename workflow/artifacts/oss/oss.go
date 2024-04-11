@@ -1,6 +1,7 @@
 package oss
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"math"
@@ -331,8 +332,9 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 		Days: markDeletionAfterDays,
 	}
 
+	keySha := fmt.Sprintf("%x", sha256.Sum256([]byte(ossArtifact.Key)))
 	rule := oss.LifecycleRule{
-		ID:                   "argo-workflows-rule",
+		ID:                   keySha,
 		Prefix:               ossArtifact.Key,
 		Status:               string(oss.VersionEnabled),
 		Expiration:           &expiration,
