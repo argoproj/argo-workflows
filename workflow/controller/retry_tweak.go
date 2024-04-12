@@ -22,7 +22,7 @@ func FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.NodeStatus {
 		}
 		if boundaryID == "" && node.HasChild(nodeID) {
 			return &node
-		} else if node.TemplateName == templateName {
+		} else if boundaryNode.TemplateName != "" && node.TemplateName == templateName {
 			return &node
 		} else if boundaryNode.TemplateRef != nil && node.TemplateRef != nil && node.TemplateRef.Name == boundaryNode.TemplateRef.Name && node.TemplateRef.Template == boundaryNode.TemplateRef.Template {
 			return &node
