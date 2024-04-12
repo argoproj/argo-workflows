@@ -913,7 +913,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						for _, child := range descendantNodeIDs {
 							childNode, err := wf.Status.Nodes.Get(child)
 							if err != nil {
-								log.Fatalf("was unable to obtain node for %s due to %s", child, err)
+								log.Warnf("was unable to obtain node for %s due to %s", child, err)
 								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", child, err)
 							}
 							if _, present := nodeIDsToReset[child]; present {
@@ -943,7 +943,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							deletedNodes[descendantNodeID] = true
 							descendantNode, err := wf.Status.Nodes.Get(descendantNodeID)
 							if err != nil {
-								log.Fatalf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+								log.Warnf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
 								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
 							}
 							if descendantNode.Type == wfv1.NodeTypePod {
