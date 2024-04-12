@@ -560,3 +560,77 @@ func TestSubmitWorkflowTemplateRefWithoutRBAC(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
+
+const wfTemplateHello = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-template-global-arg
+  namespace: default
+spec:
+  templates:
+    - name: hello-world
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{workflow.parameters.global-parameter}}"]
+`
+
+const wfWithDynamicRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-wf-global-arg-
+  namespace: default
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: global-parameter
+        value: hello
+  templates:
+    - name: whalesay
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: '{{item.workflow-template}}'
+              template: '{{item.template-name}}'
+            withItems:
+                - { workflow-template: 'hello-world-template-global-arg', template-name: 'hello-world'}
+          - name: hello-world-dag
+            template: diamond
+
+    - name: diamond
+      dag:
+        tasks:
+        - name: A
+          templateRef:
+            name: '{{item.workflow-template}}'
+            template: '{{item.template-name}}'
+          withItems:
+              - { workflow-template: 'hello-world-template-global-arg', template-name: 'hello-world'}
+`
+
+func TestWorkflowTemplateWithDynamicRef(t *testing.T) {
+	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(wfWithDynamicRef), wfv1.MustUnmarshalWorkflowTemplate(wfTemplateHello))
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(wfWithDynamicRef), controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	pod := pods.Items[0]
+	assert.Contains(t, pod.Name, "hello-world")
+	assert.Equal(t, "docker/whalesay", pod.Spec.Containers[1].Image)
+	assert.Contains(t, "hello", pod.Spec.Containers[1].Args[0])
+	pod = pods.Items[1]
+	assert.Contains(t, pod.Name, "hello-world")
+	assert.Equal(t, "docker/whalesay", pod.Spec.Containers[1].Image)
+	assert.Contains(t, "hello", pod.Spec.Containers[1].Args[0])
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
