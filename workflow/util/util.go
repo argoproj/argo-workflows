@@ -827,7 +827,7 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
 			parentNode, err := oldWF.Status.Nodes.Get(currentNode.BoundaryID)
 			if err != nil {
-				log.Warnf("panicking unable to obtain node for %s", currentNode.BoundaryID)
+				log.Warnf("unable to obtain node for %s, panicking", currentNode.BoundaryID)
 				panic("was not able to get node")
 			}
 			if isGroupNode(*parentNode) {
