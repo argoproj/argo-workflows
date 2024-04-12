@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
+	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
@@ -521,12 +522,23 @@ func (wfc *WorkflowController) getPodCleanupPatch(pod *apiv1.Pod, labelPodComple
 		un.SetLabels(map[string]string{common.LabelKeyCompleted: "true"})
 	}
 
-	finalizerEnabled := os.Getenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") == "true"
-	if finalizerEnabled && slice.ContainsString(pod.Finalizers, common.FinalizerPodStatus) {
-		un.SetFinalizers(slice.RemoveString(pod.Finalizers, common.FinalizerPodStatus))
-		un.SetResourceVersion(pod.ObjectMeta.ResourceVersion)
+	finalizerEnabled := os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true"
+	if finalizerEnabled {
+		finalizers, found := make([]string, 0), false
+		for _, f := range pod.Finalizers {
+			if f == common.FinalizerPodStatus {
+				found = true
+			} else {
+				finalizers = append(finalizers, f)
+			}
+		}
+		if found {
+			un.SetFinalizers(finalizers)
+			un.SetResourceVersion(pod.ObjectMeta.ResourceVersion)
+		}
 	}
 
+	// if there was nothing to patch (no-op)
 	if len(un.Object) == 0 {
 		return nil, nil
 	}
@@ -534,7 +546,7 @@ func (wfc *WorkflowController) getPodCleanupPatch(pod *apiv1.Pod, labelPodComple
 	return un.MarshalJSON()
 }
 
-func (wfc *WorkflowController) patchPodForCleanup(ctx context.Context, namespace, podName string, labelPodCompleted bool) error {
+func (wfc *WorkflowController) patchPodForCleanup(ctx context.Context, pods typedv1.PodInterface, namespace, podName string, labelPodCompleted bool) error {
 	pod, err := wfc.getPod(namespace, podName)
 	// err is always nil in all kind of caches for now
 	if err != nil {
@@ -553,13 +565,7 @@ func (wfc *WorkflowController) patchPodForCleanup(ctx context.Context, namespace
 		return nil
 	}
 
-	_, err = wfc.kubeclientset.CoreV1().Pods(namespace).Patch(
-		ctx,
-		podName,
-		types.MergePatchType,
-		patch,
-		metav1.PatchOptions{},
-	)
+	_, err = pods.Patch(ctx, podName, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
@@ -599,11 +605,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case labelPodCompleted:
-			if err := wfc.patchPodForCleanup(ctx, namespace, podName, true); err != nil {
+			if err := wfc.patchPodForCleanup(ctx, pods, namespace, podName, true); err != nil {
 				return err
 			}
 		case deletePod:
-			if err := wfc.patchPodForCleanup(ctx, namespace, podName, false); err != nil {
+			if err := wfc.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
 				return err
 			}
 

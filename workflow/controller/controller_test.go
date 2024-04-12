@@ -2,7 +2,7 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
@@ -1183,6 +1183,45 @@ spec:
 	assert.Len(t, pods.Items, 0)
 }
 
+func TestPodCleaupPatch(t *testing.T) {
+	wfc := &WorkflowController{}
+
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:          map[string]string{common.LabelKeyCompleted: "false"},
+			Finalizers:      []string{common.FinalizerPodStatus},
+			ResourceVersion: "123456",
+		},
+	}
+
+	os.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
+
+	// pod finalizer enabled, patch label
+	patch, err := wfc.getPodCleanupPatch(pod, true)
+	assert.Nil(t, err)
+	expected := `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
+	require.JSONEq(t, expected, string(patch))
+
+	// pod finalizer enabled, do not patch label
+	patch, err = wfc.getPodCleanupPatch(pod, false)
+	assert.Nil(t, err)
+	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
+	require.JSONEq(t, expected, string(patch))
+
+	os.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
+
+	// pod finalizer disabled, patch both
+	patch, err = wfc.getPodCleanupPatch(pod, true)
+	assert.Nil(t, err)
+	expected = `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`
+	require.JSONEq(t, expected, string(patch))
+
+	// pod finalizer disabled, do not patch label
+	patch, err = wfc.getPodCleanupPatch(pod, false)
+	assert.Nil(t, err)
+	assert.Nil(t, patch)
+}
+
 func TestPendingPodWhenTerminate(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
@@ -1257,54 +1296,4 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-}
-
-func TestGetPodCleaupCache(t *testing.T) {
-	wfc := &WorkflowController{}
-
-	pod := &apiv1.Pod{}
-	pod.SetLabels(map[string]string{common.LabelKeyCompleted: "false"})
-	pod.SetFinalizers([]string{common.FinalizerPodStatus})
-	pod.SetResourceVersion("123456")
-
-	// pod finalizer enabled, patch label
-	os.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "true")
-	expected := &map[string]interface{}{}
-	err := json.Unmarshal([]byte(`{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`), expected)
-	assert.Nil(t, err)
-	patch, err := wfc.getPodCleanupPatch(pod, true)
-	assert.Nil(t, err)
-	actual := &map[string]interface{}{}
-	err = json.Unmarshal(patch, actual)
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual)
-	assert.Len(t, pod.Finalizers, 1)
-
-	// pod finalizer enabled, not patch label
-	expected = &map[string]interface{}{}
-	err = json.Unmarshal([]byte(`{"metadata":{"resourceVersion":"123456","finalizers":[]}}`), expected)
-	assert.Nil(t, err)
-	patch, err = wfc.getPodCleanupPatch(pod, false)
-	assert.Nil(t, err)
-	actual = &map[string]interface{}{}
-	err = json.Unmarshal(patch, actual)
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual)
-
-	// pod finalizer disabled, patch both
-	os.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "false")
-	expected = &map[string]interface{}{}
-	err = json.Unmarshal([]byte(`{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`), expected)
-	assert.Nil(t, err)
-	patch, err = wfc.getPodCleanupPatch(pod, true)
-	assert.Nil(t, err)
-	actual = &map[string]interface{}{}
-	err = json.Unmarshal(patch, actual)
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual)
-
-	// pod finalizer disabled, not patch label
-	patch, err = wfc.getPodCleanupPatch(pod, false)
-	assert.Nil(t, err)
-	assert.Nil(t, patch)
 }
