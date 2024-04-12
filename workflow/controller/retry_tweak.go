@@ -17,13 +17,14 @@ func FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.NodeStatus {
 	boundaryNode := nodes[boundaryID]
 	templateName := boundaryNode.TemplateName
 	for _, node := range nodes {
-		if boundaryID == "" && node.Type == wfv1.NodeTypeRetry && node.HasChild(nodeID) {
-			return &node
+		if node.Type != wfv1.NodeTypeRetry {
+			continue
 		}
-		if node.Type == wfv1.NodeTypeRetry && node.TemplateName == templateName {
+		if boundaryID == "" && node.HasChild(nodeID) {
 			return &node
-		}
-		if boundaryNode.TemplateRef != nil && node.Type == wfv1.NodeTypeRetry && node.TemplateRef != nil && node.TemplateRef.Name == boundaryNode.TemplateRef.Name && node.TemplateRef.Template == boundaryNode.TemplateRef.Template {
+		} else if node.TemplateName == templateName {
+			return &node
+		} else if boundaryNode.TemplateRef != nil && node.TemplateRef != nil && node.TemplateRef.Name == boundaryNode.TemplateRef.Name && node.TemplateRef.Template == boundaryNode.TemplateRef.Template {
 			return &node
 		}
 	}
