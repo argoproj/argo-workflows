@@ -2824,7 +2824,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Fatalf("was unable to obtain node for %s", nodeID)
+		woc.log.Warnf("was unable to obtain node for %s", nodeID)
 		panic(fmt.Sprintf("Expected node for %s", nodeID))
 	}
 	switch node.Type {
@@ -3267,7 +3267,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	childID := woc.wf.NodeID(child)
 	node, err := woc.wf.Status.Nodes.Get(parentID)
 	if err != nil {
-		woc.log.Fatalf("was unable to obtain node for %s", parentID)
+		woc.log.Warnf("was unable to obtain node for %s", parentID)
 		panic(fmt.Sprintf("parent node %s not initialized", parent))
 	}
 	for _, nodeID := range node.Children {

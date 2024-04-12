@@ -346,7 +346,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	for _, childNodeID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			woc.log.Fatalf("was unable to obtain node for %s", childNodeID)
+			woc.log.Warnf("was unable to obtain node for %s, panicking", childNodeID)
 			panic(fmt.Sprintf("unable to get childNode for %s", childNodeID))
 		}
 		step := nodeSteps[childNode.Name]
