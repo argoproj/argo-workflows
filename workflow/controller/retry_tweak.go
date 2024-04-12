@@ -15,14 +15,13 @@ type RetryTweak = func(retryStrategy wfv1.RetryStrategy, nodes wfv1.Nodes, pod *
 func FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.NodeStatus {
 	boundaryID := nodes[nodeID].BoundaryID
 	boundaryNode := nodes[boundaryID]
-	templateName := boundaryNode.TemplateName
 	for _, node := range nodes {
 		if node.Type != wfv1.NodeTypeRetry {
 			continue
 		}
 		if boundaryID == "" && node.HasChild(nodeID) {
 			return &node
-		} else if boundaryNode.TemplateName != "" && node.TemplateName == templateName {
+		} else if boundaryNode.TemplateName != "" && node.TemplateName == boundaryNode.TemplateName {
 			return &node
 		} else if boundaryNode.TemplateRef != nil && node.TemplateRef != nil && node.TemplateRef.Name == boundaryNode.TemplateRef.Name && node.TemplateRef.Template == boundaryNode.TemplateRef.Template {
 			return &node
