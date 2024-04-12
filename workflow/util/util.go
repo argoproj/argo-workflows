@@ -777,7 +777,7 @@ func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsT
 		childStatus, err := wf.Status.Nodes.Get(child)
 		if err != nil {
 			log.Warnf("Coudn't obtain child for %s, panicking", child)
-			panic("Was not able to obtain child")
+			panic("was not able to obtain child")
 		}
 		_, present := nodeIDsToReset[child]
 		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(wf, *childStatus, nodeIDsToReset) {
