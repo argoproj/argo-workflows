@@ -699,7 +699,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 	for _, node := range wf.Status.Nodes {
 		newNode := node.DeepCopy()
