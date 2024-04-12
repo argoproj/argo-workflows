@@ -1,8 +1,9 @@
 import {Ticker} from 'argo-ui';
 import * as React from 'react';
+
 import {ago} from '../duration';
 
-export const Timestamp = ({date}: {date: Date | string | number}) => {
+export function Timestamp({date}: {date: Date | string | number}) {
     const tooltip = (utc: Date | string | number) => {
         return utc.toString() + '\n' + new Date(utc.toString()).toLocaleString();
     };
@@ -17,4 +18,4 @@ export const Timestamp = ({date}: {date: Date | string | number}) => {
             )}
         </span>
     );
-};
+}

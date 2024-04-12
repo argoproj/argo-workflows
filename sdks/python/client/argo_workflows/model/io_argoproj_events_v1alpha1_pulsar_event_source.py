@@ -93,6 +93,8 @@ class IoArgoprojEventsV1alpha1PulsarEventSource(ModelNormal):
         """
         lazy_import()
         return {
+            'auth_athenz_params': ({str: (str,)},),  # noqa: E501
+            'auth_athenz_secret': (SecretKeySelector,),  # noqa: E501
             'auth_token_secret': (SecretKeySelector,),  # noqa: E501
             'connection_backoff': (IoArgoprojEventsV1alpha1Backoff,),  # noqa: E501
             'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
@@ -113,6 +115,8 @@ class IoArgoprojEventsV1alpha1PulsarEventSource(ModelNormal):
 
 
     attribute_map = {
+        'auth_athenz_params': 'authAthenzParams',  # noqa: E501
+        'auth_athenz_secret': 'authAthenzSecret',  # noqa: E501
         'auth_token_secret': 'authTokenSecret',  # noqa: E501
         'connection_backoff': 'connectionBackoff',  # noqa: E501
         'filter': 'filter',  # noqa: E501
@@ -168,6 +172,8 @@ class IoArgoprojEventsV1alpha1PulsarEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            auth_athenz_params ({str: (str,)}): [optional]  # noqa: E501
+            auth_athenz_secret (SecretKeySelector): [optional]  # noqa: E501
             auth_token_secret (SecretKeySelector): [optional]  # noqa: E501
             connection_backoff (IoArgoprojEventsV1alpha1Backoff): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
@@ -261,6 +267,8 @@ class IoArgoprojEventsV1alpha1PulsarEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            auth_athenz_params ({str: (str,)}): [optional]  # noqa: E501
+            auth_athenz_secret (SecretKeySelector): [optional]  # noqa: E501
             auth_token_secret (SecretKeySelector): [optional]  # noqa: E501
             connection_backoff (IoArgoprojEventsV1alpha1Backoff): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501

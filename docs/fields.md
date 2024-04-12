@@ -331,7 +331,7 @@ Workflow is the definition of a workflow resource
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
-- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -340,6 +340,8 @@ Workflow is the definition of a workflow resource
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -753,7 +755,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
-- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -762,6 +764,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -797,7 +801,7 @@ WorkflowSpec is the specification of a Workflow.
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
 |`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
-|`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
+|`dnsPolicy`|`string`|Set DNS policy for workflow pods. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
@@ -857,7 +861,7 @@ WorkflowStatus contains overall status information about a workflow
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
-|`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.|
+|`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.|
 
 ## CronWorkflowSpec
 
@@ -1190,7 +1194,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
-- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -1199,6 +1203,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -1229,6 +1235,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 |`concurrencyPolicy`|`string`|ConcurrencyPolicy is the K8s-style concurrency policy that will be used|
 |`failedJobsHistoryLimit`|`integer`|FailedJobsHistoryLimit is the number of failed jobs to be kept at a time|
 |`schedule`|`string`|Schedule is a schedule to run the Workflow in Cron format|
+|`schedules`|`Array< string >`|Schedules is a list of schedules to run the Workflow in Cron format|
 |`startingDeadlineSeconds`|`integer`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
 |`stopStrategy`|[`StopStrategy`](#stopstrategy)|StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow|
 |`successfulJobsHistoryLimit`|`integer`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
@@ -2404,7 +2411,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`containers`|`Array<`[`ContainerNode`](#containernode)`>`|_No description available_|
-|`retryStrategy`|[`ContainerSetRetryStrategy`](#containersetretrystrategy)|RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.|
+|`retryStrategy`|[`ContainerSetRetryStrategy`](#containersetretrystrategy)|RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.|
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|_No description available_|
 
 ## DAGTemplate
@@ -2583,7 +2590,7 @@ UserContainer is a container specified by a user.
 |`livenessProbe`|[`Probe`](#probe)|Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`mirrorVolumeMounts`|`boolean`|MirrorVolumeMounts will mount the same volumes specified in the main container to the container (including artifacts), at the same mountPaths. This enables dind daemon to partially see the same filesystem as the main container in order to use features such as docker volume binding|
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
-|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
+|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
@@ -2899,6 +2906,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
 
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
 
@@ -2914,7 +2923,7 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 |`lifecycle`|[`Lifecycle`](#lifecycle)|Actions that the management system should take in response to container lifecycle events. Cannot be updated.|
 |`livenessProbe`|[`Probe`](#probe)|Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
-|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
+|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
@@ -3089,6 +3098,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -3552,7 +3563,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |:----------:|:----------:|---------------|
 |`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for input parameter configuration|
 |`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
-|`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
+|`event`|`string`|Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`expression`|`string`|Expression, if defined, is evaluated to specify the value for the parameter|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
@@ -3671,7 +3682,7 @@ MetricLabel is a single label for a prometheus metric
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
-- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 </details>
 
 ### Fields
@@ -3721,7 +3732,7 @@ _No description available_
 |`lifecycle`|[`Lifecycle`](#lifecycle)|Actions that the management system should take in response to container lifecycle events. Cannot be updated.|
 |`livenessProbe`|[`Probe`](#probe)|Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
-|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
+|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
@@ -3737,7 +3748,7 @@ _No description available_
 
 ## ContainerSetRetryStrategy
 
-_No description available_
+ContainerSetRetryStrategy provides controls on how to retry a container set
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -3769,7 +3780,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the time between each retry, examples values are "300ms", "1s" or "5m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".|
-|`retries`|[`IntOrString`](#intorstring)|Nbr of retries|
+|`retries`|[`IntOrString`](#intorstring)|Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`.|
 
 ## DAGTask
 
@@ -3926,6 +3937,8 @@ DataSource sources external data into a data template
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
 
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
 
@@ -4069,6 +4082,8 @@ Sequence expands a workflow step into numeric range
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
@@ -4834,7 +4849,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
-- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -4843,6 +4858,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -5434,7 +5451,7 @@ A single application container that you want to run within a pod.
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
-- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -6163,7 +6180,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
-- [`title-and-descriptin-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-descriptin-with-markdown.yaml)
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -6172,6 +6189,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 

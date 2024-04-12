@@ -12,7 +12,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
 import {Context} from '../../../shared/context';
-import {useLocalStorage} from '../../../shared/hooks/uselocalstorage';
+import {useLocalStorage} from '../../../shared/use-local-storage';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
@@ -297,7 +297,8 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
                 )}
                 {execSpec(workflow).podGC && (
                     <>
-                        <WarningIcon /> Your pod GC settings will delete pods and their logs immediately on completion.
+                        <WarningIcon /> Your pod GC settings will delete pods and their logs{' '}
+                        {execSpec(workflow).podGC.deleteDelayDuration ? `after ${execSpec(workflow).podGC.deleteDelayDuration}` : 'immediately'} on completion.
                     </>
                 )}{' '}
                 Logs may not appear for pods that are deleted.{' '}

@@ -405,12 +405,14 @@ message ContainerNode {
   repeated string dependencies = 2;
 }
 
+// ContainerSetRetryStrategy provides controls on how to retry a container set
 message ContainerSetRetryStrategy {
   // Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
   // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
   optional string duration = 1;
 
-  // Nbr of retries
+  // Retries is the maximum number of retry attempts for each container. It does not include the
+  // first, original attempt; the maximum number of total attempts will be `retries + 1`.
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString retries = 2;
 }
 
@@ -419,8 +421,8 @@ message ContainerSetTemplate {
 
   repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
 
-  // RetryStrategy describes how to retry a container nodes in the container set if it fails.
-  // Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
+  // RetryStrategy describes how to retry container nodes if the container set fails.
+  // Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.
   optional ContainerSetRetryStrategy retryStrategy = 5;
 }
 
@@ -499,6 +501,9 @@ message CronWorkflowSpec {
 
   // StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
   optional StopStrategy stopStrategy = 10;
+
+  // Schedules is a list of schedules to run the Workflow in Cron format
+  repeated string schedules = 11;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
@@ -608,7 +613,7 @@ message DataSource {
 }
 
 message Event {
-  // Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+  // Selector (https://github.com/expr-lang/expr) that we must must match the event. E.g. `payload.message == "test"`
   optional string selector = 1;
 }
 
@@ -1766,7 +1771,7 @@ message ValueFrom {
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
 
-  // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  // Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
   optional string event = 7;
 
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
@@ -1972,7 +1977,7 @@ message WorkflowSpec {
   // Host networking requested for this workflow pod. Default to false.
   optional bool hostNetwork = 14;
 
-  // Set DNS policy for the pod.
+  // Set DNS policy for workflow pods.
   // Defaults to "ClusterFirst".
   // Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
   // DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
@@ -2137,7 +2142,7 @@ message WorkflowStatus {
   // ArtifactGCStatus maintains the status of Artifact Garbage Collection
   optional ArtGCStatus artifactGCStatus = 19;
 
-  // TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.
+  // TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
   map<string, bool> taskResultsCompletionStatus = 20;
 }
 

@@ -1738,7 +1738,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+							Description: "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -1930,7 +1930,8 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.Refe
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ContainerSetRetryStrategy provides controls on how to retry a container set",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"duration": {
 						SchemaProps: spec.SchemaProps{
@@ -1941,7 +1942,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.Refe
 					},
 					"retries": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Nbr of retries",
+							Description: "Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`.",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
@@ -1988,7 +1989,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.Reference
 					},
 					"retryStrategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.",
+							Description: "RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy"),
 						},
 					},
@@ -2239,6 +2240,21 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 						SchemaProps: spec.SchemaProps{
 							Description: "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy"),
+						},
+					},
+					"schedules": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Schedules is a list of schedules to run the Workflow in Cron format",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -2574,7 +2590,7 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"selector": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == \"test\"`",
+							Description: "Selector (https://github.com/expr-lang/expr) that we must must match the event. E.g. `payload.message == \"test\"`",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -5469,7 +5485,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+							Description: "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6580,7 +6596,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+							Description: "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6791,7 +6807,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					},
 					"event": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
+							Description: "Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7532,7 +7548,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"dnsPolicy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
+							Description: "Set DNS policy for workflow pods. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7895,7 +7911,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					},
 					"taskResultsCompletionStatus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TaskResultsCompletionStatus tracks task result completion status (mapped by pod name). Used to prevent premature archiving and garbage collection.",
+							Description: "TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,

@@ -1,7 +1,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  clusterName: ""
   creationTimestamp: 2018-08-01T09:57:43Z
   generateName: dag-fail-
   generation: 1

@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: retry-workflow-with-continueon
+spec:
+  entrypoint: dag
+  templates:
+    - name: dag
+      dag:
+        failFast: false
+        tasks:
+          - name: success
+            template: node-to-exit
+            arguments:
+              parameters:
+                - name: exitCode
+                  value: 0
+          - name: failure
+            template: node-to-exit
+            dependencies: [success]
+            arguments:
+              parameters:
+                - name: exitCode
+                  value: 1
+          - name: task-after-failure
+            template: node-to-exit
+            dependencies: [failure]
+            arguments:
+              parameters:
+                - name: exitCode
+                  value: 0
+          - name: continue
+            template: node-to-exit
+            continueOn:
+              failed: true
+            dependencies: [success]
+            arguments:
+              parameters:
+                - name: exitCode
+                  value: 2
+          - name: task-after-continue
+            template: node-to-exit
+            dependencies: [continue]
+            arguments:
+              parameters:
+                - name: exitCode
+                  value: 0
+
+    - name: node-to-exit
+      inputs:
+        parameters:
+          - name: exitCode
+      container:
+        image: alpine:3.7
+        command: [ sh, "-c", "exit {{inputs.parameters.exitCode}}" ]

@@ -204,6 +204,11 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		// the file is a tarball or not. If it is, it is first extracted then renamed to
 		// the desired location. If not, it is simply renamed to the location.
 		tempArtPath := artPath + ".tmp"
+		// Ensure parent directory exist, create if missing
+		tempArtDir := filepath.Dir(tempArtPath)
+		if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
+			return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
+		}
 		err = artDriver.Load(driverArt, tempArtPath)
 		if err != nil {
 			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
@@ -793,8 +798,8 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
-		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
+			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
 		}
@@ -815,7 +820,7 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
 		}
@@ -843,7 +848,7 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			if result.Outputs.HasOutputs() {
 				value, err := json.Marshal(result.Outputs)
 				if err != nil {

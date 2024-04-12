@@ -1,4 +1,4 @@
-import {CronWorkflowContainer} from './components/cron-workflow-container';
+import {CronWorkflowContainer} from './cron-workflow-container';
 
 export default {
     component: CronWorkflowContainer

@@ -55,7 +55,7 @@ flowchart LR
   onfailureNoExpr[OnFailure]
   onfailure[OnFailure AND Expression]
   version(Workflows version)
-  version-->|3.4 or ealier|onfailure
+  version-->|3.4 or earlier|onfailure
   always[Only Expression matters]
   version-->|3.5 or later|always
 ```
@@ -85,9 +85,8 @@ spec:
 
 > v3.2 and after
 
-You can also use `expression` to control retries. The `expression` field
-accepts an [expr](https://github.com/antonmedv/expr) expression and has
-access to the following variables:
+You can also use `expression` to control retries.
+This is an [expression](variables.md#expression) with access to the following variables:
 
 - `lastRetry.exitCode`: The exit code of the last retry, or "-1" if not available
 - `lastRetry.status`: The phase of the last retry: Error, Failed

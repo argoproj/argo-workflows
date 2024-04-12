@@ -826,12 +826,12 @@ container images in workload controllers like Deployments and StatefulSets.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.
 Each container in a pod must have a unique name (DNS_LABEL).
 Cannot be updated. |  |
-| ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Exposing a port here gives
-the system additional information about the network connections a
-container uses, but is primarily informational. Not specifying a port here
+| ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here
 DOES NOT prevent that port from being exposed. Any port which is
 listening on the default "0.0.0.0" address inside a container will be
 accessible from the network.
+Modifying this array with strategic merge patch may corrupt the data.
+For more information See https://github.com/kubernetes/kubernetes/issues/108255.
 Cannot be updated.
 +optional
 +patchMergeKey=containerPort
@@ -937,12 +937,12 @@ container images in workload controllers like Deployments and StatefulSets.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.
 Each container in a pod must have a unique name (DNS_LABEL).
 Cannot be updated. |  |
-| ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Exposing a port here gives
-the system additional information about the network connections a
-container uses, but is primarily informational. Not specifying a port here
+| ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here
 DOES NOT prevent that port from being exposed. Any port which is
 listening on the default "0.0.0.0" address inside a container will be
 accessible from the network.
+Modifying this array with strategic merge patch may corrupt the data.
+For more information See https://github.com/kubernetes/kubernetes/issues/108255.
 Cannot be updated.
 +optional
 +patchMergeKey=containerPort
@@ -1026,7 +1026,10 @@ referred to by services.
 ### <span id="container-set-retry-strategy"></span> ContainerSetRetryStrategy
 
 
+> ContainerSetRetryStrategy provides controls on how to retry a container set
   
+
+
 
 
 
@@ -2903,7 +2906,7 @@ and allows a Source for provider-specific attributes
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
 +optional |  |
 | dataSource | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
-| dataSourceRef | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
+| dataSourceRef | [TypedObjectReference](#typed-object-reference)| `TypedObjectReference` |  | |  |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | selector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
 | storageClassName | string| `string` |  | | storageClassName is the name of the StorageClass required by the claim.
@@ -2934,13 +2937,6 @@ PersistentVolumeClaim objects as part of an EphemeralVolumeSource.
 set by external tools to store and retrieve arbitrary metadata. They are not
 queryable and should be preserved when modifying objects.
 More info: http://kubernetes.io/docs/user-guide/annotations
-+optional |  |
-| clusterName | string| `string` |  | | Deprecated: ClusterName is a legacy field that was always cleared by
-the system and never used; it will be removed completely in 1.25.
-
-The name in the go struct is changed to help clients detect
-accidental use.
-
 +optional |  |
 | creationTimestamp | [Time](#time)| `Time` |  | |  |  |
 | deletionGracePeriodSeconds | int64 (formatted integer)| `int64` |  | | Number of seconds allowed for this object to gracefully terminate before
@@ -3268,8 +3264,11 @@ Note that this field cannot be set when spec.os.name is windows.
 | seLinuxOptions | [SELinuxOptions](#s-e-linux-options)| `SELinuxOptions` |  | |  |  |
 | seccompProfile | [SeccompProfile](#seccomp-profile)| `SeccompProfile` |  | |  |  |
 | supplementalGroups | []int64 (formatted integer)| `[]int64` |  | | A list of groups applied to the first process run in each container, in addition
-to the container's primary GID.  If unspecified, no groups will be added to
-any container.
+to the container's primary GID, the fsGroup (if specified), and group memberships
+defined in the container image for the uid of the container process. If unspecified,
+no additional groups are added to any container. Note that group memberships
+defined in the container image for the uid of the container process are still effective,
+even if they are not included in this list.
 Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | sysctls | [][Sysctl](#sysctl)| `[]*Sysctl` |  | | Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
@@ -3480,8 +3479,11 @@ mode, like fsGroup, and the result can be other mode bits set.
 
 > The serialization format is:
 
+```
 <quantity>        ::= <signedNumber><suffix>
+
 (Note that <suffix> may be empty, from the "" case in <decimalSI>.)
+
 <digit>           ::= 0 | 1 | ... | 9
 <digits>          ::= <digit> | <digit><digits>
 <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits>
@@ -3489,10 +3491,15 @@ mode, like fsGroup, and the result can be other mode bits set.
 <signedNumber>    ::= <number> | <sign><number>
 <suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI>
 <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei
+
 (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)
+
 <decimalSI>       ::= m | "" | k | M | G | T | P | E
+
 (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)
+
 <decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>
+```
 
 No matter which of the three exponent forms is used, no quantity may represent
 a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal
@@ -3506,12 +3513,15 @@ it had, and will use the same type again when it is serialized.
 Before serializing, Quantity will be put in "canonical form".
 This means that Exponent/suffix will be adjusted up or down (with a
 corresponding increase or decrease in Mantissa) such that:
-a. No precision is lost
-b. No fractional digits will be emitted
-c. The exponent (or suffix) is as large as possible.
+
+No precision is lost
+No fractional digits will be emitted
+The exponent (or suffix) is as large as possible.
+
 The sign will be omitted unless the number is negative.
 
 Examples:
+
 1.5 will be serialized as "1500m"
 1.5Gi will be serialized as "1536Mi"
 
@@ -3633,6 +3643,23 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 
 
+### <span id="resource-claim"></span> ResourceClaim
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| name | string| `string` |  | | Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container. |  |
+
+
+
 ### <span id="resource-field-selector"></span> ResourceFieldSelector
 
 
@@ -3673,6 +3700,18 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| claims | [][ResourceClaim](#resource-claim)| `[]*ResourceClaim` |  | | Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
++listType=map
++listMapKey=name
++featureGate=DynamicResourceAllocation
++optional |  |
 | limits | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 | requests | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 
@@ -3939,12 +3978,12 @@ container images in workload controllers like Deployments and StatefulSets.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.
 Each container in a pod must have a unique name (DNS_LABEL).
 Cannot be updated. |  |
-| ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Exposing a port here gives
-the system additional information about the network connections a
-container uses, but is primarily informational. Not specifying a port here
+| ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here
 DOES NOT prevent that port from being exposed. Any port which is
 listening on the default "0.0.0.0" address inside a container will be
 accessible from the network.
+Modifying this array with strategic merge patch may corrupt the data.
+For more information See https://github.com/kubernetes/kubernetes/issues/108255.
 Cannot be updated.
 +optional
 +patchMergeKey=containerPort
@@ -4673,6 +4712,31 @@ For any other third-party types, APIGroup is required.
 
 
 
+### <span id="typed-object-reference"></span> TypedObjectReference
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| apiGroup | string| `string` |  | | APIGroup is the group for the resource being referenced.
+If APIGroup is not specified, the specified Kind must be in the core API group.
+For any other third-party types, APIGroup is required.
++optional |  |
+| kind | string| `string` |  | | Kind is the type of resource being referenced |  |
+| name | string| `string` |  | | Name is the name of resource being referenced |  |
+| namespace | string| `string` |  | | Namespace is the namespace of resource being referenced
+Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.
+(Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
++featureGate=CrossNamespaceVolumeDataSource
++optional |  |
+
+
+
 ### <span id="uid"></span> UID
 
 
@@ -4763,12 +4827,12 @@ order to use features such as docker volume binding |  |
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.
 Each container in a pod must have a unique name (DNS_LABEL).
 Cannot be updated. |  |
-| ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Exposing a port here gives
-the system additional information about the network connections a
-container uses, but is primarily informational. Not specifying a port here
+| ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here
 DOES NOT prevent that port from being exposed. Any port which is
 listening on the default "0.0.0.0" address inside a container will be
 accessible from the network.
+Modifying this array with strategic merge patch may corrupt the data.
+For more information See https://github.com/kubernetes/kubernetes/issues/108255.
 Cannot be updated.
 +optional
 +patchMergeKey=containerPort
@@ -4837,7 +4901,7 @@ Cannot be updated.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
 | default | [AnyString](#any-string)| `AnyString` |  | |  |  |
-| event | string| `string` |  | | Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` |  |
+| event | string| `string` |  | | Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` |  |
 | expression | string| `string` |  | | Expression, if defined, is evaluated to specify the value for the parameter |  |
 | jqFilter | string| `string` |  | | JQFilter expression against the resource object in resource templates |  |
 | jsonPath | string| `string` |  | | JSONPath of a resource to retrieve an output parameter value from in resource templates |  |
