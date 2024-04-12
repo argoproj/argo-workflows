@@ -33,6 +33,7 @@ type When struct {
 	client            v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
@@ -346,6 +347,7 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 				return w
 			}
 		}
+		time.Sleep(time.Second)
 	}
 }
 
@@ -621,6 +623,7 @@ func (w *When) Then() *Then {
 		wf:          w.wf,
 		cronWf:      w.cronWf,
 		client:      w.client,
+		wftsClient:  w.wftsClient,
 		cronClient:  w.cronClient,
 		hydrator:    w.hydrator,
 		kubeClient:  w.kubeClient,
@@ -634,6 +637,7 @@ func (w *When) Given() *Given {
 		client:            w.client,
 		wfebClient:        w.wfebClient,
 		wfTemplateClient:  w.wfTemplateClient,
+		wftsClient:        w.wftsClient,
 		cwfTemplateClient: w.cwfTemplateClient,
 		cronClient:        w.cronClient,
 		hydrator:          w.hydrator,

@@ -15,17 +15,17 @@ jobs:
       pull-requests: write # for commenting on a PR and editing labels
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e # v9.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           # timing
           days-before-stale: 14 # 2 weeks of inactivity
           days-before-close: 14 # 2 more weeks of inactivity
           # labels to watch for, add, and remove
-          only-labels: 'more information needed' # only mark issues/PRs as stale if they have this label
-          labels-to-remove-when-unstale: 'more information needed' # remove label when unstale -- should be manually added back if information is insufficient
-          stale-issue-label: 'stale'
-          stale-pr-label: 'stale'
+          only-labels: 'problem/more information needed' # only mark issues/PRs as stale if they have this label
+          labels-to-remove-when-unstale: 'problem/more information needed' # remove label when unstale -- should be manually added back if information is insufficient
+          stale-issue-label: 'problem/stale'
+          stale-pr-label: 'problem/stale'
           # automated messages to issue/PR authors
           stale-issue-message: >
             This issue has been automatically marked as stale because it has not had recent activity and needs more information.

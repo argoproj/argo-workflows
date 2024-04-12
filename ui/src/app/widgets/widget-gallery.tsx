@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import {uiUrl} from '../shared/base';
 
 export const WidgetGallery = ({namespace, name, label}: {namespace: string; name?: string; label?: string}) => (

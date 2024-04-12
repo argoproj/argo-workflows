@@ -125,7 +125,7 @@ script:
     ls -al
 `
 
-// TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
+// TestScriptTemplateWithoutVolumeOptionalArtifact ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	volumeMount := apiv1.VolumeMount{
 		Name:             "input-artifacts",
@@ -325,8 +325,8 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
 }
 
-// TestTmplLevelExecutorServiceAccountName verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
-func TestTmplLevelExecutorSecurityContext(t *testing.T) {
+// TestCtrlLevelExecutorSecurityContext verifies the ability to carry forward Controller level SecurityContext to Podspec.
+func TestCtrlLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
 	ctx := context.Background()
 	woc := newWoc()
@@ -499,7 +499,7 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
-// TestConditionalNoAddArchiveLocation verifies we do  add archive location if it is needed for logs
+// TestConditionalAddArchiveLocationArchiveLogs verifies we do  add archive location if it is needed for logs
 func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	ctx := context.Background()
 	woc := newWoc()
@@ -510,7 +510,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 			},
 			KeyFormat: "path/in/bucket",
 		},
-		ArchiveLogs: pointer.BoolPtr(true),
+		ArchiveLogs: pointer.Bool(true),
 	})
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -523,7 +523,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	assert.NotNil(t, tmpl.ArchiveLocation)
 }
 
-// TestConditionalNoAddArchiveLocation verifies we add archive location when it is needed
+// TestConditionalArchiveLocation verifies we add archive location when it is needed
 func TestConditionalArchiveLocation(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -582,19 +582,19 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			if tt.workflowArchiveLog != "" {
 				workflowArchiveLog, _ := strconv.ParseBool(tt.workflowArchiveLog)
-				wf.Spec.ArchiveLogs = pointer.BoolPtr(workflowArchiveLog)
+				wf.Spec.ArchiveLogs = pointer.Bool(workflowArchiveLog)
 			}
 			if tt.templateArchiveLog != "" {
 				templateArchiveLog, _ := strconv.ParseBool(tt.templateArchiveLog)
 				wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
-					ArchiveLogs: pointer.BoolPtr(templateArchiveLog),
+					ArchiveLogs: pointer.Bool(templateArchiveLog),
 				}
 			}
 			cancel, controller := newController(wf)
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
-				ArchiveLogs: pointer.BoolPtr(tt.controllerArchiveLog),
+				ArchiveLogs: pointer.Bool(tt.controllerArchiveLog),
 				S3: &wfv1.S3ArtifactRepository{
 					S3Bucket: wfv1.S3Bucket{
 						Bucket: "foo",
@@ -1487,6 +1487,26 @@ func TestMainContainerCustomization(t *testing.T) {
 		assert.Equal(t, "1", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 		assert.Equal(t, "128974848", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 	})
+}
+
+func TestExecutorContainerCustomization(t *testing.T) {
+	woc := newWoc()
+	woc.controller.Config.Executor = &apiv1.Container{
+		Args: []string{"foo"},
+		Resources: apiv1.ResourceRequirements{
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.900"),
+				apiv1.ResourceMemory: resource.MustParse("512Mi"),
+			},
+		},
+	}
+
+	pod, err := woc.createWorkflowPod(context.Background(), "", nil, &wfv1.Template{}, &createWorkflowPodOpts{})
+	assert.NoError(t, err)
+	waitCtr := pod.Spec.Containers[0]
+	assert.Equal(t, []string{"foo"}, waitCtr.Args)
+	assert.Equal(t, "0.900", waitCtr.Resources.Limits.Cpu().AsDec().String())
+	assert.Equal(t, "536870912", waitCtr.Resources.Limits.Memory().AsDec().String())
 }
 
 var helloWindowsWf = `

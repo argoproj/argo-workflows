@@ -10,7 +10,7 @@ export const k8sNamingHashLength = 10;
 // In case templateName is not defined or that version is explicitly set to  POD_NAME_V1, it will return the nodeID (v1)
 // In other cases it will return a combination of workflow name, template name, and a hash (v2)
 // note: this is intended to be equivalent to the server-side Go code in workflow/util/pod_name.go
-export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string, version: string): string => {
+export function getPodName(workflowName: string, nodeName: string, templateName: string, nodeID: string, version: string): string {
     if (version !== POD_NAME_V1 && templateName !== '') {
         if (workflowName === nodeName) {
             return workflowName;
@@ -23,9 +23,9 @@ export const getPodName = (workflowName: string, nodeName: string, templateName:
     }
 
     return nodeID;
-};
+}
 
-export const ensurePodNamePrefixLength = (prefix: string): string => {
+export function ensurePodNamePrefixLength(prefix: string): string {
     const maxPrefixLength = maxK8sResourceNameLength - k8sNamingHashLength;
 
     if (prefix.length > maxPrefixLength - 1) {
@@ -33,9 +33,9 @@ export const ensurePodNamePrefixLength = (prefix: string): string => {
     }
 
     return prefix;
-};
+}
 
-export const createFNVHash = (input: string): number => {
+export function createFNVHash(input: string): number {
     let hashint = 2166136261;
 
     for (let i = 0; i < input.length; i++) {
@@ -45,9 +45,9 @@ export const createFNVHash = (input: string): number => {
     }
 
     return hashint >>> 0;
-};
+}
 
-export const getTemplateNameFromNode = (node: NodeStatus): string => {
+export function getTemplateNameFromNode(node: NodeStatus): string {
     if (node.templateName && node.templateName !== '') {
         return node.templateName;
     }
@@ -58,4 +58,4 @@ export const getTemplateNameFromNode = (node: NodeStatus): string => {
     }
 
     return node.templateRef.template;
-};
+}

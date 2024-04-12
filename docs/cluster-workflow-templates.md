@@ -56,9 +56,9 @@ spec:
               value: "hello world"
 ```
 
-> 2.9 and after
-
 ### Create `Workflow` from `ClusterWorkflowTemplate` Spec
+
+> v2.9 and after
 
 You can create `Workflow` from `ClusterWorkflowTemplate` spec using `workflowTemplateRef` with `clusterScope: true`. If you pass the arguments to created `Workflow`, it will be merged with cluster workflow template arguments
 
@@ -129,15 +129,15 @@ You can create some example templates as follows:
 argo cluster-template create https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/cluster-workflow-template/clustertemplates.yaml
 ```
 
-The submit a workflow using one of those templates:
+Then submit a `Workflow` using one of those templates:
 
 ```bash
 argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
 ```
 
-> 2.7 and after
->
-The submit a `ClusterWorkflowTemplate` as a `Workflow`:
+> v2.7 and after
+
+Then submit a `ClusterWorkflowTemplate` as a `Workflow`:
 
 ```bash
 argo submit --from clusterworkflowtemplate/cluster-workflow-template-submittable

@@ -11,7 +11,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
+import {useCollectEvent} from '../../../shared/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -54,9 +54,9 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
-        const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || 0;
+        const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
         return {
-            offset: queryParams.get('name'),
+            offset: queryParams.get('offset') || undefined,
             limit: parseLimit(queryParams.get('limit')) || savedPaginationLimit || 50
         };
     });
@@ -155,7 +155,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, pagination.nextOffset]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 

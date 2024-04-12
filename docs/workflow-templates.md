@@ -110,7 +110,7 @@ spec:
 
 ### Adding labels/annotations to Workflows with `workflowMetadata`
 
-> 2.10.2 and after
+> v2.10.2 and after
 
 To automatically add labels and/or annotations to Workflows created from `WorkflowTemplates`, use `workflowMetadata`.
 
@@ -282,9 +282,9 @@ to pass in "live" arguments and reference other templates (those other templates
 
 This behavior has been problematic and dangerous. It causes confusion and has design inconsistencies.
 
-> 2.9 and after
-
 ### Create `Workflow` from `WorkflowTemplate` Spec
+
+> v2.9 and after
 
 You can create `Workflow` from `WorkflowTemplate` spec using `workflowTemplateRef`. If you pass the arguments to created `Workflow`, it will be merged with workflow template arguments.
 Here is an example for referring `WorkflowTemplate` as Workflow with passing `entrypoint` and `Workflow Arguments` to `WorkflowTemplate`
@@ -333,7 +333,7 @@ Then submit a workflow using one of those templates:
 argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/workflow-template/hello-world.yaml
 ```
 
-> 2.7 and after
+> v2.7 and after
 
 Then submit a `WorkflowTemplate` as a `Workflow`:
 

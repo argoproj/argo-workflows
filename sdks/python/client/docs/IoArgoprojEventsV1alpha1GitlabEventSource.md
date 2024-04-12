@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **events** | **[str]** | Events are gitlab event to listen to. Refer https://github.com/xanzy/go-gitlab/blob/bf34eca5d13a9f4c3f501d8a97b8ac226d55e4d9/projects.go#L794. | [optional] 
 **filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **gitlab_base_url** | **str** |  | [optional] 
+**groups** | **[str]** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **project_id** | **str** |  | [optional] 
 **projects** | **[str]** |  | [optional] 

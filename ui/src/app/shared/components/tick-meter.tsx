@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
-export const TickMeter = ({value}: {value: number}) => {
+export function TickMeter({value}: {value: number}) {
     const [change, setChange] = useState<number>(0);
     const [previousValue, setPreviousValue] = useState<number>();
     useEffect(() => {
@@ -21,4 +21,4 @@ export const TickMeter = ({value}: {value: number}) => {
             )}
         </>
     );
-};
+}
