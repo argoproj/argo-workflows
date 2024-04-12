@@ -764,8 +764,8 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	for _, child := range node.Children {
 		childStatus, err := wf.Status.Nodes.Get(child)
 		if err != nil {
-			log.Fatalf("Couldn't get child, panicking")
-			panic("Was not able to obtain child")
+			log.Warnf("Coudn't obtain child for %s, panicking", child)
+			panic("was not able to obtain child")
 		}
 		descendantNodeIDs = append(descendantNodeIDs, getDescendantNodeIDs(wf, *childStatus)...)
 	}
@@ -776,7 +776,7 @@ func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsT
 	for _, child := range node.Children {
 		childStatus, err := wf.Status.Nodes.Get(child)
 		if err != nil {
-			log.Fatalf("Couldn't get child, panicking")
+			log.Warnf("Coudn't obtain child for %s, panicking", child)
 			panic("Was not able to obtain child")
 		}
 		_, present := nodeIDsToReset[child]
@@ -816,8 +816,8 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 	for {
 		currentNode, err := oldWF.Status.Nodes.Get(currentNodeID)
 		if err != nil {
-			log.Fatalf("dying due to inability to obtain node for %s", currentNodeID)
-			panic("was not able to get node, panicking")
+			log.Warnf("dying due to inability to obtain node for %s, panicking", currentNodeID)
+			panic("was not able to get node")
 		}
 		if !containsNode(resetParentGroupNodes, currentNodeID) {
 			newWF.Status.Nodes.Set(currentNodeID, resetNode(*currentNode.DeepCopy()))
@@ -827,7 +827,7 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
 			parentNode, err := oldWF.Status.Nodes.Get(currentNode.BoundaryID)
 			if err != nil {
-				log.Fatalf("panicking unable to obtain node for %s", currentNode.BoundaryID)
+				log.Warnf("panicking unable to obtain node for %s", currentNode.BoundaryID)
 				panic("was not able to get node")
 			}
 			if isGroupNode(*parentNode) {

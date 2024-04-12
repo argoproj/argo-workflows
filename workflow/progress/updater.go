@@ -72,7 +72,7 @@ func sumProgress(wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]boo
 		child, err := wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
 			log.Warnf("Coudn't obtain child for %s, panicking", childNodeID)
-			continue
+			panic("was not able to get node")
 		}
 		progress = progress.Add(sumProgress(wf, *child, visited))
 		if executable(child.Type) {
