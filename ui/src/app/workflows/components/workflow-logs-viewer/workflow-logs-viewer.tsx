@@ -25,7 +25,7 @@ const timezones = Intl.supportedValuesOf('timeZone');
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
-    nodeId?: string;
+    initialNodeId?: string;
     initialPodName: string;
     container: string;
     archived: boolean;
@@ -74,7 +74,7 @@ function parseAndTransform(formattedString: string, timeZone: string) {
     }
 }
 
-export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
+export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
     const storage = new ScopedLocalStorage('workflow-logs-viewer');
     const storedJsonFields = storage.getItem('jsonFields', {
         values: []
@@ -83,7 +83,6 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
     const {popup} = useContext(Context);
     const [podName, setPodName] = useState(initialPodName || '');
     const [selectedContainer, setContainer] = useState(container);
-    const [selectedNodeId, setNodeId] = useState(nodeId);
     const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
     const [loaded, setLoaded] = useState(false);
@@ -103,12 +102,7 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
         setError(null);
         setLoaded(false);
 
-        // if no node id is set (for example, when no node is selected), then use the node id of of the pod.
-        if (archived && !selectedNodeId && podNamesToNodeIDs.get(podName)) {
-            setNodeId(podNamesToNodeIDs.get(podName));
-        }
-
-        const source = services.workflows.getContainerLogs(workflow, podName, selectedNodeId, selectedContainer, grep, archived).pipe(
+        const source = services.workflows.getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
             // extract message from LogEntry
             map(e => {
                 const values: string[] = [];
@@ -155,7 +149,7 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
         );
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedNodeId, selectedContainer, grep, archived, selectedJsonFields, timezone]);
+    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived, selectedJsonFields, timezone]);
 
     // filter allows us to introduce a short delay, before we actually change grep
     const [logFilter, setLogFilter] = useState('');
@@ -169,7 +163,6 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
 
     // map pod names to corresponding node IDs
     const podNamesToNodeIDs = new Map<string, string>();
-
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
@@ -182,7 +175,9 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
             })
     );
 
-    const node = workflow.status.nodes[selectedNodeId];
+    // default to the node id of of the pod
+    const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
+    const node = workflow.status.nodes[nodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 
     const containers = [
@@ -229,7 +224,6 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
                     value={(podNames.find(x => x.value === podName) || {label: ''}).label}
                     onSelect={(_, item) => {
                         setPodName(item.value);
-                        setNodeId(podNamesToNodeIDs.get(item.value)); // set the correct node id to be able to fetch archived logs
                     }}
                 />{' '}
                 /{' '}
