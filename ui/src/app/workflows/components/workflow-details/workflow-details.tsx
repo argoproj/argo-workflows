@@ -94,9 +94,9 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     // boiler-plate
     const {navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
+    const namespace = match.params.namespace;
+    const name = match.params.name;
 
-    const [namespace] = useState(match.params.namespace);
-    const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [uid, setUid] = useState(queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
@@ -107,8 +107,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     const [workflow, setWorkflow] = useState<Workflow>();
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
-    const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
-    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
+    const selectedNode = workflow?.status?.nodes?.[nodeId];
+    const selectedArtifact = workflow?.status && findArtifact(workflow.status, nodeId);
     const [selectedTemplateArtifactRepo, setSelectedTemplateArtifactRepo] = useState<ArtifactRepository>();
     const isSidePanelExpanded = !!(selectedNode || selectedArtifact);
     const isSidePanelAnimating = useTransition(isSidePanelExpanded, ANIMATION_MS + ANIMATION_BUFFER_MS);
@@ -197,9 +197,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                             popup
                                 .confirm('Confirm', () => <DeleteCheck isWfInDB={isArchivedWorkflow(workflow)} isWfInCluster={isWorkflowInCluster(workflow)} />)
                                 .then(async yes => {
-                                    if (!yes) {
-                                        return;
-                                    }
+                                    if (!yes) return;
 
                                     const allPromises = [];
                                     if (isWorkflowInCluster(workflow)) {
@@ -224,16 +222,9 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                             setSidePanel('retry');
                         } else {
                             popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
-                                if (!yes) {
-                                    return;
-                                }
+                                if (!yes) return;
 
-                                workflowOperation
-                                    .action(workflow)
-                                    .then((wf: Workflow) => {
-                                        setName(wf.metadata.name);
-                                    })
-                                    .catch(setError);
+                                workflowOperation.action(workflow).catch(setError);
                             });
                         }
                     }
@@ -481,9 +472,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     function renderResumePopup() {
         return popup.confirm('Confirm', renderSuspendNodeOptions).then(yes => {
-            if (!yes) {
-                return;
-            }
+            if (!yes) return;
 
             updateOutputParametersForNodeIfRequired().then(resumeNode).catch(setError);
         });
