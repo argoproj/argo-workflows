@@ -263,7 +263,7 @@ export const WorkflowsService = {
         // Iterate over pod node ids and get their logs
         return from(podNodeIds).pipe(
             concatMap(nodeId => {
-                return this.getContainerLogs(workflow, container, nodeId, container, grep, archived);
+                return this.getContainerLogsFromArtifact(workflow, container, nodeId, container, grep, archived);
             })
         );
     },
