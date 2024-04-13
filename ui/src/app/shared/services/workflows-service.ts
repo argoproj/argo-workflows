@@ -275,12 +275,9 @@ export const WorkflowsService = {
 
         // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely
         // that the Workflow and associated pods have been deleted
-        // If we don't have a node id, then we want the logs from all nodes
-        if (archived && !nodeId) {
-            return getLogsFromArtifacts();
-        }
-
         if (archived) {
+            // If we don't have a node id, then we want the logs from all nodes
+            if (!nodeId) return getLogsFromArtifacts();
             return getLogsFromArtifact();
         }
 
