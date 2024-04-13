@@ -586,7 +586,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                         <WorkflowLogsViewer
                             workflow={workflow}
                             initialPodName={podName}
-                            nodeId={parsedSidePanel.nodeId}
+                            initialNodeId={parsedSidePanel.nodeId}
                             container={parsedSidePanel.container}
                             archived={isArchivedWorkflow(workflow)}
                         />
