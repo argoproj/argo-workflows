@@ -101,7 +101,6 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     useEffect(() => {
         setError(null);
         setLoaded(false);
-
         const source = services.workflows.getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
             // extract message from LogEntry
             map(e => {
@@ -175,8 +174,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
             })
     );
 
-    // default to the node id of of the pod
-    const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
+    const nodeId = initialNodeId || podNamesToNodeIDs.get(podName); // if not provided, use the node id of of the pod
     const node = workflow.status.nodes[nodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 
