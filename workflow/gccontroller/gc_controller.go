@@ -209,9 +209,22 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	// It should be impossible for a workflow to have been queue without a valid key.
 	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 
+	// Double check that this workflow is still completed. If it were retried, it may be running again (c.f. https://github.com/argoproj/argo-workflows/issues/12636)
+	obj, exists, err := c.wfInformer.GetStore().GetByKey(key)
+	if err != nil {
+		return nil
+	}
+	if exists {
+		un, ok := obj.(*unstructured.Unstructured)
+		if ok && !common.IsDone(un) {
+			log.Infof("Workflow '%s' is not completed due to a retry operation, ignore deletion", key)
+			return nil
+		}
+	}
+
 	// Any workflow that was queued must need deleting, therefore we do not check the expiry again.
 	log.Infof("Deleting garbage collected workflow '%s'", key)
-	err := c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
+	err = c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			log.Infof("Workflow already deleted '%s'", key)
