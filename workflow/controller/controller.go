@@ -614,6 +614,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
+		case removeFinalizer:
+			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
+			if err := wfc.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
+				return err
+			}
 		}
 		return nil
 	}()
@@ -1053,7 +1058,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					}
 					for _, p := range podList.Items {
 						if slice.ContainsString(p.Finalizers, common.FinalizerPodStatus) {
-							wfc.queuePodForCleanup(p.Namespace, p.Name, deletePod)
+							wfc.queuePodForCleanup(p.Namespace, p.Name, removeFinalizer)
 						}
 					}
 
