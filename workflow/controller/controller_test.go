@@ -1206,6 +1206,12 @@ func TestPodCleaupPatch(t *testing.T) {
 	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
 	assert.JSONEq(t, expected, string(patch))
 
+	// pod finalizer enabled, do not patch label, nil/empty finalizers
+	podWithNilFinalizers := &apiv1.Pod{}
+	patch, err = wfc.getPodCleanupPatch(podWithNilFinalizers, false)
+	assert.Nil(t, err)
+	assert.Nil(t, patch)
+
 	os.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
 
 	// pod finalizer disabled, patch both

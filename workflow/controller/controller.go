@@ -523,7 +523,7 @@ func (wfc *WorkflowController) getPodCleanupPatch(pod *apiv1.Pod, labelPodComple
 	}
 
 	finalizerEnabled := os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true"
-	if finalizerEnabled {
+	if finalizerEnabled && pod.Finalizers != nil {
 		finalizers := slice.RemoveString(pod.Finalizers, common.FinalizerPodStatus)
 		if &finalizers != &pod.Finalizers {
 			un.SetFinalizers(finalizers)
