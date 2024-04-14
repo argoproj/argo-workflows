@@ -88,13 +88,8 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return w.Write(resultMarshaled[1 : marshaledLength-1])
 	}
 
-	// Check if the value contains any quotes by adding double quotes at the beginning and end of the value.
-	// If so then escape quotes.
-	if !json.Valid([]byte(`"` + string(resultMarshaled) + `"`)) {
-		resultQuoted := []byte(strconv.Quote(string(resultMarshaled)))
-		return w.Write(resultQuoted[1 : len(resultQuoted)-1])
-	}
-	return w.Write(resultMarshaled)
+	resultQuoted := []byte(strconv.Quote(string(resultMarshaled)))
+	return w.Write(resultQuoted[1 : len(resultQuoted)-1])
 }
 
 func EnvMap(replaceMap map[string]string) map[string]interface{} {
