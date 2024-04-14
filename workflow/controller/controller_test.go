@@ -8,7 +8,6 @@ import (
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1199,13 +1198,13 @@ func TestPodCleaupPatch(t *testing.T) {
 	patch, err := wfc.getPodCleanupPatch(pod, true)
 	assert.Nil(t, err)
 	expected := `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
-	require.JSONEq(t, expected, string(patch))
+	assert.JSONEq(t, expected, string(patch))
 
 	// pod finalizer enabled, do not patch label
 	patch, err = wfc.getPodCleanupPatch(pod, false)
 	assert.Nil(t, err)
 	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
-	require.JSONEq(t, expected, string(patch))
+	assert.JSONEq(t, expected, string(patch))
 
 	os.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
 
@@ -1213,7 +1212,7 @@ func TestPodCleaupPatch(t *testing.T) {
 	patch, err = wfc.getPodCleanupPatch(pod, true)
 	assert.Nil(t, err)
 	expected = `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`
-	require.JSONEq(t, expected, string(patch))
+	assert.JSONEq(t, expected, string(patch))
 
 	// pod finalizer disabled, do not patch label
 	patch, err = wfc.getPodCleanupPatch(pod, false)

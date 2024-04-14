@@ -524,15 +524,8 @@ func (wfc *WorkflowController) getPodCleanupPatch(pod *apiv1.Pod, labelPodComple
 
 	finalizerEnabled := os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true"
 	if finalizerEnabled {
-		finalizers, found := make([]string, 0), false
-		for _, f := range pod.Finalizers {
-			if f == common.FinalizerPodStatus {
-				found = true
-			} else {
-				finalizers = append(finalizers, f)
-			}
-		}
-		if found {
+		finalizers := slice.RemoveString(pod.Finalizers, common.FinalizerPodStatus)
+		if &finalizers != &pod.Finalizers {
 			un.SetFinalizers(finalizers)
 			un.SetResourceVersion(pod.ObjectMeta.ResourceVersion)
 		}
@@ -589,7 +582,6 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
 		case terminateContainers:
 			pod, err := wfc.getPod(namespace, podName)
@@ -605,14 +597,15 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case labelPodCompleted:
+			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 			if err := wfc.patchPodForCleanup(ctx, pods, namespace, podName, true); err != nil {
 				return err
 			}
 		case deletePod:
+			pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 			if err := wfc.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
 				return err
 			}
-
 			propagation := metav1.DeletePropagationBackground
 			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
 				PropagationPolicy:  &propagation,
