@@ -451,7 +451,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 						Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 						Privileged:               pointer.Bool(false),
 						RunAsNonRoot:             pointer.Bool(true),
-						RunAsUser:                pointer.Int64Ptr(8737),
+						RunAsUser:                pointer.Int64(8737),
 						ReadOnlyRootFilesystem:   pointer.Bool(true),
 						AllowPrivilegeEscalation: pointer.Bool(false),
 					},
@@ -613,7 +613,7 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
 	if pod.Status.Phase == corev1.PodFailed {
-		errMsg := fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, pod %s exited with non-zero exit code: check pod logs for more information", pod.Name, strategy)
+		errMsg := fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, pod %s exited with non-zero exit code: check pod logs for more information", strategy, pod.Name)
 		woc.addArtGCCondition(errMsg)
 		woc.addArtGCEvent(errMsg)
 	}

@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **accessKey** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **bucket** | [**IoArgoprojEventsV1alpha1S3Bucket**](IoArgoprojEventsV1alpha1S3Bucket.md) |  |  [optional]
+**caCertificate** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **endpoint** | **String** |  |  [optional]
 **events** | **List&lt;String&gt;** |  |  [optional]
 **filter** | [**IoArgoprojEventsV1alpha1S3Filter**](IoArgoprojEventsV1alpha1S3Filter.md) |  |  [optional]

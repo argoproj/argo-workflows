@@ -97,6 +97,7 @@ class IoArgoprojEventsV1alpha1GitlabEventSource(ModelNormal):
             'events': ([str],),  # noqa: E501
             'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'gitlab_base_url': (str,),  # noqa: E501
+            'groups': ([str],),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'project_id': (str,),  # noqa: E501
             'projects': ([str],),  # noqa: E501
@@ -116,6 +117,7 @@ class IoArgoprojEventsV1alpha1GitlabEventSource(ModelNormal):
         'events': 'events',  # noqa: E501
         'filter': 'filter',  # noqa: E501
         'gitlab_base_url': 'gitlabBaseURL',  # noqa: E501
+        'groups': 'groups',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'project_id': 'projectID',  # noqa: E501
         'projects': 'projects',  # noqa: E501
@@ -170,6 +172,7 @@ class IoArgoprojEventsV1alpha1GitlabEventSource(ModelNormal):
             events ([str]): Events are gitlab event to listen to. Refer https://github.com/xanzy/go-gitlab/blob/bf34eca5d13a9f4c3f501d8a97b8ac226d55e4d9/projects.go#L794.. [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             gitlab_base_url (str): [optional]  # noqa: E501
+            groups ([str]): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             project_id (str): [optional]  # noqa: E501
             projects ([str]): [optional]  # noqa: E501
@@ -262,6 +265,7 @@ class IoArgoprojEventsV1alpha1GitlabEventSource(ModelNormal):
             events ([str]): Events are gitlab event to listen to. Refer https://github.com/xanzy/go-gitlab/blob/bf34eca5d13a9f4c3f501d8a97b8ac226d55e4d9/projects.go#L794.. [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             gitlab_base_url (str): [optional]  # noqa: E501
+            groups ([str]): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             project_id (str): [optional]  # noqa: E501
             projects ([str]): [optional]  # noqa: E501

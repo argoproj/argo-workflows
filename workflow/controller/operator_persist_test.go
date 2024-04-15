@@ -67,7 +67,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
-// TestPersistWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
+// TestPersistErrorWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
 func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	defer makeMax()()
 	cancel, controller := newController()
@@ -87,7 +87,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowError, wf.Status.Phase)
 }
 
-// TestPersistWithoutLargeWfSupport verifies persistence with largeWFsuppport
+// TestPersistWithLargeWfSupport verifies persistence with largeWFsuppport
 func TestPersistWithLargeWfSupport(t *testing.T) {
 	defer makeMax()()
 	cancel, controller := newController()
@@ -115,7 +115,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	assert.Empty(t, woc.wf.Status.CompressedNodes)
 }
 
-// TestPersistWithoutLargeWfSupport verifies persistence error with largeWFsuppport
+// TestPersistErrorWithLargeWfSupport verifies persistence error with largeWFsuppport
 func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	defer makeMax()()
 	cancel, controller := newController()

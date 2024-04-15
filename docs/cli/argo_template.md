@@ -26,6 +26,7 @@ argo template [flags]
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
+      --disable-compression            If true, opt-out of response compression for all requests to the server
       --gloglevel int                  Set the glog logging level
   -H, --header strings                 Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
@@ -54,4 +55,5 @@ argo template [flags]
 * [argo template get](argo_template_get.md)	 - display details about a workflow template
 * [argo template lint](argo_template_lint.md)	 - validate a file or directory of workflow template manifests
 * [argo template list](argo_template_list.md)	 - list workflow templates
+* [argo template update](argo_template_update.md)	 - update a workflow template
 

@@ -7,6 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**atLeastOnce** | **Boolean** |  |  [optional]
 **parameters** | [**List&lt;IoArgoprojEventsV1alpha1TriggerParameter&gt;**](IoArgoprojEventsV1alpha1TriggerParameter.md) |  |  [optional]
 **policy** | [**IoArgoprojEventsV1alpha1TriggerPolicy**](IoArgoprojEventsV1alpha1TriggerPolicy.md) |  |  [optional]
 **rateLimit** | [**IoArgoprojEventsV1alpha1RateLimit**](IoArgoprojEventsV1alpha1RateLimit.md) |  |  [optional]
