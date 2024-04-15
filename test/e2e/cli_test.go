@@ -1218,6 +1218,64 @@ func (s *CLISuite) TestWorkflowResubmit() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowResubmitDAGWithDependencies() {
+	var wfString string
+	s.Given().
+		Workflow("@testdata/resubmit-dag-with-dependencies.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		RunCli([]string{"resubmit", "--memoized", "@latest"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		}).
+		RunCli([]string{"get", "@latest", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				wfString = output
+			}
+		})
+
+	s.Given().
+		Workflow(wfString).
+		When().
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Equal(t, 5, len(status.Nodes))
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".A")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeTypeSkipped, status.Type)
+			assert.Contains(t, status.Message, "original pod")
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".B")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Contains(t, status.Message, "exit code 1")
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".C")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeTypeSkipped, status.Type)
+			assert.Contains(t, status.Message, "omitted: depends condition not met")
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".D")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeTypeSkipped, status.Type)
+			assert.Contains(t, status.Message, "omitted: depends condition not met")
+		})
+}
+
 func (s *CLISuite) TestWorkflowResubmitByLabelSelector() {
 	s.Given().
 		Workflow("@testdata/exit-1.yaml").
