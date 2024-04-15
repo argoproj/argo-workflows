@@ -27,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 var (
@@ -343,7 +344,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					return nil, err
 				}
 				for _, obj := range []interface{}{tmpl.ArchiveLocation} {
-					err = verifyResolvedVariables(obj)
+					err = validate.VerifyResolvedVariables(obj)
 					if err != nil {
 						return nil, err
 					}
@@ -1223,17 +1224,6 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
-}
-
-// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
-func verifyResolvedVariables(obj interface{}) error {
-	str, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-	return template.Validate(string(str), func(tag string) error {
-		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-	})
 }
 
 // createSecretVolumesAndMounts will retrieve and create Volumes and Volumemount object for Pod

@@ -11,32 +11,32 @@ import (
 
 type WorkflowTemplateServiceClient = Facade
 
-func (h WorkflowTemplateServiceClient) CreateWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateCreateRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
+func (h WorkflowTemplateServiceClient) CreateWorkflowTemplate(ctx context.Context, in *workflowtemplatepkg.WorkflowTemplateCreateRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
 	out := &wfv1.WorkflowTemplate{}
-	return out, h.Post(in, out, "/api/v1/workflow-templates/{namespace}")
+	return out, h.Post(ctx, in, out, "/api/v1/workflow-templates/{namespace}")
 }
 
-func (h WorkflowTemplateServiceClient) GetWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
+func (h WorkflowTemplateServiceClient) GetWorkflowTemplate(ctx context.Context, in *workflowtemplatepkg.WorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
 	out := &wfv1.WorkflowTemplate{}
-	return out, h.Get(in, out, "/api/v1/workflow-templates/{namespace}/{name}")
+	return out, h.Get(ctx, in, out, "/api/v1/workflow-templates/{namespace}/{name}")
 }
 
-func (h WorkflowTemplateServiceClient) ListWorkflowTemplates(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateListRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplateList, error) {
+func (h WorkflowTemplateServiceClient) ListWorkflowTemplates(ctx context.Context, in *workflowtemplatepkg.WorkflowTemplateListRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplateList, error) {
 	out := &wfv1.WorkflowTemplateList{}
-	return out, h.Get(in, out, "/api/v1/workflow-templates/{namespace}")
+	return out, h.Get(ctx, in, out, "/api/v1/workflow-templates/{namespace}")
 }
 
-func (h WorkflowTemplateServiceClient) UpdateWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateUpdateRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
+func (h WorkflowTemplateServiceClient) UpdateWorkflowTemplate(ctx context.Context, in *workflowtemplatepkg.WorkflowTemplateUpdateRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
 	out := &wfv1.WorkflowTemplate{}
-	return out, h.Put(in, out, "/api/v1/workflow-templates/{namespace}/{name}")
+	return out, h.Put(ctx, in, out, "/api/v1/workflow-templates/{namespace}/{name}")
 }
 
-func (h WorkflowTemplateServiceClient) DeleteWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
+func (h WorkflowTemplateServiceClient) DeleteWorkflowTemplate(ctx context.Context, in *workflowtemplatepkg.WorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
 	out := &workflowtemplatepkg.WorkflowTemplateDeleteResponse{}
-	return out, h.Delete(in, out, "/api/v1/workflow-templates/{namespace}/{name}")
+	return out, h.Delete(ctx, in, out, "/api/v1/workflow-templates/{namespace}/{name}")
 }
 
-func (h WorkflowTemplateServiceClient) LintWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateLintRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
+func (h WorkflowTemplateServiceClient) LintWorkflowTemplate(ctx context.Context, in *workflowtemplatepkg.WorkflowTemplateLintRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
 	out := &wfv1.WorkflowTemplate{}
-	return out, h.Post(in, out, "/api/v1/workflow-templates/{namespace}/lint")
+	return out, h.Post(ctx, in, out, "/api/v1/workflow-templates/{namespace}/lint")
 }
