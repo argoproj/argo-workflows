@@ -39,6 +39,7 @@ func secondarySwaggerGen() {
 	if err != nil {
 		panic(err)
 	}
+	defer f.Close()
 	e := json.NewEncoder(f)
 	e.SetIndent("", "  ")
 	err = e.Encode(swagger)
