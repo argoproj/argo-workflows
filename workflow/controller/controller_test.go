@@ -1192,7 +1192,7 @@ func TestPodCleaupPatch(t *testing.T) {
 		},
 	}
 
-	os.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
 
 	// pod finalizer enabled, patch label
 	patch, err := wfc.getPodCleanupPatch(pod, true)
