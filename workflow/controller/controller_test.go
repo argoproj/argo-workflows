@@ -1212,7 +1212,7 @@ func TestPodCleaupPatch(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, patch)
 
-	os.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
 
 	// pod finalizer disabled, patch both
 	patch, err = wfc.getPodCleanupPatch(pod, true)
