@@ -9,7 +9,7 @@ body:
       options:
         - label: I have double-checked my configuration
           required: true
-        - label: I have tested with the `:latest` image tag (i.e. `quay.io/argoproj/workflow-controller:latest`) and can confirm the issue still exists on `:latest`
+        - label: I have tested with the `:latest` image tag (i.e. `quay.io/argoproj/workflow-controller:latest`) and can confirm the issue still exists on `:latest`. If not, I have explained why, **in detail**, in my description below.
           required: true
         - label: I have searched existing issues and could not find a match for this bug
           required: true
