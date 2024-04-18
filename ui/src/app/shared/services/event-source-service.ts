@@ -33,8 +33,8 @@ export class EventSourceService {
         return requests.loadEventSource(`api/v1/stream/event-sources/${namespace}`).pipe(map(line => line && (JSON.parse(line).result as EventSourceWatchEvent)));
     }
 
-    public eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', grep = '', tailLines = -1) {
-        const params = ['podLogOptions.follow=true'];
+    eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', grep = '', tailLines = -1, container = 'main') {
+        const params = ['podLogOptions.follow=true', `podLogOptions.container=${container}`];
         if (name) {
             params.push('name=' + name);
         }
