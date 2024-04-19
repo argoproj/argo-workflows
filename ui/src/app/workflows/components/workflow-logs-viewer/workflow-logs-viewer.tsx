@@ -174,7 +174,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
             })
     );
 
-    // default to the node id of of the pod
+    // default to the node id of the pod
     const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
     const node = workflow.status.nodes[nodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
