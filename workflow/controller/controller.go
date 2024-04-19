@@ -1309,6 +1309,7 @@ func (wfc *WorkflowController) deletePluginCM(cm *apiv1.ConfigMap) {
 	log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
 }
 
+// Whether to watch the Controller's ConfigMap and semaphore ConfigMaps for run-time changes
 var watchControllerSemaphoreConfigMaps = os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false"
 
 func (wfc *WorkflowController) newConfigMapControllerInformer(ctx context.Context) cache.SharedIndexInformer {
