@@ -20,12 +20,7 @@ function isNodePendingOrRunning(node: NodeStatus) {
 
 function hasArtifactLogs(workflow: Workflow, nodeId: string, container: string) {
     const node = workflow.status.nodes[nodeId];
-
-    if (!node || !node.outputs || !node.outputs.artifacts) {
-        return false;
-    }
-
-    return node.outputs.artifacts.findIndex(a => a.name === `${container}-logs`) !== -1;
+    return node?.outputs?.artifacts?.some(a => a.name === `${container}-logs`);
 }
 
 export const WorkflowsService = {
