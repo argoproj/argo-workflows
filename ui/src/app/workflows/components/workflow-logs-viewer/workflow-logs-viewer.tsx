@@ -25,7 +25,7 @@ const timezones = Intl.supportedValuesOf('timeZone');
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
-    nodeId?: string;
+    initialNodeId?: string;
     initialPodName: string;
     container: string;
     archived: boolean;
@@ -74,7 +74,7 @@ function parseAndTransform(formattedString: string, timeZone: string) {
     }
 }
 
-export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
+export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
     const storage = new ScopedLocalStorage('workflow-logs-viewer');
     const storedJsonFields = storage.getItem('jsonFields', {
         values: []
@@ -162,7 +162,6 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
 
     // map pod names to corresponding node IDs
     const podNamesToNodeIDs = new Map<string, string>();
-
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
@@ -175,6 +174,8 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
             })
     );
 
+    // default to the node id of the pod
+    const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
     const node = workflow.status.nodes[nodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 
