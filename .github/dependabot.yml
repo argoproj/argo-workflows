@@ -15,6 +15,8 @@ updates:
     labels:
       - type/dependencies
       - go
+    commit-message:
+      prefix: chore(deps)
 
   - package-ecosystem: "npm"
     directory: "/ui"
@@ -31,6 +33,9 @@ updates:
     labels:
       - type/dependencies
       - javascript
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
 
   # build / CI dependencies
   - package-ecosystem: "pip"
@@ -43,6 +48,8 @@ updates:
     labels:
       - type/dependencies
       - python
+    commit-message:
+      prefix: chore(deps)
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -58,3 +65,5 @@ updates:
     labels:
       - type/dependencies
       - github_actions
+    commit-message:
+      prefix: chore(deps)

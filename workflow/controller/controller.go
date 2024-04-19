@@ -294,31 +294,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
-	var err error
-	wfc.wfTaskSetInformer, err = wfc.newWorkflowTaskSetInformer()
+	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
+	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
+	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+	err := wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	wfc.artGCTaskInformer, err = wfc.newArtGCTaskInformer()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	wfc.taskResultInformer, err = wfc.newWorkflowTaskResultInformer()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = wfc.addWorkflowInformerHandlers(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	wfc.podInformer, err = wfc.newPodInformer(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
+	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
 
 	wfc.cmInformer = wfc.newConfigMapInformer()
@@ -1187,14 +1170,15 @@ func (wfc *WorkflowController) newWorkflowPodWatch(ctx context.Context) *cache.L
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-func (wfc *WorkflowController) newPodInformer(ctx context.Context) (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch(ctx)
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 	})
-	_, err := informer.AddEventHandler(
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				err := wfc.enqueueWfFromPodLabel(obj)
@@ -1232,10 +1216,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) (cache.Shared
 			},
 		},
 	)
-	if err != nil {
-		return nil, err
-	}
-	return informer, nil
+	return informer
 }
 
 func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
@@ -1511,7 +1492,7 @@ func (wfc *WorkflowController) syncPodPhaseMetrics() {
 	}
 }
 
-func (wfc *WorkflowController) newWorkflowTaskSetInformer() (wfextvv1alpha1.WorkflowTaskSetInformer, error) {
+func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
 		workflowTaskSetResyncPeriod,
@@ -1520,7 +1501,8 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() (wfextvv1alpha1.Work
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			x.LabelSelector = r.String()
 		})).Argoproj().V1alpha1().WorkflowTaskSets()
-	_, err := informer.Informer().AddEventHandler(
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
@@ -1529,13 +1511,10 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() (wfextvv1alpha1.Work
 				}
 			},
 		})
-	if err != nil {
-		return nil, err
-	}
-	return informer, nil
+	return informer
 }
 
-func (wfc *WorkflowController) newArtGCTaskInformer() (wfextvv1alpha1.WorkflowArtifactGCTaskInformer, error) {
+func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArtifactGCTaskInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
 		workflowTaskSetResyncPeriod,
@@ -1544,7 +1523,8 @@ func (wfc *WorkflowController) newArtGCTaskInformer() (wfextvv1alpha1.WorkflowAr
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			x.LabelSelector = r.String()
 		})).Argoproj().V1alpha1().WorkflowArtifactGCTasks()
-	_, err := informer.Informer().AddEventHandler(
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
@@ -1553,8 +1533,5 @@ func (wfc *WorkflowController) newArtGCTaskInformer() (wfextvv1alpha1.WorkflowAr
 				}
 			},
 		})
-	if err != nil {
-		return nil, err
-	}
-	return informer, nil
+	return informer
 }
