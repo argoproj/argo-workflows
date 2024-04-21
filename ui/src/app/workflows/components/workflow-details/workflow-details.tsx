@@ -375,7 +375,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 if (e.type === 'DELETED') {
                     setUid(e.object.metadata.uid);
                     setError(new Error('Workflow gone'));
-                    if (e.object.metadata.labels[archivalStatus]) {
+                    if (e.object.metadata.labels?.[archivalStatus]) {
                         e.object.metadata.labels[archivalStatus] = 'Persisted';
                     }
                     setWorkflow(e.object);
