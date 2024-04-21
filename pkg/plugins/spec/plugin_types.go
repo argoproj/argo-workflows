@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"errors"
 	"fmt"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -33,16 +34,16 @@ type Sidecar struct {
 func (s Sidecar) Validate() error {
 	c := s.Container
 	if len(c.Ports) < 1 {
-		return fmt.Errorf("at least one port is mandatory")
+		return errors.New("at least one port is mandatory")
 	}
 	if c.Resources.Requests == nil {
-		return fmt.Errorf("resources requests are mandatory")
+		return errors.New("resources requests are mandatory")
 	}
 	if c.Resources.Limits == nil {
-		return fmt.Errorf("resources limits are mandatory")
+		return errors.New("resources limits are mandatory")
 	}
 	if c.SecurityContext == nil {
-		return fmt.Errorf("security context is mandatory")
+		return errors.New("security context is mandatory")
 	}
 	return nil
 }

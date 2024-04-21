@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
@@ -67,16 +68,16 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		return newOfflineClient(opts.OfflineFiles)
 	}
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
-		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
+		return nil, nil, errors.New("cannot use instance ID with Argo Server")
 	}
 	if opts.ArgoServerOpts.HTTP1 {
 		if opts.AuthSupplier == nil {
-			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
+			return nil, nil, errors.New("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
 		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
 	} else if opts.ArgoServerOpts.URL != "" {
 		if opts.AuthSupplier == nil {
-			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
+			return nil, nil, errors.New("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {

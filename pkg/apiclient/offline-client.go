@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -36,7 +37,7 @@ type offlineClient struct {
 	namespacedWorkflowTemplateGetterMap offlineWorkflowTemplateGetterMap
 }
 
-var OfflineErr = fmt.Errorf("not supported when you are in offline mode")
+var OfflineErr = errors.New("not supported when you are in offline mode")
 
 var _ Client = &offlineClient{}
 
