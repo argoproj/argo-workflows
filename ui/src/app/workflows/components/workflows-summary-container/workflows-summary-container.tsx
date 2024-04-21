@@ -1,6 +1,7 @@
 import {Tooltip} from 'argo-ui';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 
 import {Workflow} from '../../../../models';
 
@@ -10,6 +11,7 @@ type ReduceReturnType = Record<string, number>;
 
 export function WorkflowsSummaryContainer(props: {workflows: Workflow[]}) {
     const [wfSummary, setWfSummary] = useState(null);
+    const {t} = useTranslation();
     useEffect(() => {
         if (props.workflows) {
             const summary = props.workflows.reduce<ReduceReturnType>((acc, curr) => {
@@ -29,27 +31,27 @@ export function WorkflowsSummaryContainer(props: {workflows: Workflow[]}) {
             </p>
             <div className='row'>
                 <div className='columns small-12 xlarge-12'>
-                    <span className='wf-summary-container__text'>Running workflows &nbsp;</span>
+                    <span className='wf-summary-container__text'>{t('runningWorkflows')} &nbsp;</span>
                     <span className='wf-summary-container__running'>{wfSummary && wfSummary.Running ? wfSummary.Running : 0}</span>
                 </div>
             </div>
             <div className='row'>
                 <div className='columns small-12 xlarge-6'>
-                    <span className='wf-summary-container__subtext'>Pending &nbsp;</span>
+                    <span className='wf-summary-container__subtext'>{t('pending')} &nbsp;</span>
                     <span className='wf-summary-container__others'>{wfSummary && wfSummary.Pending ? wfSummary.Pending : 0}</span>
                 </div>
                 <div className='columns small-12 xlarge-6'>
-                    <span className='wf-summary-container__subtext'>Succeeded &nbsp;</span>
+                    <span className='wf-summary-container__subtext'>{t('succeeded')} &nbsp;</span>
                     <span className='wf-summary-container__others'>{wfSummary && wfSummary.Succeeded ? wfSummary.Succeeded : 0}</span>
                 </div>
             </div>
             <div className='row'>
                 <div className='columns small-12 xlarge-6'>
-                    <span className='wf-summary-container__subtext'>Failed &nbsp;</span>
+                    <span className='wf-summary-container__subtext'>{t('failed')} &nbsp;</span>
                     <span className='wf-summary-container__others'>{wfSummary && wfSummary.Failed ? wfSummary.Failed : 0}</span>
                 </div>
                 <div className='columns small-12 xlarge-6'>
-                    <span className='wf-summary-container__subtext'>Error &nbsp;</span>
+                    <span className='wf-summary-container__subtext'>{t('error')} &nbsp;</span>
                     <span className='wf-summary-container__others'>{wfSummary && wfSummary.Error ? wfSummary.Error : 0}</span>
                 </div>
             </div>

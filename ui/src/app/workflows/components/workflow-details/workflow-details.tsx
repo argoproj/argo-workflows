@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+import {useTranslation} from 'react-i18next';
 
 import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
@@ -119,6 +120,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         minWidth: INITIAL_SIDE_PANEL_WIDTH,
         resizedElementRef: sidePanelRef
     });
+    const {t} = useTranslation();
 
     useEffect(
         useQueryParams(history, p => {
@@ -243,13 +245,13 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         items.push({
             action: () => setSidePanel('logs'),
             iconClassName: 'fa fa-bars',
-            title: 'Logs'
+            title: t('logs')
         });
 
         items.push({
             action: () => setSidePanel('share'),
             iconClassName: 'fa fa-share-alt',
-            title: 'Share'
+            title: t('share')
         });
 
         if (links) {

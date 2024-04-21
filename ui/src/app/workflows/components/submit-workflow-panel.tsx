@@ -1,5 +1,7 @@
 import {Select} from 'argo-ui';
 import React, {useMemo, useState} from 'react';
+import {useTranslation} from 'react-i18next';
+
 import {Parameter, Template} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -32,6 +34,7 @@ export function SubmitWorkflowPanel(props: Props) {
     const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const {t} = useTranslation();
 
     const templates = useMemo(() => {
         return [defaultTemplate].concat(props.templates);
@@ -64,14 +67,14 @@ export function SubmitWorkflowPanel(props: Props) {
 
     return (
         <>
-            <h4>Submit Workflow</h4>
+            <h4>{t('submitWorkflow')}</h4>
             <h5>
                 {props.namespace}/{props.name}
             </h5>
             {error && <ErrorNotice error={error} />}
             <div className='white-box'>
                 <div key='entrypoint' title='Entrypoint' style={{marginBottom: 25}}>
-                    <label>Entrypoint</label>
+                    <label>{t('entrypoint')}</label>
                     <Select
                         value={entrypoint}
                         options={templateOptions}
@@ -83,7 +86,7 @@ export function SubmitWorkflowPanel(props: Props) {
                     />
                 </div>
                 <div key='parameters' style={{marginBottom: 25}}>
-                    <label>Parameters</label>
+                    <label>{t('parameters')}</label>
                     {workflowParameters.length > 0 && <ParametersInput parameters={workflowParameters} onChange={setWorkflowParameters} />}
                     {parameters.length > 0 && <ParametersInput parameters={parameters} onChange={setParameters} />}
                     {workflowParameters.length === 0 && parameters.length === 0 ? (
@@ -96,7 +99,7 @@ export function SubmitWorkflowPanel(props: Props) {
                     )}
                 </div>
                 <div key='labels' style={{marginBottom: 25}}>
-                    <label>Labels</label>
+                    <label>{t('label')}</label>
                     <TagsInput tags={labels} onChange={setLabels} />
                 </div>
                 <div key='submit'>

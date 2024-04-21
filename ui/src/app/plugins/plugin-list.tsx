@@ -2,6 +2,7 @@ import {Page} from 'argo-ui';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
 
 import {uiUrl} from '../shared/base';
 import {useCollectEvent} from '../shared/use-collect-event';
@@ -12,6 +13,7 @@ import {Utils} from '../shared/utils';
 export function PluginList({match, history}: RouteComponentProps<any>) {
     // state for URL and query parameters
     const [namespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const {t} = useTranslation();
     useEffect(
         () =>
             history.push(
@@ -25,7 +27,7 @@ export function PluginList({match, history}: RouteComponentProps<any>) {
 
     return (
         <Page
-            title='Plugins'
+            title={t('plugins')}
             toolbar={{
                 breadcrumbs: [{title: 'Plugins', path: uiUrl('plugins')}]
             }}>
