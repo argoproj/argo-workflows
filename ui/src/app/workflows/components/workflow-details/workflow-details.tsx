@@ -212,9 +212,6 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                     }
 
                                     navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                    // TODO: This is a temporary workaround so that the list of workflows
-                                    //  is correctly displayed. Workflow list page needs to be more responsive.
-                                    window.location.reload();
                                 });
                         } else if (workflowOperation.title === 'RESUBMIT') {
                             setSidePanel('resubmit');
