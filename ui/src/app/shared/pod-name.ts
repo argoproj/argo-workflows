@@ -52,14 +52,6 @@ function createFNVHash(input: string): number {
 }
 
 function getTemplateNameFromNode(node: NodeStatus): string {
-    if (node.templateName && node.templateName !== '') {
-        return node.templateName;
-    }
-
     // fall back to v1 pod names if no templateName or templateRef defined
-    if (node?.templateRef === undefined || node?.templateRef.template === '') {
-        return '';
-    }
-
-    return node.templateRef.template;
+    return node.templateName || node.templateRef?.template || '';
 }
