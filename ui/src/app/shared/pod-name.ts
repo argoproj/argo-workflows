@@ -13,21 +13,25 @@ const maxPrefixLength = maxK8sResourceNameLength - k8sNamingHashLength;
 // In other cases it will return a combination of workflow name, template name, and a hash (v2)
 // note: this is intended to be equivalent to the server-side Go code in workflow/util/pod_name.go
 export function getPodName(workflow: Workflow, node: NodeStatus): string {
-    const workflowName = workflow.metadata.name;
     const version = workflow.metadata?.annotations?.[ANNOTATION_KEY_POD_NAME_VERSION];
-    const templateName = getTemplateNameFromNode(node);
-
-    if (version !== POD_NAME_V1 && templateName !== '') {
-        if (workflowName === node.name) {
-            return workflowName;
-        }
-
-        const prefix = ensurePodNamePrefixLength(`${workflowName}-${templateName}`);
-        const hash = createFNVHash(node.name);
-        return `${prefix}-${hash}`;
+    if (version === POD_NAME_V1) {
+        return node.id;
     }
 
-    return node.id;
+    const workflowName = workflow.metadata.name;
+    if (workflowName === node.name) {
+        return workflowName;
+    }
+
+    const templateName = getTemplateNameFromNode(node);
+    let prefix = workflowName;
+    if (templateName) {
+        prefix += `-${templateName}`;
+    }
+    prefix = ensurePodNamePrefixLength(prefix);
+
+    const hash = createFNVHash(node.name);
+    return `${prefix}-${hash}`;
 };
 
 export function ensurePodNamePrefixLength(prefix: string): string {
