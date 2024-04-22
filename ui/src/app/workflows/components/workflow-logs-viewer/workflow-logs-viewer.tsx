@@ -6,14 +6,13 @@ import {Observable} from 'rxjs';
 import {map, publishReplay, refCount} from 'rxjs/operators';
 import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
-import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {Button} from '../../../shared/components/button';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
 import {Context} from '../../../shared/context';
 import {useLocalStorage} from '../../../shared/use-local-storage';
-import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {getPodName} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
@@ -157,9 +156,6 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         return () => clearTimeout(x);
     }, [logFilter]);
 
-    const annotations = workflow.metadata.annotations || {};
-    const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
-
     // map pod names to corresponding node IDs
     const podNamesToNodeIDs = new Map<string, string>();
     const podNames = [{value: '', label: 'All'}].concat(
@@ -167,8 +163,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
             .filter(x => x.type === 'Pod')
             .map(targetNode => {
                 const {name, id, displayName} = targetNode;
-                const templateName = getTemplateNameFromNode(targetNode);
-                const targetPodName = getPodName(workflow.metadata.name, name, templateName, id, podNameVersion);
+                const targetPodName = getPodName(workflow, targetNode);
                 podNamesToNodeIDs.set(targetPodName, id);
                 return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
             })

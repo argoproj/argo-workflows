@@ -1,4 +1,5 @@
-import {NodeStatus} from '../../models';
+import {NodeStatus, Workflow} from '../../models';
+import {ANNOTATION_KEY_POD_NAME_VERSION} from './annotations';
 
 export const POD_NAME_V1 = 'v1';
 export const POD_NAME_V2 = 'v2';
@@ -10,22 +11,25 @@ export const k8sNamingHashLength = 10;
 // In case templateName is not defined or that version is explicitly set to  POD_NAME_V1, it will return the nodeID (v1)
 // In other cases it will return a combination of workflow name, template name, and a hash (v2)
 // note: this is intended to be equivalent to the server-side Go code in workflow/util/pod_name.go
-export function getPodName(workflowName: string, nodeName: string, templateName: string, nodeID: string, version: string): string {
+export function getPodName(workflow: Workflow, node: NodeStatus): string {
+    const workflowName = workflow.metadata.name;
+    const version = workflow.metadata?.annotations?.[ANNOTATION_KEY_POD_NAME_VERSION];
+    const templateName = getTemplateNameFromNode(node);
+
     if (version !== POD_NAME_V1 && templateName !== '') {
-        if (workflowName === nodeName) {
+        if (workflowName === node.name) {
             return workflowName;
         }
 
         const prefix = ensurePodNamePrefixLength(`${workflowName}-${templateName}`);
-
-        const hash = createFNVHash(nodeName);
+        const hash = createFNVHash(node.name);
         return `${prefix}-${hash}`;
     }
 
-    return nodeID;
-}
+    return node.id;
+};
 
-export function ensurePodNamePrefixLength(prefix: string): string {
+function ensurePodNamePrefixLength(prefix: string): string {
     const maxPrefixLength = maxK8sResourceNameLength - k8sNamingHashLength;
 
     if (prefix.length > maxPrefixLength - 1) {
@@ -35,7 +39,7 @@ export function ensurePodNamePrefixLength(prefix: string): string {
     return prefix;
 }
 
-export function createFNVHash(input: string): number {
+function createFNVHash(input: string): number {
     let hashint = 2166136261;
 
     for (let i = 0; i < input.length; i++) {
@@ -47,7 +51,7 @@ export function createFNVHash(input: string): number {
     return hashint >>> 0;
 }
 
-export function getTemplateNameFromNode(node: NodeStatus): string {
+function getTemplateNameFromNode(node: NodeStatus): string {
     if (node.templateName && node.templateName !== '') {
         return node.templateName;
     }
