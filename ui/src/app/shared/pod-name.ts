@@ -32,7 +32,7 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
 
     const hash = createFNVHash(node.name);
     return `${prefix}-${hash}`;
-};
+}
 
 export function ensurePodNamePrefixLength(prefix: string): string {
     if (prefix.length > maxPrefixLength - 1) {
