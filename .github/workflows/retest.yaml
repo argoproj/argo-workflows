@@ -1,0 +1,40 @@
+name: Detect and Trigger Retest
+on:
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  detect-retest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-run failed jobs
+        if: contains(github.event.comment.body, '/retest')
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { context, github } = require('@actions/github');
+
+            console.log('Retest detected. Triggering re-run of failed jobs...');
+            const prNumber = context.payload.issue.number;
+            const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+
+            // Get the latest run ID for the PR
+            const runsResponse = await octokit.request('GET /repos/{owner}/{repo}/actions/runs', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 1,
+              workflow_id: '${{ github.event.workflow_id }}',
+              branch: '${{ github.event.issue.pull_request.head.ref }}',
+              status: 'completed',
+              event: 'pull_request',
+              actor: 'app',
+            });
+            const latestRunID = runsResponse.data.workflow_runs[0].id;
+
+            // Trigger re-run of failed jobs using GitHub CLI
+            await octokit.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: latestRunID,
+            });
+            # await exec(`gh run rerun ${latestRunID} --failed`);
