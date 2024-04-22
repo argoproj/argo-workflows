@@ -6,6 +6,7 @@ export const POD_NAME_V2 = 'v2';
 
 export const maxK8sResourceNameLength = 253;
 export const k8sNamingHashLength = 10;
+const maxPrefixLength = maxK8sResourceNameLength - k8sNamingHashLength;
 
 // getPodName returns a deterministic pod name
 // In case templateName is not defined or that version is explicitly set to  POD_NAME_V1, it will return the nodeID (v1)
@@ -29,9 +30,7 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
     return node.id;
 };
 
-function ensurePodNamePrefixLength(prefix: string): string {
-    const maxPrefixLength = maxK8sResourceNameLength - k8sNamingHashLength;
-
+export function ensurePodNamePrefixLength(prefix: string): string {
     if (prefix.length > maxPrefixLength - 1) {
         return prefix.substring(0, maxPrefixLength - 1);
     }
@@ -39,7 +38,7 @@ function ensurePodNamePrefixLength(prefix: string): string {
     return prefix;
 }
 
-function createFNVHash(input: string): number {
+export function createFNVHash(input: string): number {
     let hashint = 2166136261;
 
     for (let i = 0; i < input.length; i++) {
@@ -51,7 +50,7 @@ function createFNVHash(input: string): number {
     return hashint >>> 0;
 }
 
-function getTemplateNameFromNode(node: NodeStatus): string {
+export function getTemplateNameFromNode(node: NodeStatus): string {
     // fall back to v1 pod names if no templateName or templateRef defined
     return node.templateName || node.templateRef?.template || '';
 }
