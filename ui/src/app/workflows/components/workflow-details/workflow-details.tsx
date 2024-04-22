@@ -477,15 +477,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         });
     }
 
-    function ensurePodName(wf: Workflow, node: NodeStatus): string {
-        if (workflow && node) {
-            return getPodName(wf, node);
-        }
-
-        return node.id;
-    }
-
-    const podName = ensurePodName(workflow, selectedNode);
+    const podName = workflow && selectedNode ? getPodName(workflow, selectedNode) : nodeId;
 
     const archived = isArchivedWorkflow(workflow);
 
