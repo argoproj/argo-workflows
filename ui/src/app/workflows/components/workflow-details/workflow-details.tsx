@@ -4,7 +4,7 @@ import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
+import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, Parameter, Workflow} from '../../../../models';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
