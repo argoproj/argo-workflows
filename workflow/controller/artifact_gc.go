@@ -179,10 +179,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			woc.log.Errorf("Was unable to obtain node for %s", artifactSearchResult.NodeID)
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status??", strategy, artifactSearchResult.NodeID)
 		}
-		templateName := node.TemplateName
-		if templateName == "" && node.GetTemplateRef() != nil {
-			templateName = node.GetTemplateRef().Template
-		}
+		templateName := util.GetTemplateFromNode(*node)
 		if templateName == "" {
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node %+v has an unnamed template", strategy, node)
 		}
