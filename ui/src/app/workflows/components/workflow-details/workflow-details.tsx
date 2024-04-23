@@ -384,33 +384,26 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     // Get workflow
     useEffect(() => {
         (async () => {
-            let archivedWf: Workflow;
-            if (uid !== '') {
-                try {
-                    archivedWf = await services.workflows.getArchived(namespace, uid);
-                    setError(null);
-                } catch (err) {
-                    if (err.status !== 404) {
-                        setError(err);
-                    }
-                }
-            }
-
             try {
                 const wf = await services.workflows.get(namespace, name);
-                setError(null);
-                // If we find live workflow which has same uid, we use live workflow.
-                if (!archivedWf || archivedWf.metadata.uid === wf.metadata.uid) {
-                    setWorkflow(wf);
-                    setUid(wf.metadata.uid);
-                } else {
-                    setWorkflow(archivedWf);
-                }
+                setUid(wf.metadata.uid);
+                setWorkflow(wf);
             } catch (err) {
-                if (archivedWf) {
-                    setWorkflow(archivedWf);
-                } else {
+                if (err.status !== 404 && uid === '') {
                     setError(err);
+                    return;
+                }
+
+                try {
+                    const archivedWf = await services.workflows.getArchived(namespace, uid);
+                    setWorkflow(archivedWf);
+                } catch (archiveErr) {
+                    if (archiveErr.status === 500 && archiveErr.response.body.message === 'getting archived workflows not supported') {
+                        setError(err);
+                        return;
+                    }
+
+                    setError(archiveErr);
                 }
             }
         })();
