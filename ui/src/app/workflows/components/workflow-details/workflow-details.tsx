@@ -4,8 +4,7 @@ import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
-import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, Parameter, Workflow} from '../../../../models';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -17,7 +16,7 @@ import {useCollectEvent} from '../../../shared/use-collect-event';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
-import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {getPodName} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
@@ -475,18 +474,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         });
     }
 
-    function ensurePodName(wf: Workflow, node: NodeStatus, nodeID: string): string {
-        if (workflow && node) {
-            const annotations = workflow.metadata.annotations || {};
-            const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
-            const templateName = getTemplateNameFromNode(node);
-            return getPodName(wf.metadata.name, node.name, templateName, node.id, version);
-        }
-
-        return nodeID;
-    }
-
-    const podName = ensurePodName(workflow, selectedNode, nodeId);
+    const podName = workflow && selectedNode ? getPodName(workflow, selectedNode) : nodeId;
 
     const archived = isArchivedWorkflow(workflow);
 
