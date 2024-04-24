@@ -16,10 +16,6 @@ func SetGLogLevel(glogLevel int) {
 	_ = flag.Set("v", strconv.Itoa(glogLevel))
 }
 
-func GetGLogLevel() int {
-	verbosity, err := strconv.Atoi(flag.Lookup("v").Value.String())
-	if err != nil {
-		return 0
-	}
-	return verbosity
+func GetGLogLevel() string {
+	return flag.Lookup("v").Value.String()
 }
