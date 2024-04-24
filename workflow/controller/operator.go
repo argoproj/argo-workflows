@@ -2437,7 +2437,7 @@ func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) (*wfv1.Templat
 		}
 		return tmpl, nil
 	}
-	return woc.wf.GetTemplateByName(wfutil.GetTemplateFromNode(*node)), nil
+	return woc.wf.GetTemplateByName(node.TemplateName), nil
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) {
