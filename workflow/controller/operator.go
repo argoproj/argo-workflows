@@ -1427,6 +1427,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		new.PodIP = pod.Status.PodIP
 	}
 
+<<<<<<< HEAD
 	// If `AnnotationKeyReportOutputsCompleted` is set, it means RBAC prevented WorkflowTaskResult from being written.
 	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
 		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
@@ -1456,6 +1457,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 	}
 
+=======
+>>>>>>> dc7699c91 (chore!: remove legacy `patch` `pods` fallback)
 	new.HostNodeName = pod.Spec.NodeName
 
 	if !new.Progress.IsValid() {
