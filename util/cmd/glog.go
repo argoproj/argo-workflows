@@ -17,5 +17,9 @@ func SetGLogLevel(glogLevel int) {
 }
 
 func GetGLogLevel() string {
-	return flag.Lookup("v").Value.String()
+	f := flag.Lookup("v")
+	if f == nil {
+		return ""
+	}
+	return f.Value.String()
 }
