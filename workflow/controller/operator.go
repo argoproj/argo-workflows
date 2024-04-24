@@ -3397,7 +3397,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	}
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
-	mainCtr.Command = append([]string{"argoexec", "resource"}, woc.getExecutorLogOpts()...)
+	mainCtr.Command = append([]string{"argoexec", "resource", tmpl.Resource.Action}, woc.getExecutorLogOpts()...)
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
