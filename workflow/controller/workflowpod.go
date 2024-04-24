@@ -610,7 +610,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Containe
 func (woc *wfOperationCtx) getExecutorLogOpts() []string {
 	logOpts := []string{"--loglevel", log.GetLevel().String(), "--log-format", woc.controller.executorLogFormat()}
 	gLogLevel := cmdutil.GetGLogLevel()
-	if gLogLevel == nil {
+	if gLogLevel == "" {
 		return logOpts
 	}
 	return append(logOpts, "--gloglevel", cmdutil.GetGLogLevel())
