@@ -388,6 +388,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 const wf = await services.workflows.get(namespace, name);
                 setUid(wf.metadata.uid);
                 setWorkflow(wf);
+                setError(null);
+                return;
             } catch (err) {
                 if (err.status !== 404 && uid === '') {
                     setError(err);
@@ -397,6 +399,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 try {
                     const archivedWf = await services.workflows.getArchived(namespace, uid);
                     setWorkflow(archivedWf);
+                    setError(null);
+                    return;
                 } catch (archiveErr) {
                     if (archiveErr.status === 500 && archiveErr.response.body.message === 'getting archived workflows not supported') {
                         setError(err);
