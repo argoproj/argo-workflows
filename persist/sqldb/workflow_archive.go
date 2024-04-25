@@ -232,14 +232,14 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
 
 func startedAtFromClause(from time.Time) db.Cond {
 	if !from.IsZero() {
-		return db.Cond{"startedat >": from}
+		return db.Cond{"startedat >=": from}
 	}
 	return db.Cond{}
 }
 
 func startedAtToClause(to time.Time) db.Cond {
 	if !to.IsZero() {
-		return db.Cond{"startedat <": to}
+		return db.Cond{"startedat <=": to}
 	}
 	return db.Cond{}
 }

@@ -45,10 +45,10 @@ func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName st
 		clauses = append(clauses, db.Raw("name like ?", options.NamePrefix+"%"))
 	}
 	if !options.MinStartedAt.IsZero() {
-		clauses = append(clauses, db.Raw("startedat > ?", options.MinStartedAt))
+		clauses = append(clauses, db.Raw("startedat >= ?", options.MinStartedAt))
 	}
 	if !options.MaxStartedAt.IsZero() {
-		clauses = append(clauses, db.Raw("startedat < ?", options.MaxStartedAt))
+		clauses = append(clauses, db.Raw("startedat <= ?", options.MaxStartedAt))
 	}
 	for _, r := range options.LabelRequirements {
 		q, err := requirementToCondition(t, r, tableName, labelTableName, false)
