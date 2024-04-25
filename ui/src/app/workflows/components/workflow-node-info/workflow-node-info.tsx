@@ -5,7 +5,6 @@ import {useState} from 'react';
 
 import * as models from '../../../../models';
 import {Artifact, NodeStatus, Workflow} from '../../../../models';
-import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {Button} from '../../../shared/components/button';
 import {ClipboardText} from '../../../shared/components/clipboard-text';
 import {DurationPanel} from '../../../shared/components/duration-panel';
@@ -13,7 +12,7 @@ import {InlineTable} from '../../../shared/components/inline-table/inline-table'
 import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {getPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
@@ -100,12 +99,7 @@ function DisplayWorkflowTime(props: {date: Date | string | number}) {
 
 function WorkflowNodeSummary(props: Props) {
     const {workflow, node} = props;
-
-    const annotations = workflow.metadata.annotations || {};
-    const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
-    const templateName = getTemplateNameFromNode(node);
-
-    const podName = getPodName(workflow.metadata.name, node.name, templateName, node.id, version);
+    const podName = getPodName(workflow, node);
 
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
