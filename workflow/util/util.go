@@ -454,7 +454,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	nodeFields := fields.Set{
 		"displayName":  node.DisplayName,
-		"templateName": node.TemplateName,
+		"templateName": GetTemplateFromNode(node),
 		"phase":        string(node.Phase),
 		"name":         node.Name,
 		"id":           node.ID,
