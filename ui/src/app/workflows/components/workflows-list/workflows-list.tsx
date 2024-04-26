@@ -81,6 +81,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
     const [error, setError] = useState<Error>();
+    const [displayFullDate, setDisplayFullDate] = useState(false);
 
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
         const nowDisabled: any = {...allBatchActionsEnabled};
@@ -278,6 +279,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             key={wf.metadata.uid}
                                             checked={selectedWorkflows.has(wf.metadata.uid)}
                                             columns={columns}
+                                            displayFullDate={displayFullDate}
                                             onChange={key => {
                                                 const value = `${key}=${wf.metadata?.labels[key]}`;
                                                 let newLabels: string[];
@@ -308,6 +310,16 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                     );
                                 })}
                             </div>
+                            <label htmlFor='date_format_checkbox'>Show absolute date</label>
+                            <input
+                                id='date_format_checkbox'
+                                type='checkbox'
+                                checked={displayFullDate}
+                                onClick={e => {
+                                    e.stopPropagation();
+                                }}
+                                onChange={() => setDisplayFullDate(!displayFullDate)}
+                            />
                             <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={(filteredWorkflows || []).length} />
                         </>
                     )}

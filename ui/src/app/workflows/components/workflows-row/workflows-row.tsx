@@ -22,6 +22,7 @@ interface WorkflowsRowProps {
     select: (wf: Workflow) => void;
     checked: boolean;
     columns: models.Column[];
+    displayFullDate?: boolean;
 }
 
 export function WorkflowsRow(props: WorkflowsRowProps) {
@@ -61,10 +62,10 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                     </Link>
                     <div className='columns small-1'>{wf.metadata.namespace}</div>
                     <div className='columns small-1'>
-                        <Timestamp date={wf.status.startedAt} />
+                        <Timestamp date={wf.status.startedAt} displayFullDate={props.displayFullDate} />
                     </div>
                     <div className='columns small-1'>
-                        <Timestamp date={wf.status.finishedAt} />
+                        <Timestamp date={wf.status.finishedAt} displayFullDate={props.displayFullDate} />
                     </div>
                     <div className='columns small-1'>
                         <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
