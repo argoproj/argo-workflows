@@ -138,7 +138,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 
 	template = wftmpl.GetTemplateByName(tmplRef.Template)
 
-    // add workflow template level pod annotations and labels to template
+	// add workflow template level pod annotations and labels to template
 	podMetadata := wftmpl.GetPodMetadata()
 	if podMetadata != nil {
 		if template.Metadata.Annotations == nil {
