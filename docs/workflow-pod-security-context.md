@@ -1,10 +1,10 @@
 # Workflow Pod Security Context
 
-By default, all workflow pods run as root. The Docker executor even requires `privileged: true`.
+By default, all workflow pods run as root.
 
-For other [workflow executors](workflow-executors.md), you can run your workflow pods more securely by configuring the [security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for your workflow pod.
+You can run your workflow pods more securely by configuring the [security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for your workflow pod.
 
-This is likely to be necessary if you have a [pod security policy](https://kubernetes.io/docs/concepts/policy/pod-security-policy/). You probably can't use the Docker executor if you have a pod security policy.
+This is likely to be necessary if you have a [pod security policy](https://kubernetes.io/docs/concepts/policy/pod-security-policy/).
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
