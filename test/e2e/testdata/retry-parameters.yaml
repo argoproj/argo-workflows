@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-parameters-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: message1
+        value: "hello"
+      - name: message2
+        value: "world"
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo {{workflow.parameters.message1}} {{workflow.parameters.message2}}; exit 1"]

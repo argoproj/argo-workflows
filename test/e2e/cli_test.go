@@ -21,6 +21,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const (
@@ -858,12 +859,51 @@ func (s *CLISuite) TestWorkflowRetry() {
 			return wf.Status.AnyActiveSuspendNode(), "suspended node"
 		}), time.Second*90).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			outerStepsPodNode := status.Nodes.FindByDisplayName("steps-outer-step1")
 			innerStepsPodNode := status.Nodes.FindByDisplayName("steps-inner-step1")
 
 			assert.True(t, outerStepsPodNode.FinishedAt.Before(&retryTime))
 			assert.True(t, retryTime.Before(&innerStepsPodNode.FinishedAt))
+
+			assert.Equal(t, "Retried", metadata.GetLabels()[common.LabelKeyWorkflowRetryingStatus])
+			assert.Equal(t, "true", metadata.GetAnnotations()[common.AnnotationKeyRetryRestartSuccessful])
+			assert.Equal(t, "templateName=steps-inner", metadata.GetAnnotations()[common.AnnotationKeyRetryNodeFieldSelector])
+			assert.Equal(t, "null", metadata.GetAnnotations()[common.AnnotationKeyRetryParameters])
+		})
+}
+
+func (s *CLISuite) TestWorkflowRetryWithParameters() {
+	s.Given().
+		Workflow("@testdata/retry-parameters.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		RunCli([]string{"logs", "@latest", "--follow"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "hello world")
+			}
+		}).
+		Wait(3*time.Second).
+		RunCli([]string{"retry", "@latest", "--node-field-selector", "templateName=main", "-p", "message1=hi", "-p", "message2=argo"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err, output) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		}).
+		Wait(3*time.Second).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		RunCli([]string{"logs", "@latest", "--follow"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "hi argo")
+			}
+		}).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "Retried", metadata.GetLabels()[common.LabelKeyWorkflowRetryingStatus])
+			assert.Equal(t, "false", metadata.GetAnnotations()[common.AnnotationKeyRetryRestartSuccessful])
+			assert.Equal(t, "templateName=main", metadata.GetAnnotations()[common.AnnotationKeyRetryNodeFieldSelector])
+			assert.Equal(t, "[\"message1=hi\",\"message2=argo\"]", metadata.GetAnnotations()[common.AnnotationKeyRetryParameters])
 		})
 }
 
@@ -878,7 +918,11 @@ func (s *CLISuite) TestWorkflowRetryFailedWorkflow() {
 		RunCli([]string{"retry", "-l", "workflows.argoproj.io/workflow=fail-first-pass-second-workflow", "--namespace=argo"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err, output)
 		}).
-		WaitForWorkflow(fixtures.ToBeSucceeded)
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "Retried", metadata.GetLabels()[common.LabelKeyWorkflowRetryingStatus])
+		})
 }
 
 func (s *CLISuite) TestWorkflowRetryNestedDag() {

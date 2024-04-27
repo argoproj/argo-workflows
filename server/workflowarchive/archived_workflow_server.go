@@ -276,7 +276,6 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 
 func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.RetryArchivedWorkflowRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	kubeClient := auth.GetKubeClient(ctx)
 
 	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
 	if err != nil {
@@ -285,23 +284,19 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
-
-		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
+		wf.ObjectMeta.ResourceVersion = ""
+		wf.ObjectMeta.UID = ""
+		wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
-		for _, podName := range podsToDelete {
-			log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
-			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				return nil, sutils.ToStatusError(err, codes.Internal)
-			}
+		wf, err = util.MarkWorkflowForRetry(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 
-		wf.ObjectMeta.ResourceVersion = ""
-		wf.ObjectMeta.UID = ""
-		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}

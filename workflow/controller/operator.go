@@ -214,6 +214,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
+	// Check whether it is a workflow that requires retry
+	if woc.shouldRetry() {
+		woc.log.Info("workflow retried")
+		err := woc.retryWorkflow(ctx)
+		if err != nil {
+			woc.log.WithError(err).Errorf("Retry workflow failed")
+		}
+		return
+	}
+
 	if woc.wf.Status.ArtifactRepositoryRef == nil {
 		ref, err := woc.controller.artifactRepositories.Resolve(ctx, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
 		if err != nil {
@@ -3839,6 +3849,50 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 		return tmpl.RetryStrategy
 	}
 	return woc.execWf.Spec.RetryStrategy
+}
+
+func (woc *wfOperationCtx) shouldRetry() bool {
+	retryingStatus, ok := woc.wf.Labels[common.LabelKeyWorkflowRetryingStatus]
+	if !ok || retryingStatus == "Retried" {
+		return false
+	}
+	return true
+}
+
+func (woc *wfOperationCtx) IsRetried() bool {
+	return woc.wf.GetLabels()[common.LabelKeyWorkflowRetryingStatus] != "Pending"
+}
+
+func (woc *wfOperationCtx) retryWorkflow(ctx context.Context) error {
+	if woc.IsRetried() {
+		return nil
+	}
+	// Parse the retry parameters from the annotations.
+	nodeFiledSelector := woc.wf.GetAnnotations()[common.AnnotationKeyRetryNodeFieldSelector]
+	parametersStr := woc.wf.GetAnnotations()[common.AnnotationKeyRetryParameters]
+	var parameters []string
+	err := json.Unmarshal([]byte(parametersStr), &parameters)
+	if err != nil {
+		return fmt.Errorf("fail to unmarshaling parameters: %v", err)
+	}
+	restartSuccessful := woc.wf.GetAnnotations()[common.AnnotationKeyRetryRestartSuccessful] == "true"
+
+	// Clean up remaining pods in the workflow
+	wf, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf, restartSuccessful, nodeFiledSelector, parameters)
+	if err != nil {
+		return fmt.Errorf("fail to FormulateRetryWorkflow")
+	}
+	for _, podName := range podsToDelete {
+		woc.controller.queuePodForCleanup(wf.Namespace, podName, deletePod)
+	}
+
+	// Add labelBatchDeletePodsCompleted to the queue to help determine whether the pod has been cleaned up.
+	woc.controller.queuePodForCleanup(wf.Namespace, wf.Name, labelBatchDeletePodsCompleted)
+
+	woc.wf = wf
+	woc.wf.ObjectMeta.Labels[common.LabelKeyWorkflowRetryingStatus] = "Retrying"
+	woc.updated = true
+	return nil
 }
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
