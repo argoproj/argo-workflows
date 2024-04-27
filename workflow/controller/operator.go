@@ -1333,14 +1333,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.Phase = wfv1.NodeSucceeded
 		new.Daemoned = nil
 	case apiv1.PodFailed:
-		// ignore pod failure for daemoned steps
-		if tmpl != nil && tmpl.IsDaemon() {
-			new.Phase = wfv1.NodeSucceeded
-		} else {
-			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
-			woc.log.WithField("displayName", old.DisplayName).WithField("templateName", wfutil.GetTemplateFromNode(*old)).
-				WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
-		}
+		new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
+		woc.log.WithField("displayName", old.DisplayName).WithField("templateName", old.TemplateName).WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
 		new.Daemoned = nil
 	case apiv1.PodRunning:
 		// Daemons are a special case we need to understand the rules:
