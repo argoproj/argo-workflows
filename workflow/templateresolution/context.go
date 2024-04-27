@@ -138,6 +138,23 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 
 	template = wftmpl.GetTemplateByName(tmplRef.Template)
 
+    // add workflow template level pod annotations and labels to template
+	podMetadata := wftmpl.GetPodMetadata()
+	if podMetadata != nil {
+		if template.Metadata.Annotations == nil {
+			template.Metadata.Annotations = make(map[string]string)
+		}
+		for k, v := range podMetadata.Annotations {
+			template.Metadata.Annotations[k] = v
+		}
+		if template.Metadata.Labels == nil {
+			template.Metadata.Labels = make(map[string]string)
+		}
+		for k, v := range podMetadata.Labels {
+			template.Metadata.Labels[k] = v
+		}
+	}
+
 	if template == nil {
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found in workflow template %s", tmplRef.Template, tmplRef.Name)
 	}
