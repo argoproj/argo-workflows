@@ -304,6 +304,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		}
 
 		log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
+		// It will dehydrate the wf actualy only if needed (when the size of workflow is too large or set the env `ALWAYS_OFFLOAD_NODE_STATUS`=true)
 		err = w.hydrator.Dehydrate(wf)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
@@ -315,6 +316,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
+		// determine whether th wf is `Dehydrated` actually before
 		if !w.hydrator.IsHydrated(wf) {
 			offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
 			if err != nil {
