@@ -590,7 +590,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	archivedRepo := &mocks.WorkflowArchive{}
 
-	wfaServer := workflowarchive.NewWorkflowArchiveServer(archivedRepo)
+	wfaServer := workflowarchive.NewWorkflowArchiveServer(archivedRepo, offloadNodeStatusRepo)
 	archivedRepo.On("GetWorkflow", "", "test", "hello-world-9tql2-test").Return(&v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "hello-world-9tql2-test", Namespace: "test"},
 		Spec: v1alpha1.WorkflowSpec{
