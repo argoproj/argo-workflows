@@ -6,14 +6,13 @@ import {Observable} from 'rxjs';
 import {map, publishReplay, refCount} from 'rxjs/operators';
 import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
-import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {Button} from '../../../shared/components/button';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
 import {Context} from '../../../shared/context';
 import {useLocalStorage} from '../../../shared/use-local-storage';
-import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {getPodName} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
@@ -25,7 +24,7 @@ const timezones = Intl.supportedValuesOf('timeZone');
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
-    nodeId?: string;
+    initialNodeId?: string;
     initialPodName: string;
     container: string;
     archived: boolean;
@@ -74,7 +73,7 @@ function parseAndTransform(formattedString: string, timeZone: string) {
     }
 }
 
-export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
+export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
     const storage = new ScopedLocalStorage('workflow-logs-viewer');
     const storedJsonFields = storage.getItem('jsonFields', {
         values: []
@@ -157,24 +156,21 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
         return () => clearTimeout(x);
     }, [logFilter]);
 
-    const annotations = workflow.metadata.annotations || {};
-    const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
-
     // map pod names to corresponding node IDs
     const podNamesToNodeIDs = new Map<string, string>();
-
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
             .map(targetNode => {
                 const {name, id, displayName} = targetNode;
-                const templateName = getTemplateNameFromNode(targetNode);
-                const targetPodName = getPodName(workflow.metadata.name, name, templateName, id, podNameVersion);
+                const targetPodName = getPodName(workflow, targetNode);
                 podNamesToNodeIDs.set(targetPodName, id);
                 return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
             })
     );
 
+    // default to the node id of the pod
+    const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
     const node = workflow.status.nodes[nodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 

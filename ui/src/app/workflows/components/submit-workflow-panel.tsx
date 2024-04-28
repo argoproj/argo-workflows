@@ -1,6 +1,7 @@
 import {Select} from 'argo-ui';
-import React, {useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {Parameter, Template} from '../../../models';
+import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {ParametersInput} from '../../shared/components/parameters-input';
@@ -26,6 +27,7 @@ const defaultTemplate: Template = {
 };
 
 export function SubmitWorkflowPanel(props: Props) {
+    const {navigation} = useContext(Context);
     const [entrypoint, setEntrypoint] = useState(workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
@@ -55,7 +57,7 @@ export function SubmitWorkflowPanel(props: Props) {
                 ],
                 labels: labels.join(',')
             });
-            document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
+            navigation.goto(uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`));
         } catch (err) {
             setError(err);
             setIsSubmitting(false);

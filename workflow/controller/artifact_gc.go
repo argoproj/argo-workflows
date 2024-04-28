@@ -179,10 +179,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			woc.log.Errorf("Was unable to obtain node for %s", artifactSearchResult.NodeID)
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status??", strategy, artifactSearchResult.NodeID)
 		}
-		templateName := node.TemplateName
-		if templateName == "" && node.GetTemplateRef() != nil {
-			templateName = node.GetTemplateRef().Template
-		}
+		templateName := util.GetTemplateFromNode(*node)
 		if templateName == "" {
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node %+v has an unnamed template", strategy, node)
 		}
@@ -613,7 +610,7 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
 	if pod.Status.Phase == corev1.PodFailed {
-		errMsg := fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, pod %s exited with non-zero exit code: check pod logs for more information", pod.Name, strategy)
+		errMsg := fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, pod %s exited with non-zero exit code: check pod logs for more information", strategy, pod.Name)
 		woc.addArtGCCondition(errMsg)
 		woc.addArtGCEvent(errMsg)
 	}

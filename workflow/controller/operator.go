@@ -405,9 +405,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 				failedNodeStatus{
 					DisplayName:  node.DisplayName,
 					Message:      node.Message,
-					TemplateName: node.TemplateName,
+					TemplateName: wfutil.GetTemplateFromNode(node),
 					Phase:        string(node.Phase),
-					PodName:      wfutil.GeneratePodName(woc.wf.Name, node.Name, node.TemplateName, node.ID, wfutil.GetPodNameVersion()),
+					PodName:      wfutil.GeneratePodName(woc.wf.Name, node.Name, wfutil.GetTemplateFromNode(node), node.ID, wfutil.GetPodNameVersion()),
 					FinishedAt:   node.FinishedAt,
 				})
 		}
@@ -747,6 +747,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 
+	// Remove completed taskset status before update workflow.
+	err = woc.removeCompletedTaskSetStatus(ctx)
+	if err != nil {
+		woc.log.WithError(err).Warn("error updating taskset")
+	}
+
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
@@ -794,17 +800,15 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 
-	err = woc.removeCompletedTaskSetStatus(ctx)
-
-	if err != nil {
-		woc.log.WithError(err).Warn("error updating taskset")
-	}
-
 	// Make sure the workflow completed.
 	if woc.wf.Status.Fulfilled() {
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
+	}
+	// If Finalizer exists, requeue to make sure Finalizer can be removed.
+	if woc.wf.Status.Fulfilled() && len(wf.GetFinalizers()) > 0 {
+		woc.requeueAfter(5 * time.Second)
 	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
@@ -1334,7 +1338,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 			new.Phase = wfv1.NodeSucceeded
 		} else {
 			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
-			woc.log.WithField("displayName", old.DisplayName).WithField("templateName", old.TemplateName).
+			woc.log.WithField("displayName", old.DisplayName).WithField("templateName", wfutil.GetTemplateFromNode(*old)).
 				WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
 		}
 		new.Daemoned = nil
@@ -2624,7 +2628,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
 
-	podName := woc.getPodName(node.Name, node.TemplateName)
+	podName := woc.getPodName(node.Name, wfutil.GetTemplateFromNode(*node))
 	return woc.controller.getPodFromCache(woc.wf.GetNamespace(), podName)
 }
 
@@ -2820,8 +2824,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Fatalf("was unable to obtain node for %s", nodeID)
-		panic(fmt.Sprintf("Expected node for %s", nodeID))
+		woc.log.Panicf("was unable to obtain node for %s", nodeID)
 	}
 	switch node.Type {
 	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
@@ -3263,8 +3266,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	childID := woc.wf.NodeID(child)
 	node, err := woc.wf.Status.Nodes.Get(parentID)
 	if err != nil {
-		woc.log.Fatalf("was unable to obtain node for %s", parentID)
-		panic(fmt.Sprintf("parent node %s not initialized", parent))
+		woc.log.Panicf("was unable to obtain node for %s", parentID)
 	}
 	for _, nodeID := range node.Children {
 		if childID == nodeID {
@@ -3739,38 +3741,30 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		return nil
 	}
 
-	pdb, err := woc.controller.kubeclientset.PolicyV1().PodDisruptionBudgets(woc.wf.Namespace).Get(
-		ctx,
-		woc.wf.Name,
-		metav1.GetOptions{},
-	)
-	if err != nil && !apierr.IsNotFound(err) && !apierr.IsAlreadyExists(err) {
-		return err
-	}
-	if pdb != nil && pdb.Name != "" {
-		woc.log.Info("PDB resource already exists for workflow.")
-		return nil
-	}
-
+	labels := map[string]string{common.LabelKeyWorkflow: woc.wf.Name}
 	pdbSpec := *woc.execWf.Spec.PodDisruptionBudget
 	if pdbSpec.Selector == nil {
 		pdbSpec.Selector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+			MatchLabels: labels,
 		}
 	}
 
 	newPDB := policyv1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   woc.wf.Name,
-			Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+			Labels: labels,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
 		},
 		Spec: pdbSpec,
 	}
-	_, err = woc.controller.kubeclientset.PolicyV1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
+	_, err := woc.controller.kubeclientset.PolicyV1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
 	if err != nil {
+		if apierr.IsAlreadyExists(err) {
+			woc.log.Info("PDB resource already exists for workflow.")
+			return nil
+		}
 		return err
 	}
 	woc.log.Info("Created PDB resource for workflow.")
