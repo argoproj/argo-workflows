@@ -208,7 +208,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 	}
 
 	for _, depName := range targetTasks {
-		branchPhase, _ := targetTaskPhases[d.taskNodeID(depName)]
+		branchPhase := targetTaskPhases[d.taskNodeID(depName)]
 		if branchPhase == wfv1.NodeOmitted {
 			result = wfv1.NodeSucceeded
 			// If failFast is disabled, we will want to let all tasks complete before checking for failures
