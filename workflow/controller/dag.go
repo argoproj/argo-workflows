@@ -277,6 +277,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	for _, task := range tmpl.DAG.Tasks {
+		task := task
 		taskId := dagCtx.taskNodeID(task.Name)
 		dagCtx.nodeToTask[taskId] = &task
 	}
