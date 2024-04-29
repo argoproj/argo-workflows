@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/TwiN/go-color"
@@ -155,7 +156,10 @@ func (s *E2ESuite) DeleteResources() {
 		archive := s.Persistence.workflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
-		workflows, err := archive.ListWorkflows(Namespace, "", "", time.Time{}, time.Time{}, parse, 0, 0)
+		workflows, err := archive.ListWorkflows(utils.ListOptions{
+			Namespace:         Namespace,
+			LabelRequirements: parse,
+		})
 		s.CheckError(err)
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(string(w.UID))
