@@ -35,7 +35,7 @@ spec:
       - name: repo
         value: https://github.com/argoproj/argo-workflows
       - name: branch
-        value: master
+        value: main
       - name: path
         value: test/e2e/images/argosay/v2
       - name: image
@@ -62,13 +62,6 @@ spec:
                   value: "{{workflow.parameters.repo}}"
                 - name: branch
                   value: "{{workflow.parameters.branch}}"
-          - name: build
-            template: build
-            arguments:
-              parameters:
-                - name: path
-                  value: "{{workflow.parameters.path}}"
-            depends: "clone"
           - name: image
             template: image
             arguments:
@@ -77,7 +70,7 @@ spec:
                   value: "{{workflow.parameters.path}}"
                 - name: image
                   value: "{{workflow.parameters.image}}"
-            depends: "build"
+            depends: "clone"
     - name: clone
       inputs:
         parameters:
@@ -100,28 +93,6 @@ spec:
           - --single-branch
           - "{{inputs.parameters.repo}}"
           - .
-    - name: build
-      inputs:
-        parameters:
-          - name: path
-      container:
-        image: golang:1.13
-        volumeMounts:
-          - mountPath: /work
-            name: work
-        workingDir: /work/{{inputs.parameters.path}}
-        env:
-          # Because this is not a Gomodule, we must turn modules off.
-          - name: GO111MODULE
-            value: "off"
-        command:
-          - go
-        args:
-          - build
-          - -v
-          - -o
-          - argosay
-          - ./...
     - name: image
       inputs:
         parameters:
