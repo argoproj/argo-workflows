@@ -3147,9 +3147,10 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 		return nil
 	}
 	// Some of the children may be hooks, only keep those that aren't
+	// keep children that's a sub task/step
 	nodeIdx := 0
 	for i := range childNodes {
-		if childNodes[i].NodeFlag == nil || !childNodes[i].NodeFlag.Hooked {
+		if (childNodes[i].NodeFlag == nil || !childNodes[i].NodeFlag.Hooked) && strings.Contains(childNodes[i].DisplayName, "(") {
 			childNodes[nodeIdx] = childNodes[i]
 			nodeIdx++
 		}

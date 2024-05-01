@@ -494,15 +494,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range taskDependencies {
 				depNode := dagCtx.getTaskNode(depName)
-				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
-				for _, outNodeID := range outboundNodeIDs {
-					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
-					if err != nil {
-						woc.log.Errorf("was unable to obtain node for %s", outNodeID)
-						return
-					}
-					woc.addChildNode(nodeName, taskNodeName)
+				nodeName, err := woc.wf.Status.Nodes.GetName(depNode.ID)
+				if err != nil {
+					woc.log.Errorf("was unable to obtain node for %s", depNode.ID)
+					return
 				}
+				woc.addChildNode(nodeName, taskNodeName)
 			}
 		}
 	}
