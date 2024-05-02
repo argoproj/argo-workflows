@@ -938,7 +938,7 @@ func (s *CLISuite) TestRetryWorkflowWithContinueOn() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
-			assert.Equal(t, 6, len(status.Nodes))
+			assert.Equal(t, 7, len(status.Nodes))
 		}).
 		RunCli([]string{"retry", workflowName}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err, output) {
@@ -954,7 +954,7 @@ func (s *CLISuite) TestRetryWorkflowWithContinueOn() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Equal(t, 6, len(status.Nodes))
+			assert.Equal(t, 7, len(status.Nodes))
 		}).
 		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
 			return strings.Contains(status.Name, "retry-workflow-with-continueon.success")
