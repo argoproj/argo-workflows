@@ -957,7 +957,7 @@ func (s *CLISuite) TestRetryWorkflowWithContinueOn() {
 			assert.Equal(t, 7, len(status.Nodes))
 		}).
 		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
-			return strings.Contains(status.Name, "retry-workflow-with-continueon.success")
+			return strings.Contains(status.Name, ".success")
 		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
 			assert.Equal(t, 2, len(status.Children))
 		})
