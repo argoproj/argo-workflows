@@ -4,6 +4,9 @@ metadata:
   name: retry-workflow-with-continueon
 spec:
   entrypoint: dag
+  retryStrategy:
+    limit: 2
+    retryPolicy: OnError
   templates:
     - name: dag
       dag:
