@@ -95,6 +95,7 @@ func (d *dagContext) GetTaskDependsLogic(taskName string) string {
 }
 
 func (d *dagContext) resolveDependencies(taskName string) {
+	// TESTING CODE CHANGE TO SEE IF E2E tests fail
 	dependencies, resolvedDependsLogic := common.GetTaskDependencies(d.GetTask(taskName), d)
 	var dependencyTasks []string
 	for dep := range dependencies {
