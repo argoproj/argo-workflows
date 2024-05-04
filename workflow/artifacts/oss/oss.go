@@ -1,6 +1,7 @@
 package oss
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"math"
@@ -16,7 +17,6 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -238,7 +238,9 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 			objectName := outputArtifact.OSS.Key
 			if outputArtifact.OSS.LifecycleRule != nil {
 				err = setBucketLifecycleRule(osscli, outputArtifact.OSS)
-				return !isTransientOSSErr(err), err
+				if err != nil {
+					return !isTransientOSSErr(err), err
+				}
 			}
 			if isDir {
 				if err = putDirectory(bucket, objectName, path); err != nil {
@@ -351,33 +353,33 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 		return fmt.Errorf("markInfrequentAccessAfterDays cannot be large than markDeletionAfterDays")
 	}
 
-	// Set expiration rule.
-	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", ossArtifact.Key, true, markInfrequentAccessAfterDays)
-	// Automatically delete the expired delete tag so we don't have to manage it ourselves.
+	// Delete the current version objects after a period of time.
+	// If BucketVersioning is enbaled, the objects will turn to non-current version.
 	expiration := oss.LifecycleExpiration{
-		ExpiredObjectDeleteMarker: pointer.Bool(true),
+		Days: markDeletionAfterDays,
 	}
 	// Convert to Infrequent Access (IA) storage type for objects that are expired after a period of time.
-	versionTransition := oss.LifecycleVersionTransition{
-		NoncurrentDays: markInfrequentAccessAfterDays,
-		StorageClass:   oss.StorageIA,
+	transition := oss.LifecycleTransition{
+		Days:         markInfrequentAccessAfterDays,
+		StorageClass: oss.StorageIA,
 	}
-	// Mark deletion after a period of time.
-	versionExpiration := oss.LifecycleVersionExpiration{
-		NoncurrentDays: markDeletionAfterDays,
+	// Delete the aborted uploaded parts after a period of time.
+	abortMultipartUpload := oss.LifecycleAbortMultipartUpload{
+		Days: markDeletionAfterDays,
 	}
-	versionTransitionRule := oss.LifecycleRule{
-		ID:                    "version-transition-rule",
-		Prefix:                ossArtifact.Key,
-		Status:                string(oss.VersionEnabled),
-		Expiration:            &expiration,
-		NonVersionExpiration:  &versionExpiration,
-		NonVersionTransitions: []oss.LifecycleVersionTransition{versionTransition},
+
+	keySha := fmt.Sprintf("%x", sha256.Sum256([]byte(ossArtifact.Key)))
+	rule := oss.LifecycleRule{
+		ID:                   keySha,
+		Prefix:               ossArtifact.Key,
+		Status:               string(oss.VersionEnabled),
+		Expiration:           &expiration,
+		Transitions:          []oss.LifecycleTransition{transition},
+		AbortMultipartUpload: &abortMultipartUpload,
 	}
 
 	// Set lifecycle rules to the bucket.
-	rules := []oss.LifecycleRule{expirationRule, versionTransitionRule}
-	err := client.SetBucketLifecycle(ossArtifact.Bucket, rules)
+	err := client.SetBucketLifecycle(ossArtifact.Bucket, []oss.LifecycleRule{rule})
 	return err
 }
 
