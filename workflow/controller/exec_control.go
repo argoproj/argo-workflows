@@ -13,9 +13,9 @@ import (
 )
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
-// kills any pending and running pods when workflow has reached it's deadline
+// kills any pending and running pods (except agent pod) when workflow has reached its deadline
 func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
-	if pod == nil {
+	if pod == nil || woc.isAgentPod(pod) {
 		return
 	}
 
