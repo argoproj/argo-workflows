@@ -1,6 +1,7 @@
 package signal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -14,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
+func SignalContainer(ctx context.Context, restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", "kill -%d 1"}
 
 	// If the container has the /var/run/argo volume mounted, this it will have access to `argoexec`.
@@ -40,15 +41,15 @@ func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string,
 		}
 	}
 
-	return ExecPodContainerAndGetOutput(restConfig, pod.Namespace, pod.Name, container, command...)
+	return ExecPodContainerAndGetOutput(ctx, restConfig, pod.Namespace, pod.Name, container, command...)
 }
 
-func ExecPodContainerAndGetOutput(restConfig *rest.Config, namespace string, pod string, container string, command ...string) error {
+func ExecPodContainerAndGetOutput(ctx context.Context, restConfig *rest.Config, namespace string, pod string, container string, command ...string) error {
 	x, err := common.ExecPodContainer(restConfig, namespace, pod, container, true, true, command...)
 	if err != nil {
 		return err
 	}
-	stdout, stderr, err := common.GetExecutorOutput(x)
+	stdout, stderr, err := common.GetExecutorOutput(ctx, x)
 	log.
 		WithField("namespace", namespace).
 		WithField("pod", pod).

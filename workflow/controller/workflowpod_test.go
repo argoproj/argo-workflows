@@ -125,7 +125,7 @@ script:
     ls -al
 `
 
-// TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
+// TestScriptTemplateWithoutVolumeOptionalArtifact ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	volumeMount := apiv1.VolumeMount{
 		Name:             "input-artifacts",
@@ -499,7 +499,7 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
-// TestConditionalNoAddArchiveLocation verifies we do  add archive location if it is needed for logs
+// TestConditionalAddArchiveLocationArchiveLogs verifies we do  add archive location if it is needed for logs
 func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	ctx := context.Background()
 	woc := newWoc()
@@ -510,7 +510,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 			},
 			KeyFormat: "path/in/bucket",
 		},
-		ArchiveLogs: pointer.BoolPtr(true),
+		ArchiveLogs: pointer.Bool(true),
 	})
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -523,7 +523,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	assert.NotNil(t, tmpl.ArchiveLocation)
 }
 
-// TestConditionalNoAddArchiveLocation verifies we add archive location when it is needed
+// TestConditionalArchiveLocation verifies we add archive location when it is needed
 func TestConditionalArchiveLocation(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -582,19 +582,19 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			if tt.workflowArchiveLog != "" {
 				workflowArchiveLog, _ := strconv.ParseBool(tt.workflowArchiveLog)
-				wf.Spec.ArchiveLogs = pointer.BoolPtr(workflowArchiveLog)
+				wf.Spec.ArchiveLogs = pointer.Bool(workflowArchiveLog)
 			}
 			if tt.templateArchiveLog != "" {
 				templateArchiveLog, _ := strconv.ParseBool(tt.templateArchiveLog)
 				wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
-					ArchiveLogs: pointer.BoolPtr(templateArchiveLog),
+					ArchiveLogs: pointer.Bool(templateArchiveLog),
 				}
 			}
 			cancel, controller := newController(wf)
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
-				ArchiveLogs: pointer.BoolPtr(tt.controllerArchiveLog),
+				ArchiveLogs: pointer.Bool(tt.controllerArchiveLog),
 				S3: &wfv1.S3ArtifactRepository{
 					S3Bucket: wfv1.S3Bucket{
 						Bucket: "foo",

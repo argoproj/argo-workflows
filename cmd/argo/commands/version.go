@@ -12,7 +12,7 @@ import (
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 )
 
-// NewVersionCmd returns a new `version` command to be used as a sub-command to root
+// NewVersionCommand returns a new `version` command to be used as a sub-command to root
 func NewVersionCommand() *cobra.Command {
 	var short bool
 	cmd := cobra.Command{

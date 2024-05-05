@@ -99,7 +99,7 @@ func NewRetryCommand() *cobra.Command {
 	return command
 }
 
-// retryWorkflows retries workflows by given retryArgs or workflow names
+// retryArchivedWorkflows retries workflows by given retryArgs or workflow names
 func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowarchivepkg.ArchivedWorkflowServiceClient, serviceClient workflowpkg.WorkflowServiceClient, retryOpts retryOps, cliSubmitOpts common.CliSubmitOpts, args []string) error {
 	selector, err := fields.ParseSelector(retryOpts.nodeFieldSelector)
 	if err != nil {

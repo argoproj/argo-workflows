@@ -194,6 +194,7 @@ nav:
           - argo cluster-template get: cli/argo_cluster-template_get.md
           - argo cluster-template lint: cli/argo_cluster-template_lint.md
           - argo cluster-template list: cli/argo_cluster-template_list.md
+          - argo cluster-template update: cli/argo_cluster-template_update.md
           - argo completion: cli/argo_completion.md
           - argo cp: cli/argo_cp.md
           - argo cron: cli/argo_cron.md
@@ -204,6 +205,7 @@ nav:
           - argo cron list: cli/argo_cron_list.md
           - argo cron resume: cli/argo_cron_resume.md
           - argo cron suspend: cli/argo_cron_suspend.md
+          - argo cron update: cli/argo_cron_update.md
           - argo delete: cli/argo_delete.md
           - argo executor-plugin: cli/argo_executor-plugin.md
           - argo executor-plugin build: cli/argo_executor-plugin_build.md
@@ -225,6 +227,7 @@ nav:
           - argo template get: cli/argo_template_get.md
           - argo template lint: cli/argo_template_lint.md
           - argo template list: cli/argo_template_list.md
+          - argo template update: cli/argo_template_update.md
           - argo terminate: cli/argo_terminate.md
           - argo version: cli/argo_version.md
           - argo wait: cli/argo_wait.md

@@ -977,7 +977,7 @@ func parseRetryMessage(message string) (int, error) {
 	return totalSeconds, nil
 }
 
-// TestProcessNodeRetries tests retrying when RetryOn.Error is disabled
+// TestProcessNodesNoRetryWithError tests retrying when RetryOn.Error is disabled
 func TestProcessNodesNoRetryWithError(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
@@ -2810,6 +2810,201 @@ func TestWorkflowSpecParam(t *testing.T) {
 	assert.True(t, found)
 
 	assert.Equal(t, "my-host", pod.Spec.NodeSelector["kubernetes.io/hostname"])
+}
+
+var workflowSchedulingConstraintsTemplateDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: benchmarks-dag
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        name: benchmark1
+        template: benchmark
+      - arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        name: benchmark2
+        template: benchmark
+    name: main
+    nodeSelector:
+      pool: workflows
+    tolerations:
+    - key: pool
+      operator: Equal
+      value: workflows
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node_group
+                  operator: In
+                  values:
+                    - argo-workflow
+  - inputs:
+      parameters:
+      - name: msg
+    name: benchmark
+    script:
+      command:
+      - python
+      image: python:latest
+      source: |
+        print("{{inputs.parameters.msg}}")
+`
+
+var workflowSchedulingConstraintsTemplateSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: benchmarks-steps
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: benchmark1
+        arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        template: benchmark
+      - name: benchmark2
+        arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        template: benchmark
+    nodeSelector:
+      pool: workflows
+    tolerations:
+    - key: pool
+      operator: Equal
+      value: workflows
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node_group
+                  operator: In
+                  values:
+                    - argo-workflow
+  - inputs:
+      parameters:
+      - name: msg
+    name: benchmark
+    script:
+      command:
+      - python
+      image: python:latest
+      source: |
+        print("{{inputs.parameters.msg}}")
+`
+
+var workflowSchedulingConstraintsDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-wf-scheduling-constraints-dag-
+  namespace: argo
+spec:
+  entrypoint: hello
+  templates:
+    - name: hello
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: benchmarks-dag
+              template: main
+`
+
+var workflowSchedulingConstraintsSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-wf-scheduling-constraints-steps-
+  namespace: argo
+spec:
+  entrypoint: hello
+  templates:
+    - name: hello
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: benchmarks-steps
+              template: main
+`
+
+func TestWokflowSchedulingConstraintsDAG(t *testing.T) {
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowSchedulingConstraintsTemplateDAG)
+	wf := wfv1.MustUnmarshalWorkflow(workflowSchedulingConstraintsDAG)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+	for _, pod := range pods.Items {
+		assert.Equal(t, "workflows", pod.Spec.NodeSelector["pool"])
+		found := false
+		value := ""
+		for _, toleration := range pod.Spec.Tolerations {
+			if toleration.Key == "pool" {
+				found = true
+				value = toleration.Value
+			}
+		}
+		assert.True(t, found)
+		assert.Equal(t, "workflows", value)
+		assert.NotNil(t, pod.Spec.Affinity)
+		assert.Equal(t, "node_group", pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Key)
+		assert.Contains(t, pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Values, "argo-workflow")
+	}
+}
+
+func TestWokflowSchedulingConstraintsSteps(t *testing.T) {
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowSchedulingConstraintsTemplateSteps)
+	wf := wfv1.MustUnmarshalWorkflow(workflowSchedulingConstraintsSteps)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+	for _, pod := range pods.Items {
+		assert.Equal(t, "workflows", pod.Spec.NodeSelector["pool"])
+		found := false
+		value := ""
+		for _, toleration := range pod.Spec.Tolerations {
+			if toleration.Key == "pool" {
+				found = true
+				value = toleration.Value
+			}
+		}
+		assert.True(t, found)
+		assert.Equal(t, "workflows", value)
+		assert.NotNil(t, pod.Spec.Affinity)
+		assert.Equal(t, "node_group", pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Key)
+		assert.Contains(t, pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Values, "argo-workflow")
+	}
 }
 
 func TestAddGlobalParamToScope(t *testing.T) {
@@ -5409,6 +5604,177 @@ func TestConfigMapCacheLoadOperateNoOutputs(t *testing.T) {
 	}
 }
 
+var workflowWithMemoizedInSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-bug-
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: hello-steps
+        template: memoized
+    - - name: whatever
+        template: hello
+
+  - name: memoized
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          parameter: "{{steps.hello-step.outputs.result}}"
+    steps:
+    - - name: hello-step
+        template: hello
+    memoize:
+      key: "memoized-bug-steps-0"
+      cache:
+        configMap:
+          name: my-config
+
+  - name: hello
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo Hello"]
+`
+
+var workflowWithMemoizedInDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-bug-
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: hello-dag
+        template: memoized
+    - - name: whatever
+        template: hello
+
+  - name: memoized
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          parameter: "{{dag.hello-dag.outputs.result}}"
+    dag:
+      tasks:
+      - name: hello-dag
+        template: hello
+    memoize:
+      key: "memoized-bug-dag-0"
+      cache:
+        configMap:
+          name: my-config
+
+  - name: hello
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo Hello"]
+`
+
+func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
+	myConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"memoized-bug-steps-0": `{"nodeID":"memoized-bug-wqbj4-3475368823","outputs":null,"creationTimestamp":"2020-09-21T18:12:56Z","lastHitTimestamp":"2024-03-11T05:59:58Z"}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "my-config",
+			ResourceVersion: "80004",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+	}
+
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithMemoizedInSteps)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &myConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	hitCache := 0
+	for _, node := range woc.wf.Status.Nodes {
+		if node.DisplayName == "hello-steps" {
+			hitCache++
+			assert.NotNil(t, node.MemoizationStatus)
+			assert.True(t, node.MemoizationStatus.Hit)
+			assert.Equal(t, 1, len(node.Children))
+		}
+	}
+	assert.Equal(t, 1, hitCache)
+}
+
+func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
+	myConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"memoized-bug-dag-0": `{"nodeID":"memoized-bug-wqbj4-3475368823","outputs":null,"creationTimestamp":"2020-09-21T18:12:56Z","lastHitTimestamp":"2024-03-11T05:59:58Z"}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "my-config",
+			ResourceVersion: "80004",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+	}
+
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithMemoizedInDAG)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &myConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	hitCache := 0
+	for _, node := range woc.wf.Status.Nodes {
+		if node.DisplayName == "hello-dag" {
+			hitCache++
+			assert.NotNil(t, node.MemoizationStatus)
+			assert.True(t, node.MemoizationStatus.Hit)
+			assert.Equal(t, 1, len(node.Children))
+		}
+	}
+	assert.Equal(t, 1, hitCache)
+}
+
 var workflowCachedMaxAge = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -5804,7 +6170,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 		Parameters: []wfv1.Parameter{
 			{Name: "hello", Value: wfv1.AnyStringPtr("foobar")},
 		},
-		ExitCode: pointer.StringPtr("0"),
+		ExitCode: pointer.String("0"),
 	}
 
 	ctx := context.Background()
@@ -10607,4 +10973,93 @@ status:
 	woc.wf.Status.MarkTaskResultComplete(nodeId)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var wfHasContainerSet = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: lovely-rhino
+spec:
+  templates:
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+            arguments: {}
+    - name: run
+      containerSet:
+        containers:
+          - name: main
+            image: alpine:latest
+            command:
+              - /bin/sh
+            args:
+              - '-c'
+              - sleep 9000
+            resources: {}
+          - name: main2
+            image: alpine:latest
+            command:
+              - /bin/sh
+            args:
+              - '-c'
+              - sleep 9000
+            resources: {}
+  entrypoint: init
+  arguments: {}
+  ttlStrategy:
+    secondsAfterCompletion: 300
+  podGC:
+    strategy: OnPodCompletion`
+
+// TestContainerSetDeleteContainerWhenPodDeleted test whether a workflow has ContainerSet error when pod deleted.
+func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSet)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+
+	// mark pod Running
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			assert.Equal(t, wfv1.NodeRunning, node.Phase)
+		}
+	}
+
+	// TODO: Refactor to use local-scoped env vars in test to avoid long wait. See https://github.com/argoproj/argo-workflows/pull/12756#discussion_r1530245007
+	// delete pod
+	time.Sleep(10 * time.Second)
+	deletePods(ctx, woc)
+	pods, err = listPods(woc)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(pods.Items))
+
+	// reconcile
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Equal(t, wfv1.NodeError, node.Phase)
+		if node.Type == wfv1.NodeTypePod {
+			assert.Equal(t, "pod deleted", node.Message)
+		}
+		if node.Type == wfv1.NodeTypeContainer {
+			assert.Equal(t, "container deleted", node.Message)
+		}
+	}
 }
