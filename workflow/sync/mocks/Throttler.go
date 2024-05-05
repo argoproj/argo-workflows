@@ -61,18 +61,14 @@ func (_m *Throttler) Remove(key string) {
 	_m.Called(key)
 }
 
-<<<<<<< HEAD
 // RemoveParallelismLimit provides a mock function with given fields: key
 func (_m *Throttler) RemoveParallelismLimit(key string) {
 	_m.Called(key)
 }
 
-type mockConstructorTestingTNewThrottler interface {
-=======
 // NewThrottler creates a new instance of Throttler. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewThrottler(t interface {
->>>>>>> main
 	mock.TestingT
 	Cleanup(func())
 }) *Throttler {
