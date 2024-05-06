@@ -207,7 +207,8 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var accessKey string
 		var secretKey string
 
-		if !art.OSS.UseSDKCreds && art.OSS.AccessKeySecret != nil && art.OSS.AccessKeySecret.Name != "" {
+		if !art.OSS.UseSDKCreds && art.OSS.AccessKeySecret != nil && art.OSS.AccessKeySecret.Name != "" &&
+			art.OSS.SecretKeySecret != nil && art.OSS.SecretKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
@@ -217,7 +218,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			secretKey = string(secretKeyBytes)
+			secretKey = secretKeyBytes
 		}
 
 		driver := oss.ArtifactDriver{
@@ -237,8 +238,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			serviceAccountKey := string(serviceAccountKeyBytes)
-			driver.ServiceAccountKey = serviceAccountKey
+			driver.ServiceAccountKey = serviceAccountKeyBytes
 		}
 		// key is not set, assume it is using Workload Idendity
 		return &driver, nil
