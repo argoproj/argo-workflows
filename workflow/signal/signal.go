@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -49,6 +50,8 @@ func ExecPodContainerAndGetOutput(ctx context.Context, restConfig *rest.Config, 
 	if err != nil {
 		return err
 	}
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
 	stdout, stderr, err := common.GetExecutorOutput(ctx, x)
 	log.
 		WithField("namespace", namespace).
