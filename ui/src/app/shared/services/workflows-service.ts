@@ -185,7 +185,7 @@ export class WorkflowsService {
         return this.isNodePendingOrRunning(node);
     }
 
-    getContainerLogsFromArtifact(workflow: Workflow, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
+    public getContainerLogsFromArtifact(workflow: Workflow, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
         return of(this.hasArtifactLogs(workflow, nodeId, container)).pipe(
             switchMap(isArtifactLogs => {
                 if (!isArtifactLogs) {
