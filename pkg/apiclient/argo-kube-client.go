@@ -25,7 +25,7 @@ import (
 	cronworkflowserver "github.com/argoproj/argo-workflows/v3/server/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	workflowserver "github.com/argoproj/argo-workflows/v3/server/workflow"
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
+	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	workflowtemplateserver "github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -38,8 +38,6 @@ var (
 
 type argoKubeClient struct {
 	instanceIDService instanceid.Service
-	wfClient          workflow.Interface
-	wfStore           store.WorkflowStore
 }
 
 var _ Client = &argoKubeClient{}
@@ -86,16 +84,13 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	if err != nil {
 		return nil, nil, err
 	}
-	wfStore, err := store.NewSQLiteStore(instanceIDService)
-	if err != nil {
-		return nil, nil, err
-	}
-	return ctx, &argoKubeClient{instanceIDService, wfClient, wfStore}, nil
+	return ctx, &argoKubeClient{instanceIDService}, nil
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfStore)}}
+	wfaServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, argoKubeOffloadNodeStatusRepo)
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfaServer)}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkflowServiceClient, error) {

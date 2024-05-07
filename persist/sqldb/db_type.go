@@ -12,7 +12,6 @@ type dbType string
 const (
 	MySQL    dbType = "mysql"
 	Postgres dbType = "postgres"
-	SQLite   dbType = "sqlite"
 )
 
 func dbTypeFor(session db.Session) dbType {

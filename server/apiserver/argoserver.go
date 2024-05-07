@@ -55,7 +55,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
@@ -231,13 +230,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
-	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo)
-	wfStore, err := store.NewSQLiteStore(instanceIDService)
-	if err != nil {
-		log.Fatal(err)
-	}
-	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore)
-	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
+	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links, config.Columns, config.NavColor)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -267,7 +260,6 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	grpcL := tcpm.Match(cmux.Any())
 
 	go eventServer.Run(as.stopCh)
-	go workflowServer.Run(as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
@@ -284,7 +276,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workflowServer workflowpkg.WorkflowServiceServer, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
@@ -316,11 +308,12 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
+	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadNodeStatusRepo)
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links, columns, navColor))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
 	sensorpkg.RegisterSensorServiceServer(grpcServer, sensor.NewSensorServer())
-	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflowServer)
+	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo, wfArchiveServer))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, wfArchiveServer)

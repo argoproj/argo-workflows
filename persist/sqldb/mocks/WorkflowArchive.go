@@ -4,10 +4,9 @@ package mocks
 
 import (
 	mock "github.com/stretchr/testify/mock"
+	labels "k8s.io/apimachinery/pkg/labels"
 
 	time "time"
-
-	utils "github.com/argoproj/argo-workflows/v3/server/utils"
 
 	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -35,9 +34,9 @@ func (_m *WorkflowArchive) ArchiveWorkflow(wf *v1alpha1.Workflow) error {
 	return r0
 }
 
-// CountWorkflows provides a mock function with given fields: options
-func (_m *WorkflowArchive) CountWorkflows(options utils.ListOptions) (int64, error) {
-	ret := _m.Called(options)
+// CountWorkflows provides a mock function with given fields: namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements
+func (_m *WorkflowArchive) CountWorkflows(namespace string, name string, namePrefix string, minStartAt time.Time, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error) {
+	ret := _m.Called(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CountWorkflows")
@@ -45,17 +44,17 @@ func (_m *WorkflowArchive) CountWorkflows(options utils.ListOptions) (int64, err
 
 	var r0 int64
 	var r1 error
-	if rf, ok := ret.Get(0).(func(utils.ListOptions) (int64, error)); ok {
-		return rf(options)
+	if rf, ok := ret.Get(0).(func(string, string, string, time.Time, time.Time, labels.Requirements) (int64, error)); ok {
+		return rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
 	}
-	if rf, ok := ret.Get(0).(func(utils.ListOptions) int64); ok {
-		r0 = rf(options)
+	if rf, ok := ret.Get(0).(func(string, string, string, time.Time, time.Time, labels.Requirements) int64); ok {
+		r0 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
 
-	if rf, ok := ret.Get(1).(func(utils.ListOptions) error); ok {
-		r1 = rf(options)
+	if rf, ok := ret.Get(1).(func(string, string, string, time.Time, time.Time, labels.Requirements) error); ok {
+		r1 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -147,9 +146,9 @@ func (_m *WorkflowArchive) IsEnabled() bool {
 	return r0
 }
 
-// ListWorkflows provides a mock function with given fields: options
-func (_m *WorkflowArchive) ListWorkflows(options utils.ListOptions) (v1alpha1.Workflows, error) {
-	ret := _m.Called(options)
+// ListWorkflows provides a mock function with given fields: namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset
+func (_m *WorkflowArchive) ListWorkflows(namespace string, name string, namePrefix string, minStartAt time.Time, maxStartAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (v1alpha1.Workflows, error) {
+	ret := _m.Called(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListWorkflows")
@@ -157,19 +156,19 @@ func (_m *WorkflowArchive) ListWorkflows(options utils.ListOptions) (v1alpha1.Wo
 
 	var r0 v1alpha1.Workflows
 	var r1 error
-	if rf, ok := ret.Get(0).(func(utils.ListOptions) (v1alpha1.Workflows, error)); ok {
-		return rf(options)
+	if rf, ok := ret.Get(0).(func(string, string, string, time.Time, time.Time, labels.Requirements, int, int) (v1alpha1.Workflows, error)); ok {
+		return rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 	}
-	if rf, ok := ret.Get(0).(func(utils.ListOptions) v1alpha1.Workflows); ok {
-		r0 = rf(options)
+	if rf, ok := ret.Get(0).(func(string, string, string, time.Time, time.Time, labels.Requirements, int, int) v1alpha1.Workflows); ok {
+		r0 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(v1alpha1.Workflows)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(utils.ListOptions) error); ok {
-		r1 = rf(options)
+	if rf, ok := ret.Get(1).(func(string, string, string, time.Time, time.Time, labels.Requirements, int, int) error); ok {
+		r1 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 	} else {
 		r1 = ret.Error(1)
 	}
