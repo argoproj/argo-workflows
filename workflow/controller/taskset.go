@@ -34,7 +34,7 @@ func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch interfac
 func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]interface{}, nodesPatch map[string]interface{}) {
 	deletedNode := make(map[string]interface{})
 	for _, node := range woc.wf.Status.Nodes {
-		if (node.Type == wfv1.NodeTypeHTTP || node.Type == wfv1.NodeTypePlugin) && node.Fulfilled() {
+		if node.IsTaskSetNode() && node.Fulfilled() {
 			deletedNode[node.ID] = nil
 		}
 	}
@@ -52,12 +52,11 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]in
 	}
 	return
 }
-func taskSetNode(n wfv1.NodeStatus) bool {
-	return n.Type == wfv1.NodeTypeHTTP || n.Type == wfv1.NodeTypePlugin
-}
 
 func (woc *wfOperationCtx) hasTaskSetNodes() bool {
-	return woc.wf.Status.Nodes.Any(taskSetNode)
+	return woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.IsTaskSetNode()
+	})
 }
 
 func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
@@ -107,7 +106,7 @@ func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(nodeName string) bo
 		return false
 	}
 	// If this node is of type HTTP, it will need an HTTP reconciliation
-	if taskSetNode(*node) {
+	if node.IsTaskSetNode() {
 		return true
 	}
 	for _, child := range node.Children {
