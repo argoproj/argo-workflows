@@ -23,6 +23,14 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
+    # split devDeps and prod deps as typically only prod deps need security backports
+    groups:
+      devDeps:
+        applies-to: security-updates
+        dependency-type: "development"
+      deps:
+        applies-to: security-updates
+        dependency-type: "production"
     ignore:
       - dependency-name: raw-loader
       - dependency-name: style-loader
