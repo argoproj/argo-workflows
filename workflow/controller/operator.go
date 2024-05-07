@@ -2399,7 +2399,9 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 		}
 		woc.updated = true
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		if woc.hasTaskSetNodes() {
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		}
 	}
 }
 
