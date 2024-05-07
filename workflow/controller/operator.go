@@ -306,7 +306,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err, podReconciliationCompleted := woc.podReconciliation(ctx)
 		if err == nil {
-			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+			// Execution control has been applied to the nodes with created pods after pod reconciliation.
+			// However, pending and suspended nodes do not have created pods, and taskset nodes use the agent pod.
+			// Apply execution control to these nodes now since pod reconciliation does not take effect on them.
+			woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown()
 		}
 
 		if err != nil {
@@ -424,7 +427,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
-	// Reconcile TaskSet and Agent for HTTP templates when is not shutdown
+	// Reconcile TaskSet and Agent for HTTP/Plugin templates when is not shutdown
 	if !woc.execWf.Spec.Shutdown.Enabled() {
 		woc.taskSetReconciliation(ctx)
 	}
@@ -1267,10 +1270,14 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
-func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() {
+// failNodesWithoutCreatedPodsAfterDeadlineOrShutdown mark the nodes without created pods failed when shutting down or exceeding deadline.
+func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown() {
 	for _, node := range woc.wf.Status.Nodes {
-		// fail suspended nodes or plugin nodes when shuting down
-		if woc.GetShutdownStrategy().Enabled() && (node.IsActiveSuspendNode() || node.IsActivePluginNode()) {
+		if node.Fulfilled() {
+			continue
+		}
+		// fail suspended nodes or taskset nodes when shutting down
+		if woc.GetShutdownStrategy().Enabled() && (node.IsActiveSuspendNode() || node.IsTaskSetNode()) {
 			message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			continue
