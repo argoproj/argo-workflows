@@ -7593,12 +7593,7 @@ spec:
       image: python:alpine3.6
       command: [python]
       source: |
-        import random
-        import time
-        random.seed(time.time())
-        i = random.randint(1, 10)
-        print(i)
-        exit(i)
+        exit(1)
 `
 
 func TestRetryOnNodeAntiAffinity(t *testing.T) {
