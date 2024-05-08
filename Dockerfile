@@ -72,6 +72,8 @@ ARG GIT_TREE_STATE
 RUN mkdir -p ui/dist
 COPY --from=argo-ui ui/dist/app ui/dist/app
 
+# Ensure in github CI that we don't attempt to rebuild this file
+RUN touch ui/dist/app/index.html
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build STATIC_FILES=true make dist/argo GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}
 
 ####################################################################################################
