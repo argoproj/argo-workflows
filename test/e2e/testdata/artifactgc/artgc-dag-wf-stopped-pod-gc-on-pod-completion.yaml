@@ -60,8 +60,9 @@ spec:
             done
     - name: artgc-dag-workflow-stopper
       container:
-        image: argoproj/argocli:latest
-        args: 
+        image: quay.io/argoproj/argocli:latest
+        imagePullPolicy: Never
+        args:
           - stop
           - -l
           - workflows.argoproj.io/workflow=artgc-dag-wf-stopped-pod-gc-on-pod-completion
