@@ -161,6 +161,8 @@ endef
 cli: dist/argo
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
+	@echo $^ | xargs ls -l --full-time
+	ls -l --full-time $@
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
