@@ -12,6 +12,7 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
@@ -603,10 +604,14 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	archivedRepo.On("GetWorkflow", "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "latest").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
-	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "workflows"}).Return(int64(2), nil)
-	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "workflows", Limit: -2}).Return(v1alpha1.Workflows{wfObj2, failedWfObj}, nil)
-	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "test"}).Return(int64(1), nil)
-	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "test", Limit: -1}).Return(v1alpha1.Workflows{wfObj4}, nil)
+	r, err := labels.ParseToRequirements("workflows.argoproj.io/controller-instanceid=my-instanceid")
+	if err != nil {
+		panic(err)
+	}
+	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "workflows", LabelRequirements: r}).Return(int64(2), nil)
+	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "workflows", Limit: -2, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj2, failedWfObj}, nil)
+	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "test", LabelRequirements: r}).Return(int64(1), nil)
+	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "test", Limit: -1, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj4}, nil)
 
 	kubeClientSet := fake.NewSimpleClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -633,7 +638,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	if err = wfStore.Add(&wfObj5); err != nil {
 		panic(err)
 	}
-	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore)
+	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore)
 	return server, ctx
 }
 

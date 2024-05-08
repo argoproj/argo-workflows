@@ -52,29 +52,40 @@ type workflowServer struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
+	wfLister              store.WorkflowLister
 	wfReflector           *cache.Reflector
-	wfStore               store.WorkflowStore
 }
 
 var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfStore store.WorkflowStore) *workflowServer {
-	ctx := context.Background()
-	lw := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).List(ctx, options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).Watch(ctx, options)
-		},
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore) *workflowServer {
+	ws := &workflowServer{
+		instanceIDService:     instanceIDService,
+		offloadNodeStatusRepo: offloadNodeStatusRepo,
+		hydrator:              hydrator.New(offloadNodeStatusRepo),
+		wfArchive:             wfArchive,
+		wfLister:              wfLister,
 	}
-	wfReflector := cache.NewReflector(lw, &wfv1.Workflow{}, wfStore, reSyncDuration)
-	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfArchive, wfReflector, wfStore}
+	if wfStore != nil {
+		lw := &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).List(context.Background(), options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).Watch(context.Background(), options)
+			},
+		}
+		wfReflector := cache.NewReflector(lw, &wfv1.Workflow{}, wfStore, reSyncDuration)
+		ws.wfReflector = wfReflector
+	}
+	return ws
 }
 
 func (s *workflowServer) Run(stopCh <-chan struct{}) {
-	s.wfReflector.Run(stopCh)
+	if s.wfReflector != nil {
+		s.wfReflector.Run(stopCh)
+	}
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*wfv1.Workflow, error) {
@@ -156,13 +167,13 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
-	listOption := &metav1.ListOptions{}
+	listOption := metav1.ListOptions{}
 	if req.ListOptions != nil {
-		listOption = req.ListOptions
+		listOption = *req.ListOptions
 	}
-	s.instanceIDService.With(listOption)
+	s.instanceIDService.With(&listOption)
 
-	options, err := sutils.BuildListOptions(req.ListOptions, req.Namespace, "")
+	options, err := sutils.BuildListOptions(listOption, req.Namespace, "")
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +187,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	var wfs wfv1.Workflows
-	liveWfCount, err := s.wfStore.CountWorkflows(options)
+	liveWfCount, err := s.wfLister.CountWorkflows(ctx, req.Namespace, "", listOption)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -187,13 +198,13 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	totalCount := liveWfCount + archivedCount
 
 	// first fetch live workflows
-	var liveWfList []wfv1.Workflow
+	liveWfList := &wfv1.WorkflowList{}
 	if liveWfCount > 0 && (options.Limit == 0 || options.Offset < int(liveWfCount)) {
-		liveWfList, err = s.wfStore.ListWorkflows(options)
+		liveWfList, err = s.wfLister.ListWorkflows(ctx, req.Namespace, "", listOption)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
-		wfs = append(wfs, liveWfList...)
+		wfs = append(wfs, liveWfList.Items...)
 	}
 
 	// then fetch archived workflows
@@ -203,7 +214,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		archivedLimit := options.Limit
 		if archivedOffset < 0 {
 			archivedOffset = 0
-			archivedLimit = options.Limit - len(liveWfList)
+			archivedLimit = options.Limit - len(liveWfList.Items)
 		}
 		archivedWfList, err := s.wfArchive.ListWorkflows(options.WithLimit(archivedLimit).WithOffset(archivedOffset))
 		if err != nil {
@@ -211,7 +222,10 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		}
 		wfs = append(wfs, archivedWfList...)
 	}
-	meta := metav1.ListMeta{ResourceVersion: s.wfReflector.LastSyncResourceVersion()}
+	meta := metav1.ListMeta{ResourceVersion: liveWfList.ResourceVersion}
+	if s.wfReflector != nil {
+		meta.ResourceVersion = s.wfReflector.LastSyncResourceVersion()
+	}
 	remainCount := totalCount - int64(options.Offset) - int64(len(wfs))
 	if remainCount < 0 {
 		remainCount = 0

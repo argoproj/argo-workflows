@@ -51,10 +51,7 @@ func (l ListOptions) WithStartedAtAscending(ascending bool) ListOptions {
 	return l
 }
 
-func BuildListOptions(options *metav1.ListOptions, ns, namePrefix string) (ListOptions, error) {
-	if options == nil {
-		options = &metav1.ListOptions{}
-	}
+func BuildListOptions(options metav1.ListOptions, ns, namePrefix string) (ListOptions, error) {
 	if options.Continue == "" {
 		options.Continue = "0"
 	}

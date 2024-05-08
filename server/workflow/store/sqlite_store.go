@@ -1,17 +1,20 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 
+	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -64,33 +67,36 @@ func initDB() (*sqlite.Conn, error) {
 
 type WorkflowStore interface {
 	cache.Store
-	ListWorkflows(options sutils.ListOptions) ([]wfv1.Workflow, error)
-	CountWorkflows(options sutils.ListOptions) (int64, error)
 }
 
-// sqliteStore is a sqlite-based store.
-type sqliteStore struct {
+// SQLiteStore is a sqlite-based store.
+type SQLiteStore struct {
 	conn            *sqlite.Conn
 	instanceService instanceid.Service
 }
 
-var _ WorkflowStore = &sqliteStore{}
+var _ WorkflowStore = &SQLiteStore{}
+var _ WorkflowLister = &SQLiteStore{}
 
-func NewSQLiteStore(instanceService instanceid.Service) (WorkflowStore, error) {
+func NewSQLiteStore(instanceService instanceid.Service) (*SQLiteStore, error) {
 	conn, err := initDB()
 	if err != nil {
 		return nil, err
 	}
-	return &sqliteStore{conn: conn, instanceService: instanceService}, nil
+	return &SQLiteStore{conn: conn, instanceService: instanceService}, nil
 }
 
-func (s *sqliteStore) ListWorkflows(options sutils.ListOptions) ([]wfv1.Workflow, error) {
+func (s *SQLiteStore) ListWorkflows(ctx context.Context, namespace, namePrefix string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
+	options, err := sutils.BuildListOptions(listOptions, namespace, namePrefix)
+	if err != nil {
+		return nil, err
+	}
 	query := `select workflow from argo_workflows
 where instanceid = ?
 `
 	args := []any{s.instanceService.InstanceID()}
 
-	query, args, err := sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, false)
+	query, args, err = sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, false)
 	if err != nil {
 		return nil, err
 	}
@@ -114,10 +120,16 @@ where instanceid = ?
 		return nil, err
 	}
 
-	return workflows, nil
+	return &wfv1.WorkflowList{
+		Items: workflows,
+	}, nil
 }
 
-func (s *sqliteStore) CountWorkflows(options sutils.ListOptions) (int64, error) {
+func (s *SQLiteStore) CountWorkflows(ctx context.Context, namespace, namePrefix string, listOptions metav1.ListOptions) (int64, error) {
+	options, err := sutils.BuildListOptions(listOptions, namespace, namePrefix)
+	if err != nil {
+		return 0, err
+	}
 	query := `select count(*) as total from argo_workflows
 where instanceid = ?
 `
@@ -125,7 +137,7 @@ where instanceid = ?
 
 	options.Limit = 0
 	options.Offset = 0
-	query, args, err := sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, true)
+	query, args, err = sqldb.BuildWorkflowSelector(query, args, workflowTableName, workflowLabelsTableName, sqldb.SQLite, options, true)
 	if err != nil {
 		return 0, err
 	}
@@ -144,7 +156,7 @@ where instanceid = ?
 	return total, nil
 }
 
-func (s *sqliteStore) Add(obj interface{}) error {
+func (s *SQLiteStore) Add(obj interface{}) error {
 	wf, ok := obj.(*wfv1.Workflow)
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
@@ -155,7 +167,7 @@ func (s *sqliteStore) Add(obj interface{}) error {
 	return err
 }
 
-func (s *sqliteStore) Update(obj interface{}) error {
+func (s *SQLiteStore) Update(obj interface{}) error {
 	wf, ok := obj.(*wfv1.Workflow)
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
@@ -166,7 +178,7 @@ func (s *sqliteStore) Update(obj interface{}) error {
 	return err
 }
 
-func (s *sqliteStore) Delete(obj interface{}) error {
+func (s *SQLiteStore) Delete(obj interface{}) error {
 	wf, ok := obj.(*wfv1.Workflow)
 	if !ok {
 		return fmt.Errorf("unable to convert object to Workflow. object: %v", obj)
@@ -174,7 +186,7 @@ func (s *sqliteStore) Delete(obj interface{}) error {
 	return sqlitex.Execute(s.conn, deleteWorkflowQuery, &sqlitex.ExecOptions{Args: []any{string(wf.UID)}})
 }
 
-func (s *sqliteStore) Replace(list []interface{}, resourceVersion string) error {
+func (s *SQLiteStore) Replace(list []interface{}, resourceVersion string) error {
 	wfs := make([]*wfv1.Workflow, 0, len(list))
 	for _, obj := range list {
 		wf, ok := obj.(*wfv1.Workflow)
@@ -189,27 +201,27 @@ func (s *sqliteStore) Replace(list []interface{}, resourceVersion string) error 
 	return err
 }
 
-func (s *sqliteStore) Resync() error {
+func (s *SQLiteStore) Resync() error {
 	return nil
 }
 
-func (s *sqliteStore) List() []interface{} {
+func (s *SQLiteStore) List() []interface{} {
 	panic("not implemented")
 }
 
-func (s *sqliteStore) ListKeys() []string {
+func (s *SQLiteStore) ListKeys() []string {
 	panic("not implemented")
 }
 
-func (s *sqliteStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
+func (s *SQLiteStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
 	panic("not implemented")
 }
 
-func (s *sqliteStore) GetByKey(key string) (item interface{}, exists bool, err error) {
+func (s *SQLiteStore) GetByKey(key string) (item interface{}, exists bool, err error) {
 	panic("not implemented")
 }
 
-func (s *sqliteStore) upsertWorkflow(wf *wfv1.Workflow) error {
+func (s *SQLiteStore) upsertWorkflow(wf *wfv1.Workflow) error {
 	err := sqlitex.Execute(s.conn, deleteWorkflowQuery, &sqlitex.ExecOptions{Args: []any{string(wf.UID)}})
 	if err != nil {
 		return err
@@ -248,7 +260,7 @@ func (s *sqliteStore) upsertWorkflow(wf *wfv1.Workflow) error {
 	return nil
 }
 
-func (s *sqliteStore) replaceWorkflows(workflows []*wfv1.Workflow) error {
+func (s *SQLiteStore) replaceWorkflows(workflows []*wfv1.Workflow) error {
 	err := sqlitex.Execute(s.conn, `delete from argo_workflows`, nil)
 	if err != nil {
 		return err

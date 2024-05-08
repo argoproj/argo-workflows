@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
@@ -71,7 +71,7 @@ func TestStoreOperation(t *testing.T) {
 	instanceIdSvc := instanceid.NewService("my-instanceid")
 	conn, err := initDB()
 	require.NoError(t, err)
-	store := sqliteStore{
+	store := SQLiteStore{
 		conn:            conn,
 		instanceService: instanceIdSvc,
 	}
@@ -79,7 +79,7 @@ func TestStoreOperation(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			require.NoError(t, store.Add(generateWorkflow(i)))
 		}
-		num, err := store.CountWorkflows(sutils.ListOptions{Namespace: "argo"})
+		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, int64(10), num)
 		// Labels are also added
@@ -129,12 +129,12 @@ func TestStoreOperation(t *testing.T) {
 		}))
 	})
 	t.Run("TestListWorkflows", func(t *testing.T) {
-		wfList, err := store.ListWorkflows(sutils.ListOptions{Namespace: "argo", Limit: 5})
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "", metav1.ListOptions{Limit: 5})
 		require.NoError(t, err)
-		assert.Len(t, wfList, 5)
+		assert.Len(t, wfList.Items, 5)
 	})
 	t.Run("TestCountWorkflows", func(t *testing.T) {
-		num, err := store.CountWorkflows(sutils.ListOptions{Namespace: "argo"})
+		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, int64(9), num)
 	})
