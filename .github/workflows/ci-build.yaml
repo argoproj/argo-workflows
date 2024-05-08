@@ -42,6 +42,7 @@ jobs:
               - tasks.yaml
             tests: &tests
               - *common
+              - Dockerfile
               - cmd/**
               - config/**
               - errors/**
