@@ -1474,7 +1474,7 @@ func TestAssessNodeStatus(t *testing.T) {
 		},
 		daemon: true,
 		node:   &wfv1.NodeStatus{TemplateName: templateName},
-		want:   wfv1.NodeSucceeded,
+		want:   wfv1.NodeFailed,
 	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
