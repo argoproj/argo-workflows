@@ -30,6 +30,15 @@ controller:
       value: "true"
 ```
 
+In case you want to modify a running `workflow-controller`:
+
+```bash
+kubectl patch deployment \
+  workflow-controller \
+  --namespace argo \
+  -p '{"spec":{"template":{"spec":{"containers":[{"name":"workflow-controller","env":[{"name":"ARGO_EXECUTOR_PLUGINS","value":"true"}]}]}}}}'
+```
+
 ## Template Executor
 
 This is a plugin that runs custom "plugin" templates, e.g. for non-pod tasks such as Tekton builds, Spark jobs, sending
@@ -162,7 +171,7 @@ spec:
         - containerPort: 4355
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534 # nobody
+        runAsUser: 1000
       resources:
         requests:
           memory: "64Mi"
@@ -201,6 +210,30 @@ spec:
 ```
 
 You'll see the workflow complete successfully.
+
+**Note**: The service account running the workflow needs at least the following permissions. If <= v3.2 you must replace `workflowtasksets/status` with `workflowtasksets`.
+
+```yaml
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets/status
+  verbs:
+  - patch
+```
 
 ### Discovery
 
