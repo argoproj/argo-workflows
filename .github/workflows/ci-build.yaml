@@ -56,6 +56,7 @@ jobs:
             e2e-tests:
               - *tests
               # plus manifests and SDKs that are used in E2E tests
+              - Dockerfile
               - manifests/**
               - sdks/**
             codegen:
