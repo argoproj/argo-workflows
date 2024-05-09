@@ -30,7 +30,7 @@ controller:
       value: "true"
 ```
 
-In case you want to modify a running `workflow-controller`:
+If you want to modify a running Controller:
 
 ```bash
 kubectl patch deployment \
@@ -38,6 +38,10 @@ kubectl patch deployment \
   --namespace argo \
   -p '{"spec":{"template":{"spec":{"containers":[{"name":"workflow-controller","env":[{"name":"ARGO_EXECUTOR_PLUGINS","value":"true"}]}]}}}}'
 ```
+
+### Permissions
+
+Plugins use the Argo Agent, which executes the requests independently of the controller. In order to use the Argo Agent, you will need to ensure that you have added the appropriate [workflow RBAC](workflow-rbac.md) to add an agent role with to Argo Workflows. An example agent role can be found in [the quick-start manifests](https://github.com/argoproj/argo-workflows/tree/main/manifests/quick-start/base/agent-role.yaml).
 
 ## Template Executor
 
@@ -210,30 +214,6 @@ spec:
 ```
 
 You'll see the workflow complete successfully.
-
-**Note**: The service account running the workflow needs at least the following permissions. If <= v3.2 you must replace `workflowtasksets/status` with `workflowtasksets`.
-
-```yaml
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: agent
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtasksets
-  verbs:
-  - list
-  - watch
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtasksets/status
-  verbs:
-  - patch
-```
 
 ### Discovery
 
