@@ -151,7 +151,7 @@ class PodAffinityTerm(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             label_selector (LabelSelector): [optional]  # noqa: E501
             namespace_selector (LabelSelector): [optional]  # noqa: E501
-            namespaces ([str]): namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\". [optional]  # noqa: E501
+            namespaces ([str]): namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -239,7 +239,7 @@ class PodAffinityTerm(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             label_selector (LabelSelector): [optional]  # noqa: E501
             namespace_selector (LabelSelector): [optional]  # noqa: E501
-            namespaces ([str]): namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\". [optional]  # noqa: E501
+            namespaces ([str]): namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

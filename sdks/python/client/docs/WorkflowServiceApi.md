@@ -80,7 +80,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 annotations={
                     "key": "key_example",
                 },
-                cluster_name="cluster_name_example",
                 creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                 deletion_grace_period_seconds=1,
                 deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -129,7 +128,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     match_expressions=[
                                         NodeSelectorRequirement(
                                             key="key_example",
-                                            operator="DoesNotExist",
+                                            operator="operator_example",
                                             values=[
                                                 "values_example",
                                             ],
@@ -138,7 +137,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     match_fields=[
                                         NodeSelectorRequirement(
                                             key="key_example",
-                                            operator="DoesNotExist",
+                                            operator="operator_example",
                                             values=[
                                                 "values_example",
                                             ],
@@ -154,7 +153,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     match_expressions=[
                                         NodeSelectorRequirement(
                                             key="key_example",
-                                            operator="DoesNotExist",
+                                            operator="operator_example",
                                             values=[
                                                 "values_example",
                                             ],
@@ -163,7 +162,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     match_fields=[
                                         NodeSelectorRequirement(
                                             key="key_example",
-                                            operator="DoesNotExist",
+                                            operator="operator_example",
                                             values=[
                                                 "values_example",
                                             ],
@@ -987,6 +986,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                     ),
+                    unhealthy_pod_eviction_policy="unhealthy_pod_eviction_policy_example",
                 ),
                 pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
                     delete_delay_duration=Duration(
@@ -1048,7 +1048,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                     seccomp_profile=SeccompProfile(
                         localhost_profile="localhost_profile_example",
-                        type="Localhost",
+                        type="type_example",
                     ),
                     supplemental_groups=[
                         1,
@@ -1093,7 +1093,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -1102,7 +1102,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -1118,7 +1118,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -1127,7 +1127,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -1553,7 +1553,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                         image="image_example",
-                        image_pull_policy="Always",
+                        image_pull_policy="image_pull_policy_example",
                         lifecycle=Lifecycle(
                             post_start=LifecycleHandler(
                                 _exec=ExecAction(
@@ -1571,7 +1571,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -1594,7 +1594,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -1623,7 +1623,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -1642,7 +1642,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_ip="host_ip_example",
                                 host_port=1,
                                 name="name_example",
-                                protocol="SCTP",
+                                protocol="protocol_example",
                             ),
                         ],
                         readiness_probe=Probe(
@@ -1666,7 +1666,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -1678,7 +1678,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
+                        resize_policy=[
+                            ContainerResizePolicy(
+                                resource_name="resource_name_example",
+                                restart_policy="restart_policy_example",
+                            ),
+                        ],
                         resources=ResourceRequirements(
+                            claims=[
+                                ResourceClaim(
+                                    name="name_example",
+                                ),
+                            ],
                             limits={
                                 "key": "key_example",
                             },
@@ -1710,7 +1721,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             windows_options=WindowsSecurityContextOptions(
                                 gmsa_credential_spec="gmsa_credential_spec_example",
@@ -1740,7 +1751,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -1755,7 +1766,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         stdin=True,
                         stdin_once=True,
                         termination_message_path="termination_message_path_example",
-                        termination_message_policy="FallbackToLogsOnError",
+                        termination_message_policy="termination_message_policy_example",
                         tty=True,
                         volume_devices=[
                             VolumeDevice(
@@ -1846,7 +1857,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -1869,7 +1880,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -1898,7 +1909,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -1917,7 +1928,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -1941,7 +1952,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -1953,7 +1964,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -1985,7 +2007,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -2015,7 +2037,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -3011,7 +3033,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -3034,7 +3056,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -3063,7 +3085,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -3083,7 +3105,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -3107,7 +3129,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -3119,7 +3141,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -3151,7 +3184,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -3181,7 +3214,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -4154,7 +4187,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -4177,7 +4210,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -4206,7 +4239,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -4225,7 +4258,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_ip="host_ip_example",
                                 host_port=1,
                                 name="name_example",
-                                protocol="SCTP",
+                                protocol="protocol_example",
                             ),
                         ],
                         readiness_probe=Probe(
@@ -4249,7 +4282,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -4261,7 +4294,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
+                        resize_policy=[
+                            ContainerResizePolicy(
+                                resource_name="resource_name_example",
+                                restart_policy="restart_policy_example",
+                            ),
+                        ],
                         resources=ResourceRequirements(
+                            claims=[
+                                ResourceClaim(
+                                    name="name_example",
+                                ),
+                            ],
                             limits={
                                 "key": "key_example",
                             },
@@ -4293,7 +4337,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             windows_options=WindowsSecurityContextOptions(
                                 gmsa_credential_spec="gmsa_credential_spec_example",
@@ -4324,7 +4368,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -4373,7 +4417,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         seccomp_profile=SeccompProfile(
                             localhost_profile="localhost_profile_example",
-                            type="Localhost",
+                            type="type_example",
                         ),
                         supplemental_groups=[
                             1,
@@ -4459,7 +4503,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -4482,7 +4526,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -4511,7 +4555,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -4531,7 +4575,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -4555,7 +4599,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -4567,7 +4611,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -4599,7 +4654,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -4629,7 +4684,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -5270,9 +5325,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     timeout="timeout_example",
                     tolerations=[
                         Toleration(
-                            effect="NoExecute",
+                            effect="effect_example",
                             key="key_example",
-                            operator="Equal",
+                            operator="operator_example",
                             toleration_seconds=1,
                             value="value_example",
                         ),
@@ -5369,7 +5424,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         annotations={
                                             "key": "key_example",
                                         },
-                                        cluster_name="cluster_name_example",
                                         creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                         deletion_grace_period_seconds=1,
                                         deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -5417,12 +5471,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             kind="kind_example",
                                             name="name_example",
                                         ),
-                                        data_source_ref=TypedLocalObjectReference(
+                                        data_source_ref=TypedObjectReference(
                                             api_group="api_group_example",
                                             kind="kind_example",
                                             name="name_example",
+                                            namespace="namespace_example",
                                         ),
                                         resources=ResourceRequirements(
+                                            claims=[
+                                                ResourceClaim(
+                                                    name="name_example",
+                                                ),
+                                            ],
                                             limits={
                                                 "key": "key_example",
                                             },
@@ -5660,7 +5720,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -5669,7 +5729,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -5685,7 +5745,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -5694,7 +5754,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -6120,7 +6180,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                             image="image_example",
-                            image_pull_policy="Always",
+                            image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
                                 post_start=LifecycleHandler(
                                     _exec=ExecAction(
@@ -6138,7 +6198,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -6161,7 +6221,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -6190,7 +6250,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -6209,7 +6269,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -6233,7 +6293,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -6245,7 +6305,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -6277,7 +6348,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -6307,7 +6378,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -6322,7 +6393,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             stdin=True,
                             stdin_once=True,
                             termination_message_path="termination_message_path_example",
-                            termination_message_policy="FallbackToLogsOnError",
+                            termination_message_policy="termination_message_policy_example",
                             tty=True,
                             volume_devices=[
                                 VolumeDevice(
@@ -6413,7 +6484,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -6436,7 +6507,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -6465,7 +6536,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -6484,7 +6555,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -6508,7 +6579,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -6520,7 +6591,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -6552,7 +6634,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -6582,7 +6664,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -7578,7 +7660,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -7601,7 +7683,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -7630,7 +7712,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -7650,7 +7732,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -7674,7 +7756,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -7686,7 +7768,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -7718,7 +7811,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -7748,7 +7841,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -8721,7 +8814,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -8744,7 +8837,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -8773,7 +8866,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -8792,7 +8885,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -8816,7 +8909,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -8828,7 +8921,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -8860,7 +8964,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -8891,7 +8995,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -8940,7 +9044,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             supplemental_groups=[
                                 1,
@@ -9026,7 +9130,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -9049,7 +9153,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -9078,7 +9182,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -9098,7 +9202,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -9122,7 +9226,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -9134,7 +9238,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -9166,7 +9281,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -9196,7 +9311,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -9837,9 +9952,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         timeout="timeout_example",
                         tolerations=[
                             Toleration(
-                                effect="NoExecute",
+                                effect="effect_example",
                                 key="key_example",
-                                operator="Equal",
+                                operator="operator_example",
                                 toleration_seconds=1,
                                 value="value_example",
                             ),
@@ -9936,7 +10051,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             annotations={
                                                 "key": "key_example",
                                             },
-                                            cluster_name="cluster_name_example",
                                             creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                             deletion_grace_period_seconds=1,
                                             deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -9984,12 +10098,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 kind="kind_example",
                                                 name="name_example",
                                             ),
-                                            data_source_ref=TypedLocalObjectReference(
+                                            data_source_ref=TypedObjectReference(
                                                 api_group="api_group_example",
                                                 kind="kind_example",
                                                 name="name_example",
+                                                namespace="namespace_example",
                                             ),
                                             resources=ResourceRequirements(
+                                                claims=[
+                                                    ResourceClaim(
+                                                        name="name_example",
+                                                    ),
+                                                ],
                                                 limits={
                                                     "key": "key_example",
                                                 },
@@ -10219,9 +10339,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 tolerations=[
                     Toleration(
-                        effect="NoExecute",
+                        effect="effect_example",
                         key="key_example",
-                        operator="Equal",
+                        operator="operator_example",
                         toleration_seconds=1,
                         value="value_example",
                     ),
@@ -10242,7 +10362,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             annotations={
                                 "key": "key_example",
                             },
-                            cluster_name="cluster_name_example",
                             creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                             deletion_grace_period_seconds=1,
                             deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -10290,12 +10409,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 kind="kind_example",
                                 name="name_example",
                             ),
-                            data_source_ref=TypedLocalObjectReference(
+                            data_source_ref=TypedObjectReference(
                                 api_group="api_group_example",
                                 kind="kind_example",
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -10338,10 +10463,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     message="message_example",
                                     reason="reason_example",
                                     status="status_example",
-                                    type="FileSystemResizePending",
+                                    type="type_example",
                                 ),
                             ],
-                            phase="Bound",
+                            phase="phase_example",
                             resize_status="resize_status_example",
                         ),
                     ),
@@ -10438,7 +10563,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     annotations={
                                         "key": "key_example",
                                     },
-                                    cluster_name="cluster_name_example",
                                     creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                     deletion_grace_period_seconds=1,
                                     deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -10486,12 +10610,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         kind="kind_example",
                                         name="name_example",
                                     ),
-                                    data_source_ref=TypedLocalObjectReference(
+                                    data_source_ref=TypedObjectReference(
                                         api_group="api_group_example",
                                         kind="kind_example",
                                         name="name_example",
+                                        namespace="namespace_example",
                                     ),
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -11844,7 +11974,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     annotations={
                                         "key": "key_example",
                                     },
-                                    cluster_name="cluster_name_example",
                                     creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                     deletion_grace_period_seconds=1,
                                     deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -11892,12 +12021,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         kind="kind_example",
                                         name="name_example",
                                     ),
-                                    data_source_ref=TypedLocalObjectReference(
+                                    data_source_ref=TypedObjectReference(
                                         api_group="api_group_example",
                                         kind="kind_example",
                                         name="name_example",
+                                        namespace="namespace_example",
                                     ),
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -12140,7 +12275,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -12149,7 +12284,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -12165,7 +12300,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -12174,7 +12309,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -12600,7 +12735,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                             image="image_example",
-                            image_pull_policy="Always",
+                            image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
                                 post_start=LifecycleHandler(
                                     _exec=ExecAction(
@@ -12618,7 +12753,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -12641,7 +12776,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -12670,7 +12805,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -12689,7 +12824,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -12713,7 +12848,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -12725,7 +12860,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -12757,7 +12903,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -12787,7 +12933,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -12802,7 +12948,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             stdin=True,
                             stdin_once=True,
                             termination_message_path="termination_message_path_example",
-                            termination_message_policy="FallbackToLogsOnError",
+                            termination_message_policy="termination_message_policy_example",
                             tty=True,
                             volume_devices=[
                                 VolumeDevice(
@@ -12893,7 +13039,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -12916,7 +13062,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -12945,7 +13091,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -12964,7 +13110,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -12988,7 +13134,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -13000,7 +13146,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -13032,7 +13189,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -13062,7 +13219,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -14058,7 +14215,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -14081,7 +14238,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -14110,7 +14267,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -14130,7 +14287,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -14154,7 +14311,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -14166,7 +14323,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -14198,7 +14366,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -14228,7 +14396,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -15201,7 +15369,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -15224,7 +15392,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -15253,7 +15421,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -15272,7 +15440,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -15296,7 +15464,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -15308,7 +15476,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -15340,7 +15519,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -15371,7 +15550,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -15420,7 +15599,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             supplemental_groups=[
                                 1,
@@ -15506,7 +15685,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -15529,7 +15708,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -15558,7 +15737,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -15578,7 +15757,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -15602,7 +15781,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -15614,7 +15793,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -15646,7 +15836,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -15676,7 +15866,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -16317,9 +16507,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         timeout="timeout_example",
                         tolerations=[
                             Toleration(
-                                effect="NoExecute",
+                                effect="effect_example",
                                 key="key_example",
-                                operator="Equal",
+                                operator="operator_example",
                                 toleration_seconds=1,
                                 value="value_example",
                             ),
@@ -16416,7 +16606,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             annotations={
                                                 "key": "key_example",
                                             },
-                                            cluster_name="cluster_name_example",
                                             creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                             deletion_grace_period_seconds=1,
                                             deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -16464,12 +16653,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 kind="kind_example",
                                                 name="name_example",
                                             ),
-                                            data_source_ref=TypedLocalObjectReference(
+                                            data_source_ref=TypedObjectReference(
                                                 api_group="api_group_example",
                                                 kind="kind_example",
                                                 name="name_example",
+                                                namespace="namespace_example",
                                             ),
                                             resources=ResourceRequirements(
+                                                claims=[
+                                                    ResourceClaim(
+                                                        name="name_example",
+                                                    ),
+                                                ],
                                                 limits={
                                                     "key": "key_example",
                                                 },
@@ -16707,7 +16902,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -16716,7 +16911,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -16732,7 +16927,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -16741,7 +16936,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -17565,6 +17760,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "key": "key_example",
                             },
                         ),
+                        unhealthy_pod_eviction_policy="unhealthy_pod_eviction_policy_example",
                     ),
                     pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
                         delete_delay_duration=Duration(
@@ -17626,7 +17822,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         seccomp_profile=SeccompProfile(
                             localhost_profile="localhost_profile_example",
-                            type="Localhost",
+                            type="type_example",
                         ),
                         supplemental_groups=[
                             1,
@@ -17671,7 +17867,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -17680,7 +17876,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -17696,7 +17892,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -17705,7 +17901,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -18131,7 +18327,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                             image="image_example",
-                            image_pull_policy="Always",
+                            image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
                                 post_start=LifecycleHandler(
                                     _exec=ExecAction(
@@ -18149,7 +18345,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -18172,7 +18368,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -18201,7 +18397,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -18220,7 +18416,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -18244,7 +18440,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -18256,7 +18452,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -18288,7 +18495,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -18318,7 +18525,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -18333,7 +18540,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             stdin=True,
                             stdin_once=True,
                             termination_message_path="termination_message_path_example",
-                            termination_message_policy="FallbackToLogsOnError",
+                            termination_message_policy="termination_message_policy_example",
                             tty=True,
                             volume_devices=[
                                 VolumeDevice(
@@ -18424,7 +18631,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -18447,7 +18654,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -18476,7 +18683,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -18495,7 +18702,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -18519,7 +18726,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -18531,7 +18738,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -18563,7 +18781,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -18593,7 +18811,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -19589,7 +19807,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -19612,7 +19830,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -19641,7 +19859,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -19661,7 +19879,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -19685,7 +19903,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -19697,7 +19915,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -19729,7 +19958,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -19759,7 +19988,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -20732,7 +20961,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -20755,7 +20984,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -20784,7 +21013,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -20803,7 +21032,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -20827,7 +21056,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -20839,7 +21068,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -20871,7 +21111,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -20902,7 +21142,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -20951,7 +21191,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             supplemental_groups=[
                                 1,
@@ -21037,7 +21277,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -21060,7 +21300,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -21089,7 +21329,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -21109,7 +21349,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -21133,7 +21373,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -21145,7 +21385,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -21177,7 +21428,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -21207,7 +21458,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -21848,9 +22099,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         timeout="timeout_example",
                         tolerations=[
                             Toleration(
-                                effect="NoExecute",
+                                effect="effect_example",
                                 key="key_example",
-                                operator="Equal",
+                                operator="operator_example",
                                 toleration_seconds=1,
                                 value="value_example",
                             ),
@@ -21947,7 +22198,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             annotations={
                                                 "key": "key_example",
                                             },
-                                            cluster_name="cluster_name_example",
                                             creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                             deletion_grace_period_seconds=1,
                                             deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -21995,12 +22245,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 kind="kind_example",
                                                 name="name_example",
                                             ),
-                                            data_source_ref=TypedLocalObjectReference(
+                                            data_source_ref=TypedObjectReference(
                                                 api_group="api_group_example",
                                                 kind="kind_example",
                                                 name="name_example",
+                                                namespace="namespace_example",
                                             ),
                                             resources=ResourceRequirements(
+                                                claims=[
+                                                    ResourceClaim(
+                                                        name="name_example",
+                                                    ),
+                                                ],
                                                 limits={
                                                     "key": "key_example",
                                                 },
@@ -22238,7 +22494,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 match_expressions=[
                                                     NodeSelectorRequirement(
                                                         key="key_example",
-                                                        operator="DoesNotExist",
+                                                        operator="operator_example",
                                                         values=[
                                                             "values_example",
                                                         ],
@@ -22247,7 +22503,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 match_fields=[
                                                     NodeSelectorRequirement(
                                                         key="key_example",
-                                                        operator="DoesNotExist",
+                                                        operator="operator_example",
                                                         values=[
                                                             "values_example",
                                                         ],
@@ -22263,7 +22519,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 match_expressions=[
                                                     NodeSelectorRequirement(
                                                         key="key_example",
-                                                        operator="DoesNotExist",
+                                                        operator="operator_example",
                                                         values=[
                                                             "values_example",
                                                         ],
@@ -22272,7 +22528,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 match_fields=[
                                                     NodeSelectorRequirement(
                                                         key="key_example",
-                                                        operator="DoesNotExist",
+                                                        operator="operator_example",
                                                         values=[
                                                             "values_example",
                                                         ],
@@ -22698,7 +22954,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ],
                                 image="image_example",
-                                image_pull_policy="Always",
+                                image_pull_policy="image_pull_policy_example",
                                 lifecycle=Lifecycle(
                                     post_start=LifecycleHandler(
                                         _exec=ExecAction(
@@ -22716,7 +22972,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -22739,7 +22995,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -22768,7 +23024,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -22787,7 +23043,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -22811,7 +23067,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -22823,7 +23079,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -22855,7 +23122,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -22885,7 +23152,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -22900,7 +23167,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 stdin=True,
                                 stdin_once=True,
                                 termination_message_path="termination_message_path_example",
-                                termination_message_policy="FallbackToLogsOnError",
+                                termination_message_policy="termination_message_policy_example",
                                 tty=True,
                                 volume_devices=[
                                     VolumeDevice(
@@ -22991,7 +23258,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ],
                                                     path="path_example",
                                                     port="port_example",
-                                                    scheme="HTTP",
+                                                    scheme="scheme_example",
                                                 ),
                                                 tcp_socket=TCPSocketAction(
                                                     host="host_example",
@@ -23014,7 +23281,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ],
                                                     path="path_example",
                                                     port="port_example",
-                                                    scheme="HTTP",
+                                                    scheme="scheme_example",
                                                 ),
                                                 tcp_socket=TCPSocketAction(
                                                     host="host_example",
@@ -23043,7 +23310,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             initial_delay_seconds=1,
                                             period_seconds=1,
@@ -23062,7 +23329,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 host_ip="host_ip_example",
                                                 host_port=1,
                                                 name="name_example",
-                                                protocol="SCTP",
+                                                protocol="protocol_example",
                                             ),
                                         ],
                                         readiness_probe=Probe(
@@ -23086,7 +23353,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             initial_delay_seconds=1,
                                             period_seconds=1,
@@ -23098,7 +23365,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             termination_grace_period_seconds=1,
                                             timeout_seconds=1,
                                         ),
+                                        resize_policy=[
+                                            ContainerResizePolicy(
+                                                resource_name="resource_name_example",
+                                                restart_policy="restart_policy_example",
+                                            ),
+                                        ],
                                         resources=ResourceRequirements(
+                                            claims=[
+                                                ResourceClaim(
+                                                    name="name_example",
+                                                ),
+                                            ],
                                             limits={
                                                 "key": "key_example",
                                             },
@@ -23130,7 +23408,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             seccomp_profile=SeccompProfile(
                                                 localhost_profile="localhost_profile_example",
-                                                type="Localhost",
+                                                type="type_example",
                                             ),
                                             windows_options=WindowsSecurityContextOptions(
                                                 gmsa_credential_spec="gmsa_credential_spec_example",
@@ -23160,7 +23438,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             initial_delay_seconds=1,
                                             period_seconds=1,
@@ -24156,7 +24434,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -24179,7 +24457,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -24208,7 +24486,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -24228,7 +24506,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -24252,7 +24530,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -24264,7 +24542,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -24296,7 +24585,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -24326,7 +24615,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -25299,7 +25588,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -25322,7 +25611,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -25351,7 +25640,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -25370,7 +25659,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -25394,7 +25683,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -25406,7 +25695,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -25438,7 +25738,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -25469,7 +25769,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -25518,7 +25818,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 supplemental_groups=[
                                     1,
@@ -25604,7 +25904,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -25627,7 +25927,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -25656,7 +25956,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -25676,7 +25976,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -25700,7 +26000,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -25712,7 +26012,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -25744,7 +26055,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -25774,7 +26085,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -26415,9 +26726,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             timeout="timeout_example",
                             tolerations=[
                                 Toleration(
-                                    effect="NoExecute",
+                                    effect="effect_example",
                                     key="key_example",
-                                    operator="Equal",
+                                    operator="operator_example",
                                     toleration_seconds=1,
                                     value="value_example",
                                 ),
@@ -26514,7 +26825,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 annotations={
                                                     "key": "key_example",
                                                 },
-                                                cluster_name="cluster_name_example",
                                                 creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                                 deletion_grace_period_seconds=1,
                                                 deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -26562,12 +26872,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     kind="kind_example",
                                                     name="name_example",
                                                 ),
-                                                data_source_ref=TypedLocalObjectReference(
+                                                data_source_ref=TypedObjectReference(
                                                     api_group="api_group_example",
                                                     kind="kind_example",
                                                     name="name_example",
+                                                    namespace="namespace_example",
                                                 ),
                                                 resources=ResourceRequirements(
+                                                    claims=[
+                                                        ResourceClaim(
+                                                            name="name_example",
+                                                        ),
+                                                    ],
                                                     limits={
                                                         "key": "key_example",
                                                     },
@@ -26797,9 +27113,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     tolerations=[
                         Toleration(
-                            effect="NoExecute",
+                            effect="effect_example",
                             key="key_example",
-                            operator="Equal",
+                            operator="operator_example",
                             toleration_seconds=1,
                             value="value_example",
                         ),
@@ -26820,7 +27136,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 annotations={
                                     "key": "key_example",
                                 },
-                                cluster_name="cluster_name_example",
                                 creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                 deletion_grace_period_seconds=1,
                                 deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -26868,12 +27183,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     kind="kind_example",
                                     name="name_example",
                                 ),
-                                data_source_ref=TypedLocalObjectReference(
+                                data_source_ref=TypedObjectReference(
                                     api_group="api_group_example",
                                     kind="kind_example",
                                     name="name_example",
+                                    namespace="namespace_example",
                                 ),
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -26916,10 +27237,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         message="message_example",
                                         reason="reason_example",
                                         status="status_example",
-                                        type="FileSystemResizePending",
+                                        type="type_example",
                                     ),
                                 ],
-                                phase="Bound",
+                                phase="phase_example",
                                 resize_status="resize_status_example",
                             ),
                         ),
@@ -27016,7 +27337,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         annotations={
                                             "key": "key_example",
                                         },
-                                        cluster_name="cluster_name_example",
                                         creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                         deletion_grace_period_seconds=1,
                                         deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -27064,12 +27384,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             kind="kind_example",
                                             name="name_example",
                                         ),
-                                        data_source_ref=TypedLocalObjectReference(
+                                        data_source_ref=TypedObjectReference(
                                             api_group="api_group_example",
                                             kind="kind_example",
                                             name="name_example",
+                                            namespace="namespace_example",
                                         ),
                                         resources=ResourceRequirements(
+                                            claims=[
+                                                ResourceClaim(
+                                                    name="name_example",
+                                                ),
+                                            ],
                                             limits={
                                                 "key": "key_example",
                                             },
@@ -27634,7 +27960,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 annotations={
                     "key": "key_example",
                 },
-                cluster_name="cluster_name_example",
                 creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                 deletion_grace_period_seconds=1,
                 deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -27683,7 +28008,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     match_expressions=[
                                         NodeSelectorRequirement(
                                             key="key_example",
-                                            operator="DoesNotExist",
+                                            operator="operator_example",
                                             values=[
                                                 "values_example",
                                             ],
@@ -27692,7 +28017,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     match_fields=[
                                         NodeSelectorRequirement(
                                             key="key_example",
-                                            operator="DoesNotExist",
+                                            operator="operator_example",
                                             values=[
                                                 "values_example",
                                             ],
@@ -27708,7 +28033,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     match_expressions=[
                                         NodeSelectorRequirement(
                                             key="key_example",
-                                            operator="DoesNotExist",
+                                            operator="operator_example",
                                             values=[
                                                 "values_example",
                                             ],
@@ -27717,7 +28042,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     match_fields=[
                                         NodeSelectorRequirement(
                                             key="key_example",
-                                            operator="DoesNotExist",
+                                            operator="operator_example",
                                             values=[
                                                 "values_example",
                                             ],
@@ -28541,6 +28866,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             "key": "key_example",
                         },
                     ),
+                    unhealthy_pod_eviction_policy="unhealthy_pod_eviction_policy_example",
                 ),
                 pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
                     delete_delay_duration=Duration(
@@ -28602,7 +28928,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                     seccomp_profile=SeccompProfile(
                         localhost_profile="localhost_profile_example",
-                        type="Localhost",
+                        type="type_example",
                     ),
                     supplemental_groups=[
                         1,
@@ -28647,7 +28973,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -28656,7 +28982,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -28672,7 +28998,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -28681,7 +29007,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -29107,7 +29433,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                         image="image_example",
-                        image_pull_policy="Always",
+                        image_pull_policy="image_pull_policy_example",
                         lifecycle=Lifecycle(
                             post_start=LifecycleHandler(
                                 _exec=ExecAction(
@@ -29125,7 +29451,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -29148,7 +29474,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -29177,7 +29503,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -29196,7 +29522,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_ip="host_ip_example",
                                 host_port=1,
                                 name="name_example",
-                                protocol="SCTP",
+                                protocol="protocol_example",
                             ),
                         ],
                         readiness_probe=Probe(
@@ -29220,7 +29546,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -29232,7 +29558,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
+                        resize_policy=[
+                            ContainerResizePolicy(
+                                resource_name="resource_name_example",
+                                restart_policy="restart_policy_example",
+                            ),
+                        ],
                         resources=ResourceRequirements(
+                            claims=[
+                                ResourceClaim(
+                                    name="name_example",
+                                ),
+                            ],
                             limits={
                                 "key": "key_example",
                             },
@@ -29264,7 +29601,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             windows_options=WindowsSecurityContextOptions(
                                 gmsa_credential_spec="gmsa_credential_spec_example",
@@ -29294,7 +29631,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -29309,7 +29646,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         stdin=True,
                         stdin_once=True,
                         termination_message_path="termination_message_path_example",
-                        termination_message_policy="FallbackToLogsOnError",
+                        termination_message_policy="termination_message_policy_example",
                         tty=True,
                         volume_devices=[
                             VolumeDevice(
@@ -29400,7 +29737,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -29423,7 +29760,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -29452,7 +29789,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -29471,7 +29808,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -29495,7 +29832,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -29507,7 +29844,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -29539,7 +29887,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -29569,7 +29917,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -30565,7 +30913,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -30588,7 +30936,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -30617,7 +30965,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -30637,7 +30985,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -30661,7 +31009,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -30673,7 +31021,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -30705,7 +31064,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -30735,7 +31094,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -31708,7 +32067,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -31731,7 +32090,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -31760,7 +32119,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -31779,7 +32138,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 host_ip="host_ip_example",
                                 host_port=1,
                                 name="name_example",
-                                protocol="SCTP",
+                                protocol="protocol_example",
                             ),
                         ],
                         readiness_probe=Probe(
@@ -31803,7 +32162,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -31815,7 +32174,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
+                        resize_policy=[
+                            ContainerResizePolicy(
+                                resource_name="resource_name_example",
+                                restart_policy="restart_policy_example",
+                            ),
+                        ],
                         resources=ResourceRequirements(
+                            claims=[
+                                ResourceClaim(
+                                    name="name_example",
+                                ),
+                            ],
                             limits={
                                 "key": "key_example",
                             },
@@ -31847,7 +32217,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             windows_options=WindowsSecurityContextOptions(
                                 gmsa_credential_spec="gmsa_credential_spec_example",
@@ -31878,7 +32248,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="HTTP",
+                                scheme="scheme_example",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -31927,7 +32297,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         seccomp_profile=SeccompProfile(
                             localhost_profile="localhost_profile_example",
-                            type="Localhost",
+                            type="type_example",
                         ),
                         supplemental_groups=[
                             1,
@@ -32013,7 +32383,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -32036,7 +32406,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -32065,7 +32435,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -32085,7 +32455,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -32109,7 +32479,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -32121,7 +32491,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -32153,7 +32534,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -32183,7 +32564,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -32824,9 +33205,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     timeout="timeout_example",
                     tolerations=[
                         Toleration(
-                            effect="NoExecute",
+                            effect="effect_example",
                             key="key_example",
-                            operator="Equal",
+                            operator="operator_example",
                             toleration_seconds=1,
                             value="value_example",
                         ),
@@ -32923,7 +33304,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         annotations={
                                             "key": "key_example",
                                         },
-                                        cluster_name="cluster_name_example",
                                         creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                         deletion_grace_period_seconds=1,
                                         deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -32971,12 +33351,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             kind="kind_example",
                                             name="name_example",
                                         ),
-                                        data_source_ref=TypedLocalObjectReference(
+                                        data_source_ref=TypedObjectReference(
                                             api_group="api_group_example",
                                             kind="kind_example",
                                             name="name_example",
+                                            namespace="namespace_example",
                                         ),
                                         resources=ResourceRequirements(
+                                            claims=[
+                                                ResourceClaim(
+                                                    name="name_example",
+                                                ),
+                                            ],
                                             limits={
                                                 "key": "key_example",
                                             },
@@ -33214,7 +33600,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -33223,7 +33609,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -33239,7 +33625,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -33248,7 +33634,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -33674,7 +34060,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                             image="image_example",
-                            image_pull_policy="Always",
+                            image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
                                 post_start=LifecycleHandler(
                                     _exec=ExecAction(
@@ -33692,7 +34078,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -33715,7 +34101,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -33744,7 +34130,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -33763,7 +34149,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -33787,7 +34173,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -33799,7 +34185,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -33831,7 +34228,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -33861,7 +34258,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -33876,7 +34273,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             stdin=True,
                             stdin_once=True,
                             termination_message_path="termination_message_path_example",
-                            termination_message_policy="FallbackToLogsOnError",
+                            termination_message_policy="termination_message_policy_example",
                             tty=True,
                             volume_devices=[
                                 VolumeDevice(
@@ -33967,7 +34364,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -33990,7 +34387,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -34019,7 +34416,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -34038,7 +34435,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -34062,7 +34459,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -34074,7 +34471,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -34106,7 +34514,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -34136,7 +34544,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -35132,7 +35540,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -35155,7 +35563,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -35184,7 +35592,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -35204,7 +35612,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -35228,7 +35636,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -35240,7 +35648,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -35272,7 +35691,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -35302,7 +35721,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -36275,7 +36694,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -36298,7 +36717,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -36327,7 +36746,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -36346,7 +36765,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -36370,7 +36789,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -36382,7 +36801,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -36414,7 +36844,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -36445,7 +36875,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -36494,7 +36924,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             supplemental_groups=[
                                 1,
@@ -36580,7 +37010,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -36603,7 +37033,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -36632,7 +37062,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -36652,7 +37082,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -36676,7 +37106,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -36688,7 +37118,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -36720,7 +37161,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -36750,7 +37191,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -37391,9 +37832,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         timeout="timeout_example",
                         tolerations=[
                             Toleration(
-                                effect="NoExecute",
+                                effect="effect_example",
                                 key="key_example",
-                                operator="Equal",
+                                operator="operator_example",
                                 toleration_seconds=1,
                                 value="value_example",
                             ),
@@ -37490,7 +37931,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             annotations={
                                                 "key": "key_example",
                                             },
-                                            cluster_name="cluster_name_example",
                                             creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                             deletion_grace_period_seconds=1,
                                             deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -37538,12 +37978,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 kind="kind_example",
                                                 name="name_example",
                                             ),
-                                            data_source_ref=TypedLocalObjectReference(
+                                            data_source_ref=TypedObjectReference(
                                                 api_group="api_group_example",
                                                 kind="kind_example",
                                                 name="name_example",
+                                                namespace="namespace_example",
                                             ),
                                             resources=ResourceRequirements(
+                                                claims=[
+                                                    ResourceClaim(
+                                                        name="name_example",
+                                                    ),
+                                                ],
                                                 limits={
                                                     "key": "key_example",
                                                 },
@@ -37773,9 +38219,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 tolerations=[
                     Toleration(
-                        effect="NoExecute",
+                        effect="effect_example",
                         key="key_example",
-                        operator="Equal",
+                        operator="operator_example",
                         toleration_seconds=1,
                         value="value_example",
                     ),
@@ -37796,7 +38242,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             annotations={
                                 "key": "key_example",
                             },
-                            cluster_name="cluster_name_example",
                             creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                             deletion_grace_period_seconds=1,
                             deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -37844,12 +38289,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 kind="kind_example",
                                 name="name_example",
                             ),
-                            data_source_ref=TypedLocalObjectReference(
+                            data_source_ref=TypedObjectReference(
                                 api_group="api_group_example",
                                 kind="kind_example",
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -37892,10 +38343,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     message="message_example",
                                     reason="reason_example",
                                     status="status_example",
-                                    type="FileSystemResizePending",
+                                    type="type_example",
                                 ),
                             ],
-                            phase="Bound",
+                            phase="phase_example",
                             resize_status="resize_status_example",
                         ),
                     ),
@@ -37992,7 +38443,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     annotations={
                                         "key": "key_example",
                                     },
-                                    cluster_name="cluster_name_example",
                                     creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                     deletion_grace_period_seconds=1,
                                     deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -38040,12 +38490,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         kind="kind_example",
                                         name="name_example",
                                     ),
-                                    data_source_ref=TypedLocalObjectReference(
+                                    data_source_ref=TypedObjectReference(
                                         api_group="api_group_example",
                                         kind="kind_example",
                                         name="name_example",
+                                        namespace="namespace_example",
                                     ),
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -39398,7 +39854,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     annotations={
                                         "key": "key_example",
                                     },
-                                    cluster_name="cluster_name_example",
                                     creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                     deletion_grace_period_seconds=1,
                                     deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -39446,12 +39901,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         kind="kind_example",
                                         name="name_example",
                                     ),
-                                    data_source_ref=TypedLocalObjectReference(
+                                    data_source_ref=TypedObjectReference(
                                         api_group="api_group_example",
                                         kind="kind_example",
                                         name="name_example",
+                                        namespace="namespace_example",
                                     ),
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -39694,7 +40155,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -39703,7 +40164,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -39719,7 +40180,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -39728,7 +40189,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -40154,7 +40615,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                             image="image_example",
-                            image_pull_policy="Always",
+                            image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
                                 post_start=LifecycleHandler(
                                     _exec=ExecAction(
@@ -40172,7 +40633,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -40195,7 +40656,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -40224,7 +40685,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -40243,7 +40704,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -40267,7 +40728,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -40279,7 +40740,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -40311,7 +40783,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -40341,7 +40813,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -40356,7 +40828,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             stdin=True,
                             stdin_once=True,
                             termination_message_path="termination_message_path_example",
-                            termination_message_policy="FallbackToLogsOnError",
+                            termination_message_policy="termination_message_policy_example",
                             tty=True,
                             volume_devices=[
                                 VolumeDevice(
@@ -40447,7 +40919,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -40470,7 +40942,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -40499,7 +40971,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -40518,7 +40990,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -40542,7 +41014,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -40554,7 +41026,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -40586,7 +41069,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -40616,7 +41099,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -41612,7 +42095,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -41635,7 +42118,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -41664,7 +42147,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -41684,7 +42167,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -41708,7 +42191,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -41720,7 +42203,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -41752,7 +42246,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -41782,7 +42276,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -42755,7 +43249,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -42778,7 +43272,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -42807,7 +43301,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -42826,7 +43320,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -42850,7 +43344,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -42862,7 +43356,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -42894,7 +43399,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -42925,7 +43430,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -42974,7 +43479,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             supplemental_groups=[
                                 1,
@@ -43060,7 +43565,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -43083,7 +43588,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -43112,7 +43617,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -43132,7 +43637,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -43156,7 +43661,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -43168,7 +43673,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -43200,7 +43716,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -43230,7 +43746,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -43871,9 +44387,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         timeout="timeout_example",
                         tolerations=[
                             Toleration(
-                                effect="NoExecute",
+                                effect="effect_example",
                                 key="key_example",
-                                operator="Equal",
+                                operator="operator_example",
                                 toleration_seconds=1,
                                 value="value_example",
                             ),
@@ -43970,7 +44486,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             annotations={
                                                 "key": "key_example",
                                             },
-                                            cluster_name="cluster_name_example",
                                             creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                             deletion_grace_period_seconds=1,
                                             deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -44018,12 +44533,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 kind="kind_example",
                                                 name="name_example",
                                             ),
-                                            data_source_ref=TypedLocalObjectReference(
+                                            data_source_ref=TypedObjectReference(
                                                 api_group="api_group_example",
                                                 kind="kind_example",
                                                 name="name_example",
+                                                namespace="namespace_example",
                                             ),
                                             resources=ResourceRequirements(
+                                                claims=[
+                                                    ResourceClaim(
+                                                        name="name_example",
+                                                    ),
+                                                ],
                                                 limits={
                                                     "key": "key_example",
                                                 },
@@ -44261,7 +44782,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -44270,7 +44791,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -44286,7 +44807,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -44295,7 +44816,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="DoesNotExist",
+                                                operator="operator_example",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -45119,6 +45640,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "key": "key_example",
                             },
                         ),
+                        unhealthy_pod_eviction_policy="unhealthy_pod_eviction_policy_example",
                     ),
                     pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
                         delete_delay_duration=Duration(
@@ -45180,7 +45702,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         seccomp_profile=SeccompProfile(
                             localhost_profile="localhost_profile_example",
-                            type="Localhost",
+                            type="type_example",
                         ),
                         supplemental_groups=[
                             1,
@@ -45225,7 +45747,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -45234,7 +45756,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -45250,7 +45772,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_expressions=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -45259,7 +45781,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             match_fields=[
                                                 NodeSelectorRequirement(
                                                     key="key_example",
-                                                    operator="DoesNotExist",
+                                                    operator="operator_example",
                                                     values=[
                                                         "values_example",
                                                     ],
@@ -45685,7 +46207,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                             image="image_example",
-                            image_pull_policy="Always",
+                            image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
                                 post_start=LifecycleHandler(
                                     _exec=ExecAction(
@@ -45703,7 +46225,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -45726,7 +46248,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -45755,7 +46277,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -45774,7 +46296,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -45798,7 +46320,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -45810,7 +46332,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -45842,7 +46375,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -45872,7 +46405,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -45887,7 +46420,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             stdin=True,
                             stdin_once=True,
                             termination_message_path="termination_message_path_example",
-                            termination_message_policy="FallbackToLogsOnError",
+                            termination_message_policy="termination_message_policy_example",
                             tty=True,
                             volume_devices=[
                                 VolumeDevice(
@@ -45978,7 +46511,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -46001,7 +46534,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -46030,7 +46563,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -46049,7 +46582,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -46073,7 +46606,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -46085,7 +46618,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -46117,7 +46661,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -46147,7 +46691,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -47143,7 +47687,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -47166,7 +47710,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -47195,7 +47739,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -47215,7 +47759,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -47239,7 +47783,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -47251,7 +47795,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -47283,7 +47838,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -47313,7 +47868,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -48286,7 +48841,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -48309,7 +48864,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     tcp_socket=TCPSocketAction(
                                         host="host_example",
@@ -48338,7 +48893,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -48357,7 +48912,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     host_ip="host_ip_example",
                                     host_port=1,
                                     name="name_example",
-                                    protocol="SCTP",
+                                    protocol="protocol_example",
                                 ),
                             ],
                             readiness_probe=Probe(
@@ -48381,7 +48936,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -48393,7 +48948,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 termination_grace_period_seconds=1,
                                 timeout_seconds=1,
                             ),
+                            resize_policy=[
+                                ContainerResizePolicy(
+                                    resource_name="resource_name_example",
+                                    restart_policy="restart_policy_example",
+                                ),
+                            ],
                             resources=ResourceRequirements(
+                                claims=[
+                                    ResourceClaim(
+                                        name="name_example",
+                                    ),
+                                ],
                                 limits={
                                     "key": "key_example",
                                 },
@@ -48425,7 +48991,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 windows_options=WindowsSecurityContextOptions(
                                     gmsa_credential_spec="gmsa_credential_spec_example",
@@ -48456,7 +49022,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="HTTP",
+                                    scheme="scheme_example",
                                 ),
                                 initial_delay_seconds=1,
                                 period_seconds=1,
@@ -48505,7 +49071,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             seccomp_profile=SeccompProfile(
                                 localhost_profile="localhost_profile_example",
-                                type="Localhost",
+                                type="type_example",
                             ),
                             supplemental_groups=[
                                 1,
@@ -48591,7 +49157,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -48614,7 +49180,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -48643,7 +49209,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -48663,7 +49229,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -48687,7 +49253,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -48699,7 +49265,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -48731,7 +49308,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -48761,7 +49338,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -49402,9 +49979,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         timeout="timeout_example",
                         tolerations=[
                             Toleration(
-                                effect="NoExecute",
+                                effect="effect_example",
                                 key="key_example",
-                                operator="Equal",
+                                operator="operator_example",
                                 toleration_seconds=1,
                                 value="value_example",
                             ),
@@ -49501,7 +50078,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             annotations={
                                                 "key": "key_example",
                                             },
-                                            cluster_name="cluster_name_example",
                                             creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                             deletion_grace_period_seconds=1,
                                             deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -49549,12 +50125,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 kind="kind_example",
                                                 name="name_example",
                                             ),
-                                            data_source_ref=TypedLocalObjectReference(
+                                            data_source_ref=TypedObjectReference(
                                                 api_group="api_group_example",
                                                 kind="kind_example",
                                                 name="name_example",
+                                                namespace="namespace_example",
                                             ),
                                             resources=ResourceRequirements(
+                                                claims=[
+                                                    ResourceClaim(
+                                                        name="name_example",
+                                                    ),
+                                                ],
                                                 limits={
                                                     "key": "key_example",
                                                 },
@@ -49792,7 +50374,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 match_expressions=[
                                                     NodeSelectorRequirement(
                                                         key="key_example",
-                                                        operator="DoesNotExist",
+                                                        operator="operator_example",
                                                         values=[
                                                             "values_example",
                                                         ],
@@ -49801,7 +50383,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 match_fields=[
                                                     NodeSelectorRequirement(
                                                         key="key_example",
-                                                        operator="DoesNotExist",
+                                                        operator="operator_example",
                                                         values=[
                                                             "values_example",
                                                         ],
@@ -49817,7 +50399,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 match_expressions=[
                                                     NodeSelectorRequirement(
                                                         key="key_example",
-                                                        operator="DoesNotExist",
+                                                        operator="operator_example",
                                                         values=[
                                                             "values_example",
                                                         ],
@@ -49826,7 +50408,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 match_fields=[
                                                     NodeSelectorRequirement(
                                                         key="key_example",
-                                                        operator="DoesNotExist",
+                                                        operator="operator_example",
                                                         values=[
                                                             "values_example",
                                                         ],
@@ -50252,7 +50834,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ],
                                 image="image_example",
-                                image_pull_policy="Always",
+                                image_pull_policy="image_pull_policy_example",
                                 lifecycle=Lifecycle(
                                     post_start=LifecycleHandler(
                                         _exec=ExecAction(
@@ -50270,7 +50852,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -50293,7 +50875,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -50322,7 +50904,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -50341,7 +50923,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -50365,7 +50947,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -50377,7 +50959,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -50409,7 +51002,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -50439,7 +51032,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -50454,7 +51047,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 stdin=True,
                                 stdin_once=True,
                                 termination_message_path="termination_message_path_example",
-                                termination_message_policy="FallbackToLogsOnError",
+                                termination_message_policy="termination_message_policy_example",
                                 tty=True,
                                 volume_devices=[
                                     VolumeDevice(
@@ -50545,7 +51138,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ],
                                                     path="path_example",
                                                     port="port_example",
-                                                    scheme="HTTP",
+                                                    scheme="scheme_example",
                                                 ),
                                                 tcp_socket=TCPSocketAction(
                                                     host="host_example",
@@ -50568,7 +51161,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ],
                                                     path="path_example",
                                                     port="port_example",
-                                                    scheme="HTTP",
+                                                    scheme="scheme_example",
                                                 ),
                                                 tcp_socket=TCPSocketAction(
                                                     host="host_example",
@@ -50597,7 +51190,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             initial_delay_seconds=1,
                                             period_seconds=1,
@@ -50616,7 +51209,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 host_ip="host_ip_example",
                                                 host_port=1,
                                                 name="name_example",
-                                                protocol="SCTP",
+                                                protocol="protocol_example",
                                             ),
                                         ],
                                         readiness_probe=Probe(
@@ -50640,7 +51233,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             initial_delay_seconds=1,
                                             period_seconds=1,
@@ -50652,7 +51245,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             termination_grace_period_seconds=1,
                                             timeout_seconds=1,
                                         ),
+                                        resize_policy=[
+                                            ContainerResizePolicy(
+                                                resource_name="resource_name_example",
+                                                restart_policy="restart_policy_example",
+                                            ),
+                                        ],
                                         resources=ResourceRequirements(
+                                            claims=[
+                                                ResourceClaim(
+                                                    name="name_example",
+                                                ),
+                                            ],
                                             limits={
                                                 "key": "key_example",
                                             },
@@ -50684,7 +51288,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             seccomp_profile=SeccompProfile(
                                                 localhost_profile="localhost_profile_example",
-                                                type="Localhost",
+                                                type="type_example",
                                             ),
                                             windows_options=WindowsSecurityContextOptions(
                                                 gmsa_credential_spec="gmsa_credential_spec_example",
@@ -50714,7 +51318,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             initial_delay_seconds=1,
                                             period_seconds=1,
@@ -51710,7 +52314,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -51733,7 +52337,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -51762,7 +52366,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -51782,7 +52386,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -51806,7 +52410,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -51818,7 +52422,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -51850,7 +52465,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -51880,7 +52495,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -52853,7 +53468,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -52876,7 +53491,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         tcp_socket=TCPSocketAction(
                                             host="host_example",
@@ -52905,7 +53520,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -52924,7 +53539,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         host_ip="host_ip_example",
                                         host_port=1,
                                         name="name_example",
-                                        protocol="SCTP",
+                                        protocol="protocol_example",
                                     ),
                                 ],
                                 readiness_probe=Probe(
@@ -52948,7 +53563,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -52960,7 +53575,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     termination_grace_period_seconds=1,
                                     timeout_seconds=1,
                                 ),
+                                resize_policy=[
+                                    ContainerResizePolicy(
+                                        resource_name="resource_name_example",
+                                        restart_policy="restart_policy_example",
+                                    ),
+                                ],
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -52992,7 +53618,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     seccomp_profile=SeccompProfile(
                                         localhost_profile="localhost_profile_example",
-                                        type="Localhost",
+                                        type="type_example",
                                     ),
                                     windows_options=WindowsSecurityContextOptions(
                                         gmsa_credential_spec="gmsa_credential_spec_example",
@@ -53023,7 +53649,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ],
                                         path="path_example",
                                         port="port_example",
-                                        scheme="HTTP",
+                                        scheme="scheme_example",
                                     ),
                                     initial_delay_seconds=1,
                                     period_seconds=1,
@@ -53072,7 +53698,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 seccomp_profile=SeccompProfile(
                                     localhost_profile="localhost_profile_example",
-                                    type="Localhost",
+                                    type="type_example",
                                 ),
                                 supplemental_groups=[
                                     1,
@@ -53158,7 +53784,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -53181,7 +53807,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ],
                                                 path="path_example",
                                                 port="port_example",
-                                                scheme="HTTP",
+                                                scheme="scheme_example",
                                             ),
                                             tcp_socket=TCPSocketAction(
                                                 host="host_example",
@@ -53210,7 +53836,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -53230,7 +53856,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             host_ip="host_ip_example",
                                             host_port=1,
                                             name="name_example",
-                                            protocol="SCTP",
+                                            protocol="protocol_example",
                                         ),
                                     ],
                                     readiness_probe=Probe(
@@ -53254,7 +53880,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -53266,7 +53892,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         termination_grace_period_seconds=1,
                                         timeout_seconds=1,
                                     ),
+                                    resize_policy=[
+                                        ContainerResizePolicy(
+                                            resource_name="resource_name_example",
+                                            restart_policy="restart_policy_example",
+                                        ),
+                                    ],
                                     resources=ResourceRequirements(
+                                        claims=[
+                                            ResourceClaim(
+                                                name="name_example",
+                                            ),
+                                        ],
                                         limits={
                                             "key": "key_example",
                                         },
@@ -53298,7 +53935,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         seccomp_profile=SeccompProfile(
                                             localhost_profile="localhost_profile_example",
-                                            type="Localhost",
+                                            type="type_example",
                                         ),
                                         windows_options=WindowsSecurityContextOptions(
                                             gmsa_credential_spec="gmsa_credential_spec_example",
@@ -53328,7 +53965,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ],
                                             path="path_example",
                                             port="port_example",
-                                            scheme="HTTP",
+                                            scheme="scheme_example",
                                         ),
                                         initial_delay_seconds=1,
                                         period_seconds=1,
@@ -53969,9 +54606,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             timeout="timeout_example",
                             tolerations=[
                                 Toleration(
-                                    effect="NoExecute",
+                                    effect="effect_example",
                                     key="key_example",
-                                    operator="Equal",
+                                    operator="operator_example",
                                     toleration_seconds=1,
                                     value="value_example",
                                 ),
@@ -54068,7 +54705,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 annotations={
                                                     "key": "key_example",
                                                 },
-                                                cluster_name="cluster_name_example",
                                                 creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                                 deletion_grace_period_seconds=1,
                                                 deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -54116,12 +54752,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     kind="kind_example",
                                                     name="name_example",
                                                 ),
-                                                data_source_ref=TypedLocalObjectReference(
+                                                data_source_ref=TypedObjectReference(
                                                     api_group="api_group_example",
                                                     kind="kind_example",
                                                     name="name_example",
+                                                    namespace="namespace_example",
                                                 ),
                                                 resources=ResourceRequirements(
+                                                    claims=[
+                                                        ResourceClaim(
+                                                            name="name_example",
+                                                        ),
+                                                    ],
                                                     limits={
                                                         "key": "key_example",
                                                     },
@@ -54351,9 +54993,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     tolerations=[
                         Toleration(
-                            effect="NoExecute",
+                            effect="effect_example",
                             key="key_example",
-                            operator="Equal",
+                            operator="operator_example",
                             toleration_seconds=1,
                             value="value_example",
                         ),
@@ -54374,7 +55016,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 annotations={
                                     "key": "key_example",
                                 },
-                                cluster_name="cluster_name_example",
                                 creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                 deletion_grace_period_seconds=1,
                                 deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -54422,12 +55063,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     kind="kind_example",
                                     name="name_example",
                                 ),
-                                data_source_ref=TypedLocalObjectReference(
+                                data_source_ref=TypedObjectReference(
                                     api_group="api_group_example",
                                     kind="kind_example",
                                     name="name_example",
+                                    namespace="namespace_example",
                                 ),
                                 resources=ResourceRequirements(
+                                    claims=[
+                                        ResourceClaim(
+                                            name="name_example",
+                                        ),
+                                    ],
                                     limits={
                                         "key": "key_example",
                                     },
@@ -54470,10 +55117,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         message="message_example",
                                         reason="reason_example",
                                         status="status_example",
-                                        type="FileSystemResizePending",
+                                        type="type_example",
                                     ),
                                 ],
-                                phase="Bound",
+                                phase="phase_example",
                                 resize_status="resize_status_example",
                             ),
                         ),
@@ -54570,7 +55217,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         annotations={
                                             "key": "key_example",
                                         },
-                                        cluster_name="cluster_name_example",
                                         creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
                                         deletion_grace_period_seconds=1,
                                         deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
@@ -54618,12 +55264,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             kind="kind_example",
                                             name="name_example",
                                         ),
-                                        data_source_ref=TypedLocalObjectReference(
+                                        data_source_ref=TypedObjectReference(
                                             api_group="api_group_example",
                                             kind="kind_example",
                                             name="name_example",
+                                            namespace="namespace_example",
                                         ),
                                         resources=ResourceRequirements(
+                                            claims=[
+                                                ResourceClaim(
+                                                    name="name_example",
+                                                ),
+                                            ],
                                             limits={
                                                 "key": "key_example",
                                             },
@@ -54994,6 +55646,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
     list_options_limit = "listOptions.limit_example" # str | limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. (optional)
     list_options_continue = "listOptions.continue_example" # str | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. (optional)
+    list_options_send_initial_events = True # bool | `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional (optional)
     fields = "fields_example" # str | Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\". (optional)
 
     # example passing only required values which don't have defaults set
@@ -55006,7 +55659,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.list_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, fields=fields)
+        api_response = api_instance.list_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, list_options_send_initial_events=list_options_send_initial_events, fields=fields)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling WorkflowServiceApi->list_workflows: %s\n" % e)
@@ -55027,6 +55680,7 @@ Name | Type | Description  | Notes
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]
  **list_options_limit** | **str**| limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. | [optional]
  **list_options_continue** | **str**| The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. | [optional]
+ **list_options_send_initial_events** | **bool**| &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;io.k8s.initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise. +optional | [optional]
  **fields** | **str**| Fields to be included or excluded in the response. e.g. \&quot;items.spec,items.status.phase\&quot;, \&quot;-items.status.nodes\&quot;. | [optional]
 
 ### Return type
@@ -55932,6 +56586,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
     list_options_limit = "listOptions.limit_example" # str | limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. (optional)
     list_options_continue = "listOptions.continue_example" # str | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. (optional)
+    list_options_send_initial_events = True # bool | `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -55943,7 +56598,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.watch_events(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.watch_events(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, list_options_send_initial_events=list_options_send_initial_events)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling WorkflowServiceApi->watch_events: %s\n" % e)
@@ -55964,6 +56619,7 @@ Name | Type | Description  | Notes
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]
  **list_options_limit** | **str**| limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. | [optional]
  **list_options_continue** | **str**| The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. | [optional]
+ **list_options_send_initial_events** | **bool**| &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;io.k8s.initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise. +optional | [optional]
 
 ### Return type
 
@@ -56035,6 +56691,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
     list_options_limit = "listOptions.limit_example" # str | limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. (optional)
     list_options_continue = "listOptions.continue_example" # str | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. (optional)
+    list_options_send_initial_events = True # bool | `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional (optional)
     fields = "fields_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
@@ -56047,7 +56704,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.watch_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, fields=fields)
+        api_response = api_instance.watch_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, list_options_send_initial_events=list_options_send_initial_events, fields=fields)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling WorkflowServiceApi->watch_workflows: %s\n" % e)
@@ -56068,6 +56725,7 @@ Name | Type | Description  | Notes
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]
  **list_options_limit** | **str**| limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. | [optional]
  **list_options_continue** | **str**| The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. | [optional]
+ **list_options_send_initial_events** | **bool**| &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;io.k8s.initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise. +optional | [optional]
  **fields** | **str**|  | [optional]
 
 ### Return type

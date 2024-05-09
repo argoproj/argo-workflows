@@ -5,7 +5,7 @@ Volume represents a named volume in a pod that may be accessed by any container 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**name** | **str** | Volume&#39;s name. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names | 
+**name** | **str** | name of the volume. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names | 
 **aws_elastic_block_store** | [**AWSElasticBlockStoreVolumeSource**](AWSElasticBlockStoreVolumeSource.md) |  | [optional] 
 **azure_disk** | [**AzureDiskVolumeSource**](AzureDiskVolumeSource.md) |  | [optional] 
 **azure_file** | [**AzureFileVolumeSource**](AzureFileVolumeSource.md) |  | [optional] 

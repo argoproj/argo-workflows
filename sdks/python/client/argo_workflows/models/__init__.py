@@ -23,6 +23,7 @@ from argo_workflows.model.config_map_projection import ConfigMapProjection
 from argo_workflows.model.config_map_volume_source import ConfigMapVolumeSource
 from argo_workflows.model.container import Container
 from argo_workflows.model.container_port import ContainerPort
+from argo_workflows.model.container_resize_policy import ContainerResizePolicy
 from argo_workflows.model.create_options import CreateOptions
 from argo_workflows.model.downward_api_projection import DownwardAPIProjection
 from argo_workflows.model.downward_api_volume_file import DownwardAPIVolumeFile
@@ -367,6 +368,7 @@ from argo_workflows.model.probe import Probe
 from argo_workflows.model.projected_volume_source import ProjectedVolumeSource
 from argo_workflows.model.quobyte_volume_source import QuobyteVolumeSource
 from argo_workflows.model.rbd_volume_source import RBDVolumeSource
+from argo_workflows.model.resource_claim import ResourceClaim
 from argo_workflows.model.resource_field_selector import ResourceFieldSelector
 from argo_workflows.model.resource_requirements import ResourceRequirements
 from argo_workflows.model.se_linux_options import SELinuxOptions
@@ -396,6 +398,7 @@ from argo_workflows.model.sysctl import Sysctl
 from argo_workflows.model.tcp_socket_action import TCPSocketAction
 from argo_workflows.model.toleration import Toleration
 from argo_workflows.model.typed_local_object_reference import TypedLocalObjectReference
+from argo_workflows.model.typed_object_reference import TypedObjectReference
 from argo_workflows.model.volume import Volume
 from argo_workflows.model.volume_device import VolumeDevice
 from argo_workflows.model.volume_mount import VolumeMount

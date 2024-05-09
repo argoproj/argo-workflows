@@ -25,7 +25,8 @@ func TestExponentialBackoff2(t *testing.T) {
 		err := Backoff(wait.Backoff{Steps: 1}, func() (bool, error) {
 			return false, nil
 		})
-		assert.Equal(t, err, wait.ErrWaitTimeout)
+		assert.Equal(t, err, wait.ErrorInterrupted(err))
+
 	})
 	t.Run("TimeoutError", func(t *testing.T) {
 		err := Backoff(wait.Backoff{Steps: 1}, func() (bool, error) {

@@ -59,11 +59,6 @@ class PersistentVolumeClaimStatus(ModelNormal):
     """
 
     allowed_values = {
-        ('phase',): {
-            'BOUND': "Bound",
-            'LOST': "Lost",
-            'PENDING': "Pending",
-        },
     }
 
     validations = {
@@ -155,12 +150,12 @@ class PersistentVolumeClaimStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            access_modes ([str]): AccessModes contains the actual access modes the volume backing the PVC has. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
-            allocated_resources ({str: (str,)}): The storage resource within AllocatedResources tracks the capacity allocated to a PVC. It may be larger than the actual capacity when a volume expansion operation is requested. For storage quota, the larger value from allocatedResources and PVC.spec.resources is used. If allocatedResources is not set, PVC.spec.resources alone is used for quota calculation. If a volume expansion capacity request is lowered, allocatedResources is only lowered if there are no expansion operations in progress and if the actual volume capacity is equal or lower than the requested capacity. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.. [optional]  # noqa: E501
-            capacity ({str: (str,)}): Represents the actual resources of the underlying volume.. [optional]  # noqa: E501
-            conditions ([PersistentVolumeClaimCondition]): Current Condition of persistent volume claim. If underlying persistent volume is being resized then the Condition will be set to 'ResizeStarted'.. [optional]  # noqa: E501
-            phase (str): Phase represents the current phase of PersistentVolumeClaim.  Possible enum values:  - `\"Bound\"` used for PersistentVolumeClaims that are bound  - `\"Lost\"` used for PersistentVolumeClaims that lost their underlying PersistentVolume. The claim was bound to a PersistentVolume and this volume does not exist any longer and all data on it was lost.  - `\"Pending\"` used for PersistentVolumeClaims that are not yet bound. [optional]  # noqa: E501
-            resize_status (str): ResizeStatus stores status of resize operation. ResizeStatus is not set by default but when expansion is complete resizeStatus is set to empty string by resize controller or kubelet. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.. [optional]  # noqa: E501
+            access_modes ([str]): accessModes contains the actual access modes the volume backing the PVC has. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
+            allocated_resources ({str: (str,)}): allocatedResources is the storage resource within AllocatedResources tracks the capacity allocated to a PVC. It may be larger than the actual capacity when a volume expansion operation is requested. For storage quota, the larger value from allocatedResources and PVC.spec.resources is used. If allocatedResources is not set, PVC.spec.resources alone is used for quota calculation. If a volume expansion capacity request is lowered, allocatedResources is only lowered if there are no expansion operations in progress and if the actual volume capacity is equal or lower than the requested capacity. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.. [optional]  # noqa: E501
+            capacity ({str: (str,)}): capacity represents the actual resources of the underlying volume.. [optional]  # noqa: E501
+            conditions ([PersistentVolumeClaimCondition]): conditions is the current Condition of persistent volume claim. If underlying persistent volume is being resized then the Condition will be set to 'ResizeStarted'.. [optional]  # noqa: E501
+            phase (str): phase represents the current phase of PersistentVolumeClaim.. [optional]  # noqa: E501
+            resize_status (str): resizeStatus stores status of resize operation. ResizeStatus is not set by default but when expansion is complete resizeStatus is set to empty string by resize controller or kubelet. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -242,12 +237,12 @@ class PersistentVolumeClaimStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            access_modes ([str]): AccessModes contains the actual access modes the volume backing the PVC has. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
-            allocated_resources ({str: (str,)}): The storage resource within AllocatedResources tracks the capacity allocated to a PVC. It may be larger than the actual capacity when a volume expansion operation is requested. For storage quota, the larger value from allocatedResources and PVC.spec.resources is used. If allocatedResources is not set, PVC.spec.resources alone is used for quota calculation. If a volume expansion capacity request is lowered, allocatedResources is only lowered if there are no expansion operations in progress and if the actual volume capacity is equal or lower than the requested capacity. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.. [optional]  # noqa: E501
-            capacity ({str: (str,)}): Represents the actual resources of the underlying volume.. [optional]  # noqa: E501
-            conditions ([PersistentVolumeClaimCondition]): Current Condition of persistent volume claim. If underlying persistent volume is being resized then the Condition will be set to 'ResizeStarted'.. [optional]  # noqa: E501
-            phase (str): Phase represents the current phase of PersistentVolumeClaim.  Possible enum values:  - `\"Bound\"` used for PersistentVolumeClaims that are bound  - `\"Lost\"` used for PersistentVolumeClaims that lost their underlying PersistentVolume. The claim was bound to a PersistentVolume and this volume does not exist any longer and all data on it was lost.  - `\"Pending\"` used for PersistentVolumeClaims that are not yet bound. [optional]  # noqa: E501
-            resize_status (str): ResizeStatus stores status of resize operation. ResizeStatus is not set by default but when expansion is complete resizeStatus is set to empty string by resize controller or kubelet. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.. [optional]  # noqa: E501
+            access_modes ([str]): accessModes contains the actual access modes the volume backing the PVC has. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
+            allocated_resources ({str: (str,)}): allocatedResources is the storage resource within AllocatedResources tracks the capacity allocated to a PVC. It may be larger than the actual capacity when a volume expansion operation is requested. For storage quota, the larger value from allocatedResources and PVC.spec.resources is used. If allocatedResources is not set, PVC.spec.resources alone is used for quota calculation. If a volume expansion capacity request is lowered, allocatedResources is only lowered if there are no expansion operations in progress and if the actual volume capacity is equal or lower than the requested capacity. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.. [optional]  # noqa: E501
+            capacity ({str: (str,)}): capacity represents the actual resources of the underlying volume.. [optional]  # noqa: E501
+            conditions ([PersistentVolumeClaimCondition]): conditions is the current Condition of persistent volume claim. If underlying persistent volume is being resized then the Condition will be set to 'ResizeStarted'.. [optional]  # noqa: E501
+            phase (str): phase represents the current phase of PersistentVolumeClaim.. [optional]  # noqa: E501
+            resize_status (str): resizeStatus stores status of resize operation. ResizeStatus is not set by default but when expansion is complete resizeStatus is set to empty string by resize controller or kubelet. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

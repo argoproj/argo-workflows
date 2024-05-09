@@ -55,11 +55,6 @@ class SeccompProfile(ModelNormal):
     """
 
     allowed_values = {
-        ('type',): {
-            'LOCALHOST': "Localhost",
-            'RUNTIMEDEFAULT': "RuntimeDefault",
-            'UNCONFINED': "Unconfined",
-        },
     }
 
     validations = {
@@ -111,7 +106,7 @@ class SeccompProfile(ModelNormal):
         """SeccompProfile - a model defined in OpenAPI
 
         Args:
-            type (str): type indicates which kind of seccomp profile will be applied. Valid options are:  Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.  Possible enum values:  - `\"Localhost\"` indicates a profile defined in a file on the node should be used. The file's location relative to <kubelet-root-dir>/seccomp.  - `\"RuntimeDefault\"` represents the default container runtime seccomp profile.  - `\"Unconfined\"` indicates no seccomp profile is applied (A.K.A. unconfined).
+            type (str): type indicates which kind of seccomp profile will be applied. Valid options are:  Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -197,7 +192,7 @@ class SeccompProfile(ModelNormal):
         """SeccompProfile - a model defined in OpenAPI
 
         Args:
-            type (str): type indicates which kind of seccomp profile will be applied. Valid options are:  Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.  Possible enum values:  - `\"Localhost\"` indicates a profile defined in a file on the node should be used. The file's location relative to <kubelet-root-dir>/seccomp.  - `\"RuntimeDefault\"` represents the default container runtime seccomp profile.  - `\"Unconfined\"` indicates no seccomp profile is applied (A.K.A. unconfined).
+            type (str): type indicates which kind of seccomp profile will be applied. Valid options are:  Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

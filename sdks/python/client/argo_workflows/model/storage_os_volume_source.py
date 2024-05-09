@@ -148,11 +148,11 @@ class StorageOSVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_type (str): Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
-            read_only (bool): Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
+            fs_type (str): fsType is the filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
+            read_only (bool): readOnly defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
             secret_ref (LocalObjectReference): [optional]  # noqa: E501
-            volume_name (str): VolumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.. [optional]  # noqa: E501
-            volume_namespace (str): VolumeNamespace specifies the scope of the volume within StorageOS.  If no namespace is specified then the Pod's namespace will be used.  This allows the Kubernetes name scoping to be mirrored within StorageOS for tighter integration. Set VolumeName to any name to override the default behaviour. Set to \"default\" if you are not using namespaces within StorageOS. Namespaces that do not pre-exist within StorageOS will be created.. [optional]  # noqa: E501
+            volume_name (str): volumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.. [optional]  # noqa: E501
+            volume_namespace (str): volumeNamespace specifies the scope of the volume within StorageOS.  If no namespace is specified then the Pod's namespace will be used.  This allows the Kubernetes name scoping to be mirrored within StorageOS for tighter integration. Set VolumeName to any name to override the default behaviour. Set to \"default\" if you are not using namespaces within StorageOS. Namespaces that do not pre-exist within StorageOS will be created.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -234,11 +234,11 @@ class StorageOSVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_type (str): Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
-            read_only (bool): Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
+            fs_type (str): fsType is the filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
+            read_only (bool): readOnly defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
             secret_ref (LocalObjectReference): [optional]  # noqa: E501
-            volume_name (str): VolumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.. [optional]  # noqa: E501
-            volume_namespace (str): VolumeNamespace specifies the scope of the volume within StorageOS.  If no namespace is specified then the Pod's namespace will be used.  This allows the Kubernetes name scoping to be mirrored within StorageOS for tighter integration. Set VolumeName to any name to override the default behaviour. Set to \"default\" if you are not using namespaces within StorageOS. Namespaces that do not pre-exist within StorageOS will be created.. [optional]  # noqa: E501
+            volume_name (str): volumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.. [optional]  # noqa: E501
+            volume_namespace (str): volumeNamespace specifies the scope of the volume within StorageOS.  If no namespace is specified then the Pod's namespace will be used.  This allows the Kubernetes name scoping to be mirrored within StorageOS for tighter integration. Set VolumeName to any name to override the default behaviour. Set to \"default\" if you are not using namespaces within StorageOS. Namespaces that do not pre-exist within StorageOS will be created.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
