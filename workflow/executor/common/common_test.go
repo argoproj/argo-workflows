@@ -36,7 +36,7 @@ func (*MockKC) CreateArchive(ctx context.Context, containerName, sourcePath stri
 	return nil, nil
 }
 
-// TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
+// TestTerminatePodWithContainerName ensure we can a script pod with input artifacts
 func TestTerminatePodWithContainerName(t *testing.T) {
 	// Already terminated.
 	mock := &MockKC{

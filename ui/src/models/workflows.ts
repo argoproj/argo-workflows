@@ -545,7 +545,9 @@ export function isWorkflowInCluster(wf: Workflow): boolean {
     if (!wf) {
         return false;
     }
-    return !wf.metadata.labels[archivalStatus] || wf.metadata.labels[archivalStatus] === 'Pending' || wf.metadata.labels[archivalStatus] === 'Archived';
+
+    const labelValue = wf.metadata?.labels?.[archivalStatus];
+    return !labelValue || labelValue === 'Pending' || labelValue === 'Archived';
 }
 
 export function isArchivedWorkflow(wf?: Workflow): boolean {

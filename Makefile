@@ -25,6 +25,7 @@ SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 # docker image publishing options
 IMAGE_NAMESPACE       ?= quay.io/argoproj
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
+TARGET_PLATFORM := $(shell [ `uname -m` = arm64 ] && echo linux/arm64 || echo linux/amd64)
 
 # declares which cluster to import to in case it's not the default name
 K3D_CLUSTER_NAME      ?= k3s-default
@@ -99,7 +100,7 @@ ALWAYS_OFFLOAD_NODE_STATUS := false
 POD_STATUS_CAPTURE_FINALIZER ?= true
 
 $(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
-$(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH))
+$(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
 $(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
 
 override LDFLAGS += \
@@ -184,6 +185,7 @@ endif
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/argo-linux-riscv64: GOARGS = GOOS=linux GOARCH=riscv64
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
 dist/argo-darwin-arm64: GOARGS = GOOS=darwin GOARCH=arm64
@@ -212,7 +214,7 @@ endif
 argocli-image:
 
 .PHONY: clis
-clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-darwin-arm64.gz dist/argo-windows-amd64.gz
+clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-riscv64.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-darwin-arm64.gz dist/argo-windows-amd64.gz
 
 # controller
 
@@ -243,6 +245,7 @@ argoexec-image:
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
 	docker buildx build \
+		--platform $(TARGET_PLATFORM) \
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg GIT_TAG=$(GIT_TAG) \
 		--build-arg GIT_TREE_STATE=$(GIT_TREE_STATE) \
