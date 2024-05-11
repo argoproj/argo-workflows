@@ -61,7 +61,7 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 * [Kedro](https://kedro.readthedocs.io/en/stable/)
 * [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
 * [Netflix Metaflow](https://metaflow.org)
-* [Onepanel](https://www.onepanel.ai/)
+* [Onepanel](https://github.com/onepanelio/onepanel)
 * [Orchest](https://github.com/orchest/orchest/)
 * [Piper](https://github.com/rookout/piper)
 * [Ploomber](https://github.com/ploomber/ploomber)
