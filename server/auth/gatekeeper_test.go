@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/go-jose/go-jose/v3/jwt"
@@ -26,8 +25,7 @@ import (
 
 func TestServer_GetWFClient(t *testing.T) {
 	// prevent using local KUBECONFIG - which will fail on CI
-	_ = os.Setenv("KUBECONFIG", "/dev/null")
-	defer func() { _ = os.Unsetenv("KUBECONFIG") }()
+	t.Setenv("KUBECONFIG", "/dev/null")
 	wfClient := fakewfclientset.NewSimpleClientset()
 	kubeClient := kubefake.NewSimpleClientset(
 		&corev1.ServiceAccount{
@@ -189,7 +187,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=2, Delegated", func(t *testing.T) {
-		os.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
@@ -208,7 +206,6 @@ func TestServer_GetWFClient(t *testing.T) {
 				assert.Equal(t, "user1-sa", hook.LastEntry().Data["serviceAccount"])
 			}
 		}
-		os.Unsetenv("SSO_DELEGATE_RBAC_TO_NAMESPACE")
 	})
 	t.Run("SSO+RBAC, Namespace delegation OFF, precedence=2, Not Delegated", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
@@ -231,7 +228,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=0, Not delegated", func(t *testing.T) {
-		os.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
@@ -250,10 +247,9 @@ func TestServer_GetWFClient(t *testing.T) {
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
 		}
-		os.Unsetenv("SSO_DELEGATE_RBAC_TO_NAMESPACE")
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=1, Not delegated", func(t *testing.T) {
-		os.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
@@ -272,7 +268,6 @@ func TestServer_GetWFClient(t *testing.T) {
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
 		}
-		os.Unsetenv("SSO_DELEGATE_RBAC_TO_NAMESPACE")
 	})
 	t.Run("SSO+RBAC,precedence=0", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}

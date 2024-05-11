@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -728,13 +727,12 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	transientEnvVarKey := "TRANSIENT_ERROR_PATTERN"
 	transientErrMsg := "This error is transient"
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError, transientErrMsg)
-	_ = os.Setenv(transientEnvVarKey, transientErrMsg)
+	t.Setenv(transientEnvVarKey, transientErrMsg)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
-	_ = os.Unsetenv(transientEnvVarKey)
 
 	// Add a third node that has errored.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
@@ -3366,7 +3364,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 		{"v2", "output-value-placeholders-wf-tell-pod-name-3033990984"},
 	}
 	for _, tt := range tests {
-		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+		t.Setenv("POD_NAMES", tt.podNameVersion)
 		ctx := context.Background()
 		wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
 		woc := newWoc(*wf)
@@ -9374,10 +9372,6 @@ spec:
 }
 
 func TestSetWFPodNamesAnnotation(t *testing.T) {
-	defer func() {
-		_ = os.Unsetenv("POD_NAMES")
-	}()
-
 	tests := []struct {
 		podNameVersion string
 	}{
@@ -9386,7 +9380,7 @@ func TestSetWFPodNamesAnnotation(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+		t.Setenv("POD_NAMES", tt.podNameVersion)
 
 		wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
 		cancel, controller := newController(wf)
@@ -10383,7 +10377,7 @@ func TestMaxDepthEnvVariable(t *testing.T) {
 	controller.maxStackDepth = 2
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	_ = os.Setenv("DISABLE_MAX_RECURSION", "true")
+	t.Setenv("DISABLE_MAX_RECURSION", "true")
 
 	woc.operate(ctx)
 
@@ -10400,8 +10394,6 @@ func TestMaxDepthEnvVariable(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-
-	_ = os.Unsetenv("DISABLE_MAX_RECURSION")
 }
 
 func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
@@ -10661,7 +10653,7 @@ spec:
     script:
       image: python:alpine3.6
       command: [python]
-      env:  
+      env:
       - name: message
         value: "{{inputs.parameters.message}}"
       source: |

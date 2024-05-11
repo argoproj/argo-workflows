@@ -2,7 +2,6 @@ package workflowarchive
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -241,13 +240,12 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.Len(t, resp.Items, 2)
 
 		assert.False(t, matchLabelKeyPattern("my-key"))
-		_ = os.Setenv(disableValueListRetrievalKeyPattern, "my-key")
+		t.Setenv(disableValueListRetrievalKeyPattern, "my-key")
 		assert.True(t, matchLabelKeyPattern("my-key"))
 		assert.False(t, matchLabelKeyPattern("wrong key"))
 		resp, err = w.ListArchivedWorkflowLabelValues(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest{ListOptions: &metav1.ListOptions{LabelSelector: "my-key"}})
 		assert.NoError(t, err)
 		assert.Len(t, resp.Items, 0)
-		_ = os.Unsetenv(disableValueListRetrievalKeyPattern)
 	})
 	t.Run("RetryArchivedWorkflow", func(t *testing.T) {
 		_, err := w.RetryArchivedWorkflow(ctx, &workflowarchivepkg.RetryArchivedWorkflowRequest{Uid: "failed-uid"})
