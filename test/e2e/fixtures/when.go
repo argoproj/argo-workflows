@@ -238,7 +238,7 @@ type WorkflowCompletionOkay bool
 
 // Wait for a workflow to meet a condition:
 // Options:
-// * `time.Duration` - change the timeout - 30s by default
+// * `time.Duration` - change the timeout - 60s by default
 // * `string` - either:
 //   - the workflow's name (not spaces)
 //   - or a new message (if it contain spaces) - default "to finish"
