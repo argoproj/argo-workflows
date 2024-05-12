@@ -58,3 +58,14 @@ export function getTemplateNameFromNode(node: NodeStatus): string {
     // fall back to v1 pod names if no templateName or templateRef defined
     return node.templateName || node.templateRef?.template || '';
 }
+
+// Calculates the node id from a node name.
+// note: this is intended to be equivalent to the server-side Go code in pkg/apis/workflow/v1alpha1/workflow_types.go
+export function getNodeIdFromNodeName(workflow: Workflow, nodeName: string): string {
+    if (workflow.metadata.name === nodeName) {
+        return workflow.metadata.name;
+    }
+
+    const hash = createFNVHash(nodeName);
+    return `${workflow.metadata.name}-${hash}`;
+}

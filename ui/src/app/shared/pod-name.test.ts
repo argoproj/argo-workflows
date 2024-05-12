@@ -1,7 +1,17 @@
 import {NodeStatus, Workflow} from '../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from './annotations';
 
-import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
+import {
+    createFNVHash,
+    ensurePodNamePrefixLength,
+    getPodName,
+    getTemplateNameFromNode,
+    k8sNamingHashLength,
+    maxK8sResourceNameLength,
+    POD_NAME_V1,
+    POD_NAME_V2,
+    getNodeIdFromNodeName
+} from './pod-name';
 
 describe('pod names', () => {
     test('createFNVHash', () => {
@@ -75,5 +85,15 @@ describe('pod names', () => {
         // case: template name defined
         node.templateName = 'test-template';
         expect(getTemplateNameFromNode(node)).toEqual(node.templateName);
+    });
+
+    test('getNodeIdFromNodeName', () => {
+        const wf = {
+            metadata: {
+                name: 'outputs-result-5cffb'
+            }
+        } as unknown as Workflow;
+        expect(getNodeIdFromNodeName(wf, 'outputs-result-5cffb.a.main')).toEqual('outputs-result-5cffb-534491738');
+        expect(getNodeIdFromNodeName(wf, 'outputs-result-5cffb.b')).toEqual('outputs-result-5cffb-3597813194');
     });
 });
