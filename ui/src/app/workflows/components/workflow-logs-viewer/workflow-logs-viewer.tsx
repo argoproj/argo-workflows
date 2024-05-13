@@ -243,8 +243,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                 </Button>
                 <span className='fa-pull-right'>
                     <div className='log-menu'>
-                        <i className='fa fa-filter' />{' '}
-                        <input type='search' defaultValue={grep} onChange={v => setDebouncedGrep(v.target.value)} placeholder='Filter (regexp)...' />
+                        <i className='fa fa-filter' /> <input type='search' defaultValue={grep} onChange={v => setDebouncedGrep(v.target.value)} placeholder='Filter (regexp)...' />
                         <i className='fa fa-globe' />{' '}
                         <Autocomplete
                             items={filteredTimezones}
