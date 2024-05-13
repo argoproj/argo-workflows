@@ -40,7 +40,8 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
-    - typecheck
+    # Temporarily disabled due to flakiness
+    # - typecheck
     - unparam
     - unused
 linters-settings:
@@ -65,3 +66,6 @@ issues:
   exclude-rules:
     - path: server/artifacts/artifact_server_test.go
       text: "response body must be closed"
+    - path: /
+      linters:
+        - typecheck

@@ -413,7 +413,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	$(GOPATH)/bin/golangci-lint run --fix --verbose
+	$(GOPATH)/bin/golangci-lint run --fix --verbose -c .golangci.yml
 	# Lint the UI
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 
