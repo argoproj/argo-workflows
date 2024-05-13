@@ -89,7 +89,9 @@ export const Utils = {
         }
     },
 
-    onNamespaceChange() {
+    // TODO: some of these utils should probably be moved to context
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- just a temp type, this gets set in app-router
+    onNamespaceChange(x: string) {
         // noop
     },
 
