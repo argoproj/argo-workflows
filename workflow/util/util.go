@@ -762,20 +762,6 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	return descendantNodeIDs
 }
 
-func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {
-	for _, child := range node.Children {
-		childStatus, err := wf.Status.Nodes.Get(child)
-		if err != nil {
-			log.Panicf("Coudn't obtain child for %s, panicking", child)
-		}
-		_, present := nodeIDsToReset[child]
-		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(wf, *childStatus, nodeIDsToReset) {
-			return true
-		}
-	}
-	return false
-}
-
 func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
 	templateName := GetTemplateFromNode(node)
 	version := GetWorkflowPodNameVersion(wf)
