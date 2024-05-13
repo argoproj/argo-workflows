@@ -22,6 +22,8 @@ spec:
               value: admin
             - name: MINIO_SECRET_KEY
               value: password
+            - name: MINIO_DOMAIN
+              value: minio
           ports:
             - containerPort: 9000
               name: api
