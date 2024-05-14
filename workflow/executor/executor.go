@@ -802,6 +802,9 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
+			if err != nil {
+				return err
+			}
 		}
 		err = we.RemoveFinalizer(ctx, common.FinalizerTaskResultStatus)
 		return err
@@ -824,6 +827,9 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
+			if err != nil {
+				return err
+			}
 		}
 		err = we.AddFinalizer(ctx, common.FinalizerTaskResultStatus)
 		return err
