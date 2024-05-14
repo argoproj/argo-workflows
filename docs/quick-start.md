@@ -14,20 +14,27 @@ For quick testing, you can use a local cluster with:
 * [k3s](https://k3s.io/) or [k3d](https://k3d.io/)
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
+## Install Argo Workflows
+
+To install Argo Workflows for development or evaluation, use the
+`quick-start-minimal.yaml` manifest provided with each release.
+
 !!! Warning "Development vs. Production"
     These instructions are intended to help you get started quickly. They are not suitable for production.
     For production installs, please refer to [the installation documentation](installation.md).
 
-## Install Argo Workflows
+First, specify the version you'd like to install in an environment variable. Modify the
+command below:
 
-To install Argo Workflows, go to the [releases page](https://github.com/argoproj/argo-workflows/releases/latest).
-Scroll down to the `Controller and Server` section and execute the `kubectl` commands.
+```bash
+ARGO_WORKFLOWS_VERSION="vX.Y.Z"
+```
 
-Below is an example of the install commands (substitute `<<ARGO_WORKFLOWS_VERSION>>` with the version number):
+Next, copy the command below to apply the quick-start manifest:
 
 ```bash
 kubectl create namespace argo
-kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v<<ARGO_WORKFLOWS_VERSION>>/quick-start-minimal.yaml
+kubectl apply -n argo -f "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/quick-start-minimal.yaml"
 ```
 
 ## Install the Argo Workflows CLI
