@@ -753,7 +753,7 @@ pre-commit: codegen lint docs
 # release
 
 release-notes: /dev/null
-	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
+	version=$(VERSION) envsubst '$$version' < hack/release-notes.md > release-notes
 
 .PHONY: checksums
 checksums:
