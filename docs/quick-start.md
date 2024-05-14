@@ -14,10 +14,6 @@ For quick testing, you can use a local cluster with:
 * [k3s](https://k3s.io/) or [k3d](https://k3d.io/)
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-
-To install Argo Workflows for development or evaluation, use the
-`quick-start-minimal.yaml` manifest provided with each release.
-
 !!! Warning "Development vs. Production"
     These instructions are intended to help you get started quickly. They are not suitable for production.
     For production installs, please refer to [the installation documentation](installation.md).
