@@ -35,7 +35,7 @@ import (
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argoprojv1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	argoutil "github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
@@ -921,7 +921,7 @@ func (we *WorkflowExecutor) RemoveFinalizer(ctx context.Context, finalizer strin
 			return err
 		}
 		updatedPod := currentPod.DeepCopy()
-		updatedPod.Finalizers = argoutil.RemoveFinalizer(updatedPod.Finalizers, finalizer)
+		updatedPod.Finalizers = util.RemoveFinalizer(updatedPod.Finalizers, finalizer)
 		_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Update(ctx, updatedPod, metav1.UpdateOptions{})
 		return err
 	})
