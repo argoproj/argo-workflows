@@ -1004,11 +1004,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			if err != nil {
 				return nil, false, err
 			}
-			firstChildNode, err := woc.wf.Status.Nodes.Get(childNodeIds[0])
-			if err != nil {
-				return nil, false, err
-			}
-			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
+			maxDurationDeadline = lastChildNode.FinishedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
 				woc.log.Infoln("Max duration limit exceeded. Failing...")
 				return woc.markNodePhase(node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
@@ -1049,9 +1045,6 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
 		}
-
-		woc.log.WithField("node", node.Name).Infof("node has maxDuration set, setting executionDeadline to: %s", humanize.Timestamp(maxDurationDeadline))
-		opts.executionDeadline = maxDurationDeadline
 
 		node = woc.markNodePhase(node.Name, node.Phase, "")
 	}
