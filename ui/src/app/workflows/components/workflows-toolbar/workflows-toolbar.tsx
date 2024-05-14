@@ -1,4 +1,4 @@
-import type {NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
 import * as React from 'react';
 import {useContext, useMemo} from 'react';
 

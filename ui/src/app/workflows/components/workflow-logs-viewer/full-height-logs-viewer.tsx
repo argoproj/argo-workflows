@@ -28,7 +28,7 @@ export function FullHeightLogsViewer(props: LogsViewerProps) {
 const LazyLogsViewer = React.lazy(async () => {
     // prefetch b/c logs are commonly used
     const module = await import(/* webpackPrefetch: true, webpackChunkName: "argo-ui-logs-viewer" */ 'argo-ui/src/components/logs-viewer/logs-viewer');
-    return { default: module.LogsViewer }; // React.lazy requires a default import, so we create an intermediate module
+    return {default: module.LogsViewer}; // React.lazy requires a default import, so we create an intermediate module
 });
 
 function SuspenseLogsViewer(props: LogsViewerProps) {
