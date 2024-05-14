@@ -35,7 +35,7 @@ import (
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argoprojv1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
+	argoutil "github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
@@ -803,6 +803,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
 		}
+		err = we.RemoveFinalizer(ctx, common.FinalizerTaskResultStatus)
 		return err
 	})
 	if err != nil {
@@ -824,6 +825,7 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
 		}
+		err = we.AddFinalizer(ctx, common.FinalizerTaskResultStatus)
 		return err
 	})
 	if err != nil {
@@ -895,6 +897,38 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
 	return err
 
+}
+
+// AddFinalizer adds a Finalizer to the workflow pod
+func (we *WorkflowExecutor) AddFinalizer(ctx context.Context, finalizer string) error {
+	data, err := json.Marshal(map[string]interface{}{"metadata": metav1.ObjectMeta{
+		Finalizers: []string {
+			finalizer,
+		},
+	}})
+	if err != nil {
+		return err
+	}
+	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
+	return err
+}
+
+// RemoveFinalizer remove a Finalizer from the workflow pod
+func (we *WorkflowExecutor) RemoveFinalizer(ctx context.Context, finalizer string) error {
+	err := retryutil.RetryOnConflict(retry.DefaultRetry, func() error {
+		currentPod, err := we.ClientSet.CoreV1().Pods(we.Namespace).Get(ctx, we.PodName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		updatedPod := currentPod.DeepCopy()
+		updatedPod.Finalizers = argoutil.RemoveFinalizer(updatedPod.Finalizers, finalizer)
+		_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Update(ctx, updatedPod, metav1.UpdateOptions{})
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // isTarball returns whether or not the file is a tarball
