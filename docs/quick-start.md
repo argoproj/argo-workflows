@@ -31,7 +31,7 @@ command below:
 ARGO_WORKFLOWS_VERSION="vX.Y.Z"
 ```
 
-Next, copy the command below to apply the quick-start manifest:
+Then, copy the commands below to apply the quick-start manifest:
 
 ```bash
 kubectl create namespace argo
