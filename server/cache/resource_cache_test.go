@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,8 +23,7 @@ func checkServiceAccountExists(saList []*v1.ServiceAccount, name string) bool {
 }
 
 func TestServer_K8sUtilsCache(t *testing.T) {
-	_ = os.Setenv("KUBECONFIG", "/dev/null")
-	defer func() { _ = os.Unsetenv("KUBECONFIG") }()
+	t.Setenv("KUBECONFIG", "/dev/null")
 	saLabels := make(map[string]string)
 	saLabels["hello"] = "world"
 
