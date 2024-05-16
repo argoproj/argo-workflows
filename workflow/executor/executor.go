@@ -908,7 +908,7 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 // AddFinalizer adds a Finalizer to the workflow pod
 func (we *WorkflowExecutor) AddFinalizer(ctx context.Context, finalizer string) error {
 	data, err := json.Marshal(map[string]interface{}{"metadata": metav1.ObjectMeta{
-		Finalizers: []string {
+		Finalizers: []string{
 			finalizer,
 		},
 	}})
