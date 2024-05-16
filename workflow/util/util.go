@@ -971,7 +971,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
-				if isDescendantNodeSucceeded(wf, node, nodeIDsToReset) {
+				if node.Type != wfv1.NodeTypeRetry && isDescendantNodeSucceeded(wf, node, nodeIDsToReset) {
 					log.Debugf("Node %s remains as is since it has succeed child nodes.", node.Name)
 					newWF.Status.Nodes.Set(node.ID, node)
 					continue
