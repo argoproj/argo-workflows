@@ -20,7 +20,7 @@ For quick testing, you can use a local cluster with:
 
 ## Install Argo Workflows
 
-First, specify the version you'd like to install in an environment variable.
+First, specify the version you want to install in an environment variable.
 Modify the command below:
 
 ```bash
