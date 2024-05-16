@@ -50,6 +50,7 @@ func ExecPodContainerAndGetOutput(ctx context.Context, restConfig *rest.Config, 
 	if err != nil {
 		return err
 	}
+	// workaround for when exec does not properly return: https://github.com/kubernetes/kubernetes/pull/103177
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	stdout, stderr, err := common.GetExecutorOutput(ctx, x)
