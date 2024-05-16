@@ -921,20 +921,9 @@ func (we *WorkflowExecutor) AddFinalizer(ctx context.Context, finalizer string) 
 
 // RemoveFinalizer remove a Finalizer from the workflow pod
 func (we *WorkflowExecutor) RemoveFinalizer(ctx context.Context, finalizer string) error {
-	err := retryutil.RetryOnConflict(retry.DefaultRetry, func() error {
-		currentPod, err := we.ClientSet.CoreV1().Pods(we.Namespace).Get(ctx, we.PodName, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		updatedPod := currentPod.DeepCopy()
-		updatedPod.Finalizers = util.RemoveFinalizer(updatedPod.Finalizers, finalizer)
-		_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Update(ctx, updatedPod, metav1.UpdateOptions{})
-		return err
-	})
-	if err != nil {
-		return err
-	}
-	return nil
+	data := fmt.Sprintf(`[ { "op": "remove", "path": "/metadata/finalizers", "value": [%s] } ]`, finalizer)
+	_, err := we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, []byte(data), metav1.PatchOptions{})
+	return err
 }
 
 // isTarball returns whether or not the file is a tarball
