@@ -7573,6 +7573,107 @@ func TestRetryOnDiffHost(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
+var nodeAntiAffinityWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-fail
+spec:
+  entrypoint: retry-fail
+  templates:
+  - name: retry-fail
+    retryStrategy:
+      limit: 2
+      retryPolicy: "Always"
+      affinity:
+        nodeAntiAffinity: {}
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        exit(1)
+`
+
+func TestRetryOnNodeAntiAffinity(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityWorkflow)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+
+	// First retry
+	pod := pods.Items[0]
+	pod.Spec.NodeName = "node0"
+	_, err = controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace()).Update(ctx, &pod, metav1.UpdateOptions{})
+	assert.NoError(t, err)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("retry-fail(0)")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Equal(t, "node0", node.HostNodeName)
+	}
+
+	pods, err = listPods(woc)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+
+	var podRetry1 apiv1.Pod
+	for _, p := range pods.Items {
+		if p.Name != pod.GetName() {
+			podRetry1 = p
+		}
+	}
+
+	hostSelector := "kubernetes.io/hostname"
+	targetNodeSelectorRequirement := podRetry1.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   []string{node.HostNodeName},
+	}
+	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+
+	// Second retry
+	podRetry1.Spec.NodeName = "node1"
+	_, err = controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace()).Update(ctx, &podRetry1, metav1.UpdateOptions{})
+	assert.NoError(t, err)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc.operate(ctx)
+
+	node1 := woc.wf.Status.Nodes.FindByDisplayName("retry-fail(1)")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeFailed, node1.Phase)
+		assert.Equal(t, "node1", node1.HostNodeName)
+	}
+
+	pods, err = listPods(woc)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(pods.Items))
+
+	var podRetry2 apiv1.Pod
+	for _, p := range pods.Items {
+		if p.Name != pod.GetName() && p.Name != podRetry1.GetName() {
+			podRetry2 = p
+		}
+	}
+
+	targetNodeSelectorRequirement = podRetry2.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	sourceNodeSelectorRequirement = apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   []string{node1.HostNodeName, node.HostNodeName},
+	}
+	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+}
+
 var noPodsWhenShutdown = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
