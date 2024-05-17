@@ -921,8 +921,8 @@ func (we *WorkflowExecutor) AddFinalizer(ctx context.Context, finalizer string) 
 
 // RemoveFinalizer remove a Finalizer from the workflow pod
 func (we *WorkflowExecutor) RemoveFinalizer(ctx context.Context, finalizer string) error {
-	data := fmt.Sprintf(`[ { "op": "remove", "path": "/metadata/finalizers", "value": [%s] } ]`, finalizer)
-	_, err := we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, []byte(data), metav1.PatchOptions{})
+	data := fmt.Sprintf(`[ { "op": "remove", "path": "/metadata/finalizers", "value": ["%s"] } ]`, finalizer)
+	_, err := we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.JSONPatchType, []byte(data), metav1.PatchOptions{})
 	return err
 }
 
