@@ -733,6 +733,9 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
+		} else if newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(wf, node, make(map[string]bool)) {
+			newWF.Status.Nodes.Delete(newNode.ID)
+			continue
 		} else {
 			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
