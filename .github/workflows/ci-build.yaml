@@ -262,14 +262,12 @@ jobs:
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           pattern: '*_image.tar'
-          merge-multiple: true
           path: /tmp
       - name: Load images
         run: |
           set -eux
-          ls -lR /tmp
-          docker load < /tmp/argoexec_image.tar
-          docker load < /tmp/argocli_image.tar
+          docker load < /tmp/argoexec_image.tar/argoexec_image.tar
+          docker load < /tmp/argocli_image.tar/argocli_image.tar
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
