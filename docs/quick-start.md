@@ -20,14 +20,18 @@ For quick testing, you can use a local cluster with:
 
 ## Install Argo Workflows
 
-To install Argo Workflows, go to the [releases page](https://github.com/argoproj/argo-workflows/releases/latest).
-Scroll down to the `Controller and Server` section and execute the `kubectl` commands.
+First, specify the version you want to install in an environment variable.
+Modify the command below:
 
-Below is an example of the install commands (substitute `<<ARGO_WORKFLOWS_VERSION>>` with the version number):
+```bash
+ARGO_WORKFLOWS_VERSION="vX.Y.Z"
+```
+
+Then, copy the commands below to apply the quick-start manifest:
 
 ```bash
 kubectl create namespace argo
-kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v<<ARGO_WORKFLOWS_VERSION>>/quick-start-minimal.yaml
+kubectl apply -n argo -f "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/quick-start-minimal.yaml"
 ```
 
 ## Install the Argo Workflows CLI

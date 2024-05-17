@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"testing"
-	"time"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
@@ -25,7 +26,8 @@ import (
 	v1alpha "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
+	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -136,7 +138,7 @@ const wf2 = `
         "namespace": "workflows",
         "resourceVersion": "52919656",
         "selfLink": "/apis/argoproj.io/v1alpha1/namespaces/workflows/workflows/hello-world-b6h5m",
-        "uid": "91066a6c-1ddc-11ea-b443-42010aa80075"
+        "uid": "91066a6c-1ddc-11ea-b443-42010aa80074"
     },
     "spec": {
         
@@ -199,7 +201,7 @@ const wf3 = `
         "namespace": "test",
         "resourceVersion": "53020772",
         "selfLink": "/apis/argoproj.io/v1alpha1/namespaces/workflows/workflows/hello-world-9tql2",
-        "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
+        "uid": "6522aff1-1e01-11ea-b443-42010aa80074"
     },
     "spec": {
         
@@ -325,7 +327,7 @@ const wf5 = `
         "namespace": "workflows",
         "resourceVersion": "53020772",
         "selfLink": "/apis/argoproj.io/v1alpha1/namespaces/workflows/workflows/hello-world-9tql2",
-        "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
+        "uid": "6522aff1-1e01-11ea-b443-42010aa80073"
     },
     "spec": {
         
@@ -574,7 +576,6 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
 	v1alpha1.MustUnmarshal(wf1, &wfObj1)
-	v1alpha1.MustUnmarshal(wf1, &wfObj1)
 	v1alpha1.MustUnmarshal(wf2, &wfObj2)
 	v1alpha1.MustUnmarshal(wf3, &wfObj3)
 	v1alpha1.MustUnmarshal(wf4, &wfObj4)
@@ -590,7 +591,6 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	archivedRepo := &mocks.WorkflowArchive{}
 
-	wfaServer := workflowarchive.NewWorkflowArchiveServer(archivedRepo, offloadNodeStatusRepo)
 	archivedRepo.On("GetWorkflow", "", "test", "hello-world-9tql2-test").Return(&v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "hello-world-9tql2-test", Namespace: "test"},
 		Spec: v1alpha1.WorkflowSpec{
@@ -604,11 +604,41 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	archivedRepo.On("GetWorkflow", "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "latest").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
-	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, wfaServer)
+	r, err := labels.ParseToRequirements("workflows.argoproj.io/controller-instanceid=my-instanceid")
+	if err != nil {
+		panic(err)
+	}
+	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "workflows", LabelRequirements: r}).Return(int64(2), nil)
+	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "workflows", Limit: -2, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj2, failedWfObj}, nil)
+	archivedRepo.On("CountWorkflows", sutils.ListOptions{Namespace: "test", LabelRequirements: r}).Return(int64(1), nil)
+	archivedRepo.On("ListWorkflows", sutils.ListOptions{Namespace: "test", Limit: -1, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj4}, nil)
+
 	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	listOptions := &metav1.ListOptions{}
+	instanceIdSvc := instanceid.NewService("my-instanceid")
+	instanceIdSvc.With(listOptions)
+	wfStore, err := store.NewSQLiteStore(instanceIdSvc)
+	if err != nil {
+		panic(err)
+	}
+	if err = wfStore.Add(&wfObj1); err != nil {
+		panic(err)
+	}
+	if err = wfStore.Add(&wfObj3); err != nil {
+		panic(err)
+	}
+	if err = wfStore.Add(&wfObj5); err != nil {
+		panic(err)
+	}
+	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore)
 	return server, ctx
 }
 
@@ -648,26 +678,6 @@ type testWatchWorkflowServer struct {
 
 func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 	panic("implement me")
-}
-
-func TestMergeWithArchivedWorkflows(t *testing.T) {
-	timeNow := time.Now()
-	wf1Live := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
-			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Archived"}}}
-	wf1Archived := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
-			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Persisted"}}}
-	wf2 := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "2", CreationTimestamp: metav1.Time{Time: timeNow.Add(2 * time.Second)}}}
-	wf3 := v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{UID: "3", CreationTimestamp: metav1.Time{Time: timeNow.Add(3 * time.Second)}}}
-	liveWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Live, wf2}}
-	archivedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1Archived, wf3, wf2}}
-	expectedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2, wf1Live}}
-	expectedShortWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2}}
-	assert.Equal(t, expectedWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 0).Items)
-	assert.Equal(t, expectedShortWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 2).Items)
 }
 
 func TestWatchWorkflows(t *testing.T) {
