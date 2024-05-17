@@ -267,6 +267,7 @@ jobs:
       - name: Load images
         run: |
           set -eux
+          ls -lR /tmp
           docker load < /tmp/argoexec_image.tar
           docker load < /tmp/argocli_image.tar
       - name: Set-up /etc/hosts
