@@ -287,7 +287,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.InitContainers[i] = c
 	}
 
-	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
+//if os.Getenv("ARGOTEMPLATE_WITH_INPUTS") != "false" {
+	tmplWithoutInputs := tmpl.DeepCopy()
+	tmplWithoutInputs.Inputs = wfv1.Inputs{}
+	envVarTemplateValue := wfv1.MustMarshallJSON(tmplWithoutInputs)
+//}
 
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
