@@ -304,7 +304,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 		return artifacts, argoerrs.InternalWrapError(err)
 	}
 
-	for i, art := range we.Template.Outputs.Artifacts {
+	for _, art := range we.Template.Outputs.Artifacts {
 		err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
 			return artifacts, err
