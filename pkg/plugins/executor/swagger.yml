@@ -365,8 +365,11 @@ definitions:
       factor:
         $ref: '#/definitions/IntOrString'
       maxDuration:
-        description: MaxDuration is the maximum amount of time allowed for a workflow
-          in the backoff strategy
+        description: |-
+          MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.
+          It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.
+          However, when the workflow fails, the pod's deadline is then overridden by maxDuration.
+          This ensures that the workflow does not exceed the specified maximum duration when retries are involved.
         type: string
     type: object
   BasicAuth:
