@@ -2333,7 +2333,7 @@ Backoff is a backoff strategy to use within retryStrategy
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
 |`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
-|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy|
+|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.|
 
 ## Mutex
 
