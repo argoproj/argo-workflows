@@ -13,7 +13,7 @@ import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
 import {Context} from '../../../shared/context';
 import {useLocalStorage} from '../../../shared/use-local-storage';
-import {getPodName} from '../../../shared/pod-name';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
@@ -169,7 +169,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     // default to the node id of the pod
     const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
     const node = workflow.status.nodes[nodeId];
-    const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
+    const templates = execSpec(workflow).templates.filter(t => !node || t.name === getTemplateNameFromNode(node));
 
     const containers = [
         ...new Set(
