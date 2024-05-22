@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -728,13 +727,12 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	transientEnvVarKey := "TRANSIENT_ERROR_PATTERN"
 	transientErrMsg := "This error is transient"
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError, transientErrMsg)
-	_ = os.Setenv(transientEnvVarKey, transientErrMsg)
+	t.Setenv(transientEnvVarKey, transientErrMsg)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
-	_ = os.Unsetenv(transientEnvVarKey)
 
 	// Add a third node that has errored.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
@@ -3366,7 +3364,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 		{"v2", "output-value-placeholders-wf-tell-pod-name-3033990984"},
 	}
 	for _, tt := range tests {
-		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+		t.Setenv("POD_NAMES", tt.podNameVersion)
 		ctx := context.Background()
 		wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
 		woc := newWoc(*wf)
@@ -7575,6 +7573,107 @@ func TestRetryOnDiffHost(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
+var nodeAntiAffinityWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-fail
+spec:
+  entrypoint: retry-fail
+  templates:
+  - name: retry-fail
+    retryStrategy:
+      limit: 2
+      retryPolicy: "Always"
+      affinity:
+        nodeAntiAffinity: {}
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        exit(1)
+`
+
+func TestRetryOnNodeAntiAffinity(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityWorkflow)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+
+	// First retry
+	pod := pods.Items[0]
+	pod.Spec.NodeName = "node0"
+	_, err = controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace()).Update(ctx, &pod, metav1.UpdateOptions{})
+	assert.NoError(t, err)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("retry-fail(0)")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Equal(t, "node0", node.HostNodeName)
+	}
+
+	pods, err = listPods(woc)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+
+	var podRetry1 apiv1.Pod
+	for _, p := range pods.Items {
+		if p.Name != pod.GetName() {
+			podRetry1 = p
+		}
+	}
+
+	hostSelector := "kubernetes.io/hostname"
+	targetNodeSelectorRequirement := podRetry1.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   []string{node.HostNodeName},
+	}
+	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+
+	// Second retry
+	podRetry1.Spec.NodeName = "node1"
+	_, err = controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace()).Update(ctx, &podRetry1, metav1.UpdateOptions{})
+	assert.NoError(t, err)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc.operate(ctx)
+
+	node1 := woc.wf.Status.Nodes.FindByDisplayName("retry-fail(1)")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeFailed, node1.Phase)
+		assert.Equal(t, "node1", node1.HostNodeName)
+	}
+
+	pods, err = listPods(woc)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(pods.Items))
+
+	var podRetry2 apiv1.Pod
+	for _, p := range pods.Items {
+		if p.Name != pod.GetName() && p.Name != podRetry1.GetName() {
+			podRetry2 = p
+		}
+	}
+
+	targetNodeSelectorRequirement = podRetry2.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	sourceNodeSelectorRequirement = apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   []string{node1.HostNodeName, node.HostNodeName},
+	}
+	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+}
+
 var noPodsWhenShutdown = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -9374,10 +9473,6 @@ spec:
 }
 
 func TestSetWFPodNamesAnnotation(t *testing.T) {
-	defer func() {
-		_ = os.Unsetenv("POD_NAMES")
-	}()
-
 	tests := []struct {
 		podNameVersion string
 	}{
@@ -9386,7 +9481,7 @@ func TestSetWFPodNamesAnnotation(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+		t.Setenv("POD_NAMES", tt.podNameVersion)
 
 		wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
 		cancel, controller := newController(wf)
@@ -10383,7 +10478,7 @@ func TestMaxDepthEnvVariable(t *testing.T) {
 	controller.maxStackDepth = 2
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	_ = os.Setenv("DISABLE_MAX_RECURSION", "true")
+	t.Setenv("DISABLE_MAX_RECURSION", "true")
 
 	woc.operate(ctx)
 
@@ -10400,8 +10495,6 @@ func TestMaxDepthEnvVariable(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-
-	_ = os.Unsetenv("DISABLE_MAX_RECURSION")
 }
 
 func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
@@ -10661,7 +10754,7 @@ spec:
     script:
       image: python:alpine3.6
       command: [python]
-      env:  
+      env:
       - name: message
         value: "{{inputs.parameters.message}}"
       source: |

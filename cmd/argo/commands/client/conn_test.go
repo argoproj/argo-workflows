@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -10,14 +9,12 @@ import (
 )
 
 func TestGetAuthString(t *testing.T) {
-	_ = os.Setenv("ARGO_TOKEN", "my-token")
-	defer func() { _ = os.Unsetenv("ARGO_TOKEN") }()
+	t.Setenv("ARGO_TOKEN", "my-token")
 	assert.Equal(t, "my-token", GetAuthString())
 }
 
 func TestNamespace(t *testing.T) {
-	_ = os.Setenv("ARGO_NAMESPACE", "my-ns")
-	defer func() { _ = os.Unsetenv("ARGO_NAMESPACE") }()
+	t.Setenv("ARGO_NAMESPACE", "my-ns")
 	assert.Equal(t, "my-ns", Namespace())
 }
 
