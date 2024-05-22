@@ -802,6 +802,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// Make sure the workflow completed.
 	if woc.wf.Status.Fulfilled() {
+		woc.controller.metrics.StopRealtimeMetricsForKey(string(woc.wf.GetUID()))
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
