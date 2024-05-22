@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
@@ -39,8 +40,9 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 				spec := pod.Spec
 				assert.Equal(t, pointer.Bool(false), spec.AutomountServiceAccountToken)
 				assert.Equal(t, &apiv1.PodSecurityContext{
-					RunAsUser:    pointer.Int64(8737),
-					RunAsNonRoot: pointer.Bool(true),
+					RunAsUser:      pointer.Int64(8737),
+					RunAsNonRoot:   pointer.Bool(true),
+					SeccompProfile: &v1.SeccompProfile{Type: "RuntimeDefault"},
 				}, spec.SecurityContext)
 				if assert.Len(t, spec.Volumes, 4) {
 					assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
@@ -71,7 +73,9 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 								RunAsNonRoot:             pointer.Bool(true),
 								AllowPrivilegeEscalation: pointer.Bool(false),
 								ReadOnlyRootFilesystem:   pointer.Bool(true),
+								Privileged:               pointer.Bool(false),
 								Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
+								SeccompProfile:           &v1.SeccompProfile{Type: "RuntimeDefault"},
 							}, agent.SecurityContext)
 						}
 					}

@@ -454,7 +454,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	nodeFields := fields.Set{
 		"displayName":  node.DisplayName,
-		"templateName": node.TemplateName,
+		"templateName": GetTemplateFromNode(node),
 		"phase":        string(node.Phase),
 		"name":         node.Name,
 		"id":           node.ID,
@@ -733,6 +733,9 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
+		} else if newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(wf, node, make(map[string]bool)) {
+			newWF.Status.Nodes.Delete(newNode.ID)
+			continue
 		} else {
 			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
@@ -971,7 +974,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
-				if isDescendantNodeSucceeded(wf, node, nodeIDsToReset) {
+				if node.Type != wfv1.NodeTypeRetry && isDescendantNodeSucceeded(wf, node, nodeIDsToReset) {
 					log.Debugf("Node %s remains as is since it has succeed child nodes.", node.Name)
 					newWF.Status.Nodes.Set(node.ID, node)
 					continue

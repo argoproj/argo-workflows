@@ -685,14 +685,9 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 	}
 	// lock down resource pods by default
 	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {
-		exec.SecurityContext = &apiv1.SecurityContext{
-			Capabilities: &apiv1.Capabilities{
-				Drop: []apiv1.Capability{"ALL"},
-			},
-			RunAsNonRoot:             pointer.Bool(true),
-			RunAsUser:                pointer.Int64(8737),
-			AllowPrivilegeEscalation: pointer.Bool(false),
-		}
+		exec.SecurityContext = common.MinimalCtrSC()
+		// TODO: always set RO FS once #10787 is fixed
+		exec.SecurityContext.ReadOnlyRootFilesystem = nil
 		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
 			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
 		}
