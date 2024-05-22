@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func NewCpCommand() *cobra.Command {
@@ -82,7 +83,7 @@ func NewCpCommand() *cobra.Command {
 				if nodeInfo == nil {
 					return fmt.Errorf("could not get node status for node ID %s", artifact.NodeID)
 				}
-				customPath = strings.Replace(customPath, "{templateName}", nodeInfo.TemplateName, 1)
+				customPath = strings.Replace(customPath, "{templateName}", wfutil.GetTemplateFromNode(*nodeInfo), 1)
 				customPath = strings.Replace(customPath, "{namespace}", namespace, 1)
 				customPath = strings.Replace(customPath, "{workflowName}", workflowName, 1)
 				customPath = strings.Replace(customPath, "{nodeId}", artifact.NodeID, 1)

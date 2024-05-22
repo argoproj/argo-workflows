@@ -133,7 +133,7 @@ Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
 >uses `nginx.ingress.kubernetes.io/backend-protocol`
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: argo-server
@@ -143,12 +143,15 @@ metadata:
     nginx.ingress.kubernetes.io/backend-protocol: https # ingress-nginx
 spec:
   rules:
-    - http:
-        paths:
-          - backend:
-              serviceName: argo-server
-              servicePort: 2746
-            path: /argo(/|$)(.*)
+  - http:
+      paths:
+      - path: /argo(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: argo-server
+            port:
+              number: 2746
 ```
 
 [Learn more](https://github.com/argoproj/argo-workflows/issues/3080)

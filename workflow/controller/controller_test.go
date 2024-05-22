@@ -2,13 +2,12 @@ package controller
 
 import (
 	"context"
-	gosync "sync"
 	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	syncpkg "github.com/argoproj/pkg/sync"
+	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -284,7 +283,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		kubeclientset:             kube,
 		dynamicInterface:          dynamicClient,
 		wfclientset:               wfclientset,
-		workflowKeyLock:           syncpkg.NewKeyLock(),
+		workflowKeyLock:           sync.NewKeyLock(),
 		wfArchive:                 sqldb.NullWorkflowArchive,
 		hydrator:                  hydratorfake.Noop,
 		estimatorFactory:          estimation.DummyEstimatorFactory,
@@ -294,7 +293,6 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
-		podNameLocks:              &gosync.Map{},
 	}
 
 	for _, opt := range options {
@@ -322,7 +320,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
-		wfc.addWorkflowInformerHandlers(ctx)
+		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
 		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
@@ -358,7 +356,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
 	cancel, controller := newController(func(controller *WorkflowController) {
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
-			Spec: wfv1.WorkflowSpec{HostNetwork: pointer.BoolPtr(true)},
+			Spec: wfv1.WorkflowSpec{HostNetwork: pointer.Bool(true)},
 		}
 	})
 	return cancel, controller
@@ -376,13 +374,13 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 				},
 			},
 			Spec: wfv1.WorkflowSpec{
-				HostNetwork:        pointer.BoolPtr(true),
+				HostNetwork:        pointer.Bool(true),
 				Entrypoint:         "good_entrypoint",
 				ServiceAccountName: "my_service_account",
 				TTLStrategy: &wfv1.TTLStrategy{
-					SecondsAfterCompletion: pointer.Int32Ptr(10),
-					SecondsAfterSuccess:    pointer.Int32Ptr(10),
-					SecondsAfterFailure:    pointer.Int32Ptr(10),
+					SecondsAfterCompletion: pointer.Int32(10),
+					SecondsAfterSuccess:    pointer.Int32(10),
+					SecondsAfterFailure:    pointer.Int32(10),
 				},
 			},
 		}
@@ -694,10 +692,22 @@ spec:
       container:
         image: my-image
 `),
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-2
+spec:
+  shutdown: Terminate
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
 				f,
 			)
 			defer cancel()
 			ctx := context.Background()
+			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 			assert.True(t, controller.processNextItem(ctx))
 
@@ -710,6 +720,11 @@ spec:
 				if assert.NotNil(t, wf) {
 					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
 					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+				}
+			})
+			expectWorkflow(ctx, controller, "my-wf-2", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowSucceeded, wf.Status.Phase)
 				}
 			})
 		})
@@ -1164,6 +1179,25 @@ spec:
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 0)
+}
+
+func TestPendingPodWhenTerminate(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+	wf.Status.Phase = wfv1.WorkflowPending
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Equal(t, wfv1.NodeSkipped, node.Phase)
+	}
 }
 
 func TestWorkflowReferItselfFromExpression(t *testing.T) {

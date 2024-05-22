@@ -59,6 +59,25 @@ func TestFindRetryNode(t *testing.T) {
 			Children:     []string{},
 			TemplateName: "tmpl2",
 		},
+		"E1": wfv1.NodeStatus{
+			ID:         "E1",
+			Type:       wfv1.NodeTypeRetry,
+			Phase:      wfv1.NodeRunning,
+			BoundaryID: "A1",
+			Children:   []string{},
+			TemplateRef: &wfv1.TemplateRef{
+				Name:     "tmpl1",
+				Template: "tmpl3",
+			},
+		},
+		"E2": wfv1.NodeStatus{
+			ID:           "E2",
+			Type:         wfv1.NodeTypePod,
+			Phase:        wfv1.NodeRunning,
+			BoundaryID:   "E1",
+			Children:     []string{},
+			TemplateName: "tmpl2",
+		},
 	}
 	t.Run("Expect to find retry node", func(t *testing.T) {
 		node := allNodes["B2"]
@@ -67,5 +86,9 @@ func TestFindRetryNode(t *testing.T) {
 	t.Run("Expect to get nil", func(t *testing.T) {
 		a := FindRetryNode(allNodes, "A1")
 		assert.Nil(t, a)
+	})
+	t.Run("Expect to find retry node has TemplateRef", func(t *testing.T) {
+		node := allNodes["E1"]
+		assert.Equal(t, FindRetryNode(allNodes, "E2"), &node)
 	})
 }

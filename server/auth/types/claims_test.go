@@ -181,7 +181,7 @@ func TestGetCustomGroup(t *testing.T) {
 		claims := &Claims{}
 		_, err := claims.GetCustomGroup(("ad_groups"))
 		if assert.Error(t, err) {
-			assert.EqualError(t, err, "No claim found for key: ad_groups")
+			assert.EqualError(t, err, "no claim found for key: ad_groups")
 		}
 	})
 	t.Run("CustomGroupSet", func(t *testing.T) {
@@ -209,7 +209,7 @@ func TestGetCustomGroup(t *testing.T) {
 		}}
 		_, err := claims.GetCustomGroup(("ad_groups"))
 		if assert.Error(t, err) {
-			assert.EqualError(t, err, "Group name 0 was not a string")
+			assert.EqualError(t, err, "group name 0 was not a string")
 		}
 	})
 	t.Run("CustomGroupNotSlice", func(t *testing.T) {
@@ -243,7 +243,7 @@ func TestGetUserInfoGroups(t *testing.T) {
 		httpClient = &HttpClientMock{StatusCode: 200, Body: body}
 
 		claims := &Claims{}
-		groups, err := claims.GetUserInfoGroups("Bearer fake", "https://fake.okta.com", "/user-info")
+		groups, err := claims.GetUserInfoGroups(httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
 		assert.Equal(t, groups, []string{"Everyone"})
 		assert.Equal(t, nil, err)
 	})

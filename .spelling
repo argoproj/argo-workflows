@@ -213,6 +213,7 @@ v2
 v2.0
 v2.1
 v2.10
+v2.10.2
 v2.11
 v2.12
 v2.35.0
@@ -233,7 +234,9 @@ v3.3
 v3.3.
 v3.4
 v3.4.
+v3.4.4
 v3.5
+v3.6
 validator
 vendored
 versioned

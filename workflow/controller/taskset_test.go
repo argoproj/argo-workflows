@@ -323,11 +323,6 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 		err := woc.reconcileTaskSet(ctx)
 		assert.NoError(t, err)
 	})
-	t.Run("completeTaskSet", func(t *testing.T) {
-		woc.operate(ctx)
-		err := woc.completeTaskSet(ctx)
-		assert.NoError(t, err)
-	})
 	t.Run("removeCompletedTaskSetStatus", func(t *testing.T) {
 		woc.operate(ctx)
 		err := woc.removeCompletedTaskSetStatus(ctx)

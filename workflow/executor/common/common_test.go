@@ -36,7 +36,7 @@ func (*MockKC) CreateArchive(ctx context.Context, containerName, sourcePath stri
 	return nil, nil
 }
 
-// TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
+// TestTerminatePodWithContainerName ensure we can a script pod with input artifacts
 func TestTerminatePodWithContainerName(t *testing.T) {
 	// Already terminated.
 	mock := &MockKC{
@@ -57,7 +57,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 				Name: "foo",
 			},
 			Spec: v1.PodSpec{
-				ShareProcessNamespace: pointer.BoolPtr(true),
+				ShareProcessNamespace: pointer.Bool(true),
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{

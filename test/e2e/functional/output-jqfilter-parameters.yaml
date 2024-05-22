@@ -52,7 +52,8 @@ spec:
       - name: key
       - name: value
     container:
-      image: argoproj/argoexec:latest
+      image: quay.io/argoproj/argoexec:latest
+      imagePullPolicy: Never
       command: [sh, -c]
       args: ["
         echo '<{{inputs.parameters.key}}>' > /tmp/input;

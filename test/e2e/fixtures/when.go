@@ -33,6 +33,7 @@ type When struct {
 	client            v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
@@ -209,6 +210,11 @@ var (
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning
 		}), "to have running pod"
 	}
+	ToHaveFailedPod Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeFailed
+		}), "to have failed pod"
+	}
 )
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
@@ -346,6 +352,7 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 				return w
 			}
 		}
+		time.Sleep(time.Second)
 	}
 }
 
@@ -621,6 +628,7 @@ func (w *When) Then() *Then {
 		wf:          w.wf,
 		cronWf:      w.cronWf,
 		client:      w.client,
+		wftsClient:  w.wftsClient,
 		cronClient:  w.cronClient,
 		hydrator:    w.hydrator,
 		kubeClient:  w.kubeClient,
@@ -634,6 +642,7 @@ func (w *When) Given() *Given {
 		client:            w.client,
 		wfebClient:        w.wfebClient,
 		wfTemplateClient:  w.wfTemplateClient,
+		wftsClient:        w.wftsClient,
 		cwfTemplateClient: w.cwfTemplateClient,
 		cronClient:        w.cronClient,
 		hydrator:          w.hydrator,

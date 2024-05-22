@@ -14,6 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
@@ -866,6 +867,20 @@ func (s *CLISuite) TestWorkflowRetry() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowRetryFailedWorkflow() {
+	failFirstPassSecondWorkflowWhen := s.Given().
+		Workflow("@testdata/fail-first-pass-second.yaml").
+		When()
+
+	failFirstPassSecondWorkflowWhen.
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		RunCli([]string{"retry", "-l", "workflows.argoproj.io/workflow=fail-first-pass-second-workflow", "--namespace=argo"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err, output)
+		}).
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func (s *CLISuite) TestWorkflowRetryNestedDag() {
 	s.Given().
 		Workflow("@testdata/retry-nested-dag-test.yaml").
@@ -910,6 +925,41 @@ func (s *CLISuite) TestWorkflowRetryWithRecreatedPVC() {
 			// This step is failed intentionally to allow retry. The error message is not related to PVC that is deleted
 			// previously since it is re-created during retry.
 			assert.Equal(t, "Error (exit code 1)", status.Nodes.FindByDisplayName("print").Message)
+		})
+}
+
+func (s *CLISuite) TestRetryWorkflowWithContinueOn() {
+	var workflowName string
+	s.Given().
+		Workflow(`@testdata/retry-workflow-with-continueon.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			workflowName = metadata.Name
+			assert.Equal(t, 7, len(status.Nodes))
+		}).
+		RunCli([]string{"retry", workflowName}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err, output) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		})
+
+	s.Given().
+		When().
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			workflowName = metadata.Name
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Equal(t, 7, len(status.Nodes))
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".success")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, 2, len(status.Children))
 		})
 }
 
@@ -1041,7 +1091,7 @@ func (s *CLISuite) TestWorkflowWatch() {
 		})
 }
 
-func (s *CLISuite) TestTemplate() {
+func (s *CLISuite) TestTemplateCommands() {
 	s.Run("LintWithoutArgs", func() {
 		s.Given().RunCli([]string{"template", "lint"}, func(t *testing.T, output string, err error) {
 			if assert.Error(t, err) {
@@ -1105,6 +1155,44 @@ func (s *CLISuite) TestTemplate() {
 				}
 			})
 	})
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"template", "update", "testdata/basic-workflowtemplate-update.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Name:")
+					assert.Contains(t, output, "Namespace:")
+					assert.Contains(t, output, "Created:")
+				}
+			})
+	})
+	s.Run("Get", func() {
+		s.Given().RunCli([]string{"template", "get", "basic", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "entrypoint: main-2")
+				assert.Contains(t, output, "name: main-2")
+			}
+		})
+	})
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"template", "update", "testdata/basic-workflowtemplate.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Name:")
+					assert.Contains(t, output, "Namespace:")
+					assert.Contains(t, output, "Created:")
+				}
+			})
+	})
+	s.Run("Get", func() {
+		s.Given().RunCli([]string{"template", "get", "basic", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "entrypoint: main")
+				assert.Contains(t, output, "name: main")
+				assert.NotContains(t, output, "entrypoint: main-2")
+				assert.NotContains(t, output, "name: main-2")
+			}
+		})
+	})
 	s.Run("Delete", func() {
 		s.Given().RunCli([]string{"template", "delete", "basic"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
@@ -1127,6 +1215,64 @@ func (s *CLISuite) TestWorkflowResubmit() {
 				assert.Contains(t, output, "Status:")
 				assert.Contains(t, output, "Created:")
 			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowResubmitDAGWithDependencies() {
+	var wfString string
+	s.Given().
+		Workflow("@testdata/resubmit-dag-with-dependencies.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		RunCli([]string{"resubmit", "--memoized", "@latest"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		}).
+		RunCli([]string{"get", "@latest", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				wfString = output
+			}
+		})
+
+	s.Given().
+		Workflow(wfString).
+		When().
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Equal(t, 5, len(status.Nodes))
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".A")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeTypeSkipped, status.Type)
+			assert.Contains(t, status.Message, "original pod")
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".B")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Contains(t, status.Message, "exit code 1")
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".C")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeTypeSkipped, status.Type)
+			assert.Contains(t, status.Message, "omitted: depends condition not met")
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".D")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeTypeSkipped, status.Type)
+			assert.Contains(t, status.Message, "omitted: depends condition not met")
 		})
 }
 
@@ -1166,7 +1312,7 @@ func (s *CLISuite) TestWorkflowResubmitByFieldSelector() {
 		})
 }
 
-func (s *CLISuite) TestCron() {
+func (s *CLISuite) TestCronCommands() {
 	s.Run("Lint", func() {
 		s.Given().RunCli([]string{"cron", "lint", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -1236,7 +1382,44 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
-
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"cron", "update", "cron/basic-update.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Schedule:                      5 5 5 * *")
+				}
+			})
+	})
+	s.Run("Get", func() {
+		s.Given().RunCli([]string{"cron", "get", "test-cron-wf-basic", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "5 5 5 * *")
+				assert.Contains(t, output, "Replace")
+				assert.Contains(t, output, "startingDeadlineSeconds: 10")
+				assert.Contains(t, output, "successfulJobsHistoryLimit: 5")
+				assert.Contains(t, output, "failedJobsHistoryLimit: 3")
+				assert.Contains(t, output, "argosay")
+			}
+		})
+	})
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"cron", "update", "cron/basic-update-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Schedule:                      5 5 5 * *")
+				}
+			})
+	})
+	s.Run("Get", func() {
+		s.Given().RunCli([]string{"cron", "get", "test-cron-wf-basic", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "5 5 5 * *")
+				assert.Contains(t, output, "Replace")
+				assert.Contains(t, output, "whalesay")
+				assert.NotContains(t, output, "argosay")
+			}
+		})
+	})
 	s.Run("Create Parameter Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/param.yaml", "-p", "message=\"bar test passed\"", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -1327,6 +1510,13 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
+	s.Run("Create Multiple Schedules", func() {
+		s.Given().RunCli([]string{"cron", "create", "cron/multiple-schedules.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Schedule:                      * * * * *,*/2 * * * *")
+			}
+		})
+	})
 }
 
 func (s *CLISuite) TestClusterTemplateCommands() {
@@ -1343,6 +1533,40 @@ func (s *CLISuite) TestClusterTemplateCommands() {
 			RunCli([]string{"cluster-template", "get", "cluster-workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "update", "smoke/cluster-workflow-template-whalesay-template-update.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
+	s.Run("Get", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "get", "cluster-workflow-template-whalesay-template", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+					assert.Contains(t, output, "Updated: {{inputs.parameters.message}}")
+				}
+			})
+	})
+	s.Run("Update", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "update", "smoke/cluster-workflow-template-whalesay-template-update-parameters.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
+	s.Run("Get", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "get", "cluster-workflow-template-whalesay-template", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+					assert.Contains(t, output, "thanks")
 				}
 			})
 	})

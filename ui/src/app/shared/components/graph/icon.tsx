@@ -1,8 +1,9 @@
 import * as React from 'react';
+
 import {Icon} from '../icon';
 import {icons} from '../icons';
 
-export const GraphIcon = ({nodeSize, progress, icon}: {icon: Icon; progress?: number; nodeSize: number}) => {
+export function GraphIcon({nodeSize, progress, icon}: {icon: Icon; progress?: number; nodeSize: number}) {
     if (!progress) {
         return (
             <text className='fa icon' style={{fontSize: nodeSize / 2}}>
@@ -21,4 +22,4 @@ export const GraphIcon = ({nodeSize, progress, icon}: {icon: Icon; progress?: nu
     const largeArcFlag = theta > Math.PI ? 1 : 0;
     const sweepFlag = 1;
     return <path className='icon' d={`M${start.x},${start.y} A${radius},${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x},${end.y}`} />;
-};
+}

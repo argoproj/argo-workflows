@@ -93,6 +93,7 @@ class IoArgoprojEventsV1alpha1S3Artifact(ModelNormal):
         return {
             'access_key': (SecretKeySelector,),  # noqa: E501
             'bucket': (IoArgoprojEventsV1alpha1S3Bucket,),  # noqa: E501
+            'ca_certificate': (SecretKeySelector,),  # noqa: E501
             'endpoint': (str,),  # noqa: E501
             'events': ([str],),  # noqa: E501
             'filter': (IoArgoprojEventsV1alpha1S3Filter,),  # noqa: E501
@@ -110,6 +111,7 @@ class IoArgoprojEventsV1alpha1S3Artifact(ModelNormal):
     attribute_map = {
         'access_key': 'accessKey',  # noqa: E501
         'bucket': 'bucket',  # noqa: E501
+        'ca_certificate': 'caCertificate',  # noqa: E501
         'endpoint': 'endpoint',  # noqa: E501
         'events': 'events',  # noqa: E501
         'filter': 'filter',  # noqa: E501
@@ -162,6 +164,7 @@ class IoArgoprojEventsV1alpha1S3Artifact(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             access_key (SecretKeySelector): [optional]  # noqa: E501
             bucket (IoArgoprojEventsV1alpha1S3Bucket): [optional]  # noqa: E501
+            ca_certificate (SecretKeySelector): [optional]  # noqa: E501
             endpoint (str): [optional]  # noqa: E501
             events ([str]): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1S3Filter): [optional]  # noqa: E501
@@ -252,6 +255,7 @@ class IoArgoprojEventsV1alpha1S3Artifact(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             access_key (SecretKeySelector): [optional]  # noqa: E501
             bucket (IoArgoprojEventsV1alpha1S3Bucket): [optional]  # noqa: E501
+            ca_certificate (SecretKeySelector): [optional]  # noqa: E501
             endpoint (str): [optional]  # noqa: E501
             events ([str]): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1S3Filter): [optional]  # noqa: E501

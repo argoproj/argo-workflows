@@ -1,11 +1,13 @@
 package signal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -14,7 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
+func SignalContainer(ctx context.Context, restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", "kill -%d 1"}
 
 	// If the container has the /var/run/argo volume mounted, this it will have access to `argoexec`.
@@ -40,15 +42,18 @@ func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string,
 		}
 	}
 
-	return ExecPodContainerAndGetOutput(restConfig, pod.Namespace, pod.Name, container, command...)
+	return ExecPodContainerAndGetOutput(ctx, restConfig, pod.Namespace, pod.Name, container, command...)
 }
 
-func ExecPodContainerAndGetOutput(restConfig *rest.Config, namespace string, pod string, container string, command ...string) error {
+func ExecPodContainerAndGetOutput(ctx context.Context, restConfig *rest.Config, namespace string, pod string, container string, command ...string) error {
 	x, err := common.ExecPodContainer(restConfig, namespace, pod, container, true, true, command...)
 	if err != nil {
 		return err
 	}
-	stdout, stderr, err := common.GetExecutorOutput(x)
+	// workaround for when exec does not properly return: https://github.com/kubernetes/kubernetes/pull/103177
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	stdout, stderr, err := common.GetExecutorOutput(ctx, x)
 	log.
 		WithField("namespace", namespace).
 		WithField("pod", pod).
