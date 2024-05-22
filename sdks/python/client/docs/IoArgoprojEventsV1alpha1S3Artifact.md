@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **access_key** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **bucket** | [**IoArgoprojEventsV1alpha1S3Bucket**](IoArgoprojEventsV1alpha1S3Bucket.md) |  | [optional] 
+**ca_certificate** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **endpoint** | **str** |  | [optional] 
 **events** | **[str]** |  | [optional] 
 **filter** | [**IoArgoprojEventsV1alpha1S3Filter**](IoArgoprojEventsV1alpha1S3Filter.md) |  | [optional] 

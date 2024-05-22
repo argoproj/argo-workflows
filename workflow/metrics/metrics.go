@@ -42,6 +42,8 @@ func (s ServerConfig) SameServerAs(other ServerConfig) bool {
 type metric struct {
 	metric      prometheus.Metric
 	lastUpdated time.Time
+	realtime    bool
+	completed   bool
 }
 
 type Metrics struct {
@@ -155,6 +157,23 @@ func (m *Metrics) StopRealtimeMetricsForKey(key string) {
 
 	realtimeMetrics := m.workflows[key]
 	for _, metric := range realtimeMetrics {
+		if realtimeMetric, ok := m.customMetrics[metric]; ok {
+			realtimeMetric.completed = true
+			m.customMetrics[metric] = realtimeMetric
+		}
+	}
+}
+
+func (m *Metrics) DeleteRealtimeMetricsForKey(key string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	if _, exists := m.workflows[key]; !exists {
+		return
+	}
+
+	realtimeMetrics := m.workflows[key]
+	for _, metric := range realtimeMetrics {
 		delete(m.customMetrics, metric)
 	}
 
@@ -190,7 +209,7 @@ func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prom
 	} else {
 		m.metricNameHelps[name] = help
 	}
-	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now()}
+	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now(), realtime: realtime}
 
 	// If this is a realtime metric, track it
 	if realtime {

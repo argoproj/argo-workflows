@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -97,10 +98,10 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 }
 
 // GetExecutorOutput returns the output of an remotecommand.Executor
-func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffer, error) {
+func GetExecutorOutput(ctx context.Context, exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdOut bytes.Buffer
 	var stdErr bytes.Buffer
-	err := exec.Stream(remotecommand.StreamOptions{
+	err := exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdout: &stdOut,
 		Stderr: &stdErr,
 		Tty:    false,

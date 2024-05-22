@@ -4,6 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**at_least_once** | **bool** |  | [optional] 
 **parameters** | [**[IoArgoprojEventsV1alpha1TriggerParameter]**](IoArgoprojEventsV1alpha1TriggerParameter.md) |  | [optional] 
 **policy** | [**IoArgoprojEventsV1alpha1TriggerPolicy**](IoArgoprojEventsV1alpha1TriggerPolicy.md) |  | [optional] 
 **rate_limit** | [**IoArgoprojEventsV1alpha1RateLimit**](IoArgoprojEventsV1alpha1RateLimit.md) |  | [optional] 
