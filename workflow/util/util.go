@@ -377,6 +377,23 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 	return err
 }
 
+func OverrideOutputParametersWithDefault(outputs *wfv1.Outputs) error {
+	if outputs == nil {
+		return nil
+	}
+	for i, param := range outputs.Parameters {
+		if param.ValueFrom != nil && param.ValueFrom.Supplied != nil {
+			if param.ValueFrom.Default != nil {
+				outputs.Parameters[i].Value = param.ValueFrom.Default
+				outputs.Parameters[i].ValueFrom = nil
+			} else {
+				return fmt.Errorf("raw output parameter '%s' has not been set and does not have a default value", param.Name)
+			}
+		}
+	}
+	return nil
+}
+
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
 func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
@@ -408,17 +425,8 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 			// To resume a workflow with a suspended node we simply mark the node as Successful
 			for nodeID, node := range wf.Status.Nodes {
 				if node.IsActiveSuspendNode() {
-					if node.Outputs != nil {
-						for i, param := range node.Outputs.Parameters {
-							if param.ValueFrom != nil && param.ValueFrom.Supplied != nil {
-								if param.ValueFrom.Default != nil {
-									node.Outputs.Parameters[i].Value = param.ValueFrom.Default
-									node.Outputs.Parameters[i].ValueFrom = nil
-								} else {
-									return false, fmt.Errorf("raw output parameter '%s' has not been set and does not have a default value", param.Name)
-								}
-							}
-						}
+					if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
+						return false, err
 					}
 					node.Phase = wfv1.NodeSucceeded
 					if node.Message != "" {
