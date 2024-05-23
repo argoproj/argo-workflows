@@ -53,6 +53,8 @@ func (m *Metrics) RunServer(ctx context.Context, isDummy bool) {
 		go runServer(m.telemetryConfig, telemetryRegistry, ctx, isDummy)
 	}
 
+	recordBuildInfo()
+
 	// Run the metrics server
 	go runServer(m.metricsConfig, metricsRegistry, ctx, isDummy)
 
