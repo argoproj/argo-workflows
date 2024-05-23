@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,7 +15,18 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/env"
 
+	"github.com/argoproj/argo-workflows/v3"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
+)
+
+var (
+	buildInfo = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "build_info",
+			Help: "A metric with a constant '1' value labeled by version from which Argo-Workflows was built.",
+		},
+		[]string{"version", "goversion", "goarch", "commit"},
+	)
 )
 
 // RunServer starts a metrics server
@@ -29,6 +41,7 @@ func (m *Metrics) RunServer(ctx context.Context, isDummy bool) {
 
 	metricsRegistry := prometheus.NewRegistry()
 	metricsRegistry.MustRegister(m)
+	metricsRegistry.MustRegister(buildInfo)
 
 	if m.metricsConfig.SameServerAs(m.telemetryConfig) {
 		// If the metrics and telemetry servers are the same, run both of them in the same instance
@@ -149,4 +162,10 @@ func (m *Metrics) garbageCollector(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// recordBuildInfo publishes information about Argo-Rollouts version and runtime info through an info metric (gauge).
+func recordBuildInfo() {
+	vers := argo.GetVersion()
+	buildInfo.WithLabelValues(vers.Version, runtime.Version(), runtime.GOARCH, vers.GitCommit).Set(1)
 }
