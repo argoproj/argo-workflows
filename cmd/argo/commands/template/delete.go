@@ -19,6 +19,13 @@ func NewDeleteCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "delete WORKFLOW_TEMPLATE",
 		Short: "delete a workflow template",
+		Example: `# Delete a workflow template
+
+  argo template delete my-wftmpl
+
+# Delete all workflow templates
+
+  argo template delete --all`,
 		Run: func(cmd *cobra.Command, args []string) {
 			apiServerDeleteWorkflowTemplates(cmd.Context(), all, args)
 		},

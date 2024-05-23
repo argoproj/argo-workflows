@@ -21,6 +21,13 @@ func NewCreateCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a workflow template",
+		Example: `# Create a workflow template from a file
+
+  argo template create FILE1
+
+# Create a workflow template and print the result in YAML format
+
+  argo template create FILE1 -o yaml`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)

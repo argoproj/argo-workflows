@@ -6,6 +6,26 @@ create a cron workflow
 argo cron create FILE1 FILE2... [flags]
 ```
 
+### Examples
+
+```
+# Create a cron workflow from a file
+
+  argo cron create FILE1
+
+# Create a cron workflow and print it as YAML
+
+  argo cron create FILE1 --output yaml
+
+# Create a cron workflow with relaxed validation
+
+  argo cron create FILE1 --strict false
+
+# Create a cron workflow with a custom schedule(override the schedule in the cron workflow)
+
+  argo cron create FILE1 --schedule "0 0 * * *"
+```
+
 ### Options
 
 ```

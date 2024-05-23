@@ -6,6 +6,18 @@ delete a cluster workflow template
 argo cluster-template delete WORKFLOW_TEMPLATE [flags]
 ```
 
+### Examples
+
+```
+# Delete one or more cluster workflow templates
+
+  argo cluster-template delete cwf-template-name1 cwf-template-name2
+
+# Delete all cluster workflow templates
+
+  argo cluster-template delete --all
+```
+
 ### Options
 
 ```

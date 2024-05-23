@@ -6,6 +6,19 @@ display details about a cron workflow
 argo cron get CRON_WORKFLOW... [flags]
 ```
 
+### Examples
+
+```
+# Display details about a cron workflow
+
+  argo cron get my-cron-workflow
+
+# Display details about multiple cron workflows printed as YAML 
+
+  argo cron get my-cron-workflow -o yaml
+
+```
+
 ### Options
 
 ```

@@ -15,6 +15,9 @@ func NewGetCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "get CLUSTER WORKFLOW_TEMPLATE...",
 		Short: "display details about a cluster workflow template",
+		Example: `# Get details about a cluster workflow template
+
+  argo cluster-template get my-cluster-workflow-template -o wide`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()

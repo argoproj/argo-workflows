@@ -19,6 +19,24 @@ type cliCreateOpts struct {
 	strict   bool   // --strict
 }
 
+var (
+	createCronWFExample = `# Create a cron workflow from a file
+
+  argo cron create FILE1
+
+# Create a cron workflow and print it as YAML
+
+  argo cron create FILE1 --output yaml
+
+# Create a cron workflow with relaxed validation
+
+  argo cron create FILE1 --strict false
+
+# Create a cron workflow with a custom schedule(override the schedule in the cron workflow)
+
+  argo cron create FILE1 --schedule "0 0 * * *"`
+)
+
 func NewCreateCommand() *cobra.Command {
 	var (
 		cliCreateOpts  cliCreateOpts
@@ -26,8 +44,9 @@ func NewCreateCommand() *cobra.Command {
 		parametersFile string
 	)
 	command := &cobra.Command{
-		Use:   "create FILE1 FILE2...",
-		Short: "create a cron workflow",
+		Use:     "create FILE1 FILE2...",
+		Short:   "create a cron workflow",
+		Example: createCronWFExample,
 		Run: func(cmd *cobra.Command, args []string) {
 			checkArgs(cmd, args, parametersFile, &submitOpts)
 

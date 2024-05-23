@@ -6,6 +6,18 @@ list workflow templates
 argo template list [flags]
 ```
 
+### Examples
+
+```
+# List workflow templates
+
+  argo template list
+
+# List workflow templates in all namespaces
+
+  argo template list --all-namespaces
+```
+
 ### Options
 
 ```
