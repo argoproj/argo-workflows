@@ -1,4 +1,5 @@
-import {Page, SlidingPanel} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
