@@ -28,7 +28,6 @@ available task results is as follows:
 A tasks is considered `Skipped` if its `when` condition evaluates to false. On the other hand, if a task doesn't run
 because its `depends` evaluated to false it is `Omitted`.
 
-
 For convenience, an omitted task result is equivalent to `(task.Succeeded || task.Skipped || task.Daemoned)`.
 
 For example:
