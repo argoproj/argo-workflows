@@ -392,9 +392,15 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					c.Args = x.Cmd
 				}
 			}
-			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary",
-				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat(),
-				"--"}, c.Command...)
+			cmd := []string{common.VarRunArgoPath + "/argoexec", "emissary"}
+			if logLevel := getExecutorLogLevel(); logLevel != "info" {
+			    cmd = append(cmd, "--loglevel", logLevel)
+			}
+			if logFormat := woc.controller.executorLogFormat(); logFormat != "text" {
+			    cmd = append(cmd, "--log-format", logFormat)
+			}
+			cmd = append(cmd, "--")
+			c.Command = append(cmd, c.Command...)
 		}
 		if c.Image == woc.controller.executorImage() {
 			// mount tmp dir to wait container
@@ -597,13 +603,33 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
+	command := []string{"argoexec", "init"}
+	logLevel := getExecutorLogLevel()
+	if logLevel != "info" {
+		command = append(command, "--loglevel", logLevel)
+	}
+
+	logFormat := woc.controller.executorLogFormat()
+	if logFormat != "text" {
+		command = append(command, "--log-format", logFormat)
+	}
+	ctr.Command = command
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
+	command := []string{"argoexec", "wait"}
+	logLevel := getExecutorLogLevel()
+	if logLevel != "info" {
+		command = append(command, "--loglevel", logLevel)
+	}
+
+	logFormat := woc.controller.executorLogFormat()
+	if logFormat != "text" {
+		command = append(command, "--log-format", logFormat)
+	}
+	ctr.Command = command
 	return ctr
 }
 
