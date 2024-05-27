@@ -1,5 +1,56 @@
 # Changelog
 
+## v3.5.7 (2024-05-27)
+
+* [b2b1ecd7d](https://github.com/argoproj/argo-workflows/commit/b2b1ecd7de378cec31ab0ebb1e8b9665c4b05867) chore(deps): bump tj-actions/changed-files from 40 to 41 (#12433)
+* [4d58a0b16](https://github.com/argoproj/argo-workflows/commit/4d58a0b1627e17a24b2d552458dca889976ef83a) chore(deps): bump actions/setup-go from 4 to 5 (#12341)
+* [27a283ac5](https://github.com/argoproj/argo-workflows/commit/27a283ac5db1651ecb6f59c9f693bd9be1ab6fac) fix(ui): show container logs when using `templateRef` (#12973)
+* [d2ff152eb](https://github.com/argoproj/argo-workflows/commit/d2ff152ebcb2692ff198031a19d34d78db5fb0e4) fix: Enable realtime metric gc after its workflow is completed. Fixes #12790 (#12830)
+* [433bbace9](https://github.com/argoproj/argo-workflows/commit/433bbace9364f6da3478961ba13da0d94b41b2f3) fix: delete skipped node when resubmit with memoized.Fixes: #12936 (#12940)
+* [ca947f392](https://github.com/argoproj/argo-workflows/commit/ca947f3920042e04f2c979733258f196e7a3dc53) fix: nodeAntiAffinity is not working as expected when boundaryID is empty. Fixes: #9193 (#12701)
+* [210f1f9b2](https://github.com/argoproj/argo-workflows/commit/210f1f9b2d97b6fd240bcd77a84d193b8489ef88) fix: ignore retry node when check succeeded descendant nodes. Fixes: #13003 (#13004)
+* [e0925c961](https://github.com/argoproj/argo-workflows/commit/e0925c96100ea7fc85510e8a0f3dce4d5c5b9f7d) fix: setBucketLifecycleRule error in OSS Artifact Driver.  Fixes #12925 (#12926)
+* [c26f2da8e](https://github.com/argoproj/argo-workflows/commit/c26f2da8e765f3a0a06e7a2890c327c1ba9497bb) fix(docs): Clarify quick start installation. Fixes #13032  (#13047)
+* [a6fec41f7](https://github.com/argoproj/argo-workflows/commit/a6fec41f7f57a2dc6e2904e71c38591a9c371352) feat: add sqlite-based memory store for live workflows. Fixes #12025 (#13021)
+* [e103f6bcc](https://github.com/argoproj/argo-workflows/commit/e103f6bcc0c27f4d841261fe781e63946445ef14) fix: don't rebuild `ui/dist/app/index.html` in `argocli-build` stage (#13023)
+* [c18b1d00c](https://github.com/argoproj/argo-workflows/commit/c18b1d00c0657ecbeaf56527cb944b30bcdd6f18) fix: use argocli image from pull request in CI (#13018)
+* [50dc580ba](https://github.com/argoproj/argo-workflows/commit/50dc580ba0172427d15517dd7aa8454e35a25857) feat: add sqlite-based memory store for live workflows. Fixes #12025 (#12736)
+* [8f37a3fdd](https://github.com/argoproj/argo-workflows/commit/8f37a3fdd603baafb2efc4784a135e7ca525a507) docs(faq): add note about `pods` `patch` error (#13041)
+* [6c52b5e24](https://github.com/argoproj/argo-workflows/commit/6c52b5e2478f7b9de2adb5caf3a31f1e618a0a9a) docs(releasing): add step for announcing on Slack (#12751)
+* [4dd50bfbc](https://github.com/argoproj/argo-workflows/commit/4dd50bfbcf319da85beba02f8096bd4b2cb73220) build(docs): auto alphabetize `.spelling` file (#12521)
+* [2071a9019](https://github.com/argoproj/argo-workflows/commit/2071a901982bf8aa99c4523580651f4c8bc4ffd8) build(manifests): `quick-start` should use `cluster-install` (#12557)
+* [db3b1a2ae](https://github.com/argoproj/argo-workflows/commit/db3b1a2aeb2b62547e11f7b695ef8cf908b7f9f6) fix: retry large archived wf. Fixes #12740 (#12741)
+* [32c3e030f](https://github.com/argoproj/argo-workflows/commit/32c3e030f9840c21ee17ed26f6f171f945876f3a) fix: `insecureSkipVerify` for `GetUserInfoGroups` (#12982)
+* [27a3159e8](https://github.com/argoproj/argo-workflows/commit/27a3159e808ab2cf2ba2a0cce1b8a2a67ca07def) fix: use GetTemplateFromNode to determine template name (#12970)
+* [c2c46557f](https://github.com/argoproj/argo-workflows/commit/c2c46557f18270b3b6a18dc9f5af8232aa18d990) docs(security): add Draft GHSA option (#12747)
+* [d9f083dee](https://github.com/argoproj/argo-workflows/commit/d9f083dee24f0523509dafd3168d4f64f5bf8963) docs(sso): clarify Dex `staticClients` ID (#12843)
+* [cab5fc0c0](https://github.com/argoproj/argo-workflows/commit/cab5fc0c0c7bff9093dd5793b5476625e3fd3966) docs(cli): add `stdin` example for `argo submit`. Relates to #926 (#12820)
+* [f208cf9f5](https://github.com/argoproj/argo-workflows/commit/f208cf9f5b07a70358655d80538ce6ed44dde3a8) docs(quick-start): consolidate UI & port-forward sections (#12560)
+* [a87698d27](https://github.com/argoproj/argo-workflows/commit/a87698d27d4ca00035f29ca6f63393a8da842757) docs(variables): state that workflow.duration is reported in seconds (#12254)
+* [3737789de](https://github.com/argoproj/argo-workflows/commit/3737789deb01a7dd3bb5f582c385b85f3c3954df) docs(cli): correct headings in `argo` command's `Long` description (#11980)
+* [7e71471f8](https://github.com/argoproj/argo-workflows/commit/7e71471f83b48182f6d0d5f9b9decffa5980ce12) docs(auth): clarify "Bearer token" terminology (#11714)
+* [3e8de5d4e](https://github.com/argoproj/argo-workflows/commit/3e8de5d4e9635c881167b496f215a2777cbaaf5d) fix(ui): try retrieving live workflow first then archived (#12972)
+* [47f920bfc](https://github.com/argoproj/argo-workflows/commit/47f920bfc0fa5bda684ba02b02d4e516e418933a) fix(ui): remove unnecessary hard reload after delete (#12930)
+* [8d2bebc68](https://github.com/argoproj/argo-workflows/commit/8d2bebc682d31726cad2fa0642c0cd4ec0034f5f) fix(ui): use router navigation instead of page load after submit (#12950)
+* [437044c24](https://github.com/argoproj/argo-workflows/commit/437044c24f11e6640562f36b432a42c0c9ea179a) fix(ui): handle non-existent labels in `isWorkflowInCluster` (#12898)
+* [3f3ac8ea6](https://github.com/argoproj/argo-workflows/commit/3f3ac8ea696b3a41c88d5fd5cc1bf6eeb47abbcc) fix(ui): properly get archive logs when no node was chosen (#12932)
+
+### Contributors
+
+* Alan Clucas
+* AlbeeSo
+* Anton Gilgur
+* David Gamba
+* Jiacheng Xu
+* Matt Fisher
+* Phil Brown
+* Ryan Currah
+* dependabot[bot]
+* heidongxianhua
+* jswxstw
+* shuangkun tian
+* sycured
+
 ## v3.5.6 (2024-04-19)
 
 * [200f4d1e5](https://github.com/argoproj/argo-workflows/commit/200f4d1e5ffee0a57a9e7a9995b95da15230eb97) fix: don't load entire archived workflow into memory in list APIs (#12912)
