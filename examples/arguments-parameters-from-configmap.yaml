@@ -11,8 +11,7 @@ metadata:
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
 spec:
-  serviceAccountName: argo
-  entrypoint: print-message-from-configmap
+  entrypoint: whalesay
 
   templates:
   - name: print-message-from-configmap

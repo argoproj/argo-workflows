@@ -104,11 +104,9 @@ kind: Workflow
 metadata:
   generateName: k8s-resource-tmpl-with-artifact-
 spec:
-  serviceAccount: argo
   entrypoint: main
   templates:
     - name: main
-      serviceAccountName: argo
       inputs:
         artifacts:
         - name: manifest

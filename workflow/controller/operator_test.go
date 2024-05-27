@@ -296,20 +296,20 @@ spec:
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	assert.Equal(t, wfv1.Progress("50/100"), woc.wf.Status.Progress)
-	assert.Equal(t, wfv1.Progress("50/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
-	pod = woc.wf.Status.Nodes.FindByDisplayName("pod")
-	assert.Equal(t, wfv1.Progress("50/100"), pod.Progress)
+	assert.Equal(t, wfv1.Progress("0/1"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("0/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	pod := woc.wf.Status.Nodes.FindByDisplayName("pod")
+	assert.Equal(t, wfv1.Progress("0/1"), pod.Progress)
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-	assert.Equal(t, wfv1.Progress("100/100"), woc.wf.Status.Progress)
-	assert.Equal(t, wfv1.Progress("100/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
 	pod = woc.wf.Status.Nodes.FindByDisplayName("pod")
-	assert.Equal(t, wfv1.Progress("100/100"), pod.Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), pod.Progress)
 }
 
 var sidecarWithVol = `
@@ -6246,7 +6246,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 
 	ctx := context.Background()
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(sampleOutputs))
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
@@ -8592,7 +8592,7 @@ func TestWFGlobalArtifactNil(t *testing.T) {
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod) {
+	makePodsPhase(ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod, _ *wfOperationCtx) {
 		pod.Status.ContainerStatuses = []apiv1.ContainerStatus{
 			{
 				Name: "main",

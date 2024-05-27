@@ -447,10 +447,10 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 }
 
-type with func(pod *apiv1.Pod)
+type with func(pod *apiv1.Pod, woc *wfOperationCtx)
 
 func withExitCode(v int32) with {
-	return func(pod *apiv1.Pod) {
+	return func(pod *apiv1.Pod, _ *wfOperationCtx) {
 		for _, c := range pod.Spec.Containers {
 			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
 				Name: c.Name,
@@ -504,6 +504,24 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 	}
 }
 
+func withOutputs(outputs wfv1.Outputs) with {
+	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
+		nodeId := woc.nodeID(pod)
+		woc.controller.taskResultInformer.GetStore().Add(&wfv1.WorkflowTaskResult{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: nodeId,
+				Labels: map[string]string{
+					common.LabelKeyWorkflow: woc.wf.Name,
+				},
+			},
+			NodeResult: wfv1.NodeResult{
+				Phase: wfv1.NodeSucceeded,
+				Outputs: &outputs,
+			},
+		})
+	}
+}
+
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
@@ -518,7 +536,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 				pod.Status.Message = "Pod failed"
 			}
 			for _, w := range with {
-				w(&pod)
+				w(&pod, woc)
 			}
 			updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
 			if err != nil {
