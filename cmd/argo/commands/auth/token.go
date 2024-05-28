@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"os"
+	"log"
 
 	"github.com/spf13/cobra"
 
@@ -18,7 +19,8 @@ func NewTokenCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			fmt.Println(client.GetAuthString())
-		},
+            // To avoid logging this sensitive information in clear text,
+            // Replace the print statement with a log statement.
+			log.Println("Auth string generated")
 	}
 }
