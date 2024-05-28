@@ -25,7 +25,10 @@ available task results is as follows:
 | `.Omitted` | Task Omitted | Task was omitted |
 | `.Daemoned` | Task is Daemoned and is not Pending | |
 
-For convenience, if an omitted task result is equivalent to `(task.Succeeded || task.Skipped || task.Daemoned)`.
+A tasks is considered `Skipped` if its `when` condition evaluates to false. On the other hand, if a task doesn't run
+because its `depends` evaluated to false it is `Omitted`.
+
+For convenience, an omitted task result is equivalent to `(task.Succeeded || task.Skipped || task.Daemoned)`.
 
 For example:
 
