@@ -29,6 +29,11 @@ func Int32(is *intstr.IntOrString) (*int32, error) {
 	if v == nil || err != nil {
 		return nil, err
 	}
+	
+	if *v > math.MaxInt32 || *v < math.MinInt32 {
+		return nil, fmt.Errorf("integer out of range for int32: %d", *v)
+	}
+
 	i := int32(*v)
 	return &i, err
 }
