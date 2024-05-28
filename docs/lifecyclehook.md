@@ -25,7 +25,7 @@ In other words, a `LifecycleHook` functions like an [exit handler](https://githu
 
 ## Unsupported conditions
 
-- [`outputs`](fields.md#outputs) are not usable since `LifecycleHook` executes during execution time and `outputs` are not produced until the step is completed. You can use outputs from previous steps, just not the one you're hooking into. If you'd like to use outputs create an exit handler instead - all the status variable are available there so you can still conditionally decide what to do.
+- [`outputs`](fields.md#outputs) from the step you are hooking into are available but no other outputs can be used.
 
 ## Notification use case
 
