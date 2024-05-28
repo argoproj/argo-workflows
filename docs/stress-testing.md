@@ -4,7 +4,7 @@ Install `gcloud` binary.
 
 ```bash
 # Login to GCP:
-gloud auth login
+gcloud auth login
 
 # Set-up your config (if needed):
 gcloud config set project alex-sb
