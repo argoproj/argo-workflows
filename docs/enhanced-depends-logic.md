@@ -2,8 +2,8 @@
 
 > v2.9 and after
 
-Enhanced `depends` improves on [the `dependencies` field](walk-through/dag.md) by allowing you to specify which _result_ of a task to depend on.
-For example, you may only want to run a task if its dependent task succeeded.
+Enhanced `depends` improves on [the `dependencies` field](walk-through/dag.md) by specifying which _result_ of a task to depend on.
+For example, to only run a task if its dependent task succeeded.
 
 ## Depends
 
