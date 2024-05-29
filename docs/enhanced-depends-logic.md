@@ -9,8 +9,8 @@ For example, to only run a task if its dependent task succeeded.
 
 You can use the `depends` field to specify dependent tasks, their results, and boolean logic between them.
 
-Its value is a `string` with expression-like syntax with operands having the form `<task-name>.<task-result>`, such as `task-1.Succeeded`, `task-2.Failed`, `task-3.Daemoned`.
-The available task results are:
+You use operands of the form `<task-name>.<task-result>`, such as `task-1.Succeeded`, `task-2.Failed`, `task-3.Daemoned`.
+Available task results are:
 
 |  Task Result | Description |
 |:------------:|-------------|
