@@ -25,7 +25,13 @@ SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 # docker image publishing options
 IMAGE_NAMESPACE       ?= quay.io/argoproj
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
-TARGET_PLATFORM := $(shell [ `uname -m` = arm64 ] && echo linux/arm64 || echo linux/amd64)
+PLATFORM ?= $(shell uname -m)
+ifeq ($(PLATFORM), x86_64)
+PLATFORM=amd64
+else ifeq ($(PLATFORM), arm)
+PLATFORM=arm64
+endif
+TARGET_PLATFORM := $(shell echo linux/${PLATFORM})
 
 # declares which cluster to import to in case it's not the default name
 K3D_CLUSTER_NAME      ?= k3s-default
