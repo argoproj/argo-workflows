@@ -3297,7 +3297,6 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 
 	assert.Equal(t, []string{
 		"/var/run/argo/argoexec", "emissary",
-		"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
 		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\"",
 	}, pods.Items[0].Spec.Containers[1].Command)
 }
