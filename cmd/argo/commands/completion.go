@@ -138,7 +138,7 @@ For fish, output to a file in ~/.config/fish/completions
 			shell := args[0]
 			rootCommand := NewCommand()
 			rootCommand.BashCompletionFunction = bashCompletionFunc
-			availableCompletions := map[string]func(out io.Writer, argo *cobra.Command) error{
+			availableCompletions := map[string]func(out io.Writer, cmd *cobra.Command) error{
 				"bash": runCompletionBash,
 				"zsh":  runCompletionZsh,
 				"fish": runCompletionFish,
@@ -156,14 +156,14 @@ For fish, output to a file in ~/.config/fish/completions
 	return command
 }
 
-func runCompletionBash(out io.Writer, argo *cobra.Command) error {
-	return argo.GenBashCompletion(out)
+func runCompletionBash(out io.Writer, cmd *cobra.Command) error {
+	return cmd.GenBashCompletion(out)
 }
 
-func runCompletionZsh(out io.Writer, argo *cobra.Command) error {
-	return argo.GenZshCompletion(out)
+func runCompletionZsh(out io.Writer, cmd *cobra.Command) error {
+	return cmd.GenZshCompletion(out)
 }
 
-func runCompletionFish(out io.Writer, argo *cobra.Command) error {
-	return argo.GenFishCompletion(out, true)
+func runCompletionFish(out io.Writer, cmd *cobra.Command) error {
+	return cmd.GenFishCompletion(out, true)
 }
