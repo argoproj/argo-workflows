@@ -287,7 +287,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.InitContainers[i] = c
 	}
 
-	if os.Getenv("ARGO_TEMPLATE_WITH_INPUTS") != "false" {
+	if os.Getenv("ARGO_TEMPLATE_WITH_INPUTS") == "false" {
 		tmplWithoutInputs := tmpl.DeepCopy()
 		// Preserve Inputs.Artifacts and clear other inputs
 		var artifacts []wfv1.Artifact
@@ -300,6 +300,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
         	    Artifacts: artifacts,
 		}
 		envVarTemplateValue := wfv1.MustMarshallJSON(tmplWithoutInputs)
+	} else {
+		envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
 	}
 
 	// Add standard environment variables, making pod spec larger
