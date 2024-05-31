@@ -53,7 +53,7 @@ Otherwise, we typically release every two weeks:
 
 ### Notes on Compatibility
 
-Argo versions may be compatible with newer and older Kubernetes versions (indicated by `?`), but only three minor versions are actively tested against unless otherwise noted.
+Argo versions may be compatible with newer and older Kubernetes versions (indicated by `?`), but only three minor versions are tested unless otherwise noted.
 
 Note that Kubernetes [is backward compatible with clients](https://github.com/kubernetes/client-go/tree/aa7909e7d7c0661792ba21b9e882f3cd6ad0ce53?tab=readme-ov-file#compatibility-client-go---kubernetes-clusters), so newer k8s versions are generally supported.
 The caveats with newer k8s versions are possible changes to experimental APIs and unused new features.
