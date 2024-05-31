@@ -969,6 +969,10 @@ func untar(tarPath string, destPath string) error {
 				if err := f.Close(); err != nil {
 					return err
 				}
+				if err := os.Chtimes(target, header.AccessTime, header.ModTime); err != nil {
+					return err
+				}
+
 			}
 		}
 	}
