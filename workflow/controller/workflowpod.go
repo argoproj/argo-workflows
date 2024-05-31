@@ -394,10 +394,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			}
 			cmd := []string{common.VarRunArgoPath + "/argoexec", "emissary"}
 			if logLevel := getExecutorLogLevel(); logLevel != "info" {
-			    cmd = append(cmd, "--loglevel", logLevel)
+				cmd = append(cmd, "--loglevel", logLevel)
 			}
 			if logFormat := woc.controller.executorLogFormat(); logFormat != "text" {
-			    cmd = append(cmd, "--log-format", logFormat)
+				cmd = append(cmd, "--log-format", logFormat)
 			}
 			cmd = append(cmd, "--")
 			c.Command = append(cmd, c.Command...)
