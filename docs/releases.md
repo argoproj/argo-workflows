@@ -51,6 +51,10 @@ Otherwise, we typically release every two weeks:
 
 ### Notes on Compatibility
 
-Argo versions may be compatible with newer and older versions than what it is listed but only three minor versions are supported per Argo release unless otherwise noted.
+Argo versions may be compatible with newer and older Kubernetes versions (indicated by `?`), but only three minor versions are tested unless otherwise noted.
 
-The main branch of `Argo Workflows` is currently tested on `Kubernetes` 1.21.
+Note that Kubernetes [is backward compatible with clients](https://github.com/kubernetes/client-go/tree/aa7909e7d7c0661792ba21b9e882f3cd6ad0ce53?tab=readme-ov-file#compatibility-client-go---kubernetes-clusters), so newer k8s versions are generally supported.
+The caveats with newer k8s versions are possible changes to experimental APIs and unused new features.
+Argo uses stable Kubernetes APIs such as Pods and ConfigMaps; see the Controller and Server RBAC of your [installation](installation.md) for a full list.
+
+The `release-3.4` branch is currently [tested on Kubernetes 1.21](https://github.com/argoproj/argo-workflows/blob/release-3.4/.github/workflows/ci-build.yaml#L90) and [1.26](https://github.com/argoproj/argo-workflows/blob/release-3.4/.github/workflows/ci-build.yaml#L123).
