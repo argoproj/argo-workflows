@@ -1878,13 +1878,13 @@ func TestProgressEnvVars(t *testing.T) {
 		})
 	})
 
-	t.Run("setting patch tick duration to 0 disables self reporting progress but still exposes the ARGO_PROGRESS_FILE env var as a convenience.", func(t *testing.T) {
+	t.Run("setting patch tick duration to 0 disables self reporting progress.", func(t *testing.T) {
 		cancel, pod := setup(t, func(workflowController *WorkflowController) {
 			workflowController.progressPatchTickDuration = 0
 		})
 		defer cancel()
 
-		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+		assert.NotContains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
 			Name:  common.EnvVarProgressFile,
 			Value: common.ArgoProgressPath,
 		})
@@ -1898,13 +1898,13 @@ func TestProgressEnvVars(t *testing.T) {
 		})
 	})
 
-	t.Run("setting read file tick duration to 0 disables self reporting progress but still exposes the ARGO_PROGRESS_FILE env var as a convenience.", func(t *testing.T) {
+	t.Run("setting read file tick duration to 0 disables self reporting progress.", func(t *testing.T) {
 		cancel, pod := setup(t, func(workflowController *WorkflowController) {
 			workflowController.progressFileTickDuration = 0
 		})
 		defer cancel()
 
-		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+		assert.NotContains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
 			Name:  common.EnvVarProgressFile,
 			Value: common.ArgoProgressPath,
 		})
