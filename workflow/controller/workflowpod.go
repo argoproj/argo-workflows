@@ -297,7 +297,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
 	}
 
-	// only set tick durations/EnvVarProgressFile if progress is enabled. 
+	// only set tick durations/EnvVarProgressFile if progress is enabled.
 	// The progress is only monitored if the tick durations are >0.
 	if woc.controller.progressPatchTickDuration != 0 && woc.controller.progressFileTickDuration != 0 {
 		envVars = append(envVars,
