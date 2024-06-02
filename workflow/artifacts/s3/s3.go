@@ -183,7 +183,7 @@ func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 
 		isDir, err := s3cli.IsDirectory(artifact.S3.Bucket, artifact.S3.Key)
 		if err != nil {
-			return fmt.Errorf("failed to test if %s is a directory: %v", artifact.S3.Key, err)
+			return fmt.Errorf("failed checking if %s is a directory: %v", artifact.S3.Key, err)
 		}
 
 		if !isDir {
