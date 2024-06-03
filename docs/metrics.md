@@ -149,7 +149,7 @@ labels wherever it is emitted. This is how these metrics are "linked" as belongi
 
 ### Grafana Dashboard for Argo Controller Metrics
 
-Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/13927) Grafana dashboard.
+Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/20348-argo-workflows-metrics/) Grafana dashboard.
 
 ## Defining metrics
 
