@@ -75,7 +75,7 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
+func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts, localParams map[string]string) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
@@ -345,10 +345,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	var podSpecPatchs []string
 	if woc.execWf.Spec.HasPodSpecPatch() {
 		// Final substitution for workflow level PodSpecPatch
-		localParams := make(map[string]string)
-		if tmpl.IsPodType() {
-			localParams[common.LocalVarPodName] = pod.Name
-		}
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodSpecPatch = woc.execWf.Spec.PodSpecPatch
 		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
