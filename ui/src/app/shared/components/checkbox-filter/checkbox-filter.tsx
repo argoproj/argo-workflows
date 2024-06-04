@@ -1,4 +1,4 @@
-import {Checkbox} from 'argo-ui';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
 import * as React from 'react';
 
 import './checkbox-filter.scss';

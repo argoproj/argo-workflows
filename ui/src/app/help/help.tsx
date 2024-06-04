@@ -1,4 +1,4 @@
-import {Page} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
 
 import {uiUrl} from '../shared/base';

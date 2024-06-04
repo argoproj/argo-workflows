@@ -31,30 +31,28 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
     }, [namespace]);
 
     useEffect(() => {
-        switch (stage) {
-            case 'full-editor':
-                if (workflowTemplate) {
-                    setWorkflow({
-                        metadata: {
-                            generateName: workflowTemplate.metadata.name + '-',
-                            namespace,
-                            labels: {
-                                'workflows.argoproj.io/workflow-template': workflowTemplate.metadata.name,
-                                'submit-from-ui': 'true'
-                            }
-                        },
-                        spec: {
-                            arguments: workflowTemplate.spec.arguments,
-                            workflowTemplateRef: {
-                                name: workflowTemplate.metadata.name
-                            }
-                        }
-                    });
-                } else {
-                    setWorkflow(exampleWorkflow(Utils.getNamespaceWithDefault(namespace)));
-                }
-                break;
+        if (stage !== 'full-editor') return;
+        if (!workflowTemplate) {
+            setWorkflow(exampleWorkflow(Utils.getNamespaceWithDefault(namespace)));
+            return;
         }
+
+        setWorkflow({
+            metadata: {
+                generateName: workflowTemplate.metadata.name + '-',
+                namespace,
+                labels: {
+                    'workflows.argoproj.io/workflow-template': workflowTemplate.metadata.name,
+                    'submit-from-ui': 'true'
+                }
+            },
+            spec: {
+                arguments: workflowTemplate.spec.arguments,
+                workflowTemplateRef: {
+                    name: workflowTemplate.metadata.name
+                }
+            }
+        });
     }, [stage]);
 
     useEffect(() => {
