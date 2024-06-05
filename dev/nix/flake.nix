@@ -175,15 +175,6 @@
           uiCmd = mkExec "yarn" argoConfig.ui.env argoConfig.ui.args;
         in
         {
-          _module.args = import inputs.nixpkgs {
-            inherit system;
-            overlays = [
-              (self: super: {
-                go = super.go_1_20;
-                buildGoModule = super.buildGo120Module;
-              })
-            ];
-          };
 
           packages = {
             ${package.name} = pkgs.buildGoModule {
@@ -262,7 +253,7 @@
                 rev = "v${version}";
                 sha256 = "sha256-G0jBQ12cpjfWGhXYppV9dB2n68bExi6ME9QbxXsUWvw=";
               };
-              vendorHash = "sha256-89hzPiqP++tQpPkcSvzc1tHxHcj5PI71RxxxUCgm0BI=";
+              vendorHash = "";
               doCheck = false;
             };
 
