@@ -12,6 +12,7 @@ RUN apk update && apk add --no-cache \
     wget \
     curl \
     gcc \
+    libc-dev \
     bash \
     mailcap
 
