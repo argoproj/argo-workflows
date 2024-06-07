@@ -99,15 +99,15 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Docker Login
-        uses: Azure/docker-login@83efeb77770c98b620c73055fbb59b2847e17dc0 # v1.0.1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: Azure/docker-login@83efeb77770c98b620c73055fbb59b2847e17dc0 # v1.0.1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          login-server: quay.io
+          registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
@@ -149,15 +149,15 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Docker Login
-        uses: Azure/docker-login@83efeb77770c98b620c73055fbb59b2847e17dc0 # v1.0.1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: Azure/docker-login@83efeb77770c98b620c73055fbb59b2847e17dc0 # v1.0.1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          login-server: quay.io
+          registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
@@ -211,15 +211,15 @@ jobs:
         target: [ workflow-controller, argocli, argoexec ]
     steps:
       - name: Docker Login
-        uses: Azure/docker-login@83efeb77770c98b620c73055fbb59b2847e17dc0 # v1.0.1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: Azure/docker-login@83efeb77770c98b620c73055fbb59b2847e17dc0 # v1.0.1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          login-server: quay.io
+          registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
@@ -245,15 +245,15 @@ jobs:
     needs: [ push-images ]
     steps:
       - name: Docker Login
-        uses: Azure/docker-login@83efeb77770c98b620c73055fbb59b2847e17dc0 # v1.0.1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: Azure/docker-login@83efeb77770c98b620c73055fbb59b2847e17dc0 # v1.0.1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          login-server: quay.io
+          registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
       - name: Try pulling
