@@ -80,7 +80,7 @@ spec:
           metadata:
             generateName: k8s-pod-resource-
           spec:
-            serviceAccountName: argo
+            serviceAccountName: default
             containers:
             - name: argosay-container
               image: argoproj/argosay:v2

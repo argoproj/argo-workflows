@@ -507,7 +507,7 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 func withOutputs(outputs wfv1.Outputs) with {
 	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
 		nodeId := woc.nodeID(pod)
-		woc.controller.taskResultInformer.GetStore().Add(&wfv1.WorkflowTaskResult{
+		err := woc.controller.taskResultInformer.GetStore().Add(&wfv1.WorkflowTaskResult{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nodeId,
 				Labels: map[string]string{
@@ -519,6 +519,9 @@ func withOutputs(outputs wfv1.Outputs) with {
 				Outputs: &outputs,
 			},
 		})
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
