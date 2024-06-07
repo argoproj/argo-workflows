@@ -242,6 +242,7 @@ endif
 
 argoexec-image:
 
+
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
 	docker buildx build \
