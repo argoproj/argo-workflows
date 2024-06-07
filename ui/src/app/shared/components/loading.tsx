@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {MockupList} from '../../../../node_modules/argo-ui';
+import {MockupList} from 'argo-ui/src/components/mockup-list/mockup-list';
 
 export const Loading = () => (
     <div style={{margin: 20}}>

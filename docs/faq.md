@@ -21,8 +21,8 @@ Is there an RBAC error?
 
 [Learn more about workflow RBAC](workflow-rbac.md)
 
-## Return "unknown (get pods)" error
+## `cannot patch resource "pods" in API group ""` error
 
 You're probably getting a permission denied error because your RBAC is not configured.
 
-[Learn more about workflow RBAC](workflow-rbac.md) and [even more details](https://blog.argoproj.io/demystifying-argo-workflowss-kubernetes-rbac-7a1406d446fc)
+[Learn more about workflow RBAC](workflow-rbac.md)

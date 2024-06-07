@@ -431,7 +431,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 			OwnerReferences: ownerReferences,
 		},
 		Spec: corev1.PodSpec{
-			Volumes: volumes,
+			Volumes:         volumes,
+			SecurityContext: common.MinimalPodSC(),
 			Containers: []corev1.Container{
 				{
 					Name:            common.MainContainerName,
@@ -444,14 +445,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					// if this pod is breached by an attacker we:
 					// * prevent installation of any new packages
 					// * modification of the file-system
-					SecurityContext: &corev1.SecurityContext{
-						Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
-						Privileged:               pointer.Bool(false),
-						RunAsNonRoot:             pointer.Bool(true),
-						RunAsUser:                pointer.Int64(8737),
-						ReadOnlyRootFilesystem:   pointer.Bool(true),
-						AllowPrivilegeEscalation: pointer.Bool(false),
-					},
+					SecurityContext: common.MinimalCtrSC(),
 					// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
 					Resources: corev1.ResourceRequirements{
 						Limits: map[corev1.ResourceName]resource.Quantity{

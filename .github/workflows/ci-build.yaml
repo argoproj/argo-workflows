@@ -151,11 +151,17 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  argoexec-image:
-    name: argoexec-image
+  argo-images:
+    name: argo-images
     # needs: [ lint ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: argoexec
+          - image: argocli
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
@@ -163,45 +169,21 @@ jobs:
         uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
         with:
           context: .
-          tags: quay.io/argoproj/argoexec:latest
-          outputs: type=docker,dest=/tmp/argoexec_image.tar
-          target: argoexec
+          tags: quay.io/argoproj/${{matrix.image}}:latest
+          outputs: type=docker,dest=/tmp/${{matrix.image}}_image.tar
+          target: ${{matrix.image}}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
-          name: argoexec
-          path: /tmp/argoexec_image.tar
-          if-no-files-found: error
-
-  argocli-image:
-    name: argocli-image
-    # needs: [ lint ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
-      - name: Build and export
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
-        with:
-          context: .
-          tags: quay.io/argoproj/argocli:latest
-          outputs: type=docker,dest=/tmp/argocli_image.tar
-          target: argocli
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Upload
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        with:
-          name: argocli
-          path: /tmp/argocli_image.tar
+          name: ${{matrix.image}}_image.tar
+          path: /tmp/${{matrix.image}}_image.tar
           if-no-files-found: error
 
   e2e-tests:
     name: E2E Tests
-    needs: [ changed-files, argoexec-image, argocli-image ]
+    needs: [ changed-files, argo-images ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -276,20 +258,16 @@ jobs:
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
-      - name: Download argoexec image
+      - name: Download images
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
-          name: argoexec
+          pattern: '*_image.tar'
           path: /tmp
-      - name: Load argoexec image
-        run: docker load < /tmp/argoexec_image.tar
-      - name: Download argocli image
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: argocli
-          path: /tmp
-      - name: Load argocli image
-        run: docker load < /tmp/argocli_image.tar
+      - name: Load images
+        run: |
+          set -eux
+          docker load < /tmp/argoexec_image.tar/argoexec_image.tar
+          docker load < /tmp/argocli_image.tar/argocli_image.tar
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts

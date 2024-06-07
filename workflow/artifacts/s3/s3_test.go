@@ -215,7 +215,7 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 		},
 	}
 
-	_ = os.Setenv(transientEnvVarKey, "this error is transient")
+	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			stream, err := streamS3Artifact(tc.s3client, &wfv1.Artifact{
@@ -237,7 +237,6 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 			}
 		})
 	}
-	_ = os.Unsetenv(transientEnvVarKey)
 }
 
 // Delete deletes an S3 artifact by artifact key
@@ -380,7 +379,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		},
 	}
 
-	_ = os.Setenv(transientEnvVarKey, "this error is transient")
+	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			success, err := loadS3Artifact(tc.s3client, &wfv1.Artifact{
@@ -401,7 +400,6 @@ func TestLoadS3Artifact(t *testing.T) {
 			}
 		})
 	}
-	_ = os.Unsetenv(transientEnvVarKey)
 }
 
 func TestSaveS3Artifact(t *testing.T) {
@@ -509,7 +507,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		_ = os.Setenv(transientEnvVarKey, "this error is transient")
+		t.Setenv(transientEnvVarKey, "this error is transient")
 		t.Run(name, func(t *testing.T) {
 			success, err := saveS3Artifact(
 				tc.s3client,
@@ -535,7 +533,6 @@ func TestSaveS3Artifact(t *testing.T) {
 				assert.Equal(t, tc.errMsg, "")
 			}
 		})
-		_ = os.Unsetenv(transientEnvVarKey)
 	}
 }
 
@@ -590,7 +587,7 @@ func TestListObjects(t *testing.T) {
 		},
 	}
 
-	_ = os.Setenv(transientEnvVarKey, "this error is transient")
+	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			_, files, err := listObjects(tc.s3client,
@@ -617,5 +614,4 @@ func TestListObjects(t *testing.T) {
 			}
 		})
 	}
-	_ = os.Unsetenv(transientEnvVarKey)
 }

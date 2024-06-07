@@ -129,6 +129,7 @@ args
 async
 auth
 backend
+backported
 boolean
 booleans
 buildkit
@@ -164,6 +165,7 @@ instantiators
 jenkins
 k3d
 k3s
+k8s
 k8s-jobs
 kube
 kube-apiserver

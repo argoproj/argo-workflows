@@ -1,4 +1,4 @@
-import {Ticker} from 'argo-ui/src/index';
+import {Ticker} from 'argo-ui/src/components/ticker';
 import * as React from 'react';
 import {useState} from 'react';
 import {Link} from 'react-router-dom';
