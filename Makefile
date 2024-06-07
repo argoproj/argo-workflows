@@ -605,6 +605,8 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
+	# Force the timestamp to be up to date
+	touch $@
 	# Delete the link
 	[ -e ./v3 ] && rm -rf v3
 
@@ -618,6 +620,8 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
 	    workflow:v1alpha1 \
 	    --go-header-file ./hack/custom-boilerplate.go.txt
+	# Force the timestamp to be up to date
+	touch $@
 	# Delete the link
 	[ -e ./v3 ] && rm -rf v3
 
