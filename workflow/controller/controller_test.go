@@ -497,6 +497,7 @@ func withOutputs(outputs wfv1.Outputs) with {
 				Name: nodeId,
 				Labels: map[string]string{
 					common.LabelKeyWorkflow: woc.wf.Name,
+					common.LabelKeyReportOutputsCompleted: "true",
 				},
 			},
 			NodeResult: wfv1.NodeResult{
