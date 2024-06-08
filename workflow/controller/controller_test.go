@@ -500,7 +500,7 @@ func withOutputs(outputs wfv1.Outputs) with {
 				},
 			},
 			NodeResult: wfv1.NodeResult{
-				Phase: wfv1.NodeSucceeded,
+				Phase:   wfv1.NodeSucceeded,
 				Outputs: &outputs,
 			},
 		})
