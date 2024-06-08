@@ -496,7 +496,7 @@ func withOutputs(outputs wfv1.Outputs) with {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nodeId,
 				Labels: map[string]string{
-					common.LabelKeyWorkflow: woc.wf.Name,
+					common.LabelKeyWorkflow:               woc.wf.Name,
 					common.LabelKeyReportOutputsCompleted: "true",
 				},
 			},
@@ -507,6 +507,21 @@ func withOutputs(outputs wfv1.Outputs) with {
 		})
 		if err != nil {
 			panic(err)
+		}
+	}
+}
+
+func withExitCode(v int32) with {
+	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
+		for _, c := range pod.Spec.Containers {
+			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
+				Name: c.Name,
+				State: apiv1.ContainerState{
+					Terminated: &apiv1.ContainerStateTerminated{
+						ExitCode: v,
+					},
+				},
+			})
 		}
 	}
 }

@@ -6246,7 +6246,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 
 	ctx := context.Background()
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(sampleOutputs))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0), withOutputs(sampleOutputs))
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
