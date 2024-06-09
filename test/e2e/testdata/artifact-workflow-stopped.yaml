@@ -8,7 +8,7 @@ spec:
       workflows.argoproj.io/test: "true"
       workflows.argoproj.io/workflow: "wf-stopped"
   entrypoint: wf-stopped-main
-  serviceAccountName: argo
+  serviceAccountName: default
   executor:
     serviceAccountName: default
   volumeClaimTemplates:

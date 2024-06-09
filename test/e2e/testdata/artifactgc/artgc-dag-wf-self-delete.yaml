@@ -13,7 +13,7 @@ spec:
     serviceAccountName: default
     strategy: OnWorkflowDeletion
   entrypoint: artgc-dag-wf-self-delete-main
-  serviceAccountName: argo
+  serviceAccountName: default
   executor:
     serviceAccountName: default
   volumeClaimTemplates:

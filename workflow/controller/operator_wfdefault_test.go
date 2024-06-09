@@ -26,7 +26,7 @@ var wfDefaults = `
           name: message
           value: "hello world"
     onExit: whalesay-exit
-    serviceAccountName: argo
+    serviceAccountName: default
     templates: 
       - 
         container: 
@@ -81,7 +81,7 @@ spec:
         value: "hello world"
   entrypoint: whalesay
   onExit: whalesay-exit
-  serviceAccountName: argo
+  serviceAccountName: default
   templates: 
     - 
       container: 

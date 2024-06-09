@@ -9328,7 +9328,6 @@ metadata:
 spec:
   arguments: {}
   entrypoint: main
-  serviceAccountName: argo
   templates:
   - inputs: {}
     metadata: {}
@@ -10902,7 +10901,7 @@ spec:
     serviceAccountName: default
   podSpecPatch: |
     terminationGracePeriodSeconds: 3
-  serviceAccountName: argo
+  serviceAccountName: default
   templates:
   - inputs: {}
     metadata: {}
