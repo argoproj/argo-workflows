@@ -1233,8 +1233,6 @@ rules:
   verbs:
   - list
   - watch
-  - patch
-  - create
   - deletecollection
 - apiGroups:
   - ""

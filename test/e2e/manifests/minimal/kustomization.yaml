@@ -9,6 +9,7 @@ resources:
 - ../mixins/argo-workflows-agent-ca-certificates.yaml
 - ../mixins/argo-server.service-account-token-secret.yaml
 - ../mixins/argo.service-account-token-secret.yaml
+- ../mixins/resource-permissioned-executor-sa.yaml
 
 patches:
 - path: ../mixins/argo-server-deployment.yaml

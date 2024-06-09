@@ -449,6 +449,43 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 
 type with func(pod *apiv1.Pod, woc *wfOperationCtx)
 
+func withOutputs(outputs wfv1.Outputs) with {
+	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
+		nodeId := woc.nodeID(pod)
+		err := woc.controller.taskResultInformer.GetStore().Add(&wfv1.WorkflowTaskResult{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: nodeId,
+				Labels: map[string]string{
+					common.LabelKeyWorkflow:               woc.wf.Name,
+					common.LabelKeyReportOutputsCompleted: "true",
+				},
+			},
+			NodeResult: wfv1.NodeResult{
+				Phase:   wfv1.NodeSucceeded,
+				Outputs: &outputs,
+			},
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func withExitCode(v int32) with {
+	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
+		for _, c := range pod.Spec.Containers {
+			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
+				Name: c.Name,
+				State: apiv1.ContainerState{
+					Terminated: &apiv1.ContainerStateTerminated{
+						ExitCode: v,
+					},
+				},
+			})
+		}
+	}
+}
+
 // createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
 // pod assessor
 func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
@@ -485,43 +522,6 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 		err = woc.controller.podInformer.GetIndexer().Add(&pod)
 		if err != nil {
 			panic(err)
-		}
-	}
-}
-
-func withOutputs(outputs wfv1.Outputs) with {
-	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
-		nodeId := woc.nodeID(pod)
-		err := woc.controller.taskResultInformer.GetStore().Add(&wfv1.WorkflowTaskResult{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: nodeId,
-				Labels: map[string]string{
-					common.LabelKeyWorkflow:               woc.wf.Name,
-					common.LabelKeyReportOutputsCompleted: "true",
-				},
-			},
-			NodeResult: wfv1.NodeResult{
-				Phase:   wfv1.NodeSucceeded,
-				Outputs: &outputs,
-			},
-		})
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-func withExitCode(v int32) with {
-	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
-		for _, c := range pod.Spec.Containers {
-			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
-				Name: c.Name,
-				State: apiv1.ContainerState{
-					Terminated: &apiv1.ContainerStateTerminated{
-						ExitCode: v,
-					},
-				},
-			})
 		}
 	}
 }
