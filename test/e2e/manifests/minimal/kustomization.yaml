@@ -16,7 +16,6 @@ patches:
 - path: ../mixins/workflow-controller-configmap.yaml
 - path: ../mixins/workflow-controller-deployment.yaml
 - path: ../mixins/workflow-controller-cluster-workflow-template-rbac.yaml
-- path: ../mixins/pod-manager-full-permissions-rbac.yaml
 - path: ../mixins/minio-deployment.yaml
 
 labels:

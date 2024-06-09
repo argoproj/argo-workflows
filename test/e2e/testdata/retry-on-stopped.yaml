@@ -8,7 +8,7 @@ spec:
       workflows.argoproj.io/test: "true"
       workflows.argoproj.io/workflow: "wf-retry-stopped"
   entrypoint: wf-retry-stopped-main
-  serviceAccountName: default
+  serviceAccountName: argo
   executor:
     serviceAccountName: default
   templates:
