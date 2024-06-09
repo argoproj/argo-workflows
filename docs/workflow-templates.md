@@ -138,7 +138,6 @@ kind: WorkflowTemplate
 metadata:
   name: hello-world-template-global-arg
 spec:
-  serviceAccountName: argo
   templates:
     - name: hello-world
       container:
@@ -151,8 +150,7 @@ kind: Workflow
 metadata:
   generateName: hello-world-wf-global-arg-
 spec:
-  serviceAccountName: argo
-  entrypoint: print-message
+  entrypoint: whalesay
   arguments:
     parameters:
       - name: global-parameter

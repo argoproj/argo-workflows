@@ -67,7 +67,6 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      serviceAccountName: resource-permissioned-executor
       resource:
         action: create
         setOwnerReference: true
@@ -116,7 +115,6 @@ spec:
               metadata:
                 generateName: k8s-pod-resource-
               spec:
-                serviceAccountName: argo
                 containers:
                 - name: argosay-container
                   image: argoproj/argosay:v2
