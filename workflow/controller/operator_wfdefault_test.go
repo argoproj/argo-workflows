@@ -144,7 +144,7 @@ var storedSpecResult = `
    },
    "entrypoint": "whalesay-template",
    "onExit": "whalesay-exit",
-   "serviceAccountName": "argo",
+   "serviceAccountName": "default",
    "templates": [
       {
          "container": {
