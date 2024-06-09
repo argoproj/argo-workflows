@@ -84,7 +84,7 @@ Use the same configuration as GRPC mode, but also set:
 
 	ARGO_HTTP1=true
 
-If your server is behind an ingress with a path (you'll be running "argo server --basehref /...) or "BASE_HREF=/... argo server"):
+If your server is behind an ingress with a path (running "argo server --base-href /argo" or "ARGO_BASE_HREF=/argo argo server"):
 
 	ARGO_BASE_HREF=/argo
 `,
