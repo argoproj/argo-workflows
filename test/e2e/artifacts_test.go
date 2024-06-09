@@ -257,12 +257,14 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 	for _, tt := range []struct {
 		workflowFile                 string
 		hasGC                        bool
+		workflowShouldSucceed        bool
 		expectedArtifacts            []artifactState
 		expectedGCPodsOnWFCompletion int
 	}{
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 2,
 			expectedArtifacts: []artifactState{
 				artifactState{"first-on-completion-1", "my-bucket-2", true, false},
@@ -276,6 +278,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
@@ -286,6 +289,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
@@ -296,6 +300,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
@@ -306,6 +311,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
@@ -316,6 +322,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-ref-template.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
@@ -327,6 +334,15 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-no-gc.yaml",
 			hasGC:                        false,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts:            []artifactState{},
+		},
+		// Workflow fails to write an artifact that's been defined as an Output
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-artifact-not-written.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        false, // artifact not being present causes Workflow to fail
 			expectedGCPodsOnWFCompletion: 0,
 			expectedArtifacts:            []artifactState{},
 		},
@@ -352,7 +368,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				}
 			})
 
-		if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+		if tt.workflowShouldSucceed && when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
 		}) {
 			fmt.Println("can't reliably verify Artifact GC since workflow failed")
@@ -365,7 +381,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			WaitForWorkflow(
 				fixtures.WorkflowCompletionOkay(true),
 				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-					return len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion,
+					return (len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion) || (tt.expectedGCPodsOnWFCompletion == 0),
 						fmt.Sprintf("for all %d pods to have been recouped", tt.expectedGCPodsOnWFCompletion)
 				}))
 
@@ -391,6 +407,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		when.
 			DeleteWorkflow().
 			WaitForWorkflowDeletion()
+
+		when.Then().ExpectWorkflowDeleted()
 
 		when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
 

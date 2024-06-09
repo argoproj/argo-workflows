@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: testing-artifact-not-present-
+spec:
+  entrypoint: entrypoint
+  artifactGC:
+    strategy: OnWorkflowDeletion
+  podGC:
+    strategy: ""
+  templates:
+    - name: entrypoint
+      steps:
+      - - name: on-deletion
+          template: on-deletion
+    - name: on-deletion
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "not writing anything"
+      outputs:
+        artifacts:
+          - name: notpresent
+            path: /tmp/notpresent
