@@ -107,9 +107,9 @@ ifndef $(GOPATH)
 endif
 
 # -- file lists
-ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39- | xargs -I {} find {} -type f -name "*.go")
-CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39- | xargs -I {} find {} -type f -name "*.go")
-CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39- | xargs -I {} find {} -type f -name "*.go")
+ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+CLI_PKG_FILES             := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
