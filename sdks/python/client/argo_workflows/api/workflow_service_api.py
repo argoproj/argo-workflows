@@ -340,6 +340,8 @@ class WorkflowServiceApi(object):
             params_map={
                 'all': [
                     'namespace',
+                    'name_prefix',
+                    'name_pattern',
                     'list_options_label_selector',
                     'list_options_field_selector',
                     'list_options_watch',
@@ -370,6 +372,10 @@ class WorkflowServiceApi(object):
                 'openapi_types': {
                     'namespace':
                         (str,),
+                    'name_prefix':
+                        (str,),
+                    'name_pattern':
+                        (str,),
                     'list_options_label_selector':
                         (str,),
                     'list_options_field_selector':
@@ -395,6 +401,8 @@ class WorkflowServiceApi(object):
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
+                    'name_prefix': 'namePrefix',
+                    'name_pattern': 'namePattern',
                     'list_options_label_selector': 'listOptions.labelSelector',
                     'list_options_field_selector': 'listOptions.fieldSelector',
                     'list_options_watch': 'listOptions.watch',
@@ -409,6 +417,8 @@ class WorkflowServiceApi(object):
                 },
                 'location_map': {
                     'namespace': 'path',
+                    'name_prefix': 'query',
+                    'name_pattern': 'query',
                     'list_options_label_selector': 'query',
                     'list_options_field_selector': 'query',
                     'list_options_watch': 'query',
@@ -1741,6 +1751,8 @@ class WorkflowServiceApi(object):
             namespace (str):
 
         Keyword Args:
+            name_prefix (str): [optional]
+            name_pattern (str): [optional]
             list_options_label_selector (str): A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.. [optional]
             list_options_field_selector (str): A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.. [optional]
             list_options_watch (bool): Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.. [optional]

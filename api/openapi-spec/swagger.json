@@ -2896,6 +2896,16 @@
           },
           {
             "type": "string",
+            "name": "namePrefix",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "namePattern",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
             "name": "listOptions.labelSelector",
             "in": "query"

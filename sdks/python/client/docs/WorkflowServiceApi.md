@@ -57759,6 +57759,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
+    name_prefix = "namePrefix_example" # str |  (optional)
+    name_pattern = "namePattern_example" # str |  (optional)
     list_options_label_selector = "listOptions.labelSelector_example" # str | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. (optional)
     list_options_field_selector = "listOptions.fieldSelector_example" # str | A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. (optional)
     list_options_watch = True # bool | Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. (optional)
@@ -57793,6 +57795,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **str**|  |
+ **name_prefix** | **str**|  | [optional]
+ **name_pattern** | **str**|  | [optional]
  **list_options_label_selector** | **str**| A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. | [optional]
  **list_options_field_selector** | **str**| A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. | [optional]
  **list_options_watch** | **bool**| Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. | [optional]
