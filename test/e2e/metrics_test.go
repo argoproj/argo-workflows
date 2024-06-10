@@ -80,7 +80,7 @@ func (s *MetricsSuite) TestRetryMetrics() {
 func (s *MetricsSuite) TestFailedMetric() {
 	s.Given().
 		WorkflowTemplate(`@testdata/template-failed-metric.yaml`).
-		Workflow(`@testdata/wf=failed-metric.yaml`).
+		Workflow(`@testdata/wf-failed-metric.yaml`).
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
