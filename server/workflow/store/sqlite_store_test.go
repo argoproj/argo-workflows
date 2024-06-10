@@ -79,7 +79,7 @@ func TestStoreOperation(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			require.NoError(t, store.Add(generateWorkflow(i)))
 		}
-		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
+		num, err := store.CountWorkflows(context.Background(), "argo", "", "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, int64(10), num)
 		// Labels are also added
@@ -129,12 +129,38 @@ func TestStoreOperation(t *testing.T) {
 		}))
 	})
 	t.Run("TestListWorkflows", func(t *testing.T) {
-		wfList, err := store.ListWorkflows(context.Background(), "argo", "", metav1.ListOptions{Limit: 5})
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "", "", metav1.ListOptions{Limit: 5})
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 5)
 	})
+	t.Run("TestListWorkflows namePrefix", func(t *testing.T) {
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "flow", "", metav1.ListOptions{Limit: 5})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 0)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "workflow-", "", metav1.ListOptions{Limit: 5})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 5)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "workflow-1", "", metav1.ListOptions{Limit: 5})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+	})
+	t.Run("TestListWorkflows namePattern", func(t *testing.T) {
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "", "non-existing-pattern", metav1.ListOptions{Limit: 5})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 0)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "", "flow", metav1.ListOptions{Limit: 5})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 5)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "workflow-1", "", metav1.ListOptions{Limit: 5})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+	})
 	t.Run("TestCountWorkflows", func(t *testing.T) {
-		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
+		num, err := store.CountWorkflows(context.Background(), "argo", "", "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, int64(9), num)
 	})

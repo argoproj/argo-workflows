@@ -44,6 +44,9 @@ func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName st
 	if options.NamePrefix != "" {
 		clauses = append(clauses, db.Raw("name like ?", options.NamePrefix+"%"))
 	}
+	if options.NamePattern != "" {
+		clauses = append(clauses, db.Raw("name like ?", "%"+options.NamePattern+"%"))
+	}
 	if !options.MinStartedAt.IsZero() {
 		clauses = append(clauses, db.Raw("startedat >= ?", options.MinStartedAt))
 	}
