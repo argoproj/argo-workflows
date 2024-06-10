@@ -178,7 +178,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 	// verify if we have permission to list Workflows
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

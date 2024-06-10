@@ -9,8 +9,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CanI(ctx context.Context, kubeclientset kubernetes.Interface, verb, resource, namespace, name string) (bool, error) {
-	logCtx := log.WithFields(log.Fields{"verb": verb, "resource": resource, "namespace": namespace, "name": name})
+func CanI(ctx context.Context, kubeclientset kubernetes.Interface, verb, resource, namespace string) (bool, error) {
+	logCtx := log.WithFields(log.Fields{"verb": verb, "resource": resource, "namespace": namespace})
 	logCtx.Debug("CanI")
 
 	review, err := kubeclientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, &auth.SelfSubjectAccessReview{
