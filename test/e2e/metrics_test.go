@@ -85,14 +85,15 @@ func (s *MetricsSuite) TestFailedMetric() {
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
-		Then().ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-		assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-		s.e(s.T()).GET("").
-			Expect().
-			Status(200).
-			Body().
-			Contains(`argo_workflows_dagtask_workflow_failure 1`)
-	})
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`argo_workflows_dagtask_workflow_failure 1`)
+		})
 }
 
 func TestMetricsSuite(t *testing.T) {
