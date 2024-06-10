@@ -21,7 +21,7 @@ spec:
           - -c
         args:
           - |
-            echo "not writing anything"
+            echo "intentionally not writing anything to disk"
       outputs:
         artifacts:
           - name: notpresent
