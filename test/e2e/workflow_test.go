@@ -64,7 +64,7 @@ metadata:
   generateName: get-resources-via-script-template-
   namespace: argo
 spec:
-  serviceAccountName: default
+  serviceAccountName: argo
   automountServiceAccountToken: false
   executor:
     serviceAccountName: default

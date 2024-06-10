@@ -27,6 +27,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
@@ -453,6 +454,10 @@ func withOutputs(outputs wfv1.Outputs) with {
 	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
 		nodeId := woc.nodeID(pod)
 		err := woc.controller.taskResultInformer.GetStore().Add(&wfv1.WorkflowTaskResult{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: workflow.APIVersion,
+				Kind:       workflow.WorkflowTaskResultKind,
+			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nodeId,
 				Labels: map[string]string{
