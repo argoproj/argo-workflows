@@ -30,9 +30,11 @@ message WorkflowGetRequest {
 
 message WorkflowListRequest {
   string namespace = 1;
-  k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+  string namePrefix = 2;
+  string namePattern = 3;
+  k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 4;
   // Fields to be included or excluded in the response. e.g. "items.spec,items.status.phase", "-items.status.nodes"
-  string fields = 3;
+  string fields = 5;
 }
 
 message WorkflowResubmitRequest {
