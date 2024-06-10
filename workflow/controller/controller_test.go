@@ -321,8 +321,10 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)
-		wfc.podInformer = wfc.newPodInformer(ctx)
-		wfc.configMapInformer = wfc.newConfigMapInformer()
+		wfc.podInformer, _ = wfc.newPodInformer(ctx)
+		wfc.cmInformer = wfc.newConfigMapInformer()
+		wfc.cmControllerInformer = wfc.newConfigMapControllerInformer(ctx)
+		wfc.cmSemaphoreInformer = wfc.newConfigMapSemaphoreInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
@@ -927,10 +929,7 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	cancel, controller := newController(wf, wf1, wf2)
 	defer cancel()
 
-	cm := apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
-		Name:      "my-config",
-		Namespace: "default",
-	}}
+	cmNamespace, cmName := "default", "my-config"
 	assert.Equal(3, controller.wfQueue.Len())
 
 	// Remove all Wf from Worker queue
@@ -940,7 +939,7 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	}
 	assert.Equal(0, controller.wfQueue.Len())
 
-	controller.notifySemaphoreConfigUpdate(&cm)
+	controller.notifySemaphoreConfigUpdate(cmNamespace, cmName)
 	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
 }

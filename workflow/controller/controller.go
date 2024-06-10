@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
@@ -35,7 +36,6 @@ import (
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 
@@ -123,7 +123,9 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
-	configMapInformer     cache.SharedIndexInformer
+	cmInformer            cache.SharedIndexInformer // configmaps with common.LabelKeyConfigMapType: plugins, parameters, memoizations, etc
+	cmControllerInformer  cache.SharedIndexInformer // controller's own configmap
+	cmSemaphoreInformer   cache.SharedIndexInformer // semaphore configmaps
 	wfQueue               workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
@@ -302,7 +304,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
 
-	wfc.configMapInformer = wfc.newConfigMapInformer()
+	wfc.cmInformer = wfc.newConfigMapInformer()
+	wfc.cmControllerInformer = wfc.newConfigMapControllerInformer(ctx)
+	wfc.cmSemaphoreInformer = wfc.newConfigMapSemaphoreInformer()
 
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
@@ -311,14 +315,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal(err)
 	}
 
-	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
-		go wfc.runConfigMapWatcher(ctx.Done())
-	}
-
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.configMapInformer.Run(ctx.Done())
+	go wfc.cmInformer.Run(ctx.Done())
+	go wfc.cmControllerInformer.Run(ctx.Done())
+	go wfc.cmSemaphoreInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
@@ -330,7 +332,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
-		wfc.configMapInformer.HasSynced,
+		wfc.cmInformer.HasSynced,
+		wfc.cmControllerInformer.HasSynced,
+		wfc.cmSemaphoreInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
@@ -421,43 +425,12 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	return nil
 }
 
-func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-	ctx := context.Background()
-	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	defer retryWatcher.Stop()
-
-	for {
-		select {
-		case event := <-retryWatcher.ResultChan():
-			cm, ok := event.Object.(*apiv1.ConfigMap)
-			if !ok {
-				log.Errorf("invalid config map object received in config watcher. Ignored processing")
-				continue
-			}
-			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
-			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
-				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
-				wfc.UpdateConfig(ctx)
-			}
-			wfc.notifySemaphoreConfigUpdate(cm)
-		case <-stopCh:
-			return
-		}
-	}
-}
-
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
-func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
-	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
+func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ns string, name string) {
+	key := fmt.Sprintf("%s/%s", ns, name)
+	log.Debugf("received semaphore config map %s update", key)
+
+	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, key)
 	if err != nil {
 		log.Errorf("failed get the workflow from informer. %v", err)
 	}
@@ -1042,9 +1015,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				// This function is called when an object is to be removed
 				// from the informer
 				DeleteFunc: func(obj interface{}) {
-					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-					// key function.
-
 					// Remove finalizers from Pods if they exist before deletion
 					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 					podList, err := pods.List(ctx, metav1.ListOptions{
@@ -1059,6 +1029,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						}
 					}
 
+					// IndexerInformer uses a delta queue, therefore for deletes we have to use this key function.
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
@@ -1252,64 +1223,147 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
-		opts.LabelSelector = common.LabelKeyConfigMapType
+		opts.LabelSelector = common.LabelKeyConfigMapType // only configmaps with this label
 	})
-	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
-	if wfc.executorPlugins != nil {
-		//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
-		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
-				cm, err := meta.Accessor(obj)
-				if err != nil {
-					return false
-				}
-				return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
-			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
-					cm := obj.(*apiv1.ConfigMap)
-					p, err := plugin.FromConfigMap(cm)
-					if err != nil {
-						log.WithField("namespace", cm.GetNamespace()).
-							WithField("name", cm.GetName()).
-							WithError(err).
-							Error("failed to convert configmap to plugin")
-						return
-					}
-					if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
-						wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
-					}
-					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
-					log.WithField("namespace", cm.GetNamespace()).
-						WithField("name", cm.GetName()).
-						Info("Executor plugin added")
-				},
-				UpdateFunc: func(_, obj interface{}) {
-					cm := obj.(*apiv1.ConfigMap)
-					p, err := plugin.FromConfigMap(cm)
-					if err != nil {
-						log.WithField("namespace", cm.GetNamespace()).
-							WithField("name", cm.GetName()).
-							WithError(err).
-							Error("failed to convert configmap to plugin")
-						return
-					}
 
-					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
-					log.WithField("namespace", cm.GetNamespace()).
-						WithField("name", cm.GetName()).
-						Info("Executor plugin updated")
-				},
-				DeleteFunc: func(obj interface{}) {
-					key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
-					delete(wfc.executorPlugins[namespace], name)
-					log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
-				},
-			},
-		})
+	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
+	if wfc.executorPlugins == nil {
+		return indexInformer
 	}
+
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			cmMeta, err := meta.Accessor(obj)
+			if err != nil {
+				log.WithError(err).
+					Error("failed to get configmap metadata")
+				return false
+			}
+
+			return isPluginCM(cmMeta)
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+				wfc.applyPluginCM(cm, "added")
+			},
+			UpdateFunc: func(_, obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+				wfc.applyPluginCM(cm, "updated")
+			},
+			DeleteFunc: func(obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+				wfc.deletePluginCM(cm)
+			},
+		},
+	})
 	return indexInformer
+}
+
+func isPluginCM(cmMeta metav1.Object) bool {
+	return cmMeta.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
+}
+
+func (wfc *WorkflowController) applyPluginCM(cm *apiv1.ConfigMap, verb string) {
+	p, err := plugin.FromConfigMap(cm)
+	if err != nil {
+		log.WithField("namespace", cm.GetNamespace()).
+			WithField("name", cm.GetName()).
+			WithError(err).
+			Error("failed to convert configmap to plugin")
+		return
+	}
+	if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
+		wfc.executorPlugins[cm.GetNamespace()] = map[string]*spec.Plugin{}
+	}
+	wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
+	log.WithField("namespace", cm.GetNamespace()).
+		WithField("name", cm.GetName()).
+		Infof("Executor plugin %s", verb)
+}
+
+func (wfc *WorkflowController) deletePluginCM(cm *apiv1.ConfigMap) {
+	key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(cm)
+	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+	delete(wfc.executorPlugins[namespace], name)
+	log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
+}
+
+// Whether to watch the Controller's ConfigMap and semaphore ConfigMaps for run-time changes
+var watchControllerSemaphoreConfigMaps = os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false"
+
+func (wfc *WorkflowController) newConfigMapControllerInformer(ctx context.Context) cache.SharedIndexInformer {
+	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetNamespace(), 20*time.Minute, nil, func(opts *metav1.ListOptions) {
+		opts.FieldSelector = fields.OneTermEqualSelector(metav1.ObjectNameField, wfc.configController.GetName()).String() // only the controller configmap
+	})
+
+	if !watchControllerSemaphoreConfigMaps {
+		return indexInformer
+	}
+
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	indexInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(_, obj interface{}) {
+			cm := obj.(*apiv1.ConfigMap)
+			log.Infof("Received Workflow Controller config map %s/%s update", cm.GetNamespace(), cm.GetName())
+			wfc.UpdateConfig(ctx)
+		},
+	})
+	return indexInformer
+}
+
+func (wfc *WorkflowController) newConfigMapSemaphoreInformer() cache.SharedIndexInformer {
+	indexInformer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
+	})
+	//nolint:errcheck // the error only happens if the informer has already started, which hasn't happened yet (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L446)
+	indexInformer.SetTransform(func(obj interface{}) (interface{}, error) {
+		cm, ok := obj.(*apiv1.ConfigMap)
+		if !ok {
+			return obj, nil
+		}
+
+		// only leave name and namespace, remove the rest as we don't use it
+		cm = cm.DeepCopy()
+		cm.ObjectMeta = metav1.ObjectMeta{
+			Name:      cm.Name,
+			Namespace: cm.Namespace,
+		}
+		cm.Data = map[string]string{}
+		cm.BinaryData = map[string][]byte{}
+		return cm, nil
+	})
+
+	if !watchControllerSemaphoreConfigMaps {
+		return indexInformer
+	}
+
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			cmMeta, err := meta.Accessor(obj)
+			if err != nil {
+				log.WithError(err).
+					Error("failed to get configmap metadata")
+				return false
+			}
+
+			return isSemaphoreCM(cmMeta.GetNamespace(), cmMeta.GetName())
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(_, obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+				wfc.notifySemaphoreConfigUpdate(cm.GetNamespace(), cm.GetName())
+			},
+		},
+	})
+	return indexInformer
+}
+
+func isSemaphoreCM(ns string, name string) bool {
+	key := fmt.Sprintf("%s/%s", ns, name)
+	return indexes.HasSemaphoreKey(key)
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
@@ -1330,11 +1384,15 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 	return nil
 }
 
+func (wfc *WorkflowController) GetNamespace() string {
+	return wfc.namespace
+}
+
 func (wfc *WorkflowController) GetManagedNamespace() string {
 	if wfc.managedNamespace != "" {
 		return wfc.managedNamespace
 	}
-	return wfc.Config.Namespace
+	return wfc.Config.Namespace // if not set, then empty string = cluster-scope. if set, then limit the watch
 }
 
 func (wfc *WorkflowController) getMaxStackDepth() int {
