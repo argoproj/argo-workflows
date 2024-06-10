@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dag-task-test
+spec:
+  entrypoint: dag-task
+  templates:
+  - name: dag-task
+    metrics:
+        prometheus:
+        - counter:
+            value: "1"
+          # help: DAG Task Workflow succeeded
+          # name: dagtask_workflow_success
+          # when: '{{status}} == Succeeded'
+          help: DAG Task Workflow failed
+          name: dagtask_workflow_failure
+          when: '{{status}} == Failed'
+    dag:
+      tasks:
+      - name: TEST-ONE
+        template: echo
+        arguments:
+          parameters: 
+            - name: message
+              value: "console output-->TEST-{{item.command}}"
+            - name: tag
+              value: "{{item.tag}}"
+        withItems:
+          - { tag: TEST-ONE-A, command: ONE-A }
+          - { tag: TEST-ONE-B, command: ONE-B }
+
+      - name: TEST-TWO
+        template: echo
+        arguments:
+          parameters: 
+            - name: message
+              value: "console output-->TEST-{{item.command}}"
+            - name: tag
+              value: "{{item.tag}}"
+        withItems:
+          - { tag: TEST-TWO-A, command: TWO-A }
+          - { tag: TEST-TWO-B, command: TWO-B }
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+      - name: tag
+    container:
+      image: alpine:3.7
+      # command: [echo, "{{inputs.parameters.message}}"]
+      # to fail it
+      command: ["{{inputs.parameters.message}}"]
