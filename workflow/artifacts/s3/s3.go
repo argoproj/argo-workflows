@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
@@ -181,12 +182,8 @@ func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 			return err
 		}
 
-		isDir, err := s3cli.IsDirectory(artifact.S3.Bucket, artifact.S3.Key)
-		if err != nil {
-			return fmt.Errorf("failed checking if %s is a directory: %v", artifact.S3.Key, err)
-		}
-
-		if !isDir {
+		// s3cli.IsDirectory will introduce additional api requests for simple file delete (most scenarios)
+		if !strings.HasSuffix(artifact.S3.Key, "/") {
 			return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
 		}
 
