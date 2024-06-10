@@ -407,8 +407,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		when.
 			DeleteWorkflow().
 			WaitForWorkflowDeletion()
-
-		when.Then().ExpectWorkflowDeleted()
+			Then().
+			ExpectWorkflowDeleted()
 
 		when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
 
