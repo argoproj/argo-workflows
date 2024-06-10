@@ -51,9 +51,12 @@ export const WorkflowsService = {
             'items.status.estimatedDuration',
             'items.status.progress',
             'items.spec.suspend'
-        ]
+        ],
+        name?: string,
+        namePrefix?: string,
+        namePattern?: string
     ) {
-        const params = queryParams({phases, labels, pagination});
+        const params = queryParams({phases, labels, pagination, name, namePrefix, namePattern});
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     },

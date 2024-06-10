@@ -1,6 +1,8 @@
 import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
 import React, {useState} from 'react';
 
+import './input-filter.scss';
+
 interface InputProps {
     value: string;
     placeholder?: string;
@@ -44,7 +46,7 @@ export function InputFilter(props: InputProps) {
     }
 
     return (
-        <>
+        <div className='input-filter'>
             <Autocomplete
                 items={localCache}
                 value={value}
@@ -62,6 +64,6 @@ export function InputFilter(props: InputProps) {
                 }}>
                 <i className='fa fa-times-circle' />
             </a>
-        </>
+        </div>
     );
 }
