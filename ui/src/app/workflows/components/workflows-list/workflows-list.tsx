@@ -34,6 +34,9 @@ interface WorkflowListRenderOptions {
     paginationLimit: number;
     phases: WorkflowPhase[];
     labels: string[];
+    name: string;
+    namePrefix: string;
+    namePattern: string;
 }
 
 const actions = Actions.WorkflowOperationsMap;
@@ -82,6 +85,23 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
     const [error, setError] = useState<Error>();
+    // don't get the storage saved value if there is a name filter in the URL, as it will override the storage value
+    const hasNameUrlFiltering = queryParams.has('name') || queryParams.has('namePrefix') || queryParams.has('namePattern');
+    const [name, setName] = useState(() => {
+        const savedOptions = hasNameUrlFiltering ? '' : storage.getItem('options', {}).name;
+        const nameQueryParam = queryParams.get('name');
+        return (nameQueryParam ? nameQueryParam : savedOptions) || '';
+    });
+    const [namePrefix, setNamePrefix] = useState(() => {
+        const savedOptions = hasNameUrlFiltering ? '' : storage.getItem('options', {}).namePrefix;
+        const namePrefixQueryParam = queryParams.get('namePrefix');
+        return (namePrefixQueryParam ? namePrefixQueryParam : savedOptions) || '';
+    });
+    const [namePattern, setNamePattern] = useState(() => {
+        const savedOptions = hasNameUrlFiltering ? '' : storage.getItem('options', {}).namePattern;
+        const namePatternQueryParam = queryParams.get('namePattern');
+        return (namePatternQueryParam ? namePatternQueryParam : savedOptions) || '';
+    });
 
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
         const nowDisabled: any = {...allBatchActionsEnabled};
@@ -119,6 +139,9 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         const options = {selectedPhases: [], selectedLabels: []} as unknown as WorkflowListRenderOptions;
         options.phases = phases;
         options.labels = labels;
+        options.name = name;
+        options.namePrefix = namePrefix;
+        options.namePattern = namePattern;
         if (pagination.limit) {
             options.paginationLimit = pagination.limit;
         }
@@ -133,12 +156,21 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
         }
+        if (name) {
+            params.append('name', name);
+        }
+        if (namePrefix) {
+            params.append('namePrefix', namePrefix);
+        }
+        if (namePattern) {
+            params.append('namePattern', namePattern);
+        }
         history.push(historyUrl('workflows' + (Utils.managedNamespace ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
+    }, [namespace, name, namePrefix, namePattern, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
 
     useEffect(() => {
         const listWatch = new ListWatch(
-            () => services.workflows.list(namespace, phases, labels, pagination),
+            () => services.workflows.list(namespace, phases, labels, pagination, undefined, name, namePrefix, namePattern),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
             metadata => {
                 setError(null);
@@ -156,7 +188,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, name, namePrefix, namePattern]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
@@ -212,6 +244,12 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                 setFinishedBefore(date);
                                 clearSelectedWorkflows(); // date filters are client-side, but clear similar to the server-side ones for consistency
                             }}
+                            name={name}
+                            setName={setName}
+                            namePrefix={namePrefix}
+                            setNamePrefix={setNamePrefix}
+                            namePattern={namePattern}
+                            setNamePattern={setNamePattern}
                         />
                     </div>
                 </div>

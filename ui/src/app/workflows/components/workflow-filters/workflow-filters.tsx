@@ -11,7 +11,10 @@ import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 import {services} from '../../../shared/services';
 
+import {InputFilter} from '../../../shared/components/input-filter';
 import './workflow-filters.scss';
+import {DropDown} from '../../../shared/components/dropdown/dropdown';
+import classNames from 'classnames';
 
 interface WorkflowFilterProps {
     workflows: models.Workflow[];
@@ -26,9 +29,39 @@ interface WorkflowFilterProps {
     setLabels: (labels: string[]) => void;
     setCreatedAfter: (createdAfter: Date) => void;
     setFinishedBefore: (finishedBefore: Date) => void;
+    name: string;
+    setName: (name: string) => void;
+    namePrefix: string;
+    setNamePrefix: (namePrefix: string) => void;
+    namePattern: string;
+    setNamePattern: (namePattern: string) => void;
 }
 
+const NAME_FILTERS = [
+    {
+        title: 'Name Pattern',
+        id: 'namePattern'
+    },
+    {
+        title: 'Name Prefix',
+        id: 'namePrefix'
+    },
+    {
+        title: 'Name Exact',
+        id: 'name'
+    }
+];
+
 export function WorkflowFilters(props: WorkflowFilterProps) {
+    const [nameFilter, setNameFilter] = React.useState(() => {
+        if (props.namePrefix) {
+            return NAME_FILTERS[1];
+        }
+        if (props.name) {
+            return NAME_FILTERS[2];
+        }
+        return NAME_FILTERS[0];
+    });
     function setLabel(name: string, value: string) {
         props.setLabels([name.concat('=' + value)]);
     }
@@ -57,12 +90,44 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
         return results;
     }, [props.workflows, props.phaseItems]);
 
+    const handleNameFilterChange = (item: {title: string; id: string}) => {
+        props.setNamePrefix('');
+        props.setNamePattern('');
+        props.setName('');
+        setNameFilter(item);
+    };
+
     return (
         <div className='wf-filters-container'>
             <div className='row'>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Namespace</p>
                     <NamespaceFilter value={props.namespace} onChange={props.setNamespace} />
+                </div>
+                <div className='columns small-2 xlarge-12'>
+                    <DropDown
+                        isMenu
+                        closeOnInsideClick
+                        anchor={
+                            <div className={classNames('top-bar__filter')} title='Filter'>
+                                <p className='wf-filters-container__title'>
+                                    {nameFilter.title} <i className='fa fa-angle-down' aria-hidden='true' />
+                                </p>
+                            </div>
+                        }>
+                        <ul id='top-bar__filter-list'>
+                            {NAME_FILTERS.map((item, i) => (
+                                <li key={i} className={classNames('top-bar__filter-item', {title: true})} onClick={() => handleNameFilterChange(item)}>
+                                    <span>{item.title}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </DropDown>
+                    {nameFilter.id === 'namePrefix' ? <InputFilter value={props.namePrefix} name='wfNamePrefix' onChange={props.setNamePrefix} placeholder='Search...' /> : null}
+                    {nameFilter.id === 'namePattern' ? (
+                        <InputFilter value={props.namePattern} name='wfNamePattern' onChange={props.setNamePattern} placeholder='Search...' />
+                    ) : null}
+                    {nameFilter.id === 'name' ? <InputFilter value={props.name} name='wfName' onChange={props.setName} placeholder='Search...' /> : null}
                 </div>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Labels</p>
