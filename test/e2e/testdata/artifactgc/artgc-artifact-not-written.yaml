@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: testing-artifact-not-present-
+  generateName: artgc-artifact-not-written-
 spec:
   entrypoint: entrypoint
   artifactGC:
