@@ -11,9 +11,9 @@ spec:
   templates:
     - name: entrypoint
       steps:
-      - - name: on-deletion
-          template: on-deletion
-    - name: on-deletion
+      - - name: artifact-not-written
+          template: artifact-not-written
+    - name: artifact-not-written
       container:
         image: argoproj/argosay:v2
         command:
