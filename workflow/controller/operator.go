@@ -963,18 +963,6 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
-	if retryStrategy.Expression != "" && len(childNodeIds) > 0 {
-		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
-		scope := env.GetFuncMap(localScope)
-		shouldContinue, err := argoexpr.EvalBool(retryStrategy.Expression, scope)
-		if err != nil {
-			return nil, false, err
-		}
-		if !shouldContinue && lastChildNode.Fulfilled() {
-			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
-		}
-	}
-
 	if lastChildNode == nil {
 		return node, true, nil
 	}
@@ -999,6 +987,18 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 		woc.log.Infoln(message)
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, message), true, nil
+	}
+
+	if retryStrategy.Expression != "" && len(childNodeIds) > 0 {
+		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
+		scope := env.GetFuncMap(localScope)
+		shouldContinue, err := argoexpr.EvalBool(retryStrategy.Expression, scope)
+		if err != nil {
+			return nil, false, err
+		}
+		if !shouldContinue && lastChildNode.Fulfilled() {
+			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
+		}
 	}
 
 	if retryStrategy.Backoff != nil {

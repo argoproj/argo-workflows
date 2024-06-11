@@ -932,6 +932,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, "", n.Message)
 
 	// Mark the parent node as running again and the lastChild as errored.
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
@@ -941,6 +942,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
 
 	// Add a third node that has failed.
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
@@ -952,6 +954,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
 }
 
 func parseRetryMessage(message string) (int, error) {
