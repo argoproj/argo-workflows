@@ -504,7 +504,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 }
 
 func (a *ArtifactServer) validateAccess(ctx context.Context, wf *wfv1.Workflow) error {
-	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace)
+	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
 	if err != nil {
 		return err
 	}

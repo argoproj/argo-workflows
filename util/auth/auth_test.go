@@ -26,11 +26,11 @@ func TestCanI(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	allowed, err := CanI(ctx, kubeClient, "get", "workflow", "")
+	allowed, err := CanI(ctx, kubeClient, "get", "workflow", "", "")
 	if assert.NoError(t, err) {
 		assert.True(t, allowed)
 	}
-	notAllowed, err := CanI(ctx, kubeClient, "list", "workflow", "")
+	notAllowed, err := CanI(ctx, kubeClient, "list", "workflow", "", "")
 	if assert.NoError(t, err) {
 		assert.False(t, notAllowed)
 	}
