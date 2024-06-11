@@ -47,7 +47,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	// verify if we have permission to list Workflows
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace)
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -107,7 +107,7 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *w
 		// no need to call ToStatusError since it is already a status
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, wf.Namespace)
+	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -122,7 +122,7 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	allowed, err := auth.CanI(ctx, "delete", workflow.WorkflowPlural, wf.Namespace)
+	allowed, err := auth.CanI(ctx, "delete", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

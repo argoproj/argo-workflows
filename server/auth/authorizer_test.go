@@ -22,7 +22,7 @@ func TestAuthorizer_CanI(t *testing.T) {
 	})
 	ctx := context.WithValue(context.Background(), KubeKey, kubeClient)
 	t.Run("CanI", func(t *testing.T) {
-		allowed, err := CanI(ctx, "", "", "")
+		allowed, err := CanI(ctx, "", "", "", "")
 		require.NoError(t, err)
 		assert.True(t, allowed)
 	})
