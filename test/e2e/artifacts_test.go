@@ -137,11 +137,11 @@ type artifactState struct {
 type s3Location struct {
 	bucketName string
 	// specify one of these two:
-	specifiedKey string      // exact key is known
-	derivedKey   *derivedKey // exact key needs to be derived
+	specifiedKey string              // exact key is known
+	derivedKey   *artifactDerivedKey // exact key needs to be derived
 }
 
-type derivedKey struct {
+type artifactDerivedKey struct {
 	templateName string
 	artifactName string
 }
@@ -386,7 +386,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowShouldSucceed:        false, // artifact not being present causes Workflow to fail
 			expectedGCPodsOnWFCompletion: 0,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket", derivedKey: &derivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				artifactState{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
 			},
 		},
 	} {
