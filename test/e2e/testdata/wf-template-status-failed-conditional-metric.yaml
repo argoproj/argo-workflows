@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-task
+  generateName: wf-failed-conditional-metric-
 spec:
   entrypoint: whalesay
   templates:
@@ -9,5 +9,5 @@ spec:
       steps:
         - - name: hello-world
             templateRef:
-              name: dag-task-test
-              template: dag-task
+              name: template-status-failed-conditional-metric
+              template: dag

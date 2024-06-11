@@ -79,8 +79,8 @@ func (s *MetricsSuite) TestRetryMetrics() {
 
 func (s *MetricsSuite) TestFailedMetric() {
 	s.Given().
-		WorkflowTemplate(`@testdata/template-failed-metric.yaml`).
-		Workflow(`@testdata/wf-failed-metric.yaml`).
+		WorkflowTemplate(`@testdata/template-status-failed-conditional-metric.yaml`).
+		Workflow(`@testdata/wf-template-status-failed-conditional-metric.yaml`).
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
@@ -92,7 +92,7 @@ func (s *MetricsSuite) TestFailedMetric() {
 				Expect().
 				Status(200).
 				Body().
-				Contains(`argo_workflows_dagtask_workflow_failure 1`)
+				Contains(`argo_workflows_task_failure 1`)
 		})
 }
 
