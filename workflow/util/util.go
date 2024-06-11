@@ -1252,44 +1252,32 @@ func ConvertYAMLToJSON(str string) (string, error) {
 	return str, nil
 }
 
-// PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
-func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
-	wfPatch, err := ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
-	if err != nil {
-		return "", err
-	}
-	tmplPatch, err := ConvertYAMLToJSON(tmpl.PodSpecPatch)
-	if err != nil {
-		return "", err
-	}
-	data, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
-	return string(data), err
-}
-
-func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYaml string) (*apiv1.PodSpec, error) {
+func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*apiv1.PodSpec, error) {
 	podSpecJson, err := json.Marshal(podSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
 	}
 
-	// must convert to json because PodSpec has only json tags
-	podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
-	if err != nil {
-		return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
-	}
+	for _, podSpecPatchYaml := range podSpecPatchYamls {
+		// must convert to json because PodSpec has only json tags
+		podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
+		}
 
-	// validate the patch to be a PodSpec
-	if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
-		return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
-	}
+		// validate the patch to be a PodSpec
+		if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
+		}
 
-	modJson, err := strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
-	if err != nil {
-		return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		podSpecJson, err = strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		}
 	}
 
 	var newPodSpec apiv1.PodSpec
-	err = json.Unmarshal(modJson, &newPodSpec)
+	err = json.Unmarshal(podSpecJson, &newPodSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 	}

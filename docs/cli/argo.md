@@ -57,7 +57,7 @@ Use the same configuration as GRPC mode, but also set:
 
 	ARGO_HTTP1=true
 
-If your server is behind an ingress with a path (you'll be running "argo server --basehref /...) or "BASE_HREF=/... argo server"):
+If your server is behind an ingress with a path (running "argo server --base-href /argo" or "ARGO_BASE_HREF=/argo argo server"):
 
 	ARGO_BASE_HREF=/argo
 
@@ -69,7 +69,7 @@ argo [flags]
 ### Options
 
 ```
-      --argo-base-href string          Path to use with HTTP client due to BASE_HREF. Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
@@ -107,7 +107,7 @@ argo [flags]
 * [argo archive](argo_archive.md)	 - manage the workflow archive
 * [argo auth](argo_auth.md)	 - manage authentication settings
 * [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
-* [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
+* [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash, zsh or fish)
 * [argo cp](argo_cp.md)	 - copy artifacts from workflow
 * [argo cron](argo_cron.md)	 - manage cron workflows
 * [argo delete](argo_delete.md)	 - delete workflows
