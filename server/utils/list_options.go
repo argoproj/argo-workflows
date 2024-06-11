@@ -13,12 +13,13 @@ import (
 )
 
 type ListOptions struct {
-	Namespace, Name, NamePrefix, NamePattern string
-	MinStartedAt, MaxStartedAt               time.Time
-	LabelRequirements                        labels.Requirements
-	Limit, Offset                            int
-	ShowRemainingItemCount                   bool
-	StartedAtAscending                       bool
+	Namespace, Name            string
+	NamePrefix, NamePattern    string
+	MinStartedAt, MaxStartedAt time.Time
+	LabelRequirements          labels.Requirements
+	Limit, Offset              int
+	ShowRemainingItemCount     bool
+	StartedAtAscending         bool
 }
 
 func (l ListOptions) WithLimit(limit int) ListOptions {

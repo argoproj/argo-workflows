@@ -8,6 +8,7 @@ interface InputProps {
     placeholder?: string;
     name: string;
     onChange: (input: string) => void;
+    filterSuggestions?: boolean;
 }
 
 export function InputFilter(props: InputProps) {
@@ -56,6 +57,7 @@ export function InputFilter(props: InputProps) {
                     props.onChange(newValue);
                 }}
                 renderInput={renderInput}
+                filterSuggestions={props.filterSuggestions}
             />
             <a
                 onClick={() => {

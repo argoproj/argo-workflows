@@ -2896,16 +2896,6 @@
           },
           {
             "type": "string",
-            "name": "namePrefix",
-            "in": "query"
-          },
-          {
-            "type": "string",
-            "name": "namePattern",
-            "in": "query"
-          },
-          {
-            "type": "string",
             "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
             "name": "listOptions.labelSelector",
             "in": "query"
@@ -2970,6 +2960,18 @@
             "type": "string",
             "description": "Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".",
             "name": "fields",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Return workflows having this name prefix.",
+            "name": "namePrefix",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Return workflows with name containing this value.",
+            "name": "namePattern",
             "in": "query"
           }
         ],

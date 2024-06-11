@@ -12,25 +12,26 @@ import { ErrorNotice } from '../../../shared/components/error-notice';
 import { ExampleManifests } from '../../../shared/components/example-manifests';
 import { Loading } from '../../../shared/components/loading';
 import { PaginationPanel } from '../../../shared/components/pagination-panel';
-import { useCollectEvent } from '../../../shared/use-collect-event';
 import { ZeroState } from '../../../shared/components/zero-state';
 import { Context } from '../../../shared/context';
 import { historyUrl } from '../../../shared/history';
 import { ListWatch, sortByYouth } from '../../../shared/list-watch';
+import * as nsUtils from '../../../shared/namespaces';
 import { Pagination, parseLimit } from '../../../shared/pagination';
 import { ScopedLocalStorage } from '../../../shared/scoped-local-storage';
 import { services } from '../../../shared/services';
-import * as nsUtils from '../../../shared/namespaces';
+import { useCollectEvent } from '../../../shared/use-collect-event';
 import * as Actions from '../../../shared/workflow-operations-map';
 import { WorkflowCreator } from '../workflow-creator';
-import { WorkflowFilters } from '../workflow-filters/workflow-filters';
+import type { NameFilterKeys } from '../workflow-filters/workflow-filters';
+import { NAME_FILTER_KEYS, WorkflowFilters } from '../workflow-filters/workflow-filters';
 import { WorkflowsRow } from '../workflows-row/workflows-row';
 import { WorkflowsSummaryContainer } from '../workflows-summary-container/workflows-summary-container';
 import { WorkflowsToolbar } from '../workflows-toolbar/workflows-toolbar';
 
-import './workflows-list.scss';
-import useTimestamp, { TIMESTAMP_KEYS } from '../../../shared/use-timestamp';
 import { TimestampSwitch } from '../../../shared/components/timestamp';
+import useTimestamp, { TIMESTAMP_KEYS } from '../../../shared/use-timestamp';
+import './workflows-list.scss';
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
@@ -87,24 +88,21 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
     const [error, setError] = useState<Error>();
-    // don't get the storage saved value if there is a name filter in the URL, as it will override the storage value
-    const hasNameUrlFiltering = queryParams.has('name') || queryParams.has('namePrefix') || queryParams.has('namePattern');
-    const [name, setName] = useState(() => {
-        const savedOptions = hasNameUrlFiltering ? '' : storage.getItem('options', {}).name;
-        const nameQueryParam = queryParams.get('name');
-        return (nameQueryParam ? nameQueryParam : savedOptions) || '';
+    const [nameFilter, setNameFilter] = useState((): { type: NameFilterKeys; value: string } => {
+        const keys = NAME_FILTER_KEYS;
+        const nameUrlFilterType = keys.find(key => queryParams.get(key));
+        // don't get the storage saved value if there is a name filter in the URL, as it will override the storage value
+        if (nameUrlFilterType) {
+            return { type: nameUrlFilterType, value: queryParams.get(nameUrlFilterType) };
+        }
+        const savedOptions = storage.getItem('options', {});
+        for (const key of keys) {
+            if (savedOptions[key]) {
+                return { type: key, value: savedOptions[key] };
+            }
+        }
+        return { type: 'namePattern', value: '' };
     });
-    const [namePrefix, setNamePrefix] = useState(() => {
-        const savedOptions = hasNameUrlFiltering ? '' : storage.getItem('options', {}).namePrefix;
-        const namePrefixQueryParam = queryParams.get('namePrefix');
-        return (namePrefixQueryParam ? namePrefixQueryParam : savedOptions) || '';
-    });
-    const [namePattern, setNamePattern] = useState(() => {
-        const savedOptions = hasNameUrlFiltering ? '' : storage.getItem('options', {}).namePattern;
-        const namePatternQueryParam = queryParams.get('namePattern');
-        return (namePatternQueryParam ? namePatternQueryParam : savedOptions) || '';
-    });
-
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
         const nowDisabled: any = { ...allBatchActionsEnabled };
         for (const action of Object.keys(nowDisabled)) {
@@ -139,11 +137,9 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
     useEffect(() => {
         // add empty selectedPhases + selectedLabels for forward-compat w/ old version: previous code relies on them existing, so if you move up a version and back down, it breaks
         const options = { selectedPhases: [], selectedLabels: [] } as unknown as WorkflowListRenderOptions;
+        options[nameFilter.type] = nameFilter.value;
         options.phases = phases;
         options.labels = labels;
-        options.name = name;
-        options.namePrefix = namePrefix;
-        options.namePattern = namePattern;
         if (pagination.limit) {
             options.paginationLimit = pagination.limit;
         }
@@ -158,19 +154,22 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
         if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
         }
-        if (name) {
-            params.append('name', name);
+        if (options.name) {
+            params.append('name', options.name);
         }
-        if (namePrefix) {
-            params.append('namePrefix', namePrefix);
+        if (options.namePrefix) {
+            params.append('namePrefix', options.namePrefix);
         }
-        if (namePattern) {
-            params.append('namePattern', namePattern);
+        if (options.namePattern) {
+            params.append('namePattern', options.namePattern);
         }
         history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), { namespace, extraSearchParams: params }));
-    }, [namespace, name, namePrefix, namePattern, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
+    }, [namespace, nameFilter, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
 
     useEffect(() => {
+        const name = nameFilter.type === 'name' ? nameFilter.value : undefined;
+        const namePrefix = nameFilter.type === 'namePrefix' ? nameFilter.value : undefined;
+        const namePattern = nameFilter.type === 'namePattern' ? nameFilter.value : undefined;
         const listWatch = new ListWatch(
             () => services.workflows.list(namespace, phases, labels, pagination, undefined, name, namePrefix, namePattern),
             (resourceVersion: string) => services.workflows.watchFields({ namespace, phases, labels, resourceVersion }),
@@ -190,7 +189,7 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, name, namePrefix, namePattern]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameFilter]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
@@ -249,12 +248,8 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
                                 setFinishedBefore(date);
                                 clearSelectedWorkflows(); // date filters are client-side, but clear similar to the server-side ones for consistency
                             }}
-                            name={name}
-                            setName={setName}
-                            namePrefix={namePrefix}
-                            setNamePrefix={setNamePrefix}
-                            namePattern={namePattern}
-                            setNamePattern={setNamePattern}
+                            nameFilter={nameFilter}
+                            setNameFilter={setNameFilter}
                         />
                     </div>
                 </div>
