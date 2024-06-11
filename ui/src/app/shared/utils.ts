@@ -136,7 +136,7 @@ export const Utils = {
         resourceVersion?: string;
     }) {
         const queryParams: string[] = [];
-        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.name, filter.createdAfter, filter.finishedBefore, filter.namePrefix, filter.namePattern);
+        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.name, filter.createdAfter, filter.finishedBefore);
         if (fieldSelector.length > 0) {
             queryParams.push(`listOptions.fieldSelector=${fieldSelector}`);
         }
@@ -152,11 +152,11 @@ export const Utils = {
                 queryParams.push(`listOptions.limit=${filter.pagination.limit}`);
             }
         }
-        if (filter.namePattern) {
-            queryParams.push(`namePattern=${filter.namePattern}`);
-        }
         if (filter.namePrefix) {
             queryParams.push(`namePrefix=${filter.namePrefix}`);
+        }
+        if (filter.namePattern) {
+            queryParams.push(`namePattern=${filter.namePattern}`);
         }
         if (filter.resourceVersion) {
             queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);
