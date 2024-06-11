@@ -283,15 +283,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		woc.markWorkflowRunning(ctx)
-		setWfPodNamesAnnotation(woc.wf)
-
 		err := woc.createPDBResource(ctx)
 		if err != nil {
-			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
-			woc.markWorkflowFailed(ctx, msg)
+			woc.log.WithError(err).WithField("workflow", woc.wf.Name).Error("PDB creation failed")
+			woc.requeue()
 			return
 		}
+
+		woc.markWorkflowRunning(ctx)
+		setWfPodNamesAnnotation(woc.wf)
 
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
@@ -440,38 +440,42 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	var onExitNode *wfv1.NodeStatus
-	if woc.execWf.Spec.HasExitHook() && woc.GetShutdownStrategy().ShouldExecute(true) {
+	if woc.execWf.Spec.HasExitHook() {
 		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
-		exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
-		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, exitHook.Arguments, &executeTemplateOpts{
-			onExitTemplate: true, nodeFlag: &wfv1.NodeFlag{Hooked: true}})
-		if err != nil {
-			x := fmt.Errorf("error in exit template execution : %w", err)
-			switch err {
-			case ErrDeadlineExceeded:
-				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
-			case ErrParallelismReached:
-			default:
-				if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
-					woc.markWorkflowError(ctx, x)
+		onExitNode, _ = woc.execWf.GetNodeByName(onExitNodeName)
+		if onExitNode != nil || woc.GetShutdownStrategy().ShouldExecute(true) {
+			exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
+			onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, exitHook.Arguments, &executeTemplateOpts{
+				onExitTemplate: true, nodeFlag: &wfv1.NodeFlag{Hooked: true},
+			})
+			if err != nil {
+				x := fmt.Errorf("error in exit template execution : %w", err)
+				switch err {
+				case ErrDeadlineExceeded:
+					woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
+				case ErrParallelismReached:
+				default:
+					if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
+						woc.markWorkflowError(ctx, x)
 
-					// Garbage collect PVCs if Onexit template execution returns error
-					if err := woc.deletePVCs(ctx); err != nil {
-						woc.log.WithError(err).Warn("failed to delete PVCs")
+						// Garbage collect PVCs if Onexit template execution returns error
+						if err := woc.deletePVCs(ctx); err != nil {
+							woc.log.WithError(err).Warn("failed to delete PVCs")
+						}
 					}
 				}
+				return
 			}
-			return
-		}
 
-		// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
-		if onExitNode != nil && woc.nodeRequiresTaskSetReconciliation(onExitNode.Name) {
-			woc.taskSetReconciliation(ctx)
-		}
+			// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
+			if onExitNode != nil && woc.nodeRequiresTaskSetReconciliation(onExitNode.Name) {
+				woc.taskSetReconciliation(ctx)
+			}
 
-		if onExitNode == nil || !onExitNode.Fulfilled() {
-			return
+			if onExitNode == nil || !onExitNode.Fulfilled() {
+				return
+			}
 		}
 	}
 
@@ -802,6 +806,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// Make sure the workflow completed.
 	if woc.wf.Status.Fulfilled() {
+		woc.controller.metrics.StopRealtimeMetricsForKey(string(woc.wf.GetUID()))
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}

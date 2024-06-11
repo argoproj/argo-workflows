@@ -1,4 +1,4 @@
-import {Ticker} from 'argo-ui';
+import {Ticker} from 'argo-ui/src/components/ticker';
 import * as React from 'react';
 
 import {ago} from '../duration';

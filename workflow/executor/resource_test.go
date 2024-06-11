@@ -209,13 +209,11 @@ func TestResourceExecRetry(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	dirname := path.Dir(filename)
 	duration := retry.DefaultBackoff.Duration
-	path := os.Getenv("PATH")
 	defer func() {
-		os.Setenv("PATH", path)
 		retry.DefaultBackoff.Duration = duration
 	}()
 	retry.DefaultBackoff.Duration = 0
-	os.Setenv("PATH", dirname+"/testdata")
+	t.Setenv("PATH", dirname+"/testdata")
 
 	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
 	assert.Error(t, err)
