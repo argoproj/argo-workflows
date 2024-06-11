@@ -182,7 +182,7 @@ func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 			return err
 		}
 
-		// s3cli.IsDirectory will introduce additional api requests for simple file delete (most scenarios)
+		// check suffix instead of s3cli.IsDirectory as it requires another request for file delete (most scenarios)
 		if !strings.HasSuffix(artifact.S3.Key, "/") {
 			return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
 		}
