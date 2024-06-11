@@ -954,7 +954,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
-	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
+	assert.Equal(t, "No more retries left", n.Message)
 }
 
 func parseRetryMessage(message string) (int, error) {
