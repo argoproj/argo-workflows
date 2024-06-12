@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -1354,4 +1355,29 @@ func (s *FunctionalSuite) TestWithItemsWithHooks() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+// when you terminate a workflow with onexit handler,
+// then the onexit handler should fail along with steps and stepsGroup
+func (s *FunctionalSuite) TestTerminateWorkflowWhileOnExitHandlerRunning() {
+	s.Given().
+		Workflow("@functional/workflow-exit-handler-sleep.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+			a := wf.Status.Nodes.FindByDisplayName("workflow-exit-handler-sleep")
+			return wfv1.NodeSucceeded == a.Phase, "nodes succeeded"
+		})).
+		ShutdownWorkflow(wfv1.ShutdownStrategyTerminate).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			for _, node := range status.Nodes {
+				if node.Type == wfv1.NodeTypeStepGroup || node.Type == wfv1.NodeTypeSteps {
+					assert.Equal(t, node.Phase, wfv1.NodeFailed)
+				}
+			}
+			assert.Equal(t, status.Phase, wfv1.WorkflowFailed)
+		})
 }
