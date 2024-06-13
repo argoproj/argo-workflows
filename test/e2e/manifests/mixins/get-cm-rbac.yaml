@@ -21,7 +21,7 @@ metadata:
   name: get-cm-get-cm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
+  kind: ClusterRole
   name: get-cm
 subjects:
   - kind: ServiceAccount
