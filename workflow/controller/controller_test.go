@@ -470,9 +470,12 @@ func withOutputs(outputs wfv1.Outputs) with {
 				Outputs: &outputs,
 			},
 		}
-		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.controller.GetManagedNamespace()).Create(
-			context.Background(), taskResult, metav1.CreateOptions{},
-		)
+		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+			Create(
+				context.Background(),
+				taskResult,
+				metav1.CreateOptions{},
+			)
 		if err != nil {
 			panic(err)
 		}
