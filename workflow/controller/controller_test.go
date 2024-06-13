@@ -453,7 +453,7 @@ type with func(pod *apiv1.Pod, woc *wfOperationCtx)
 func withOutputs(outputs wfv1.Outputs) with {
 	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
 		nodeId := woc.nodeID(pod)
-		err := woc.controller.taskResultInformer.GetStore().Add(&wfv1.WorkflowTaskResult{
+		err := woc.controller.taskResultInformer.GetIndexer().Add(&wfv1.WorkflowTaskResult{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: workflow.APIVersion,
 				Kind:       workflow.WorkflowTaskResultKind,
