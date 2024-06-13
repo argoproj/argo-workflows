@@ -1836,6 +1836,16 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	return childrenIds
 }
 
+func extractExitCode(input string) (string, error) {
+	re := regexp.MustCompile(`exit code (\d+)\)`)
+	matches := re.FindStringSubmatch(input)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("no exit code found")
+	}
+	exitCode := strings.TrimSpace(matches[1])
+	return exitCode, nil
+}
+
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
 	localScope := make(map[string]interface{})
 
@@ -1850,6 +1860,11 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	exitCode := "-1"
 	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
 		exitCode = *lastChildNode.Outputs.ExitCode
+	} else {
+		tmpexitCode, err := extractExitCode(lastChildNode.Message)
+		if err == nil {
+			exitCode = tmpexitCode
+		}
 	}
 	localScope[common.LocalVarRetriesLastExitCode] = exitCode
 	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
