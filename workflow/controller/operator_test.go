@@ -932,6 +932,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, "", n.Message)
 
 	// Mark the parent node as running again and the lastChild as errored.
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
@@ -941,6 +942,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
 
 	// Add a third node that has failed.
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
@@ -952,6 +954,119 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+	assert.Equal(t, "No more retries left", n.Message)
+}
+
+func TestProcessNodeRetriesMessageOrder(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	assert.NotNil(t, controller)
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	// Verify that there are no nodes in the wf status.
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
+	retries := wfv1.RetryStrategy{}
+	retries.Expression = "false"
+	retries.Limit = intstrutil.ParsePtr("1")
+	retries.RetryPolicy = wfv1.RetryPolicyAlways
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	// Ensure there are no child nodes yet.
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+	assert.Nil(t, lastChild)
+
+	// Add child nodes.
+	for i := 0; i < 1; i++ {
+		childNode := fmt.Sprintf("%s(%d)", nodeName, i)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{Retried: true})
+		woc.addChildNode(nodeName, childNode)
+	}
+
+	n, err := woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
+	assert.NotNil(t, lastChild)
+
+	// No retry related message for running node
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// No retry related message for pending node
+	woc.markNodePhase(lastChild.Name, wfv1.NodePending)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, "", n.Message)
+
+	// No retry related message for succeeded node
+	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, "", n.Message)
+
+	// workflow mark shutdown, no retry is evaluated
+	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.Equal(t, "Stopped with strategy 'Stop'", n.Message)
+	woc.wf.Spec.Shutdown = ""
+
+	// Invalid retry policy, shouldn't evaluate expression
+	retries.RetryPolicy = "noExist"
+	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.Equal(t, err.Error(), "noExist is not a valid RetryPolicy")
+
+	// Node status doesn't with retrypolicy, shouldn't evaluate expression
+	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
+	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.Equal(t, "", n.Message)
+
+	// Node status aligns with retrypolicy, should evaluate expression
+	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
+	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
+
+	// Node status aligns with retrypolicy but reach max retry limit, shouldn't evaluate expression
+	woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	childNode := fmt.Sprintf("%s(%d)", nodeName, 1)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
+	woc.addChildNode(nodeName, childNode)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	assert.NoError(t, err)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	assert.NoError(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+	assert.Equal(t, "No more retries left", n.Message)
 }
 
 func parseRetryMessage(message string) (int, error) {
