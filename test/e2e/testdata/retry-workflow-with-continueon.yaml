@@ -21,6 +21,7 @@ spec:
           - name: failure
             template: node-to-exit
             dependencies: [success]
+            onExit: on-exit
             arguments:
               parameters:
                 - name: exitCode
@@ -56,3 +57,8 @@ spec:
       container:
         image: alpine:3.7
         command: [ sh, "-c", "exit {{inputs.parameters.exitCode}}" ]
+
+    - name: on-exit
+      container:
+        image: alpine:3.7
+        command: [ sh, "-c", "exit 0" ]

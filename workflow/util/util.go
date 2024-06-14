@@ -54,6 +54,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
+const (
+	onExitNodeNameSuffix = ".onExit"
+)
+
 // NewWorkflowInformer returns the workflow informer used by the controller. This is actually
 // a custom built UnstructuredInformer which is in actuality returning unstructured.Unstructured
 // objects. We no longer return WorkflowInformer due to:
@@ -780,6 +784,10 @@ func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsT
 		if err != nil {
 			log.Panicf("Coudn't obtain child for %s, panicking", child)
 		}
+		// skip onExit child
+		if strings.HasSuffix(childStatus.Name, onExitNodeNameSuffix) {
+			continue
+		}
 		_, present := nodeIDsToReset[child]
 		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(wf, *childStatus, nodeIDsToReset) {
 			return true
@@ -885,7 +893,6 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 	}
 
-	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	// Get all children of nodes that match filter
 	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
@@ -905,7 +912,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if strings.HasPrefix(node.Name, onExitNodeName) || doForceResetNode {
+			if strings.HasSuffix(node.Name, onExitNodeNameSuffix) || doForceResetNode {
 				log.Debugf("Force reset for node: %s", node.Name)
 				// Reset parent node if this node is a step/task group or DAG.
 				if isGroupNode(node) && node.BoundaryID != "" {
