@@ -1860,7 +1860,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	exitCode := "-1"
 	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
 		exitCode = *lastChildNode.Outputs.ExitCode
-	} else {
+	} else if lastChildNode.Message != nil {
 		tmpexitCode, err := extractExitCode(lastChildNode.Message)
 		if err == nil {
 			exitCode = tmpexitCode
