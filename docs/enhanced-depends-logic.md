@@ -17,9 +17,9 @@ Available task results are:
 | `.Succeeded` | Task finished with no error |
 | `.Failed`    | Task exited with a non-0 exit code |
 | `.Errored`   | Task had an error other than a non-0 exit code |
-| `.Skipped`   | Task's `when` condition evaluated to `false` |
+| `.Skipped`   | Task's [`when`](walk-through/conditionals.md) condition evaluated to `false` |
 | `.Omitted`   | Task's `depends` condition evaluated to `false` |
-| `.Daemoned`  | Task is Daemoned and is not Pending |
+| `.Daemoned`  | Task is [daemoned](walk-through/daemon-containers.md) and is not `Pending` |
 
 For compatibility with `dependencies`, an unspecified result is equivalent to `(task.Succeeded || task.Skipped || task.Daemoned)`. For example:
 
