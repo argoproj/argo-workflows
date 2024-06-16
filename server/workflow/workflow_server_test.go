@@ -638,7 +638,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	if err = wfStore.Add(&wfObj5); err != nil {
 		panic(err)
 	}
-	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, metav1.NamespaceAll)
+	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, nil)
 	return server, ctx
 }
 

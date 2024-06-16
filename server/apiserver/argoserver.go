@@ -236,7 +236,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
-	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, getResourceCacheNamespace(as.managedNamespace))
+	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
+	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, &resourceCacheNamespace)
 	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
