@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: wf-failed-conditional-metric-
+  generateName: template-status-failed-conditional-metric-
 spec:
   entrypoint: dag
   templates:
@@ -21,7 +21,7 @@ spec:
           parameters: 
             - name: message
               value: "test"
-              
+
   - name: echo
     inputs:
       parameters:
