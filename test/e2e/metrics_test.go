@@ -96,10 +96,8 @@ func (s *MetricsSuite) TestDAGMetrics() {
 
 func (s *MetricsSuite) TestFailedMetric() {
 	s.Given().
-		WorkflowTemplate(`@testdata/template-status-failed-conditional-metric.yaml`).
 		Workflow(`@testdata/wf-template-status-failed-conditional-metric.yaml`).
 		When().
-		CreateWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().

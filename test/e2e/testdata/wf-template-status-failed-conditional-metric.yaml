@@ -3,11 +3,29 @@ kind: Workflow
 metadata:
   generateName: wf-failed-conditional-metric-
 spec:
-  entrypoint: whalesay
+  entrypoint: dag
   templates:
-    - name: whalesay
-      steps:
-        - - name: hello-world
-            templateRef:
-              name: template-status-failed-conditional-metric
-              template: dag
+  - name: dag
+    metrics:
+        prometheus:
+        - counter:
+            value: "1"
+          help: Task failed
+          name: task_failure
+          when: '{{status}} == Failed'
+    dag:
+      tasks:
+      - name: test
+        template: echo
+        arguments:
+          parameters: 
+            - name: message
+              value: "test"
+              
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: ["{{inputs.parameters.message}}"]
