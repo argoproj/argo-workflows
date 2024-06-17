@@ -147,7 +147,6 @@ type artifactDerivedKey struct {
 }
 
 func (al *s3Location) getS3Key(wf *wfv1.Workflow) (string, error) {
-
 	if al.specifiedKey == "" && al.derivedKey == nil {
 		panic(fmt.Sprintf("invalid artifactLocation: %+v, must have knownKey or derivedKey set", al))
 	}
