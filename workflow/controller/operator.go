@@ -58,7 +58,6 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/progress"
 	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
@@ -200,7 +199,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			} else {
 				woc.markWorkflowError(ctx, fmt.Errorf("%v", r))
 			}
-			woc.controller.metrics.OperationPanic()
+			woc.controller.metrics.OperationPanic(ctx)
 		}
 	}()
 
@@ -279,7 +278,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	if woc.execWf.Spec.Metrics != nil {
 		localScope, realTimeScope := woc.prepareDefaultMetricScope()
-		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
+		woc.computeMetrics(ctx, woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
 	}
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
@@ -521,7 +520,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.execWf.Spec.Metrics != nil {
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		localScope, realTimeScope := woc.prepareMetricScope(node)
-		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
+		woc.computeMetrics(ctx, woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
 
 	if err := woc.deletePVCs(ctx); err != nil {
@@ -806,7 +805,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// Make sure the workflow completed.
 	if woc.wf.Status.Fulfilled() {
-		woc.controller.metrics.StopRealtimeMetricsForKey(string(woc.wf.GetUID()))
+		woc.controller.metrics.StopRealtimeMetricsForWfUID(string(woc.wf.GetUID()))
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete task-results")
 		}
@@ -1138,7 +1137,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 		defer wfNodesLock.Unlock()
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err == nil {
-			if newState := woc.assessNodeStatus(pod, node); newState != nil {
+			if newState := woc.assessNodeStatus(ctx, pod, node); newState != nil {
 				// Check whether its taskresult is in an incompleted state.
 				if newState.Succeeded() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
 					woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
@@ -1207,12 +1206,12 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 		}
 		recentlyStarted := recentlyStarted(node)
 		// In case in the absence of nodes, collect metrics.
-		metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Add(0)
+		woc.controller.metrics.PodMissingEnsure(ctx, recentlyStarted, string(node.Phase))
 		if _, ok := seenPods[nodeID]; !ok {
 
 			// grace-period to allow informer sync
 			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
-			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
+			woc.controller.metrics.PodMissingInc(ctx, recentlyStarted, string(node.Phase))
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
@@ -1322,7 +1321,7 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
-func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
 	new := old.DeepCopy()
 	tmpl, err := woc.GetNodeTemplate(old)
 	if err != nil {
@@ -1334,6 +1333,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.Phase = wfv1.NodePending
 		new.Message = getPendingReason(pod)
 		new.Daemoned = nil
+		if old.Phase != new.Phase || old.Message != new.Message {
+			woc.controller.metrics.ChangePodPending(ctx, new.Message, pod.ObjectMeta.Namespace)
+		}
 	case apiv1.PodSucceeded:
 		new.Phase = wfv1.NodeSucceeded
 		new.Daemoned = nil
@@ -1375,6 +1377,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	default:
 		new.Phase = wfv1.NodeError
 		new.Message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
+	}
+	if old.Phase != new.Phase {
+		woc.controller.metrics.ChangePodPhase(ctx, string(new.Phase), pod.ObjectMeta.Namespace)
 	}
 
 	// if it's ContainerSetTemplate pod then the inner container names should match to some node names,
@@ -1933,7 +1938,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Check if this is a fulfilled node for synchronization.
 	// If so, release synchronization and return this node. No more logic will be executed.
 	if node != nil {
-		fulfilledNode := woc.handleNodeFulfilled(nodeName, node, processedTmpl)
+		fulfilledNode := woc.handleNodeFulfilled(ctx, nodeName, node, processedTmpl)
 		if fulfilledNode != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
@@ -2058,7 +2063,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Check if this is a fulfilled node for memoization.
 	// If so, just return this node. No more logic will be executed.
 	if node != nil {
-		fulfilledNode := woc.handleNodeFulfilled(nodeName, node, processedTmpl)
+		fulfilledNode := woc.handleNodeFulfilled(ctx, nodeName, node, processedTmpl)
 		if fulfilledNode != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
@@ -2115,7 +2120,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
 				if prevNodeStatus, ok := woc.preExecutionNodePhases[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
 					localScope, realTimeScope := woc.prepareMetricScope(processedRetryParentNode)
-					woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+					woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 				}
 			}
 			if processedTmpl.Synchronization != nil {
@@ -2130,7 +2135,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		} else if lastChildNode != nil && lastChildNode.Fulfilled() && processedTmpl.Metrics != nil {
 			// If retry node has not completed and last child node has completed, emit metrics for the last child node.
 			localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
-			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
 
 		var retryNum int
@@ -2252,7 +2257,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// If the node did not previously exist, we can infer that it was created during the current operation, emit real time metrics.
 		if _, ok := woc.preExecutionNodePhases[node.ID]; !ok {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
-			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
+			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
 		}
 		// Check if the node completed during this execution, if it did emit metrics
 		//
@@ -2266,14 +2271,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
 		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; (!ok || !prevNodeStatus.Fulfilled()) && node.Fulfilled() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
-			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
 	}
-
 	return node, nil
 }
 
-func (woc *wfOperationCtx) handleNodeFulfilled(nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template) *wfv1.NodeStatus {
 	if node == nil || !node.Fulfilled() {
 		return nil
 	}
@@ -2285,7 +2289,7 @@ func (woc *wfOperationCtx) handleNodeFulfilled(nodeName string, node *wfv1.NodeS
 		// We can infer that this node completed during the current operation, emit metrics
 		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
-			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
 	}
 	return node
@@ -2314,6 +2318,21 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 	return nil, nil
 }
 
+// recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing
+func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
+	phase := string(woc.wf.Status.Phase)
+	woc.controller.metrics.ChangeWorkflowPhase(ctx, phase, woc.wf.ObjectMeta.Namespace)
+	if woc.wf.Spec.WorkflowTemplateRef != nil { // not-woc-misuse
+		woc.controller.metrics.CountWorkflowTemplate(ctx, phase, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.ObjectMeta.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) // not-woc-misuse
+		switch woc.wf.Status.Phase {
+		case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
+			duration := time.Since(woc.wf.Status.StartedAt.Time)
+			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.ObjectMeta.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) // not-woc-misuse
+			log.Warnf("Recording template time")
+		}
+	}
+}
+
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.WorkflowPhase, message string) {
@@ -2333,6 +2352,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		woc.log.Infof("Updated phase %s -> %s", woc.wf.Status.Phase, phase)
 		woc.updated = true
 		woc.wf.Status.Phase = phase
+		woc.recordWorkflowPhaseChange(ctx)
 		if woc.wf.ObjectMeta.Labels == nil {
 			woc.wf.ObjectMeta.Labels = make(map[string]string)
 		}
@@ -3614,7 +3634,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
+func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
 	for _, metricTmpl := range metricList {
 
 		// Don't process real time metrics after execution
@@ -3675,12 +3695,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.reportMetricEmissionError(fmt.Sprintf("'%s' is not available as a real time metric", value))
 				continue
 			}
-			updatedMetric, err := metrics.ConstructRealTimeGaugeMetric(metricTmpl, valueFunc)
-			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
-				continue
-			}
-			err = woc.controller.metrics.UpsertCustomMetric(metricTmpl.GetDesc(), string(woc.wf.UID), updatedMetric, true)
+			err = woc.controller.metrics.UpsertCustomMetric(ctx, metricTmpl, string(woc.wf.UID), valueFunc)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
 				continue
@@ -3713,14 +3728,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 
 			metricSpec.SetValueString(replacedStringJson)
 
-			metric := woc.controller.metrics.GetCustomMetric(metricSpec.GetDesc())
-			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us
-			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec)
-			if err != nil {
-				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
-				continue
-			}
-			err = woc.controller.metrics.UpsertCustomMetric(metricSpec.GetDesc(), string(woc.wf.UID), updatedMetric, false)
+			err = woc.controller.metrics.UpsertCustomMetric(ctx, metricSpec, string(woc.wf.UID), nil)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
 				continue
@@ -3816,7 +3824,7 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 	return hasOutputResultRef(name, parentTemplate), nil
 }
 
-func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) {
+func (woc *wfOperationCtx) fetchWorkflowSpec(ctx context.Context) (wfv1.WorkflowSpecHolder, error) {
 	if woc.wf.Spec.WorkflowTemplateRef == nil { // not-woc-misuse
 		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
 	}
@@ -3829,8 +3837,10 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) 
 			woc.log.WithError(err).Error("clusterWorkflowTemplate RBAC is missing")
 			return nil, fmt.Errorf("cannot get resource clusterWorkflowTemplate at cluster scope")
 		}
-		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name) // not-woc-misuse
+		woc.controller.metrics.CountWorkflowTemplate(ctx, "New", woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, true) // not-woc-misuse
+		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)                    // not-woc-misuse
 	} else {
+		woc.controller.metrics.CountWorkflowTemplate(ctx, "New", woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, false)                // not-woc-misuse
 		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name) // not-woc-misuse
 	}
 	if err != nil {
@@ -3848,7 +3858,7 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	if woc.wf.Spec.WorkflowTemplateRef != nil { // not-woc-misuse
-		err := woc.setStoredWfSpec()
+		err := woc.setStoredWfSpec(ctx)
 		if err != nil {
 			woc.markWorkflowError(ctx, err)
 			return err
@@ -3940,7 +3950,7 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown) // not-woc-misuse
 }
 
-func (woc *wfOperationCtx) setStoredWfSpec() error {
+func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 	wfDefault := woc.controller.Config.WorkflowDefaults
 	if wfDefault == nil {
 		wfDefault = &wfv1.Workflow{}
@@ -3950,7 +3960,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 
 	// Load the spec from WorkflowTemplate in first time.
 	if woc.wf.Status.StoredWorkflowSpec == nil {
-		wftHolder, err := woc.fetchWorkflowSpec()
+		wftHolder, err := woc.fetchWorkflowSpec(ctx)
 		if err != nil {
 			return err
 		}
@@ -3968,7 +3978,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
 		woc.updated = true
 	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
-		wftHolder, err := woc.fetchWorkflowSpec()
+		wftHolder, err := woc.fetchWorkflowSpec(ctx)
 		if err != nil {
 			return err
 		}

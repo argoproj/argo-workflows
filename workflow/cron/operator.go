@@ -80,20 +80,21 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	defer woc.persistUpdate(ctx)
 
 	woc.log.Infof("Running %s", woc.name)
+	woc.metrics.CronWfTrigger(ctx, woc.name, woc.cronWf.ObjectMeta.Namespace)
 
 	// If the cron workflow has a schedule that was just updated, update its annotation
 	if woc.cronWf.IsUsingNewSchedule() {
 		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	}
 
-	err := woc.validateCronWorkflow()
+	err := woc.validateCronWorkflow(ctx)
 	if err != nil {
 		return
 	}
 
 	completed, err := woc.checkStopingCondition()
 	if err != nil {
-		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprintf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err))
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprintf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err))
 		return
 	} else if completed {
 		woc.setAsCompleted()
@@ -101,7 +102,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	proceed, err := woc.enforceRuntimePolicy(ctx)
 	if err != nil {
-		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Concurrency policy error: %s", err))
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Concurrency policy error: %s", err))
 		return
 	} else if !proceed {
 		return
@@ -115,7 +116,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 		if errors.IsAlreadyExists(err) {
 			return
 		}
-		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
 		return
 	}
 
@@ -125,12 +126,12 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
 }
 
-func (woc *cronWfOperationCtx) validateCronWorkflow() error {
+func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.ObjectMeta.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
 	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf)
 	if err != nil {
-		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
 		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSpecError)
 	}
@@ -409,7 +410,7 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobLis
 	return nil
 }
 
-func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.ConditionType, errString string) {
+func (woc *cronWfOperationCtx) reportCronWorkflowError(ctx context.Context, conditionType v1alpha1.ConditionType, errString string) {
 	woc.log.WithField("conditionType", conditionType).Error(errString)
 	woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
 		Type:    conditionType,
@@ -417,12 +418,12 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.Co
 		Status:  v1.ConditionTrue,
 	})
 	if conditionType == v1alpha1.ConditionTypeSpecError {
-		woc.metrics.CronWorkflowSpecError()
+		woc.metrics.CronWorkflowSpecError(ctx)
 	} else {
 		if conditionType == v1alpha1.ConditionTypeSubmissionError {
 			woc.cronWf.Status.Failed++
 		}
-		woc.metrics.CronWorkflowSubmissionError()
+		woc.metrics.CronWorkflowSubmissionError(ctx)
 	}
 }
 

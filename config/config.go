@@ -245,6 +245,24 @@ type MySQLConfig struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
+// MetricOptions are options for an individual named metric to change their behaviour
+type MetricOption struct {
+	// Disable disables the emission of this metric completely
+	Disable bool `json:"disable,omitempty"`
+	// DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality
+	DisabledAttributes []string `json:"disabledAttributes"`
+	// HistogramBuckets allow configuring of the buckets used in a histogram
+	// Has no effect on non-histogram buckets
+	HistogramBuckets []float64 `json:"histogramBuckets,omitempty"`
+}
+
+type MetricsTemporality string
+
+const (
+	MetricsTemporalityCumulative MetricsTemporality = "Cumulative"
+	MetricsTemporalityDelta      MetricsTemporality = "Delta"
+)
+
 // MetricsConfig defines a config for a metrics server
 type MetricsConfig struct {
 	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
@@ -260,8 +278,14 @@ type MetricsConfig struct {
 	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
-	// Secure is a flag that starts the metrics servers using TLS
+	// Secure is a flag that starts the metrics servers using TLS, defaults to true
 	Secure *bool `json:"secure,omitempty"`
+	// Configure metrics by name
+	Options map[string]MetricOption `json:"options,omitempty"`
+	// Temporality configures the temporality of the opentelemetry metrics.
+	// Valid values are Cumulative and Delta, defaulting to cumulative.
+	// This has no effect on prometheus metrics, which are always cumulative
+	Temporality MetricsTemporality `json:"temporality,omitempty"`
 }
 
 func (mc MetricsConfig) GetSecure(defaultValue bool) bool {

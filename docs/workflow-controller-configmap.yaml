@@ -225,8 +225,19 @@ data:
     metricsTTL: "10m"
     # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
     ignoreErrors: false
-    # Use a self-signed cert for TLS, default false
-    secure: false
+    # Use a self-signed cert for TLS, default true
+    secure: true
+    # Which temporality to use for opentelemetry, defaults to Cumulative
+    temporality: Delta
+    # Options for configuring individual metrics
+    options:
+      pod_missing:
+        disable: true
+      cronworkflows_triggered_total:
+        disabledAttributes:
+          - name
+      k8s_request_duration:
+        histogramBuckets: [ 1.0, 2.0, 10.0 ]
 
     # DEPRECATED: Legacy metrics are now removed, this field is ignored
     disableLegacy: false

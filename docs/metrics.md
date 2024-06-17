@@ -2,6 +2,9 @@
 
 > v2.7 and after
 
+!!! Metrics changes in 3.6
+    Please read [this](metrics-3.6.md) short guide on what you must consider when upgrading to 3.6.
+
 ## Introduction
 
 Argo emits a certain number of controller metrics that inform on the state of the controller at any given time. Furthermore,
@@ -17,6 +20,99 @@ for many cases; some examples:
 Emitting custom metrics with Argo is easy, but it's important to understand what makes a good Prometheus metric and the
 best way to define metrics in Argo to avoid problems such as [cardinality explosion](https://stackoverflow.com/questions/46373442/how-dangerous-are-high-cardinality-labels-in-prometheus).
 
+Metrics can be collected using the OpenTelemetry protocol or via prometheus compatible scraping.
+
+## Metrics configuration
+
+It is possible to collect metrics via the OpenTelemetry protocol or via prometheus compatible scraping. Both of these mechanisms can be enabled at the same time, which could be useful if you'd like to migrate from one system to the other. Using multiple protocols at the same time is not intended for long term use however.
+
+OpenTelemetry is the recommended way of collecting metrics, and the OpenTelemetry collector can export metrics to prometheus via [the prometheus remote write exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/prometheusremotewriteexporter/README.md).
+
+### OpenTelemetry protocol
+
+To enable the OpenTelemetry protocol you must set the environment variable `OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`. It will not default to the default value if left blank, instead no Open
+
+You can configure the protocol using the environment variables documented in [standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
+
+The [configuration options](#common) in the controller ConfigMap `metricsTTL`, `options` and `temporality` affect the OpenTelemetry behavior, but the other parameters do not.
+
+To use the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/) you can configure it
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+```
+
+You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernetes/operator/) to setup the collector and instrument the workflow-controller.
+
+### Prometheus scraping
+
+You can adjust various elements of the prometheus metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
+
+```yaml
+metricsConfig: |
+  # Enabled controls the prometheus metric. Default is true, set "enabled: false" to turn off
+  enabled: true
+
+  # Path is the path where prometheus metrics are emitted. Must start with a "/". Default is "/metrics"
+  path: /metrics
+
+  # Port is the port where prometheus metrics are emitted. Default is "9090"
+  port: 8080
+
+  # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
+  ignoreErrors: false
+
+  # Use a self-signed cert for TLS, default true
+  secure: true
+```
+
+The metric names emitted by this mechanism are prefixed with `argo_workflows_`. `Attributes` are exposed as prometheus `labels` of the same name.
+
+### Common
+
+You can adjust various elements of the metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
+
+```yaml
+metricsConfig: |
+  # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
+  metricsTTL: "10m"
+  options:
+    pod_missing:
+      disable: true
+    cronworkflows_triggered_total:
+      disabledAttributes:
+        - name
+    k8s_request_duration:
+      histogramBuckets: [ 1.0, 2.0, 10.0 ]
+```
+
+### Options
+
+Using options you can manipulate the metrics created by the workflow controller. These options apply to the built-in metrics and any custom metrics you create. Each option applies to the named metric only, and applies to all output methods.
+
+`disable: true` will disable the emission of the metric from the system.
+
+```yaml
+  disabledAttributes:
+    - namespace
+```
+
+Will disable the attribute (label) from being emitted. The metric will be emitted with the attribute missing, the remaining attributes will still be emitted with the values correctly aggregated. This can be used to reduce cardinality of metrics.
+
+```yaml
+  histogramBuckets:
+    - 1.0
+    - 2.0
+    - 5.0
+    - 10.0
+```
+
+For histogram metrics only, this will change the boundary values for the histogram buckets. All values must be floating point numbers.
+
 ## Metrics and metrics in Argo
 
 There are two kinds of metrics emitted by Argo: **controller metrics** and **custom metrics**.
@@ -30,8 +126,9 @@ Default controller metrics can be scraped from service ```workflow-controller-me
 
 Metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.
 
-Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible
-for emitting metrics correctly.
+Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible for emitting metrics correctly.
+
+Currently custom metrics and their labels must be valid prometheus and OpenTelemetry metric names, which limits them to alpha-numerics, `_`. This applies even if you're only using OpenTelemetry for metrics.
 
 ### What is and isn't a Prometheus metric
 
@@ -58,67 +155,241 @@ at the current time, they should not be used to report historical data such as:
 Metrics are also ephemeral, meaning there is no guarantee that they will be persisted for any amount of time. If you need
 a way to view and analyze historical data, consider the [workflow archive](workflow-archive.md) or reporting to logs.
 
+### Counter, gauge and histogram
+
+The following terms have specific meanings for the metrics that we collect:
+
+- `counter`: A value that accumulates over time – you can think of this like an odometer on a car; it only ever goes up.
+    - The rate of change of counters can be a very powerful tool in understanding these metrics.
+- `gauge`: Measures a current value at the time it is read. An example would be the fuel gauge in a vehicle.
+- `histogram`: A client-side aggregation of values, such as request latencies. A histogram is a good choice if you are interested in value statistics. For example: How many requests take fewer than 1 second?
+
+Thanks to [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/metrics/#metric-instruments) for these explanations.
+
 ### Default Controller Metrics
 
 Metrics for the Four Golden Signals are:
 
-- Latency: `argo_workflows_queue_latency`
-- Traffic: `argo_workflows_count` and `argo_workflows_queue_depth_count`
-- Errors: `argo_workflows_count` and `argo_workflows_error_count`
-- Saturation: `argo_workflows_workers_busy` and `argo_workflows_workflow_condition`
+- Latency: `queue_latency`
+- Traffic: `gauge` and `queue_depth_gauge`
+- Errors: `count` and `error_count`
+- Saturation: `workers_busy` and `workflow_condition`
 
+!!! High cardinality
+    Some metric attributes may have high cardinality and are marked with ⚠️ to warn you. You may need to disable this metric or disable the attribute.
 <!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
+<!-- titles are without argo_workflows prefix -->
+#### `build_info`
 
-#### `argo_pod_missing`
+The build information for this workflow controller
 
-Pods were not seen. E.g. by being deleted by Kubernetes. You should only see this under high load.
+| attribute   | explanation                                                            |
+|-------------|------------------------------------------------------------------------|
+| `version`   | The version of argo-workflows                                          |
+| `platform`  | Platform this is running on, as go describes it e.g. `linux/amd64` |
+| `gover`     | Version of go that built this workflow controller                  |
+| `build`     | Build date for this workflow controller                                |
+| `compiler`  | The compiler used to build this workflow controller e.g. `gc`          |
+| `commit`    | The full git SHA1 of the code that built this workflow controller      |
+| `treestate` | Whether the git tree was `dirty` or `clean` when this was built        |
+| `tag`       | The tag on the git commit or `untagged` if it was not tagged           |
 
-!!! NOTE
-    This metric's name starts with `argo_` not `argo_workflows_`.
+#### `cronworkflows_triggered_total`
 
-#### `argo_workflows_count`
+A counter of the number of times a CronWorkflow has been
 
-Number of workflow in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
+| attribute   | explanation                               |
+|-------------|-------------------------------------------|
+| `name`     | ⚠️ The name of the CronWorkflow. |
+| `namespace` | The namespace in which the pod is running |
 
-#### `argo_workflows_error_count`
+#### `gauge`
 
-A count of certain errors incurred by the controller.
+A gauge of the number of workflows currently in the cluster in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
 
-#### `argo_workflows_k8s_request_total`
+| attribute | explanation                       |
+|-----------|-----------------------------------|
+| `status`  | The phase that the workflow is in |
 
-Number of API requests sent to the Kubernetes API.
+#### `error_count`
 
-#### `argo_workflows_operation_duration_seconds`
+A counter of certain errors incurred by the controller.
+
+| attribute | explanation            |
+|-----------|------------------------|
+| `cause`     | The cause of the error |
+
+The currently tracked specific errors are
+
+- `OperationPanic` - the controller `panic()` on a programming bug
+- `CronWorkflowSubmissionError` - A cron workflow failed submission
+- `CronWorkflowSpecError` - A cron workflow has an invalid specification
+
+#### `k8s_request_total`
+
+A counter of the number of API requests sent to the Kubernetes API.
+
+| attribute     | explanation                                                        |
+|---------------|--------------------------------------------------------------------|
+| `kind`        | The kubernetes `kind` involved in the request such as `configmaps` |
+| `verb`        | The verb of the request, such as `Get` or `List`                   |
+| `status_code` | The HTTP status code of the response                               |
+
+This metric is calculable from `k8s_request_duration`, and it is suggested you just collect that metric instead.
+
+#### `k8s_request_duration`
+
+A histogram recording how long each type of request took.
+
+| attribute     | explanation                                                        |
+|---------------|--------------------------------------------------------------------|
+| `kind`        | The kubernetes `kind` involved in the request such as `configmaps` |
+| `verb`        | The verb of the request, such as `Get` or `List`                   |
+| `status_code` | The HTTP status code of the response                               |
+
+This is contains all the information contained in `k8s_request_total` along with timings.
+
+#### `log_messages`
+
+A count of log messages emitted by the controller by log level: `error`, `warn` and `info`.
+
+| attribute | explanation                  |
+|-----------|------------------------------|
+| `level`   | The log level of the message |
+
+#### `operation_duration_seconds`
 
 A histogram of durations of operations. An operation is a single workflow reconciliation loop within the workflow-controller. It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
 
-#### `argo_workflows_pods_count`
+This metric has no attributes.
 
-It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done.
+The environment variables `OPERATION_DURATION_METRIC_BUCKET_COUNT` and `MAX_OPERATION_TIME` configure the bucket sizes for this metric, unless they are specified using an `histogramBuckets` option in the `metricsConfig` block.
 
-#### `argo_workflows_queue_adds_count`
+#### `pods_gauge`
 
-The number of additions to the queue of workflows or cron workflows.
+A gauge of the number of workflow created pods currently in the cluster in each phase. It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done.
 
-#### `argo_workflows_queue_depth_count`
+| attribute | explanation                  |
+|-----------|------------------------------|
+| `phase`   | The phase that the pod is in |
 
-The depth of the queue of workflows or cron workflows to be processed by the controller.
+#### `pod_missing`
 
-#### `argo_workflows_queue_latency`
+A counter of pods that were not seen. E.g. by being deleted by Kubernetes. You should only see this under high load.
 
-The time workflows or cron workflows spend in the queue waiting to be processed.
+| attribute          | explanation                            |
+|--------------------|----------------------------------------|
+| `recently_started` | Boolean: was this pod started recently |
+| `node_phase`       | The phase that the pod's node was in   |
 
-#### `argo_workflows_workers_busy`
+`recently_started` is controlled by the [environment variable](environment-variables.md) `RECENTLY_STARTED_POD_DURATION` and defaults to 10 seconds.
 
-The number of workers that are busy.
+#### `pods_total_count`
 
-#### `argo_workflows_workflow_condition`
+A gauge of the number of pods which have entered each phase and then observed by the controller. This is not directly controlled by the workflow controller, so it is possible for some pod phases to be missed.
 
-The number of workflow with different conditions. This will tell you the number of workflows with running pods.
+| attribute   | explanation                               |
+|-------------|-------------------------------------------|
+| `phase`     | The phase that the pod is in              |
+| `namespace` | The namespace in which the pod is running |
 
-#### `argo_workflows_workflows_processed_count`
+#### `queue_adds_count`
 
-A count of all Workflow updates processed by the controller.
+A counter of additions to the work queues inside the controller. The rate of this shows how busy that area of the controller is.
+
+| attribute     | explanation       |
+|---------------|-------------------|
+| `worker_type` | The type of queue |
+
+Queues:
+
+- `workflow_queue`: the queue of Workflow updates from the cluster
+- `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+- `workflow_ttl_queue`: workflows which are queued for deletion due to age
+- `pod_cleanup_queue`: pods which are queued for deletion
+
+This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+
+#### `queue_depth_gauge`
+
+A gauge of the current depth of the queues. If these get large then the workflow controller is not keeping up with the cluster.
+
+See [queue adds count](#queue_adds_count) for details.
+
+#### `queue_duration`
+
+A histogram of the time events in the queues are taking to be processed.
+
+See [queue adds count](#queue_adds_count) for details.
+
+#### `queue_latency`
+
+A histogram of the time events in the queues are taking before they are processed.
+
+See [queue adds count](#queue_adds_count) for details.
+
+#### `queue_longest_running`
+
+A gauge of the number of seconds that this queue's longest running processor has been running for.
+
+See [queue adds count](#queue_adds_count) for details.
+
+#### `queue_retries`
+
+A counter of the number of times a message has been retried in the queue
+
+See [queue adds count](#queue_adds_count) for details.
+
+#### `queue_unfinished_work`
+
+A gauge of the number of queue items that have not been processed yet.
+
+See [queue adds count](#queue_adds_count) for details.
+
+#### `total_count`
+
+A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace.
+
+| attribute   | explanation                                    |
+|-------------|------------------------------------------------|
+| `phase`     | The phase that the workflow has entered        |
+| `namespace` | The namespace in which the workflow is running |
+
+#### `workers_busy_count`
+
+A count of queue workers that are busy.
+
+See [queue adds count](#queue_adds_count) for details.
+
+#### `workflow_condition`
+
+A gauge of the number of workflows with different conditions. This will tell you the number of workflows with running pods.
+
+| attribute | explanation                                     |
+|-----------|-------------------------------------------------|
+| `type`    | the type of condition, currently only `Running` |
+| `status`  | `true` or `false`                               |
+
+#### `workflowtemplate_runtime`
+
+A histogram of the duration of workflows using `workflowTemplateRef` only, as they enter each phase. Counts both WorkflowTemplate and ClusterWorkflowTemplate usage. Records time between entering the `Running` phase and completion, so does not include any time in `Pending`.
+
+| attribute       | explanation                                                  |
+|-----------------|--------------------------------------------------------------|
+| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate      |
+| `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate.  |
+| `namespace`     | The namespace from which the WorkflowTemplate is being used  |
+
+#### `workflowtemplate_triggered_total`
+
+A counter of workflows using `workflowTemplateRef` only, as they enter each phase. Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
+
+| attribute       | explanation                                                  |
+|-----------------|--------------------------------------------------------------|
+| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate      |
+| `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate.  |
+| `namespace`     | The namespace from which the WorkflowTemplate is being used  |
+| `phase`         | The phase that the workflow entered                          |
 
 ### Metric types
 
@@ -170,7 +441,7 @@ When defining a `histogram`, `buckets` must also be provided (see below).
 
 [Argo variables](variables.md) can be included anywhere in the metric spec, such as in `labels`, `name`, `help`, `when`, etc.
 
-Metric names can only contain alphanumeric characters, `_`, and `:`.
+Metric names can only contain alpha-numeric characters, `_`, and `:`.
 
 ### Metric Spec
 
@@ -332,28 +603,3 @@ EOF
 ```
 
 If you have more than one controller pod, using one as a [hot-standby](high-availability.md), you should use [a headless service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) to ensure that each pod is being scraped so that no metrics are missed.
-
-## Metrics configuration
-
-You can adjust various elements of the metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
-
-```yaml
-metricsConfig: |
-  # Enabled controls metric emission. Default is true, set "enabled: false" to turn off
-  enabled: true
-
-  # Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
-  path: /metrics
-
-  # Port is the port where metrics are emitted. Default is "9090"
-  port: 8080
-
-  # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
-  metricsTTL: "10m"
-
-  # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
-  ignoreErrors: false
-
-  # Use a self-signed cert for TLS, default false
-  secure: false
-```

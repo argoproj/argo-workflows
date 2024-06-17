@@ -37,6 +37,7 @@ CRDs
 CloudSQL
 ClusterRoleBinding
 ClusterRoles
+ClusterWorkflowTemplate
 Codespaces
 ConfigMap
 ConfigMaps
@@ -92,6 +93,7 @@ OAuth
 OAuth2
 Okta
 OpenAPI
+OpenTelemetry
 PDBs
 PProf
 PVCs
@@ -120,6 +122,7 @@ Welch
 WorkflowTemplate
 WorkflowTemplates
 a.m.
+alpha-numerics
 anded
 apis
 architecting
@@ -193,6 +196,7 @@ parameterizing
 params
 pprof
 pre-commit
+prometheus
 rc2
 repo
 roadmap
@@ -247,4 +251,5 @@ webHDFS
 webhook
 webhooks
 workflow-controller-configmap
+workqueue
 yaml

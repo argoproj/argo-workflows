@@ -182,7 +182,7 @@ status:
   startedAt: "2020-06-16T00:57:45Z"
   storedTemplates:
     namespaced/workflow-template-submittable-2.9/start:
-      
+
       container:
         args:
         - '{{inputs.parameters.message}}'
@@ -204,7 +204,7 @@ status:
         value: hello world
     entrypoint: start
     templates:
-    - 
+    -
       container:
         args:
         - '{{inputs.parameters.message}}'
@@ -298,7 +298,7 @@ status:
   startedAt: "2020-06-16T01:00:14Z"
   storedTemplates:
     namespaced/workflow-template-submittable-2.9/start:
-      
+
       container:
         args:
         - '{{inputs.parameters.message}}'
@@ -320,7 +320,7 @@ status:
         value: hello world
     entrypoint: start
     templates:
-    - 
+    -
       container:
         args:
         - '{{inputs.parameters.message}}'
@@ -339,16 +339,19 @@ status:
       secondsAfterCompletion: 60
 `
 
-func newTTLController() *Controller {
+func newTTLController(t *testing.T) *Controller {
+	t.Helper()
 	clock := testingclock.NewFakeClock(time.Now())
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
+	gcMetrics, err := metrics.New(context.Background(), metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
+	assert.NoError(t, err)
 	return &Controller{
 		wfclientset: wfclientset,
 		wfInformer:  wfInformer,
 		clock:       clock,
 		workqueue:   workqueue.NewDelayingQueue(),
-		metrics:     metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
+		metrics:     gcMetrics,
 	}
 }
 
@@ -361,7 +364,7 @@ func TestEnqueueWF(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
 
-	controller := newTTLController()
+	controller := newTTLController(t)
 
 	// Veirfy we do not enqueue if not completed
 	wf := wfv1.MustUnmarshalWorkflow([]byte(completedWf))
@@ -376,7 +379,7 @@ func TestTTLStrategySucceeded(t *testing.T) {
 	var un *unstructured.Unstructured
 	var ten int32 = 10
 
-	controller := newTTLController()
+	controller := newTTLController(t)
 
 	// Veirfy we do not enqueue if not completed
 	wf := wfv1.MustUnmarshalWorkflow([]byte(succeededWf))
@@ -424,7 +427,7 @@ func TestTTLStrategyFailed(t *testing.T) {
 	var un *unstructured.Unstructured
 	var ten int32 = 10
 
-	controller := newTTLController()
+	controller := newTTLController(t)
 
 	// Veirfy we do not enqueue if not completed
 	wf := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
@@ -447,7 +450,7 @@ func TestTTLStrategyFailed(t *testing.T) {
 func TestNoTTLStrategyFailed(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
-	controller := newTTLController()
+	controller := newTTLController(t)
 	// Veirfy we do not enqueue if not completed
 	wf := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
@@ -469,7 +472,7 @@ func TestTTLStrategyFromUnstructured(t *testing.T) {
 	var un *unstructured.Unstructured
 	var five int32 = 5
 
-	controller3 := newTTLController()
+	controller3 := newTTLController(t)
 	wf3 := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
 	ttlstrategy3 := wfv1.TTLStrategy{SecondsAfterSuccess: &five}
 	wf3.Spec.TTLStrategy = &ttlstrategy3
@@ -482,7 +485,7 @@ func TestTTLStrategyFromUnstructured(t *testing.T) {
 }
 
 func TestTTLlExpired(t *testing.T) {
-	controller := newTTLController()
+	controller := newTTLController(t)
 	var ten int32 = 10
 
 	wf := wfv1.MustUnmarshalWorkflow([]byte(failedWf))

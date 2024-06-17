@@ -567,7 +567,7 @@ spec:
     - name: missing
   entrypoint: whalesay
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -1945,7 +1945,7 @@ spec:
 
 func TestInvalidMetricName(t *testing.T) {
 	err := validate(invalidMetricName)
-	assert.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters, '_', or ':'")
+	assert.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters or '_'")
 }
 
 var invalidMetricLabelName = `
@@ -1972,7 +1972,7 @@ spec:
 
 func TestInvalidMetricLabelName(t *testing.T) {
 	err := validate(invalidMetricLabelName)
-	assert.EqualError(t, err, "metric label 'invalid.key' is invalid: keys may only contain alphanumeric characters, '_', or ':'")
+	assert.EqualError(t, err, "metric label 'invalid.key' is invalid: keys may only contain alphanumeric characters or '_'")
 }
 
 var invalidMetricHelp = `
@@ -3000,7 +3000,7 @@ metadata:
 spec:
   entrypoint: steps-timing
   templates:
-    
+
     - name: steps-timing
       steps:
         - - name: one
@@ -3015,12 +3015,12 @@ spec:
                   value: "{{steps.one.finishedAt}}"
                 - name: id
                   value: "{{steps.one.id}}"
-    
+
     - name: wait
       container:
         image: alpine:3.7
         command: [sleep, "5"]
-    
+
     - name: printer
       inputs:
         parameters:
