@@ -16,11 +16,15 @@ func Test_nullSSO_Authorize(t *testing.T) {
 func Test_nullSSO_HandleCallback(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	NullSSO.HandleCallback(recorder, &http.Request{})
-	assert.Equal(t, http.StatusNotImplemented, recorder.Result().StatusCode)
+	result := recorder.Result()
+	defer result.Body.Close()
+	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
 }
 
 func Test_nullSSO_HandleRedirect(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	NullSSO.HandleRedirect(recorder, &http.Request{})
-	assert.Equal(t, http.StatusNotImplemented, recorder.Result().StatusCode)
+	result := recorder.Result()
+	defer result.Body.Close()
+	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
 }
