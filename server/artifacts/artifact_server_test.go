@@ -18,7 +18,6 @@ import (
 	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 
 	"github.com/stretchr/testify/assert"
-	testhttp "github.com/stretchr/testify/http"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -629,30 +628,30 @@ func TestArtifactServer_NodeWithoutArtifact(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node-no-artifacts/%s", "my-artifact"))
-	w := &testhttp.TestResponseWriter{}
+	w := httptest.NewRecorder()
 	s.GetInputArtifact(w, r)
 	// make sure there is no nil pointer panic
-	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, 500, w.Code)
 	s.GetOutputArtifact(w, r)
-	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, 500, w.Code)
 }
 
 func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-ns/your-wf/my-node-1/my-artifact")
-	w := &testhttp.TestResponseWriter{}
+	w := httptest.NewRecorder()
 	s.GetOutputArtifact(w, r)
-	assert.NotEqual(t, 200, w.StatusCode)
+	assert.NotEqual(t, 200, w.Code)
 }
 
 func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-uuid/my-node-1/my-artifact")
-	w := &testhttp.TestResponseWriter{}
+	w := httptest.NewRecorder()
 	s.GetOutputArtifactByUID(w, r)
-	assert.Equal(t, 401, w.StatusCode)
+	assert.Equal(t, 401, w.Code)
 }
 
 func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
@@ -660,48 +659,58 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 	r := &http.Request{}
 	// missing my-artifact part to have a valid URL
 	r.URL = mustParse("/input-artifacts/my-uuid/my-node-1")
-	w := &testhttp.TestResponseWriter{}
+	w := httptest.NewRecorder()
 	s.GetInputArtifactByUID(w, r)
 	// make sure there is no index out of bounds error
-	assert.Equal(t, 400, w.StatusCode)
-	assert.Contains(t, w.Output, "Bad Request")
+	assert.Equal(t, 400, w.Code)
+	output, err := io.ReadAll(w.Body)
+	assert.NoError(t, err)
+	assert.Contains(t, output, "Bad Request")
 
-	w = &testhttp.TestResponseWriter{}
+	w = httptest.NewRecorder()
 	s.GetOutputArtifactByUID(w, r)
-	assert.Equal(t, 400, w.StatusCode)
-	assert.Contains(t, w.Output, "Bad Request")
+	assert.Equal(t, 400, w.Code)
+	output, err = io.ReadAll(w.Body)
+	assert.NoError(t, err)
+	assert.Contains(t, output, "Bad Request")
 }
 
 func TestArtifactServer_httpBadRequestError(t *testing.T) {
 	s := newServer()
-	w := &testhttp.TestResponseWriter{}
+	w := httptest.NewRecorder()
 	s.httpBadRequestError(w)
 
-	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
-	assert.Contains(t, w.Output, "Bad Request")
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	output, err := io.ReadAll(w.Body)
+	assert.NoError(t, err)
+	assert.Contains(t, output, "Bad Request")
 }
 
 func TestArtifactServer_httpFromError(t *testing.T) {
 	s := newServer()
-	w := &testhttp.TestResponseWriter{}
+	w := httptest.NewRecorder()
 	err := errors.New("math: square root of negative number")
 
 	s.httpFromError(err, w)
 
-	assert.Equal(t, http.StatusInternalServerError, w.StatusCode)
-	assert.Equal(t, "Internal Server Error\n", w.Output)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	output, err := io.ReadAll(w.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "Internal Server Error\n", output)
 
-	w = &testhttp.TestResponseWriter{}
+	w = httptest.NewRecorder()
 	err = apierr.NewUnauthorized("")
 
 	s.httpFromError(err, w)
 
-	assert.Equal(t, http.StatusUnauthorized, w.StatusCode)
-	assert.Contains(t, w.Output, "Unauthorized")
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	output, err = io.ReadAll(w.Body)
+	assert.NoError(t, err)
+	assert.Contains(t, output, "Unauthorized")
 
-	w = &testhttp.TestResponseWriter{}
+	w = httptest.NewRecorder()
 	err = argoerrors.New(argoerrors.CodeNotFound, "not found")
 
 	s.httpFromError(err, w)
-	assert.Equal(t, http.StatusNotFound, w.StatusCode)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }

@@ -2,10 +2,10 @@ package sso
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	testhttp "github.com/stretchr/testify/http"
 )
 
 func Test_nullSSO_Authorize(t *testing.T) {
@@ -14,13 +14,13 @@ func Test_nullSSO_Authorize(t *testing.T) {
 }
 
 func Test_nullSSO_HandleCallback(t *testing.T) {
-	w := &testhttp.TestResponseWriter{}
+	w := httptest.NewRecorder()
 	NullSSO.HandleCallback(w, &http.Request{})
-	assert.Equal(t, http.StatusNotImplemented, w.StatusCode)
+	assert.Equal(t, http.StatusNotImplemented, w.Code)
 }
 
 func Test_nullSSO_HandleRedirect(t *testing.T) {
-	w := &testhttp.TestResponseWriter{}
+	w := httptest.NewRecorder()
 	NullSSO.HandleRedirect(w, &http.Request{})
-	assert.Equal(t, http.StatusNotImplemented, w.StatusCode)
+	assert.Equal(t, http.StatusNotImplemented, w.Code)
 }
