@@ -174,15 +174,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             envVars,
-		SecurityContext: &apiv1.SecurityContext{
-			Capabilities: &apiv1.Capabilities{
-				Drop: []apiv1.Capability{"ALL"},
-			},
-			RunAsNonRoot:             pointer.Bool(true),
-			RunAsUser:                pointer.Int64(8737),
-			ReadOnlyRootFilesystem:   pointer.Bool(true),
-			AllowPrivilegeEscalation: pointer.Bool(false),
-		},
+		SecurityContext: common.MinimalCtrSC(),
 		Resources: apiv1.ResourceRequirements{
 			Requests: map[apiv1.ResourceName]resource.Quantity{
 				"cpu":    resource.MustParse("10m"),
@@ -198,11 +190,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
 	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = []string{"agent", "init"}
+	agentInitCtr.Args = []string{"agent", "init", "--loglevel", getExecutorLogLevel()}
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
-	agentMainCtr.Args = []string{"agent", "main"}
+	agentMainCtr.Args = []string{"agent", "main", "--loglevel", getExecutorLogLevel()}
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -221,12 +213,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			},
 		},
 		Spec: apiv1.PodSpec{
-			RestartPolicy:    apiv1.RestartPolicyOnFailure,
-			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
-			SecurityContext: &apiv1.PodSecurityContext{
-				RunAsNonRoot: pointer.Bool(true),
-				RunAsUser:    pointer.Int64(8737),
-			},
+			RestartPolicy:                apiv1.RestartPolicyOnFailure,
+			ImagePullSecrets:             woc.execWf.Spec.ImagePullSecrets,
+			SecurityContext:              common.MinimalPodSC(),
 			ServiceAccountName:           serviceAccountName,
 			AutomountServiceAccountToken: pointer.Bool(false),
 			Volumes:                      podVolumes,

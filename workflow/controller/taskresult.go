@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
-func (wfc *WorkflowController) newWorkflowTaskResultInformer() (cache.SharedIndexInformer, error) {
+func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndexInformer {
 	labelSelector := labels.NewSelector().
 		Add(*workflowReq).
 		Add(wfc.instanceIDReq()).
@@ -36,7 +36,8 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() (cache.SharedInde
 			options.ResourceVersion = ""
 		},
 	)
-	_, err := informer.AddEventHandler(
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(new interface{}) {
 				result := new.(*wfv1.WorkflowTaskResult)
@@ -49,14 +50,10 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() (cache.SharedInde
 				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
 			},
 		})
-	if err != nil {
-		return nil, err
-	}
-	return informer, nil
+	return informer
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
-
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
 	for _, obj := range objs {

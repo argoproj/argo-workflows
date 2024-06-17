@@ -50,7 +50,7 @@ func Test_BasicAuthString(t *testing.T) {
 		assert.NoError(t, err)
 		err = file.Close()
 		assert.NoError(t, err)
-		os.Setenv("KUBECONFIG", file.Name())
+		t.Setenv("KUBECONFIG", file.Name())
 		config, err := GetRestConfig(authString)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "admin", config.Username)

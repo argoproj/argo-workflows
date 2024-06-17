@@ -1,4 +1,4 @@
-import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui';
+import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui/src/components/autocomplete/autocomplete';
 import classNames from 'classnames';
 import * as React from 'react';
 import {useRef, useState} from 'react';

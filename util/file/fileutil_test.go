@@ -16,7 +16,7 @@ import (
 // TestCompressContentString ensures compressing then decompressing a content string works as expected
 func TestCompressContentString(t *testing.T) {
 	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
-		_ = os.Setenv(file.GZipImplEnvVarKey, gzipImpl)
+		t.Setenv(file.GZipImplEnvVarKey, gzipImpl)
 		content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"name\":\"pod-limits-rrdm8[0]." +
 			"run-pod(0:0)\",\"displayName\":\"run-pod(0:0)\",\"type\":\"Pod\",\"templateName\":\"run-pod\",\"phase\":" +
 			"\"Succeeded\",\"boundaryID\":\"pod-limits-rrdm8\",\"startedAt\":\"2019-03-07T19:14:50Z\",\"finishedAt\":" +
@@ -28,13 +28,12 @@ func TestCompressContentString(t *testing.T) {
 
 		assert.Equal(t, content, resultString)
 	}
-	_ = os.Unsetenv(file.GZipImplEnvVarKey)
 }
 
 // TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.
 func TestGetGzipReader(t *testing.T) {
 	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
-		_ = os.Setenv(file.GZipImplEnvVarKey, gzipImpl)
+		t.Setenv(file.GZipImplEnvVarKey, gzipImpl)
 		rawContent := "this is the content"
 		content := file.CompressEncodeString(rawContent)
 		buf, err := base64.StdEncoding.DecodeString(content)
@@ -45,7 +44,6 @@ func TestGetGzipReader(t *testing.T) {
 		res, err := io.ReadAll(reader)
 		assert.NoError(t, err)
 		assert.Equal(t, rawContent, string(res))
-		_ = os.Unsetenv(file.GZipImplEnvVarKey)
 	}
 }
 

@@ -1,6 +1,8 @@
-import {Checkbox} from 'argo-ui';
-import React, {useState} from 'react';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
+import React, {useContext, useState} from 'react';
+
 import {Parameter, ResubmitOpts, Workflow} from '../../../models';
+import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {ParametersInput} from '../../shared/components/parameters-input';
@@ -13,6 +15,7 @@ interface Props {
 }
 
 export function ResubmitWorkflowPanel(props: Props) {
+    const {navigation} = useContext(Context);
     const [overrideParameters, setOverrideParameters] = useState(false);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflow.spec.arguments.parameters || [])));
     const [memoized, setMemoized] = useState(false);
@@ -33,7 +36,7 @@ export function ResubmitWorkflowPanel(props: Props) {
             const submitted = props.isArchived
                 ? await services.workflows.resubmitArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
                 : await services.workflows.resubmit(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
-            document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
+            navigation.goto(uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`));
         } catch (err) {
             setError(err);
             setIsSubmitting(false);

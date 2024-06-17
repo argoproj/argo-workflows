@@ -27,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 var (
@@ -48,10 +49,6 @@ var (
 	}
 	maxEnvVarLen = 131072
 )
-
-func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
-	return woc.execWf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
-}
 
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
 // retryStrategy.affinity.nodeAntiAffinity{} is specified
@@ -352,7 +349,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					return nil, err
 				}
 				for _, obj := range []interface{}{tmpl.ArchiveLocation} {
-					err = verifyResolvedVariables(obj)
+					err = validate.VerifyResolvedVariables(obj)
 					if err != nil {
 						return nil, err
 					}
@@ -361,24 +358,27 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	// Apply the patch string from template
-	if woc.hasPodSpecPatch(tmpl) {
-		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
-		}
-
+	// Apply the patch string from workflow and template
+	var podSpecPatchs []string
+	if woc.execWf.Spec.HasPodSpecPatch() {
 		// Final substitution for workflow level PodSpecPatch
 		localParams := make(map[string]string)
 		if tmpl.IsPodType() {
 			localParams[common.LocalVarPodName] = pod.Name
 		}
-		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		newTmpl := tmpl.DeepCopy()
+		newTmpl.PodSpecPatch = woc.execWf.Spec.PodSpecPatch
+		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
-
-		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, tmpl.PodSpecPatch)
+		podSpecPatchs = append(podSpecPatchs, processedTmpl.PodSpecPatch)
+	}
+	if tmpl.HasPodSpecPatch() {
+		podSpecPatchs = append(podSpecPatchs, tmpl.PodSpecPatch)
+	}
+	if len(podSpecPatchs) > 0 {
+		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, podSpecPatchs...)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
 		}
@@ -694,14 +694,9 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 	}
 	// lock down resource pods by default
 	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {
-		exec.SecurityContext = &apiv1.SecurityContext{
-			Capabilities: &apiv1.Capabilities{
-				Drop: []apiv1.Capability{"ALL"},
-			},
-			RunAsNonRoot:             pointer.Bool(true),
-			RunAsUser:                pointer.Int64(8737),
-			AllowPrivilegeEscalation: pointer.Bool(false),
-		}
+		exec.SecurityContext = common.MinimalCtrSC()
+		// TODO: always set RO FS once #10787 is fixed
+		exec.SecurityContext.ReadOnlyRootFilesystem = nil
 		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
 			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
 		}
@@ -1233,17 +1228,6 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
-}
-
-// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
-func verifyResolvedVariables(obj interface{}) error {
-	str, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-	return template.Validate(string(str), func(tag string) error {
-		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-	})
 }
 
 // createSecretVolumesAndMounts will retrieve and create Volumes and Volumemount object for Pod

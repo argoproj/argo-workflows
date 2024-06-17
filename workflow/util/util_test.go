@@ -167,33 +167,6 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 	}
 }
 
-var yamlStr = `
-containers:
-  - name: main
-    resources:
-      limits:
-        cpu: 1000m
-`
-
-func TestPodSpecPatchMerge(t *testing.T) {
-	tmpl := wfv1.Template{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"cpu\": \"1000m\"}}}]}"}
-	wf := wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
-	merged, err := PodSpecPatchMerge(&wf, &tmpl)
-	assert.NoError(t, err)
-	var spec v1.PodSpec
-	wfv1.MustUnmarshal([]byte(merged), &spec)
-	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
-	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
-
-	tmpl = wfv1.Template{PodSpecPatch: yamlStr}
-	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
-	merged, err = PodSpecPatchMerge(&wf, &tmpl)
-	assert.NoError(t, err)
-	wfv1.MustUnmarshal([]byte(merged), &spec)
-	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
-	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
-}
-
 var suspendedWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1364,6 +1337,64 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+			}
+		}
+	})
+
+	t.Run("Retry continue on failed workflow", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "continue-on-failed-workflow",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"continue-on-failed-workflow": {ID: "continue-on-failed-workflow", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"1"}, OutboundNodes: []string{"3", "5"}},
+					"1":                           {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Children: []string{"2", "4"}, Name: "node1"},
+					"2":                           {ID: "2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Children: []string{"3"}, Name: "node2"},
+					"3":                           {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Name: "node3"},
+					"4":                           {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Children: []string{"5"}, Name: "node4"},
+					"5":                           {ID: "5", Phase: wfv1.NodeOmitted, Type: wfv1.NodeTypeSkipped, BoundaryID: "continue-on-failed-workflow", Name: "node5"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		if assert.NoError(t, err) {
+			if assert.Len(t, wf.Status.Nodes, 4) {
+				assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes["2"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+				assert.Equal(t, 2, len(podsToDelete))
+			}
+		}
+	})
+
+	t.Run("Retry continue on failed workflow with restartSuccessful and nodeFieldSelector", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "continue-on-failed-workflow-2",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"continue-on-failed-workflow-2": {ID: "continue-on-failed-workflow-2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"1"}, OutboundNodes: []string{"3", "5"}},
+					"1":                             {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Children: []string{"2", "4"}, Name: "node1"},
+					"2":                             {ID: "2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Children: []string{"3"}, Name: "node2"},
+					"3":                             {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Name: "node3"},
+					"4":                             {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Children: []string{"5"}, Name: "node4"},
+					"5":                             {ID: "5", Phase: wfv1.NodeOmitted, Type: wfv1.NodeTypeSkipped, BoundaryID: "continue-on-failed-workflow-2", Name: "node5"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
+		if assert.NoError(t, err) {
+			if assert.Len(t, wf.Status.Nodes, 2) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow-2"].Phase)
+				assert.Equal(t, 4, len(podsToDelete))
 			}
 		}
 	})

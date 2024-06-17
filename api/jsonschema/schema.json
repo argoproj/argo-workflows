@@ -4438,7 +4438,7 @@
           "description": "Factor is a factor to multiply the base duration after each failed retry"
         },
         "maxDuration": {
-          "description": "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy",
+          "description": "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.",
           "type": "string"
         }
       },
@@ -4770,6 +4770,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
+      "description": "ContainerSetRetryStrategy provides controls on how to retry a container set",
       "properties": {
         "duration": {
           "description": "Duration is the time between each retry, examples values are \"300ms\", \"1s\" or \"5m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".",
@@ -4777,7 +4778,7 @@
         },
         "retries": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Nbr of retries"
+          "description": "Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`."
         }
       },
       "required": [
@@ -4795,7 +4796,7 @@
         },
         "retryStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy",
-          "description": "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set."
+          "description": "RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers."
         },
         "volumeMounts": {
           "items": {
