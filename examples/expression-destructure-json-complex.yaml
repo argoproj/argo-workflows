@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: expression-destructure-json-complex-
+spec:
+  arguments:
+    parameters:
+      - name: config
+        value: '{"employees": [{"name": "Baris", "age":43},{"name": "Mo", "age": 42}, {"name": "Jai", "age" :44}]}'
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: a
+            value: "{{=jsonpath(workflow.parameters.config, '$.employees[?(@.name==\"Baris\")].age')}}"
+          - name: b
+            value: "{{=jsonpath(workflow.parameters.config, '$.employees[?(@.age>42 && @.age<44)].age')}}"
+          - name: c
+            value: "{{=jsonpath(workflow.parameters.config, '$.employees[0:1]')}}"
+          - name: d
+            value: "{{=jsonpath(workflow.parameters.config, '$.employees[*].name')}}"
+      script:
+        env:
+          - name: A
+            value: "{{inputs.parameters.a}}"
+          - name: B
+            value: "{{inputs.parameters.b}}"
+          - name: C
+            value: "{{inputs.parameters.c}}"
+          - name: D
+            value: "{{inputs.parameters.d}}"
+        image: debian:9.4
+        command: [bash]
+        source: |
+          echo "$A$B$C$D"
