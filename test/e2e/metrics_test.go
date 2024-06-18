@@ -94,6 +94,23 @@ func (s *MetricsSuite) TestDAGMetrics() {
 		})
 }
 
+func (s *MetricsSuite) TestFailedMetric() {
+	s.Given().
+		Workflow(`@testdata/template-status-failed-conditional-metric.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`argo_workflows_task_failure 1`)
+		})
+}
+
 func TestMetricsSuite(t *testing.T) {
 	suite.Run(t, new(MetricsSuite))
 }
