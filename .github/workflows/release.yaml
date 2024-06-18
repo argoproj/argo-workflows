@@ -172,7 +172,9 @@ jobs:
           COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         run: |
+          set -euo pipefail
           : ${DOCKER_CONFIG:=~/.docker}
+
           echo $(jq -c '. + { "experimental": "enabled" }' ${DOCKER_CONFIG}/config.json) > ${DOCKER_CONFIG}/config.json
 
           docker_org=$DOCKERIO_ORG
@@ -197,8 +199,8 @@ jobs:
             docker manifest push $image_name
             docker manifest push quay.io/$image_name
 
-            cosign sign -y --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
-
+            digest=$(docker inspect quay.io/$image_name | jq -r '.[0].RepoDigests[0]' | cut -d'@' -f2)
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY "quay.io/${docker_org}/${target}:${digest}"
           done
 
   test-images-linux-amd64:
