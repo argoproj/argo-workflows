@@ -1,5 +1,33 @@
 # Changelog
 
+## v3.5.8 (2024-06-17)
+
+* [d13891154](https://github.com/argoproj/argo-workflows/commit/d1389115484f52d22d1cdcae29139518cbf2fc03) fix(deps): bump `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from 1.5.1 to 1.6.0 to fix CVE (#13197)
+* [10488d655](https://github.com/argoproj/argo-workflows/commit/10488d655a78c28bb6e3e6bca490a5496addd605) fix: don't necessarily include all artifacts from templates in node outputs (#13066)
+* [c2204ae03](https://github.com/argoproj/argo-workflows/commit/c2204ae03de97acf1c589c898180bdb9942f1524) fix(server): don't use cluster scope list + watch in namespaced mode. Fixes #13177 (#13189)
+* [9481bb04c](https://github.com/argoproj/argo-workflows/commit/9481bb04c3e48a85da5ba05ef47c2f0a2ba500f4) fix(server): mutex calls to sqlitex (#13166)
+* [ee150afdf](https://github.com/argoproj/argo-workflows/commit/ee150afdf3561f8250c5212e1b6a38628a847b39) fix: only evaluate retry expression for fail/error node. Fixes #13058 (#13165)
+* [028f9ec41](https://github.com/argoproj/argo-workflows/commit/028f9ec41cf07056bfcf823a109964b00621797c) fix: Merge templateDefaults into dag task tmpl. Fixes #12821 (#12833)
+* [e8f0cae39](https://github.com/argoproj/argo-workflows/commit/e8f0cae398e8f135a6957cd74919368e0b692b6b) fix: Apply podSpecPatch  in `woc.execWf.Spec` and template to pod sequentially (#12476)
+* [c1a5f3073](https://github.com/argoproj/argo-workflows/commit/c1a5f3073c58033dcfba5d14fe3dff9092ab258d) fix: don't fail workflow if PDB creation fails (#13102)
+* [5c56a161c](https://github.com/argoproj/argo-workflows/commit/5c56a161cb66b1c83fc31e5238bb812bc35f9754) fix: Allow termination of workflow to update on exit handler nodes. fixes #13052 (#13120)
+* [e5dfe5d73](https://github.com/argoproj/argo-workflows/commit/e5dfe5d7393c04efc0e4067a02a37aae79231a64) fix: load missing fields for archived workflows (#13136)
+* [7dc7fc246](https://github.com/argoproj/argo-workflows/commit/7dc7fc246393295a53308df1b77c585d5b24fe07) fix(ui): `package.json#license` should be Apache (#13040)
+* [3622a896d](https://github.com/argoproj/argo-workflows/commit/3622a896d08599e0d325e739c9f389c399419f7d) fix(docs): Fix `gcloud` typo (#13101)
+* [207e0713a](https://github.com/argoproj/argo-workflows/commit/207e0713a6eae52fc7bd1e9dcb43206d55f1a754) docs(server): full copy-edit of auth mode page (#13137)
+
+### Contributors
+
+* Alan Clucas
+* Anton Gilgur
+* Janghun Lee(James)
+* Jiacheng Xu
+* Julie Vogelman
+* Miltiadis Alexis
+* Tianchu Zhao
+* Yulin Li
+* jswxstw
+
 ## v3.5.7 (2024-05-27)
 
 * [b2b1ecd7d](https://github.com/argoproj/argo-workflows/commit/b2b1ecd7de378cec31ab0ebb1e8b9665c4b05867) chore(deps): bump tj-actions/changed-files from 40 to 41 (#12433)
