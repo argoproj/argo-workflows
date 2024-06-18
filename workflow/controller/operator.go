@@ -1777,6 +1777,10 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
 	localScope := make(map[string]interface{})
+	localScope[common.LocalVarRetriesLastExitCode] = "0"
+	localScope[common.LocalVarRetriesLastStatus] = ""
+	localScope[common.LocalVarRetriesLastDuration] = "0"
+	localScope[common.LocalVarRetriesLastMessage] = ""
 
 	// `retries` variable
 	childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, nodes)
@@ -2076,6 +2080,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			nodeName = lastChildNode.Name
 			node = lastChildNode
 		} else {
+			localScope := buildRetryStrategyLocalScope(retryParentNode, woc.wf.Status.Nodes)
+			for key, value := range localScope {
+				strKey := fmt.Sprintf("%v", key)
+				strValue := fmt.Sprintf("%v", value)
+				localParams[strKey] = strValue
+			}
 			retryNum := len(childNodeIDs)
 			// Create a new child node and append it to the retry node.
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
