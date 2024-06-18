@@ -199,6 +199,17 @@ jobs:
             cosign sign -y --key env://COSIGN_PRIVATE_KEY "quay.io/${image_name}@${digest}"
           }
 
+          sign_list() {
+            local image_name=$1
+            local tag=$2
+            local digest
+            docker pull "quay.io/${image_name}:${tag}"
+            digest=$(docker inspect "quay.io/${image_name}:${tag}" \
+              | jq -r '.[0].RepoDigests[0]' \
+              | cut -d'@' -f2)
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY "quay.io/${image_name}@${digest}"
+          }
+
           targets="workflow-controller argoexec argocli"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
@@ -219,6 +230,7 @@ jobs:
             if [ $target = "argoexec" ]; then
               sign ${docker_org}/${target} ${tag}-windows windows amd64
             fi
+            sign_list ${docker_org}/${target} ${tag}
           done
 
   test-images-linux-amd64:
