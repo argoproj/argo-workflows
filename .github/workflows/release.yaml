@@ -216,7 +216,9 @@ jobs:
 
             sign ${docker_org}/${target} ${tag}-linux-amd64 linux amd64
             sign ${docker_org}/${target} ${tag}-linux-arm64 linux arm64
-            sign ${docker_org}/${target} ${tag}-windows windows amd64
+            if [ $target = "argoexec" ]; then
+              sign ${docker_org}/${target} ${tag}-windows windows amd64
+            fi
           done
 
   test-images-linux-amd64:
