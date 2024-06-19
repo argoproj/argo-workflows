@@ -2222,8 +2222,14 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
 			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
-
-		var retryNum int
+		localScope := buildRetryStrategyLocalScope(retryParentNode, woc.wf.Status.Nodes)
+		for key, value := range localScope {
+			strKey := fmt.Sprintf("%v", key)
+			strValue := fmt.Sprintf("%v", value)
+			localParams[strKey] = strValue
+		}
+		retryNum := len(childNodeIDs)
+		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
 			// Last child node is either still running, or in some cases the corresponding Pod hasn't even been
 			// created yet, for example if it exceeded the ResourceQuota
@@ -2231,20 +2237,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			node = lastChildNode
 			retryNum = len(childNodeIDs) - 1
 		} else {
-			localScope := buildRetryStrategyLocalScope(retryParentNode, woc.wf.Status.Nodes)
-			for key, value := range localScope {
-				strKey := fmt.Sprintf("%v", key)
-				strValue := fmt.Sprintf("%v", value)
-				localParams[strKey] = strValue
-			}
-			retryNum := len(childNodeIDs)
 			// Create a new child node and append it to the retry node.
 			retryNum = len(childNodeIDs)
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
 		}
-
 
 		// Change the `pod.name` variable to the new retry node name
 		if processedTmpl.IsPodType() {
