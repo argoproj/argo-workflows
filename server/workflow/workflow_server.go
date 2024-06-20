@@ -59,7 +59,7 @@ type workflowServer struct {
 var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore) *workflowServer {
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, namespace *string) *workflowServer {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -67,13 +67,13 @@ func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRe
 		wfArchive:             wfArchive,
 		wfLister:              wfLister,
 	}
-	if wfStore != nil {
+	if wfStore != nil && namespace != nil {
 		lw := &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).List(context.Background(), options)
+				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return wfClientSet.ArgoprojV1alpha1().Workflows(metav1.NamespaceAll).Watch(context.Background(), options)
+				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).Watch(context.Background(), options)
 			},
 		}
 		wfReflector := cache.NewReflector(lw, &wfv1.Workflow{}, wfStore, reSyncDuration)

@@ -124,9 +124,9 @@ func init() {
 	}
 }
 
-func getResourceCacheNamespace(opts ArgoServerOpts) string {
-	if opts.ManagedNamespace != "" {
-		return opts.ManagedNamespace
+func getResourceCacheNamespace(managedNamespace string) string {
+	if managedNamespace != "" {
+		return managedNamespace
 	}
 	return v1.NamespaceAll
 }
@@ -146,7 +146,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		}
 		if ssoIf.IsRBACEnabled() {
 			// resourceCache is only used for SSO RBAC
-			resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
+			resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts.ManagedNamespace))
 			resourceCache.Run(ctx.Done())
 		}
 		log.Info("SSO enabled")
@@ -236,7 +236,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
-	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore)
+	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
+	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, &resourceCacheNamespace)
 	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
