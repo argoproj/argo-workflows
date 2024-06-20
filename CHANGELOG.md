@@ -4,7 +4,7 @@
 
 * [d13891154](https://github.com/argoproj/argo-workflows/commit/d1389115484f52d22d1cdcae29139518cbf2fc03) fix(deps): bump `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from 1.5.1 to 1.6.0 to fix CVE (#13197)
 * [10488d655](https://github.com/argoproj/argo-workflows/commit/10488d655a78c28bb6e3e6bca490a5496addd605) fix: don't necessarily include all artifacts from templates in node outputs (#13066)
-* [c2204ae03](https://github.com/argoproj/argo-workflows/commit/c2204ae03de97acf1c589c898180bdb9942f1524) fix(server): don't use cluster scope list + watch in namespaced mode. Fixes #13177 (#13189)
+* [c2204ae03](https://github.com/argoproj/argo-workflows/commit/c2204ae03de97acf1c589c898180bdb9942f1524) fix(server): don't use cluster scope list + watch in namespaced mode test. Fixes #13177 (#13189)
 * [9481bb04c](https://github.com/argoproj/argo-workflows/commit/9481bb04c3e48a85da5ba05ef47c2f0a2ba500f4) fix(server): mutex calls to sqlitex (#13166)
 * [ee150afdf](https://github.com/argoproj/argo-workflows/commit/ee150afdf3561f8250c5212e1b6a38628a847b39) fix: only evaluate retry expression for fail/error node. Fixes #13058 (#13165)
 * [028f9ec41](https://github.com/argoproj/argo-workflows/commit/028f9ec41cf07056bfcf823a109964b00621797c) fix: Merge templateDefaults into dag task tmpl. Fixes #12821 (#12833)
