@@ -1097,8 +1097,10 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		if err != nil {
 			return nil, false, err
 		}
-		if !shouldContinue && lastChildNode.Fulfilled() {
+		if !shouldContinue {
 			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
+		} else {
+			woc.log.Debugf("node %s phase %s retryStrategy.expression evaluated to true", node.Name, lastChildNode.Phase)
 		}
 	}
 
@@ -1836,6 +1838,16 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	return childrenIds
 }
 
+func extractExitCode(input string) (string, error) {
+	re := regexp.MustCompile(`exit code (\d+)\)`)
+	matches := re.FindStringSubmatch(input)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("no exit code found")
+	}
+	exitCode := strings.TrimSpace(matches[1])
+	return exitCode, nil
+}
+
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
 	localScope := make(map[string]interface{})
 
@@ -1850,12 +1862,18 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	exitCode := "-1"
 	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
 		exitCode = *lastChildNode.Outputs.ExitCode
+	} else {
+		tmpexitCode, err := extractExitCode(lastChildNode.Message)
+		if err == nil {
+			exitCode = tmpexitCode
+			log.Debugf("retryStrategy extracted exit code: %s", exitCode)
+		}
 	}
 	localScope[common.LocalVarRetriesLastExitCode] = exitCode
 	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
 	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 	localScope[common.LocalVarRetriesLastMessage] = lastChildNode.Message
-
+	log.Debugf("retryStrategy localScope: %v for node: %s", localScope, lastChildNode.Name)
 	return localScope
 }
 
