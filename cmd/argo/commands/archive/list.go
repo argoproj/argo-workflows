@@ -18,7 +18,8 @@ import (
 
 func NewListCommand() *cobra.Command {
 	var (
-		selector  string
+		label     string
+		fields    string
 		output    string
 		chunkSize int64
 	)
@@ -30,20 +31,22 @@ func NewListCommand() *cobra.Command {
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			errors.CheckError(err)
 			namespace := client.Namespace()
-			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, selector, chunkSize)
+			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, fields, label, chunkSize)
 			errors.CheckError(err)
 			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true, UID: true})
 			errors.CheckError(err)
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
-	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	command.Flags().StringVarP(&label, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	command.Flags().StringVar(&fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().Int64VarP(&chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	return command
 }
 
-func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, namespace string, labelSelector string, chunkSize int64) (wfv1.Workflows, error) {
+func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, namespace string, fieldSelector string, labelSelector string, chunkSize int64) (wfv1.Workflows, error) {
 	listOpts := &metav1.ListOptions{
+		FieldSelector: fieldSelector,
 		LabelSelector: labelSelector,
 		Limit:         chunkSize,
 	}
