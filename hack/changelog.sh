@@ -7,7 +7,10 @@ echo_escape() {
 }
 
 git_log='git --no-pager log --no-merges'
-git_log_filtered="$git_log --invert-grep --grep=^\(build\|chore\|ci\|docs\|test\):"
+# only types: feat or fix. plus scope: deps. plus breaking changes (!:)
+# exclude scope: docs
+# plus backward-compat: <=3.4.7 missing some conventional commits, <=2.5.0-rc missing most or all conventional commits
+git_log_filtered="$git_log -P --grep=^((feat|fix)(\((?!docs).+\))?|.+(\(deps\))|.+!):"
 
 echo '# Changelog'
 
