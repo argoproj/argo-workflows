@@ -2238,7 +2238,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"stopStrategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
+							Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy"),
 						},
 					},
@@ -2309,7 +2309,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"succeeded": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Succeeded is a counter of how many times the child workflows had success",
+							Description: "v3.6 and after: Succeeded counts how many times child workflows succeeded",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
@@ -2317,7 +2317,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"failed": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Failed is a counter of how many times a child workflow terminated in failed or errored state",
+							Description: "v3.6 and after: Failed counts how many times child workflows failed",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
@@ -2325,7 +2325,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running",
+							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -5820,12 +5820,12 @@ func schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow",
+				Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"condition": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.",
+							Description: "v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
