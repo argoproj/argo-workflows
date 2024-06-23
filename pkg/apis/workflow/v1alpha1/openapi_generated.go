@@ -2309,7 +2309,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"succeeded": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Succeeded counts how many times the child workflows succeeded",
+							Description: "v3.6 and after: Succeeded counts how many times child workflows succeeded",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
@@ -2317,7 +2317,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"failed": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Failed counts how many times a child workflow failed",
+							Description: "v3.6 and after: Failed counts how many times child workflows failed",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",

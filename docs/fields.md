@@ -1259,10 +1259,10 @@ CronWorkflowStatus is the status of a CronWorkflow
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
-|`failed`|`integer`|v3.6 and after: Failed counts how many times a child workflow failed|
+|`failed`|`integer`|v3.6 and after: Failed counts how many times child workflows failed|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
 |`phase`|`string`|v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true|
-|`succeeded`|`integer`|v3.6 and after: Succeeded counts how many times the child workflows succeeded|
+|`succeeded`|`integer`|v3.6 and after: Succeeded counts how many times child workflows succeeded|
 
 ## Arguments
 

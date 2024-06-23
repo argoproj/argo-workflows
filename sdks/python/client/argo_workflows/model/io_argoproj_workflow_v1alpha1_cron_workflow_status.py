@@ -124,10 +124,10 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         Args:
             active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow
             conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have
-            failed (int): v3.6 and after: Failed counts how many times a child workflow failed
+            failed (int): v3.6 and after: Failed counts how many times child workflows failed
             last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
             phase (str): v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
-            succeeded (int): v3.6 and after: Succeeded counts how many times the child workflows succeeded
+            succeeded (int): v3.6 and after: Succeeded counts how many times child workflows succeeded
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -219,10 +219,10 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         Args:
             active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow
             conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have
-            failed (int): v3.6 and after: Failed counts how many times a child workflow failed
+            failed (int): v3.6 and after: Failed counts how many times child workflows failed
             last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
             phase (str): v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
-            succeeded (int): v3.6 and after: Succeeded counts how many times the child workflows succeeded
+            succeeded (int): v3.6 and after: Succeeded counts how many times child workflows succeeded
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

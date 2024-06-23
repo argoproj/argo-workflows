@@ -8960,7 +8960,7 @@
           }
         },
         "failed": {
-          "description": "v3.6 and after: Failed counts how many times a child workflow failed",
+          "description": "v3.6 and after: Failed counts how many times child workflows failed",
           "type": "integer"
         },
         "lastScheduledTime": {
@@ -8972,7 +8972,7 @@
           "type": "string"
         },
         "succeeded": {
-          "description": "v3.6 and after: Succeeded counts how many times the child workflows succeeded",
+          "description": "v3.6 and after: Succeeded counts how many times child workflows succeeded",
           "type": "integer"
         }
       }
