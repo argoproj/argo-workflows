@@ -3,7 +3,6 @@ import {ANNOTATION_KEY_POD_NAME_VERSION} from './annotations';
 
 import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
 
-
 describe('pod names', () => {
     test('createFNVHash', () => {
         expect(createFNVHash('hello')).toEqual(1335831723);
