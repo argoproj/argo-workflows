@@ -7816,7 +7816,7 @@ func TestNoPodsWhenShutdown(t *testing.T) {
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
 	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeSkipped, node.Phase)
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
 		assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
 	}
 }
