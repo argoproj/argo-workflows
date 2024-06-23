@@ -109,10 +109,9 @@ For example, with timezone set at `America/Los_Angeles`, we have daylight saving
 > v3.6 and after
 
 You can configure a `CronWorkflow` to automatically stop based on an [expression](variables.md#expression) with `stopStrategy.condition`.
+You can use the [variables](variables.md#stopstrategy) `failed` and `succeeded`.
 
-You can use the variables `failed` and `succeeded`.
-
-For example, if you want to stop scheduling new workflows after a successful child `Workflow`, you can define the spec as:
+For example, if you want to stop scheduling new workflows after one success:
 
 ```yaml
 stopStrategy:
@@ -131,7 +130,7 @@ stopStrategy:
     For example, if you configure the `CronWorkflow` to schedule every minute (`* * * * *`) and stop after one success (`succeeded >= 1`).
     If the `Workflow` takes 90 seconds to run, the `CronWorkflow` will actually stop after two completions.
     This is because when the stopping condition is achieved, there is _already_ another `Workflow` running.
-    For that reason, prefer conditions like `succeeded  >= 1` over `succeeded == 1`.
+    For that reason, prefer conditions like `succeeded >= 1` over `succeeded == 1`.
 
 ## Managing `CronWorkflow`
 

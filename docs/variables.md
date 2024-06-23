@@ -276,16 +276,16 @@ For `Template`-level metrics:
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
 | `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
 
-### Stop Strategy
+### `stopStrategy`
 
 > v3.6 and after
 
-When using the `condition` field within `stopStrategy` in `CronWorkflows`, special variables are available.
+When using the `condition` field within the [`stopStrategy` of a `CronWorkflow`](cron-workflows.md#automatically-stopping-a-cronworkflow), special variables are available.
 
 | Variable | Description|
 |----------|------------|
-| `failed` | Counts how many times a child workflow failed |
-| `succeeded` | Counts how many times the child workflows succeeded |
+| `failed` | Counts how many times child workflows failed |
+| `succeeded` | Counts how many times child workflows succeeded |
 
 ### Knowing where you are
 
