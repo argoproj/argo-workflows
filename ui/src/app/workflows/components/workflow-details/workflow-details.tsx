@@ -17,7 +17,7 @@ import {useCollectEvent} from '../../../shared/use-collect-event';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
-import {getPodName, getNodeIdFromNodeName} from '../../../shared/pod-name';
+import {getPodName} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
@@ -472,15 +472,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         });
     }
 
-    const podName = (() => {
-        if (workflow && selectedNode?.type === 'Container') {
-            // A containerset node name can be converted to its corresponding pod node name by removing the postfix
-            const podNodeName = selectedNode.name.replace(/\.[^/.]+$/, '');
-            const podNode = workflow.status.nodes[getNodeIdFromNodeName(workflow, podNodeName)];
-            return getPodName(workflow, podNode);
-        } else if (workflow && selectedNode) return getPodName(workflow, selectedNode);
-        else return nodeId;
-    })();
+    const podName = workflow && selectedNode ? getPodName(workflow, selectedNode) : nodeId;
 
     const archived = isArchivedWorkflow(workflow);
 
