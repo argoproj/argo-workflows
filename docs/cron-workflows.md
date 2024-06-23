@@ -125,12 +125,15 @@ stopStrategy:
   condition: "failed >= 3"
 ```
 
+<!-- markdownlint-disable MD046 -- this is indented due to the admonition, not a code block -->
 !!! Warning "Scheduling vs. Completions"
     Depending on the time it takes to schedule and run a workflow, the number of completions can exceed the configured maximum.
+
     For example, if you configure the `CronWorkflow` to schedule every minute (`* * * * *`) and stop after one success (`succeeded >= 1`).
     If the `Workflow` takes 90 seconds to run, the `CronWorkflow` will actually stop after two completions.
     This is because when the stopping condition is achieved, there is _already_ another `Workflow` running.
     For that reason, prefer conditions like `succeeded >= 1` over `succeeded == 1`.
+<!-- markdownlint-enable MD046 -->
 
 ## Managing `CronWorkflow`
 
