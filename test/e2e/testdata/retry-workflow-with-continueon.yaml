@@ -20,7 +20,7 @@ spec:
                   value: 0
           - name: failure
             template: node-to-exit
-            dependencies: [success]
+            dependencies: [ success ]
             onExit: on-exit
             arguments:
               parameters:
@@ -28,7 +28,7 @@ spec:
                   value: 1
           - name: task-after-failure
             template: node-to-exit
-            dependencies: [failure]
+            dependencies: [ failure ]
             arguments:
               parameters:
                 - name: exitCode
@@ -37,14 +37,14 @@ spec:
             template: node-to-exit
             continueOn:
               failed: true
-            dependencies: [success]
+            dependencies: [ success ]
             arguments:
               parameters:
                 - name: exitCode
                   value: 2
           - name: task-after-continue
             template: node-to-exit
-            dependencies: [continue]
+            dependencies: [ continue ]
             arguments:
               parameters:
                 - name: exitCode
@@ -59,6 +59,11 @@ spec:
         command: [ sh, "-c", "exit {{inputs.parameters.exitCode}}" ]
 
     - name: on-exit
+      steps:
+        - - name: alarm
+            template: alarm
+
+    - name: alarm
       container:
         image: alpine:3.7
         command: [ sh, "-c", "exit 0" ]

@@ -54,10 +54,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
-const (
-	onExitNodeNameSuffix = ".onExit"
-)
-
 // NewWorkflowInformer returns the workflow informer used by the controller. This is actually
 // a custom built UnstructuredInformer which is in actuality returning unstructured.Unstructured
 // objects. We no longer return WorkflowInformer due to:
@@ -785,7 +781,7 @@ func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsT
 			log.Panicf("Coudn't obtain child for %s, panicking", child)
 		}
 		// skip onExit child
-		if strings.HasSuffix(childStatus.Name, onExitNodeNameSuffix) {
+		if childStatus.IsExitNode() {
 			continue
 		}
 		_, present := nodeIDsToReset[child]
@@ -912,7 +908,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if strings.HasSuffix(node.Name, onExitNodeNameSuffix) || doForceResetNode {
+			if doForceResetNode {
 				log.Debugf("Force reset for node: %s", node.Name)
 				// Reset parent node if this node is a step/task group or DAG.
 				if isGroupNode(node) && node.BoundaryID != "" {
@@ -966,6 +962,29 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						log.Debugf("Reset non-pod/suspend/skipped node %s", node.Name)
 						newNode := node.DeepCopy()
 						newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
+					}
+				}
+			} else if node.IsExitNode() {
+				log.Debugf("Handle retry for onExit node: %s", node.Name)
+				// handle onExit node and its children
+				deletedNodes[node.ID] = true
+				if node.Type == wfv1.NodeTypePod {
+					deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
+					log.Debugf("Deleted pod node: %s", node.Name)
+				}
+
+				descendantNodeIDs := getDescendantNodeIDs(wf, node)
+				for _, descendantNodeID := range descendantNodeIDs {
+					deletedNodes[descendantNodeID] = true
+					descendantNode, err := wf.Status.Nodes.Get(descendantNodeID)
+					if err != nil {
+						log.Fatalf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+						return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+					}
+					if descendantNode.Type == wfv1.NodeTypePod {
+						newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
+						deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, *descendantNode, deletedPods, podsToDelete)
+						log.Debugf("Deleted pod node %s since it belongs to node %s", descendantNode.Name, node.Name)
 					}
 				}
 			} else {
