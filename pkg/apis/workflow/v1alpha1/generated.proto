@@ -520,10 +520,10 @@ message CronWorkflowStatus {
   // Conditions is a list of conditions the CronWorkflow may have
   repeated Condition conditions = 3;
 
-  // v3.6 and after: Succeeded counts how many times the child workflows succeeded
+  // v3.6 and after: Succeeded counts how many times child workflows succeeded
   optional int64 succeeded = 4;
 
-  // v3.6 and after: Failed counts how many times a child workflow failed
+  // v3.6 and after: Failed counts how many times child workflows failed
   optional int64 failed = 5;
 
   // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
