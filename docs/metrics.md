@@ -169,7 +169,7 @@ Thanks to [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/metrics
 
 ### Default Controller Metrics
 
-Metrics for the Four Golden Signals are:
+Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-distributed-systems/#xref_monitoring_golden-signals) are:
 
 - Latency: `queue_latency`
 - Traffic: `gauge` and `queue_depth_gauge`
