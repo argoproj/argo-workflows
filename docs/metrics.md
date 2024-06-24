@@ -128,7 +128,8 @@ Metrics that inform on the state of a Workflow, or a series of Workflows. These 
 
 Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible for emitting metrics correctly.
 
-Currently custom metrics and their labels must be valid prometheus and OpenTelemetry metric names, which limits them to alpha-numerics, `_`. This applies even if you're only using OpenTelemetry for metrics.
+Currently, custom metrics and their labels must be valid Prometheus and OpenTelemetry metric names, which limits them to alphanumeric characters and `_`.
+This applies even if you're only using OpenTelemetry for metrics.
 
 ### What is and isn't a Prometheus metric
 
