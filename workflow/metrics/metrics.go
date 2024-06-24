@@ -27,8 +27,8 @@ type Config struct {
 	TTL            time.Duration
 	IgnoreErrors   bool
 	Secure         bool
-	DefaultOptions MetricOption
-	Options        map[string]MetricOption
+	DefaultOptions Modifier
+	Modifiers      map[string]Modifier
 	Temporality    wfconfig.MetricsTemporality
 }
 

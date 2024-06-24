@@ -7,34 +7,36 @@
 
 ## Introduction
 
-Argo emits a certain number of controller metrics that inform on the state of the controller at any given time. Furthermore,
-users can also define their own custom metrics to inform on the state of their Workflows.
+Argo emits a certain number of controller metrics that inform on the state of the controller at any given time.
+Furthermore, users can also define their own custom metrics to inform on the state of their Workflows.
 
-Custom Prometheus metrics can be defined to be emitted on a `Workflow`- and `Template`-level basis. These can be useful
-for many cases; some examples:
+Custom metrics can be defined to be emitted on a `Workflow`- and `Template`-level basis. These can be useful for many cases; some examples:
 
 - Keeping track of the duration of a `Workflow` or `Template` over time, and setting an alert if it goes beyond a threshold
 - Keeping track of the number of times a `Workflow` or `Template` fails over time
 - Reporting an important internal metric, such as a model training score or an internal error rate
 
-Emitting custom metrics with Argo is easy, but it's important to understand what makes a good Prometheus metric and the
-best way to define metrics in Argo to avoid problems such as [cardinality explosion](https://stackoverflow.com/questions/46373442/how-dangerous-are-high-cardinality-labels-in-prometheus).
+Emitting custom metrics with Argo is easy, but it's important to understand what makes a good metric and the best way to define metrics in Argo to avoid problems such as [cardinality explosion](https://stackoverflow.com/questions/46373442/how-dangerous-are-high-cardinality-labels-in-prometheus).
 
-Metrics can be collected using the OpenTelemetry protocol or via prometheus compatible scraping.
+Metrics can be collected using the OpenTelemetry protocol or via Prometheus compatible scraping.
 
 ## Metrics configuration
 
-It is possible to collect metrics via the OpenTelemetry protocol or via prometheus compatible scraping. Both of these mechanisms can be enabled at the same time, which could be useful if you'd like to migrate from one system to the other. Using multiple protocols at the same time is not intended for long term use however.
+It is possible to collect metrics via the OpenTelemetry protocol or via Prometheus compatible scraping.
+Both of these mechanisms can be enabled at the same time, which could be useful if you'd like to migrate from one system to the other.
+Using multiple protocols at the same time is not intended for long term use.
 
-OpenTelemetry is the recommended way of collecting metrics, and the OpenTelemetry collector can export metrics to prometheus via [the prometheus remote write exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/prometheusremotewriteexporter/README.md).
+OpenTelemetry is the recommended way of collecting metrics.
+The OpenTelemetry collector can export metrics to Prometheus via [the Prometheus remote write exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/prometheusremotewriteexporter/README.md).
 
 ### OpenTelemetry protocol
 
-To enable the OpenTelemetry protocol you must set the environment variable `OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`. It will not default to the default value if left blank, instead no Open
+To enable the OpenTelemetry protocol you must set the environment variable `OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`.
+It will not be enabled if left blank, unlike some other implementations.
 
 You can configure the protocol using the environment variables documented in [standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
 
-The [configuration options](#common) in the controller ConfigMap `metricsTTL`, `options` and `temporality` affect the OpenTelemetry behavior, but the other parameters do not.
+The [configuration options](#common) in the controller ConfigMap `metricsTTL`, `modifiers` and `temporality` affect the OpenTelemetry behavior, but the other parameters do not.
 
 To use the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/) you can configure it
 
@@ -50,7 +52,7 @@ You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernete
 
 ### Prometheus scraping
 
-You can adjust various elements of the prometheus metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
+You can adjust various elements of the Prometheus metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
 
 ```yaml
 metricsConfig: |
@@ -70,7 +72,8 @@ metricsConfig: |
   secure: true
 ```
 
-The metric names emitted by this mechanism are prefixed with `argo_workflows_`. `Attributes` are exposed as prometheus `labels` of the same name.
+The metric names emitted by this mechanism are prefixed with `argo_workflows_`.
+`Attributes` are exposed as Prometheus `labels` of the same name.
 
 ### Common
 
@@ -80,9 +83,9 @@ You can adjust various elements of the metrics configuration by changing values 
 metricsConfig: |
   # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
   metricsTTL: "10m"
-  options:
+  modifiers:
     pod_missing:
-      disable: true
+      disabled: true
     cronworkflows_triggered_total:
       disabledAttributes:
         - name
@@ -90,18 +93,22 @@ metricsConfig: |
       histogramBuckets: [ 1.0, 2.0, 10.0 ]
 ```
 
-### Options
+### Modifiers
 
-Using options you can manipulate the metrics created by the workflow controller. These options apply to the built-in metrics and any custom metrics you create. Each option applies to the named metric only, and applies to all output methods.
+Using modifiers you can manipulate the metrics created by the workflow controller.
+These modifiers apply to the built-in metrics and any custom metrics you create.
+Each modifier applies to the named metric only, and to all output methods.
 
-`disable: true` will disable the emission of the metric from the system.
+`disabled: true` will disable the emission of the metric from the system.
 
 ```yaml
   disabledAttributes:
     - namespace
 ```
 
-Will disable the attribute (label) from being emitted. The metric will be emitted with the attribute missing, the remaining attributes will still be emitted with the values correctly aggregated. This can be used to reduce cardinality of metrics.
+Will disable the attribute (label) from being emitted.
+The metric will be emitted with the attribute missing, the remaining attributes will still be emitted with the values correctly aggregated.
+This can be used to reduce cardinality of metrics.
 
 ```yaml
   histogramBuckets:
@@ -111,7 +118,8 @@ Will disable the attribute (label) from being emitted. The metric will be emitte
     - 10.0
 ```
 
-For histogram metrics only, this will change the boundary values for the histogram buckets. All values must be floating point numbers.
+For histogram metrics only, this will change the boundary values for the histogram buckets.
+All values must be floating point numbers.
 
 ## Metrics and metrics in Argo
 
@@ -124,9 +132,11 @@ Default controller metrics can be scraped from service ```workflow-controller-me
 
 ### Custom metrics
 
-Metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.
+Metrics that inform on the state of a Workflow, or a series of Workflows.
+These custom metrics are defined by the user in the Workflow spec.
 
-Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible for emitting metrics correctly.
+Emitting custom metrics is the responsibility of the emitter owner.
+Since the user defines Workflows in Argo, the user is responsible for emitting metrics correctly.
 
 Currently, custom metrics and their labels must be valid Prometheus and OpenTelemetry metric names, which limits them to alphanumeric characters and `_`.
 This applies even if you're only using OpenTelemetry for metrics.
@@ -134,7 +144,8 @@ This applies even if you're only using OpenTelemetry for metrics.
 ### What is and isn't a Prometheus metric
 
 Prometheus metrics should be thought of as ephemeral data points of running processes; i.e., they are the answer to
-the question "What is the state of my system _right now_?". Metrics should report things such as:
+the question "What is the state of my system _right now_?".
+Metrics should report things such as:
 
 - a counter of the number of times a workflow or steps has failed, or
 - a gauge of workflow duration, or
@@ -147,14 +158,13 @@ Aggregating the examples above over time could answer useful questions such as:
 - How has the duration of this workflow changed over time? Is the current workflow running for too long?
 - Is our model improving over time?
 
-Prometheus metrics should **not** be thought of as a store of data. Since metrics should only report the state of the system
-at the current time, they should not be used to report historical data such as:
+Prometheus metrics should **not** be thought of as a store of data. Since metrics should only report the state of the system at the current time, they should not be used to report historical data such as:
 
 - the status of an individual instance of a workflow, or
 - how long a particular instance of a step took to run.
 
-Metrics are also ephemeral, meaning there is no guarantee that they will be persisted for any amount of time. If you need
-a way to view and analyze historical data, consider the [workflow archive](workflow-archive.md) or reporting to logs.
+Metrics are also ephemeral, meaning there is no guarantee that they will be persisted for any amount of time.
+If you need a way to view and analyze historical data, consider the [workflow archive](workflow-archive.md) or reporting to logs.
 
 ### Counter, gauge and histogram
 
@@ -164,7 +174,6 @@ These terms are [defined by OpenTelemetry](https://opentelemetry.io/docs/concept
     - The rate of change of counters can be a very powerful tool in understanding these metrics.
 > - `gauge`: Measures a current value at the time it is read. An example would be the fuel gauge in a vehicle.
 > - `histogram`: A client-side aggregation of values, such as request latencies. A histogram is a good choice if you are interested in value statistics. For example: How many requests take fewer than 1 second?
-
 
 ### Default Controller Metrics
 
@@ -249,6 +258,14 @@ A histogram recording how long each type of request took.
 
 This is contains all the information contained in `k8s_request_total` along with timings.
 
+#### `leader`
+
+This gauge indicates if this workflow controller the leader in a leader elected controller setup, or is otherwise
+
+- It will be `1` if this is the leader, or the controller is running in standalone mode [`LEADER_ELECTION_DISABLE=true`](environment-variables.md#controller).
+- It will be `0` otherwise.
+This controller is not actively running workflows.
+
 #### `log_messages`
 
 A count of log messages emitted by the controller by log level: `error`, `warn` and `info`.
@@ -259,15 +276,18 @@ A count of log messages emitted by the controller by log level: `error`, `warn` 
 
 #### `operation_duration_seconds`
 
-A histogram of durations of operations. An operation is a single workflow reconciliation loop within the workflow-controller. It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
+A histogram of durations of operations. An operation is a single workflow reconciliation loop within the workflow-controller.
+It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
 
 This metric has no attributes.
 
-The environment variables `OPERATION_DURATION_METRIC_BUCKET_COUNT` and `MAX_OPERATION_TIME` configure the bucket sizes for this metric, unless they are specified using an `histogramBuckets` option in the `metricsConfig` block.
+The environment variables `OPERATION_DURATION_METRIC_BUCKET_COUNT` and `MAX_OPERATION_TIME` configure the bucket sizes for this metric, unless they are specified using an `histogramBuckets` modifier in the `metricsConfig` block.
 
 #### `pods_gauge`
 
-A gauge of the number of workflow created pods currently in the cluster in each phase. It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done.
+A gauge of the number of workflow created pods currently in the cluster in each phase.
+It is possible for a workflow to start, but no pods be running (for example cluster is too busy to run them).
+This metric sheds light on actual work being done.
 
 | attribute | explanation                  |
 |-----------|------------------------------|
@@ -275,7 +295,8 @@ A gauge of the number of workflow created pods currently in the cluster in each 
 
 #### `pod_missing`
 
-A counter of pods that were not seen. E.g. by being deleted by Kubernetes. You should only see this under high load.
+A counter of pods that were not seen - for example they are by being deleted by Kubernetes.
+You should only see this under high load.
 
 | attribute          | explanation                            |
 |--------------------|----------------------------------------|
@@ -284,9 +305,23 @@ A counter of pods that were not seen. E.g. by being deleted by Kubernetes. You s
 
 `recently_started` is controlled by the [environment variable](environment-variables.md) `RECENTLY_STARTED_POD_DURATION` and defaults to 10 seconds.
 
+#### `pod_pending_count`
+
+A counter of pods that have been seen in the Pending state.
+
+| attribute          | explanation                               |
+|--------------------|-------------------------------------------|
+| `reason` | Summary of the kubernetes Reason for pending.    |
+| `namespace`        | The namespace in which the pod is running |
+
+This metric ignores the `PodInitializing` reason and does not count it.
+The `reason` attribute is the value from the Reason message before the `:` in the message.
+This is not directly controlled by the workflow controller, so it is possible for some pod pending states to be missed.
+
 #### `pods_total_count`
 
-A gauge of the number of pods which have entered each phase and then observed by the controller. This is not directly controlled by the workflow controller, so it is possible for some pod phases to be missed.
+A gauge of the number of pods which have entered each phase and then observed by the controller.
+This is not directly controlled by the workflow controller, so it is possible for some pod phases to be missed.
 
 | attribute   | explanation                               |
 |-------------|-------------------------------------------|
@@ -295,7 +330,8 @@ A gauge of the number of pods which have entered each phase and then observed by
 
 #### `queue_adds_count`
 
-A counter of additions to the work queues inside the controller. The rate of this shows how busy that area of the controller is.
+A counter of additions to the work queues inside the controller.
+The rate of this shows how busy that area of the controller is.
 
 | attribute     | explanation       |
 |---------------|-------------------|
@@ -312,7 +348,8 @@ This and associated metrics are all directly sourced from the [client-go workque
 
 #### `queue_depth_gauge`
 
-A gauge of the current depth of the queues. If these get large then the workflow controller is not keeping up with the cluster.
+A gauge of the current depth of the queues.
+If these get large then the workflow controller is not keeping up with the cluster.
 
 See [queue adds count](#queue_adds_count) for details.
 
@@ -363,7 +400,8 @@ See [queue adds count](#queue_adds_count) for details.
 
 #### `workflow_condition`
 
-A gauge of the number of workflows with different conditions. This will tell you the number of workflows with running pods.
+A gauge of the number of workflows with different conditions.
+This will tell you the number of workflows with running pods.
 
 | attribute | explanation                                     |
 |-----------|-------------------------------------------------|
@@ -372,7 +410,9 @@ A gauge of the number of workflows with different conditions. This will tell you
 
 #### `workflowtemplate_runtime`
 
-A histogram of the duration of workflows using `workflowTemplateRef` only, as they enter each phase. Counts both WorkflowTemplate and ClusterWorkflowTemplate usage. Records time between entering the `Running` phase and completion, so does not include any time in `Pending`.
+A histogram of the duration of workflows using `workflowTemplateRef` only, as they enter each phase.
+Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
+Records time between entering the `Running` phase and completion, so does not include any time in `Pending`.
 
 | attribute       | explanation                                                  |
 |-----------------|--------------------------------------------------------------|
@@ -382,7 +422,8 @@ A histogram of the duration of workflows using `workflowTemplateRef` only, as th
 
 #### `workflowtemplate_triggered_total`
 
-A counter of workflows using `workflowTemplateRef` only, as they enter each phase. Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
+A counter of workflows using `workflowTemplateRef` only, as they enter each phase.
+Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
 
 | attribute       | explanation                                                  |
 |-----------------|--------------------------------------------------------------|
@@ -397,56 +438,56 @@ Please see the [Prometheus docs on metric types](https://prometheus.io/docs/conc
 
 ### How metrics work in Argo
 
-In order to analyze the behavior of a workflow over time, we need to be able to link different instances
-(i.e. individual executions) of a workflow together into a "series" for the purposes of emitting metrics. We do so by linking them together
-with the same metric descriptor.
+In order to analyze the behavior of a workflow over time, you need to be able to link different instances (individual executions) of a workflow together into a "series" for the purposes of emitting metrics.
+You can do this by linking them together with the same metric descriptor.
 
-In Prometheus, a metric descriptor is defined as a metric's name and its key-value labels. For example, for a metric
-tracking the duration of model execution over time, a metric descriptor could be:
+In Prometheus, a metric descriptor is defined as a metric's name and its key-value labels.
+For example, for a metric tracking the duration of model execution over time, a metric descriptor could be:
 
 `argo_workflows_model_exec_time{model_name="model_a",phase="validation"}`
 
-This metric then represents the amount of time that "Model A" took to train in the phase "Validation". It is important
-to understand that the metric name _and_ its labels form the descriptor: `argo_workflows_model_exec_time{model_name="model_b",phase="validation"}`
-is a different metric (and will track a different "series" altogether).
+This metric then represents the amount of time that "Model A" took to train in the phase "Validation".
+It is important to understand that the metric name _and_ its labels form the descriptor: `argo_workflows_model_exec_time{model_name="model_b",phase="validation"}`is a different metric (and will track a different "series" altogether).
 
-Now, whenever we run our first workflow that validates "Model A" a metric with the amount of time it took it to do so will
-be created and emitted. For each subsequent time that this happens, no new metrics will be emitted and the _same_ metric
-will be updated with the new value. Since, in effect, we are interested on the execution time of "validation" of "Model A"
-over time, we are no longer interested in the previous metric and can assume it has already been scraped.
+Now, whenever you run a workflow that validates "Model A" a metric with the amount of time it took it to do so will be created and emitted.
+For each subsequent time that this happens, no new metrics will be emitted and the _same_ metric will be updated with the new value.
+Since, you are interested on the execution time of "validation" of "Model A" over time, you are  no longer interested in the previous metric and can assume it has already been stored.
 
-In summary, whenever you want to track a particular metric over time, you should use the same metric name _and_ metric
-labels wherever it is emitted. This is how these metrics are "linked" as belonging to the same series.
+In summary, whenever you want to track a particular metric over time, you should use the same metric name _and_ metric labels wherever it is emitted.
+This is how these metrics are "linked" as belonging to the same series.
 
 ### Grafana Dashboard for Argo Controller Metrics
 
 Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/20348-argo-workflows-metrics/) Grafana dashboard.
 
-## Defining metrics
+## Defining custom metrics
 
-Metrics are defined in-place on the Workflow/Step/Task where they are emitted from. Metrics are always processed _after_
-the Workflow/Step/Task completes, with the exception of [real-time metrics](#real-time-metrics).
+Metrics are defined in-place on the Workflow/Step/Task where they are emitted from.
+Metrics are always processed _after_ the Workflow/Step/Task completes, with the exception of [real-time metrics](#real-time-metrics).
+Custom metrics are defined under a `prometheus` tag in the yaml for legacy reasons.
+They are emitted over all active protocols.
 
-Metric definitions **must** include a `name` and a `help` doc string. They can also include any number of `labels` (when
-defining labels avoid cardinality explosion). Metrics with the same `name` **must always** use the same exact `help` string,
-having different metrics with the same name, but with a different `help` string will cause an error (this is a Prometheus requirement).
+Metric definitions **must** include a `name` and a `help` doc string.
+They can also include any number of `labels` (when defining labels avoid cardinality explosion).
+Metrics with the same `name` **must always** use the same exact `help` string, having different metrics with the same name, but with a different `help` string will cause an error (this is a Prometheus requirement).
+Metrics with the same `name` may not change what type of metric they are.
 
-All metrics can also be conditionally emitted by defining a `when` clause. This `when` clause works the same as elsewhere
-in a workflow.
+All metrics can also be conditionally emitted by defining a `when` clause.
+This `when` clause works the same as elsewhere in a workflow.
 
-A metric must also have a type, it can be one of `gauge`, `histogram`, and `counter` ([see below](#metric-spec)). Within
-the metric type a `value` must be specified. This value can be either a literal value of be an [Argo variable](variables.md).
+A metric must also have a type, it can be one of `gauge`, `histogram`, and `counter` ([see below](#metric-spec)).
+Within the metric type a `value` must be specified. This value can be either a literal value of be an [Argo variable](variables.md).
 
 When defining a `histogram`, `buckets` must also be provided (see below).
 
 [Argo variables](variables.md) can be included anywhere in the metric spec, such as in `labels`, `name`, `help`, `when`, etc.
 
-Metric names can only contain alphanumeric characters, `_`, and `:`.
+Metric names can only contain alphanumeric characters and `_` for compatibility with both Prometheus and OpenTelemetry, even if only one of these protocols is in use.
 
 ### Metric Spec
 
-In Argo you can define a metric on the `Workflow` level or on the `Template` level. Here is an example of a `Workflow`
-level Gauge metric that will report the Workflow duration time:
+In Argo you can define a metric on the `Workflow` level or on the `Template` level.
+Here is an example of a `Workflow` level Gauge metric that will report the Workflow duration time:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -551,8 +592,9 @@ Finally, an example of a `Template`-level Histogram metric that tracks an intern
 
 ### Real-Time Metrics
 
-Argo supports a limited number of real-time metrics. These metrics are emitted in real-time, beginning when the step execution starts
-and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#real-time-metrics).
+Argo supports a limited number of real-time metrics.
+These metrics are emitted in real-time, beginning when the step execution starts and ending when it completes.
+Real-time metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#real-time-metrics).
 
 To define a real-time metric simply add `realtime: true` to a gauge metric with a valid real-time variable. For example:
 
@@ -564,7 +606,8 @@ To define a real-time metric simply add `realtime: true` to a gauge metric with 
 
 ## Metrics endpoint
 
-By default, metrics are emitted by the workflow-controller on port 9090 on the `/metrics` path. By port-forwarding to the pod you can view the metrics in your browser at `http://localhost:9090/metrics`:
+By default, metrics are emitted by the workflow-controller on port 9090 on the `/metrics` path.
+By port-forwarding to the pod you can view the metrics in your browser at `http://localhost:9090/metrics`:
 
 `kubectl -n argo port-forward deploy/workflow-controller 9090:9090`
 

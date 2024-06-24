@@ -1353,12 +1353,12 @@ func (wfc *WorkflowController) getMaxStackDepth() int {
 
 func (wfc *WorkflowController) getMetricsServerConfig() *metrics.Config {
 	// Metrics config
-	options := make(map[string]metrics.MetricOption)
-	for name, option := range wfc.Config.MetricsConfig.Options {
-		options[name] = metrics.MetricOption{
-			Disable:            option.Disable,
-			DisabledAttributes: option.DisabledAttributes,
-			HistogramBuckets:   option.HistogramBuckets,
+	modifiers := make(map[string]metrics.Modifier)
+	for name, modifier := range wfc.Config.MetricsConfig.Modifiers {
+		modifiers[name] = metrics.Modifier{
+			Disabled:           modifier.Disabled,
+			DisabledAttributes: modifier.DisabledAttributes,
+			HistogramBuckets:   modifier.HistogramBuckets,
 		}
 	}
 
@@ -1370,7 +1370,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() *metrics.Config {
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
 		// Default to true for 3.6
 		Secure:      wfc.Config.MetricsConfig.GetSecure(true),
-		Options:     options,
+		Modifiers:   modifiers,
 		Temporality: wfc.Config.MetricsConfig.Temporality,
 	}
 	return &metricsConfig

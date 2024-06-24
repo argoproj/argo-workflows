@@ -11,9 +11,9 @@ import (
 func TestViewDisable(t *testing.T) {
 	// Same metric as TestMetrics, but disabled by a view
 	m, te, err := createTestMetrics(&Config{
-		Options: map[string]MetricOption{
+		Modifiers: map[string]Modifier{
 			nameOperationDuration: {
-				Disable: true,
+				Disabled: true,
 			},
 		},
 	})
@@ -27,7 +27,7 @@ func TestViewDisable(t *testing.T) {
 func TestViewDisabledAttributes(t *testing.T) {
 	// Disable the error cause label
 	m, te, err := createTestMetrics(&Config{
-		Options: map[string]MetricOption{
+		Modifiers: map[string]Modifier{
 			nameErrorCount: {
 				DisabledAttributes: []string{labelErrorCause},
 			},
@@ -53,7 +53,7 @@ func TestViewHistogramBuckets(t *testing.T) {
 	// Same metric as TestMetrics, but buckets changed
 	bounds := []float64{1.0, 3.0, 5.0, 10.0}
 	m, te, err := createTestMetrics(&Config{
-		Options: map[string]MetricOption{
+		Modifiers: map[string]Modifier{
 			nameOperationDuration: {
 				HistogramBuckets: bounds,
 			},
