@@ -1,6 +1,6 @@
 # Metrics upgrade notes
 
-Metrics have changed between 3.5 and 3.6.
+Metrics have changed in 3.6.
 
 You can now retrieve metrics using the OpenTelemetry Protocol using the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/), and this is the recommended mechanism.
 
