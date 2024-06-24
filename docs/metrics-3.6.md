@@ -41,7 +41,7 @@ metricsConfig:
 
 ## Renamed metrics
 
-If you are using these metrics in your recording rules, dashboards or alerts you will need to use their new name after the upgrade:
+If you are using these metrics in your recording rules, dashboards, or alerts, you will need to update their names after the upgrade:
 
 | Old name                           | New name                           |
 |------------------------------------|------------------------------------|
