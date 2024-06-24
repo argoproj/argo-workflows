@@ -8,7 +8,7 @@ These notes explain the differences in using the prometheus `/metrics` endpoint 
 
 ## TLS
 
-The prometheus `/metrics` endpoint defaults to TLS on.
+The Prometheus `/metrics` endpoint now has TLS enabled by default.
 
 To disable this set `.metricsConfig.secure` to `false`.
 
