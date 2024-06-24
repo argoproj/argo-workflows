@@ -3,7 +3,7 @@
 > v2.7 and after
 
 !!! Metrics changes in 3.6
-    Please read [this](metrics-3.6.md) short guide on what you must consider when upgrading to 3.6.
+    Please read [this short guide](upgrading.md#metrics_changes) on what you must consider when upgrading to 3.6.
 
 ## Introduction
 
