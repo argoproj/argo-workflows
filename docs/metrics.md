@@ -158,14 +158,13 @@ a way to view and analyze historical data, consider the [workflow archive](workf
 
 ### Counter, gauge and histogram
 
-The following terms have specific meanings for the metrics that we collect:
+These terms are [defined by OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/metrics/#metric-instruments):
 
-- `counter`: A value that accumulates over time – you can think of this like an odometer on a car; it only ever goes up.
+> - `counter`: A value that accumulates over time – you can think of this like an odometer on a car; it only ever goes up.
     - The rate of change of counters can be a very powerful tool in understanding these metrics.
-- `gauge`: Measures a current value at the time it is read. An example would be the fuel gauge in a vehicle.
-- `histogram`: A client-side aggregation of values, such as request latencies. A histogram is a good choice if you are interested in value statistics. For example: How many requests take fewer than 1 second?
+> - `gauge`: Measures a current value at the time it is read. An example would be the fuel gauge in a vehicle.
+> - `histogram`: A client-side aggregation of values, such as request latencies. A histogram is a good choice if you are interested in value statistics. For example: How many requests take fewer than 1 second?
 
-Thanks to [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/metrics/#metric-instruments) for these explanations.
 
 ### Default Controller Metrics
 
