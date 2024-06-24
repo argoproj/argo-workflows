@@ -37,30 +37,6 @@ metricsConfig:
   options:
     build_info:
       disable: true
-    total_count:
-      disable: true
-    pods_total_count:
-      disable: true
-    controller_build_info:
-      disable: true
-    cronworkflows_triggered_total:
-      disable: true
-    workflowtemplate_triggered_total:
-      disable: true
-    workflowtemplate_runtime:
-      disable: true
-    k8s_request_duration:
-      disable: true
-    queue_duration:
-      disable: true
-    queue_longest_running:
-      disable: true
-    queue_retries:
-      disable: true}
-    queue_unfinished_work:
-      disable: true
-    pod_pending:
-      disable: true
 ```
 
 ## Renamed metrics
