@@ -50,6 +50,14 @@ receivers:
 
 You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernetes/operator/) to setup the collector and instrument the workflow-controller.
 
+You can adjust temporality of the OpenTelemetry metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
+
+```yaml
+metricsConfig: |
+  # Which temporality to use for opentelemetry, defaults to Cumulative
+  temporality: Delta
+```
+
 ### Prometheus scraping
 
 You can adjust various elements of the Prometheus metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
@@ -75,6 +83,9 @@ metricsConfig: |
 The metric names emitted by this mechanism are prefixed with `argo_workflows_`.
 `Attributes` are exposed as Prometheus `labels` of the same name.
 
+Prometheus metrics will return empty metrics on a workflow controller which is not the leader.
+All metrics emitted over Prometheus will have `argo_workflows_` prefixed to their name.
+
 ### Common
 
 You can adjust various elements of the metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
@@ -83,6 +94,7 @@ You can adjust various elements of the metrics configuration by changing values 
 metricsConfig: |
   # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
   metricsTTL: "10m"
+  # Modifiers allows tuning of each of the emitted metrics
   modifiers:
     pod_missing:
       disabled: true
