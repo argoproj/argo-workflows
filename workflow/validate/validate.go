@@ -263,13 +263,15 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	//   - If OnExit is specified in referred WorkflowTemplate, the OnExit of the referred WorkflowTemplate will be validated.
 	//   - If OnExit is empty in referred WorkflowTemplate, nothing will be validated.
 	var tmplHolder *wfv1.WorkflowStep
-	if wf.Spec.OnExit != "" {
-		tmplHolder = &wfv1.WorkflowStep{Template: wf.Spec.OnExit}
+	if wf.Spec.HasExitHook() {
+		exitTemplate := wf.Spec.GetExitHook(wf.Spec.Arguments).Template
+		tmplHolder = &wfv1.WorkflowStep{Template: exitTemplate}
 		if hasWorkflowTemplateRef {
-			tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wf.Spec.OnExit)}
+			tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(exitTemplate)}
 		}
-	} else if hasWorkflowTemplateRef && wfSpecHolder.GetWorkflowSpec().OnExit != "" {
-		tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wfSpecHolder.GetWorkflowSpec().OnExit)}
+	} else if hasWorkflowTemplateRef && wfSpecHolder.GetWorkflowSpec().HasExitHook() {
+		exitTemplate := wfSpecHolder.GetWorkflowSpec().GetExitHook(wfSpecHolder.GetWorkflowSpec().Arguments).Template
+		tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(exitTemplate)}
 	}
 	if tmplHolder != nil {
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
