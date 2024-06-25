@@ -12,12 +12,10 @@ interface ParametersInputProps {
 
 export function ParametersInput(props: ParametersInputProps) {
     function onParameterChange(parameter: Parameter, value: string) {
-        const newParameters: Parameter[] = props.parameters.map(p => ({
-            name: p.name,
+        props.onChange(props.parameters.map(p => ({
+            ...p,
             value: p.name === parameter.name ? value : Utils.getValueFromParameter(p),
-            enum: p.enum
-        }));
-        props.onChange(newParameters);
+        })));
     }
 
     function displaySelectFieldForEnumValues(parameter: Parameter) {
