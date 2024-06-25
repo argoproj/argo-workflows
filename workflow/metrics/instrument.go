@@ -1,0 +1,145 @@
+package metrics
+
+import (
+	"fmt"
+
+	"go.opentelemetry.io/otel/metric"
+
+	"github.com/argoproj/argo-workflows/v3"
+)
+
+type instrument struct {
+	name        string
+	description string
+	otel        interface{}
+	userdata    interface{}
+}
+
+func (m *Metrics) preCreateCheck(name string) error {
+	if _, exists := m.allInstruments[name]; exists {
+		return fmt.Errorf("Instrument called %s already exists", name)
+	}
+	return nil
+}
+
+func addHelpLink(name, description string) string {
+	version := `latest`
+	if major, minor, _, err := argo.GetVersion().Components(); err == nil {
+		version = fmt.Sprintf("release-%s.%s", major, minor)
+	}
+	return fmt.Sprintf("%s https://argo-workflows.readthedocs.io/en/%s/metrics/#%s", description, version, name)
+}
+
+type instrumentType int
+
+const (
+	float64ObservableGauge instrumentType = iota
+	float64Histogram
+	float64UpDownCounter
+	int64ObservableGauge
+	int64UpDownCounter
+	int64Counter
+)
+
+// InstrumentOption applies options to all instruments.
+type instrumentOptions struct {
+	builtIn        bool
+	defaultBuckets []float64
+}
+
+type instrumentOption func(*instrumentOptions)
+
+func withAsBuiltIn() instrumentOption {
+	return func(o *instrumentOptions) {
+		o.builtIn = true
+	}
+}
+
+func withDefaultBuckets(buckets []float64) instrumentOption {
+	return func(o *instrumentOptions) {
+		o.defaultBuckets = buckets
+	}
+}
+
+func collectOptions(options ...instrumentOption) instrumentOptions {
+	var o instrumentOptions
+	for _, opt := range options {
+		opt(&o)
+	}
+	return o
+}
+
+func (m *Metrics) createInstrument(instType instrumentType, name, desc, unit string, options ...instrumentOption) error {
+	opts := collectOptions(options...)
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	err := m.preCreateCheck(name)
+	if err != nil {
+		return err
+	}
+
+	if opts.builtIn {
+		desc = addHelpLink(name, desc)
+	}
+	var instPtr interface{}
+	switch instType {
+	case float64ObservableGauge:
+		inst, insterr := (*m.otelMeter).Float64ObservableGauge(name,
+			metric.WithDescription(desc),
+			metric.WithUnit(unit),
+		)
+		instPtr = &inst
+		err = insterr
+	case float64Histogram:
+		inst, insterr := (*m.otelMeter).Float64Histogram(name,
+			metric.WithDescription(desc),
+			metric.WithUnit(unit),
+			metric.WithExplicitBucketBoundaries(m.buckets(name, opts.defaultBuckets)...),
+		)
+		instPtr = &inst
+		err = insterr
+	case float64UpDownCounter:
+		inst, insterr := (*m.otelMeter).Float64UpDownCounter(name,
+			metric.WithDescription(desc),
+			metric.WithUnit(unit),
+		)
+		instPtr = &inst
+		err = insterr
+	case int64ObservableGauge:
+		inst, insterr := (*m.otelMeter).Int64ObservableGauge(name,
+			metric.WithDescription(desc),
+			metric.WithUnit(unit),
+		)
+		instPtr = &inst
+		err = insterr
+	case int64UpDownCounter:
+		inst, insterr := (*m.otelMeter).Int64UpDownCounter(name,
+			metric.WithDescription(desc),
+			metric.WithUnit(unit),
+		)
+		instPtr = &inst
+		err = insterr
+	case int64Counter:
+		inst, insterr := (*m.otelMeter).Int64Counter(name,
+			metric.WithDescription(desc),
+			metric.WithUnit(unit),
+		)
+		instPtr = &inst
+		err = insterr
+	default:
+		return fmt.Errorf("internal error creating metric instrument of unknown type %v", instType)
+	}
+	if err != nil {
+		return err
+	}
+	m.allInstruments[name] = &instrument{
+		name:        name,
+		description: desc,
+		otel:        instPtr,
+	}
+	return nil
+}
+
+func (m *Metrics) buckets(name string, defaultBuckets []float64) []float64 {
+	return defaultBuckets
+}
