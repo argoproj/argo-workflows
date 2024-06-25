@@ -93,6 +93,7 @@ func New(ctx context.Context, serviceName string, config *Config, callbacks Call
 		realtimeWorkflows: make(map[string][]realtimeTracker),
 	}
 	err = metrics.populate(ctx,
+		addBuildInfo,
 		addPodPhaseGauge,
 		addPodMissingCounter,
 		addWorkflowPhaseGauge,
