@@ -59,3 +59,44 @@ Outputs of a `script` are assigned to standard output and captured in the `resul
 
 Container steps and tasks also have their standard output captured in the `result` parameter.
 Given a `task`, called `log-int`, `result` would then be accessible as `{{ tasks.log-int.outputs.result }}`. If using [steps](steps.md), substitute `tasks` for `steps`: `{{ steps.log-int.outputs.result }}`.
+
+#### Output parameter from a standard output of a step
+
+Standard output of step as output parameter.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-parameter-step-
+spec:
+  entrypoint: output-parameter-step
+  templates:
+  - name: output-parameter-step
+    steps:
+    - - name: generate-parameter
+        template: whalesay
+    - - name: consume-parameter
+        template: print-message
+        arguments:
+          parameters:
+          # Pass the stdout from the generate-parameter step as the message input to print-message
+          - name: message
+            value: "{{steps.generate-parameter.outputs.result}}"
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: [echo "hello-world"]
+
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+```
