@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"k8s.io/client-go/rest"
 
@@ -10,7 +11,8 @@ import (
 )
 
 const (
-	nameK8sRequestTotal = `k8s_request_total`
+	nameK8sRequestTotal    = `k8s_request_total`
+	nameK8sRequestDuration = `k8s_request_duration`
 )
 
 func addK8sRequests(_ context.Context, m *Metrics) error {
@@ -23,6 +25,13 @@ func addK8sRequests(_ context.Context, m *Metrics) error {
 	if err != nil {
 		return err
 	}
+	err = m.createInstrument(float64Histogram,
+		nameK8sRequestDuration,
+		"Duration of kubernetes requests executed.",
+		"s",
+		withDefaultBuckets([]float64{0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 60.0, 180.0}),
+		withAsBuiltIn(),
+	)
 	// Register this metrics with the global
 	k8sMetrics.metrics = m
 	return err
@@ -39,7 +48,9 @@ type metricsRoundTripper struct {
 var k8sMetrics metricsRoundTripper
 
 func (m metricsRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	startTime := time.Now()
 	x, err := m.roundTripper.RoundTrip(r)
+	duration := time.Since(startTime)
 	if x != nil && m.metrics != nil {
 		verb, kind := k8s.ParseRequest(r)
 		attribs := instAttribs{
@@ -48,6 +59,7 @@ func (m metricsRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) 
 			{name: labelRequestCode, value: x.StatusCode},
 		}
 		(*m.metrics).addInt(m.ctx, nameK8sRequestTotal, 1, attribs)
+		(*m.metrics).record(m.ctx, nameK8sRequestDuration, duration.Seconds(), attribs)
 	}
 	return x, err
 }
