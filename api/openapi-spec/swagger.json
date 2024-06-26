@@ -2964,14 +2964,8 @@
           },
           {
             "type": "string",
-            "description": "Return workflows having this name prefix.",
-            "name": "namePrefix",
-            "in": "query"
-          },
-          {
-            "type": "string",
-            "description": "Return workflows with name containing this value.",
-            "name": "namePattern",
+            "description": "Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.",
+            "name": "nameFilter",
             "in": "query"
           }
         ],

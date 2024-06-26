@@ -19,16 +19,16 @@ import './workflow-filters.scss';
 
 const NAME_FILTERS = [
     {
-        title: 'Name Pattern',
-        id: 'namePattern' as const
+        title: 'Name Contains',
+        id: 'Contains' as const
     },
     {
         title: 'Name Prefix',
-        id: 'namePrefix' as const
+        id: 'Prefix' as const
     },
     {
         title: 'Name Exact',
-        id: 'name' as const
+        id: 'Exact' as const
     }
 ];
 
@@ -49,12 +49,14 @@ interface WorkflowFilterProps {
     setLabels: (labels: string[]) => void;
     setCreatedAfter: (createdAfter: Date) => void;
     setFinishedBefore: (finishedBefore: Date) => void;
-    nameFilter: {value: string; type: NameFilterKeys};
-    setNameFilter: (nameFilter: {value: string; type: NameFilterKeys}) => void;
+    nameFilter: NameFilterKeys;
+    nameValue: string;
+    setNameFilter: (nameFilter: NameFilterKeys) => void;
+    setNameValue: (nameValue: string) => void;
 }
 
 export function WorkflowFilters(props: WorkflowFilterProps) {
-    const nameFilter = NAME_FILTERS.find(item => item.id === props.nameFilter.type);
+    const nameFilter = NAME_FILTERS.find(item => item.id === props.nameFilter);
     function setLabel(name: string, value: string) {
         props.setLabels([name.concat('=' + value)]);
     }
@@ -84,7 +86,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
     }, [props.workflows, props.phaseItems]);
 
     function handleNameFilterChange(item: {title: string; id: string}) {
-        props.setNameFilter({value: props.nameFilter.value, type: item.id as NameFilterKeys});
+        props.setNameFilter(item.id as NameFilterKeys);
     }
 
     return (
@@ -113,13 +115,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                             ))}
                         </ul>
                     </DropDown>
-                    <InputFilter
-                        value={props.nameFilter.value}
-                        name='wfNameFilter'
-                        onChange={value => props.setNameFilter({value, type: props.nameFilter.type})}
-                        placeholder='Search...'
-                        filterSuggestions
-                    />
+                    <InputFilter value={props.nameValue} name='wfNameFilter' onChange={value => props.setNameValue(value)} filterSuggestions />
                 </div>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Labels</p>

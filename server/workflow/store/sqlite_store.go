@@ -88,8 +88,8 @@ func NewSQLiteStore(instanceService instanceid.Service) (*SQLiteStore, error) {
 	return &SQLiteStore{conn: conn, instanceService: instanceService}, nil
 }
 
-func (s *SQLiteStore) ListWorkflows(ctx context.Context, namespace, namePrefix, namePattern string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
-	options, err := sutils.BuildListOptions(listOptions, namespace, namePrefix, namePattern)
+func (s *SQLiteStore) ListWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
+	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +129,8 @@ where instanceid = ?
 	}, nil
 }
 
-func (s *SQLiteStore) CountWorkflows(ctx context.Context, namespace, namePrefix, namePattern string, listOptions metav1.ListOptions) (int64, error) {
-	options, err := sutils.BuildListOptions(listOptions, namespace, namePrefix, namePattern)
+func (s *SQLiteStore) CountWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (int64, error) {
+	options, err := sutils.BuildListOptions(listOptions, namespace, "", nameFilter)
 	if err != nil {
 		return 0, err
 	}

@@ -88,21 +88,13 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
     const [error, setError] = useState<Error>();
-    const [nameFilter, setNameFilter] = useState((): { type: NameFilterKeys; value: string } => {
-        const keys = NAME_FILTER_KEYS;
-        const nameUrlFilterType = keys.find(key => queryParams.get(key));
-        // don't get the storage saved value if there is a name filter in the URL, as it will override the storage value
-        if (nameUrlFilterType) {
-            return { type: nameUrlFilterType, value: queryParams.get(nameUrlFilterType) };
-        }
-        const savedOptions = storage.getItem('options', {});
-        for (const key of keys) {
-            if (savedOptions[key]) {
-                return { type: key, value: savedOptions[key] };
-            }
-        }
-        return { type: 'namePattern', value: '' };
+    const [nameValue, setNameValue] = useState<string>(() => {
+        return queryParams.get(NAME_FILTER_KEYS.find(key => queryParams.get(key))) || '';
     });
+    const [nameFilter, setNameFilter] = useState<NameFilterKeys>(() => {
+        return NAME_FILTER_KEYS.find(key => queryParams.get(key)) || 'Contains';
+    });
+
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
         const nowDisabled: any = { ...allBatchActionsEnabled };
         for (const action of Object.keys(nowDisabled)) {
@@ -154,24 +146,15 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
         if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
         }
-        if (options.name) {
-            params.append('name', options.name);
-        }
-        if (options.namePrefix) {
-            params.append('namePrefix', options.namePrefix);
-        }
-        if (options.namePattern) {
-            params.append('namePattern', options.namePattern);
+        if (nameValue) {
+            params.append(nameFilter, nameValue);
         }
         history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), { namespace, extraSearchParams: params }));
-    }, [namespace, nameFilter, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter]); // referential equality, so use values, not refs
 
     useEffect(() => {
-        const name = nameFilter.type === 'name' ? nameFilter.value : undefined;
-        const namePrefix = nameFilter.type === 'namePrefix' ? nameFilter.value : undefined;
-        const namePattern = nameFilter.type === 'namePattern' ? nameFilter.value : undefined;
         const listWatch = new ListWatch(
-            () => services.workflows.list(namespace, phases, labels, pagination, undefined, name, namePrefix, namePattern),
+            () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter),
             (resourceVersion: string) => services.workflows.watchFields({ namespace, phases, labels, resourceVersion }),
             metadata => {
                 setError(null);
@@ -189,7 +172,7 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameFilter]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
@@ -249,7 +232,9 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
                                 clearSelectedWorkflows(); // date filters are client-side, but clear similar to the server-side ones for consistency
                             }}
                             nameFilter={nameFilter}
+                            nameValue={nameValue}
                             setNameFilter={setNameFilter}
+                            setNameValue={setNameValue}
                         />
                     </div>
                 </div>
