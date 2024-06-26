@@ -26,6 +26,7 @@ These notes explain the differences in using the Prometheus `/metrics` endpoint 
 The following are new metrics:
 
 * `controller_build_info`
+* `leader`
 * `queue_duration`
 * `queue_longest_running`
 * `queue_retries`
