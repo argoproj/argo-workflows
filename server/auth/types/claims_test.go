@@ -243,7 +243,7 @@ func TestGetUserInfoGroups(t *testing.T) {
 		httpClient = &HttpClientMock{StatusCode: 200, Body: body}
 
 		claims := &Claims{}
-		groups, err := claims.GetUserInfoGroups("Bearer fake", "https://fake.okta.com", "/user-info")
+		groups, err := claims.GetUserInfoGroups(httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
 		assert.Equal(t, groups, []string{"Everyone"})
 		assert.Equal(t, nil, err)
 	})

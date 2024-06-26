@@ -25,7 +25,7 @@ SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 # docker image publishing options
 IMAGE_NAMESPACE       ?= quay.io/argoproj
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
-TARGET_PLATFORM := $(shell [ `uname -m` = arm64 ] && echo linux/arm64 || echo linux/amd64)
+TARGET_PLATFORM       ?= linux/$(shell go env GOARCH)
 
 # declares which cluster to import to in case it's not the default name
 K3D_CLUSTER_NAME      ?= k3s-default
@@ -185,6 +185,7 @@ endif
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/argo-linux-riscv64: GOARGS = GOOS=linux GOARCH=riscv64
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
 dist/argo-darwin-arm64: GOARGS = GOOS=darwin GOARCH=arm64
@@ -213,7 +214,7 @@ endif
 argocli-image:
 
 .PHONY: clis
-clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-darwin-arm64.gz dist/argo-windows-amd64.gz
+clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-riscv64.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-darwin-arm64.gz dist/argo-windows-amd64.gz
 
 # controller
 
@@ -731,7 +732,7 @@ docs: /usr/local/bin/mkdocs \
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/docs/check-env-doc.sh
 	# build the docs
-	mkdocs build --strict
+	TZ=UTC mkdocs build --strict
 	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
@@ -756,7 +757,7 @@ pre-commit: codegen lint docs
 # release
 
 release-notes: /dev/null
-	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
+	version=$(VERSION) envsubst '$$version' < hack/release-notes.md > release-notes
 
 .PHONY: checksums
 checksums:

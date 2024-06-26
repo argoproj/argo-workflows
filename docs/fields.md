@@ -127,6 +127,8 @@ Workflow is the definition of a workflow resource
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -564,6 +566,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -1004,6 +1008,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -1237,7 +1243,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 |`schedule`|`string`|Schedule is a schedule to run the Workflow in Cron format|
 |`schedules`|`Array< string >`|Schedules is a list of schedules to run the Workflow in Cron format|
 |`startingDeadlineSeconds`|`integer`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
-|`stopStrategy`|[`StopStrategy`](#stopstrategy)|StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow|
+|`stopStrategy`|[`StopStrategy`](#stopstrategy)|v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition|
 |`successfulJobsHistoryLimit`|`integer`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`suspend`|`boolean`|Suspend is a flag that will stop new CronWorkflows from running if set to true|
 |`timezone`|`string`|Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.|
@@ -1253,10 +1259,10 @@ CronWorkflowStatus is the status of a CronWorkflow
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
-|`failed`|`integer`|Failed is a counter of how many times a child workflow terminated in failed or errored state|
+|`failed`|`integer`|v3.6 and after: Failed counts how many times child workflows failed|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
-|`phase`|`string`|Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running|
-|`succeeded`|`integer`|Succeeded is a counter of how many times the child workflows had success|
+|`phase`|`string`|v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true|
+|`succeeded`|`integer`|v3.6 and after: Succeeded counts how many times child workflows succeeded|
 
 ## Arguments
 
@@ -1332,6 +1338,8 @@ Arguments to a template
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -1943,12 +1951,12 @@ SynchronizationStatus stores the status of semaphore and mutex.
 
 ## StopStrategy
 
-StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`condition`|`string`|Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.|
+|`condition`|`string`|v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.|
 
 ## Artifact
 
@@ -2130,6 +2138,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-step-level.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -2333,7 +2343,7 @@ Backoff is a backoff strategy to use within retryStrategy
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
 |`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
-|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy|
+|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.|
 
 ## Mutex
 
@@ -2677,6 +2687,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -2877,6 +2889,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -3909,6 +3923,8 @@ DataSource sources external data into a data template
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -4658,6 +4674,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -5572,6 +5590,8 @@ EnvVar represents an environment variable present in a Container.
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/colored-logs.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -5989,6 +6009,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 

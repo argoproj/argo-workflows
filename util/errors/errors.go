@@ -37,7 +37,8 @@ func IsTransientErr(err error) bool {
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||
 		matchTransientErrPattern(err) ||
-		errors.Is(err, NewErrTransient(""))
+		errors.Is(err, NewErrTransient("")) ||
+		isTransientSqbErr(err)
 	if isTransient {
 		log.Infof("Transient error: %v", err)
 	} else {
@@ -122,4 +123,8 @@ func generateErrorString(err error) string {
 		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
 	}
 	return errorString
+}
+
+func isTransientSqbErr(err error) bool {
+	return strings.Contains(err.Error(), "upper: no more rows in")
 }

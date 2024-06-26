@@ -128,6 +128,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [MariaDB](https://mariadb.com/)
 1. [Marmalade](https://www.marmalade.co/)
 1. [Max Kelsen](https://maxkelsen.com/)
+1. [Maya](https://www.maya.ph/)
 1. [Microba](https://www.microba.com/)
 1. [Microblink](https://microblink.com/)
 1. [Mirantis](https://mirantis.com/)

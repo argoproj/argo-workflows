@@ -59,8 +59,9 @@ spec:
             done
     - name: artgc-dag-workflow-deleter
       container:
-        image: argoproj/argocli:latest
-        args: 
+        image: quay.io/argoproj/argocli:latest
+        imagePullPolicy: Never
+        args:
           - delete
           - -l
           - workflows.argoproj.io/workflow=artgc-dag-wf-self-delete

@@ -9,7 +9,7 @@ body:
       options:
         - label: I have double-checked my configuration
           required: true
-        - label: I can confirm the issue exists when I tested with `:latest`
+        - label: I have tested with the `:latest` image tag (i.e. `quay.io/argoproj/workflow-controller:latest`) and can confirm the issue still exists on `:latest`. If not, I have explained why, **in detail**, in my description below.
           required: true
         - label: I have searched existing issues and could not find a match for this bug
           required: true
@@ -53,8 +53,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for submitting this issue! Are you a contributor? If not, have you thought about it? 
+        Thanks for submitting this issue! Are you a contributor? If not, have you thought about it?
 
-        Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable. 
-        See [Sustainability Effort](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information. 
+        Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
+        See [Sustainability Effort](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information.
 

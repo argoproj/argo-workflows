@@ -48,6 +48,7 @@ The resulting `Workflow` name will be a generated name based on the `CronWorkflo
 | `startingDeadlineSeconds`    |           `0`          | Number of seconds after the last successful run during which a missed `Workflow` will be run                                                                                                                                            |
 | `successfulJobsHistoryLimit` |           `3`          | Number of successful `Workflows` that will be persisted at a time                                                                                                                                                                       |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` that will be persisted at a time                                                                                                                                                                           |
+| `stopStrategy`               |         `nil`          | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition                                                                                                                                                 |
 
 ### Cron Schedule Syntax
 
@@ -102,6 +103,37 @@ For example, with timezone set at `America/Los_Angeles`, we have daylight saving
     | 1 2 ** *  | 1        | 2020-11-01 02:01:00 -0800 PST |
     |            | 2        | 2020-11-02 02:01:00 -0800 PST |
     |            | 3        | 2020-11-03 02:01:00 -0800 PST |
+
+### Automatically Stopping a `CronWorkflow`
+
+> v3.6 and after
+
+You can configure a `CronWorkflow` to automatically stop based on an [expression](variables.md#expression) with `stopStrategy.condition`.
+You can use the [variables](variables.md#stopstrategy) `failed` and `succeeded`.
+
+For example, if you want to stop scheduling new workflows after one success:
+
+```yaml
+stopStrategy:
+  condition: "succeeded >= 1"
+```
+
+You can also stop scheduling new workflows after three failures with:
+
+```yaml
+stopStrategy:
+  condition: "failed >= 3"
+```
+
+<!-- markdownlint-disable MD046 -- this is indented due to the admonition, not a code block -->
+!!! Warning "Scheduling vs. Completions"
+    Depending on the time it takes to schedule and run a workflow, the number of completions can exceed the configured maximum.
+
+    For example, if you configure the `CronWorkflow` to schedule every minute (`* * * * *`) and stop after one success (`succeeded >= 1`).
+    If the `Workflow` takes 90 seconds to run, the `CronWorkflow` will actually stop after two completions.
+    This is because when the stopping condition is achieved, there is _already_ another `Workflow` running.
+    For that reason, prefer conditions like `succeeded >= 1` over `succeeded == 1`.
+<!-- markdownlint-enable MD046 -->
 
 ## Managing `CronWorkflow`
 

@@ -128,10 +128,50 @@ func (s *ArtifactsSuite) TestGlobalArtifactPassing() {
 }
 
 type artifactState struct {
-	key                   string
-	bucketName            string
+	artifactLocation s3Location
+
 	deletedAtWFCompletion bool
 	deletedAtWFDeletion   bool
+}
+
+type s3Location struct {
+	bucketName string
+	// specify one of these two:
+	specifiedKey string              // exact key is known
+	derivedKey   *artifactDerivedKey // exact key needs to be derived
+}
+
+type artifactDerivedKey struct {
+	templateName string
+	artifactName string
+}
+
+func (al *s3Location) getS3Key(wf *wfv1.Workflow) (string, error) {
+	if al.specifiedKey == "" && al.derivedKey == nil {
+		panic(fmt.Sprintf("invalid artifactLocation: %+v, must have specifiedKey or derivedKey set", al))
+	}
+
+	if al.specifiedKey != "" {
+		return al.specifiedKey, nil
+	}
+
+	// get key by finding the node in the Workflow's NodeStatus and looking at its Artifacts
+
+	// get node name using template
+	n := wf.Status.Nodes.Find(func(nodeStatus wfv1.NodeStatus) bool { return nodeStatus.TemplateName == al.derivedKey.templateName })
+	if n == nil {
+		return "", fmt.Errorf("no node with template name=%q found in workflow %+v", al.derivedKey.templateName, wf)
+	}
+	for _, a := range n.Outputs.Artifacts {
+		if a.Name == al.derivedKey.artifactName {
+			if a.S3 == nil {
+				return "", fmt.Errorf("didn't find expected S3 field in artifact %q: %+v", al.derivedKey.artifactName, a)
+			}
+			return a.S3.Key, nil
+		}
+	}
+
+	return "", fmt.Errorf("artifact named %q not found", al.derivedKey.artifactName)
 }
 
 func (s *ArtifactsSuite) TestStoppedWorkflow() {
@@ -257,69 +297,76 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 	for _, tt := range []struct {
 		workflowFile                 string
 		hasGC                        bool
+		workflowShouldSucceed        bool
 		expectedArtifacts            []artifactState
 		expectedGCPodsOnWFCompletion int
 	}{
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 2,
 			expectedArtifacts: []artifactState{
-				artifactState{"first-on-completion-1", "my-bucket-2", true, false},
-				artifactState{"first-on-completion-2", "my-bucket-3", true, false},
-				artifactState{"first-no-deletion", "my-bucket-3", false, false},
-				artifactState{"second-on-deletion", "my-bucket-3", false, true},
-				artifactState{"second-on-completion", "my-bucket-2", true, false},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "first-on-completion-1"}, true, false},
+				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-on-completion-2"}, true, false},
+				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-no-deletion"}, false, false},
+				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "second-on-deletion"}, false, true},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "second-on-completion"}, true, false},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{"on-completion", "my-bucket-2", true, false},
-				artifactState{"on-deletion", "my-bucket-2", false, true},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{"on-completion", "my-bucket-2", true, false},
-				artifactState{"on-deletion", "my-bucket-2", false, true},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{"on-completion", "my-bucket-2", true, false},
-				artifactState{"on-deletion", "my-bucket-2", false, true},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{"on-completion", "my-bucket-2", true, false},
-				artifactState{"on-deletion", "my-bucket-2", false, false},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, false},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate which has a Step that references another WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-ref-template.yaml",
 			hasGC:                        true,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{"on-completion", "my-bucket-2", true, false},
-				artifactState{"on-deletion", "my-bucket-2", false, true},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
@@ -327,8 +374,19 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-no-gc.yaml",
 			hasGC:                        false,
+			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 0,
 			expectedArtifacts:            []artifactState{},
+		},
+		// Workflow fails to write an artifact that's been defined as an Output
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-artifact-not-written.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        false, // artifact not being present causes Workflow to fail
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts: []artifactState{
+				artifactState{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+			},
 		},
 	} {
 		// for each test make sure that:
@@ -352,7 +410,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				}
 			})
 
-		if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+		if tt.workflowShouldSucceed && when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
 		}) {
 			fmt.Println("can't reliably verify Artifact GC since workflow failed")
@@ -365,7 +423,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			WaitForWorkflow(
 				fixtures.WorkflowCompletionOkay(true),
 				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-					return len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion,
+					return (len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion) || (tt.expectedGCPodsOnWFCompletion == 0),
 						fmt.Sprintf("for all %d pods to have been recouped", tt.expectedGCPodsOnWFCompletion)
 				}))
 
@@ -373,14 +431,19 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 
 		// verify that the artifacts that should have been deleted at completion time were
 		for _, expectedArtifact := range tt.expectedArtifacts {
+			artifactKey, err := expectedArtifact.artifactLocation.getS3Key(when.GetWorkflow())
+			fmt.Printf("artifact key: %q\n", artifactKey)
+			if err != nil {
+				panic(err)
+			}
 			if expectedArtifact.deletedAtWFCompletion {
-				fmt.Printf("verifying artifact %s is deleted at completion time\n", expectedArtifact.key)
-				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+				fmt.Printf("verifying artifact %s is deleted at completion time\n", artifactKey)
+				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
 					assert.NotNil(t, err)
 				})
 			} else {
-				fmt.Printf("verifying artifact %s is not deleted at completion time\n", expectedArtifact.key)
-				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+				fmt.Printf("verifying artifact %s is not deleted at completion time\n", artifactKey)
+				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
 					assert.NoError(t, err)
 				})
 			}
@@ -390,25 +453,32 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 
 		when.
 			DeleteWorkflow().
-			WaitForWorkflowDeletion()
+			WaitForWorkflowDeletion().
+			Then().
+			ExpectWorkflowDeleted()
 
 		when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
 
 		then = when.Then()
 
 		for _, expectedArtifact := range tt.expectedArtifacts {
+			artifactKey, err := expectedArtifact.artifactLocation.getS3Key(when.GetWorkflow())
+			fmt.Printf("artifact key: %q\n", artifactKey)
+			if err != nil {
+				panic(err)
+			}
 
 			if expectedArtifact.deletedAtWFCompletion { // already checked this
 				continue
 			}
 			if expectedArtifact.deletedAtWFDeletion {
-				fmt.Printf("verifying artifact %s is deleted\n", expectedArtifact.key)
-				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+				fmt.Printf("verifying artifact %s is deleted\n", artifactKey)
+				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
 					assert.NotNil(t, err)
 				})
 			} else {
-				fmt.Printf("verifying artifact %s is not deleted\n", expectedArtifact.key)
-				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+				fmt.Printf("verifying artifact %s is not deleted\n", artifactKey)
+				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
 					assert.NoError(t, err)
 				})
 			}

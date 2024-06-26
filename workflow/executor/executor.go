@@ -291,26 +291,27 @@ func (we *WorkflowExecutor) StageFiles() error {
 }
 
 // SaveArtifacts uploads artifacts to the archive location
-func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
+func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, error) {
+	artifacts := wfv1.Artifacts{}
 	if len(we.Template.Outputs.Artifacts) == 0 {
 		log.Infof("No output artifacts")
-		return nil
+		return artifacts, nil
 	}
 
 	log.Infof("Saving output artifacts")
 	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
 	if err != nil {
-		return argoerrs.InternalWrapError(err)
+		return artifacts, argoerrs.InternalWrapError(err)
 	}
 
-	for i, art := range we.Template.Outputs.Artifacts {
+	for _, art := range we.Template.Outputs.Artifacts {
 		err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
-			return err
+			return artifacts, err
 		}
-		we.Template.Outputs.Artifacts[i] = art
+		artifacts = append(artifacts, art)
 	}
-	return nil
+	return artifacts, nil
 }
 
 func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) error {
@@ -832,9 +833,9 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 }
 
 // ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
-func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
+func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
-	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
+	outputs.Artifacts = artifacts
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
