@@ -61,7 +61,7 @@ Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec
 ```yaml
 <... snipped ...>
   - name: large-artifact
-    # below patch gets merged with the actual pod spec and increses the memory
+    # below patch gets merged with the actual pod spec and increases the memory
     # request of the init container.
     podSpecPatch: |
       initContainers:
@@ -92,15 +92,15 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
         path: /tmp/hello_world.txt
 
         # disable archiving entirely - upload the file / directory as is.
-        # this is useful when the container layout matches the desired target repository layout.   
+        # this is useful when the container layout matches the desired target repository layout.
       - name: hello-art-2
         path: /tmp/hello_world.txt
         archive:
           none: {}
 
         # customize the compression behavior (disabling it here).
-        # this is useful for files with varying compression benefits, 
-        # e.g. disabling compression for a cached build workspace and large binaries, 
+        # this is useful for files with varying compression benefits,
+        # e.g. disabling compression for a cached build workspace and large binaries,
         # or increasing compression for "perfect" textual data - like a json/xml export of a large database.
       - name: hello-art-3
         path: /tmp/hello_world.txt
@@ -167,7 +167,7 @@ metadata:
 spec:
   entrypoint: main
   artifactGC:
-    strategy: OnWorkflowDeletion 
+    strategy: OnWorkflowDeletion
     ##############################################################################################
     #    Workflow Level Service Account and Metadata
     ##############################################################################################
@@ -268,7 +268,7 @@ A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [
 ```yaml
 spec:
   artifactGC:
-    strategy: OnWorkflowDeletion 
+    strategy: OnWorkflowDeletion
     forceFinalizerRemoval: true
 
 ```
