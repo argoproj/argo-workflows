@@ -28,6 +28,7 @@ The following are new metrics:
 * `controller_build_info`
 * `k8s_request_duration`
 * `leader`
+* `pods_total_count`
 * `queue_duration`
 * `queue_longest_running`
 * `queue_retries`

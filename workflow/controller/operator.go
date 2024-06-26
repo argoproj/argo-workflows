@@ -1137,7 +1137,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 		defer wfNodesLock.Unlock()
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err == nil {
-			if newState := woc.assessNodeStatus(pod, node); newState != nil {
+			if newState := woc.assessNodeStatus(ctx, pod, node); newState != nil {
 				// Check whether its taskresult is in an incompleted state.
 				if newState.Succeeded() && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
 					woc.log.WithFields(log.Fields{"nodeID": newState.ID}).Debug("Taskresult of the node not yet completed")
@@ -1321,7 +1321,7 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
-func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
 	new := old.DeepCopy()
 	tmpl, err := woc.GetNodeTemplate(old)
 	if err != nil {
@@ -1374,6 +1374,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	default:
 		new.Phase = wfv1.NodeError
 		new.Message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
+	}
+	if old.Phase != new.Phase {
+		woc.controller.metrics.ChangePodPhase(ctx, string(new.Phase), pod.ObjectMeta.Namespace)
 	}
 
 	// if it's ContainerSetTemplate pod then the inner container names should match to some node names,
