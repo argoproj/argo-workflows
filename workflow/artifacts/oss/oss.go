@@ -86,6 +86,13 @@ func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	var options []oss.ClientOption
+
+	// for oss driver, the proxy cannot be configured through environment variables
+	// ref: https://help.aliyun.com/zh/cli/use-an-http-proxy-server#section-5yf-ejl-jwf
+	if proxy, ok := os.LookupEnv("https_proxy"); ok {
+		options = append(options, oss.Proxy(proxy))
+	}
+
 	if token := ossDriver.SecurityToken; token != "" {
 		options = append(options, oss.SecurityToken(token))
 	}
