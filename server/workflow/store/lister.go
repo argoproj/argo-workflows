@@ -10,8 +10,8 @@ import (
 )
 
 type WorkflowLister interface {
-	ListWorkflows(ctx context.Context, namespace, namePrefix, namePattern string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error)
-	CountWorkflows(ctx context.Context, namespace, namePrefix, namePattern string, listOptions metav1.ListOptions) (int64, error)
+	ListWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error)
+	CountWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (int64, error)
 }
 
 type kubeLister struct {
@@ -24,7 +24,7 @@ func NewKubeLister(wfClient versioned.Interface) WorkflowLister {
 	return &kubeLister{wfClient: wfClient}
 }
 
-func (k *kubeLister) ListWorkflows(ctx context.Context, namespace, namePrefix, namePattern string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
+func (k *kubeLister) ListWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (*wfv1.WorkflowList, error) {
 	wfList, err := k.wfClient.ArgoprojV1alpha1().Workflows(namespace).List(ctx, listOptions)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (k *kubeLister) ListWorkflows(ctx context.Context, namespace, namePrefix, n
 	return wfList, nil
 }
 
-func (k *kubeLister) CountWorkflows(ctx context.Context, namespace, namePrefix, namePattern string, listOptions metav1.ListOptions) (int64, error) {
+func (k *kubeLister) CountWorkflows(ctx context.Context, namespace, nameFilter string, listOptions metav1.ListOptions) (int64, error) {
 	wfList, err := k.wfClient.ArgoprojV1alpha1().Workflows(namespace).List(ctx, listOptions)
 	if err != nil {
 		return 0, err
