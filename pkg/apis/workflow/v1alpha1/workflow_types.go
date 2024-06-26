@@ -2381,9 +2381,25 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
+// IsPartOfExitHandler returns whether node is part of exit handler.
+func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
+	currentNode := n
+	for !currentNode.IsExitNode() {
+		if currentNode.BoundaryID == "" {
+			return false
+		}
+		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
+		if err != nil {
+			log.Panicf("was unable to obtain node for %s", currentNode.BoundaryID)
+		}
+		currentNode = boundaryNode
+	}
+	return true
+}
+
 // IsExitNode returns whether or not node run as exit handler.
-func (ws NodeStatus) IsExitNode() bool {
-	return strings.HasSuffix(ws.DisplayName, ".onExit")
+func (n NodeStatus) IsExitNode() bool {
+	return strings.HasSuffix(n.DisplayName, ".onExit")
 }
 
 func (n NodeStatus) Succeeded() bool {
