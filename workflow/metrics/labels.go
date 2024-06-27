@@ -10,6 +10,8 @@ const (
 	labelBuildGitTreeState string = `treestate`
 	labelBuildGitTag       string = `tag`
 
+	labelCronWFName string = `name`
+
 	labelErrorCause string = "cause"
 
 	labelLogLevel string = `level`

@@ -216,6 +216,15 @@ The build information for this workflow controller
 | `treestate` | Whether the git tree was `dirty` or `clean` when this was built        |
 | `tag`       | The tag on the git commit or `untagged` if it was not tagged           |
 
+#### `cronworkflows_triggered_total`
+
+A counter of the number of times a CronWorkflow has been
+
+| attribute   | explanation                               |
+|-------------|-------------------------------------------|
+| `name`     | ⚠️ The name of the CronWorkflow. |
+| `namespace` | The namespace in which the pod is running |
+
 #### `gauge`
 
 A gauge of the number of workflows currently in the cluster in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
