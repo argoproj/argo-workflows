@@ -6,6 +6,14 @@ get workflow label values in the archive
 argo archive list-label-values [flags]
 ```
 
+### Examples
+
+```
+# List archived workflow label values
+
+  argo archive list-label-values -l key1
+```
+
 ### Options
 
 ```

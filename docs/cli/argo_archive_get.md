@@ -6,6 +6,14 @@ get a workflow in the archive
 argo archive get UID [flags]
 ```
 
+### Examples
+
+```
+# Get an archived workflow
+
+  argo archive get uid
+```
+
 ### Options
 
 ```
