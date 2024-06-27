@@ -7988,32 +7988,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.ArtifactGCSpec": {
-      "description": "ArtifactGCSpec specifies the Artifacts that need to be deleted",
-      "type": "object",
-      "properties": {
-        "artifactsByNode": {
-          "description": "ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactNodeSpec"
-          }
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactGCStatus": {
-      "description": "ArtifactGCStatus describes the result of the deletion",
-      "type": "object",
-      "properties": {
-        "artifactResultsByNode": {
-          "description": "ArtifactResultsByNode maps Node name to result",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
-          }
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "type": "object",
@@ -8057,23 +8031,6 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactNodeSpec": {
-      "description": "ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node",
-      "type": "object",
-      "properties": {
-        "archiveLocation": {
-          "description": "ArchiveLocation is the template-level Artifact location specification",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
-        },
-        "artifacts": {
-          "description": "Artifacts maps artifact name to Artifact description",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
-          }
         }
       }
     },
@@ -8243,40 +8200,6 @@
         "namespace": {
           "description": "The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).",
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactResult": {
-      "description": "ArtifactResult describes the result of attempting to delete a given Artifact",
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "error": {
-          "description": "Error is an optional error message which should be set if Success==false",
-          "type": "string"
-        },
-        "name": {
-          "description": "Name is the name of the Artifact",
-          "type": "string"
-        },
-        "success": {
-          "description": "Success describes whether the deletion succeeded",
-          "type": "boolean"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus": {
-      "description": "ArtifactResultNodeStatus describes the result of the deletion on a given node",
-      "type": "object",
-      "properties": {
-        "artifactResults": {
-          "description": "ArtifactResults maps Artifact name to result of the deletion",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResult"
-          }
         }
       }
     },
@@ -9877,23 +9800,6 @@
         "retried": {
           "description": "Retried tracks whether or not this node was retried by retryStrategy",
           "type": "boolean"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.NodeResult": {
-      "type": "object",
-      "properties": {
-        "message": {
-          "type": "string"
-        },
-        "outputs": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
-        },
-        "phase": {
-          "type": "string"
-        },
-        "progress": {
-          "type": "string"
         }
       }
     },
@@ -12122,28 +12028,6 @@
         },
         "namespace": {
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
-      "type": "object",
-      "properties": {
-        "tasks": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          }
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus": {
-      "type": "object",
-      "properties": {
-        "nodes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
-          }
         }
       }
     },
@@ -15138,24 +15022,6 @@
         }
       },
       "x-kubernetes-map-type": "atomic"
-    },
-    "io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause": {
-      "description": "StatusCause provides more information about an api.Status failure, including cases when multiple errors are encountered.",
-      "type": "object",
-      "properties": {
-        "field": {
-          "description": "The field of the resource that has caused this error, as named by its JSON serialization. May include dot and postfix notation for nested attributes. Arrays are zero-indexed.  Fields may appear more than once in an array of causes due to fields having multiple errors. Optional.\n\nExamples:\n  \"name\" - the field \"name\" on the current resource\n  \"items[0].name\" - the field \"name\" on the first array entry in \"items\"",
-          "type": "string"
-        },
-        "message": {
-          "description": "A human-readable description of the cause of the error.  This field may be presented as-is to a reader.",
-          "type": "string"
-        },
-        "reason": {
-          "description": "A machine-readable description of the cause of the error. If this value is empty there is no information available.",
-          "type": "string"
-        }
-      }
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
       "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
