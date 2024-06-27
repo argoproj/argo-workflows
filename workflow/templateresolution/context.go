@@ -107,6 +107,24 @@ func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
 	if tmpl == nil {
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
 	}
+
+	// add workflow template level pod annotations and labels to template
+	podMetadata := ctx.tmplBase.GetPodMetadata()
+	if podMetadata != nil {
+		if tmpl.Metadata.Annotations == nil {
+			tmpl.Metadata.Annotations = make(map[string]string)
+		}
+		for k, v := range podMetadata.Annotations {
+			tmpl.Metadata.Annotations[k] = v
+		}
+		if tmpl.Metadata.Labels == nil {
+			tmpl.Metadata.Labels = make(map[string]string)
+		}
+		for k, v := range podMetadata.Labels {
+			tmpl.Metadata.Labels[k] = v
+		}
+	}
+
 	return tmpl.DeepCopy(), nil
 }
 
@@ -141,6 +159,24 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 	if template == nil {
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found in workflow template %s", tmplRef.Template, tmplRef.Name)
 	}
+
+	// add workflow template level pod annotations and labels to template
+	podMetadata := wftmpl.GetPodMetadata()
+	if podMetadata != nil {
+		if template.Metadata.Annotations == nil {
+			template.Metadata.Annotations = make(map[string]string)
+		}
+		for k, v := range podMetadata.Annotations {
+			template.Metadata.Annotations[k] = v
+		}
+		if template.Metadata.Labels == nil {
+			template.Metadata.Labels = make(map[string]string)
+		}
+		for k, v := range podMetadata.Labels {
+			template.Metadata.Labels[k] = v
+		}
+	}
+
 	return template.DeepCopy(), nil
 }
 

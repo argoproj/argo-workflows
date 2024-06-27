@@ -3409,6 +3409,11 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
 }
 
+// GetPodMetadata returns the PodMetadata of a workflow.
+func (wf *Workflow) GetPodMetadata() *Metadata {
+	return wf.Spec.PodMetadata
+}
+
 // GetWorkflowSpec returns the Spec of a workflow.
 func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
 	return wf.Spec
