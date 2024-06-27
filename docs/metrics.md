@@ -201,6 +201,15 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
     Some metric attributes may have high cardinality and are marked with ⚠️ to warn you. You may need to disable this metric or disable the attribute.
 <!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
 <!-- titles are without argo_workflows prefix -->
+#### `cronworkflows_triggered_total`
+
+A counter of the number of times a CronWorkflow has been
+
+| attribute   | explanation                               |
+|-------------|-------------------------------------------|
+| `name`     | ⚠️ The name of the CronWorkflow. |
+| `namespace` | The namespace in which the pod is running |
+
 #### `gauge`
 
 A gauge of the number of workflows currently in the cluster in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
