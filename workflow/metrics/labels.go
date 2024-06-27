@@ -16,8 +16,9 @@ const (
 
 	labelNodePhase string = `node_phase`
 
-	labelPodPhase     string = `phase`
-	labelPodNamespace string = `namespace`
+	labelPodPhase         string = `phase`
+	labelPodNamespace     string = `namespace`
+	labelPodPendingReason string = `reason`
 
 	labelQueueName string = `queue_name`
 

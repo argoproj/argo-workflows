@@ -1333,6 +1333,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		new.Phase = wfv1.NodePending
 		new.Message = getPendingReason(pod)
 		new.Daemoned = nil
+		if old.Phase != new.Phase || old.Message != new.Message {
+			woc.controller.metrics.ChangePodPending(ctx, new.Message, pod.ObjectMeta.Namespace)
+		}
 	case apiv1.PodSucceeded:
 		new.Phase = wfv1.NodeSucceeded
 		new.Daemoned = nil

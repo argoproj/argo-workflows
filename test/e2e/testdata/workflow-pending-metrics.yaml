@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-pending-metrics-
+spec:
+  entrypoint: main
+  nodeSelector:
+    arch: nonexistent
+  templates:
+    - name: main
+      steps:
+        - - name: runTest
+            template: run-test
+    - name: run-test
+      container:
+        name: runner
+        image: 'argoproj/argosay:v2'
+        args:
+          - exit 1
+        command:
+          - sh
+          - -c
