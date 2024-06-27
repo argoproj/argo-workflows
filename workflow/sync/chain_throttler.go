@@ -38,4 +38,10 @@ func (c ChainThrottler) Remove(key Key) {
 	}
 }
 
+func (c ChainThrottler) RemoveParallelismLimit(key Key) {
+	for _, t := range c {
+		t.RemoveParallelismLimit(key)
+	}
+}
+
 var _ Throttler = ChainThrottler{}
