@@ -175,41 +175,31 @@
           uiCmd = mkExec "yarn" argoConfig.ui.env argoConfig.ui.args;
         in
         {
-          _module.args = import inputs.nixpkgs {
-            inherit system;
-            overlays = [
-              (self: super: {
-                go = super.go_1_20;
-                buildGoModule = super.buildGo120Module;
-              })
-            ];
-          };
 
           packages = {
             ${package.name} = pkgs.buildGoModule {
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorHash = "sha256-DHqQigUi31GdCFsjvAu1jU1PRNuPW/f3ECrgVd6bvuk=";
+              vendorHash = "sha256-WbceAnRCkYEWpsUEK7iaj8mkbwcfWdn1U+cbWJnFbbk=";
               doCheck = false;
             };
 
             mockery = pkgs.buildGoModule rec { 
               pname = "mockery";
-              version = "2.42.0"; # upgrade this in the Makefile if upgraded here
+              version = "2.26.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
                 repo = "mockery";
-                rev = "v${version}";
-                sha256 = "sha256-wwt7rhHWPlYtvudWKb8vk8t19MeN7AMfMugs0XeBDVk=";
+                rev = "v${version}"; # Look 4 lines below this one!!!
+                sha256 = "sha256-3wJ7XY/wfVXB4nEHLqEtNRscow/KrAo79sr2OgJisSY=";
               };
+              ldflags = [
+                "-X github.com/vektra/mockery/v2/pkg/logging.SemVer=v${version}"  # IMPERATIVE TO LOOK AT SOURCE CODE WHEN UPDATING VERSION!!!
+              ];
               doCheck = false;
               vendorHash = "sha256-J7eL2AQ6v5nG2lZOSSZQOTKBhfk7GtDtqZ7Felo0l54=";
-
-              ldflags = [
-                "-X 'github.com/vektra/mockery/v2/pkg/logging.SemVer=v${version}'" # IMPERATIVE TO ENSURE PATH STAYS THE SAME WHEN VERSION CHANGES
-              ];
             };
 
             protoc-gen-gogo-all = pkgs.buildGoModule rec {
@@ -263,7 +253,7 @@
                 rev = "v${version}";
                 sha256 = "sha256-G0jBQ12cpjfWGhXYppV9dB2n68bExi6ME9QbxXsUWvw=";
               };
-              vendorHash = "sha256-89hzPiqP++tQpPkcSvzc1tHxHcj5PI71RxxxUCgm0BI=";
+              vendorHash = "";
               doCheck = false;
             };
 
