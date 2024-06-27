@@ -15,6 +15,10 @@ Previously it was `--basehref` (no dash in between) and `ARGO_BASEHREF` (no unde
 `ALLOWED_LINK_PROTOCOL` and `BASE_HREF` have been removed as redundant.
 Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
 
+### Legacy insecure pod patch fallback removed. ([#13100](https://github.com/argoproj/argo-workflows/pull/13100))
+
+For the Emissary executor to work properly, you must set up RBAC. See [workflow RBAC](workflow-rbac.md)
+
 ### Metrics changes
 
 You can now retrieve metrics using the OpenTelemetry Protocol using the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/), and this is the recommended mechanism.
