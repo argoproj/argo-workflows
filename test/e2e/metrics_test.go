@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const baseUrlMetrics = "http://localhost:9090/metrics"
+const baseUrlMetrics = "https://localhost:9090/metrics"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
