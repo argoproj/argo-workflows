@@ -1359,8 +1359,8 @@ func (wfc *WorkflowController) getMetricsServerConfig() *metrics.Config {
 		Port:         wfc.Config.MetricsConfig.Port,
 		TTL:          time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
-		// Default to false until v3.5
-		Secure: wfc.Config.MetricsConfig.GetSecure(false),
+		// Enable by default in 3.6
+		Secure: wfc.Config.MetricsConfig.GetSecure(true),
 	}
 	return &metricsConfig
 }

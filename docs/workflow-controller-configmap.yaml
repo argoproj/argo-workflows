@@ -225,8 +225,8 @@ data:
     metricsTTL: "10m"
     # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
     ignoreErrors: false
-    # Use a self-signed cert for TLS, default false
-    secure: false
+    # Use a self-signed cert for TLS, default true
+    secure: true
 
     # DEPRECATED: Legacy metrics are now removed, this field is ignored
     disableLegacy: false

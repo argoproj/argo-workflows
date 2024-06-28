@@ -68,8 +68,8 @@ metricsConfig: |
   # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
   ignoreErrors: false
 
-  # Use a self-signed cert for TLS
-  secure: false
+  # Use a self-signed cert for TLS, default true
+  secure: true
 ```
 
 The metric names emitted by this mechanism are prefixed with `argo_workflows_`.
