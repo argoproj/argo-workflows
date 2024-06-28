@@ -36,7 +36,7 @@ It will not be enabled if left blank, unlike some other implementations.
 
 You can configure the protocol using the environment variables documented in [standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
 
-The [configuration option](#common) in the controller ConfigMap `metricsTTL` affects the OpenTelemetry behavior, but the other parameters do not.
+The [configuration options](#common) in the controller ConfigMap `metricsTTL` and `temporality` affect the OpenTelemetry behavior, but the other parameters do not.
 
 To use the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/) you can configure it
 
@@ -49,6 +49,14 @@ receivers:
 ```
 
 You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernetes/operator/) to setup the collector and instrument the workflow-controller.
+
+You can adjust temporality of the OpenTelemetry metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
+
+```yaml
+metricsConfig: |
+  # Which temporality to use for opentelemetry, defaults to Cumulative
+  temporality: Delta
+```
 
 ### Prometheus scraping
 

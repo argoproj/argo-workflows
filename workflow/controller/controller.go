@@ -1360,6 +1360,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() *metrics.Config {
 		TTL:          time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
 		Secure:       wfc.Config.MetricsConfig.GetSecure(true),
+		Temporality:  wfc.Config.MetricsConfig.Temporality,
 	}
 	return &metricsConfig
 }
