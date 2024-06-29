@@ -5,6 +5,8 @@ PulsarTrigger refers to the specification of the Pulsar trigger.
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**auth_athenz_params** | **{str: (str,)}** |  | [optional] 
+**auth_athenz_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **auth_token_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **connection_backoff** | [**IoArgoprojEventsV1alpha1Backoff**](IoArgoprojEventsV1alpha1Backoff.md) |  | [optional] 
 **parameters** | [**[IoArgoprojEventsV1alpha1TriggerParameter]**](IoArgoprojEventsV1alpha1TriggerParameter.md) | Parameters is the list of parameters that is applied to resolved Kafka trigger object. | [optional] 

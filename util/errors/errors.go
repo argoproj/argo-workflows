@@ -28,8 +28,17 @@ func IsTransientErr(err error) bool {
 		return false
 	}
 	err = argoerrs.Cause(err)
-	isTransient := isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err) ||
-		errors.Is(err, NewErrTransient(""))
+	isTransient := isExceededQuotaErr(err) ||
+		apierr.IsTooManyRequests(err) ||
+		isResourceQuotaConflictErr(err) ||
+		isResourceQuotaTimeoutErr(err) ||
+		isTransientNetworkErr(err) ||
+		apierr.IsServerTimeout(err) ||
+		apierr.IsServiceUnavailable(err) ||
+		isTransientEtcdErr(err) ||
+		matchTransientErrPattern(err) ||
+		errors.Is(err, NewErrTransient("")) ||
+		isTransientSqbErr(err)
 	if isTransient {
 		log.Infof("Transient error: %v", err)
 	} else {
@@ -55,6 +64,20 @@ func isExceededQuotaErr(err error) bool {
 
 func isResourceQuotaConflictErr(err error) bool {
 	return apierr.IsConflict(err) && strings.Contains(err.Error(), "Operation cannot be fulfilled on resourcequota")
+}
+
+func isResourceQuotaTimeoutErr(err error) bool {
+	return apierr.IsInternalError(err) && strings.Contains(err.Error(), "resource quota evaluation timed out")
+}
+
+func isTransientEtcdErr(err error) bool {
+	// Some clusters expose these (transient) etcd errors to the caller
+	if strings.Contains(err.Error(), "etcdserver: leader changed") {
+		return true
+	} else if strings.Contains(err.Error(), "etcdserver: request timed out") {
+		return true
+	}
+	return false
 }
 
 func isTransientNetworkErr(err error) bool {
@@ -100,4 +123,8 @@ func generateErrorString(err error) string {
 		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
 	}
 	return errorString
+}
+
+func isTransientSqbErr(err error) bool {
+	return strings.Contains(err.Error(), "upper: no more rows in")
 }

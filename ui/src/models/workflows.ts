@@ -545,14 +545,18 @@ export function isWorkflowInCluster(wf: Workflow): boolean {
     if (!wf) {
         return false;
     }
-    return !wf.metadata.labels[archivalStatus] || wf.metadata.labels[archivalStatus] === 'Pending' || wf.metadata.labels[archivalStatus] === 'Archived';
+
+    const labelValue = wf.metadata?.labels?.[archivalStatus];
+    return !labelValue || labelValue === 'Pending' || labelValue === 'Archived';
 }
 
-export function isArchivedWorkflow(wf: Workflow): boolean {
+export function isArchivedWorkflow(wf?: Workflow): boolean {
     if (!wf) {
         return false;
     }
-    return wf.metadata.labels && (wf.metadata.labels[archivalStatus] === 'Archived' || wf.metadata.labels[archivalStatus] === 'Persisted');
+
+    const labelValue = wf.metadata?.labels?.[archivalStatus];
+    return labelValue === 'Archived' || labelValue === 'Persisted';
 }
 
 export type NodeType = 'Pod' | 'Container' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
@@ -823,6 +827,7 @@ export interface WorkflowSpec {
      */
     podGC?: {
         strategy?: string;
+        deleteDelayDuration?: string;
     };
     /**
      * SecurityContext holds pod-level security attributes and common container settings.

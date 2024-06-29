@@ -1,11 +1,12 @@
 import * as React from 'react';
+
 import {uiUrl} from '../shared/base';
 
 export const WidgetGallery = ({namespace, name, label}: {namespace: string; name?: string; label?: string}) => (
     <div className='white-box'>
         <h3>Widgets</h3>
         <p>
-            These widgets can be embedded inside other applications. <a href='https://argoproj.github.io/argo-workflows/widgets'>Learn more</a>
+            These widgets can be embedded inside other applications. <a href='https://argo-workflows.readthedocs.io/en/latest/widgets'>Learn more</a>
         </p>
         {[
             {
@@ -60,7 +61,7 @@ export const WidgetGallery = ({namespace, name, label}: {namespace: string; name
             </>
         ))}
         <p>
-            Widgets not loading? Check for <a href='https://argoproj.github.io/argo-workflows/widgets'>solutions in the docs</a>.
+            Widgets not loading? Check for <a href='https://argo-workflows.readthedocs.io/en/latest/widgets'>solutions in the docs</a>.
         </p>
     </div>
 );

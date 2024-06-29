@@ -1,6 +1,6 @@
 # Docker-in-Docker Using Sidecars
 
-Note: It is increasingly unlikely that the below example will work for you on your version of Kubernetes. [Since Kubernetes 1.24, the dockershim has been unavailable as part of Kubernetes](https://kubernetes.io/blog/2022/02/17/dockershim-faq/), rendering Docker-in-Docker unworkable. It is recommended to seek alternative methods of building containers, such as [Kaniko](https://github.com/GoogleContainerTools/kaniko) or [Buildkit](https://github.com/moby/buildkit). A [Buildkit Workflow example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/buildkit-template.yaml) is available in the examples directory of the Argo Workflows repository.
+Note: It is increasingly unlikely that the below example will work for you on your version of Kubernetes. [Since Kubernetes 1.24, the dockershim has been unavailable as part of Kubernetes](https://kubernetes.io/blog/2022/02/17/dockershim-faq/), rendering Docker-in-Docker unworkable. It is recommended to seek alternative methods of building containers, such as [Kaniko](https://github.com/GoogleContainerTools/kaniko) or [Buildkit](https://github.com/moby/buildkit). A [Buildkit Workflow example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/buildkit-template.yaml) is available in the examples directory of the Argo Workflows repository.
 
 ---
 

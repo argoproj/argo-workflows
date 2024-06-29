@@ -2,16 +2,15 @@ import classNames from 'classnames';
 import React, {ReactNode, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 
+import './dropdown.scss';
+
 export interface DropDownProps {
     isMenu?: boolean;
     anchor: JSX.Element;
     children: ReactNode;
-    qeId?: string;
 }
 
-require('./dropdown.scss');
-
-export function DropDown({isMenu, anchor, children, qeId}: DropDownProps) {
+export function DropDown({isMenu, anchor, children}: DropDownProps) {
     const [opened, setOpened] = useState(false);
     const [left, setLeft] = useState(0);
     const [top, setTop] = useState(0);
@@ -79,7 +78,6 @@ export function DropDown({isMenu, anchor, children, qeId}: DropDownProps) {
     return (
         <div className='argo-dropdown' ref={anchorRef}>
             <div
-                qe-id={qeId}
                 className='argo-dropdown__anchor'
                 onClick={event => {
                     open();

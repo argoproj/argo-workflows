@@ -1,8 +1,8 @@
-import {SlideContents} from 'argo-ui';
+import {SlideContents} from 'argo-ui/src/components/slide-contents/slide-contents';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import {ObjectEditor} from '../../../shared/components/object-editor/object-editor';
+import {ObjectEditor} from '../../../shared/components/object-editor';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 
 interface WorkflowYamlViewerProps {

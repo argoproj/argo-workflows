@@ -52,7 +52,7 @@ export function ConditionsPanel(props: Props) {
     return (
         <>
             {props.conditions &&
-                Object.entries(props.conditions).map(([_, condition]) => {
+                Object.entries(props.conditions).map(([, condition]) => {
                     return (
                         <div key={condition.type} style={{lineHeight: '120%', marginTop: '16px'}}>
                             {getConditionIcon(condition.type)}

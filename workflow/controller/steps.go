@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Knetic/govaluate"
@@ -170,6 +172,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	if err != nil {
 		return node, err
 	}
+
 	if outputs != nil {
 		node, err := woc.wf.GetNodeByName(nodeName)
 		if err != nil {
@@ -178,13 +181,14 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		node.Outputs = outputs
 		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes.Set(node.ID, *node)
-		if node.MemoizationStatus != nil {
-			c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-			err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-			if err != nil {
-				woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-				node.Phase = wfv1.NodeError
-			}
+	}
+
+	if node.MemoizationStatus != nil {
+		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+		if err != nil {
+			woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+			node.Phase = wfv1.NodeError
 		}
 	}
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
@@ -342,8 +346,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	for _, childNodeID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			woc.log.Fatalf("was unable to obtain node for %s", childNodeID)
-			panic(fmt.Sprintf("unable to get childNode for %s", childNodeID))
+			woc.log.Panicf("Coudn't obtain child for %s, panicking", childNodeID)
 		}
 		step := nodeSteps[childNode.Name]
 		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
@@ -395,6 +398,15 @@ func shouldExecute(when string) (bool, error) {
 	return boolRes, nil
 }
 
+func errorFromChannel(errCh <-chan error) error {
+	select {
+	case err := <-errCh:
+		return err
+	default:
+	}
+	return nil
+}
+
 // resolveReferences replaces any references to outputs of previous steps, or artifacts in the inputs
 // NOTE: by now, input parameters should have been substituted throughout the template, so we only
 // are concerned with:
@@ -412,21 +424,21 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		return nil, err
 	}
 
-	for i, step := range stepGroup {
+	// Resolve a Step's References and add it to newStepGroup
+	resolveStepReferences := func(i int, step wfv1.WorkflowStep, newStepGroup []wfv1.WorkflowStep) error {
 		// Step 1: replace all parameter scope references in the step
-		// TODO: improve this
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
-			return nil, errors.InternalWrapError(err)
+			return errors.InternalWrapError(err)
 		}
 		newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		var newStep wfv1.WorkflowStep
 		err = json.Unmarshal([]byte(newStepStr), &newStep)
 		if err != nil {
-			return nil, errors.InternalWrapError(err)
+			return errors.InternalWrapError(err)
 		}
 
 		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
@@ -439,13 +451,13 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			if newStep.ShouldExpand() {
 				proceed = true
 			} else {
-				return nil, err
+				return err
 			}
 		}
 		if !proceed {
 			// We can simply return this WorkflowStep; the fact that it won't execute will be reconciled later on in execution
 			newStepGroup[i] = newStep
-			continue
+			return nil
 		}
 
 		// Step 2: replace all artifact references
@@ -459,13 +471,37 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 				if art.Optional {
 					continue
 				}
-				return nil, fmt.Errorf("unable to resolve references: %s", err)
+				return fmt.Errorf("unable to resolve references: %s", err)
 			}
 			resolvedArt.Name = art.Name
 			newStep.Arguments.Artifacts[j] = *resolvedArt
 		}
 
 		newStepGroup[i] = newStep
+		return nil
+	}
+
+	// When resolveStepReferences we can use a channel parallelStepNum to control the number of concurrencies
+	parallelStepNum := make(chan string, 500)
+	errCh := make(chan error, len(stepGroup)) // contains the error during resolveStepReferences
+	var wg sync.WaitGroup
+	for i, step := range stepGroup {
+		parallelStepNum <- step.Name
+		wg.Add(1)
+		go func(i int, step wfv1.WorkflowStep) {
+			defer wg.Done()
+			if err := resolveStepReferences(i, step, newStepGroup); err != nil {
+				woc.log.WithFields(log.Fields{"stepName": step.Name}).WithError(err).Error("Failed to resolve references")
+				errCh <- err
+			}
+			<-parallelStepNum
+		}(i, step)
+	}
+	wg.Wait()
+
+	err = errorFromChannel(errCh) // fetch the first error during resolveStepReferences
+	if err != nil {
+		return nil, fmt.Errorf("Failed to resolve references: %s", err)
 	}
 	return newStepGroup, nil
 }
@@ -591,6 +627,10 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		realTimeScope[common.LocalVarDuration] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
+	}
+
+	if len(node.Children) != 0 {
+		localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
 	}
 
 	if node.Phase != "" {

@@ -18,7 +18,6 @@ import (
 	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 
 	"github.com/stretchr/testify/assert"
-	testhttp "github.com/stretchr/testify/http"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -188,6 +187,14 @@ func newServer() *ArtifactServer {
 								ArtifactLocation: wfv1.ArtifactLocation{
 									S3: &wfv1.S3Artifact{
 										Key: "my-wf/my-node-1/my-s3-input-artifact.tgz",
+									},
+								},
+							},
+							{
+								Name: "my-s3-artifact-directory",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "my-wf/my-node-1/my-s3-artifact-directory",
 									},
 								},
 							},
@@ -389,6 +396,21 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 		},
 		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/my-s3-artifact-directory/subdirectory/",
+			statusCode:  200,
+			isDirectory: true,
+			directoryFiles: []string{
+				"..",
+				"b.txt",
+				"c.txt",
+			},
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/inputs/my-s3-input-artifact",
+			statusCode:  200,
+			isDirectory: false,
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/inputs/my-s3-artifact-directory/subdirectory/",
 			statusCode:  200,
 			isDirectory: true,
 			directoryFiles: []string{
@@ -606,30 +628,30 @@ func TestArtifactServer_NodeWithoutArtifact(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node-no-artifacts/%s", "my-artifact"))
-	w := &testhttp.TestResponseWriter{}
-	s.GetInputArtifact(w, r)
+	recorder := httptest.NewRecorder()
+	s.GetInputArtifact(recorder, r)
 	// make sure there is no nil pointer panic
-	assert.Equal(t, 500, w.StatusCode)
-	s.GetOutputArtifact(w, r)
-	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, 500, recorder.Result().StatusCode)
+	s.GetOutputArtifact(recorder, r)
+	assert.Equal(t, 500, recorder.Result().StatusCode)
 }
 
 func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-ns/your-wf/my-node-1/my-artifact")
-	w := &testhttp.TestResponseWriter{}
-	s.GetOutputArtifact(w, r)
-	assert.NotEqual(t, 200, w.StatusCode)
+	recorder := httptest.NewRecorder()
+	s.GetOutputArtifact(recorder, r)
+	assert.NotEqual(t, 200, recorder.Result().StatusCode)
 }
 
 func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-uuid/my-node-1/my-artifact")
-	w := &testhttp.TestResponseWriter{}
-	s.GetOutputArtifactByUID(w, r)
-	assert.Equal(t, 401, w.StatusCode)
+	recorder := httptest.NewRecorder()
+	s.GetOutputArtifactByUID(recorder, r)
+	assert.Equal(t, 401, recorder.Result().StatusCode)
 }
 
 func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
@@ -637,48 +659,58 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 	r := &http.Request{}
 	// missing my-artifact part to have a valid URL
 	r.URL = mustParse("/input-artifacts/my-uuid/my-node-1")
-	w := &testhttp.TestResponseWriter{}
-	s.GetInputArtifactByUID(w, r)
+	recorder := httptest.NewRecorder()
+	s.GetInputArtifactByUID(recorder, r)
 	// make sure there is no index out of bounds error
-	assert.Equal(t, 400, w.StatusCode)
-	assert.Contains(t, w.Output, "Bad Request")
+	assert.Equal(t, 400, recorder.Result().StatusCode)
+	output, err := io.ReadAll(recorder.Result().Body)
+	assert.NoError(t, err)
+	assert.Contains(t, string(output), "Bad Request")
 
-	w = &testhttp.TestResponseWriter{}
-	s.GetOutputArtifactByUID(w, r)
-	assert.Equal(t, 400, w.StatusCode)
-	assert.Contains(t, w.Output, "Bad Request")
+	recorder = httptest.NewRecorder()
+	s.GetOutputArtifactByUID(recorder, r)
+	assert.Equal(t, 400, recorder.Result().StatusCode)
+	output, err = io.ReadAll(recorder.Result().Body)
+	assert.NoError(t, err)
+	assert.Contains(t, string(output), "Bad Request")
 }
 
 func TestArtifactServer_httpBadRequestError(t *testing.T) {
 	s := newServer()
-	w := &testhttp.TestResponseWriter{}
-	s.httpBadRequestError(w)
+	recorder := httptest.NewRecorder()
+	s.httpBadRequestError(recorder)
 
-	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
-	assert.Contains(t, w.Output, "Bad Request")
+	assert.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
+	output, err := io.ReadAll(recorder.Result().Body)
+	assert.NoError(t, err)
+	assert.Contains(t, string(output), "Bad Request")
 }
 
 func TestArtifactServer_httpFromError(t *testing.T) {
 	s := newServer()
-	w := &testhttp.TestResponseWriter{}
+	recorder := httptest.NewRecorder()
 	err := errors.New("math: square root of negative number")
 
-	s.httpFromError(err, w)
+	s.httpFromError(err, recorder)
 
-	assert.Equal(t, http.StatusInternalServerError, w.StatusCode)
-	assert.Equal(t, "Internal Server Error\n", w.Output)
+	assert.Equal(t, http.StatusInternalServerError, recorder.Result().StatusCode)
+	output, err := io.ReadAll(recorder.Result().Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "Internal Server Error\n", string(output))
 
-	w = &testhttp.TestResponseWriter{}
+	recorder = httptest.NewRecorder()
 	err = apierr.NewUnauthorized("")
 
-	s.httpFromError(err, w)
+	s.httpFromError(err, recorder)
 
-	assert.Equal(t, http.StatusUnauthorized, w.StatusCode)
-	assert.Contains(t, w.Output, "Unauthorized")
+	assert.Equal(t, http.StatusUnauthorized, recorder.Result().StatusCode)
+	output, err = io.ReadAll(recorder.Result().Body)
+	assert.NoError(t, err)
+	assert.Contains(t, string(output), "Unauthorized")
 
-	w = &testhttp.TestResponseWriter{}
+	recorder = httptest.NewRecorder()
 	err = argoerrors.New(argoerrors.CodeNotFound, "not found")
 
-	s.httpFromError(err, w)
-	assert.Equal(t, http.StatusNotFound, w.StatusCode)
+	s.httpFromError(err, recorder)
+	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
 }

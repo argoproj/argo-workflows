@@ -1,16 +1,20 @@
-import {Ticker} from 'argo-ui/src/index';
+import {Ticker} from 'argo-ui/src/components/ticker';
 import * as React from 'react';
 import {useState} from 'react';
 import {Link} from 'react-router-dom';
+
 import * as models from '../../../../models';
 import {isArchivedWorkflow, Workflow} from '../../../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
+import {Loading} from '../../../shared/components/loading';
 import {DurationPanel} from '../../../shared/components/duration-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {wfDuration} from '../../../shared/duration';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
+
+require('./workflows-row.scss');
 
 interface WorkflowsRowProps {
     workflow: Workflow;
@@ -23,6 +27,11 @@ interface WorkflowsRowProps {
 export function WorkflowsRow(props: WorkflowsRowProps) {
     const [hideDrawer, setHideDrawer] = useState(true);
     const wf = props.workflow;
+    // title + description vars
+    const title = wf.metadata.annotations?.[ANNOTATION_TITLE] ?? wf.metadata.name;
+    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${wf.metadata.annotations[ANNOTATION_DESCRIPTION]}`) || '';
+    const hasAnnotation = title !== wf.metadata.name && description !== '';
+    const markdown = `${title}${description}`;
 
     return (
         <div className='workflows-list__row-container'>
@@ -35,22 +44,21 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                         onClick={e => {
                             e.stopPropagation();
                         }}
-                        onChange={e => {
+                        onChange={() => {
                             props.select(props.workflow);
                         }}
                     />
                     <PhaseIcon value={wf.status.phase} />
                 </div>
-                <Link
-                    to={{
-                        pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`),
-                        search: `?uid=${wf.metadata.uid}`
-                    }}
-                    className='small-11 row'>
-                    <div className='columns small-2'>
-                        {(wf.metadata.annotations && wf.metadata.annotations[ANNOTATION_TITLE]) || wf.metadata.name}
-                        {wf.metadata.annotations && wf.metadata.annotations[ANNOTATION_DESCRIPTION] ? <p>{wf.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
-                    </div>
+                <div className='small-11 row'>
+                    <Link
+                        to={{
+                            pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`),
+                            search: `?uid=${wf.metadata.uid}`
+                        }}
+                        className='columns small-2'>
+                        <div className='wf-rows-name'>{hasAnnotation ? <SuspenseReactMarkdownGfm markdown={markdown} /> : markdown}</div>
+                    </Link>
                     <div className='columns small-1'>{wf.metadata.namespace}</div>
                     <div className='columns small-1'>
                         <Timestamp date={wf.status.startedAt} />
@@ -87,7 +95,7 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                     <div className='columns small-1'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>
                     {(props.columns || []).map(column => {
                         // best not to make any assumptions and wait until this data is filled
-                        const value = wf?.metadata?.labels?.[column.key] ?? 'unknown';
+                        const value = (column.type === 'label' ? wf?.metadata?.labels?.[column.key] : wf?.metadata?.annotations?.[column.key]) ?? 'unknown';
                         return (
                             <div key={column.name} className='columns small-1'>
                                 {value}
@@ -95,8 +103,21 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                         );
                     })}
                     {hideDrawer ? <span /> : <WorkflowDrawer name={wf.metadata.name} namespace={wf.metadata.namespace} onChange={props.onChange} />}
-                </Link>
+                </div>
             </div>
         </div>
+    );
+}
+
+// lazy load ReactMarkdown (and remark-gfm) as it is a large optional component (which can be split into a separate bundle)
+const LazyReactMarkdownGfm = React.lazy(() => {
+    return import(/* webpackChunkName: "react-markdown-plus-gfm" */ './react-markdown-gfm');
+});
+
+function SuspenseReactMarkdownGfm(props: {markdown: string}) {
+    return (
+        <React.Suspense fallback={<Loading />}>
+            <LazyReactMarkdownGfm markdown={props.markdown} />
+        </React.Suspense>
     );
 }

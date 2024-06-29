@@ -45,7 +45,7 @@ spec:
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
 ```
-  
+
 - A `WorkflowTemplate` is a definition of a `Workflow` that lives in your cluster. Since it is a definition of a `Workflow`
 it also contains `templates`. These `templates` can be referenced from within the `WorkflowTemplate` and from other `Workflows`
 and `WorkflowTemplates` on your cluster. To see how, please see [Referencing Other `WorkflowTemplates`](#referencing-other-workflowtemplates).
@@ -110,7 +110,7 @@ spec:
 
 ### Adding labels/annotations to Workflows with `workflowMetadata`
 
-> 2.10.2 and after
+> v2.10.2 and after
 
 To automatically add labels and/or annotations to Workflows created from `WorkflowTemplates`, use `workflowMetadata`.
 
@@ -282,9 +282,9 @@ to pass in "live" arguments and reference other templates (those other templates
 
 This behavior has been problematic and dangerous. It causes confusion and has design inconsistencies.
 
-> 2.9 and after
-
 ### Create `Workflow` from `WorkflowTemplate` Spec
+
+> v2.9 and after
 
 You can create `Workflow` from `WorkflowTemplate` spec using `workflowTemplateRef`. If you pass the arguments to created `Workflow`, it will be merged with workflow template arguments.
 Here is an example for referring `WorkflowTemplate` as Workflow with passing `entrypoint` and `Workflow Arguments` to `WorkflowTemplate`
@@ -302,7 +302,7 @@ spec:
         value: "from workflow"
   workflowTemplateRef:
     name: workflow-template-submittable
-```  
+```
 
 Here is an example of a referring `WorkflowTemplate` as Workflow and using `WorkflowTemplates`'s `entrypoint` and `Workflow Arguments`
 
@@ -324,16 +324,16 @@ spec:
 You can create some example templates as follows:
 
 ```bash
-argo template create https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/templates.yaml
+argo template create https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/workflow-template/templates.yaml
 ```
 
 Then submit a workflow using one of those templates:
 
 ```bash
-argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/workflow-template/hello-world.yaml
+argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/workflow-template/hello-world.yaml
 ```
 
-> 2.7 and after
+> v2.7 and after
 
 Then submit a `WorkflowTemplate` as a `Workflow`:
 

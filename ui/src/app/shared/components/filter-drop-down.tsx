@@ -1,6 +1,7 @@
-import {Checkbox} from 'argo-ui';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
 import classNames from 'classnames';
 import * as React from 'react';
+
 import {DropDown} from './dropdown/dropdown';
 
 interface FilterDropDownProps {
@@ -13,7 +14,7 @@ export interface FilterDropSection {
     onChange: (label: string, checked: boolean) => void;
 }
 
-export const FilterDropDown = (props: FilterDropDownProps) => {
+export function FilterDropDown(props: FilterDropDownProps) {
     return (
         <DropDown
             isMenu={true}
@@ -46,4 +47,4 @@ export const FilterDropDown = (props: FilterDropDownProps) => {
             </ul>
         </DropDown>
     );
-};
+}

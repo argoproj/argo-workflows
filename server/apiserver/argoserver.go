@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/handlers"
@@ -54,6 +55,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
+	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
@@ -122,9 +124,9 @@ func init() {
 	}
 }
 
-func getResourceCacheNamespace(opts ArgoServerOpts) string {
-	if opts.ManagedNamespace != "" {
-		return opts.ManagedNamespace
+func getResourceCacheNamespace(managedNamespace string) string {
+	if managedNamespace != "" {
+		return managedNamespace
 	}
 	return v1.NamespaceAll
 }
@@ -144,7 +146,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		}
 		if ssoIf.IsRBACEnabled() {
 			// resourceCache is only used for SSO RBAC
-			resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
+			resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts.ManagedNamespace))
 			resourceCache.Run(ctx.Done())
 		}
 		log.Info("SSO enabled")
@@ -229,7 +231,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
-	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links, config.Columns, config.NavColor)
+	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo)
+	wfStore, err := store.NewSQLiteStore(instanceIDService)
+	if err != nil {
+		log.Fatal(err)
+	}
+	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
+	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, &resourceCacheNamespace)
+	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -259,6 +268,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	grpcL := tcpm.Match(cmux.Any())
 
 	go eventServer.Run(as.stopCh)
+	go workflowServer.Run(as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
@@ -275,7 +285,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workflowServer workflowpkg.WorkflowServiceServer, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
@@ -307,12 +317,11 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
-	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive)
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links, columns, navColor))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
 	sensorpkg.RegisterSensorServiceServer(grpcServer, sensor.NewSensorServer())
-	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo, wfArchiveServer))
+	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflowServer)
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, wfArchiveServer)
@@ -325,8 +334,13 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 // using grpc-gateway as a proxy to the gRPC server.
 func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
+	ipKeyFunc := httplimit.IPKeyFunc()
+	if ipKeyFuncHeadersStr := env.GetString("IP_KEY_FUNC_HEADERS", ""); ipKeyFuncHeadersStr != "" {
+		ipKeyFuncHeaders := strings.Split(ipKeyFuncHeadersStr, ",")
+		ipKeyFunc = httplimit.IPKeyFunc(ipKeyFuncHeaders...)
+	}
 
-	ratelimit_middleware, err := httplimit.NewMiddleware(as.apiRateLimiter, httplimit.IPKeyFunc())
+	rateLimitMiddleware, err := httplimit.NewMiddleware(as.apiRateLimiter, ipKeyFunc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -334,7 +348,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux := http.NewServeMux()
 	httpServer := http.Server{
 		Addr:      endpoint,
-		Handler:   ratelimit_middleware.Handle(accesslog.Interceptor(mux)),
+		Handler:   rateLimitMiddleware.Handle(accesslog.Interceptor(mux)),
 		TLSConfig: as.tlsConfig,
 	}
 	dialOpts := []grpc.DialOption{

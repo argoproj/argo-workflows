@@ -209,6 +209,7 @@ func TestStepsOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
@@ -283,6 +284,7 @@ func TestDAGOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
@@ -354,7 +356,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: pointer.StringPtr("ok"), Parameters: []wfv1.Parameter{{}}}))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: pointer.String("ok"), Parameters: []wfv1.Parameter{{}}}))
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
@@ -383,6 +385,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 				},
 			}
 			woc2.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 
@@ -487,6 +490,7 @@ func TestDAGOnExit(t *testing.T) {
 				},
 			}
 			woc2.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
@@ -998,4 +1002,77 @@ status:
 	}
 	woc.operate(ctx)
 	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowRunning)
+}
+
+func TestStepsTemplateOnExitStatusArgument(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: lifecycle-hook-tmpl-level-
+  labels:
+    test: test
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: main
+            template: echo
+            hooks:
+              exit:
+                template: hook
+                arguments:
+                  parameters:
+                    - name: status
+                      value: "{{steps.main.status}}"
+    - name: echo
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["echo hi"]
+    - name: hook
+      inputs:
+        parameters:
+          - name: status
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.status}}"]
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	var hasExitNode bool
+	var exitNodeName string
+
+	for _, node := range woc.wf.Status.Nodes {
+		if node.IsExitNode() {
+			hasExitNode = true
+			exitNodeName = node.DisplayName
+			break
+		}
+	}
+
+	assert.True(t, hasExitNode)
+	assert.NotEmpty(t, exitNodeName)
+
+	hookNode := woc.wf.Status.Nodes.FindByDisplayName(exitNodeName)
+
+	if assert.NotNil(t, hookNode) {
+		assert.NotNil(t, hookNode.Inputs)
+		if assert.Len(t, hookNode.Inputs.Parameters, 1) {
+			assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
+			assert.Equal(t, hookNode.Inputs.Parameters[0].Value.String(), string(apiv1.PodFailed))
+		}
+	}
 }

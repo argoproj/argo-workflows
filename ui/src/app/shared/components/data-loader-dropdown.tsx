@@ -1,8 +1,10 @@
-import {DataLoader, Select, SelectOption} from 'argo-ui';
+import {DataLoader} from 'argo-ui/src/components/data-loader';
+import {Select, SelectOption} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
+import {useState} from 'react';
 
-export const DataLoaderDropdown = (props: {load: () => Promise<(string | SelectOption)[]>; onChange: (value: string) => void; placeholder?: string}) => {
-    const [selected, setSelected] = React.useState('');
+export function DataLoaderDropdown(props: {load: () => Promise<(string | SelectOption)[]>; onChange: (value: string) => void; placeholder?: string}) {
+    const [selected, setSelected] = useState('');
 
     return (
         <DataLoader load={props.load}>
@@ -19,4 +21,4 @@ export const DataLoaderDropdown = (props: {load: () => Promise<(string | SelectO
             )}
         </DataLoader>
     );
-};
+}

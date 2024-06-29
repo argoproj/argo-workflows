@@ -59,7 +59,7 @@ import (
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo-workflows/issues/632
-func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListRequestListOptions internalinterfaces.TweakListOptionsFunc, tweakWatchRequestListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
@@ -71,7 +71,8 @@ func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time
 		ns,
 		resyncPeriod,
 		indexers,
-		tweakListOptions,
+		tweakListRequestListOptions,
+		tweakWatchRequestListOptions,
 	)
 	return informer
 }
@@ -364,7 +365,7 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
-			wf.Spec.Suspend = pointer.BoolPtr(true)
+			wf.Spec.Suspend = pointer.Bool(true)
 			_, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 			if apierr.IsConflict(err) {
 				return false, nil
@@ -453,7 +454,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	nodeFields := fields.Set{
 		"displayName":  node.DisplayName,
-		"templateName": node.TemplateName,
+		"templateName": GetTemplateFromNode(node),
 		"phase":        string(node.Phase),
 		"name":         node.Name,
 		"id":           node.ID,
@@ -601,10 +602,6 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // generates an insecure random string
 func randString(n int) string {
 	b := make([]byte, n)
@@ -702,7 +699,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	for _, node := range wf.Status.Nodes {
 		newNode := node.DeepCopy()
@@ -736,6 +733,9 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
+		} else if newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(wf, node, make(map[string]bool)) {
+			newWF.Status.Nodes.Delete(newNode.ID)
+			continue
 		} else {
 			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
@@ -767,12 +767,25 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	for _, child := range node.Children {
 		childStatus, err := wf.Status.Nodes.Get(child)
 		if err != nil {
-			log.Fatalf("Couldn't get child, panicking")
-			panic("Was not able to obtain child")
+			log.Panicf("Coudn't obtain child for %s, panicking", child)
 		}
 		descendantNodeIDs = append(descendantNodeIDs, getDescendantNodeIDs(wf, *childStatus)...)
 	}
 	return descendantNodeIDs
+}
+
+func isDescendantNodeSucceeded(wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {
+	for _, child := range node.Children {
+		childStatus, err := wf.Status.Nodes.Get(child)
+		if err != nil {
+			log.Panicf("Coudn't obtain child for %s, panicking", child)
+		}
+		_, present := nodeIDsToReset[child]
+		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(wf, *childStatus, nodeIDsToReset) {
+			return true
+		}
+	}
+	return false
 }
 
 func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
@@ -804,8 +817,7 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 	for {
 		currentNode, err := oldWF.Status.Nodes.Get(currentNodeID)
 		if err != nil {
-			log.Fatalf("dying due to inability to obtain node for %s", currentNodeID)
-			panic("was not able to get node, panicking")
+			log.Panicf("dying due to inability to obtain node for %s, panicking", currentNodeID)
 		}
 		if !containsNode(resetParentGroupNodes, currentNodeID) {
 			newWF.Status.Nodes.Set(currentNodeID, resetNode(*currentNode.DeepCopy()))
@@ -815,8 +827,7 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
 			parentNode, err := oldWF.Status.Nodes.Get(currentNode.BoundaryID)
 			if err != nil {
-				log.Fatalf("panicking unable to obtain node for %s", currentNode.BoundaryID)
-				panic("was not able to get node")
+				log.Panicf("unable to obtain node for %s, panicking", currentNode.BoundaryID)
 			}
 			if isGroupNode(*parentNode) {
 				currentNodeID = parentNode.ID
@@ -905,7 +916,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						for _, child := range descendantNodeIDs {
 							childNode, err := wf.Status.Nodes.Get(child)
 							if err != nil {
-								log.Fatalf("was unable to obtain node for %s due to %s", child, err)
+								log.Warnf("was unable to obtain node for %s due to %s", child, err)
 								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", child, err)
 							}
 							if _, present := nodeIDsToReset[child]; present {
@@ -935,7 +946,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							deletedNodes[descendantNodeID] = true
 							descendantNode, err := wf.Status.Nodes.Get(descendantNodeID)
 							if err != nil {
-								log.Fatalf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+								log.Warnf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
 								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
 							}
 							if descendantNode.Type == wfv1.NodeTypePod {
@@ -963,6 +974,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
+				if node.Type != wfv1.NodeTypeRetry && isDescendantNodeSucceeded(wf, node, nodeIDsToReset) {
+					log.Debugf("Node %s remains as is since it has succeed child nodes.", node.Name)
+					newWF.Status.Nodes.Set(node.ID, node)
+					continue
+				}
 				log.Debugf("Deleted %s node %s since it's not a group node", node.Name, string(node.Phase))
 				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
 				log.Debugf("Deleted pod node: %s", node.Name)
@@ -1236,44 +1252,32 @@ func ConvertYAMLToJSON(str string) (string, error) {
 	return str, nil
 }
 
-// PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
-func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
-	wfPatch, err := ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
-	if err != nil {
-		return "", err
-	}
-	tmplPatch, err := ConvertYAMLToJSON(tmpl.PodSpecPatch)
-	if err != nil {
-		return "", err
-	}
-	data, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
-	return string(data), err
-}
-
-func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYaml string) (*apiv1.PodSpec, error) {
+func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*apiv1.PodSpec, error) {
 	podSpecJson, err := json.Marshal(podSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
 	}
 
-	// must convert to json because PodSpec has only json tags
-	podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
-	if err != nil {
-		return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
-	}
+	for _, podSpecPatchYaml := range podSpecPatchYamls {
+		// must convert to json because PodSpec has only json tags
+		podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
+		}
 
-	// validate the patch to be a PodSpec
-	if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
-		return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
-	}
+		// validate the patch to be a PodSpec
+		if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
+		}
 
-	modJson, err := strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
-	if err != nil {
-		return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		podSpecJson, err = strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		}
 	}
 
 	var newPodSpec apiv1.PodSpec
-	err = json.Unmarshal(modJson, &newPodSpec)
+	err = json.Unmarshal(podSpecJson, &newPodSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 	}

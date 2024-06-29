@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  schedule: "5 5 5 * *" # "* * * * *" -> "5 5 5 * *"
+  concurrencyPolicy: "Replace" # Allow -> Replace
+  startingDeadlineSeconds: 10 # 0 -> 10
+  successfulJobsHistoryLimit: 5  # 4 -> 5
+  failedJobsHistoryLimit: 3 # 2 -> 3
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+  workflowSpec:
+    entrypoint: main
+    templates:
+      - name: main
+        container:
+          image: argoproj/argosay:v2

@@ -9,11 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type ExecutorPluginsSuite struct {
@@ -36,10 +38,11 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			if assert.Len(t, pods, 1) {
 				pod := pods[0]
 				spec := pod.Spec
-				assert.Equal(t, pointer.BoolPtr(false), spec.AutomountServiceAccountToken)
+				assert.Equal(t, pointer.Bool(false), spec.AutomountServiceAccountToken)
 				assert.Equal(t, &apiv1.PodSecurityContext{
-					RunAsUser:    pointer.Int64(8737),
-					RunAsNonRoot: pointer.BoolPtr(true),
+					RunAsUser:      pointer.Int64(8737),
+					RunAsNonRoot:   pointer.Bool(true),
+					SeccompProfile: &v1.SeccompProfile{Type: "RuntimeDefault"},
 				}, spec.SecurityContext)
 				if assert.Len(t, spec.Volumes, 4) {
 					assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
@@ -67,15 +70,23 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 							}
 							assert.Equal(t, &apiv1.SecurityContext{
 								RunAsUser:                pointer.Int64(8737),
-								RunAsNonRoot:             pointer.BoolPtr(true),
-								AllowPrivilegeEscalation: pointer.BoolPtr(false),
-								ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+								RunAsNonRoot:             pointer.Bool(true),
+								AllowPrivilegeEscalation: pointer.Bool(false),
+								ReadOnlyRootFilesystem:   pointer.Bool(true),
+								Privileged:               pointer.Bool(false),
 								Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
+								SeccompProfile:           &v1.SeccompProfile{Type: "RuntimeDefault"},
 							}, agent.SecurityContext)
 						}
 					}
 				}
 			}
+		}).
+		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
+			assert.NotNil(t, wfts)
+			assert.Len(t, wfts.Spec.Tasks, 0)
+			assert.Len(t, wfts.Status.Nodes, 0)
+			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
 		})
 }
 

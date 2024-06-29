@@ -1,0 +1,41 @@
+# https://github.com/actions/stale
+name: Mark stale issues and pull requests
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # once a day at 2am
+
+permissions:
+  contents: read
+
+jobs:
+  stale:
+    permissions:
+      issues: write # for commenting on an issue and editing labels
+      pull-requests: write # for commenting on a PR and editing labels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e # v9.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          # timing
+          days-before-stale: 14 # 2 weeks of inactivity
+          days-before-close: 14 # 2 more weeks of inactivity
+          # labels to watch for, add, and remove
+          only-labels: 'problem/more information needed' # only mark issues/PRs as stale if they have this label
+          labels-to-remove-when-unstale: 'problem/more information needed' # remove label when unstale -- should be manually added back if information is insufficient
+          stale-issue-label: 'problem/stale'
+          stale-pr-label: 'problem/stale'
+          # automated messages to issue/PR authors
+          stale-issue-message: >
+            This issue has been automatically marked as stale because it has not had recent activity and needs more information.
+            It will be closed if no further activity occurs.
+          stale-pr-message: >
+            This PR has been automatically marked as stale because it has not had recent activity and needs further changes.
+            It will be closed if no further activity occurs.
+          close-issue-message: >
+            This issue has been closed due to inactivity and lack of information.
+            If you still encounter this issue, please add the requested information and re-open.
+          close-pr-message:
+            This PR has been closed due to inactivity and lack of changes.
+            If you would like to still work on this PR, please address the review comments and re-open.

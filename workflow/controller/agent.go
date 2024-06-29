@@ -18,6 +18,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func (woc *wfOperationCtx) getAgentPodName() string {
@@ -173,15 +174,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             envVars,
-		SecurityContext: &apiv1.SecurityContext{
-			Capabilities: &apiv1.Capabilities{
-				Drop: []apiv1.Capability{"ALL"},
-			},
-			RunAsNonRoot:             pointer.BoolPtr(true),
-			RunAsUser:                pointer.Int64Ptr(8737),
-			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-			AllowPrivilegeEscalation: pointer.BoolPtr(false),
-		},
+		SecurityContext: common.MinimalCtrSC(),
 		Resources: apiv1.ResourceRequirements{
 			Requests: map[apiv1.ResourceName]resource.Quantity{
 				"cpu":    resource.MustParse("10m"),
@@ -197,11 +190,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
 	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = []string{"agent", "init"}
+	agentInitCtr.Args = []string{"agent", "init", "--loglevel", getExecutorLogLevel()}
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
-	agentMainCtr.Args = []string{"agent", "main"}
+	agentMainCtr.Args = []string{"agent", "main", "--loglevel", getExecutorLogLevel()}
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -220,14 +213,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			},
 		},
 		Spec: apiv1.PodSpec{
-			RestartPolicy:    apiv1.RestartPolicyOnFailure,
-			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
-			SecurityContext: &apiv1.PodSecurityContext{
-				RunAsNonRoot: pointer.BoolPtr(true),
-				RunAsUser:    pointer.Int64Ptr(8737),
-			},
+			RestartPolicy:                apiv1.RestartPolicyOnFailure,
+			ImagePullSecrets:             woc.execWf.Spec.ImagePullSecrets,
+			SecurityContext:              common.MinimalPodSC(),
 			ServiceAccountName:           serviceAccountName,
-			AutomountServiceAccountToken: pointer.BoolPtr(false),
+			AutomountServiceAccountToken: pointer.Bool(false),
 			Volumes:                      podVolumes,
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
@@ -240,8 +230,17 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	tmpl := &wfv1.Template{}
-	addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl)
+	woc.addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
 	woc.addMetadata(pod, tmpl)
+	woc.addDNSConfig(pod)
+
+	if woc.execWf.Spec.HasPodSpecPatch() {
+		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
+		}
+		pod.Spec = *patchedPodSpec
+	}
 
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
@@ -293,17 +292,17 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 }
 
 func addresses(containers []apiv1.Container) []string {
-	var addresses []string
+	var pluginAddresses []string
 	for _, c := range containers {
-		addresses = append(addresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
+		pluginAddresses = append(pluginAddresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
 	}
-	return addresses
+	return pluginAddresses
 }
 
 func names(containers []apiv1.Container) []string {
-	var addresses []string
+	var pluginNames []string
 	for _, c := range containers {
-		addresses = append(addresses, c.Name)
+		pluginNames = append(pluginNames, c.Name)
 	}
-	return addresses
+	return pluginNames
 }

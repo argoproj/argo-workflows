@@ -75,7 +75,7 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			if since > 0 {
-				logOptions.SinceSeconds = pointer.Int64Ptr(int64(since.Seconds()))
+				logOptions.SinceSeconds = pointer.Int64(int64(since.Seconds()))
 			}
 
 			if sinceTime != "" {
@@ -86,7 +86,7 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			if tailLines >= 0 {
-				logOptions.TailLines = pointer.Int64Ptr(tailLines)
+				logOptions.TailLines = pointer.Int64(tailLines)
 			}
 
 			// set-up

@@ -13,9 +13,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-func write(metric prometheus.Metric) dto.Metric {
-	var m dto.Metric
-	err := metric.Write(&m)
+func write(metric prometheus.Metric) *dto.Metric {
+	m := &dto.Metric{}
+	err := metric.Write(m)
 	if err != nil {
 		panic(err)
 	}
@@ -118,8 +118,63 @@ func TestMetricGC(t *testing.T) {
 	go m.garbageCollector(ctx)
 
 	// Ensure we get at least one TTL run
-	time.Sleep(1*time.Second + 100*time.Millisecond)
+	timeoutTime := time.Now().Add(time.Second * 2)
+	for time.Now().Before(timeoutTime) {
+		// Break if we know our test will pass.
+		if len(m.customMetrics) == 0 {
+			break
+		}
+		// Sleep to prevent overloading test worker CPU.
+		time.Sleep(100 * time.Millisecond)
+	}
 
+	assert.Len(t, m.customMetrics, 0)
+}
+
+func TestRealtimeMetricGC(t *testing.T) {
+	config := ServerConfig{
+		Enabled: true,
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
+		TTL:     1 * time.Second,
+	}
+	m := New(config, config)
+	assert.Len(t, m.customMetrics, 0)
+
+	err := m.UpsertCustomMetric("realtime_metric", "workflow-uid", newCounter("test", "test", nil), true)
+	if assert.NoError(t, err) {
+		assert.Len(t, m.customMetrics, 1)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go m.garbageCollector(ctx)
+
+	// simulate workflow is still running.
+	timeoutTime := time.Now().Add(time.Second * 2)
+	// Ensure we get at least one TTL run
+	for time.Now().Before(timeoutTime) {
+		// Break if we know our test will pass.
+		if len(m.customMetrics) == 0 {
+			break
+		}
+		// Sleep to prevent overloading test worker CPU.
+		time.Sleep(100 * time.Millisecond)
+	}
+	assert.Len(t, m.customMetrics, 1)
+
+	// simulate workflow is completed.
+	m.StopRealtimeMetricsForKey("workflow-uid")
+	timeoutTime = time.Now().Add(time.Second * 2)
+	// Ensure we get at least one TTL run
+	for time.Now().Before(timeoutTime) {
+		// Break if we know our test will pass.
+		if len(m.customMetrics) == 0 {
+			break
+		}
+		// Sleep to prevent overloading test worker CPU.
+		time.Sleep(100 * time.Millisecond)
+	}
 	assert.Len(t, m.customMetrics, 0)
 }
 
@@ -163,7 +218,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	assert.NotEmpty(t, m.workflows["123"])
 	assert.Len(t, m.customMetrics, 1)
 
-	m.StopRealtimeMetricsForKey("123")
+	m.DeleteRealtimeMetricsForKey("123")
 	assert.Empty(t, m.workflows["123"])
 	assert.Len(t, m.customMetrics, 0)
 
@@ -175,7 +230,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	assert.Empty(t, m.workflows["456"])
 	assert.Len(t, m.customMetrics, 1)
 
-	m.StopRealtimeMetricsForKey("456")
+	m.DeleteRealtimeMetricsForKey("456")
 	assert.Empty(t, m.workflows["456"])
 	assert.Len(t, m.customMetrics, 1)
 }

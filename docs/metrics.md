@@ -90,7 +90,7 @@ Number of API requests sent to the Kubernetes API.
 
 #### `argo_workflows_operation_duration_seconds`
 
-A histogram of durations of operations.
+A histogram of durations of operations. An operation is a single workflow reconciliation loop within the workflow-controller. It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
 
 #### `argo_workflows_pods_count`
 
@@ -149,7 +149,7 @@ labels wherever it is emitted. This is how these metrics are "linked" as belongi
 
 ### Grafana Dashboard for Argo Controller Metrics
 
-Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/13927) Grafana dashboard.
+Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/20348-argo-workflows-metrics/) Grafana dashboard.
 
 ## Defining metrics
 
@@ -344,7 +344,7 @@ metricsConfig: |
 
   # Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
   path: /metrics
-  
+
   # Port is the port where metrics are emitted. Default is "9090"
   port: 8080
 

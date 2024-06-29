@@ -1,7 +1,7 @@
-import {Checkbox} from 'argo-ui';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
 import * as React from 'react';
 
-require('./checkbox-filter.scss');
+import './checkbox-filter.scss';
 
 interface Props {
     items: {name: string; count: number}[];

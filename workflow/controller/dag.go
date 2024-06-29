@@ -264,6 +264,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	// kick off execution of each target task asynchronously
+	onExitCompleted := true
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(ctx, dagCtx, taskName)
 
@@ -287,19 +288,21 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			}
 			if taskNode.Fulfilled() {
 				if taskNode.Completed() {
-					// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
-					// of the onExit node before continuing. That will be done in assesDAGPhase
-					_, _, err := woc.runOnExitNode(ctx, dagCtx.GetTask(taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
+					hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, dagCtx.GetTask(taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
 					if err != nil {
 						return node, err
+					}
+					if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled()) {
+						onExitCompleted = false
 					}
 				}
 			}
 		}
 	}
 
-	// check if we are still running any tasks in this dag and return early if we do
-	dagPhase, err := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes, woc.GetShutdownStrategy().Enabled())
+	// Check if we are still running any tasks in this dag and return early if we do
+	// We should wait for onExit nodes even if ShutdownStrategy is enabled.
+	dagPhase, err := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes, woc.GetShutdownStrategy().Enabled() && onExitCompleted)
 	if err != nil {
 		return nil, err
 	}
@@ -358,13 +361,13 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		}
 		node.Outputs = outputs
 		woc.wf.Status.Nodes.Set(node.ID, *node)
-		if node.MemoizationStatus != nil {
-			c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-			err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-			if err != nil {
-				woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-				node.Phase = wfv1.NodeError
-			}
+	}
+	if node.MemoizationStatus != nil {
+		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+		if err != nil {
+			woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+			node.Phase = wfv1.NodeError
 		}
 	}
 
@@ -429,6 +432,10 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	if node != nil && node.Fulfilled() {
 		// Collect the completed task metrics
 		_, tmpl, _, _ := dagCtx.tmplCtx.ResolveTemplate(task)
+		if err := woc.mergedTemplateDefaultsInto(tmpl); err != nil {
+			woc.markNodeError(node.Name, err)
+			return
+		}
 		if tmpl != nil && tmpl.Metrics != nil {
 			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
 				localScope, realTimeScope := woc.prepareMetricScope(node)
@@ -843,18 +850,8 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 
 		// If the task is still running, we should not proceed.
 		depNode := d.getTaskNode(taskName)
-		if depNode == nil || !depNode.Fulfilled() {
+		if depNode == nil || !depNode.Fulfilled() || !common.CheckAllHooksFullfilled(depNode, d.wf.Status.Nodes) {
 			return false, false, nil
-		}
-
-		// If a task happens to have an onExit node, don't proceed until the onExit node is fulfilled
-		if onExitNode, err := d.wf.GetNodeByName(common.GenerateOnExitNodeName(depNode.Name)); onExitNode != nil {
-			if err != nil {
-				return false, false, err
-			}
-			if !onExitNode.Fulfilled() {
-				return false, false, nil
-			}
 		}
 
 		evalTaskName := strings.Replace(taskName, "-", "_", -1)

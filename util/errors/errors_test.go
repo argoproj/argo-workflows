@@ -57,6 +57,10 @@ func TestIsTransientErr(t *testing.T) {
 		assert.False(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{}, "", nil)))
 		assert.True(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{Group: "v1", Resource: "resourcequotas"}, "", nil)))
 	})
+	t.Run("ResourceQuotaTimeoutErr", func(t *testing.T) {
+		assert.False(t, IsTransientErr(apierr.NewInternalError(errors.New(""))))
+		assert.True(t, IsTransientErr(apierr.NewInternalError(errors.New("resource quota evaluation timed out"))))
+	})
 	t.Run("ExceededQuotaErr", func(t *testing.T) {
 		assert.False(t, IsTransientErr(apierr.NewForbidden(schema.GroupResource{}, "", nil)))
 		assert.True(t, IsTransientErr(apierr.NewForbidden(schema.GroupResource{Group: "v1", Resource: "pods"}, "", errors.New("exceeded quota"))))
@@ -86,18 +90,16 @@ func TestIsTransientErr(t *testing.T) {
 		assert.True(t, IsTransientErr(connectionResetErr))
 	})
 	t.Run("TransientErrorPattern", func(t *testing.T) {
-		_ = os.Setenv(transientEnvVarKey, "this error is transient")
+		t.Setenv(transientEnvVarKey, "this error is transient")
 		assert.True(t, IsTransientErr(transientErr))
 		assert.True(t, IsTransientErr(&transientExitErr))
 
-		_ = os.Setenv(transientEnvVarKey, "this error is not transient")
+		t.Setenv(transientEnvVarKey, "this error is not transient")
 		assert.False(t, IsTransientErr(transientErr))
 		assert.False(t, IsTransientErr(&transientExitErr))
 
-		_ = os.Setenv(transientEnvVarKey, "")
+		t.Setenv(transientEnvVarKey, "")
 		assert.False(t, IsTransientErr(transientErr))
-
-		_ = os.Unsetenv(transientEnvVarKey)
 	})
 	t.Run("ExplicitTransientErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(NewErrTransient("")))

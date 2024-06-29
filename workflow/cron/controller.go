@@ -101,11 +101,15 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
 		cronWfInformerListOptionsFunc(options, cc.instanceId)
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
-	cc.addCronWorkflowInformerHandler()
+	err := cc.addCronWorkflowInformerHandler()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
-		wfInformerListOptionsFunc(options, cc.instanceId)
-	}, cache.Indexers{})
+	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
+		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceId) },
+		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceId) },
+		cache.Indexers{})
 	go wfInformer.Run(ctx.Done())
 
 	cc.wfLister = util.NewWorkflowLister(wfInformer)
@@ -189,40 +193,64 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	// The job is currently scheduled, remove it and re add it.
 	cc.cron.Delete(key.(string))
 
-	lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), cronWf.Spec.GetScheduleString(), cronWorkflowOperationCtx)
-	if err != nil {
-		logCtx.WithError(err).Error("could not schedule CronWorkflow")
-		return true
+	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone() {
+		lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), schedule, cronWorkflowOperationCtx)
+		if err != nil {
+			logCtx.WithError(err).Error("could not schedule CronWorkflow")
+			return true
+		}
+		cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 	}
-
-	cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 
 	logCtx.Infof("CronWorkflow %s added", key.(string))
 
 	return true
 }
 
-func (cc *Controller) addCronWorkflowInformerHandler() {
-	cc.cronWfInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-		UpdateFunc: func(old, new interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(new)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-		DeleteFunc: func(obj interface{}) {
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err == nil {
-				cc.cronWfQueue.Add(key)
-			}
-		},
-	})
+func (cc *Controller) addCronWorkflowInformerHandler() error {
+	_, err := cc.cronWfInformer.Informer().AddEventHandler(
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				un, ok := obj.(*unstructured.Unstructured)
+				if !ok {
+					log.Warnf("Cron Workflow FilterFunc: '%v' is not an unstructured", obj)
+					return false
+				}
+				return !isCompleted(un)
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(obj)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+				UpdateFunc: func(old, new interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(new)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+				DeleteFunc: func(obj interface{}) {
+					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+					if err == nil {
+						cc.cronWfQueue.Add(key)
+					}
+				},
+			},
+		})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func isCompleted(wf v1.Object) bool {
+	completed, ok := wf.GetLabels()[common.LabelKeyCronWorkflowCompleted]
+	if !ok {
+		return false
+	}
+	return completed == "true"
 }
 
 func (cc *Controller) syncAll(ctx context.Context) {

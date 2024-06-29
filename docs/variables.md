@@ -49,14 +49,14 @@ args: [ "{{ inputs.parameters.message }}" ]
 
 ### Expression
 
-> Since v3.1
+> v3.1 and after
 
 The tag is substituted with the result of evaluating the tag as an expression.
 
 Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
 indexing into the parameter or step map, e.g. `inputs.parameters['my-param']` or `steps['my-step'].outputs.result`.
 
-[Learn about the expression syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).
+[Learn more about the expression syntax](https://expr-lang.org/docs/language-definition).
 
 #### Examples
 
@@ -170,7 +170,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 
 ### HTTP Templates
 
-> Since v3.3
+> v3.3 and after
 
 Only available for `successCondition`
 
@@ -219,15 +219,16 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 When emitting custom metrics in a `template`, special variables are available that allow self-reference to the current
 step.
 
-| Variable | Description|
-|----------|------------|
-| `status` | Phase status of the metric-emitting template |
-| `duration` | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`) |
-| `exitCode` | Exit code of the metric-emitting template |
-| `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
-| `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
-| `outputs.result` | Output result of the metric-emitting template |
-| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc.|
+| Variable                         | Description                                                                                                                                                                                  |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `status`                         | Phase status of the metric-emitting template                                                                                                                                                 |
+| `duration`                       | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`)                                              |
+| `exitCode`                       | Exit code of the metric-emitting template                                                                                                                                                    |
+| `inputs.parameters.<NAME>`       | Input parameter of the metric-emitting template                                                                                                                                              |
+| `outputs.parameters.<NAME>`      | Output parameter of the metric-emitting template                                                                                                                                             |
+| `outputs.result`                 | Output result of the metric-emitting template                                                                                                                                                |
+| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc. |
+| `retries`                        | Retried count by retry strategy                                                                                                                                                              |
 
 ### Real-Time Metrics
 
@@ -265,7 +266,7 @@ For `Template`-level metrics:
 | `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation time-stamp formatted with a [`strftime`](http://strftime.org) format character. |
 | `workflow.creationTimestamp.RFC3339` | Creation time-stamp formatted with in RFC 3339. |
 | `workflow.priority` | Workflow priority |
-| `workflow.duration` | Workflow duration estimate, may differ from actual duration by a couple of seconds |
+| `workflow.duration` | Workflow duration estimate in seconds, may differ from actual duration by a couple of seconds |
 | `workflow.scheduledTime` | Scheduled runtime formatted in RFC 3339 (only available for `CronWorkflow`) |
 
 ### Exit Handler
@@ -274,6 +275,17 @@ For `Template`-level metrics:
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
 | `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
+
+### `stopStrategy`
+
+> v3.6 and after
+
+When using the `condition` field within the [`stopStrategy` of a `CronWorkflow`](cron-workflows.md#automatically-stopping-a-cronworkflow), special variables are available.
+
+| Variable | Description|
+|----------|------------|
+| `failed` | Counts how many times child workflows failed |
+| `succeeded` | Counts how many times child workflows succeeded |
 
 ### Knowing where you are
 
