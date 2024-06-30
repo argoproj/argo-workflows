@@ -27,6 +27,7 @@ import {WorkflowTemplateCreator} from './workflow-template-creator';
 import {WorkflowTemplateFilters} from './workflow-template-filters';
 
 import './workflow-template-list.scss';
+import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-templates/'>Learn more</a>;
 
@@ -154,7 +155,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                                         </div>
                                         <div className='columns small-3'>{t.metadata.namespace}</div>
                                         <div className='columns small-3'>
-                                            <Timestamp date={t.metadata.creationTimestamp} />
+                                            <Timestamp date={t.metadata.creationTimestamp} timestampKey={TIMESTAMP_KEYS.WORKFLOW_TEMPLATE_LIST_CREATION} />
                                         </div>
                                     </Link>
                                 ))}

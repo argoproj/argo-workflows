@@ -9,6 +9,7 @@ import {ToggleButton} from '../../shared/components/toggle-button';
 import debounce from '../../shared/debounce';
 import {ListWatch} from '../../shared/list-watch';
 import {services} from '../../shared/services';
+import {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 
 export function EventsPanel({namespace, name, kind}: {namespace: string; name: string; kind: string}) {
     const [showAll, setShowAll] = useState(false);
@@ -120,7 +121,7 @@ export function EventsPanel({namespace, name, kind}: {namespace: string; name: s
                                     {e.type === 'Normal' ? <i className='fa fa-check-circle status-icon--init' /> : <i className='fa fa-exclamation-circle status-icon--pending' />}
                                 </div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={e.lastTimestamp} />
+                                    <Timestamp date={e.lastTimestamp} timestampKey={TIMESTAMP_KEYS.EVENTS_PANEL_LAST} />
                                 </div>
                                 <div className='columns small-2'>{e.reason}</div>
                                 <div className='columns small-2'>

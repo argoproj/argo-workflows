@@ -20,6 +20,7 @@ import {services} from '../shared/services';
 import {ClusterWorkflowTemplateCreator} from './cluster-workflow-template-creator';
 
 import './cluster-workflow-template-list.scss';
+import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 export function ClusterWorkflowTemplateList({history, location}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);
@@ -84,7 +85,7 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                             </div>
                             <div className='columns small-5'>{t.metadata.name}</div>
                             <div className='columns small-3'>
-                                <Timestamp date={t.metadata.creationTimestamp} />
+                                <Timestamp date={t.metadata.creationTimestamp} timestampKey={TIMESTAMP_KEYS.CLUSTER_WORKFLOW_TEMPLATE_LIST} />
                             </div>
                         </Link>
                     ))}

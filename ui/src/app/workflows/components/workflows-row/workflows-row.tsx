@@ -13,6 +13,7 @@ import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {wfDuration} from '../../../shared/duration';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
+import {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
 require('./workflows-row.scss');
 
@@ -61,10 +62,10 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                     </Link>
                     <div className='columns small-1'>{wf.metadata.namespace}</div>
                     <div className='columns small-1'>
-                        <Timestamp date={wf.status.startedAt} />
+                        <Timestamp date={wf.status.startedAt} timestampKey={TIMESTAMP_KEYS.WORKFLOWS_ROW_STARTED} />
                     </div>
                     <div className='columns small-1'>
-                        <Timestamp date={wf.status.finishedAt} />
+                        <Timestamp date={wf.status.finishedAt} timestampKey={TIMESTAMP_KEYS.WORKFLOWS_ROW_FINISHED} />
                     </div>
                     <div className='columns small-1'>
                         <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>

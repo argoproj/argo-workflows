@@ -27,6 +27,7 @@ import {CronWorkflowFilters} from './cron-workflow-filters';
 import {PrettySchedule} from './pretty-schedule';
 
 import './cron-workflow-list.scss';
+import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/cron-workflows/'>Learn more</a>;
 
@@ -180,10 +181,16 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                             )}
                                         </div>
                                         <div className='columns small-1'>
-                                            <Timestamp date={w.metadata.creationTimestamp} />
+                                            <Timestamp date={w.metadata.creationTimestamp} timestampKey={TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_CREATION} />
                                         </div>
                                         <div className='columns small-1'>
-                                            {w.spec.suspend ? '' : <Ticker intervalMs={1000}>{() => <Timestamp date={getCronNextScheduledTime(w.spec)} />}</Ticker>}
+                                            {w.spec.suspend ? (
+                                                ''
+                                            ) : (
+                                                <Ticker intervalMs={1000}>
+                                                    {() => <Timestamp date={getCronNextScheduledTime(w.spec)} timestampKey={TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_NEXT_SCHEDULED} />}
+                                                </Ticker>
+                                            )}
                                         </div>
                                     </Link>
                                 ))}
