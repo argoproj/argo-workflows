@@ -21,6 +21,7 @@ import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 
 import './workflow-node-info.scss';
+import {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
 function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
     const endTime = node.finishedAt ? moment(node.finishedAt) : now;
@@ -82,20 +83,16 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
     </div>
 );
 
-function DisplayWorkflowTime(props: {date: Date | string | number}) {
+function DisplayWorkflowTime(props: {date: Date | string | number; timestampKey: TIMESTAMP_KEYS}) {
     const {date} = props;
-    const getLocalDateTime = (utc: Date | string | number) => {
-        return new Date(utc.toString()).toLocaleString();
-    };
+
+    if (date === null || date === undefined) return <div>-</div>;
+
     return (
         <div>
-            {date === null || date === undefined ? (
-                '-'
-            ) : (
-                <span>
-                    {getLocalDateTime(date)} (<Timestamp date={date} />)
-                </span>
-            )}
+            <span>
+                <Timestamp date={date} timestampKey={props.timestampKey} displayLocalDateTime />
+            </span>
         </div>
     );
 }
@@ -120,8 +117,8 @@ function WorkflowNodeSummary(props: Props) {
                   }
               ]
             : []),
-        {title: 'START TIME', value: <DisplayWorkflowTime date={props.node.startedAt} />},
-        {title: 'END TIME', value: <DisplayWorkflowTime date={props.node.finishedAt} />},
+        {title: 'START TIME', value: <DisplayWorkflowTime date={props.node.startedAt} timestampKey={TIMESTAMP_KEYS.WORKFLOW_NODE_STARTED} />},
+        {title: 'END TIME', value: <DisplayWorkflowTime date={props.node.finishedAt} timestampKey={TIMESTAMP_KEYS.WORKFLOW_NODE_FINISHED} />},
         {
             title: 'DURATION',
             value: <Ticker>{now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}</Ticker>
@@ -450,7 +447,7 @@ function WorkflowNodeArtifacts(props: {workflow: Workflow; node: NodeStatus; arc
                                 {artifact.path}
                             </span>
                             <span title={artifact.dateCreated} className='muted'>
-                                <Timestamp date={artifact.dateCreated} />
+                                <Timestamp date={artifact.dateCreated} timestampKey={TIMESTAMP_KEYS.WORKFLOW_NODE_ARTIFACT_CREATED} />
                             </span>
                         </div>
                     </div>
