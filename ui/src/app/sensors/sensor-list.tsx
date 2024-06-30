@@ -24,6 +24,7 @@ import {Utils} from '../shared/utils';
 import {SensorCreator} from './sensor-creator';
 import {SensorSidePanel} from './sensor-side-panel';
 import {Utils as EventsUtils} from './utils';
+import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
 
@@ -138,7 +139,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
                                 <div className='columns small-4'>{s.metadata.name}</div>
                                 <div className='columns small-3'>{s.metadata.namespace}</div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={s.metadata.creationTimestamp} />
+                                    <Timestamp date={s.metadata.creationTimestamp} timestampKey={TIMESTAMP_KEYS.SENSOR_LIST_CREATION} />
                                 </div>
                                 <div className='columns small-2'>
                                     <div
