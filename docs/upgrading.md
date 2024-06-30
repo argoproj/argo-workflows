@@ -52,7 +52,6 @@ Custom metrics, as defined by a workflow, could be defined as one type (say coun
 #### TLS
 
 The Prometheus `/metrics` endpoint now has TLS enabled by default.
-
 To disable this set `metricsConfig.secure` to `false`.
 
 ## Upgrading to v3.5
