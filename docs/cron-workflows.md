@@ -45,7 +45,7 @@ The resulting `Workflow` name will be a generated name based on the `CronWorkflo
 |          `timezone`          |    Machine timezone    | Timezone during which the Workflow will be run from the IANA timezone standard, e.g. `America/Los_Angeles`                                                                                                                              |
 |           `suspend`          |         `false`        | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly                                                                                                                                              |
 |      `concurrencyPolicy`     |         `Allow`        | Policy that determines what to do if multiple `Workflows` are scheduled at the same time. Available options: `Allow`: allow all, `Replace`: remove all old before scheduling a new, `Forbid`: do not allow any new while there are old  |
-| `startingDeadlineSeconds`    |           `0`          | Number of seconds after the last successful run during which a missed `Workflow` will be run                                                                                                                                            |
+| `startingDeadlineSeconds`    |           `0`          | Number of seconds after the last scheduled time during which a missed `Workflow` will still be run                                                                                                                                            |
 | `successfulJobsHistoryLimit` |           `3`          | Number of successful `Workflows` that will be persisted at a time                                                                                                                                                                       |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` that will be persisted at a time                                                                                                                                                                           |
 | `stopStrategy`               |         `nil`          | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition                                                                                                                                                 |
@@ -61,7 +61,6 @@ More detailed documentation for the specific library used is [documented here](h
 If the Controller crashes, you can ensure that any missed schedules still run.
 
 With `startingDeadlineSeconds` you can specify a maximum grace period past the last scheduled time during which it will still run.
-
 For example, if a `CronWorkflow` that runs every minute is last run at 12:05:00, and the controller crashes between 12:05:55 and 12:06:05, then the expected execution time of 12:06:00 would be missed.
 However, if `startingDeadlineSeconds` is set to a value greater than 5 (the time passed between the last scheduled time of 12:06:00 and the current time of 12:06:05), then a single instance of the `CronWorkflow` will be executed exactly at 12:06:05.
 
