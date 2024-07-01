@@ -58,9 +58,12 @@ More detailed documentation for the specific library used is [documented here](h
 
 ### Crash Recovery
 
-If the `workflow-controller` crashes (and hence the `CronWorkflow` controller), there are some options you can set to ensure that `CronWorkflows` that would have been scheduled while the controller was down can still run. Mainly `startingDeadlineSeconds` can be set to specify the maximum number of seconds past the last scheduled run of a `CronWorkflow` during which a missed run will still be executed.
+If the Controller crashes, you can ensure that any missed schedules still run.
 
-For example, if a `CronWorkflow` that runs every minute is last run at 12:05:00, and the controller crashes between 12:05:55 and 12:06:05, then the expected execution time of 12:06:00 would be missed. However, if `startingDeadlineSeconds` is set to a value greater than 5 (the amount of time passing between the last scheduled run time of 12:06:00 and the current time of 12:06:05), then a single instance of the `CronWorkflow` will be executed exactly at 12:06:05.
+With `startingDeadlineSeconds` you can specify a maximum grace period past the last scheduled time during which it will still run.
+
+For example, if a `CronWorkflow` that runs every minute is last run at 12:05:00, and the controller crashes between 12:05:55 and 12:06:05, then the expected execution time of 12:06:00 would be missed.
+However, if `startingDeadlineSeconds` is set to a value greater than 5 (the time passed between the last scheduled time of 12:06:00 and the current time of 12:06:05), then a single instance of the `CronWorkflow` will be executed exactly at 12:06:05.
 
 Currently only a single instance will be executed as a result of setting `startingDeadlineSeconds`.
 
