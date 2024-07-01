@@ -96,6 +96,7 @@ func New(ctx context.Context, serviceName string, config *Config, callbacks Call
 		addBuildInfo,
 		addIsLeader,
 		addPodPhaseGauge,
+		addPodPhaseCounter,
 		addPodMissingCounter,
 		addWorkflowPhaseGauge,
 		addOperationDurationHistogram,
