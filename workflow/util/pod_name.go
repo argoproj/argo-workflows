@@ -58,7 +58,7 @@ func GeneratePodName(workflowName, nodeName, templateName, nodeID string, versio
 	}
 
 	prefix := workflowName
-	if !strings.Contains(nodeName, ".inline") && templateName != "" {
+	if templateName != "" {
 		prefix = fmt.Sprintf("%s-%s", prefix, templateName)
 	}
 	prefix = ensurePodNamePrefixLength(prefix)
