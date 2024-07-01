@@ -55,7 +55,7 @@ func TestMetricGC(t *testing.T) {
 		Port:    defaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
-	m, _, err := createTestMetrics(&config)
+	m, _, err := createTestMetrics(&config, Callbacks{})
 	if assert.NoError(t, err) {
 		const key string = `metric`
 
