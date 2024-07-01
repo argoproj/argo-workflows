@@ -2,6 +2,7 @@ package git
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 
 	"k8s.io/client-go/util/homedir"
@@ -167,6 +168,14 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 				SingleBranch: true,
 			}))
 		})
+	})
+	t.Run("UnsupportedFileScheme", func(t *testing.T) {
+		t.Setenv("PATH", "") // make sure git executable not in path
+		driver := &ArtifactDriver{}
+		repo := "file://DOES_NOT_MATTER"
+		err := load(driver, &wfv1.GitArtifact{Repo: repo})
+		assert.ErrorIs(t, err, exec.ErrNotFound)
+		assert.ErrorContains(t, err, "but using file:// scheme requires a git executable, which is not installed by default in argo workflows executor images")
 	})
 }
 
