@@ -1410,38 +1410,10 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.PodIP = pod.Status.PodIP
 	}
 
-	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		resultName := woc.nodeID(pod)
-		if x == "true" {
-			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else {
-			woc.wf.Status.MarkTaskResultIncomplete(resultName)
-		}
-	}
-
-	if x, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		if new.Outputs == nil {
-			new.Outputs = &wfv1.Outputs{}
-		}
-		if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
-			new.Phase = wfv1.NodeError
-			new.Message = err.Error()
-		}
-	}
-
 	new.HostNodeName = pod.Spec.NodeName
 
 	if !new.Progress.IsValid() {
 		new.Progress = wfv1.ProgressDefault
-	}
-
-	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		if p, ok := wfv1.ParseProgress(x); ok {
-			new.Progress = p
-		}
 	}
 
 	// We capture the exit-code after we look for the task-result.

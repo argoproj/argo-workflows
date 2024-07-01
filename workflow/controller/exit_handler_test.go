@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -24,7 +23,7 @@ spec:
     steps:
     - - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -33,7 +32,7 @@ spec:
         template: whalesay
     - - name: leafB
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -92,7 +91,7 @@ spec:
       tasks:
       - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -102,7 +101,7 @@ spec:
       - name: leafB
         dependencies: [leafA]
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -160,7 +159,7 @@ spec:
     steps:
     - - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               artifacts:
@@ -236,7 +235,7 @@ spec:
       tasks:
       - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               artifacts:
@@ -314,7 +313,7 @@ spec:
         template: whalesay
     - - name: leafB
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -356,7 +355,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: pointer.String("ok"), Parameters: []wfv1.Parameter{{}}}))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
@@ -419,7 +418,7 @@ spec:
       - name: leafB
         dependencies: [leafA]
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -461,7 +460,7 @@ func TestDAGOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Parameters: []wfv1.Parameter{{}}}))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)

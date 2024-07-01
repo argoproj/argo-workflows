@@ -10,7 +10,6 @@ metadata:
       Note that the "simple-parameters" ConfigMap (defined in examples/configmaps/simple-parameters-configmap.yaml)
       needs to be created first before submitting this workflow.
 spec:
-  serviceAccountName: argo
   entrypoint: whalesay
   arguments:
     parameters:

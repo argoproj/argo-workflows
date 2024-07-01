@@ -7,6 +7,6 @@ roleRef:
   kind: Role
   name: argo-role
 subjects:
-- kind: ServiceAccount
-  name: argo
+  - kind: ServiceAccount
+    name: argo
 

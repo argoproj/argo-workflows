@@ -195,7 +195,6 @@ metadata:
   label:
     workflows.argoproj.io/test: "true"
 spec:
-  serviceAccountName: argo
   entrypoint: whalesay
   arguments:
     parameters:

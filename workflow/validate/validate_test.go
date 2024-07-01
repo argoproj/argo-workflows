@@ -2193,7 +2193,7 @@ metadata:
   generateName: hello-world-
 spec:
   entrypoint: A
-  serviceAccountName: argo
+  serviceAccountName: default
   parallelism: 1
   volumes:
   - name: workdir
@@ -3041,7 +3041,6 @@ metadata:
   generateName: arguments-parameters-from-configmap-
 spec:
   entrypoint: whalesay
-  serviceAccountName: argo
   arguments:
     parameters:
     - name: message

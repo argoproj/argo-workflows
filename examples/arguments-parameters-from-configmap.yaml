@@ -12,7 +12,6 @@ metadata:
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
 spec:
-  serviceAccountName: argo
   entrypoint: whalesay
 
   templates:

@@ -956,7 +956,7 @@ kind: Workflow
 metadata:
   generateName: loops-
 spec:
-  serviceAccountName: argo
+  serviceAccountName: default
   entrypoint: dag
   templates:
   - name: dag
