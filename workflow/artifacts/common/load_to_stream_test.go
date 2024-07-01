@@ -1,3 +1,4 @@
+// disabled on windows because artifacts server isn't run in windows and the test fails.
 //go:build !windows
 
 package common

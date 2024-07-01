@@ -1,3 +1,4 @@
+// not necessary to test on windows - metrics don't run on windows
 //go:build !windows
 
 package metrics
