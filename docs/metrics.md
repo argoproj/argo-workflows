@@ -201,6 +201,21 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
     Some metric attributes may have high cardinality and are marked with ⚠️ to warn you. You may need to disable this metric or disable the attribute.
 <!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
 <!-- titles are without argo_workflows prefix -->
+#### `controller_build_info`
+
+The build information for this workflow controller
+
+| attribute   | explanation                                                            |
+|-------------|------------------------------------------------------------------------|
+| `version`   | The version of argo-workflows                                          |
+| `platform`  | Platform this is running on, as go describes it e.g. `linux/amd64` |
+| `gover`     | Version of go that built this workflow controller                  |
+| `build`     | Build date for this workflow controller                                |
+| `compiler`  | The compiler used to build this workflow controller e.g. `gc`          |
+| `commit`    | The full git SHA1 of the code that built this workflow controller      |
+| `treestate` | Whether the git tree was `dirty` or `clean` when this was built        |
+| `tag`       | The tag on the git commit or `untagged` if it was not tagged           |
+
 #### `gauge`
 
 A gauge of the number of workflows currently in the cluster in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
