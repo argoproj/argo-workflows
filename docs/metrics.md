@@ -248,6 +248,20 @@ A counter of the number of API requests sent to the Kubernetes API.
 | `verb`        | The verb of the request, such as `Get` or `List`                   |
 | `status_code` | The HTTP status code of the response                               |
 
+This metric is calculable from `k8s_request_duration`, and it is suggested you just collect that metric instead.
+
+#### `k8s_request_duration`
+
+A histogram recording how long each type of request took.
+
+| attribute     | explanation                                                        |
+|---------------|--------------------------------------------------------------------|
+| `kind`        | The kubernetes `kind` involved in the request such as `configmaps` |
+| `verb`        | The verb of the request, such as `Get` or `List`                   |
+| `status_code` | The HTTP status code of the response                               |
+
+This is contains all the information contained in `k8s_request_total` along with timings.
+
 #### `leader`
 
 This gauge indicates if this workflow controller the leader in a leader elected controller setup, or is otherwise
