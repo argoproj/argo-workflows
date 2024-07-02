@@ -339,7 +339,7 @@ endif
 $(GOPATH)/bin/swagger:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.31.0
 endif
 $(GOPATH)/bin/goimports:
 # update this in Nix when upgrading it here
