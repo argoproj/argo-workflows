@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 
+	wfconfig "github.com/argoproj/argo-workflows/v3/config"
+
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
@@ -24,6 +26,7 @@ type Config struct {
 	TTL          time.Duration
 	IgnoreErrors bool
 	Secure       bool
+	Temporality  wfconfig.MetricsTemporality
 }
 
 type Metrics struct {
@@ -52,7 +55,7 @@ func New(ctx context.Context, serviceName string, config *Config, callbacks Call
 	_, otlpMetricsEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`)
 	if otlpEnabled || otlpMetricsEnabled {
 		log.Info("Starting OTLP metrics exporter")
-		otelExporter, err := otlpmetricgrpc.New(ctx)
+		otelExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(getTemporality(config)))
 		if err != nil {
 			return nil, err
 		}
@@ -116,4 +119,19 @@ func (m *Metrics) populate(ctx context.Context, adders ...addMetric) error {
 		}
 	}
 	return nil
+}
+
+func getTemporality(config *Config) metricsdk.TemporalitySelector {
+	switch config.Temporality {
+	case wfconfig.MetricsTemporalityCumulative:
+		return func(metricsdk.InstrumentKind) metricdata.Temporality {
+			return metricdata.CumulativeTemporality
+		}
+	case wfconfig.MetricsTemporalityDelta:
+		return func(metricsdk.InstrumentKind) metricdata.Temporality {
+			return metricdata.DeltaTemporality
+		}
+	default:
+		return metricsdk.DefaultTemporalitySelector
+	}
 }

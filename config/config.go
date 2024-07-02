@@ -245,6 +245,13 @@ type MySQLConfig struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
+type MetricsTemporality string
+
+const (
+	MetricsTemporalityCumulative MetricsTemporality = "Cumulative"
+	MetricsTemporalityDelta      MetricsTemporality = "Delta"
+)
+
 // MetricsConfig defines a config for a metrics server
 type MetricsConfig struct {
 	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
@@ -262,6 +269,10 @@ type MetricsConfig struct {
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
 	// Secure is a flag that starts the metrics servers using TLS, defaults to true
 	Secure *bool `json:"secure,omitempty"`
+	// Temporality of the OpenTelemetry metrics.
+	// Enum of Cumulative or Delta, defaulting to Cumulative.
+	// No effect on Prometheus metrics, which are always Cumulative.
+	Temporality MetricsTemporality `json:"temporality,omitempty"`
 }
 
 func (mc MetricsConfig) GetSecure(defaultValue bool) bool {

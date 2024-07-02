@@ -228,6 +228,8 @@ data:
     # Use a self-signed cert for TLS
     # >= 3.6: default true
     secure: true
+    # >= 3.6. Which temporality to use for OpenTelemetry. Default is "Cumulative"
+    temporality: Delta
 
     # DEPRECATED: Legacy metrics are now removed, this field is ignored
     disableLegacy: false
