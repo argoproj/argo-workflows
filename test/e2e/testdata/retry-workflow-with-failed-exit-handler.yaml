@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-workflow-with-failed-exit-handler
+spec:
+  entrypoint: hello
+  onExit: exit-handler
+  templates:
+  - name: hello
+    container:
+      image: alpine:3.18
+      command: [sh, -c]
+      args: ["echo hello"]
+  - name: exit-handler
+    container:
+      image: alpine:3.18
+      command: [sh, -c]
+      args: ["exit 1"]
