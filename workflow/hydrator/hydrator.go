@@ -1,6 +1,7 @@
 package hydrator
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -11,7 +12,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/file"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
 
@@ -31,6 +34,7 @@ func New(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) Interface {
 }
 
 var alwaysOffloadNodeStatus = os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true"
+var offloadNodeStatusErrorFallback = os.Getenv(common.EnvVarOffloadNodeStatusErrorFallback) == "true"
 
 func init() {
 	log.WithField("alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug("Hydrator config")
@@ -115,6 +119,21 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 			return !errorsutil.IsTransientErr(offloadErr), offloadErr
 		})
 		if offloadErr != nil {
+			if sqldb.IsTooLargeError(offloadErr) {
+				return offloadErr
+			}
+			if offloadNodeStatusErrorFallback {
+				log.Warnf("%sTried to offload but encountered error: %s", errMsg, offloadErr.Error())
+				var nodeContent []byte
+				nodeContent, err = json.Marshal(wf.Status.Nodes)
+				if err != nil {
+					return err
+				}
+				wf.Status.CompressedNodes = file.CompressEncodeString(string(nodeContent))
+				wf.Status.Nodes = nil
+				wf.Status.OffloadNodeStatusVersion = ""
+				return nil
+			}
 			return fmt.Errorf("%sTried to offload but encountered error: %s", errMsg, offloadErr.Error())
 		}
 		wf.Status.Nodes = nil

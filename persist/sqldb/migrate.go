@@ -258,6 +258,15 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 		// add indexes for list archived workflow performance. #8836
 		ansiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (startedat)`),
 		ansiSQLChange(`create index argo_archived_workflows_labels_i1 on argo_archived_workflows_labels (name,value)`),
+		ternary(dbType == MySQL,
+			ansiSQLChange(`alter table `+m.tableName+` add column compressednodes longtext`),
+			ansiSQLChange(`alter table `+m.tableName+` add column compressednodes text`),
+		),
+		ansiSQLChange(`update ` + m.tableName + ` set compressednodes = '' where compressednodes is null`),
+		ternary(dbType == MySQL,
+			ansiSQLChange(`alter table `+m.tableName+` add column id bigint auto_increment, add constraint id unique (id)`),
+			ansiSQLChange(`alter table `+m.tableName+` add column id bigserial, add constraint id unique (id)`),
+		),
 	} {
 		err := m.applyChange(changeSchemaVersion, change)
 		if err != nil {
