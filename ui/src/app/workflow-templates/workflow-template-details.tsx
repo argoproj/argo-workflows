@@ -5,16 +5,19 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {WorkflowTemplate} from '../../models';
+import * as models from '../../models';
+import {WorkflowTemplate, Workflow} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
 import {useCollectEvent} from '../shared/use-collect-event';
+import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
 import {WidgetGallery} from '../widgets/widget-gallery';
+import {WorkflowsRow} from '../workflows/components/workflows-row/workflows-row';
 import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
@@ -28,6 +31,14 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const name = match.params.name;
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
+    const [workflows, setWorkflows] = useState<Workflow[]>([]);
+    const [columns, setColumns] = useState<models.Column[]>([]);
+
+    const [template, setTemplate] = useState<WorkflowTemplate>();
+    const [error, setError] = useState<Error>();
+    const [edited, setEdited] = useState(false);
+
+    useEffect(() => setEdited(true), [template]);
 
     useEffect(
         useQueryParams(history, p => {
@@ -50,12 +61,6 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
         [namespace, name, sidePanel, tab]
     );
 
-    const [error, setError] = useState<Error>();
-    const [template, setTemplate] = useState<WorkflowTemplate>();
-    const [edited, setEdited] = useState(false);
-
-    useEffect(() => setEdited(true), [template]);
-
     useEffect(() => {
         services.workflowTemplate
             .get(name, namespace)
@@ -65,7 +70,63 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
             .catch(setError);
     }, [name, namespace]);
 
+    useEffect(() => {
+        (async () => {
+            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.workflowTemplate}=${name}`], {limit: 50});
+            const workflowsInfo = await services.info.getInfo();
+
+            setWorkflows(workflowList.items);
+            setColumns(workflowsInfo.columns);
+        })();
+    }, []);
+
     useCollectEvent('openedWorkflowTemplateDetails');
+
+    const getItems = () => {
+        const items = [
+            {
+                title: 'Submit',
+                iconClassName: 'fa fa-plus',
+                disabled: edited,
+                action: () => setSidePanel('submit')
+            },
+            {
+                title: 'Update',
+                iconClassName: 'fa fa-save',
+                disabled: !edited,
+                action: () =>
+                    services.workflowTemplate
+                        .update(template, name, namespace)
+                        .then(setTemplate)
+                        .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
+                        .then(() => setEdited(false))
+                        .then(() => setError(null))
+                        .catch(setError)
+            },
+            {
+                title: 'Delete',
+                iconClassName: 'fa fa-trash',
+                action: () => {
+                    popup.confirm('confirm', 'Are you sure you want to delete this workflow template?').then(yes => {
+                        if (yes) {
+                            services.workflowTemplate
+                                .delete(name, namespace)
+                                .then(() => navigation.goto(uiUrl('workflow-templates/' + namespace)))
+                                .then(() => setError(null))
+                                .catch(setError);
+                        }
+                    });
+                }
+            },
+            {
+                title: 'Share',
+                iconClassName: 'fa fa-share-alt',
+                action: () => setSidePanel('share')
+            }
+        ];
+
+        return items;
+    };
 
     return (
         <Page
@@ -77,68 +138,66 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                     {title: name, path: uiUrl('workflow-templates/' + namespace + '/' + name)}
                 ],
                 actionMenu: {
-                    items: [
-                        {
-                            title: 'Submit',
-                            iconClassName: 'fa fa-plus',
-                            disabled: edited,
-                            action: () => setSidePanel('submit')
-                        },
-                        {
-                            title: 'Update',
-                            iconClassName: 'fa fa-save',
-                            disabled: !edited,
-                            action: () =>
-                                services.workflowTemplate
-                                    .update(template, name, namespace)
-                                    .then(setTemplate)
-                                    .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
-                                    .then(() => setEdited(false))
-                                    .then(() => setError(null))
-                                    .catch(setError)
-                        },
-                        {
-                            title: 'Delete',
-                            iconClassName: 'fa fa-trash',
-                            action: () => {
-                                popup.confirm('confirm', 'Are you sure you want to delete this workflow template?').then(yes => {
-                                    if (yes) {
-                                        services.workflowTemplate
-                                            .delete(name, namespace)
-                                            .then(() => navigation.goto(uiUrl('workflow-templates/' + namespace)))
-                                            .then(() => setError(null))
-                                            .catch(setError);
-                                    }
-                                });
-                            }
-                        },
-                        {
-                            title: 'Share',
-                            iconClassName: 'fa fa-share-alt',
-                            action: () => setSidePanel('share')
-                        }
-                    ]
+                    items: getItems()
                 }
             }}>
             <>
-                <ErrorNotice error={error} />
-                {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />}
-            </>
-            {template && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={sidePanel === 'submit'}>
-                    {sidePanel === 'submit' && (
-                        <SubmitWorkflowPanel
-                            kind='WorkflowTemplate'
-                            namespace={namespace}
-                            name={name}
-                            entrypoint={template.spec.entrypoint}
-                            templates={template.spec.templates || []}
-                            workflowParameters={template.spec.arguments.parameters || []}
-                        />
+                <>
+                    <ErrorNotice error={error} />
+                    {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />}
+                </>
+                {template && (
+                    <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={sidePanel === 'submit'}>
+                        {sidePanel === 'submit' && (
+                            <SubmitWorkflowPanel
+                                kind='WorkflowTemplate'
+                                namespace={namespace}
+                                name={name}
+                                entrypoint={template.spec.entrypoint}
+                                templates={template.spec.templates || []}
+                                workflowParameters={template.spec.arguments.parameters || []}
+                            />
+                        )}
+                        {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}
+                    </SlidingPanel>
+                )}
+                <>
+                    <ErrorNotice error={error} />
+                    {!workflows ? (
+                        <ZeroState title='No completed workflow templates'>
+                            <p> You can create new workflow templates here or using the CLI. </p>
+                        </ZeroState>
+                    ) : (
+                        <div className='argo-table-list workflows-template-list'>
+                            <div className='row argo-table-list__head'>
+                                <div className='columns small-1 workflows-list__status' />
+                                <div className='row small-11'>
+                                    <div className='columns small-2'>NAME</div>
+                                    <div className='columns small-1'>NAMESPACE</div>
+                                    <div className='columns small-1'>STARTED</div>
+                                    <div className='columns small-1'>FINISHED</div>
+                                    <div className='columns small-1'>DURATION</div>
+                                    <div className='columns small-1'>PROGRESS</div>
+                                    <div className='columns small-2'>MESSAGE</div>
+                                    <div className='columns small-1'>DETAILS</div>
+                                    <div className='columns small-1'>ARCHIVED</div>
+                                    {(columns || []).map(col => {
+                                        return (
+                                            <div className='columns small-1' key={col.key}>
+                                                {col.name}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            {/* checkboxes are not visible and are unused on this page */}
+                            {workflows.map(wf => {
+                                return <WorkflowsRow workflow={wf} key={wf.metadata.uid} checked={false} columns={columns} onChange={null} select={null} />;
+                            })}
+                        </div>
                     )}
-                    {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}
-                </SlidingPanel>
-            )}
+                </>
+            </>
         </Page>
     );
 }
