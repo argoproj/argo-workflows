@@ -172,4 +172,45 @@ spec:
 
 		assert.False(t, fatal, "should not have exited")
 	})
+
+	workflowCaseSensitivePath := filepath.Join(subdir, "workflowCaseSensitive.yaml")
+	err = os.WriteFile(workflowCaseSensitivePath, []byte(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoInt: whalesay
+  templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay
+        command: [ cowsay ]
+        args: [ "hello world" ]
+        resources:
+          limits:
+            memory: 32Mi
+            cpu: 100m
+`), 0644)
+	require.NoError(t, err)
+
+	t.Run("linting a workflow with case sensitive fields and strict enabled", func(t *testing.T) {
+		defer func() { logrus.StandardLogger().ExitFunc = nil }()
+		var fatal bool
+		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
+
+		runLint(context.Background(), []string{workflowCaseSensitivePath}, true, nil, "pretty", true)
+
+		assert.True(t, fatal, "should have exited")
+	})
+
+	t.Run("linting a workflow with case sensitive fields and strict disabled", func(t *testing.T) {
+		defer func() { logrus.StandardLogger().ExitFunc = nil }()
+		var fatal bool
+		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
+
+		runLint(context.Background(), []string{workflowCaseSensitivePath}, true, nil, "pretty", false)
+
+		assert.False(t, fatal, "should not have exited")
+	})
 }
