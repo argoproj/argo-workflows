@@ -26,6 +26,7 @@ import {Utils} from '../shared/utils';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceCreator} from './event-source-creator';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
+import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/event_source/'>Learn more</a>;
 
@@ -140,7 +141,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
                                 <div className='columns small-4'>{es.metadata.name}</div>
                                 <div className='columns small-3'>{es.metadata.namespace}</div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={es.metadata.creationTimestamp} />
+                                    <Timestamp date={es.metadata.creationTimestamp} timestampKey={TIMESTAMP_KEYS.EVENT_SOURCE_LIST_CREATION} />
                                 </div>
                                 <div className='columns small-2'>
                                     <div
