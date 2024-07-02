@@ -50,7 +50,7 @@ receivers:
 
 You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernetes/operator/) to setup the collector and instrument the workflow-controller.
 
-You can configure the temporality of OpenTelemetry metrics in the [Workflow Controller ConfigMap](workflow-controller-configmap.md).
+You can configure the [temporality](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#temporality) of OpenTelemetry metrics in the [Workflow Controller ConfigMap](workflow-controller-configmap.md).
 
 ```yaml
 metricsConfig: |
