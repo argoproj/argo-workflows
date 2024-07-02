@@ -54,7 +54,7 @@ You can configure the [temporality](https://opentelemetry.io/docs/specs/otel/met
 
 ```yaml
 metricsConfig: |
-  # Which temporality to use for opentelemetry, defaults to Cumulative
+  # >= 3.6. Which temporality to use for OpenTelemetry. Default is "Cumulative"
   temporality: Delta
 ```
 
