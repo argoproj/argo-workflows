@@ -56,6 +56,9 @@ metadata:
 spec:
   arguments: {}
   entrypoint: whalesay
+  podMetadata:
+    labels:
+      workflows.argoproj.io/cron-workflow: hello-world
   templates:
   - container:
       args:
