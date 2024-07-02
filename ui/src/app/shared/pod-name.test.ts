@@ -52,6 +52,7 @@ describe('pod names', () => {
         expect(getPodName(wf, node)).toEqual(v2podName);
         delete wf.metadata.annotations;
         expect(getPodName(wf, node)).toEqual(v2podName);
+        expect(getPodName(wf, {...node, name: node.name + '.mycontainername', type: 'Container'})).toEqual(v2podName); // containerSet node check
 
         wf.metadata.name = longWfName;
         node.templateName = longTemplateName;
