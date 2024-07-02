@@ -53,9 +53,10 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 				if assert.Len(t, spec.Containers, 2) {
 					{
 						plug := spec.Containers[0]
-						if assert.Equal(t, "hello-executor-plugin", plug.Name) {
+						if assert.Equal(t, "hello", plug.Name) {
 							if assert.Len(t, plug.VolumeMounts, 2) {
 								assert.Equal(t, "var-run-argo", plug.VolumeMounts[0].Name)
+								assert.Equal(t, plug.Name, plug.VolumeMounts[0].SubPath)
 								assert.Contains(t, plug.VolumeMounts[1].Name, "kube-api-access-")
 							}
 						}
