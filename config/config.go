@@ -269,9 +269,9 @@ type MetricsConfig struct {
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
 	// Secure is a flag that starts the metrics servers using TLS, defaults to true
 	Secure *bool `json:"secure,omitempty"`
-	// Temporality configures the temporality of the opentelemetry metrics.
-	// Valid values are Cumulative and Delta, defaulting to cumulative.
-	// This has no effect on prometheus metrics, which are always cumulative
+	// Temporality of the OpenTelemetry metrics.
+	// Enum of Cumulative or Delta, defaulting to Cumulative.
+	// No effect on Prometheus metrics, which are always Cumulative.
 	Temporality MetricsTemporality `json:"temporality,omitempty"`
 }
 
