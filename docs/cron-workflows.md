@@ -41,7 +41,7 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 
 ### `CronWorkflow` Options
 
-|          Option Name         |      Default Value     | Description |
+| Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
 | `schedule`                   | None, must be provided | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *` |
 | `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
