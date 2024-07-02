@@ -132,3 +132,13 @@ func GetDeletePropagation() *metav1.DeletionPropagation {
 	}
 	return &propagationPolicy
 }
+
+func RemoveFinalizer(finalizers []string, targetFinalizer string) []string {
+	var updatedFinalizers []string
+	for _, finalizer := range finalizers {
+		if finalizer != targetFinalizer {
+			updatedFinalizers = append(updatedFinalizers, finalizer)
+		}
+	}
+	return updatedFinalizers
+}

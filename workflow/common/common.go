@@ -174,6 +174,9 @@ const (
 	// Finalizer blocks the deletion of pods until the controller captures their status.
 	FinalizerPodStatus = workflow.WorkflowFullName + "/status"
 
+	// Finalizer blocks the deletion of pods until the taskresult marked completed.
+	FinalizerTaskResultStatus = workflow.WorkflowFullName + "/taskresult"
+
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
