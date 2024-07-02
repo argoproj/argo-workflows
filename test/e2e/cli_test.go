@@ -21,6 +21,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const (
@@ -221,6 +222,42 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 				// server-dry-run should get a UID
 				assert.Contains(t, output, "uid:")
 			}
+		})
+}
+
+func (s *CLISuite) TestSubmitWorkflowTemplateDryRun() {
+	s.Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		When().
+		CreateWorkflowTemplates().
+		RunCli([]string{"submit", "--dry-run", "--from", "workflowtemplate/workflow-template-whalesay-template", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "generateName: workflow-template-whalesay-template-")
+				// dry-run should never get a UID
+				assert.NotContains(t, output, "uid:")
+			}
+		}).
+		Then().
+		ExpectWorkflowList(metav1.ListOptions{LabelSelector: common.LabelKeyWorkflowTemplate + "=workflow-template-whalesay-template"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
+			assert.Equal(t, 0, len(wfList.Items))
+		})
+}
+
+func (s *CLISuite) TestSubmitWorkflowTemplateServerDryRun() {
+	s.Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		When().
+		CreateWorkflowTemplates().
+		RunCli([]string{"submit", "--server-dry-run", "--from", "workflowtemplate/workflow-template-whalesay-template", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "generateName: workflow-template-whalesay-template-")
+				// server-dry-run should get a UID
+				assert.Contains(t, output, "uid:")
+			}
+		}).
+		Then().
+		ExpectWorkflowList(metav1.ListOptions{LabelSelector: common.LabelKeyWorkflowTemplate + "=workflow-template-whalesay-template"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
+			assert.Equal(t, 0, len(wfList.Items))
 		})
 }
 

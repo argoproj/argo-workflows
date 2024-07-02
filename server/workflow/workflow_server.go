@@ -780,6 +780,23 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
+
+	// if we are doing a normal dryRun, just return the workflow un-altered
+	if req.SubmitOptions != nil && req.SubmitOptions.DryRun {
+		return wf, nil
+	}
+	if req.SubmitOptions != nil && req.SubmitOptions.ServerDryRun {
+		// For a server dry run we require a namespace
+		if wf.Namespace == "" {
+			wf.Namespace = req.Namespace
+		}
+		workflow, err := util.CreateServerDryRun(ctx, wf, wfClient)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		}
+		return workflow, nil
+	}
+
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
