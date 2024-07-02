@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -92,6 +93,7 @@ func TestLoadToStream(t *testing.T) {
 				stream.Close()
 
 				// make sure the new file got deleted when we called stream.Close() above
+				time.Sleep(1 * time.Second) // fs race condition -- wait a bit to ensure the file has been deleted
 				filesAfter, err := os.ReadDir("/tmp/")
 				if err != nil {
 					panic(err)
