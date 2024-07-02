@@ -15,6 +15,38 @@ Previously it was `--basehref` (no dash in between) and `ARGO_BASEHREF` (no unde
 `ALLOWED_LINK_PROTOCOL` and `BASE_HREF` have been removed as redundant.
 Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
 
+### Metrics changes
+
+You can now retrieve metrics using the OpenTelemetry Protocol using the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/), and this is the recommended mechanism.
+
+These notes explain the differences in using the Prometheus `/metrics` endpoint to scrape metrics for a minimal effort upgrade. It is not recommended you follow this guide blindly, the new metrics have been introduced because they add value, and so they should be worth collecting and using.
+
+#### New metrics
+
+The following are new metrics:
+
+* `queue_duration`
+* `queue_longest_running`
+* `queue_retries`
+* `queue_unfinished_work`
+
+#### Renamed metrics
+
+If you are using these metrics in your recording rules, dashboards, or alerts, you will need to update their names after the upgrade:
+
+| Old name                           | New name                           |
+|------------------------------------|------------------------------------|
+| `argo_workflows_count`             | `argo_workflows_gauge`             |
+| `argo_workflows_pods_count`        | `argo_workflows_pods_gauge`        |
+| `argo_workflows_queue_depth_count` | `argo_workflows_queue_depth_gauge` |
+| `log_messages`                     | `argo_workflows_log_messages`      |
+
+#### Custom metrics
+
+Custom metric names and labels must be valid Prometheus and OpenTelemetry names now. This prevents the use of `:`, which was usable in earlier versions of workflows
+
+Custom metrics, as defined by a workflow, could be defined as one type (say counter) in one workflow, and then as a histogram of the same name in a different workflow. This would work in 3.5 if the first usage of the metric had reached TTL and been deleted. This will no-longer work in 3.6, and custom metrics may not be redefined. It doesn't really make sense to change a metric in this way, and the OpenTelemetry SDK prevents you from doing so.
+
 ## Upgrading to v3.5
 
 There are no known breaking changes in this release. Please file an issue if you encounter any unexpected problems after upgrading.
