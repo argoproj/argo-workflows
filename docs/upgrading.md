@@ -47,6 +47,8 @@ Custom metric names and labels must be valid Prometheus and OpenTelemetry names 
 
 Custom metrics, as defined by a workflow, could be defined as one type (say counter) in one workflow, and then as a histogram of the same name in a different workflow. This would work in 3.5 if the first usage of the metric had reached TTL and been deleted. This will no-longer work in 3.6, and custom metrics may not be redefined. It doesn't really make sense to change a metric in this way, and the OpenTelemetry SDK prevents you from doing so.
 
+`metricsTTL` for histogram metrics is not functional as opentelemetry doesn't allow deletion of metrics. This is faked via asynchronous meters for the other metric types.
+
 ## Upgrading to v3.5
 
 There are no known breaking changes in this release.

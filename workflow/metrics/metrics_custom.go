@@ -17,12 +17,12 @@ import (
 type RealTimeValueFunc func() float64
 
 type customMetricValue struct {
-	// We are faking a settable and incrementable up/down gauge
+	// We are faking a settable and incrementable up/down gauge/coutner
 	// for compatibility with prometheus. callback() reads this.
-	// This is used for both gauges and realtime custom metrics,
-	// using either the prometheusGauge value or the
-	// rtValueFunc in the latter case.
-	prometheusGauge float64
+	// This is used for counters, gauges and realtime custom metrics,
+	// using either the prometheusValue or the
+	// rtValueFunc in the realtime case.
+	prometheusValue float64
 	rtValueFunc     RealTimeValueFunc
 	lastUpdated     time.Time
 	labels          []*wfv1.MetricLabel
@@ -84,7 +84,7 @@ func (i *instrument) customCallback(_ context.Context, o metric.Observer) error 
 		if value.rtValueFunc != nil {
 			i.observeFloat(o, value.rtValueFunc(), value.getLabels())
 		} else {
-			i.observeFloat(o, value.prometheusGauge, value.getLabels())
+			i.observeFloat(o, value.prometheusValue, value.getLabels())
 		}
 	}
 	return nil
@@ -128,7 +128,7 @@ func (m *Metrics) matchExistingMetric(metricSpec *wfv1.Prometheus) (*instrument,
 			if wantedType != wfv1.MetricTypeGauge && !metricSpec.IsRealtime() {
 				return nil, fmt.Errorf("Found existing gauge for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
-		case *metric.Float64UpDownCounter:
+		case *metric.Float64ObservableUpDownCounter:
 			if wantedType != wfv1.MetricTypeCounter {
 				return nil, fmt.Errorf("Found existing counter for custom metric %s of type %s", metricSpec.Name, wantedType)
 			}
@@ -189,15 +189,14 @@ func (m *Metrics) UpsertCustomMetric(ctx context.Context, metricSpec *wfv1.Prome
 		}
 		switch metricSpec.Gauge.Operation {
 		case wfv1.GaugeOperationAdd:
-			metricValue.prometheusGauge += val
+			metricValue.prometheusValue += val
 		case wfv1.GaugeOperationSub:
-			metricValue.prometheusGauge -= val
+			metricValue.prometheusValue -= val
 		case wfv1.GaugeOperationSet:
 			fallthrough
 		default:
-			metricValue.prometheusGauge = val
+			metricValue.prometheusValue = val
 		}
-
 	case metricType == wfv1.MetricTypeHistogram:
 		val, err := strconv.ParseFloat(metricSpec.Histogram.Value, 64)
 		if err != nil {
@@ -209,8 +208,9 @@ func (m *Metrics) UpsertCustomMetric(ctx context.Context, metricSpec *wfv1.Prome
 		if err != nil {
 			return err
 		}
-		baseMetric.addFloat(ctx, val, metricValue.getLabels())
+		metricValue.prometheusValue += val
 	default:
+		return fmt.Errorf("invalid custom metric type")
 	}
 	return nil
 }
@@ -244,7 +244,12 @@ func (m *Metrics) createCustomMetric(metricSpec *wfv1.Prometheus) error {
 	case metricType == wfv1.MetricTypeHistogram:
 		return m.createInstrument(float64Histogram, metricSpec.Name, metricSpec.Help, "{item}", withDefaultBuckets(metricSpec.Histogram.GetBuckets()))
 	case metricType == wfv1.MetricTypeCounter:
-		return m.createInstrument(float64UpDownCounter, metricSpec.Name, metricSpec.Help, "{item}")
+		err := m.createInstrument(float64ObservableUpDownCounter, metricSpec.Name, metricSpec.Help, "{item}")
+		if err != nil {
+			return err
+		}
+		inst := m.allInstruments[metricSpec.Name]
+		return inst.registerCallback(m, inst.customCallback)
 	default:
 		return fmt.Errorf("invalid metric spec")
 	}

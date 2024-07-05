@@ -3,7 +3,7 @@
 > v2.7 and after
 
 !!! Metrics changes in 3.6
-    Please read [this short guide](upgrading.md#metrics_changes) on what you must consider when upgrading to 3.6.
+    Please read [this short guide](upgrading.md#metrics-changes) on what you must consider when upgrading to 3.6.
 
 ## Introduction
 
@@ -84,7 +84,7 @@ You can adjust various elements of the metrics configuration by changing values 
 
 ```yaml
 metricsConfig: |
-  # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
+  # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared. Histogram metrics are never cleared.
   metricsTTL: "10m"
 ```
 
@@ -372,6 +372,12 @@ spec:
 ...
 ```
 
+Gauges take an optional `operation` flag which must be one of `Set`, `Add` or `Sub`. If this is unspecified it as though you have used `operation: Set`.
+
+- `Set`: makes the gauge report the `value`
+- `Add`: increases the current value of the gauge by `value`
+- `Sub`: decreases the current value of the gauge by `value`
+
 An example of a `Template`-level Counter metric that will increase a counter every time the step fails:
 
 ```yaml
@@ -395,6 +401,8 @@ An example of a `Template`-level Counter metric that will increase a counter eve
         args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
 ...
 ```
+
+The counter `value` is added to the previous value of the counter.
 
 A similar example of such a Counter metric that will increase for every step status
 

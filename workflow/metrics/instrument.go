@@ -36,6 +36,7 @@ const (
 	float64ObservableGauge instrumentType = iota
 	float64Histogram
 	float64UpDownCounter
+	float64ObservableUpDownCounter
 	int64ObservableGauge
 	int64UpDownCounter
 	int64Counter
@@ -100,6 +101,13 @@ func (m *Metrics) createInstrument(instType instrumentType, name, desc, unit str
 		err = insterr
 	case float64UpDownCounter:
 		inst, insterr := (*m.otelMeter).Float64UpDownCounter(name,
+			metric.WithDescription(desc),
+			metric.WithUnit(unit),
+		)
+		instPtr = &inst
+		err = insterr
+	case float64ObservableUpDownCounter:
+		inst, insterr := (*m.otelMeter).Float64ObservableUpDownCounter(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
 		)
