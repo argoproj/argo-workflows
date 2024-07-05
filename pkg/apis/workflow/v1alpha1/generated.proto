@@ -502,7 +502,7 @@ message CronWorkflowSpec {
   // WorkflowMetadata contains some metadata of the workflow to be run
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 
-  // StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+  // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
   optional StopStrategy stopStrategy = 10;
 
   // Schedules is a list of schedules to run the Workflow in Cron format
@@ -520,13 +520,13 @@ message CronWorkflowStatus {
   // Conditions is a list of conditions the CronWorkflow may have
   repeated Condition conditions = 3;
 
-  // Succeeded is a counter of how many times the child workflows had success
+  // v3.6 and after: Succeeded counts how many times child workflows succeeded
   optional int64 succeeded = 4;
 
-  // Failed is a counter of how many times a child workflow terminated in failed or errored state
+  // v3.6 and after: Failed counts how many times child workflows failed
   optional int64 failed = 5;
 
-  // Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running
+  // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
   optional string phase = 6;
 }
 
@@ -1480,10 +1480,10 @@ message Sequence {
   optional string format = 4;
 }
 
-// StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 message StopStrategy {
-  // Condition defines a condition that stops scheduling workflows when evaluates to true. Use the
-  // keywords `failed` or `succeeded` to access the number of failed or successful child workflows.
+  // v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the
+  // variables `failed` or `succeeded` to access the number of failed or successful child workflows.
   optional string condition = 1;
 }
 

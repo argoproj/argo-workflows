@@ -1,10 +1,10 @@
 ## argo completion
 
-output shell completion code for the specified shell (bash or zsh)
+output shell completion code for the specified shell (bash, zsh or fish)
 
 ### Synopsis
 
-Write bash or zsh shell completion code to standard output.
+Write bash, zsh or fish shell completion code to standard output.
 
 For bash, ensure you have bash completions installed and enabled.
 To access completions in your current shell, run
@@ -13,6 +13,8 @@ Alternatively, write it to a file and source in .bash_profile
 
 For zsh, output to a file in a directory referenced by the $fpath shell
 variable.
+
+For fish, output to a file in ~/.config/fish/completions
 
 
 ```
@@ -28,7 +30,7 @@ argo completion SHELL [flags]
 ### Options inherited from parent commands
 
 ```
-      --argo-base-href string          Path to use with HTTP client due to BASE_HREF. Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation

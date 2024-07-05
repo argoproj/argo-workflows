@@ -188,6 +188,42 @@ spec:
 		})
 }
 
+func (s *WorkflowSuite) TestWorkflowInlinePodName() {
+	s.Given().Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-inline-
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            inline:
+              container:
+                image: argoproj/argosay:v2
+                command:
+                  - cowsay
+                args:
+                  - "foo"
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted, time.Minute*1).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return strings.Contains(status.Name, "a")
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.NotContains(t, pod.Name, "--")
+		})
+}
+
 func TestWorkflowSuite(t *testing.T) {
 	suite.Run(t, new(WorkflowSuite))
 }
