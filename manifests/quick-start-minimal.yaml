@@ -1172,7 +1172,6 @@ rules:
   - ""
   resources:
   - pods
-  - pods/exec
   verbs:
   - create
   - get
@@ -1308,7 +1307,6 @@ rules:
   - ""
   resources:
   - pods
-  - pods/exec
   - pods/log
   verbs:
   - get

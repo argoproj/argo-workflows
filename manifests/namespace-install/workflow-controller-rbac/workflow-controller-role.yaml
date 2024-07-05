@@ -15,7 +15,6 @@ rules:
       - ""
     resources:
       - pods
-      - pods/exec
     verbs:
       - create
       - get
