@@ -303,6 +303,7 @@ func TestUntar(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, fileInfo.Mode().IsRegular())
 	dirInfo, err := os.Stat(destPath)
+	assert.NoError(t, err)
 	// check that the modification time of the file is retained
 	assert.True(t, fileInfo.ModTime().Before(dirInfo.ModTime()))
 	fileInfo, err = os.Stat(linkPath)
