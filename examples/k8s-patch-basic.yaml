@@ -13,6 +13,7 @@ spec:
   - name: main
     resource:
       action: patch
+      # patch an annotation to own Pod
       manifest: |
         apiVersion: v1
         kind: Pod
