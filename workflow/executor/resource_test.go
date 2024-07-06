@@ -66,9 +66,7 @@ func TestResourceFlags(t *testing.T) {
 func TestResourcePatchFlags(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	manifestPath := "../../examples/hello-world.yaml"
-	buff, err := os.ReadFile(manifestPath)
-	assert.NoError(t, err)
-	fakeFlags := []string{"kubectl", "patch", "--type", "strategic", "-p", string(buff), "-f", manifestPath, "-o", "json"}
+	fakeFlags := []string{"kubectl", "patch", "--type", "strategic", "--patch-file", manifestPath, "-o", "json"}
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
@@ -97,9 +95,7 @@ func TestResourcePatchFlags(t *testing.T) {
 func TestResourcePatchFlagsJson(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	manifestPath := "../../examples/hello-world.yaml"
-	buff, err := os.ReadFile(manifestPath)
-	assert.NoError(t, err)
-	fakeFlags := []string{"kubectl", "patch", "--type", "json", "-p", string(buff), "-o", "json"}
+	fakeFlags := []string{"kubectl", "patch", "--type", "json", "--patch-file", manifestPath, "-o", "json"}
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
