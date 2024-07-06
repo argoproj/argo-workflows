@@ -19,7 +19,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -126,42 +125,6 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 		return newWf, nil
 	}
 	return wf, nil
-}
-
-func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList, numWfsToKeep int) *v1alpha1.WorkflowList {
-	var mergedWfs []v1alpha1.Workflow
-	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
-	for _, item := range liveWfs.Items {
-		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
-	}
-	for _, item := range archivedWfs.Items {
-		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
-	}
-
-	for _, v := range uidToWfs {
-		// The archived workflow we saved in the database will only have "Pending" as the archival status.
-		// We want to only keep the workflow that has the correct label to display correctly in the UI.
-		if len(v) == 1 {
-			mergedWfs = append(mergedWfs, v[0])
-		} else {
-			if ok := v[0].Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"; ok {
-				mergedWfs = append(mergedWfs, v[0])
-			} else {
-				mergedWfs = append(mergedWfs, v[1])
-			}
-		}
-	}
-	mergedWfsList := v1alpha1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
-	sort.Sort(mergedWfsList.Items)
-	numWfs := 0
-	var finalWfs []v1alpha1.Workflow
-	for _, item := range mergedWfsList.Items {
-		if numWfsToKeep == 0 || numWfs < numWfsToKeep {
-			finalWfs = append(finalWfs, item)
-			numWfs += 1
-		}
-	}
-	return &v1alpha1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
