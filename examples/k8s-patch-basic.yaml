@@ -6,7 +6,7 @@ metadata:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
-      This example shows a standard patch with the default mergeStrategy
+      This example shows a standard patch with the default mergeStrategy (strategic)
 spec:
   entrypoint: main
   templates:
