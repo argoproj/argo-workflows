@@ -12,6 +12,7 @@ spec:
       resource:
         action: patch
         mergeStrategy: json
+        # patch an annotation to self
         flags:
           - workflow
           - "{{workflow.name}}"
