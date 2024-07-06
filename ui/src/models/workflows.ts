@@ -811,7 +811,6 @@ export interface WorkflowSpec {
      */
     podGC?: {
         strategy?: string;
-        deleteDelayDuration?: string;
     };
     /**
      * SecurityContext holds pod-level security attributes and common container settings.
