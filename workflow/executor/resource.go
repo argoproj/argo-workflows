@@ -125,32 +125,24 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		output = "name"
 	}
 
-	appendFileFlag := true
+	fileFlag := "-f"
 	if action == "patch" {
+		fileFlag = "--patch-file"
+
 		mergeStrategy := "strategic"
 		if we.Template.Resource.MergeStrategy != "" {
 			mergeStrategy = we.Template.Resource.MergeStrategy
-			if mergeStrategy == "json" {
-				// Action "patch" require flag "-p" with resource arguments.
-				// But kubectl disallow specify both "-f" flag and resource arguments.
-				// Flag "-f" should be excluded for action "patch" here if it's a json patch.
-				appendFileFlag = false
-			}
 		}
-
 		args = append(args, "--type")
 		args = append(args, mergeStrategy)
-
-		args = append(args, "-p")
-		args = append(args, string(buff))
 	}
 
 	if len(flags) != 0 {
 		args = append(args, flags...)
 	}
 
-	if len(buff) != 0 && appendFileFlag {
-		args = append(args, "-f")
+	if len(buff) != 0 {
+		args = append(args, fileFlag)
 		args = append(args, manifestPath)
 	}
 	args = append(args, "-o")
