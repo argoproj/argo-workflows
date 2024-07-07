@@ -64,6 +64,7 @@ func TestResourceFlags(t *testing.T) {
 // TestResourcePatchFlags tests whether Resource Flags
 // are properly passed to `kubectl patch` command
 func TestResourcePatchFlags(t *testing.T) {
+	fakeFlags := []string{"pod", "mypod"}
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
@@ -83,27 +84,30 @@ func TestResourcePatchFlags(t *testing.T) {
 			name:           "json --patch-file",
 			patchType:      "json",
 			appendFileFlag: false,
-			manifestPath:   "../../.github/pr.yaml", // any YAML without a `kind`
+			manifestPath:   "../../.golangci.yml", // any YAML without a `kind`
 		},
 		{
 			name:           "merge --patch-file",
 			patchType:      "merge",
 			appendFileFlag: false,
-			manifestPath:   "../../.github/pr.yaml", // any YAML without a `kind`
+			manifestPath:   "../../.golangci.yml", // any YAML without a `kind`
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeFlags := []string{"kubectl", "patch", "--type", tt.patchType, "--patch-file", tt.manifestPath, "-o", "json"}
+			expectedArgs := []string{"kubectl", "patch", "--type", tt.patchType, "--patch-file", tt.manifestPath}
+			expectedArgs = append(expectedArgs, fakeFlags...)
 			if tt.appendFileFlag {
-				fakeFlags = append(fakeFlags, []string{"-f", tt.manifestPath})
+				expectedArgs = append(expectedArgs, "-f", tt.manifestPath)
 			}
+			expectedArgs = append(expectedArgs, "-o", "json")
 
 			template := wfv1.Template{
 				Resource: &wfv1.ResourceTemplate{
-					Action: "patch",
-					Flags:  fakeFlags,
+					Action:        "patch",
+					Flags:         fakeFlags,
+					MergeStrategy: tt.patchType,
 				},
 			}
 			we := WorkflowExecutor{
@@ -113,10 +117,10 @@ func TestResourcePatchFlags(t *testing.T) {
 				Namespace:       fakeNamespace,
 				RuntimeExecutor: &mockRuntimeExecutor,
 			}
-			args, err := we.getKubectlArguments("patch", tt.manifestPath, nil)
+			args, err := we.getKubectlArguments("patch", tt.manifestPath, fakeFlags)
 
 			assert.NoError(t, err)
-			assert.Equal(t, args, fakeFlags)
+			assert.Equal(t, expectedArgs, args)
 		})
 	}
 }
