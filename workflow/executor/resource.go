@@ -135,14 +135,14 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		args = append(args, "--type")
 		args = append(args, mergeStrategy)
 
-		// if the manifest has no `kind` and there are flags, assume that this is a partial manifest to patch
-		// json patches are also different manifests by definition
+		// if there are flags and the manifest has no `kind`, assume it is a patch file
+		// json patches also use patch files by definition
 		var res map[string]interface{}
 		err = yaml.Unmarshal(buff, res)
 		if err != nil {
 			return []string{}, errors.New(errors.CodeBadRequest, err.Error())
 		}
-		if len(flags) != 0 && (mergeStrategy == "json" || res["kind"] != "") {
+		if mergeStrategy == "json" || (len(flags) != 0 && res["kind"] == "") {
 			fileFlag = "--patch-file"
 		}
 	}
