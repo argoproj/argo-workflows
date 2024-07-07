@@ -126,7 +126,7 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		output = "name"
 	}
 
-	fileFlag := "-f"
+	appendFileFlag := true
 	if action == "patch" {
 		mergeStrategy := "strategic"
 		if we.Template.Resource.MergeStrategy != "" {
@@ -135,15 +135,23 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		args = append(args, "--type")
 		args = append(args, mergeStrategy)
 
-		// if there are flags and the manifest has no `kind`, assume it is a patch file
-		// json patches also use patch files by definition
-		var res map[string]interface{}
-		err = yaml.Unmarshal(buff, res)
-		if err != nil {
-			return []string{}, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		if mergeStrategy == "json" || (len(flags) != 0 && res["kind"] == "") {
-			fileFlag = "--patch-file"
+		args = append(args, "--patch-file")
+		args = append(args, manifestPath)
+
+		// if there are flags and the manifest has no `kind`, assume: `kubectl patch <kind> <name> --patch-file <path>`
+		// json patches also use patch files by definition and so require resource arguments
+		// the other form in our case is `kubectl patch -f <path> --patch-file <path>`
+		if mergeStrategy == "json" {
+			appendFileFlag = false
+		} else {
+			var obj map[string]interface{}
+			err = yaml.Unmarshal(buff, &obj)
+			if err != nil {
+				return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+			}
+			if len(flags) != 0 && obj["kind"] == nil {
+				appendFileFlag = false
+			}
 		}
 	}
 
@@ -151,8 +159,8 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		args = append(args, flags...)
 	}
 
-	if len(buff) != 0 {
-		args = append(args, fileFlag)
+	if len(buff) != 0 && appendFileFlag {
+		args = append(args, "-f")
 		args = append(args, manifestPath)
 	}
 	args = append(args, "-o")
