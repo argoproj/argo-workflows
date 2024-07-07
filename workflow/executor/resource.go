@@ -135,8 +135,8 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		args = append(args, "--type")
 		args = append(args, mergeStrategy)
 
-		// if the manifest has no `kind` and there are flags, assume that this is partial manifest to patch
-		// json patches also require this by definition
+		// if the manifest has no `kind` and there are flags, assume that this is a partial manifest to patch
+		// json patches are also different manifests by definition
 		var res map[string]interface{}
 		err = yaml.Unmarshal(buff, res)
 		if err != nil {

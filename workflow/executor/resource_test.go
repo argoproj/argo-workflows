@@ -65,29 +65,52 @@ func TestResourceFlags(t *testing.T) {
 // are properly passed to `kubectl patch` command
 func TestResourcePatchFlags(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
-	manifestPath := "../../examples/hello-world.yaml"
-	fakeFlags := []string{"kubectl", "patch", "--type", "strategic", "-f", manifestPath, "-o", "json"}
-
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
-	template := wfv1.Template{
-		Resource: &wfv1.ResourceTemplate{
-			Action: "patch",
-			Flags:  fakeFlags,
+	tests := []struct {
+		name         string
+		fakeFlags    []string
+		manifestPath string
+	}{
+		{
+			name:         "strategic -f",
+			fakeFlags:    []string{"kubectl", "patch", "--type", "strategic", "-f", "../../examples/hello-world.yaml", "-o", "json"},
+			manifestPath: "../../examples/hello-world.yaml",
+		},
+		{
+			name:         "json --patch-file",
+			fakeFlags:    []string{"kubectl", "patch", "--type", "json", "--patch-file", "../../examples/k8s-patch-json-pod.yaml", "-o", "json"},
+			manifestPath: "../../examples/k8s-patch-json-pod.yaml",
+		},
+		{
+			name:         "merge --patch-file",
+			fakeFlags:    []string{"kubectl", "patch", "--type", "merge", "--patch-file", "../../examples/k8s-patch-merge-pod.yaml", "-o", "json"},
+			manifestPath: "../../examples/k8s-patch-json-pod.yaml",
 		},
 	}
 
-	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        template,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
-	}
-	args, err := we.getKubectlArguments("patch", manifestPath, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			template := wfv1.Template{
+				Resource: &wfv1.ResourceTemplate{
+					Action: "patch",
+					Flags:  tt.fakeFlags,
+				},
+			}
 
-	assert.NoError(t, err)
-	assert.Equal(t, args, fakeFlags)
+			we := WorkflowExecutor{
+				PodName:         fakePodName,
+				Template:        template,
+				ClientSet:       fakeClientset,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: &mockRuntimeExecutor,
+			}
+			args, err := we.getKubectlArguments("patch", tt.manifestPath, nil)
+
+			assert.NoError(t, err)
+			assert.Equal(t, args, tt.fakeFlags)
+		})
+	}
 }
 
 // TestResourceConditionsMatching tests whether the JSON response match
