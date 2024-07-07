@@ -372,13 +372,14 @@ func runKubectl(args ...string) ([]byte, error) {
 		os.Args = osArgs
 	}()
 
-	var buf bytes.Buffer
 	var err error
 	// catch `os.Exit(1)` from kubectl
 	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
 		log.Info("fatal error: %s", msg)
 		err = errors.New(string(code), msg)
 	})
+
+	var buf bytes.Buffer
 	if err = kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
 		Arguments: args,
 		// TODO(vadasambar): use `DefaultConfigFlags` variable from upstream
