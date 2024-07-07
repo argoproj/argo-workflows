@@ -24,6 +24,7 @@ import (
 	"k8s.io/gengo/namer"
 	gengotypes "k8s.io/gengo/types"
 	kubectlcmd "k8s.io/kubectl/pkg/cmd"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -127,14 +128,23 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 
 	fileFlag := "-f"
 	if action == "patch" {
-		fileFlag = "--patch-file"
-
 		mergeStrategy := "strategic"
 		if we.Template.Resource.MergeStrategy != "" {
 			mergeStrategy = we.Template.Resource.MergeStrategy
 		}
 		args = append(args, "--type")
 		args = append(args, mergeStrategy)
+
+		// if the manifest has no `kind` and there are flags, assume that this is partial manifest to patch
+		// json patches also require this by definition
+		var res map[string]interface{}
+		err = yaml.Unmarshal(buff, res)
+		if err != nil {
+			return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+		}
+		if len(flags) != 0 && (mergeStrategy == "json" || res["kind"] != "") {
+			fileFlag = "--patch-file"
+		}
 	}
 
 	if len(flags) != 0 {
