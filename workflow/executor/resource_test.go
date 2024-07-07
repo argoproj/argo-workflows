@@ -66,7 +66,7 @@ func TestResourceFlags(t *testing.T) {
 func TestResourcePatchFlags(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	manifestPath := "../../examples/hello-world.yaml"
-	fakeFlags := []string{"kubectl", "patch", "--type", "strategic", "--patch-file", manifestPath, "-o", "json"}
+	fakeFlags := []string{"kubectl", "patch", "--type", "strategic", "-f", manifestPath, "-o", "json"}
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
