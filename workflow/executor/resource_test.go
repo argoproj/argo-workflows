@@ -68,33 +68,37 @@ func TestResourcePatchFlags(t *testing.T) {
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
 	tests := []struct {
-		name         string
-		fakeFlags    []string
-		manifestPath string
+		name           string
+		patchType      string
+		appendFileFlag bool
+		manifestPath   string
 	}{
 		{
-			name:         "strategic -f",
-			patchType:    "strategic",
-			fileFlag:     "-f",
-			manifestPath: "../../examples/hello-world.yaml",
+			name:           "strategic -f --patch-file",
+			patchType:      "strategic",
+			appendFileFlag: true,
+			manifestPath:   "../../examples/hello-world.yaml", // any YAML with a `kind`
 		},
 		{
-			name:         "json --patch-file",
-			patchType:    "json",
-			fileFlag:     "--patch-file",
-			manifestPath: "../../examples/k8s-patch-json-pod.yaml",
+			name:           "json --patch-file",
+			patchType:      "json",
+			appendFileFlag: false,
+			manifestPath:   "../../.github/pr.yaml", // any YAML without a `kind`
 		},
 		{
-			name:         "merge --patch-file",
-			patchType:    "merge",
-			fileFlag:     "--patch-file",
-			manifestPath: "../../examples/k8s-patch-merge-pod.yaml",
+			name:           "merge --patch-file",
+			patchType:      "merge",
+			appendfileFlag: false,
+			manifestPath:   "../../.github/pr.yaml", // any YAML without a `kind`
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeFlags := []string{"kubectl", "patch", "--type", tt.patchType, tt.fileFlag, tt.manifestPath, "-o", "json"}
+			fakeFlags := []string{"kubectl", "patch", "--type", tt.patchType, "--patch-file", tt.manifestPath, "-o", "json"}
+			if tt.appendFileFlag {
+				fakeFlags = append(fakeFlags, []string{"-f", tt.manifestPath})
+			}
 
 			template := wfv1.Template{
 				Resource: &wfv1.ResourceTemplate{
