@@ -24,6 +24,7 @@ import (
 	"k8s.io/gengo/namer"
 	gengotypes "k8s.io/gengo/types"
 	kubectlcmd "k8s.io/kubectl/pkg/cmd"
+	kubectlutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -370,8 +371,15 @@ func runKubectl(args ...string) ([]byte, error) {
 	defer func() {
 		os.Args = osArgs
 	}()
+
 	var buf bytes.Buffer
-	if err := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
+	var err error
+	// catch `os.Exit(1)` from kubectl
+	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
+		log.Info("fatal error: %s", msg)
+		err = errors.New(string(code), msg)
+	})
+	if err = kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
 		Arguments: args,
 		// TODO(vadasambar): use `DefaultConfigFlags` variable from upstream
 		// as value for `ConfigFlags` once https://github.com/kubernetes/kubernetes/pull/120024 is merged
