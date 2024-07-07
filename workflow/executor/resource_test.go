@@ -74,30 +74,34 @@ func TestResourcePatchFlags(t *testing.T) {
 	}{
 		{
 			name:         "strategic -f",
-			fakeFlags:    []string{"kubectl", "patch", "--type", "strategic", "-f", "../../examples/hello-world.yaml", "-o", "json"},
+			patchType:    "strategic",
+			fileFlag:     "-f",
 			manifestPath: "../../examples/hello-world.yaml",
 		},
 		{
 			name:         "json --patch-file",
-			fakeFlags:    []string{"kubectl", "patch", "--type", "json", "--patch-file", "../../examples/k8s-patch-json-pod.yaml", "-o", "json"},
+			patchType:    "json",
+			fileFlag:     "--patch-file",
 			manifestPath: "../../examples/k8s-patch-json-pod.yaml",
 		},
 		{
 			name:         "merge --patch-file",
-			fakeFlags:    []string{"kubectl", "patch", "--type", "merge", "--patch-file", "../../examples/k8s-patch-merge-pod.yaml", "-o", "json"},
-			manifestPath: "../../examples/k8s-patch-json-pod.yaml",
+			patchType:    "merge",
+			fileFlag:     "--patch-file",
+			manifestPath: "../../examples/k8s-patch-merge-pod.yaml",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			fakeFlags := []string{"kubectl", "patch", "--type", tt.patchType, tt.fileFlag, tt.manifestPath, "-o", "json"}
+
 			template := wfv1.Template{
 				Resource: &wfv1.ResourceTemplate{
 					Action: "patch",
-					Flags:  tt.fakeFlags,
+					Flags:  fakeFlags,
 				},
 			}
-
 			we := WorkflowExecutor{
 				PodName:         fakePodName,
 				Template:        template,
@@ -108,7 +112,7 @@ func TestResourcePatchFlags(t *testing.T) {
 			args, err := we.getKubectlArguments("patch", tt.manifestPath, nil)
 
 			assert.NoError(t, err)
-			assert.Equal(t, args, tt.fakeFlags)
+			assert.Equal(t, args, fakeFlags)
 		})
 	}
 }
