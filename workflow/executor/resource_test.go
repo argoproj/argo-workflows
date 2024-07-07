@@ -88,7 +88,7 @@ func TestResourcePatchFlags(t *testing.T) {
 		{
 			name:           "merge --patch-file",
 			patchType:      "merge",
-			appendfileFlag: false,
+			appendFileFlag: false,
 			manifestPath:   "../../.github/pr.yaml", // any YAML without a `kind`
 		},
 	}
