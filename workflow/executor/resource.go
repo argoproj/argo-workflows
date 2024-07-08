@@ -372,15 +372,14 @@ func runKubectl(args ...string) ([]byte, error) {
 		os.Args = osArgs
 	}()
 
-	var err error
+	var fatalErr error
 	// catch `os.Exit(1)` from kubectl
 	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
-		log.Info("fatal error: %s", msg)
-		err = errors.New(string(code), msg)
+		fatalErr = errors.New(errors.CodeBadRequest, msg)
 	})
 
 	var buf bytes.Buffer
-	if err = kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
+	if err := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
 		Arguments: args,
 		// TODO(vadasambar): use `DefaultConfigFlags` variable from upstream
 		// as value for `ConfigFlags` once https://github.com/kubernetes/kubernetes/pull/120024 is merged
@@ -391,6 +390,9 @@ func runKubectl(args ...string) ([]byte, error) {
 		IOStreams: genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
 	}).Execute(); err != nil {
 		return nil, err
+	}
+	if fatalErr != nil {
+		return nil, fatalErr
 	}
 	return buf.Bytes(), nil
 }
