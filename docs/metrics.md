@@ -203,7 +203,7 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
 <!-- titles are without argo_workflows prefix -->
 #### `controller_build_info`
 
-The build information for this workflow controller
+Build metadata for this Controller.
 
 | attribute   | explanation                                                            |
 |-------------|------------------------------------------------------------------------|
