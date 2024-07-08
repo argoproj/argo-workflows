@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
@@ -26,6 +27,7 @@ type Config struct {
 	TTL          time.Duration
 	IgnoreErrors bool
 	Secure       bool
+	Modifiers    map[string]Modifier
 	Temporality  wfconfig.MetricsTemporality
 }
 
@@ -71,6 +73,7 @@ func New(ctx context.Context, serviceName string, config *Config, callbacks Call
 		options = append(options, metricsdk.WithReader(promExporter))
 	}
 	options = append(options, extraOpts...)
+	options = append(options, view(config))
 
 	provider := metricsdk.NewMeterProvider(options...)
 	otel.SetMeterProvider(provider)

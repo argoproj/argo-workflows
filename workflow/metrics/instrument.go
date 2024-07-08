@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"sort"
 
 	"go.opentelemetry.io/otel/metric"
 
@@ -149,5 +150,12 @@ func (m *Metrics) createInstrument(instType instrumentType, name, desc, unit str
 }
 
 func (m *Metrics) buckets(name string, defaultBuckets []float64) []float64 {
+	if opts, ok := m.config.Modifiers[name]; ok {
+		if len(opts.HistogramBuckets) > 0 {
+			buckets := opts.HistogramBuckets
+			sort.Float64s(buckets)
+			return buckets
+		}
+	}
 	return defaultBuckets
 }

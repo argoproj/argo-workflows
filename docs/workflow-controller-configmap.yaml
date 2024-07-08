@@ -228,6 +228,15 @@ data:
     # Use a self-signed cert for TLS
     # >= 3.6: default true
     secure: true
+    # Options for configuring individual metrics
+    options:
+      pod_missing:
+        disable: true
+      cronworkflows_triggered_total:
+        disabledAttributes:
+          - name
+      k8s_request_duration:
+        histogramBuckets: [ 1.0, 2.0, 10.0 ]
     # >= 3.6. Which temporality to use for OpenTelemetry. Default is "Cumulative"
     temporality: Delta
 
