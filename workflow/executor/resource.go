@@ -375,7 +375,7 @@ func runKubectl(args ...string) ([]byte, error) {
 	var fatalErr error
 	// catch `os.Exit(1)` from kubectl
 	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
-		fatalErr = errors.New(errors.CodeBadRequest, msg)
+		fatalErr = errors.New(fmt.Sprint(code), msg)
 	})
 
 	var buf bytes.Buffer
