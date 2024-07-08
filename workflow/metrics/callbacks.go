@@ -4,5 +4,5 @@ type Callbacks struct {
 	PodPhase          PodPhaseCallback
 	WorkflowPhase     WorkflowPhaseCallback
 	WorkflowCondition WorkflowConditionCallback
-	LeaderState       LeaderStateCallback
+	IsLeader          IsLeaderCallback
 }

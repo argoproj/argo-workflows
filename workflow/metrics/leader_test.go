@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -11,17 +12,17 @@ func TestIsLeader(t *testing.T) {
 	_, te, err := createTestMetrics(
 		&Config{},
 		Callbacks{
-			LeaderState: func() bool {
+			IsLeader: func() bool {
 				return true
 			},
 		})
+
+	require.NoError(t, err)
+	assert.NotNil(t, te)
+	attribs := attribute.NewSet()
+	val, err := te.GetInt64GaugeValue(`is_leader`, &attribs)
 	if assert.NoError(t, err) {
-		assert.NotNil(t, te)
-		attribs := attribute.NewSet()
-		val, err := te.GetInt64GaugeValue(`leader`, &attribs)
-		if assert.NoError(t, err) {
-			assert.Equal(t, int64(1), val)
-		}
+		assert.Equal(t, int64(1), val)
 	}
 }
 
@@ -29,16 +30,15 @@ func TestNotLeader(t *testing.T) {
 	_, te, err := createTestMetrics(
 		&Config{},
 		Callbacks{
-			LeaderState: func() bool {
+			IsLeader: func() bool {
 				return false
 			},
 		})
+	require.NoError(t, err)
+	assert.NotNil(t, te)
+	attribs := attribute.NewSet()
+	val, err := te.GetInt64GaugeValue(`is_leader`, &attribs)
 	if assert.NoError(t, err) {
-		assert.NotNil(t, te)
-		attribs := attribute.NewSet()
-		val, err := te.GetInt64GaugeValue(`leader`, &attribs)
-		if assert.NoError(t, err) {
-			assert.Equal(t, int64(0), val)
-		}
+		assert.Equal(t, int64(0), val)
 	}
 }
