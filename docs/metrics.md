@@ -208,7 +208,7 @@ Build metadata for this Controller.
 | attribute   | explanation                                                            |
 |-------------|------------------------------------------------------------------------|
 | `version`   | The version of Argo                                          |
-| `platform`  | Platform this is running on, as go describes it e.g. `linux/amd64` |
+| `platform`  | The [Go platform](https://go.dev/doc/install/source#environment) compiled for. Example: `linux/amd64` |
 | `gover`     | Version of go that built this workflow controller                  |
 | `build`     | Build date for this workflow controller                                |
 | `compiler`  | The compiler used to build this workflow controller e.g. `gc`          |
