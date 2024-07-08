@@ -8,7 +8,6 @@ spec:
   - name: main
     resource:
       action: patch
-      successCondition: status.phase == Failed # intentional failure
       manifest: |
         apiVersion: v1
         # kind: Pod -- missing this causes an error
