@@ -173,15 +173,13 @@ func (t *TestExporter) getNamedFloat64HistogramData(name string, attribs *attrib
 	return nil, fmt.Errorf("%s type counter[float64] not found in %v", name, mtc)
 }
 
-// GetFloat64HistogramData returns an otel histogram float64 data point
-// for reading in a test
+// GetFloat64HistogramData returns an otel histogram float64 data point for test reads
 func (t *TestExporter) GetFloat64HistogramData(name string, attribs *attribute.Set) (*metricdata.HistogramDataPoint[float64], error) {
 	data, err := t.getNamedFloat64HistogramData(name, attribs)
 	return data, err
 }
 
-// GetInt64CounterValue returns an otel int64 counter value
-// for reading in a test
+// GetInt64CounterValue returns an otel int64 counter value for test reads
 func (t *TestExporter) GetInt64CounterValue(name string, attribs *attribute.Set) (int64, error) {
 	counter, err := t.getNamedInt64CounterData(name, attribs)
 	if err != nil {
@@ -190,8 +188,7 @@ func (t *TestExporter) GetInt64CounterValue(name string, attribs *attribute.Set)
 	return counter.Value, err
 }
 
-// GetFloat64GaugeValue returns an otel float64 gauge value
-// for reading in a test
+// GetFloat64GaugeValue returns an otel float64 gauge value for test reads
 func (t *TestExporter) GetFloat64GaugeValue(name string, attribs *attribute.Set) (float64, error) {
 	gauge, err := t.getNamedFloat64GaugeData(name, attribs)
 	if err != nil {
@@ -200,8 +197,7 @@ func (t *TestExporter) GetFloat64GaugeValue(name string, attribs *attribute.Set)
 	return gauge.Value, err
 }
 
-// GetFloat64CounterValue returns an otel float64 counter value
-// for reading in a test
+// GetFloat64CounterValue returns an otel float64 counter value for test reads
 func (t *TestExporter) GetFloat64CounterValue(name string, attribs *attribute.Set) (float64, error) {
 	counter, err := t.getNamedFloat64CounterData(name, attribs)
 	if err != nil {
