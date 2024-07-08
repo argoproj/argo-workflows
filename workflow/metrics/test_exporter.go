@@ -41,7 +41,7 @@ func getSharedMetrics() (*Metrics, *TestExporter, error) {
 			TTL:     1 * time.Second,
 		}
 		var err error
-		sharedMetrics, sharedTE, err = createTestMetrics(&config)
+		sharedMetrics, sharedTE, err = createTestMetrics(&config, Callbacks{})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -57,14 +57,14 @@ func CreateDefaultTestMetrics() (*Metrics, *TestExporter, error) {
 	config := Config{
 		Enabled: true,
 	}
-	return createTestMetrics(&config)
+	return createTestMetrics(&config, Callbacks{})
 }
 
-func createTestMetrics(config *Config) (*Metrics, *TestExporter, error) {
+func createTestMetrics(config *Config, callbacks Callbacks) (*Metrics, *TestExporter, error) {
 	ctx /* with cancel*/ := context.Background()
 	te := newTestExporter()
 
-	m, err := New(ctx, TestScopeName, config, Callbacks{}, metric.WithReader(te))
+	m, err := New(ctx, TestScopeName, config, callbacks, metric.WithReader(te))
 	return m, te, err
 
 }
@@ -139,6 +139,23 @@ func (t *TestExporter) getNamedFloat64GaugeData(name string, attribs *attribute.
 	return nil, fmt.Errorf("%s type gauge[float64] not found in %v", name, mtc)
 }
 
+func (t *TestExporter) getNamedInt64GaugeData(name string, attribs *attribute.Set) (*metricdata.DataPoint[int64], error) {
+	mtc, err := t.getNamedMetric(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if gauge, ok := mtc.Data.(metricdata.Gauge[int64]); ok {
+		for _, dataPoint := range gauge.DataPoints {
+			if dataPoint.Attributes.Equals(attribs) {
+				return &dataPoint, nil
+			}
+		}
+		return nil, fmt.Errorf("%s named gauge[float64] with attribs %v not found in %v", name, attribs, mtc)
+	}
+	return nil, fmt.Errorf("%s type gauge[float64] not found in %v", name, mtc)
+}
+
 func (t *TestExporter) getNamedFloat64CounterData(name string, attribs *attribute.Set) (*metricdata.DataPoint[float64], error) {
 	mtc, err := t.getNamedMetric(name)
 	if err != nil {
@@ -191,6 +208,15 @@ func (t *TestExporter) GetInt64CounterValue(name string, attribs *attribute.Set)
 // GetFloat64GaugeValue returns an otel float64 gauge value for test reads
 func (t *TestExporter) GetFloat64GaugeValue(name string, attribs *attribute.Set) (float64, error) {
 	gauge, err := t.getNamedFloat64GaugeData(name, attribs)
+	if err != nil {
+		return 0, err
+	}
+	return gauge.Value, err
+}
+
+// GetInt64CounterValue returns an otel int64 counter value for test reads
+func (t *TestExporter) GetInt64GaugeValue(name string, attribs *attribute.Set) (int64, error) {
+	gauge, err := t.getNamedInt64GaugeData(name, attribs)
 	if err != nil {
 		return 0, err
 	}

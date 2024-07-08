@@ -25,6 +25,7 @@ These notes explain the differences in using the Prometheus `/metrics` endpoint 
 
 The following are new metrics:
 
+* `leader`
 * `queue_duration`
 * `queue_longest_running`
 * `queue_retries`

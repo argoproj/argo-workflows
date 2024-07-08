@@ -226,6 +226,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 			PodPhase:          wfc.getPodPhaseMetrics,
 			WorkflowPhase:     wfc.getWorkflowPhaseMetrics,
 			WorkflowCondition: wfc.getWorkflowConditionMetrics,
+			LeaderState:       wfc.IsLeader,
 		})
 
 	if err != nil {
