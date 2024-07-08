@@ -214,7 +214,7 @@ func (t *TestExporter) GetFloat64GaugeValue(name string, attribs *attribute.Set)
 	return gauge.Value, err
 }
 
-// GetInt64CounterValue returns an otel int64 counter value for test reads
+// GetInt64GaugeValue returns an otel int64 gauge value for test reads
 func (t *TestExporter) GetInt64GaugeValue(name string, attribs *attribute.Set) (int64, error) {
 	gauge, err := t.getNamedInt64GaugeData(name, attribs)
 	if err != nil {
