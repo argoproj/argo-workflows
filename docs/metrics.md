@@ -238,8 +238,7 @@ A counter of the number of API requests sent to the Kubernetes API.
 A gauge indicating if this Controller is the [leader](high-availability.md#workflow-controller).
 
 - `1` if leader or in standalone mode via [`LEADER_ELECTION_DISABLE=true`](environment-variables.md#controller).
-- It will be `0` otherwise.
-This controller is not actively running workflows.
+- `0` otherwise, indicating that this controller is a standby that is not currently running workflows.
 
 #### `log_messages`
 
