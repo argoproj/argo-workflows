@@ -69,7 +69,8 @@ metricsConfig: |
   ignoreErrors: false
 
   # Use a self-signed cert for TLS
-  secure: false
+  # >= 3.6: default true
+  secure: true
 ```
 
 The metric names emitted by this mechanism are prefixed with `argo_workflows_`.
