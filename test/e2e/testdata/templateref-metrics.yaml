@@ -1,0 +1,7 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: templateref-metrics-
+spec:
+  workflowTemplateRef:
+    name: basic
