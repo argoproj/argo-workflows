@@ -201,21 +201,6 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
     Some metric attributes may have high cardinality and are marked with ⚠️ to warn you. You may need to disable this metric or disable the attribute.
 <!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
 <!-- titles are without argo_workflows prefix -->
-#### `controller_build_info`
-
-Build metadata for this Controller.
-
-| attribute   | explanation                                                            |
-|-------------|------------------------------------------------------------------------|
-| `version`   | The version of Argo                                          |
-| `platform`  | The [Go platform](https://go.dev/doc/install/source#environment) compiled for. Example: `linux/amd64` |
-| `goversion`     | Version of Go used                  |
-| `build`     | Build date for this workflow controller                                |
-| `compiler`  | The compiler used to build this workflow controller e.g. `gc`          |
-| `commit`    | The full git SHA1 of the code that built this workflow controller      |
-| `treestate` | Whether the git tree was `dirty` or `clean` when this was built        |
-| `tag`       | The tag on the git commit or `untagged` if it was not tagged           |
-
 #### `gauge`
 
 A gauge of the number of workflows currently in the cluster in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
@@ -341,6 +326,21 @@ See [queue adds count](#queue_adds_count) for details.
 A gauge of the number of queue items that have not been processed yet.
 
 See [queue adds count](#queue_adds_count) for details.
+
+#### `version`
+
+Build metadata for this Controller.
+
+| attribute        | explanation                                                                                           |
+|------------------|-------------------------------------------------------------------------------------------------------|
+| `version`        | The version of Argo                                                                                   |
+| `platform`       | The [Go platform](https://go.dev/doc/install/source#environment) compiled for. Example: `linux/amd64` |
+| `goversion`      | Version of Go used                                                                                    |
+| `build_date`     | Build date for this workflow controller                                                               |
+| `compiler`       | The compiler used to build this workflow controller e.g. `gc`                                         |
+| `git_commit`     | The full Git SHA1 commit                                                                              |
+| `git_tree_state` | Whether the Git tree was `dirty` or `clean` when built                                                |
+| `git_tag`        | The Git tag or `untagged` if it was not tagged                                                        |
 
 #### `workers_busy_count`
 
