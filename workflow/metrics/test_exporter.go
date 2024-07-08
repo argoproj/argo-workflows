@@ -145,15 +145,17 @@ func (t *TestExporter) getNamedInt64GaugeData(name string, attribs *attribute.Se
 		return nil, err
 	}
 
-	if gauge, ok := mtc.Data.(metricdata.Gauge[int64]); ok {
-		for _, dataPoint := range gauge.DataPoints {
-			if dataPoint.Attributes.Equals(attribs) {
-				return &dataPoint, nil
-			}
-		}
-		return nil, fmt.Errorf("%s named gauge[float64] with attribs %v not found in %v", name, attribs, mtc)
+	gauge, ok := mtc.Data.(metricdata.Gauge[int64])
+	if !ok {
+		return nil, fmt.Errorf("%s type gauge[float64] not found in %v", name, mtc)
 	}
-	return nil, fmt.Errorf("%s type gauge[float64] not found in %v", name, mtc)
+
+	for _, dataPoint := range gauge.DataPoints {
+		if dataPoint.Attributes.Equals(attribs) {
+			return &dataPoint, nil
+		}
+	}
+	return nil, fmt.Errorf("%s named gauge[float64] with attribs %v not found in %v", name, attribs, mtc)
 }
 
 func (t *TestExporter) getNamedFloat64CounterData(name string, attribs *attribute.Set) (*metricdata.DataPoint[float64], error) {
