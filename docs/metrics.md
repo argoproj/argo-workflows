@@ -335,7 +335,7 @@ Build metadata for this Controller.
 |------------------|-------------------------------------------------------------------------------------------------------|
 | `version`        | The version of Argo                                                                                   |
 | `platform`       | The [Go platform](https://go.dev/doc/install/source#environment) compiled for. Example: `linux/amd64` |
-| `goversion`      | Version of Go used                                                                                    |
+| `go_version`     | Version of Go used                                                                                    |
 | `build_date`     | Build date                                                               |
 | `compiler`       | The compiler used. Example: `gc`                                         |
 | `git_commit`     | The full Git SHA1 commit                                                                              |
