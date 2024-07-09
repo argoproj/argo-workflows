@@ -1,6 +1,15 @@
 package metrics
 
 const (
+	labelBuildVersion      string = `version`
+	labelBuildPlatform     string = `platform`
+	labelBuildGoVersion    string = `go_version`
+	labelBuildDate         string = `build_date`
+	labelBuildCompiler     string = `compiler`
+	labelBuildGitCommit    string = `git_commit`
+	labelBuildGitTreeState string = `git_treestate`
+	labelBuildGitTag       string = `git_tag`
+
 	labelErrorCause string = "cause"
 
 	labelLogLevel string = `level`
