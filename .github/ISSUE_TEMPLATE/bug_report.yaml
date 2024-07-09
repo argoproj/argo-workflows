@@ -31,7 +31,8 @@ body:
   - type: textarea
     id: failing-workflow
     attributes:
-      label: Paste a small workflow that reproduces the issue. We must be able to run the workflow; don't enter a workflows that uses private images.
+      label: Paste a minimal workflow that reproduces the issue. We must be able to run the workflow; don't enter a workflows that uses private images.
+      description: A [minimal reproduction](https://stackoverflow.com/help/minimal-reproducible-example) is essential to debugging and prioritizing your issue
       render: YAML
     validations:
       required: true
