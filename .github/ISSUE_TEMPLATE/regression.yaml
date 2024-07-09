@@ -24,8 +24,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version
-      placeholder: e.g. v3.3.8 or latest
+      label: Version(s)
+      description: What versions did you experience this on? Please provide all versions. When testing `:latest`, please provide a SHA
+      placeholder: v3.5.7, v3.5.8, 3ece3b30f0c445204fec468fd437e77283cab913
     validations:
       required: true
   - type: textarea
