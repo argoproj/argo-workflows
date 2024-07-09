@@ -25,11 +25,11 @@ These notes explain the differences in using the Prometheus `/metrics` endpoint 
 
 The following are new metrics:
 
-* `controller_build_info`
 * `queue_duration`
 * `queue_longest_running`
 * `queue_retries`
 * `queue_unfinished_work`
+* `version`
 
 and can be disabled with
 
