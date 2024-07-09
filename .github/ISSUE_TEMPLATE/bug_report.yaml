@@ -1,5 +1,5 @@
 name: Reproducible bug report
-description: Create a reproducible bug report. Not for support requests.
+description: Create a [minimal, reproducible](https://stackoverflow.com/help/minimal-reproducible-example) bug report. Not for support requests.
 labels: [ type/bug ]
 body:
   - type: checkboxes
