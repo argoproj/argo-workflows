@@ -3,7 +3,7 @@ package metrics
 const (
 	labelBuildVersion      string = `version`
 	labelBuildPlatform     string = `platform`
-	labelBuildGoVersion    string = `goversion`
+	labelBuildGoVersion    string = `go_version`
 	labelBuildDate         string = `build_date`
 	labelBuildCompiler     string = `compiler`
 	labelBuildGitCommit    string = `git_commit`
