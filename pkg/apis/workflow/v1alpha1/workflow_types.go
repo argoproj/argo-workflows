@@ -1976,7 +1976,7 @@ func (ws *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
 	if found {
 		return !value
 	}
-	return true
+	return false
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
