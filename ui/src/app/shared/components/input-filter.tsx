@@ -9,6 +9,7 @@ interface InputProps {
     name: string;
     onChange: (input: string) => void;
     filterSuggestions?: boolean;
+    autoHighlight?: boolean;
 }
 
 export function InputFilter(props: InputProps) {
@@ -58,6 +59,7 @@ export function InputFilter(props: InputProps) {
                 }}
                 renderInput={renderInput}
                 filterSuggestions={props.filterSuggestions}
+                autoHighlight={props.autoHighlight}
             />
             <a
                 onClick={() => {

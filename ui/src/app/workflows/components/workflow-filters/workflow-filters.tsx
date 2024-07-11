@@ -115,7 +115,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                             ))}
                         </ul>
                     </DropDown>
-                    <InputFilter value={props.nameValue} name='wfNameFilter' onChange={value => props.setNameValue(value)} filterSuggestions />
+                    <InputFilter value={props.nameValue} name='wfNameFilter' onChange={value => props.setNameValue(value)} filterSuggestions autoHighlight={false} />
                 </div>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Labels</p>
