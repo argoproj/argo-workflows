@@ -7,7 +7,9 @@ echo_escape() {
 }
 
 git_log='git --no-pager log --no-merges'
-git_log_filtered="$git_log --invert-grep --grep=^\(build\|chore\|ci\|docs\|test\):"
+# exclude build, chore, ci, docs, and test of all scopes. always include deps scope and breaking changes. always exclude docs and deps-dev scopes and GHA dep bumps
+# we use a denylist instead of an allowlist because of backward-compat: <=3.4.7 missing some conventional commits, <=2.5.0-rc missing most or all conventional commits
+git_log_filtered="$git_log -P --invert-grep --grep=^(build|chore|ci|docs|test)(\((?!deps).*\))?: --invert-grep --grep=^(.+)(\(docs|deps-dev\)): --invert-grep --grep=^chore\(deps\):\sbump\s(actions|dependabot)/.*"
 
 echo '# Changelog'
 
