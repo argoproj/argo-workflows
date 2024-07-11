@@ -17,7 +17,7 @@ body:
   - type: textarea
     id: description
     attributes:
-      label: What happened/what did you expect to happen?
+      label: What happened? What did you expect to happen?
     validations:
       required: true
   - type: input
