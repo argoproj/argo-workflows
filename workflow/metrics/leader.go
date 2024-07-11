@@ -17,7 +17,7 @@ func addIsLeader(ctx context.Context, m *Metrics) error {
 	const nameLeader = `is_leader`
 	err := m.createInstrument(int64ObservableGauge,
 		nameLeader,
-		"Emits 1 if this is the leader when leader elections are enabled, or 0 otherwise. Always 1 when leader elections are disabled.",
+		"Emits 1 if leader, 0 otherwise. Always 1 if leader election is disabled.",
 		"{leader}",
 		withAsBuiltIn(),
 	)
