@@ -13,9 +13,8 @@ interface ParametersInputProps {
 export function ParametersInput(props: ParametersInputProps) {
     function onParameterChange(parameter: Parameter, value: string) {
         const newParameters: Parameter[] = props.parameters.map(p => ({
-            name: p.name,
-            value: p.name === parameter.name ? value : Utils.getValueFromParameter(p),
-            enum: p.enum
+            ...p,
+            value: p.name === parameter.name ? value : Utils.getValueFromParameter(p)
         }));
         props.onChange(newParameters);
     }

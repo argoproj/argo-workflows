@@ -58,6 +58,10 @@ func (w *When) SubmitWorkflow() *When {
 	return w
 }
 
+func (w *When) GetWorkflow() *wfv1.Workflow {
+	return w.wf
+}
+
 func label(obj metav1.Object) {
 	labels := obj.GetLabels()
 	if labels == nil {

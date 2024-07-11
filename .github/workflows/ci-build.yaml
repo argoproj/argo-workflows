@@ -328,9 +328,9 @@ jobs:
           set -eux
           kubectl get pods -l workflows.argoproj.io/workflow
           kubectl describe pods -l workflows.argoproj.io/workflow
-      - name: Failure debug - Wait container logs
+      - name: Failure debug - Workflow Pod logs
         if: ${{ failure() }}
-        run: kubectl logs -c wait -l workflows.argoproj.io/workflow --prefix
+        run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
 
   # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
   # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
