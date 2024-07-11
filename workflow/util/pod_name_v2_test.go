@@ -52,6 +52,6 @@ func TestPodNameV2(t *testing.T) {
 
 	h = fnv.New32a()
 	_, _ = h.Write([]byte("stp.inline"))
-	name = GeneratePodName(shortWfName, "stp.inline", longTemplateName, nodeID, PodNameV2)
+	name = GeneratePodName(shortWfName, "stp.inline", "", nodeID, PodNameV2)
 	assert.Equal(t, fmt.Sprintf("wfname-%v", h.Sum32()), name)
 }

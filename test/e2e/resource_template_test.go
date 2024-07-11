@@ -165,6 +165,18 @@ func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
 		})
 }
 
+func (s *ResourceTemplateSuite) TestResourceTemplateFailed() {
+	s.Given().
+		Workflow("@testdata/resource-templates/failed.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+		})
+}
+
 func TestResourceTemplateSuite(t *testing.T) {
 	suite.Run(t, new(ResourceTemplateSuite))
 }
