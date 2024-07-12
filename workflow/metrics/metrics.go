@@ -95,6 +95,7 @@ func New(ctx context.Context, serviceName string, config *Config, callbacks Call
 	err = metrics.populate(ctx,
 		addIsLeader,
 		addPodPhaseGauge,
+		addPodPhaseCounter,
 		addPodMissingCounter,
 		addWorkflowPhaseGauge,
 		addOperationDurationHistogram,
