@@ -293,6 +293,19 @@ You should only see this under high load.
 
 `recently_started` is controlled by the [environment variable](environment-variables.md) `RECENTLY_STARTED_POD_DURATION` and defaults to 10 seconds.
 
+#### `pod_pending_count`
+
+A counter of pods that have been seen in the Pending state.
+
+| attribute          | explanation                               |
+|--------------------|-------------------------------------------|
+| `reason` | Summary of the kubernetes Reason for pending.    |
+| `namespace`        | The namespace in which the pod is running |
+
+This metric ignores the `PodInitializing` reason and does not count it.
+The `reason` attribute is the value from the Reason message before the `:` in the message.
+This is not directly controlled by the workflow controller, so it is possible for some pod pending states to be missed.
+
 #### `pods_total_count`
 
 A gauge of the number of pods which have entered each phase and then observed by the controller.
