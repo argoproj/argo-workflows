@@ -233,6 +233,13 @@ A counter of the number of API requests sent to the Kubernetes API.
 | `verb`        | The verb of the request, such as `Get` or `List`                   |
 | `status_code` | The HTTP status code of the response                               |
 
+#### `is_leader`
+
+A gauge indicating if this Controller is the [leader](high-availability.md#workflow-controller).
+
+- `1` if leader or in standalone mode via [`LEADER_ELECTION_DISABLE=true`](environment-variables.md#controller).
+- `0` otherwise, indicating that this controller is a standby that is not currently running workflows.
+
 #### `log_messages`
 
 A count of log messages emitted by the controller by log level: `error`, `warn` and `info`.

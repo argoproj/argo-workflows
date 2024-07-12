@@ -16,7 +16,9 @@ func TestViewDisable(t *testing.T) {
 				Disabled: true,
 			},
 		},
-	})
+	},
+		Callbacks{},
+	)
 	assert.NoError(t, err)
 	m.OperationCompleted(m.ctx, 5)
 	attribs := attribute.NewSet()
@@ -32,7 +34,9 @@ func TestViewDisabledAttributes(t *testing.T) {
 				DisabledAttributes: []string{labelErrorCause},
 			},
 		},
-	})
+	},
+		Callbacks{},
+	)
 	assert.NoError(t, err)
 	// Submit a couple of errors
 	m.OperationPanic(context.Background())
@@ -58,7 +62,9 @@ func TestViewHistogramBuckets(t *testing.T) {
 				HistogramBuckets: bounds,
 			},
 		},
-	})
+	},
+		Callbacks{},
+	)
 	assert.NoError(t, err)
 	m.OperationCompleted(m.ctx, 5)
 	attribs := attribute.NewSet()
