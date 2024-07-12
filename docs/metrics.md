@@ -233,7 +233,7 @@ A counter of the number of API requests sent to the Kubernetes API.
 | `verb`        | The verb of the request, such as `Get` or `List`                   |
 | `status_code` | The HTTP status code of the response                               |
 
-#### `leader`
+#### `is_leader`
 
 A gauge indicating if this Controller is the [leader](high-availability.md#workflow-controller).
 

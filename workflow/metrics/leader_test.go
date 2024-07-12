@@ -21,9 +21,8 @@ func TestIsLeader(t *testing.T) {
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
 	val, err := te.GetInt64GaugeValue(`is_leader`, &attribs)
-	if assert.NoError(t, err) {
-		assert.Equal(t, int64(1), val)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), val)
 }
 
 func TestNotLeader(t *testing.T) {
@@ -38,7 +37,6 @@ func TestNotLeader(t *testing.T) {
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
 	val, err := te.GetInt64GaugeValue(`is_leader`, &attribs)
-	if assert.NoError(t, err) {
-		assert.Equal(t, int64(0), val)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), val)
 }
