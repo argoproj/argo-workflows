@@ -1,5 +1,5 @@
 import {CronWorkflow, CronWorkflowList} from '../../../models';
-import {Utils} from '../utils';
+import {queryParams} from './utils';
 import requests from './requests';
 
 export const CronWorkflowService = {
@@ -12,7 +12,7 @@ export const CronWorkflowService = {
 
     list(namespace: string, labels: string[] = []) {
         return requests
-            .get(`api/v1/cron-workflows/${namespace}?${Utils.queryParams({labels}).join('&')}`)
+            .get(`api/v1/cron-workflows/${namespace}?${queryParams({labels}).join('&')}`)
             .then(res => res.body as CronWorkflowList)
             .then(list => list.items || []);
     },

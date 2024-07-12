@@ -24,7 +24,7 @@ import {uiUrl} from './shared/base';
 import {ChatButton} from './shared/components/chat-button';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
-import {Utils} from './shared/utils';
+import {nsUtils} from './shared/namespaces';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
@@ -59,21 +59,21 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
             type: NotificationType.Error
         });
     };
-    Utils.onNamespaceChange = setNamespace;
+    nsUtils.onNamespaceChange = setNamespace;
     useEffect(() => {
         const sub = popupManager.popupProps.subscribe(setPopupProps);
         return () => sub.unsubscribe();
     }, [popupManager]);
     useEffect(() => {
         services.info.getUserInfo().then(userInfo => {
-            Utils.userNamespace = userInfo.serviceAccountNamespace;
-            setNamespace(Utils.currentNamespace);
+            nsUtils.userNamespace = userInfo.serviceAccountNamespace;
+            setNamespace(nsUtils.currentNamespace);
         });
         services.info
             .getInfo()
             .then(info => {
-                Utils.managedNamespace = info.managedNamespace;
-                setNamespace(Utils.currentNamespace);
+                nsUtils.managedNamespace = info.managedNamespace;
+                setNamespace(nsUtils.currentNamespace);
                 setModals(info.modals);
                 setNavBarBackgroundColor(info.navColor);
             })
@@ -82,7 +82,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
             .catch(setError);
     }, []);
 
-    const namespaceSuffix = Utils.managedNamespace ? '' : '/' + (namespace || '');
+    const namespaceSuffix = nsUtils.managedNamespace ? '' : '/' + (namespace || '');
     return (
         <>
             {popupProps && <Popup {...popupProps} />}
@@ -179,7 +179,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                                 <Route exact={true} strict={true} path={apiDocsUrl} component={apiDocs.component} />
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
                                 <Route exact={true} strict={true} path={loginUrl} component={login.component} />
-                                {Utils.managedNamespace && <Redirect to={workflowsUrl} />}
+                                {nsUtils.managedNamespace && <Redirect to={workflowsUrl} />}
                                 {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
                             </Switch>
                         </ErrorBoundary>

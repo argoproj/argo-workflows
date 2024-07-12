@@ -5,9 +5,8 @@ import {Parameter, RetryOpts, Workflow} from '../../../models';
 import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
-import {ParametersInput} from '../../shared/components/parameters-input';
+import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
 import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
 
 interface Props {
     workflow: Workflow;
@@ -27,7 +26,7 @@ export function RetryWorkflowPanel(props: Props) {
     async function submit() {
         setIsSubmitting(true);
         const parameters: RetryOpts['parameters'] = overrideParameters
-            ? [...workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p))]
+            ? [...workflowParameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p))]
             : [];
         const opts: RetryOpts = {
             parameters,

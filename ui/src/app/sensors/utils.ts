@@ -1,28 +1,22 @@
 import {Condition} from '../../models';
 
-export const Utils = {
-    statusIconClasses(conditions: Condition[], icon: string): string {
-        let classes = [icon];
-        if (!conditions || conditions.length === 0) {
-            classes = [icon, 'status-icon--init'];
-        } else {
-            let isRunning = false;
-            let hasFailed = false;
-            conditions.map(condition => {
-                if (condition.status === 'False') {
-                    hasFailed = true;
-                } else if (condition.status === 'Unknown') {
-                    isRunning = true;
-                }
-            });
-            if (hasFailed) {
-                classes = [icon, 'status-icon--failed'];
-            } else if (isRunning) {
-                classes = [icon, 'status-icon--spin'];
-            } else {
-                classes = [icon, 'status-icon--running'];
-            }
-        }
+export function statusIconClasses(conditions: Condition[], icon: string): string {
+    let classes = [icon];
+    if (!conditions || conditions.length === 0) {
+        classes = [icon, 'status-icon--init'];
         return classes.join(' ');
     }
-};
+
+    for (const condition of conditions) {
+        if (condition.status === 'False') {
+            classes = [icon, 'status-icon--failed'];
+            return classes.join(' ');
+        } else if (condition.status === 'Unknown') {
+            classes = [icon, 'status-icon--spin'];
+            return classes.join(' ');
+        }
+    }
+
+    classes = [icon, 'status-icon--running'];
+    return classes.join(' ');
+}
