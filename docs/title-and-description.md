@@ -49,7 +49,7 @@ metadata:
 metadata:
   name: wonderful-poochenheimer
 
-# 3. markdown titile, no description
+# 3. markdown title, no description
 metadata:
   annotations:
     workflows.argoproj.io/title: '**Build and test and test**'

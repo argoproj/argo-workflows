@@ -24,6 +24,7 @@ import (
 	"k8s.io/gengo/namer"
 	gengotypes "k8s.io/gengo/types"
 	kubectlcmd "k8s.io/kubectl/pkg/cmd"
+	kubectlutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -370,6 +371,13 @@ func runKubectl(args ...string) ([]byte, error) {
 	defer func() {
 		os.Args = osArgs
 	}()
+
+	var fatalErr error
+	// catch `os.Exit(1)` from kubectl
+	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
+		fatalErr = errors.New(fmt.Sprint(code), msg)
+	})
+
 	var buf bytes.Buffer
 	if err := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
 		Arguments: args,
@@ -382,6 +390,9 @@ func runKubectl(args ...string) ([]byte, error) {
 		IOStreams: genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
 	}).Execute(); err != nil {
 		return nil, err
+	}
+	if fatalErr != nil {
+		return nil, fatalErr
 	}
 	return buf.Bytes(), nil
 }

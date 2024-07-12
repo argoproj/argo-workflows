@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
@@ -180,7 +181,23 @@ func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 		if err != nil {
 			return err
 		}
-		return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+
+		// check suffix instead of s3cli.IsDirectory as it requires another request for file delete (most scenarios)
+		if !strings.HasSuffix(artifact.S3.Key, "/") {
+			return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+		}
+
+		keys, err := s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
+		if err != nil {
+			return fmt.Errorf("unable to list files in %s: %s", artifact.S3.Key, err)
+		}
+		for _, objKey := range keys {
+			err = s3cli.Delete(artifact.S3.Bucket, objKey)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 
 	return err

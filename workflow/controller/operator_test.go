@@ -10899,6 +10899,9 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
+	for _, node := range woc.wf.Status.Nodes {
+		woc.wf.Status.MarkTaskResultIncomplete(node.ID)
+	}
 	err, podReconciliationCompleted := woc.podReconciliation(ctx)
 	assert.Nil(t, err)
 	assert.False(t, podReconciliationCompleted)
