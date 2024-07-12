@@ -34,7 +34,10 @@ The following are new metrics:
 * `queue_longest_running`
 * `queue_retries`
 * `queue_unfinished_work`
+* `total_count`
 * `version`
+* `workflowtemplate_runtime`
+* `workflowtemplate_triggered_total`
 
 and can be disabled with
 

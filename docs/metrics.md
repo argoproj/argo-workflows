@@ -380,6 +380,15 @@ A gauge of the number of queue items that have not been processed yet.
 
 See [queue adds count](#queue_adds_count) for details.
 
+#### `total_count`
+
+A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace.
+
+| attribute   | explanation                                    |
+|-------------|------------------------------------------------|
+| `phase`     | The phase that the workflow has entered        |
+| `namespace` | The namespace in which the workflow is running |
+
 #### `version`
 
 Build metadata for this Controller.
@@ -410,6 +419,30 @@ This will tell you the number of workflows with running pods.
 |-----------|-------------------------------------------------|
 | `type`    | the type of condition, currently only `Running` |
 | `status`  | `true` or `false`                               |
+
+#### `workflowtemplate_runtime`
+
+A histogram of the duration of workflows using `workflowTemplateRef` only, as they enter each phase.
+Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
+Records time between entering the `Running` phase and completion, so does not include any time in `Pending`.
+
+| attribute       | explanation                                                  |
+|-----------------|--------------------------------------------------------------|
+| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate      |
+| `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate.  |
+| `namespace`     | The namespace from which the WorkflowTemplate is being used  |
+
+#### `workflowtemplate_triggered_total`
+
+A counter of workflows using `workflowTemplateRef` only, as they enter each phase.
+Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
+
+| attribute       | explanation                                                  |
+|-----------------|--------------------------------------------------------------|
+| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate      |
+| `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate.  |
+| `namespace`     | The namespace from which the WorkflowTemplate is being used  |
+| `phase`         | The phase that the workflow entered                          |
 
 ### Metric types
 
