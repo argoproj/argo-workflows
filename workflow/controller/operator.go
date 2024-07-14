@@ -121,7 +121,9 @@ var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
-	ErrParallelismReached       = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	// ErrFailFastReached indicates that the workflow failed fast
+	ErrFailFastReached          = errors.New(errors.CodeForbidden, "Fail fast reached")
 	ErrResourceRateLimitReached = errors.New(errors.CodeForbidden, "resource creation rate-limit reached")
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
@@ -1962,6 +1964,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		return node, err
 	}
 
+	// Check if we reach template or workflow FailFast and immediately return if we did
+	if err := woc.checkFailFast(processedTmpl, node, opts.boundaryID); err != nil {
+		return node, err
+	}
+
 	unlockedNode := false
 
 	if processedTmpl.Synchronization != nil {
@@ -2755,14 +2762,8 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		return ErrParallelismReached
 	}
 
-	// If we are a DAG or Steps template, check if we have active pods or unsuccessful children
+	// If we are a DAG or Steps template, check if we have active pods
 	if node != nil && (tmpl.GetType() == wfv1.TemplateTypeDAG || tmpl.GetType() == wfv1.TemplateTypeSteps) {
-		// Check failFast
-		if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
-			return ErrParallelismReached
-		}
-
 		// Check parallelism
 		if tmpl.HasParallelism() && woc.getActivePods(node.ID) >= *tmpl.Parallelism {
 			woc.log.Infof("template (node %s) active children parallelism exceeded %d", node.ID, *tmpl.Parallelism)
@@ -2771,6 +2772,37 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 	}
 
 	// if we are about to execute a pod, make sure our parent hasn't reached it's limit
+	if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
+		boundaryTemplate, templateStored, err := woc.GetTemplateByBoundaryID(boundaryID)
+		if err != nil {
+			return err
+		}
+		// A new template was stored during resolution, persist it
+		if templateStored {
+			woc.updated = true
+		}
+
+		// Check parallelism
+		if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
+			woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
+			return ErrParallelismReached
+		}
+	}
+	return nil
+}
+
+// checkFailFast checks if the given template is failFast enabled, considering whether the workflow/template have unsuccessful children or not.
+func (woc *wfOperationCtx) checkFailFast(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
+	// If we are a DAG or Steps template, check if we have unsuccessful children
+	if node != nil && (tmpl.GetType() == wfv1.TemplateTypeDAG || tmpl.GetType() == wfv1.TemplateTypeSteps) {
+		// Check failFast
+		if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
+			woc.markNodePhase(node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+			return ErrFailFastReached
+		}
+	}
+
+	// if we are about to execute a pod, make sure our parent has failFast enabled and unsuccessful children
 	if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
 		boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID)
 		if err != nil {
@@ -2789,13 +2821,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		// Check failFast
 		if boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
 			woc.markNodePhase(boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
-			return ErrParallelismReached
-		}
-
-		// Check parallelism
-		if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
-			woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
-			return ErrParallelismReached
+			return ErrFailFastReached
 		}
 	}
 	return nil
