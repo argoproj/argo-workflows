@@ -1733,6 +1733,10 @@ message Template {
   // Timeout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
+
+  // PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+  // This duration may not be applied to Step or DAG templates.
+  optional string pendingTimeout = 44;
 }
 
 // TemplateRef is a reference of template resource.
