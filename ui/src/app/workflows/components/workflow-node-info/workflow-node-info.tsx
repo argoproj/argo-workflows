@@ -66,6 +66,7 @@ interface Props {
     onTabSelected?: (tabSelected: string) => void;
     selectedTabKey?: string;
     onResume?: () => void;
+    onRetryNode?: () => void;
 }
 
 const AttributeRow = (attr: {title: string; value: any}) => (
@@ -177,6 +178,7 @@ function WorkflowNodeSummary(props: Props) {
         });
     }
     const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
+
     return (
         <div className='white-box'>
             <div className='white-box__details' style={{paddingBottom: '8px'}}>
@@ -191,6 +193,11 @@ function WorkflowNodeSummary(props: Props) {
                 {props.node.type !== 'Container' && props.onShowYaml && (
                     <Button icon='file-code' onClick={() => props.onShowYaml(props.node.id)}>
                         MANIFEST
+                    </Button>
+                )}{' '}
+                {props.onRetryNode && ['Succeeded', 'Failed'].includes(props.node.phase) && (
+                    <Button icon='undo-alt' onClick={() => props.onRetryNode()}>
+                        RETRY NODE
                     </Button>
                 )}{' '}
                 {props.node.type === 'Pod' && props.onShowContainerLogs && (
