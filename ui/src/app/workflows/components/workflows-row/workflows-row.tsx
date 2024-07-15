@@ -13,7 +13,6 @@ import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {wfDuration} from '../../../shared/duration';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
-import {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
 require('./workflows-row.scss');
 
@@ -23,6 +22,8 @@ interface WorkflowsRowProps {
     select: (wf: Workflow) => void;
     checked: boolean;
     columns: models.Column[];
+    displayISOFormatStart: boolean;
+    displayISOFormatFinished: boolean;
 }
 
 export function WorkflowsRow(props: WorkflowsRowProps) {
@@ -62,10 +63,10 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                     </Link>
                     <div className='columns small-1'>{wf.metadata.namespace}</div>
                     <div className='columns small-1'>
-                        <Timestamp date={wf.status.startedAt} timestampKey={TIMESTAMP_KEYS.WORKFLOWS_ROW_STARTED} />
+                        <Timestamp date={wf.status.startedAt} displayISOFormat={props.displayISOFormatStart} />
                     </div>
                     <div className='columns small-1'>
-                        <Timestamp date={wf.status.finishedAt} timestampKey={TIMESTAMP_KEYS.WORKFLOWS_ROW_FINISHED} />
+                        <Timestamp date={wf.status.finishedAt} displayISOFormat={props.displayISOFormatFinished} />
                     </div>
                     <div className='columns small-1'>
                         <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>

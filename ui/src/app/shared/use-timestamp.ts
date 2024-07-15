@@ -1,4 +1,4 @@
-import React from 'react';
+import {useState} from 'react';
 import {ScopedLocalStorage} from './scoped-local-storage';
 
 export enum TIMESTAMP_KEYS {
@@ -17,24 +17,23 @@ export enum TIMESTAMP_KEYS {
     WORKFLOW_NODE_ARTIFACT_CREATED = 'workflowNodeArtifactCreated',
     WORKFLOW_TEMPLATE_LIST_CREATION = 'workflowTemplateListCreation',
     WORKFLOWS_ROW_STARTED = 'workflowsRowStarted',
-    WORKFLOWS_ROW_FINISHED = 'workflowsRowFinished'
+    WORKFLOWS_ROW_FINISHED = 'workflowsRowFinished',
+    CRON_ROW_STARTED = 'cronRowStarted',
+    CRON_ROW_FINISHED = 'cronRowFinished'
 }
 
 const storage = new ScopedLocalStorage('Timestamp');
 
 // key is used to store the preference in local storage
-const useTimestamp = (timestampKey: TIMESTAMP_KEYS) => {
-    const [displayISOFormat, setDisplayISOFormat] = React.useState(storage.getItem(`displayISOFormat-${timestampKey}`, false));
+const useTimestamp = (timestampKey: TIMESTAMP_KEYS): [boolean, (value: boolean) => void] => {
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useState<boolean>(storage.getItem(`displayISOFormat-${timestampKey}`, false));
 
-    const handleDisplayISOFormatChange = (value: boolean) => {
-        setDisplayISOFormat(value);
+    const handleStoredDisplayISOFormatChange = (value: boolean) => {
+        setStoredDisplayISOFormat(value);
         storage.setItem(`displayISOFormat-${timestampKey}`, value, false);
     };
 
-    return {
-        displayISOFormat,
-        setDisplayISOFormat: handleDisplayISOFormatChange
-    };
+    return [storedDisplayISOFormat, handleStoredDisplayISOFormatChange];
 };
 
 export default useTimestamp;
