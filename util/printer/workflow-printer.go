@@ -137,8 +137,7 @@ func countPendingRunningCompletedNodes(wf *wfv1.Workflow) (int, int, int) {
 	running := 0
 	completed := 0
 	for _, node := range wf.Status.Nodes {
-		tmpl := wf.GetTemplateByName(util.GetTemplateFromNode(node))
-		if tmpl == nil || !tmpl.IsPodType() {
+		if node.Type != wfv1.NodeTypePod {
 			continue
 		}
 		if node.Fulfilled() {

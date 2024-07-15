@@ -74,4 +74,4 @@ updates:
       - type/dependencies
       - github_actions
     commit-message:
-      prefix: chore(deps)
+      prefix: chore(deps-dev)

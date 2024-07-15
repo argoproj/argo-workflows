@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: failed-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: patch
+      manifest: |
+        apiVersion: v1
+        # kind: Pod -- missing this causes an error
+        metadata:
+          name: {{pod.name}}
+          annotations:
+            foo: bar
