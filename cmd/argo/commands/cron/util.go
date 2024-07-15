@@ -127,6 +127,9 @@ func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
 	if cwf.Spec.ConcurrencyPolicy != "" {
 		out += fmt.Sprintf(fmtStr, "ConcurrencyPolicy:", cwf.Spec.ConcurrencyPolicy)
 	}
+	if cwf.Spec.MinimumInterval != "" {
+		out += fmt.Sprintf(fmtStr, "MinimumInterval:", cwf.Spec.MinimumInterval)
+	}
 	if cwf.Status.LastScheduledTime != nil {
 		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(cwf.Status.LastScheduledTime.Time))
 	}

@@ -32,6 +32,8 @@ spec:
               failedJobsHistoryLimit:
                 format: int32
                 type: integer
+              minimumInterval:
+                type: string
               schedule:
                 type: string
               schedules:

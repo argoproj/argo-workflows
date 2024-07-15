@@ -41,16 +41,17 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 
 ### `CronWorkflow` Options
 
-| Option Name                  | Default Value          | Description |
-|:----------------------------:|:----------------------:|-------------|
-| `schedule`                   | None, must be provided | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *` |
-| `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
-| `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly |
-| `concurrencyPolicy`          | `Allow`                | What to do if multiple `Workflows` are scheduled at the same time. `Allow`: allow all, `Replace`: remove all old before scheduling new, `Forbid`: do not allow any new while there are old  |
-| `startingDeadlineSeconds`    | `0`                    | Seconds after [the last scheduled time](#crash-recovery) during which a missed `Workflow` will still be run. |
-| `successfulJobsHistoryLimit` | `3`                    | Number of successful `Workflows` to persist |
-| `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` to persist |
-| `stopStrategy`               | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition |
+| Option Name                  | Default Value          | Description                                                                                                                                                                                |
+|:----------------------------:|:----------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schedule`                   | None, must be provided | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`                                                                                                            |
+| `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles`                                                           |
+| `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly                                                                                                 |
+| `concurrencyPolicy`          | `Allow`                | What to do if multiple `Workflows` are scheduled at the same time. `Allow`: allow all, `Replace`: remove all old before scheduling new, `Forbid`: do not allow any new while there are old |
+| `minimumInterval`            | None                   | The minimum interval between executions of this workflow. Examples: `90s`, `10m`, `2h`                                                                                                     |
+| `startingDeadlineSeconds`    | `0`                    | Seconds after [the last scheduled time](#crash-recovery) during which a missed `Workflow` will still be run. Should be shorter than `minimumInterval` for that to work as expected.        |
+| `successfulJobsHistoryLimit` | `3`                    | Number of successful `Workflows` to persist                                                                                                                                                |
+| `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` to persist                                                                                                                                                    |
+| `stopStrategy`               | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition                                                                                                    |
 
 ### Cron Schedule Syntax
 
@@ -107,6 +108,36 @@ For example, with `timezone: America/Los_Angeles`:
     | 1 2 ** *  | 1        | 2020-11-01 02:01:00 -0800 PST |
     |            | 2        | 2020-11-02 02:01:00 -0800 PST |
     |            | 3        | 2020-11-03 02:01:00 -0800 PST |
+
+#### Skip forward
+
+You can use `minimumInterval` to schedule once per day, even if the time you want is in a daylight saving skip forward period where it would otherwise be scheduled twice.
+
+An example 02:30:00 schedule
+
+```yaml
+schedules:
+  - 30 2 * * *
+  - 0 3 * * *
+minimumInterval: 60m
+```
+
+The 3:00 run of the schedule will not be scheduled every day of the year except on the day when the clock leaps forward over 2:30.
+In that case the 3:00 run will run.
+
+#### Skip backwards (duplication)
+
+You can use `minimumInterval` to schedule once per day, even if the time you want is in a daylight saving skip backwards period where it would otherwise not be scheduled.
+
+An example 01:30:00 schedule
+
+```yaml
+schedule: 30 1 * * *
+minimumInterval: 120m
+```
+
+This will schedule at the first 01:30 on a skip backwards change.
+The second will not run because of `minimumInterval`.
 
 ### Automatically Stopping a `CronWorkflow`
 

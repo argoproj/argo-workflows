@@ -396,6 +396,13 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 
 	wf := common.ConvertCronWorkflowToWorkflow(cronWf)
 
+	if cronWf.Spec.MinimumInterval != "" {
+		_, err := time.ParseDuration(cronWf.Spec.MinimumInterval)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "MinimumInterval %s is malformed: %s", cronWf.Spec.MinimumInterval, err)
+		}
+	}
+
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)

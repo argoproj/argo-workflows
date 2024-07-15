@@ -36,7 +36,7 @@ K3D_CLUSTER_NAME      ?= k3s-default # declares which cluster to import to in ca
 # -- test options
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
-E2E_SUITE_TIMEOUT     ?= 15m
+E2E_SUITE_TIMEOUT     ?= 25m
 GOTEST                ?= go test -v -p 20
 
 # should we build the static files?

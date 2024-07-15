@@ -220,7 +220,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-allow
   labels:
-    
+
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -425,6 +425,41 @@ spec:
 				assert.Equal(t, int64(1), cronWf.Status.Failed)
 				assert.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
 				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
+			})
+	})
+	s.Run("TestMinimumInterval", func() {
+		s.T().Parallel()
+		var listOptions v1.ListOptions
+		wfInformerListOptionsFunc(&listOptions, "test-cron-wf-minimum-interval")
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-minimum-interval
+spec:
+  schedule: "* * * * *"
+  startingDeadlineSeconds: 0
+  minimumInterval: 90s
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 4
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2`).
+			When().
+			CreateCronWorkflow().
+			Wait(4*time.Minute+25*time.Second).
+			Then().
+			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
+				assert.Equal(t, 2, len(wfList.Items))
+				assert.True(t, wfList.Items[1].Status.FinishedAt.Time.After(time.Now().Add(-2*time.Minute)))
 			})
 	})
 }

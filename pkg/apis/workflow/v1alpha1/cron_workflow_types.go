@@ -65,6 +65,9 @@ type CronWorkflowSpec struct {
 	StopStrategy *StopStrategy `json:"stopStrategy,omitempty" protobuf:"bytes,10,opt,name=stopStrategy"`
 	// Schedules is a list of schedules to run the Workflow in Cron format
 	Schedules []string `json:"schedules,omitempty" protobuf:"bytes,11,opt,name=schedules"`
+	// v3.6 and after: MinimumInterval is the minimum time between runs of this CronWorkflow.
+	// Further runs before MinimumInterval has passed will be suppressed.
+	MinimumInterval string `json:"minimumInterval,omitempty" protobuf:"bytes,12,name=minimumInterval"`
 }
 
 // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
