@@ -67,7 +67,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
     useEffect(() => {
         services.info.getUserInfo().then(userInfo => {
             nsUtils.setUserNamespace(userInfo.serviceAccountNamespace);
-             setNamespace(nsUtils.getCurrentNamespace());
+            setNamespace(nsUtils.getCurrentNamespace());
         });
         services.info
             .getInfo()

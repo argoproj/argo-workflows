@@ -7,7 +7,7 @@ import * as nsUtils from './namespaces';
 describe('history URL', () => {
     test('namespace', () => {
         expect(historyUrl('foo/{namespace}', {namespace: 'my-ns'})).toBe('/foo/my-ns?');
-        expect(nsUtils.currentNamespace).toBe('my-ns');
+        expect(nsUtils.getCurrentNamespace()).toBe('my-ns');
     });
 
     test('path parameter', () => {
