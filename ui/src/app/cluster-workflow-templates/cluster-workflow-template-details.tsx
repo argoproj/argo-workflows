@@ -14,7 +14,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
 import {ClusterWorkflowTemplateEditor} from './cluster-workflow-template-editor';
 

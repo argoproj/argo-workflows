@@ -21,7 +21,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 import {CronWorkflowCreator} from './cron-workflow-creator';
 import {CronWorkflowFilters} from './cron-workflow-filters';
 import {PrettySchedule} from './pretty-schedule';
@@ -51,7 +51,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     useEffect(
         () =>
             history.push(
-                historyUrl('cron-workflows' + (nsUtils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel
                 })

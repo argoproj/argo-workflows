@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import {historyUrl} from './history';
-import {nsUtils} from './namespaces';
+import * as nsUtils from './namespaces';
 
 describe('history URL', () => {
     test('namespace', () => {

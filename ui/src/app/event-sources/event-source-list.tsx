@@ -22,7 +22,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceCreator} from './event-source-creator';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
@@ -52,7 +52,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
     useEffect(
         () =>
             history.push(
-                historyUrl('event-sources' + (nsUtils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('event-sources' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel,
                     selectedNode,

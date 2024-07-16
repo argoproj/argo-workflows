@@ -28,7 +28,7 @@ import {ListWatch} from '../shared/list-watch';
 import {RetryObservable} from '../shared/retry-observable';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {buildGraph} from './build-graph';
@@ -64,7 +64,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
     useEffect(
         () =>
             history.push(
-                historyUrl('event-flow' + (nsUtils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('event-flow' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     showFlow,
                     showWorkflows,

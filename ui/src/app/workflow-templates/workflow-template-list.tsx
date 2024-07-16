@@ -22,7 +22,7 @@ import {Pagination, parseLimit} from '../shared/pagination';
 import {ScopedLocalStorage} from '../shared/scoped-local-storage';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 import {WorkflowTemplateCreator} from './workflow-template-creator';
 import {WorkflowTemplateFilters} from './workflow-template-filters';
 
@@ -58,7 +58,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     useEffect(
         () =>
             history.push(
-                historyUrl('workflow-templates' + (nsUtils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel
                 })

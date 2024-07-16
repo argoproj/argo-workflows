@@ -7,7 +7,7 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {UploadButton} from '../shared/components/upload-button';
 import {exampleEventSource} from '../shared/examples';
 import {services} from '../shared/services';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 import {EventSourceEditor} from './event-source-editor';
 
 export function EventSourceCreator({onCreate, namespace}: {namespace: string; onCreate: (eventSource: EventSource) => void}) {

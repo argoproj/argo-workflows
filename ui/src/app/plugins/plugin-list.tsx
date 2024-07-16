@@ -7,7 +7,7 @@ import {uiUrl} from '../shared/base';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {historyUrl} from '../shared/history';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 
 export function PluginList({match, history}: RouteComponentProps<any>) {
     // state for URL and query parameters
@@ -15,7 +15,7 @@ export function PluginList({match, history}: RouteComponentProps<any>) {
     useEffect(
         () =>
             history.push(
-                historyUrl('plugins' + (nsUtils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('plugins' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace
                 })
             ),

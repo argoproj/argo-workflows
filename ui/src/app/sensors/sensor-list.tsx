@@ -20,7 +20,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 import {SensorCreator} from './sensor-creator';
 import {SensorSidePanel} from './sensor-side-panel';
 import {statusIconClasses} from './utils';
@@ -48,7 +48,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
     useEffect(
         () =>
             history.push(
-                historyUrl('sensors' + (nsUtils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('sensors' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel,
                     selectedNode

@@ -20,7 +20,7 @@ import {ListWatch, sortByYouth} from '../../../shared/list-watch';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
-import {nsUtils} from '../../../shared/namespaces';
+import * as nsUtils from '../../../shared/namespaces';
 import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowCreator} from '../workflow-creator';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
@@ -133,7 +133,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
         }
-        history.push(historyUrl('workflows' + (nsUtils.managedNamespace ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
+        history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
 
     useEffect(() => {

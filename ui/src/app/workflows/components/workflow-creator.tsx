@@ -9,7 +9,7 @@ import {ExampleManifests} from '../../shared/components/example-manifests';
 import {UploadButton} from '../../shared/components/upload-button';
 import {exampleWorkflow} from '../../shared/examples';
 import {services} from '../../shared/services';
-import {nsUtils} from '../../shared/namespaces';
+import * as nsUtils from '../../shared/namespaces';
 import {SubmitWorkflowPanel} from './submit-workflow-panel';
 import {WorkflowEditor} from './workflow-editor';
 

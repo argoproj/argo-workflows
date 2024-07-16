@@ -20,7 +20,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {nsUtils} from '../shared/namespaces';
+import * as nsUtils from '../shared/namespaces';
 import {ID} from './id';
 
 const introductionText = (
@@ -50,7 +50,7 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
     useEffect(
         () =>
             history.push(
-                historyUrl('workflow-event-bindings' + (nsUtils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('workflow-event-bindings' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     selectedWorkflowEventBinding
                 })
