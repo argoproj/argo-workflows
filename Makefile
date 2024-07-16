@@ -9,45 +9,35 @@ USE_NIX := false
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
+# -- build metadata
 BUILD_DATE            := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-# copied verbatim to release.yaml
+# below 3 are copied verbatim to release.yaml
 GIT_COMMIT            := $(shell git rev-parse HEAD || echo unknown)
-GIT_REMOTE            := origin
-GIT_BRANCH            := $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-# copied verbatim to release.yaml
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+GIT_REMOTE            := origin
+GIT_BRANCH            := $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
 DEV_BRANCH            := $(shell [ "$(GIT_BRANCH)" = main ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
 SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
-
-
-# docker image publishing options
-IMAGE_NAMESPACE       ?= quay.io/argoproj
-DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
-TARGET_PLATFORM       ?= linux/$(shell go env GOARCH)
-
-# declares which cluster to import to in case it's not the default name
-K3D_CLUSTER_NAME      ?= k3s-default
-
-# The name of the namespace where Kubernetes resources/RBAC will be installed
-KUBE_NAMESPACE        ?= argo
-MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
-
-# Timeout for wait conditions
-E2E_WAIT_TIMEOUT      ?= 90s
-
-E2E_PARALLEL          ?= 20
-E2E_SUITE_TIMEOUT     ?= 15m
-
 VERSION               := latest
-DOCKER_PUSH           ?= false
-
 # VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(RELEASE_TAG),true)
 VERSION               := $(GIT_TAG)
 endif
+
+# -- docker image publishing options
+IMAGE_NAMESPACE       ?= quay.io/argoproj
+DOCKER_PUSH           ?= false
+TARGET_PLATFORM       ?= linux/$(shell go env GOARCH)
+K3D_CLUSTER_NAME      ?= k3s-default # declares which cluster to import to in case it's not the default name
+
+# -- test options
+E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
+E2E_PARALLEL          ?= 20
+E2E_SUITE_TIMEOUT     ?= 15m
+GOTEST                ?= go test -v -p 20
 
 # should we build the static files?
 ifneq (,$(filter $(MAKECMDGOALS),codegen lint test docs start))
@@ -56,10 +46,12 @@ else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
-# start the UI
-UI                    ?= false
-# start the Argo Server
-API                   ?= $(UI)
+# -- install & run options
+PROFILE               ?= minimal
+KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
+PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
+UI                    ?= false # start the UI
+API                   ?= $(UI) # start the Argo Server
 TASKS                 := controller
 ifeq ($(API),true)
 TASKS                 := controller server
@@ -67,18 +59,6 @@ endif
 ifeq ($(UI),true)
 TASKS                 := controller server ui
 endif
-GOTEST                ?= go test -v -p 20
-PROFILE               ?= minimal
-PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
-# by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 1s
-# whether or not to start the Argo Service in TLS mode
-SECURE                := false
-AUTH_MODE             := hybrid
-ifeq ($(PROFILE),sso)
-AUTH_MODE             := sso
-endif
-
 # Which mode to run in:
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
@@ -86,9 +66,6 @@ RUN_MODE              := local
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
 DOCKER_DESKTOP        := $(shell [[ "$(KUBECTX)" == "docker-desktop" ]] && echo true || echo false)
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
-LOG_LEVEL             := debug
-UPPERIO_DB_DEBUG      := 0
-NAMESPACED            := true
 ifeq ($(PROFILE),prometheus)
 RUN_MODE              := kubernetes
 endif
@@ -96,8 +73,19 @@ ifeq ($(PROFILE),stress)
 RUN_MODE              := kubernetes
 endif
 
-ALWAYS_OFFLOAD_NODE_STATUS := false
-POD_STATUS_CAPTURE_FINALIZER ?= true
+# -- controller + server + executor env vars
+LOG_LEVEL                     := debug
+UPPERIO_DB_DEBUG              := 0
+DEFAULT_REQUEUE_TIME          ?= 1s # by keeping this short we speed up tests
+ALWAYS_OFFLOAD_NODE_STATUS 	  := false
+POD_STATUS_CAPTURE_FINALIZER  ?= true
+NAMESPACED                    := true
+MANAGED_NAMESPACE             ?= $(KUBE_NAMESPACE)
+SECURE                        := false # whether or not to start Argo in TLS mode
+AUTH_MODE                     := hybrid
+ifeq ($(PROFILE),sso)
+AUTH_MODE                     := sso
+endif
 
 $(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
 $(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
@@ -118,6 +106,7 @@ ifndef $(GOPATH)
 	export GOPATH
 endif
 
+# -- file lists
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
@@ -339,7 +328,7 @@ endif
 $(GOPATH)/bin/swagger:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.31.0
 endif
 $(GOPATH)/bin/goimports:
 # update this in Nix when upgrading it here
