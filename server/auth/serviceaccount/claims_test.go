@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const sub = 1234567890
+const sub = "1234567890"
 const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint:gosec
 
 const sub2 = "system:serviceaccount:argo:jenkins"
