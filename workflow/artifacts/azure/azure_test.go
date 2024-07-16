@@ -82,3 +82,25 @@ func TestArtifactDriver_DownloadDirectory_Subdir(t *testing.T) {
 	assert.NoError(t, err)
 	assert.FileExists(t, filepath.Join(dstDir, "dir", "subdir", "file-in-subdir.txt"))
 }
+
+func TestIsSASAccountKey(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		accountKey string
+		expected   bool
+	}{
+		// Valid SAS tokens
+		{"?sv=2019-12-12&ss=b&srt=sco&sp=rwdlacupx&se=2021-12-12T00:00:00Z&st=2021-01-01T00:00:00Z&spr=https&sig=signature", true},
+		{"?sv=2020-08-04&ss=b&srt=sco&sp=rwdlacupx&se=2022-12-12T00:00:00Z&st=2021-01-01T00:00:00Z&spr=https&sig=signature", true},
+		// Invalid SAS tokens
+		{"Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==", false},
+		{"invalid-sas-token", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.accountKey, func(t *testing.T) {
+			result := isSASAccountKey(tc.accountKey)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
