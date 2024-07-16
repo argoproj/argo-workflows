@@ -48,15 +48,15 @@ func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {
 		return nil, fmt.Errorf("failed to unmarshal bearer token's JWT payload: %w", err)
 	}
 
-	// attempt to derive ServiceAccount and ServiceAccountNamespace from Subject
+	// attempt to derive SA name and namespace from Subject
 	// "system:serviceaccount:argo:jenkins" -> "argo", "jenkins"
 	// note that the SA name can have a colon in it, although the rest cannot
 	parts = strings.SplitN(claims.Subject, ":", 4)
 	if len(parts) < 4 {
 		return claims, nil
 	}
-	claims.ServiceAccountName = parts[2]
-	claims.ServiceAccountNamespace = parts[3]
+	claims.ServiceAccountNamespace = parts[2]
+	claims.ServiceAccountName = parts[3]
 
 	return claims, nil
 }
