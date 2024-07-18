@@ -897,7 +897,38 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	deletedPods := make(map[string]bool)
 	var podsToDelete []string
 	var resetParentGroupNodes []string
-	for _, node := range wf.Status.Nodes {
+
+	nodes := wf.Status.Nodes
+	// Traverse nodes in BFS.
+	var nodeQueue []string
+	if len(nodes) > 0 {
+		nodeQueue = []string{wf.ObjectMeta.Name}
+	}
+	visited := make(map[string]bool)
+	// Store parents nodes info when traverse nodes.
+	parents := make(map[string]map[string]struct{})
+	for len(nodeQueue) > 0 {
+		nodeID := nodeQueue[0]
+		nodeQueue = nodeQueue[1:]
+
+		var np *wfv1.NodeStatus
+		if np, err = nodes.Get(nodeID); err != nil {
+			log.Warnf("Traverse nodes in BFS failed due to %s", err)
+			return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow: %s", err)
+		}
+		node := *np
+
+		for _, child := range node.Children {
+			if _, seen := visited[child]; !seen {
+				nodeQueue = append(nodeQueue, child)
+			}
+			if _, present := parents[child]; !present {
+				parents[child] = make(map[string]struct{})
+			}
+			parents[child][nodeID] = struct{}{}
+		}
+		visited[nodeID] = true
+
 		doForceResetNode := false
 		if _, present := nodeIDsToReset[node.ID]; present {
 			// if we are resetting this node then don't carry it across regardless of its phase
@@ -962,7 +993,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 					}
 				}
 			} else {
-				if !containsNode(resetParentGroupNodes, node.ID) {
+				if !containsNode(resetParentGroupNodes, node.ID) && !isOrphanNode(deletedNodes, parents[nodeID]) {
 					log.Debugf("Node %s remains as is", node.Name)
 					newWF.Status.Nodes.Set(node.ID, node)
 				}
@@ -1032,6 +1063,21 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 
 	return newWF, podsToDelete, nil
+}
+
+// isOrphanNode return true when all parents are deleted.
+func isOrphanNode(deletedNodes map[string]bool, parents map[string]struct{}) bool {
+	if len(parents) == 0 {
+		return false
+	}
+
+	for parent := range parents {
+		if _, ok := deletedNodes[parent]; !ok {
+			return false
+		}
+	}
+
+	return true
 }
 
 func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
