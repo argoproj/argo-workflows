@@ -52,7 +52,7 @@ func TestDetermineAccountName(t *testing.T) {
 }
 
 func TestArtifactDriver_WithServiceKey_DownloadDirectory_Subdir(t *testing.T) {
-	// t.Skipf("This test needs azurite. docker run -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:latest azurite-blob")
+	t.Skipf("This test needs azurite. docker run -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:latest azurite-blob")
 
 	driver := ArtifactDriver{
 		AccountKey: "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==", // default azurite key
@@ -74,7 +74,7 @@ func TestArtifactDriver_WithServiceKey_DownloadDirectory_Subdir(t *testing.T) {
 }
 
 func TestArtifactDriver_WithSASToken_DownloadDirectory_Subdir(t *testing.T) {
-	// t.Skipf("This test needs azurite. docker run -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:latest azurite-blob")
+	t.Skipf("This test needs azurite. docker run -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:latest azurite-blob")
 
 	driver := ArtifactDriver{
 		AccountKey: "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==", // default azurite key
