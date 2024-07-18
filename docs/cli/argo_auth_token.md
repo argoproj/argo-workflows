@@ -6,6 +6,14 @@ Print the auth token
 argo auth token [flags]
 ```
 
+### Examples
+
+```
+# Print the auth token
+
+  argo auth token
+```
+
 ### Options
 
 ```

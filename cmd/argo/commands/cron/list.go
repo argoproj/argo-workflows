@@ -23,11 +23,30 @@ type listFlags struct {
 	labelSelector string // --selector
 }
 
+var (
+	listCronWFExample = `# List all cron workflows
+
+  argo cron list
+
+# List all cron workflows in all namespaces
+
+  argo cron list --all-namespaces
+
+# List all cron workflows in all namespaces with a label selector
+
+  argo cron list --all-namespaces --selector key1=value1,key2=value2
+
+# List all cron workflows in all namespaces and output only the names
+
+  argo cron list --all-namespaces --output name`
+)
+
 func NewListCommand() *cobra.Command {
 	var listArgs listFlags
 	command := &cobra.Command{
-		Use:   "list",
-		Short: "list cron workflows",
+		Use:     "list",
+		Short:   "list cron workflows",
+		Example: listCronWFExample,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()

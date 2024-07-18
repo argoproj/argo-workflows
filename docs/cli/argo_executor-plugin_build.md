@@ -6,6 +6,15 @@ build an executor plugin
 argo executor-plugin build DIR [flags]
 ```
 
+### Examples
+
+```
+# Build an executor plugin
+
+  argo executor-plugin build my-executor-plugin/
+
+```
+
 ### Options
 
 ```

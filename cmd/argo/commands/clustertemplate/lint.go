@@ -19,6 +19,9 @@ func NewLintCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of cluster workflow template manifests",
+		Example: `# Validate cluster workflow template manifest
+
+  argo cluster-template lint FILE1 FILE2`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)

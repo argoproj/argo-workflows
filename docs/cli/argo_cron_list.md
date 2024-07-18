@@ -6,6 +6,26 @@ list cron workflows
 argo cron list [flags]
 ```
 
+### Examples
+
+```
+# List all cron workflows
+
+  argo cron list
+
+# List all cron workflows in all namespaces
+
+  argo cron list --all-namespaces
+
+# List all cron workflows in all namespaces with a label selector
+
+  argo cron list --all-namespaces --selector key1=value1,key2=value2
+
+# List all cron workflows in all namespaces and output only the names
+
+  argo cron list --all-namespaces --output name
+```
+
 ### Options
 
 ```

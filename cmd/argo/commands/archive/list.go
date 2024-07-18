@@ -16,6 +16,20 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/printer"
 )
 
+var (
+	listExample = `# List all archived workflows
+
+  argo archive list
+    
+# List archived workflows with label selector
+ 
+  argo archive list -l workflows.argoproj.io/test=true
+
+# List archived workflows in JSON format
+      
+  argo archive list -o json`
+)
+
 func NewListCommand() *cobra.Command {
 	var (
 		selector  string
@@ -23,8 +37,9 @@ func NewListCommand() *cobra.Command {
 		chunkSize int64
 	)
 	command := &cobra.Command{
-		Use:   "list",
-		Short: "list workflows in the archive",
+		Use:     "list",
+		Short:   "list workflows in the archive",
+		Example: listExample,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()

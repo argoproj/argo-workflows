@@ -14,6 +14,10 @@ func NewBuildCommand() *cobra.Command {
 		Use:          "build DIR",
 		Short:        "build an executor plugin",
 		SilenceUsage: true,
+		Example: `# Build an executor plugin
+
+  argo executor-plugin build my-executor-plugin/
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)
