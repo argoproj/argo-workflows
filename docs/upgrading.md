@@ -68,7 +68,7 @@ images:
     cmd: [/bin/bash]
 ```
 
-## feat: Fail on invalid config. (#8295)
+### feat: Fail on invalid config. (#8295)
 
 The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
 mis-configuration.
@@ -77,11 +77,11 @@ mis-configuration.
 Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
 ```
 
-## feat: add indexes for improve archived workflow performance. (#8860)
+### feat: add indexes for improve archived workflow performance. (#8860)
 
 This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.
 
-## feat: enhance artifact visualization (#8655)
+### feat: enhance artifact visualization (#8655)
 
 For AWS users using S3: visualizing artifacts in the UI and downloading them now requires an additional "Action" to be configured in your S3 bucket policy: "ListBucket".
 
