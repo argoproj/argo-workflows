@@ -1148,7 +1148,7 @@ func (s *CLISuite) TestTemplateCommands() {
 		s.Given().RunCli([]string{"template", "lint", "testdata/workflow-templates"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
 			assert.Contains(t, output, "invalid-workflowtemplate.yaml")
-			assert.Contains(t, output, `unknown field "entrypoints"`)
+			assert.Contains(t, output, `unknown field "spec.entrypoints"`)
 			assert.Contains(t, output, "linting errors found!")
 		})
 	})
