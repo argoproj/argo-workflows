@@ -344,6 +344,10 @@ Create an Azure Storage account and a container within that account. There are a
 ways to accomplish this, including the [Azure Portal](https://portal.azure.com) or the
 [CLI](https://docs.microsoft.com/en-us/cli/azure/).
 
+There are two ways to allow argo to authenticate it's access to your Azure storage account.
+
+### Using Azure access keys
+
 1. Retrieve the blob service endpoint for the storage account. For example:
 
    ```bash
@@ -393,7 +397,7 @@ used and authentication with Azure will be attempted using a
 [`DefaultAzureCredential`](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication)
 instead.
 
-## Configuring Azure Blob Storage with SAS 
+### Using Azure Shares Access Signatures (SAS)
 
 If you do not wish to use an access key, you may also use a [shared access signature (SAS)](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json).
 Create an Azure Storage account and a container within that account.
