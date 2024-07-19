@@ -10682,7 +10682,7 @@ spec:
     script:
       image: python:alpine3.6
       command: [python]
-      env:  
+      env:
       - name: message
         value: "{{inputs.parameters.message}}"
       source: |
