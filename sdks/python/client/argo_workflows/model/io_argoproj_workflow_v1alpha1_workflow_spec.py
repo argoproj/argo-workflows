@@ -151,7 +151,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             'metrics': (IoArgoprojWorkflowV1alpha1Metrics,),  # noqa: E501
             'node_selector': ({str: (str,)},),  # noqa: E501
             'on_exit': (str,),  # noqa: E501
-            'parallelism': (int,),  # noqa: E501
+            'parallelism': (str,),  # noqa: E501
             'pod_disruption_budget': (IoK8sApiPolicyV1PodDisruptionBudgetSpec,),  # noqa: E501
             'pod_gc': (IoArgoprojWorkflowV1alpha1PodGC,),  # noqa: E501
             'pod_metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
@@ -286,7 +286,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
             node_selector ({str: (str,)}): NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.. [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time in a workflow. [optional]  # noqa: E501
+            parallelism (str): [optional]  # noqa: E501
             pod_disruption_budget (IoK8sApiPolicyV1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
@@ -409,7 +409,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
             node_selector ({str: (str,)}): NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.. [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time in a workflow. [optional]  # noqa: E501
+            parallelism (str): [optional]  # noqa: E501
             pod_disruption_budget (IoK8sApiPolicyV1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501

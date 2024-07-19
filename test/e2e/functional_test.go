@@ -783,6 +783,35 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestParametrizableWorkflowParallelism() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: param-parallelism-
+spec:
+  entrypoint: whalesay
+  parallelism: "{{workflow.parameters.parallelism}}"
+  arguments:
+    parameters:
+      - name: parallelism
+        value: "5"
+  templates:
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2
+      args: [sleep, 1s]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestTemplateLevelTimeout() {
 	s.Given().
 		Workflow(`

@@ -1947,7 +1947,7 @@ message WorkflowSpec {
   repeated k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 6;
 
   // Parallelism limits the max total parallel pods that can execute at the same time in a workflow
-  optional int64 parallelism = 7;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString parallelism = 7;
 
   // ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
   optional ArtifactRepositoryRef artifactRepositoryRef = 8;
