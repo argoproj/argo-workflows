@@ -505,7 +505,7 @@ message CronWorkflowSpec {
   // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
   optional StopStrategy stopStrategy = 10;
 
-  // Schedules is a list of schedules to run the Workflow in Cron format
+  // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
   repeated string schedules = 11;
 }
 

@@ -8820,7 +8820,7 @@
           "type": "string"
         },
         "schedules": {
-          "description": "Schedules is a list of schedules to run the Workflow in Cron format",
+          "description": "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
           "type": "array",
           "items": {
             "type": "string"

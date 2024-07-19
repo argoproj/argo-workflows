@@ -63,7 +63,7 @@ type CronWorkflowSpec struct {
 	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,9,opt,name=workflowMeta"`
 	// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 	StopStrategy *StopStrategy `json:"stopStrategy,omitempty" protobuf:"bytes,10,opt,name=stopStrategy"`
-	// Schedules is a list of schedules to run the Workflow in Cron format
+	// v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
 	Schedules []string `json:"schedules,omitempty" protobuf:"bytes,11,opt,name=schedules"`
 }
 
@@ -134,11 +134,11 @@ func (c *CronWorkflow) GetLatestSchedule() string {
 func (c *CronWorkflowSpec) GetScheduleString() string {
 	var scheduleString string
 	if c.Schedule != "" {
-		scheduleString = c.withTimezone(c.Schedule)
+		scheduleString = c.Schedule
 	} else {
 		var sb strings.Builder
 		for i, schedule := range c.Schedules {
-			sb.WriteString(c.withTimezone(schedule))
+			sb.WriteString(schedule)
 			if i != len(c.Schedules)-1 {
 				sb.WriteString(",")
 			}
@@ -174,7 +174,7 @@ func (c *CronWorkflowSpec) getSchedules(withTimezone bool) []string {
 			if withTimezone {
 				schedule = c.withTimezone(schedule)
 			}
-			schedules[i] = c.withTimezone(schedule)
+			schedules[i] = schedule
 		}
 	}
 	return schedules

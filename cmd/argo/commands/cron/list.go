@@ -66,7 +66,7 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 	if listArgs.allNamespaces {
 		_, _ = fmt.Fprint(w, "NAMESPACE\t")
 	}
-	_, _ = fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tNEXT RUN\tSCHEDULE\tTIMEZONE\tSUSPENDED")
+	_, _ = fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tNEXT RUN\tSCHEDULES\tTIMEZONE\tSUSPENDED")
 	_, _ = fmt.Fprint(w, "\n")
 	for _, cwf := range wfList {
 		if listArgs.allNamespaces {

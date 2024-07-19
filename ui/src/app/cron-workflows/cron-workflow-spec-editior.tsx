@@ -12,7 +12,7 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
         <div className='white-box'>
             <div className='white-box__details'>
                 <div className='row white-box__details-row'>
-                    <div className='columns small-3'>Schedule</div>
+                    <div className='columns small-3'>Schedules</div>
                     <div className='columns small-9'>
                         {spec.schedule != '' ? (
                             <>

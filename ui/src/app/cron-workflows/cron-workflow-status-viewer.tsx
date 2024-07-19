@@ -17,7 +17,7 @@ export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec
                 {[
                     {title: 'Active', value: status.active ? getCronWorkflowActiveWorkflowList(status.active) : <i>No Workflows Active</i>},
                     {
-                        title: 'Schedule',
+                        title: 'Schedules',
                         value: (
                             <>
                                 {spec.schedule != '' ? (
