@@ -129,15 +129,32 @@ func (c *CronWorkflow) GetLatestSchedule() string {
 	return c.Annotations[annotationKeyLatestSchedule]
 }
 
-// GetScheduleString returns the schedule expression with timezone, if available. If multiple
+// GetScheduleString returns the schedule expression without timezone. If multiple
 // expressions are configured it returns a comma separated list of cron expressions
 func (c *CronWorkflowSpec) GetScheduleString() string {
+	return c.getScheduleString(false)
+}
+
+// GetScheduleString returns the schedule expression with timezone, if available. If multiple
+// expressions are configured it returns a comma separated list of cron expressions
+func (c *CronWorkflowSpec) GetScheduleWithTimezoneString() string {
+	return c.getScheduleString(true)
+}
+
+func (c *CronWorkflowSpec) getScheduleString(withTimezone bool) string {
 	var scheduleString string
 	if c.Schedule != "" {
-		scheduleString = c.Schedule
+		if withTimezone {
+			scheduleString = c.withTimezone(c.Schedule)
+		} else {
+			scheduleString = c.Schedule
+		}
 	} else {
 		var sb strings.Builder
 		for i, schedule := range c.Schedules {
+			if withTimezone {
+				schedule = c.withTimezone(schedule)
+			}
 			sb.WriteString(schedule)
 			if i != len(c.Schedules)-1 {
 				sb.WriteString(",")

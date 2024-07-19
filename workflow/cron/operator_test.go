@@ -75,7 +75,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
@@ -116,7 +116,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	// Reset last-used-schedule as if the current schedule has been used before
-	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
@@ -324,10 +324,10 @@ func TestLastUsedSchedule(t *testing.T) {
 		assert.Equal(t, time.Time{}, missedExecutionTime)
 	}
 
-	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 
 	if assert.NotNil(t, woc.cronWf.Annotations) {
-		assert.Equal(t, woc.cronWf.Spec.GetScheduleString(), woc.cronWf.GetLatestSchedule())
+		assert.Equal(t, woc.cronWf.Spec.GetScheduleWithTimezoneString(), woc.cronWf.GetLatestSchedule())
 	}
 }
 
@@ -390,7 +390,7 @@ func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
 			cronWf: &cronWf,
 			log:    logrus.WithFields(logrus.Fields{}),
 		}
-		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 		missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 		assert.NoError(t, err)
 		assert.True(t, missedExecutionTime.IsZero())
@@ -602,7 +602,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
@@ -643,7 +643,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	// Reset last-used-schedule as if the current schedule has been used before
-	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
