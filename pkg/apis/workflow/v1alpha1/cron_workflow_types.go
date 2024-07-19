@@ -101,7 +101,7 @@ func (c *CronWorkflow) IsUsingNewSchedule() bool {
 	lastUsedSchedule, exists := c.Annotations[annotationKeyLatestSchedule]
 	// If last-used-schedule does not exist, or if it does not match the current schedule then the CronWorkflow schedule
 	// was just updated
-	return !exists || lastUsedSchedule != c.Spec.GetScheduleString()
+	return !exists || lastUsedSchedule != c.Spec.GetScheduleWithTimezoneString()
 }
 
 func (c *CronWorkflow) SetSchedule(schedule string) {
