@@ -1,5 +1,4 @@
 //go:build cli
-// +build cli
 
 package e2e
 

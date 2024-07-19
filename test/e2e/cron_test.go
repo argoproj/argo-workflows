@@ -1,5 +1,4 @@
 //go:build cron
-// +build cron
 
 package e2e
 
