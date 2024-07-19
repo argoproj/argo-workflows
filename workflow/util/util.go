@@ -990,7 +990,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 
-		if node.Name == wf.ObjectMeta.Name {
+		if node.Name == wf.ObjectMeta.Name && isGroupNode(node) {
 			log.Debugf("Reset root node: %s", node.Name)
 			newNode := node.DeepCopy()
 			newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
