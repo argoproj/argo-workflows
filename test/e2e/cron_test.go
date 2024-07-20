@@ -1,5 +1,4 @@
 //go:build cron
-// +build cron
 
 package e2e
 
@@ -220,7 +219,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-allow
   labels:
-    
+
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -425,6 +424,42 @@ spec:
 				assert.Equal(t, int64(1), cronWf.Status.Failed)
 				assert.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
 				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
+			})
+	})
+	s.Run("TestMultipleWithTimezone", func() {
+		s.T().Parallel()
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-multiple-with-timezone
+spec:
+  schedules:
+    - "* * * * *"
+    - "0 1 * * *"
+  timezone: "America/Los_Angeles"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2`).
+			When().
+			CreateCronWorkflow().
+			Wait(1 * time.Minute).
+			Then().
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 }

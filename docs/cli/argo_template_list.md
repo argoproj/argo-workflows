@@ -9,9 +9,10 @@ argo template list [flags]
 ### Options
 
 ```
-  -A, --all-namespaces   Show workflows from all namespaces
-  -h, --help             help for list
-  -o, --output string    Output format. One of: wide|name
+  -A, --all-namespaces    Show workflows from all namespaces
+  -h, --help              help for list
+  -o, --output string     Output format. One of: wide|name
+  -l, --selector string   Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 
 ### Options inherited from parent commands
