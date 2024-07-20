@@ -25,7 +25,7 @@ func TestCronWorkflowSpec_GetScheduleString(t *testing.T) {
 	assert.Equal(t, "* * * * *", cwfSpec.GetScheduleString())
 
 	cwfSpec.Timezone = "America/Los_Angeles"
-	assert.Equal(t, "CRON_TZ=America/Los_Angeles * * * * *", cwfSpec.GetScheduleString())
+	assert.Equal(t, "* * * * *", cwfSpec.GetScheduleString())
 	cwfSpec = CronWorkflowSpec{
 		Timezone:  "",
 		Schedules: []string{"* * * * *", "0 * * * *"},
@@ -33,5 +33,25 @@ func TestCronWorkflowSpec_GetScheduleString(t *testing.T) {
 	assert.Equal(t, "* * * * *,0 * * * *", cwfSpec.GetScheduleString())
 
 	cwfSpec.Timezone = "America/Los_Angeles"
-	assert.Equal(t, "CRON_TZ=America/Los_Angeles * * * * *,CRON_TZ=America/Los_Angeles 0 * * * *", cwfSpec.GetScheduleString())
+	assert.Equal(t, "* * * * *,0 * * * *", cwfSpec.GetScheduleString())
+}
+
+func TestCronWorkflowSpec_GetScheduleWithTimezoneString(t *testing.T) {
+	cwfSpec := CronWorkflowSpec{
+		Timezone: "",
+		Schedule: "* * * * *",
+	}
+
+	assert.Equal(t, "* * * * *", cwfSpec.GetScheduleWithTimezoneString())
+
+	cwfSpec.Timezone = "America/Los_Angeles"
+	assert.Equal(t, "CRON_TZ=America/Los_Angeles * * * * *", cwfSpec.GetScheduleWithTimezoneString())
+	cwfSpec = CronWorkflowSpec{
+		Timezone:  "",
+		Schedules: []string{"* * * * *", "0 * * * *"},
+	}
+	assert.Equal(t, "* * * * *,0 * * * *", cwfSpec.GetScheduleWithTimezoneString())
+
+	cwfSpec.Timezone = "America/Los_Angeles"
+	assert.Equal(t, "CRON_TZ=America/Los_Angeles * * * * *,CRON_TZ=America/Los_Angeles 0 * * * *", cwfSpec.GetScheduleWithTimezoneString())
 }
