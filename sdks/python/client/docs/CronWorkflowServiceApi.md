@@ -110,6 +110,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
             spec=IoArgoprojWorkflowV1alpha1CronWorkflowSpec(
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
+                minimum_interval="minimum_interval_example",
                 schedule="schedule_example",
                 schedules=[
                     "schedules_example",
@@ -11126,6 +11127,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
             spec=IoArgoprojWorkflowV1alpha1CronWorkflowSpec(
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
+                minimum_interval="minimum_interval_example",
                 schedule="schedule_example",
                 schedules=[
                     "schedules_example",
@@ -22227,6 +22229,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
             spec=IoArgoprojWorkflowV1alpha1CronWorkflowSpec(
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
+                minimum_interval="minimum_interval_example",
                 schedule="schedule_example",
                 schedules=[
                     "schedules_example",

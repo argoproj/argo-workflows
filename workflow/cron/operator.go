@@ -210,6 +210,18 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, 
 			return false, fmt.Errorf("invalid ConcurrencyPolicy: %s", woc.cronWf.Spec.ConcurrencyPolicy)
 		}
 	}
+
+	if woc.cronWf.Spec.MinimumInterval != "" && woc.cronWf.Status.LastScheduledTime != nil {
+		minInterval, err := time.ParseDuration(woc.cronWf.Spec.MinimumInterval)
+		if err != nil {
+			return false, fmt.Errorf("invalid MiniumInterval: %s", woc.cronWf.Spec.MinimumInterval)
+		}
+		since := time.Since(woc.cronWf.Status.LastScheduledTime.Time)
+		if since < minInterval {
+			woc.log.Infof("%s has 'MinimumInterval: %s' but was last run %s ago, so skipping", woc.cronWf.Name, woc.cronWf.Spec.MinimumInterval, since.String())
+			return false, nil
+		}
+	}
 	return true, nil
 }
 

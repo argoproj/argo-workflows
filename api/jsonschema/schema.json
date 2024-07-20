@@ -4870,6 +4870,10 @@
           "description": "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
           "type": "integer"
         },
+        "minimumInterval": {
+          "description": "v3.6 and after: MinimumInterval is the minimum time between runs of this CronWorkflow. Further runs before MinimumInterval has passed will be suppressed.",
+          "type": "string"
+        },
         "schedule": {
           "description": "Schedule is a schedule to run the Workflow in Cron format",
           "type": "string"

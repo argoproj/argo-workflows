@@ -95,6 +95,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
             'workflow_spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
             'concurrency_policy': (str,),  # noqa: E501
             'failed_jobs_history_limit': (int,),  # noqa: E501
+            'minimum_interval': (str,),  # noqa: E501
             'schedules': ([str],),  # noqa: E501
             'starting_deadline_seconds': (int,),  # noqa: E501
             'stop_strategy': (IoArgoprojWorkflowV1alpha1StopStrategy,),  # noqa: E501
@@ -114,6 +115,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
         'workflow_spec': 'workflowSpec',  # noqa: E501
         'concurrency_policy': 'concurrencyPolicy',  # noqa: E501
         'failed_jobs_history_limit': 'failedJobsHistoryLimit',  # noqa: E501
+        'minimum_interval': 'minimumInterval',  # noqa: E501
         'schedules': 'schedules',  # noqa: E501
         'starting_deadline_seconds': 'startingDeadlineSeconds',  # noqa: E501
         'stop_strategy': 'stopStrategy',  # noqa: E501
@@ -170,6 +172,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             concurrency_policy (str): ConcurrencyPolicy is the K8s-style concurrency policy that will be used. [optional]  # noqa: E501
             failed_jobs_history_limit (int): FailedJobsHistoryLimit is the number of failed jobs to be kept at a time. [optional]  # noqa: E501
+            minimum_interval (str): v3.6 and after: MinimumInterval is the minimum time between runs of this CronWorkflow. Further runs before MinimumInterval has passed will be suppressed.. [optional]  # noqa: E501
             schedules ([str]): Schedules is a list of schedules to run the Workflow in Cron format. [optional]  # noqa: E501
             starting_deadline_seconds (int): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
             stop_strategy (IoArgoprojWorkflowV1alpha1StopStrategy): [optional]  # noqa: E501
@@ -266,6 +269,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             concurrency_policy (str): ConcurrencyPolicy is the K8s-style concurrency policy that will be used. [optional]  # noqa: E501
             failed_jobs_history_limit (int): FailedJobsHistoryLimit is the number of failed jobs to be kept at a time. [optional]  # noqa: E501
+            minimum_interval (str): v3.6 and after: MinimumInterval is the minimum time between runs of this CronWorkflow. Further runs before MinimumInterval has passed will be suppressed.. [optional]  # noqa: E501
             schedules ([str]): Schedules is a list of schedules to run the Workflow in Cron format. [optional]  # noqa: E501
             starting_deadline_seconds (int): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
             stop_strategy (IoArgoprojWorkflowV1alpha1StopStrategy): [optional]  # noqa: E501

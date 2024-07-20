@@ -2257,6 +2257,13 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 							},
 						},
 					},
+					"minimumInterval": {
+						SchemaProps: spec.SchemaProps{
+							Description: "v3.6 and after: MinimumInterval is the minimum time between runs of this CronWorkflow. Further runs before MinimumInterval has passed will be suppressed.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"workflowSpec", "schedule"},
 			},
