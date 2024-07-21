@@ -11274,3 +11274,149 @@ func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 		}
 	}
 }
+
+var dagContainersetWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  name: dag-containerset-qlmzl
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/phase: Running
+spec:
+  entrypoint: pipeline
+  templates:
+  - containerSet:
+      containers:
+      - args:
+        - echo
+        - hello
+        command:
+        - /argosay
+        image: argoproj/argosay:v2
+        name: main
+    name: argosay-container-set
+  - dag:
+      tasks:
+      - name: A
+        template: argosay-container-set
+      - depends: A.Succeeded
+        name: B
+        template: argosay-container-set
+      - depends: A.Succeeded
+        name: C
+        template: argosay-container-set
+    name: pipeline
+status:
+  conditions:
+  - status: "False"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    dag-containerset-qlmzl:
+      children:
+      - dag-containerset-qlmzl-1127450597
+      displayName: dag-containerset-qlmzl
+      finishedAt: null
+      id: dag-containerset-qlmzl
+      name: dag-containerset-qlmzl
+      phase: Running
+      progress: 2/6
+      startedAt: "2024-05-14T02:24:54Z"
+      templateName: pipeline
+      templateScope: local/dag-containerset-qlmzl
+      type: DAG
+    dag-containerset-qlmzl-70023156:
+      boundaryID: dag-containerset-qlmzl-1127450597
+      children:
+      - dag-containerset-qlmzl-1077117740
+      displayName: main
+      finishedAt: "2024-05-14T02:25:28Z"
+      id: dag-containerset-qlmzl-70023156
+      name: dag-containerset-qlmzl.A.main
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2024-05-14T02:24:54Z"
+      templateName: argosay-container-set
+      templateScope: local/dag-containerset-qlmzl
+      type: Container
+    dag-containerset-qlmzl-1077117740:
+      boundaryID: dag-containerset-qlmzl
+      children:
+      - dag-containerset-qlmzl-3500746831
+      displayName: B
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-containerset-qlmzl-1077117740
+      message: PodInitializing
+      name: dag-containerset-qlmzl.B
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-05-14T02:25:30Z"
+      templateName: argosay-container-set
+      templateScope: local/dag-containerset-qlmzl
+      type: Pod
+    dag-containerset-qlmzl-1127450597:
+      boundaryID: dag-containerset-qlmzl
+      children:
+      - dag-containerset-qlmzl-70023156
+      displayName: A
+      finishedAt: "2024-05-14T02:25:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-containerset-qlmzl-1127450597
+      name: dag-containerset-qlmzl.A
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 6
+        memory: 49
+      startedAt: "2024-05-14T02:24:54Z"
+      templateName: argosay-container-set
+      templateScope: local/dag-containerset-qlmzl
+      type: Pod
+    dag-containerset-qlmzl-3500746831:
+      boundaryID: dag-containerset-qlmzl-1077117740
+      displayName: main
+      finishedAt: null
+      id: dag-containerset-qlmzl-3500746831
+      name: dag-containerset-qlmzl.B.main
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-05-14T02:25:30Z"
+      templateName: argosay-container-set
+      templateScope: local/dag-containerset-qlmzl
+      type: Container
+  phase: Running
+  progress: 2/4
+  resourcesDuration:
+    cpu: 6
+    memory: 49
+  startedAt: "2024-05-14T02:24:54Z"
+  taskResultsCompletionStatus:
+    dag-containerset-qlmzl-1077117740: false
+    dag-containerset-qlmzl-1127450597: true
+`
+
+func TestGetOutboundNodesFromDAGContainerset(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagContainersetWf)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	found := false
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Name == "dag-containerset-qlmzl.A.main" {
+			assert.Equal(t, 2, len(node.Children))
+			found = true
+		}
+	}
+	assert.Equal(t, true, found)
+}
