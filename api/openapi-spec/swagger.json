@@ -8803,8 +8803,7 @@
       "description": "CronWorkflowSpec is the specification of a CronWorkflow",
       "type": "object",
       "required": [
-        "workflowSpec",
-        "schedule"
+        "workflowSpec"
       ],
       "properties": {
         "concurrencyPolicy": {

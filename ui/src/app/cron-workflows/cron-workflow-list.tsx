@@ -156,7 +156,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                         <div className='columns small-2'>{w.metadata.namespace}</div>
                                         <div className='columns small-1'>{w.spec.timezone}</div>
                                         <div className='columns small-1'>
-                                            {w.spec.schedule != ''
+                                            {(w.spec.schedule ?? '') != ''
                                                 ? w.spec.schedule
                                                 : w.spec.schedules.map(schedule => (
                                                       <>
@@ -166,7 +166,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                                   ))}
                                         </div>
                                         <div className='columns small-2'>
-                                            {w.spec.schedule != '' ? (
+                                            {(w.spec.schedule ?? '') != '' ? (
                                                 <PrettySchedule schedule={w.spec.schedule} />
                                             ) : (
                                                 <>

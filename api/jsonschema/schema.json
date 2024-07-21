@@ -4911,8 +4911,7 @@
         }
       },
       "required": [
-        "workflowSpec",
-        "schedule"
+        "workflowSpec"
       ],
       "type": "object"
     },

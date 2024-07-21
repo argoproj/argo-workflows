@@ -20,7 +20,7 @@ export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec
                         title: 'Schedules',
                         value: (
                             <>
-                                {spec.schedule != '' ? (
+                                {(spec.schedule ?? '') != '' ? (
                                     <>
                                         <code>{spec.schedule}</code> <PrettySchedule schedule={spec.schedule} />
                                     </>

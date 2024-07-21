@@ -14,7 +14,7 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                 <div className='row white-box__details-row'>
                     <div className='columns small-3'>Schedules</div>
                     <div className='columns small-9'>
-                        {spec.schedule != '' ? (
+                        {(spec.schedule ?? '') != '' ? (
                             <>
                                 <TextInput value={spec.schedule} onChange={schedule => onChange({...spec, schedule})} />
                                 <ScheduleValidator schedule={spec.schedule} />

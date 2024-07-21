@@ -45,7 +45,7 @@ type CronWorkflowSpec struct {
 	// WorkflowSpec is the spec of the workflow to be run
 	WorkflowSpec WorkflowSpec `json:"workflowSpec" protobuf:"bytes,1,opt,name=workflowSpec,casttype=WorkflowSpec"`
 	// Schedule is a schedule to run the Workflow in Cron format
-	Schedule string `json:"schedule" protobuf:"bytes,2,opt,name=schedule"`
+	Schedule string `json:"schedule,omitempty" protobuf:"bytes,2,opt,name=schedule"`
 	// ConcurrencyPolicy is the K8s-style concurrency policy that will be used
 	ConcurrencyPolicy ConcurrencyPolicy `json:"concurrencyPolicy,omitempty" protobuf:"bytes,3,opt,name=concurrencyPolicy,casttype=ConcurrencyPolicy"`
 	// Suspend is a flag that will stop new CronWorkflows from running if set to true
