@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
@@ -30,15 +31,19 @@ func (m Modes) Add(value string) error {
 	return nil
 }
 
-func (m Modes) GetMode(authorisation string) (Mode, bool) {
-	if m[SSO] && strings.HasPrefix(authorisation, sso.Prefix) {
-		return SSO, true
+func (m Modes) GetMode(authorization string) (Mode, bool, error) {
+	if authorization == "" {
+		if m[Server] {
+			return Server, true, nil
+		}
+		return "", false, errors.New("empty token")
 	}
-	if m[Client] && (strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ")) {
-		return Client, true
+
+	if m[SSO] && strings.HasPrefix(authorization, sso.Prefix) {
+		return SSO, true, nil
 	}
-	if m[Server] {
-		return Server, true
+	if m[Client] && (strings.HasPrefix(authorization, "Bearer ") || strings.HasPrefix(authorization, "Basic ")) {
+		return Client, true, nil
 	}
-	return "", false
+	return "", false, fmt.Errorf("token is missing a prefix. must be Bearer, Basic, or %s", sso.Prefix)
 }
