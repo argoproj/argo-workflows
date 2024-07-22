@@ -3,12 +3,12 @@ import * as React from 'react';
 
 import {uiUrl, uiUrlWithParams} from '../shared/base';
 import {useCollectEvent} from '../shared/use-collect-event';
-import {setCookie, AUTH_COOKIE} from '../shared/cookie';
+import {resetCookie, setCookie, AUTH_COOKIE} from '../shared/cookie';
 
 import './login.scss';
 
 function logout() {
-    document.cookie = `${AUTH_COOKIE}=;Max-Age=0`;
+    resetCookie(AUTH_COOKIE);
     document.location.reload();
 }
 
