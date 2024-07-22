@@ -524,6 +524,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
+			// get a reference to the currently existing Pod since the created pod returned before was nil.
 			if existing, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
 				return existing, nil
 			}
