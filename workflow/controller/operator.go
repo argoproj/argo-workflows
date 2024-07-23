@@ -1168,7 +1168,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			return
 		}
 		if woc.isAgentPod(pod) {
-			woc.updateAgentPodStatus(ctx, pod)
+			woc.updateAgentPodStatus(pod)
 			return
 		}
 		nodeID := woc.nodeID(pod)
