@@ -17,7 +17,16 @@ Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
 
 ## Upgrading to v3.5
 
-There are no known breaking changes in this release. Please file an issue if you encounter any unexpected problems after upgrading.
+There are no known breaking changes in this release.
+Please file an issue if you encounter any unexpected problems after upgrading.
+
+### Unified Workflows List API and UI
+
+The Workflows List in the UI now shows Archived Workflows in the same page.
+As such, the previously separate Archived Workflows page in the UI has been removed.
+
+The List API `/api/v1/workflows` also returns both types of Workflows now.
+This is not breaking as the Archived API still exists and was not removed, so this is an addition.
 
 ## Upgrading to v3.4
 

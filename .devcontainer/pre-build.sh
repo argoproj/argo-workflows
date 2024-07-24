@@ -21,6 +21,8 @@ sudo apt install -y protobuf-compiler
 
 # Make sure go path is owned by vscode
 sudo chown vscode:vscode /home/vscode/go || true
+sudo chown vscode:vscode /home/vscode/go/src || true
+sudo chown vscode:vscode /home/vscode/go/src/github.com || true
 
 # download dependencies and do first-pass compile
 CI=1 kit pre-up
