@@ -154,19 +154,13 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 }
 
 func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error) {
-	var archivedWfs []archivedWorkflowMetadata
-
-	selectQuery, err := selectArchivedWorkflowQuery(r.dbType)
-	if err != nil {
-		return nil, err
-	}
-
+	var archivedWfs []archivedWorkflowRecord
 	selector := r.session.SQL().
-		Select(selectQuery).
+		Select("workflow").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
 	if err != nil {
 		return nil, err
 	}
@@ -375,14 +369,4 @@ func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	}
 	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Info("Deleted archived workflows")
 	return nil
-}
-
-func selectArchivedWorkflowQuery(t dbType) (*db.RawExpr, error) {
-	switch t {
-	case MySQL:
-		return db.Raw("name, namespace, uid, phase, startedat, finishedat, coalesce(JSON_EXTRACT(workflow,'$.metadata.labels'), '{}') as labels,coalesce(JSON_EXTRACT(workflow,'$.metadata.annotations'), '{}') as annotations, coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.status.progress')), '') as progress, coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.metadata.creationTimestamp')), '') as creationtimestamp, JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.spec.suspend')) as suspend, coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.status.message')), '') as message, coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.status.estimatedDuration')), '0') as estimatedduration, coalesce(JSON_EXTRACT(workflow,'$.status.resourcesDuration'), '{}') as resourcesduration"), nil
-	case Postgres:
-		return db.Raw("name, namespace, uid, phase, startedat, finishedat, coalesce((workflow::json)->'metadata'->>'labels', '{}') as labels, coalesce((workflow::json)->'metadata'->>'annotations', '{}') as annotations, coalesce((workflow::json)->'status'->>'progress', '') as progress, coalesce((workflow::json)->'metadata'->>'creationTimestamp', '') as creationtimestamp, (workflow::json)->'spec'->>'suspend' as suspend, coalesce((workflow::json)->'status'->>'message', '') as message, coalesce((workflow::json)->'status'->>'estimatedDuration', '0') as estimatedduration, coalesce((workflow::json)->'status'->>'resourcesDuration', '{}') as resourcesduration"), nil
-	}
-	return nil, fmt.Errorf("unsupported db type %s", t)
 }
