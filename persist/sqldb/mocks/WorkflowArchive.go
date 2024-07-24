@@ -4,6 +4,7 @@ package mocks
 
 import (
 	mock "github.com/stretchr/testify/mock"
+	labels "k8s.io/apimachinery/pkg/labels"
 
 	time "time"
 
@@ -122,6 +123,36 @@ func (_m *WorkflowArchive) GetWorkflow(uid string, namespace string, name string
 
 	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
 		r1 = rf(uid, namespace, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetWorkflowForEstimator provides a mock function with given fields: namespace, requirements
+func (_m *WorkflowArchive) GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*v1alpha1.Workflow, error) {
+	ret := _m.Called(namespace, requirements)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetWorkflowForEstimator")
+	}
+
+	var r0 *v1alpha1.Workflow
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, []labels.Requirement) (*v1alpha1.Workflow, error)); ok {
+		return rf(namespace, requirements)
+	}
+	if rf, ok := ret.Get(0).(func(string, []labels.Requirement) *v1alpha1.Workflow); ok {
+		r0 = rf(namespace, requirements)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.Workflow)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string, []labels.Requirement) error); ok {
+		r1 = rf(namespace, requirements)
 	} else {
 		r1 = ret.Error(1)
 	}

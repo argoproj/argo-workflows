@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 	"google.golang.org/grpc/codes"
@@ -69,6 +71,7 @@ type WorkflowArchive interface {
 	ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error)
 	CountWorkflows(options sutils.ListOptions) (int64, error)
 	GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error)
+	GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 	DeleteExpiredWorkflows(ttl time.Duration) error
 	IsEnabled() bool
@@ -289,6 +292,13 @@ func namePrefixClause(namePrefix string) db.Cond {
 	return db.Cond{}
 }
 
+func phaseEqual(phase string) db.Cond {
+	if phase != "" {
+		return db.Cond{"phase": phase}
+	}
+	return db.Cond{}
+}
+
 func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error) {
 	var err error
 	archivedWf := &archivedWorkflowRecord{}
@@ -375,6 +385,46 @@ func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	}
 	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Info("Deleted archived workflows")
 	return nil
+}
+
+func (r *workflowArchive) GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
+	selector := r.session.SQL().
+		Select("name", "namespace", "uid", "startedat", "finishedat").
+		From(archiveTableName).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
+		And(phaseEqual(string(wfv1.NodeSucceeded)))
+
+	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, sutils.ListOptions{
+		Namespace:         namespace,
+		LabelRequirements: requirements,
+		Limit:             1,
+		Offset:            0,
+	}, false)
+	if err != nil {
+		return nil, err
+	}
+
+	var awf archivedWorkflowMetadata
+	err = selector.One(&awf)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      awf.Name,
+			Namespace: awf.Namespace,
+			UID:       types.UID(awf.UID),
+			Labels: map[string]string{
+				common.LabelKeyWorkflowArchivingStatus: "Persisted",
+			},
+		},
+		Status: wfv1.WorkflowStatus{
+			StartedAt:  v1.Time{Time: awf.StartedAt},
+			FinishedAt: v1.Time{Time: awf.FinishedAt},
+		},
+	}, nil
+
 }
 
 func selectArchivedWorkflowQuery(t dbType) (*db.RawExpr, error) {
