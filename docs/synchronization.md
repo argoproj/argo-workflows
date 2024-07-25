@@ -4,13 +4,12 @@
 
 ## Introduction
 
-Synchronization enables users to limit the parallel execution of certain workflows or
-templates within a workflow without having to restrict others.
+You can use synchronization to limit the parallel execution of workflows or templates.
+You can use mutexes to restrict workflows or templates to only having a single concurrent section.
+You can use semaphores to restrict workflows or templates to a configured number of parallel runs.
+This documentation refers "locks" to mean mutexes and semaphores.
 
-Users can create multiple synchronization configurations in the `ConfigMap` that can be referred to
-from a workflow or template within a workflow. Alternatively, users can
-configure a mutex to prevent concurrent execution of templates or
-workflows using the same mutex.
+You can create multiple synchronization configurations in the `ConfigMap` that can be referred to from a workflow or template.
 
 For example:
 
@@ -24,11 +23,15 @@ data:
   template: "2"  # Two instances of template can run at a given time in particular namespace
 ```
 
+Each synchronization block may only refer to either a semaphore or a mutex.
+If you specify both only the semaphore will be locked.
+
 ### Workflow-level Synchronization
 
-Workflow-level synchronization limits parallel execution of the workflow if workflows have the same synchronization reference.
-In this example, Workflow refers to `workflow` synchronization key which is configured as limit 1,
-so only one workflow instance will be executed at given time even multiple workflows created.
+You can limit parallel execution of a workflow by using Workflow-level synchronization.
+If multiple workflows have the same synchronization reference they will be limited by that synchronization reference.
+
+In this example, Workflow refers to `workflow` synchronization key which is configured as limit `"1"`, so only one workflow instance will be executed at given time even if multiple workflows are created.
 
 Using a semaphore configured by a `ConfigMap`:
 
@@ -52,7 +55,7 @@ spec:
       args: ["hello world"]
 ```
 
-Using a mutex:
+Using a mutex achieves the same thing as a count `"1"` semaphore:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -74,9 +77,11 @@ spec:
 
 ### Template-level Synchronization
 
-Template-level synchronization limits parallel execution of the template across workflows, if templates have the same synchronization reference.
-In this example, `acquire-lock` template has synchronization reference of `template` key which is configured as limit 2,
-so two instances of templates will be executed at a given time: even multiple steps/tasks within workflow or different workflows referring to the same template.
+You can limit parallel execution of a template by using Template-level synchronization.
+If templates have the same synchronization reference they will be limited by that synchronization reference, across all workflows.
+
+In this example, `acquire-lock` template has synchronization reference of `template` key which is configured as limit `"2"` so a maximum of two instances of the `acquire-lock` template will be executed at a given time.
+This applies even multiple steps or tasks within a workflow or different workflows refer to the same template.
 
 Using a semaphore configured by a `ConfigMap`:
 
@@ -110,7 +115,7 @@ spec:
       args: ["sleep 10; echo acquired lock"]
 ```
 
-Using a mutex:
+Using a mutex will limit to a single execution of the template at any one time:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -147,8 +152,16 @@ Examples:
 1. [Step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level.yaml)
 1. [Step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
-### Other Parallelism support
+### Queuing
 
-In addition to this synchronization, the workflow controller supports a parallelism setting that applies to all workflows
-in the system (it is not granular to a class of workflows, or tasks withing them). Furthermore, there is a parallelism setting
-at the workflow and template level, but this only restricts total concurrent executions of tasks within the same workflow.
+When a Workflow cannot take a lock it will be placed into a ordered queue.
+
+Workflows can have a `priority` set in their specification.
+The queue is first ordered by priority, with a higher priority number being placed before a lower priority number.
+The queue is then ordered by `CreationTimestamp` of the Workflow; older Workflows will be ordered before newer workflows.
+
+Workflows are only be allowed to take a lock if they are at the front of the queue for that lock.
+
+## Parallelism
+
+See also [how you can restrict parallelism](./parallelism.md) in other ways.
