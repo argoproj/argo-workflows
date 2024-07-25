@@ -4,21 +4,20 @@ metadata:
   annotations:
     help: |
       Install `kit` by following https://github.com/kitproj/kit#install.
-      
+
       Run `kit up` to start argo.
 
       - `env PROFILE=mysql kit up` to start with MySQL.
       - `env PROFILE=plugins ARGO_EXECUTOR_PLUGINS=true kit up` to start with plugins.
       - `env PROFILE=sso ARGO_AUTH_MODE=sso kit up` to start with SSO.
-      
-      The app will be up-and-running between 15s and 1m later (if hot compiled or cold). 
+
+      The app will be up-and-running between 15s and 1m later (if hot compiled or cold).
       Any changes made to the source code will be automatically recompiled and the app restarted, typically within a few seconds.
   name: argo-workflows
 spec:
   tasks:
     - name: go-deps
       command: go mod download
-      mutex: downloads
     - name: install
       command: sh -c "make install PROFILE=$PROFILE"
       env:
@@ -77,11 +76,11 @@ spec:
     - name: ui-deps
       command: yarn install
       workingDir: ui
-      mutex: downloads
+      watch: ui/package.json ui/yarn.lock
     - name: ui
       command: yarn start
       workingDir: ui
-      dependencies: ui-deps server
+      dependencies: ui-deps
       ports: "8080"
     - name: executor
       command: make argoexec-image
