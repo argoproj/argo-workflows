@@ -174,7 +174,7 @@ func (c *CronWorkflowSpec) getSchedules(withTimezone bool) []string {
 			if withTimezone {
 				schedule = c.withTimezone(schedule)
 			}
-			schedules[i] = c.withTimezone(schedule)
+			schedules[i] = schedule
 		}
 	}
 	return schedules

@@ -18,7 +18,6 @@ spec:
   tasks:
     - name: go-deps
       command: go mod download
-      mutex: downloads
     - name: install
       command: sh -c "make install PROFILE=$PROFILE"
       env:
@@ -78,11 +77,10 @@ spec:
       command: yarn install
       workingDir: ui
       watch: ui/package.json ui/yarn.lock
-      mutex: downloads
     - name: ui
       command: yarn start
       workingDir: ui
-      dependencies: ui-deps server
+      dependencies: ui-deps
       ports: "8080"
     - name: executor
       command: make argoexec-image

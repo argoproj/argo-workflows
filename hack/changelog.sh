@@ -33,4 +33,15 @@ git tag -l 'v*' | grep -v 0.0.0 | sed 's/-rc/~/' | sort -rV | sed 's/~/-rc/' | w
     echo "</details>"
   fi
   tag=$last
+
+  # skip versions older than v3.x.x as those have been split into a separate file
+  if [ "$tag" = "v2.12.13" ]; then
+    break
+  fi
 done
+
+# footer for versions older than 3.x.x
+echo
+echo "## v2.12.13 (2021-08-18)"
+echo
+echo "For v2.12.13 and earlier, see [CHANGELOG-2-x-x.md](CHANGELOG-2-x-x.md)"

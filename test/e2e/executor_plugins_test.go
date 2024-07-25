@@ -1,5 +1,4 @@
 //go:build plugins
-// +build plugins
 
 package e2e
 

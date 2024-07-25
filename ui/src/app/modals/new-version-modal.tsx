@@ -19,6 +19,7 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
             </h4>
             <h5>v3.5</h5>
             <ul className='new-version-modal-bullets'>
+                <li>Removed Archived Workflows page; Workflows List page now shows both</li>
                 <li>Improvements to existing UI/UX and CLI</li>
                 <li>Additional fields and parameters in workflow/template spec</li>
                 <li>Controller performance optimizations</li>

@@ -6,6 +6,7 @@ export interface EventSource {
     spec: {
         amqp?: {[key: string]: {}};
         azureEventsHub?: {[key: string]: {}};
+        bitbucketserver?: {[key: string]: {}};
         calendar?: {[key: string]: {}};
         emitter?: {[key: string]: {}};
         file?: {[key: string]: {}};
@@ -52,6 +53,7 @@ export type EventSourceWatchEvent = kubernetes.WatchEvent<EventSource>;
 export const EventSourceTypes = [
     'amqp',
     'azureEventsHub',
+    'bitbucketserver',
     'calendar',
     'emitter',
     'file',

@@ -1,5 +1,4 @@
 //go:build corefunctional
-// +build corefunctional
 
 package e2e
 
