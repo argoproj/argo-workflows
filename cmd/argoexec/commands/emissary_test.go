@@ -75,7 +75,7 @@ func TestEmissary(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				err := run("sleep 3")
-				assert.EqualError(t, err, fmt.Sprintf("exit status %d", 128+signal))
+				require.EqualError(t, err, fmt.Sprintf("exit status %d", 128+signal))
 			}()
 			wg.Wait()
 		}

@@ -59,7 +59,7 @@ func TestResourceFlags(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = os.Remove(emptyFile.Name()) }()
 	_, err = we.getKubectlArguments("fake", emptyFile.Name(), nil)
-	assert.EqualError(t, err, "Must provide at least one of flags or manifest.")
+	require.EqualError(t, err, "Must provide at least one of flags or manifest.")
 }
 
 // TestResourcePatchFlags tests whether Resource Flags

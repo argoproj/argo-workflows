@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -305,10 +306,9 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 					t.FailNow()
 				case <-ticker.C:
 					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
-					if assert.NoError(t, err) {
-						if len(list.Items) == 0 {
-							return
-						}
+					require.NoError(t, err)
+					if len(list.Items) == 0 {
+						return
 					}
 				}
 			}

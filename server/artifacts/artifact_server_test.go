@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
@@ -664,14 +665,14 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 	// make sure there is no index out of bounds error
 	assert.Equal(t, 400, recorder.Result().StatusCode)
 	output, err := io.ReadAll(recorder.Result().Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(output), "Bad Request")
 
 	recorder = httptest.NewRecorder()
 	s.GetOutputArtifactByUID(recorder, r)
 	assert.Equal(t, 400, recorder.Result().StatusCode)
 	output, err = io.ReadAll(recorder.Result().Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(output), "Bad Request")
 }
 
@@ -682,7 +683,7 @@ func TestArtifactServer_httpBadRequestError(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
 	output, err := io.ReadAll(recorder.Result().Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(output), "Bad Request")
 }
 
@@ -695,7 +696,7 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, recorder.Result().StatusCode)
 	output, err := io.ReadAll(recorder.Result().Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Internal Server Error\n", string(output))
 
 	recorder = httptest.NewRecorder()
@@ -705,7 +706,7 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, recorder.Result().StatusCode)
 	output, err = io.ReadAll(recorder.Result().Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(output), "Unauthorized")
 
 	recorder = httptest.NewRecorder()
