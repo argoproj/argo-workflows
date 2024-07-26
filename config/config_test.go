@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -25,9 +26,9 @@ func TestSanitize(t *testing.T) {
 	for _, tt := range tests {
 		err := tt.c.Sanitize([]string{"http", "https"})
 		if tt.err != "" {
-			assert.Equal(t, err.Error(), tt.err)
+			require.EqualError(t, err, tt.err)
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
