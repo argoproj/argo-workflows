@@ -19,7 +19,7 @@ func Test_listWorkflows(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		workflows, err := listEmpty(&metav1.ListOptions{}, listFlags{})
 		if assert.NoError(t, err) {
-			assert.Len(t, workflows, 0)
+			assert.Empty(t, workflows)
 		}
 	})
 	t.Run("Nothing", func(t *testing.T) {

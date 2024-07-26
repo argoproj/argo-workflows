@@ -488,10 +488,10 @@ func TestTTLlExpired(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow([]byte(failedWf))
 	wf.Spec.TTLStrategy = &wfv1.TTLStrategy{SecondsAfterFailure: &ten}
 	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
-	assert.Equal(t, true, wf.Status.Failed())
+	assert.True(t, wf.Status.Failed())
 	now := controller.clock.Now()
-	assert.Equal(t, true, now.After(wf.Status.FinishedAt.Add(time.Second*time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailure))))
-	assert.Equal(t, true, wf.Status.Failed() && wf.Spec.TTLStrategy.SecondsAfterFailure != nil)
+	assert.True(t, now.After(wf.Status.FinishedAt.Add(time.Second*time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailure))))
+	assert.True(t, wf.Status.Failed() && wf.Spec.TTLStrategy.SecondsAfterFailure != nil)
 	expiresIn, ok := controller.expiresIn(wf)
 	assert.True(t, ok)
 	assert.LessOrEqual(t, int(expiresIn), 0)

@@ -370,7 +370,7 @@ func TestJoinWfSpecs(t *testing.T) {
 	targetWf, err := JoinWorkflowSpec(&wf1.Spec, wft.GetWorkflowSpec(), &wfDefault.Spec)
 	assert.NoError(err)
 	assert.Equal(result.Spec, targetWf.Spec)
-	assert.Equal(3, len(targetWf.Spec.Templates))
+	assert.Len(targetWf.Spec.Templates, 3)
 	assert.Equal("whalesay", targetWf.Spec.Entrypoint)
 }
 
@@ -473,7 +473,7 @@ func TestMergeHooks(t *testing.T) {
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		assert.Len(t, targetHookWf.Spec.Hooks, 2)
 		assert.Equal(t, "c", targetHookWf.Spec.Hooks[`foo`].Template)
 		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
 	})
@@ -485,7 +485,7 @@ func TestMergeHooks(t *testing.T) {
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		assert.Len(t, targetHookWf.Spec.Hooks, 2)
 		assert.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
 		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
 	})

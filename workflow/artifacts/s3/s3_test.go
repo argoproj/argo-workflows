@@ -229,10 +229,10 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 				},
 			})
 			if tc.errMsg == "" {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.NotNil(t, stream)
 			} else {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 				assert.Equal(t, tc.errMsg, err.Error())
 			}
 		})
@@ -396,7 +396,7 @@ func TestLoadS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, tc.errMsg, "")
+				assert.Equal(t, "", tc.errMsg)
 			}
 		})
 	}
@@ -530,7 +530,7 @@ func TestSaveS3Artifact(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.Equal(t, tc.errMsg, "")
+				assert.Equal(t, "", tc.errMsg)
 			}
 		})
 	}
@@ -606,10 +606,10 @@ func TestListObjects(t *testing.T) {
 					},
 				})
 			if tc.expectedSuccess {
-				assert.Nil(t, err)
-				assert.Equal(t, tc.expectedNumFiles, len(files))
+				assert.NoError(t, err)
+				assert.Len(t, files, tc.expectedNumFiles)
 			} else {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 				assert.Equal(t, tc.expectedErrMsg, err.Error())
 			}
 		})

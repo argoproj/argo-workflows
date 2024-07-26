@@ -27,7 +27,7 @@ func TestSanitize(t *testing.T) {
 		if tt.err != "" {
 			assert.Equal(t, err.Error(), tt.err)
 		} else {
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 	}
 }
