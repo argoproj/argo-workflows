@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -40,7 +41,7 @@ spec:
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
 	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -108,7 +109,7 @@ spec:
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
 	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -188,7 +189,7 @@ spec:
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
 	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},

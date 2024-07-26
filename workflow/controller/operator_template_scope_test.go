@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -179,7 +180,7 @@ func TestTemplateScopeWithParam(t *testing.T) {
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].step")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param") {
@@ -273,7 +274,7 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param") {
@@ -382,7 +383,7 @@ func TestTemplateScopeDAG(t *testing.T) {
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-dag[0].step")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag") {
@@ -484,7 +485,7 @@ func TestTemplateClusterScope(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope[0].step")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {

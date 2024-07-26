@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -73,7 +74,7 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkipped)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -119,7 +120,7 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(stepsWithParamAndGlobalParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -193,16 +194,16 @@ kind: Workflow
 metadata:
   name: optional-input-artifact-ctc82
 spec:
-  
+
   entrypoint: plan
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: plan
     outputs: {}
     steps:
-    - - 
+    - -
         name: create-artifact
         template: artifact-creation
         when: "false"
@@ -213,7 +214,7 @@ spec:
             optional: true
         name: print-artifact
         template: artifact-printing
-  - 
+  -
     container:
       args:
       - echo 'hello' > /tmp/hello.txt
@@ -230,7 +231,7 @@ spec:
       artifacts:
       - name: hello
         path: /tmp/hello.txt
-  - 
+  -
     container:
       args:
       - echo 'goodbye'
@@ -308,7 +309,7 @@ func TestOptionalArgumentAndParameter(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(optionalArgumentAndParameter)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
