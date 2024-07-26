@@ -2,8 +2,6 @@
 
 > v2.10 and after
 
-## Introduction
-
 You can use synchronization to limit the parallel execution of workflows or templates.
 You can use mutexes to restrict workflows or templates to only having a single concurrent section.
 You can use semaphores to restrict workflows or templates to a configured number of parallel runs.
@@ -26,7 +24,7 @@ data:
 Each synchronization block may only refer to either a semaphore or a mutex.
 If you specify both only the semaphore will be locked.
 
-### Workflow-level Synchronization
+## Workflow-level Synchronization
 
 You can limit parallel execution of a workflow by using Workflow-level synchronization.
 If multiple workflows have the same synchronization reference they will be limited by that synchronization reference.
@@ -75,7 +73,7 @@ spec:
       args: ["hello world"]
 ```
 
-### Template-level Synchronization
+## Template-level Synchronization
 
 You can limit parallel execution of a template by using Template-level synchronization.
 If templates have the same synchronization reference they will be limited by that synchronization reference, across all workflows.
@@ -152,7 +150,7 @@ Examples:
 1. [Step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level.yaml)
 1. [Step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
-### Queuing
+## Queuing
 
 When a Workflow cannot take a lock it will be placed into a ordered queue.
 
@@ -162,6 +160,6 @@ The queue is then ordered by `CreationTimestamp` of the Workflow; older Workflow
 
 Workflows are only be allowed to take a lock if they are at the front of the queue for that lock.
 
-## Parallelism
+## Other Parallelism support
 
-See also [how you can restrict parallelism](./parallelism.md) in other ways.
+You can also [restrict parallelism in other ways](parallelism.md).
