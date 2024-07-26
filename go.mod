@@ -301,5 +301,9 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
 
-// Avoid CVE-2023-45288
-replace golang.org/x/net => golang.org/x/net v0.23.0
+replace (
+	// Avoid CWE-248
+	github.com/jackc/pgx/v4 => github.com/jackc/pgx/v4 v4.18.2
+	// Avoid CVE-2023-45288
+	golang.org/x/net => golang.org/x/net v0.23.0
+)
