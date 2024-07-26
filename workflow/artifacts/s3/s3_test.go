@@ -11,6 +11,7 @@ import (
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -229,10 +230,10 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 				},
 			})
 			if tc.errMsg == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, stream)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Equal(t, tc.errMsg, err.Error())
 			}
 		})
@@ -606,10 +607,10 @@ func TestListObjects(t *testing.T) {
 					},
 				})
 			if tc.expectedSuccess {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Len(t, files, tc.expectedNumFiles)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Equal(t, tc.expectedErrMsg, err.Error())
 			}
 		})
