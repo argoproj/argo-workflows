@@ -577,7 +577,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, defaultWorkflowSpec.Spec.HostNetwork, &ans)
 		assert.NotEqual(t, defaultWorkflowSpec, wfv1.MustUnmarshalWorkflow(helloWorldWf))
-		assert.Equal(t, *defaultWorkflowSpec.Spec.HostNetwork, true)
+		assert.True(t, *defaultWorkflowSpec.Spec.HostNetwork)
 	})
 }
 
@@ -586,14 +586,14 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 	defer cancel()
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
 	var ten int32 = 10
-	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
 	assert.Nil(t, workflow.Spec.TTLStrategy)
 	assert.Contains(t, workflow.Labels, "foo")
 	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
 	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWf))
-	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
-	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
+	assert.Equal(t, "whalesay", workflow.Spec.ServiceAccountName)
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
 	assert.Contains(t, workflow.Labels, "foo")
 	assert.Contains(t, workflow.Labels, "label")
@@ -609,8 +609,8 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
 	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWfTTL))
-	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
-	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
+	assert.Equal(t, "whalesay", workflow.Spec.ServiceAccountName)
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
 	assert.NotContains(t, workflow.Labels, "foo")
@@ -835,7 +835,7 @@ func TestInvalidWorkflowMetadata(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	err := woc.setExecWorkflow(context.Background())
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "invalid label value")
 	}
 
@@ -844,7 +844,7 @@ func TestInvalidWorkflowMetadata(t *testing.T) {
 	defer cancel()
 	woc = newWorkflowOperationCtx(wf, controller)
 	err = woc.setExecWorkflow(context.Background())
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "invalid label value")
 	}
 }
@@ -1176,7 +1176,7 @@ spec:
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 0)
+	assert.Empty(t, pods.Items)
 }
 
 func TestPendingPodWhenTerminate(t *testing.T) {
@@ -1230,13 +1230,13 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 
 	cms, err := controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.ObjectMeta.Name})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(cms.Items))
+	assert.Len(t, cms.Items, 1)
 	assert.Contains(t, cms.Items[0].Data, common.EnvVarTemplate)
 
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	found := false
 	for _, vol := range pod.Spec.Volumes {

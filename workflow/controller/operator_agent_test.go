@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -47,7 +46,7 @@ func TestHTTPTemplate(t *testing.T) {
 		pod.Status.Phase = v1.PodFailed
 		pod.Status.Message = "manual termination"
 		pod, err = controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).UpdateStatus(ctx, pod, metav1.UpdateOptions{})
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, v1.PodFailed, pod.Status.Phase)
 		// sleep 1 second to wait for informer getting pod info
 		time.Sleep(time.Second)
@@ -75,7 +74,7 @@ func TestHTTPTemplateWithoutServiceAccount(t *testing.T) {
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		_, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
-		assert.Error(t, err, fmt.Sprintf(`pods "%s" not found`, woc.getAgentPodName()))
+		assert.Error(t, err, `pods "%s" not found`, woc.getAgentPodName())
 		ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, "hello-world", metav1.GetOptions{})
 		assert.NoError(t, err)
 		assert.NotNil(t, ts)

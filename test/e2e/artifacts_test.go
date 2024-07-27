@@ -185,18 +185,18 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 		c, err := minio.New("localhost:9000", &minio.Options{
 			Creds: credentials.NewStaticV4("admin", "password", ""),
 		})
-		assert.NoError(s.T(), err)
+		s.NoError(err)
 
 		// Ensure the artifacts aren't in the bucket.
 		_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
 		if err == nil {
 			err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.RemoveObjectOptions{})
-			assert.NoError(s.T(), err)
+			s.NoError(err)
 		}
 		_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
 		if err == nil {
 			err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.RemoveObjectOptions{})
-			assert.NoError(s.T(), err)
+			s.NoError(err)
 		}
 
 		then := s.Given().
@@ -206,10 +206,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 		// Assert the artifacts don't exist.
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-1", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 		})
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-2", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 		})
 
 		when := then.When().
@@ -250,10 +250,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 		// Assert the artifacts don't exist.
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-1", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 		})
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-2", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 		})
 
 		when = then.When()
@@ -438,7 +438,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			if expectedArtifact.deletedAtWFCompletion {
 				fmt.Printf("verifying artifact %s is deleted at completion time\n", artifactKey)
 				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.NotNil(t, err)
+					assert.Error(t, err)
 				})
 			} else {
 				fmt.Printf("verifying artifact %s is not deleted at completion time\n", artifactKey)
@@ -473,7 +473,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			if expectedArtifact.deletedAtWFDeletion {
 				fmt.Printf("verifying artifact %s is deleted\n", artifactKey)
 				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.NotNil(t, err)
+					assert.Error(t, err)
 				})
 			} else {
 				fmt.Printf("verifying artifact %s is not deleted\n", artifactKey)
@@ -520,7 +520,7 @@ spec:
 func (s *ArtifactsSuite) TestInsufficientRole() {
 	ctx := context.Background()
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
-	assert.NoError(s.T(), err)
+	s.NoError(err)
 	s.T().Cleanup(func() {
 		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
 	})
@@ -544,13 +544,13 @@ func (s *ArtifactsSuite) TestInsufficientRole() {
 		var workflow wfv1.Workflow
 		err = yaml.Unmarshal([]byte(insufficientRoleWorkflow), &workflow)
 		if err != nil {
-			assert.Fail(s.T(), err.Error())
+			s.Fail(err.Error())
 		}
 
 		workflow.Spec.ArtifactGC.ForceFinalizerRemoval = tt.forceFinalizerRemoval
 		modifiedWorkflow, err := yaml.Marshal(&workflow)
 		if err != nil {
-			assert.Fail(s.T(), err.Error())
+			s.Fail(err.Error())
 		}
 
 		// Submit the Workflow
@@ -583,13 +583,13 @@ func (s *ArtifactsSuite) TestInsufficientRole() {
 						failCondition = true
 					}
 				}
-				assert.Equal(t, true, failCondition)
+				assert.True(t, failCondition)
 			}).
 			ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				if tt.forceFinalizerRemoval {
-					assert.NotContains(s.T(), meta.Finalizers, common.FinalizerArtifactGC)
+					s.NotContains(meta.Finalizers, common.FinalizerArtifactGC)
 				} else {
-					assert.Contains(s.T(), meta.Finalizers, common.FinalizerArtifactGC)
+					s.Contains(meta.Finalizers, common.FinalizerArtifactGC)
 				}
 			}).
 			When().
@@ -744,7 +744,7 @@ spec:
 					},
 				}
 				if assert.NotNil(t, n) {
-					assert.Equal(t, n.Outputs, expectedOutputs)
+					assert.Equal(t, expectedOutputs, n.Outputs)
 				}
 			})
 	})

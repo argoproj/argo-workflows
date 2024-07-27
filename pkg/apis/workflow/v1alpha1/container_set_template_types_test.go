@@ -29,7 +29,7 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 			},
 		}
 		strategy, err := set.GetRetryStrategy()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, wait.Backoff{Steps: 100}, strategy)
 	})
 
@@ -43,7 +43,7 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 			},
 		}
 		strategy, err := set.GetRetryStrategy()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, wait.Backoff{
 			Steps:    100,
 			Duration: time.Duration(20 * time.Second),
@@ -86,7 +86,7 @@ volumeMounts:
     mountPath: /workspace
 `
 	err := validateContainerSetTemplate(invalidContainerSetEmpty)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "containers must have at least one container")
 	}
 }
@@ -103,7 +103,7 @@ containers:
     image: argoproj/argosay:v2
 `
 	err := validateContainerSetTemplate(invalidContainerSetDuplicateNames)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "volumeMounts[1].mountPath '/workspace' already mounted in volumeMounts.workspace")
 	}
 }
@@ -120,7 +120,7 @@ containers:
     image: argoproj/argosay:v2
 `
 	err := validateContainerSetTemplate(invalidContainerSetDuplicateNames)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "containers[1].name 'a' is not unique")
 	}
 }
@@ -139,7 +139,7 @@ containers:
       - c
 `
 	err := validateContainerSetTemplate(invalidContainerSetDependencyNotFound)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "containers.b dependency 'c' not defined")
 	}
 }
@@ -160,7 +160,7 @@ containers:
       - a
 `
 	err := validateContainerSetTemplate(invalidContainerSetDependencyCycle)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "containers dependency cycle detected: b->a->b")
 	}
 }

@@ -42,7 +42,7 @@ func TestPodNameV2(t *testing.T) {
 	expected = fmt.Sprintf("%s-%s", longWfName, longTemplateName)
 	actual = ensurePodNamePrefixLength(expected)
 
-	assert.Equal(t, maxK8sResourceNameLength-k8sNamingHashLength-1, len(actual))
+	assert.Len(t, actual, maxK8sResourceNameLength-k8sNamingHashLength-1)
 
 	longPrefix := fmt.Sprintf("%s-%s", longWfName, longTemplateName)
 	expectedPodName = fmt.Sprintf("%s-%v", longPrefix[0:maxK8sResourceNameLength-k8sNamingHashLength-1], h.Sum32())

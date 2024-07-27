@@ -104,9 +104,9 @@ func TestSingleDependency(t *testing.T) {
 
 		ctx := context.Background()
 		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
 		woc.operate(ctx)
