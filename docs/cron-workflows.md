@@ -2,13 +2,13 @@
 
 > v2.5 and after
 
-## Introduction
-
-`CronWorkflow` are workflows that run on a preset schedule. They are designed to be converted from `Workflow` easily and to mimic the same options as Kubernetes `CronJob`. In essence, `CronWorkflow` = `Workflow` + some specific cron options.
+`CronWorkflows` are workflows that run on a schedule.
+They are designed to wrap a `workflowSpec` and to mimic the options of Kubernetes `CronJobs`.
+In essence, `CronWorkflow` = `Workflow` + some specific cron options.
 
 ## `CronWorkflow` Spec
 
-An example `CronWorkflow` spec would look like:
+Below is an example `CronWorkflow`:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -31,30 +31,31 @@ spec:
 
 ### `workflowSpec` and `workflowMetadata`
 
-`CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec` and serves as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
+`CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec`.
+It is a template for `Workflow` objects created from it.
 
-The resulting `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
+The `Workflow` name is generated based on the `CronWorkflow` name.
+In the above example it would be similar to `test-cron-wf-tj6fe`.
 
-`CronWorkflow.spec.workflowMetadata` can be used to add `labels` and `annotations`.
+You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotations`.
 
 ### `CronWorkflow` Options
 
-|          Option Name         |      Default Value     | Description                                                                                                                                                                                                                             |
-|:----------------------------:|:----------------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|          `schedule`          | None, must be provided | Schedule at which the `Workflow` will be run. E.g. `5 4 * * *`                                                                                                                                                                         |
-|          `timezone`          |    Machine timezone    | Timezone during which the Workflow will be run from the IANA timezone standard, e.g. `America/Los_Angeles`                                                                                                                              |
-|           `suspend`          |         `false`        | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly                                                                                                                                              |
-|      `concurrencyPolicy`     |         `Allow`        | Policy that determines what to do if multiple `Workflows` are scheduled at the same time. Available options: `Allow`: allow all, `Replace`: remove all old before scheduling a new, `Forbid`: do not allow any new while there are old  |
-| `startingDeadlineSeconds`    |           `0`          | Number of seconds after the last scheduled time during which a missed `Workflow` will still be run. See [Crash Recovery](#crash-recovery) for more details. |
-| `successfulJobsHistoryLimit` |           `3`          | Number of successful `Workflows` that will be persisted at a time                                                                                                                                                                       |
-| `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` that will be persisted at a time                                                                                                                                                                           |
-| `stopStrategy`               |         `nil`          | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition                                                                                                                                                 |
+| Option Name                  | Default Value          | Description |
+|:----------------------------:|:----------------------:|-------------|
+| `schedule`                   | None, must be provided | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *` |
+| `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
+| `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly |
+| `concurrencyPolicy`          | `Allow`                | What to do if multiple `Workflows` are scheduled at the same time. `Allow`: allow all, `Replace`: remove all old before scheduling new, `Forbid`: do not allow any new while there are old  |
+| `startingDeadlineSeconds`    | `0`                    | Seconds after [the last scheduled time](#crash-recovery) during which a missed `Workflow` will still be run. |
+| `successfulJobsHistoryLimit` | `3`                    | Number of successful `Workflows` to persist |
+| `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` to persist |
+| `stopStrategy`               | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition |
 
 ### Cron Schedule Syntax
 
-The cron scheduler uses the standard cron syntax, as [documented on Wikipedia](https://en.wikipedia.org/wiki/Cron).
-
-More detailed documentation for the specific library used is [documented here](https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format).
+The cron scheduler uses [standard cron syntax](https://en.wikipedia.org/wiki/Cron).
+The implementation is the same as `CronJobs`, using [`robfig/cron`](https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format).
 
 ### Crash Recovery
 
@@ -70,9 +71,10 @@ This setting can also be configured in tandem with `concurrencyPolicy` to achiev
 
 ### Daylight Saving
 
-Daylight Saving (DST) is taken into account when using timezone. This means that, depending on the local time of the scheduled job, argo will schedule the workflow once, twice, or not at all when the clock moves forward or back.
+When using `timezone`, [Daylight Saving Time (DST)](https://en.wikipedia.org/wiki/Daylight_saving_time) is taken into account.
+Depending on the local time of the scheduled workflow, it will run once, twice, or not at all when the clock moves forward or back.
 
-For example, with timezone set at `America/Los_Angeles`, we have daylight saving
+For example, with `timezone: America/Los_Angeles`:
 
 - +1 hour (DST start) at 2020-03-08 02:00:00:
 
@@ -141,7 +143,7 @@ stopStrategy:
 
 ### CLI
 
-`CronWorkflow` can be created from the CLI by using basic commands:
+You can create `CronWorkflows` with the CLI:
 
 ```bash
 $ argo cron create cron.yaml
@@ -176,11 +178,11 @@ NextScheduledTime:             Thu Oct 29 13:03:00 +0000 (32 seconds from now)
 Active Workflows:              test-cron-wf-rt4nf
 ```
 
-**Note**: `NextScheduledRun` assumes that the workflow-controller uses UTC as its timezone
+**Note**: `NextScheduledRun` assumes the Controller uses UTC as its timezone
 
 ### `kubectl`
 
-Using `kubectl apply -f` and `kubectl get cwf`
+You can use `kubectl apply -f` and `kubectl get cwf`
 
 ## Back-Filling Days
 
@@ -188,8 +190,8 @@ See [cron backfill](cron-backfill.md).
 
 ### GitOps via Argo CD
 
-`CronWorkflow` resources can be managed with GitOps by using [Argo CD](https://github.com/argoproj/argo-cd)
+You can manage `CronWorkflow` resources with GitOps by using [Argo CD](https://github.com/argoproj/argo-cd)
 
 ### UI
 
-`CronWorkflow` resources can also be managed by the UI
+You can also manage `CronWorkflow` resources in the UI

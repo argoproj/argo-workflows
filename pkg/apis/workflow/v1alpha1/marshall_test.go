@@ -11,7 +11,7 @@ func TestMustUnmarshalClusterWorkflow(t *testing.T) {
 		if r := recover(); r == nil {
 			t.Fatalf("The code did not panic but should have")
 		} else {
-			assert.Equal(t, r.(string), "no text to unmarshal")
+			assert.Equal(t, "no text to unmarshal", r.(string))
 		}
 	}()
 	_ = MustUnmarshalClusterWorkflow([]byte(""))

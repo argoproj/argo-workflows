@@ -40,21 +40,21 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 	}
 	// Check Pod is just created
 	if pod.Status.Phase != "" {
-		woc.updateAgentPodStatus(ctx, pod)
+		woc.updateAgentPodStatus(pod)
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
+func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
 	woc.log.Info("updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(pod)
-	if newPhase == wfv1.WorkflowFailed || newPhase == wfv1.WorkflowError {
-		woc.markWorkflowError(ctx, fmt.Errorf("agent pod failed with reason %s", message))
+	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
+		woc.markTaskSetNodesError(fmt.Errorf(`agent pod failed with reason:"%s"`, message))
 	}
 }
 
-func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
-	var newPhase wfv1.WorkflowPhase
+func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.NodePhase, string) {
+	var newPhase wfv1.NodePhase
 	var message string
 	log.WithField("namespace", pod.Namespace).
 		WithField("podName", pod.Name).
@@ -63,10 +63,10 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
 		return "", ""
 	case apiv1.PodFailed:
-		newPhase = wfv1.WorkflowFailed
+		newPhase = wfv1.NodeFailed
 		message = pod.Status.Message
 	default:
-		newPhase = wfv1.WorkflowError
+		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 	}
 	return newPhase, message
@@ -252,7 +252,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	if err != nil {
 		log.WithError(err).Info("Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
-			return created, nil
+			// get a reference to the currently existing Pod since the created pod returned before was nil.
+			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
+				return existing, nil
+			}
 		}
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}

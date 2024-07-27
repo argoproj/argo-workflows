@@ -88,7 +88,7 @@ func TestLintFile(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.Success, false)
+	assert.False(t, res.Success)
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNotCalled(t, "LintWorkflowTemplate")
@@ -119,7 +119,7 @@ func TestLintMultipleKinds(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.Success, false)
+	assert.False(t, res.Success)
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "foo" (WorkflowTemplate): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
@@ -172,7 +172,7 @@ func TestLintWithOutput(t *testing.T) {
 	mw.AssertCalled(t, "Write", []byte(expected[1]))
 	mw.AssertCalled(t, "Write", []byte(expected[2]))
 	assert.NoError(t, err)
-	assert.Equal(t, res.Success, false)
+	assert.False(t, res.Success)
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 2)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 2)
 	assert.Equal(t, strings.Join(expected, ""), res.Msg())
@@ -206,7 +206,7 @@ func TestLintStdin(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.Success, false)
+	assert.False(t, res.Success)
 	assert.Contains(t, res.msg, `stdin: in "steps-" (Workflow): lint error`)
 	assert.Contains(t, res.msg, `stdin: in "foo" (WorkflowTemplate): lint error`)
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
@@ -243,7 +243,7 @@ func TestLintDeviceFile(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.Success, false)
+	assert.False(t, res.Success)
 	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, deviceFileName))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNotCalled(t, "LintWorkflowTemplate")

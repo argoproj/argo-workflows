@@ -1,0 +1,7 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
+version: v1.25.0
+ignore:
+  SNYK-GOLANG-GITHUBCOMJACKCPGXV4-7416900:
+    - '*':
+        reason: "False Positive: vuln is for pgx/v5, not pgx/v4: https://pkg.go.dev/vuln/GO-2024-2567"
+        expires: 2024-09-01T11:11:11.001Z

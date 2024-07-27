@@ -17,7 +17,16 @@ Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
 
 ## Upgrading to v3.5
 
-There are no known breaking changes in this release. Please file an issue if you encounter any unexpected problems after upgrading.
+There are no known breaking changes in this release.
+Please file an issue if you encounter any unexpected problems after upgrading.
+
+### Unified Workflows List API and UI
+
+The Workflows List in the UI now shows Archived Workflows in the same page.
+As such, the previously separate Archived Workflows page in the UI has been removed.
+
+The List API `/api/v1/workflows` also returns both types of Workflows now.
+This is not breaking as the Archived API still exists and was not removed, so this is an addition.
 
 ## Upgrading to v3.4
 
@@ -68,7 +77,7 @@ images:
     cmd: [/bin/bash]
 ```
 
-## feat: Fail on invalid config. (#8295)
+### feat: Fail on invalid config. (#8295)
 
 The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
 mis-configuration.
@@ -77,11 +86,11 @@ mis-configuration.
 Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
 ```
 
-## feat: add indexes for improve archived workflow performance. (#8860)
+### feat: add indexes for improve archived workflow performance. (#8860)
 
 This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.
 
-## feat: enhance artifact visualization (#8655)
+### feat: enhance artifact visualization (#8655)
 
 For AWS users using S3: visualizing artifacts in the UI and downloading them now requires an additional "Action" to be configured in your S3 bucket policy: "ListBucket".
 
