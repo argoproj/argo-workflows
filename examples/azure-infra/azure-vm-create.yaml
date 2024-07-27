@@ -27,9 +27,9 @@ spec:
       - name: image-version
         value: "latest"
       - name: vnet-name
-        value: "ESCAP-vnet"
+        value: ""
       - name: subnet-name
-        value: "default"
+        value: ""
       - name: os-disk-size-gb
         value: "256"
       - name: admin-username
