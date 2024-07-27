@@ -25,6 +25,7 @@ import (
 	gengotypes "k8s.io/gengo/types"
 	kubectlcmd "k8s.io/kubectl/pkg/cmd"
 	kubectlutil "k8s.io/kubectl/pkg/cmd/util"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -131,19 +132,28 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		mergeStrategy := "strategic"
 		if we.Template.Resource.MergeStrategy != "" {
 			mergeStrategy = we.Template.Resource.MergeStrategy
-			if mergeStrategy == "json" {
-				// Action "patch" require flag "-p" with resource arguments.
-				// But kubectl disallow specify both "-f" flag and resource arguments.
-				// Flag "-f" should be excluded for action "patch" here if it's a json patch.
-				appendFileFlag = false
-			}
 		}
-
 		args = append(args, "--type")
 		args = append(args, mergeStrategy)
 
-		args = append(args, "-p")
-		args = append(args, string(buff))
+		args = append(args, "--patch-file")
+		args = append(args, manifestPath)
+
+		// if there are flags and the manifest has no `kind`, assume: `kubectl patch <kind> <name> --patch-file <path>`
+		// json patches also use patch files by definition and so require resource arguments
+		// the other form in our case is `kubectl patch -f <path> --patch-file <path>`
+		if mergeStrategy == "json" {
+			appendFileFlag = false
+		} else {
+			var obj map[string]interface{}
+			err = yaml.Unmarshal(buff, &obj)
+			if err != nil {
+				return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+			}
+			if len(flags) != 0 && obj["kind"] == nil {
+				appendFileFlag = false
+			}
+		}
 	}
 
 	if len(flags) != 0 {
