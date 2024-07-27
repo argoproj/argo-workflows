@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: azure-vm-delete
+spec:
+  nodeSelector:
+    kubernetes.io/os: linux
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: subscription-id
+        value: ""
+      - name: resource-group
+        value: ""
+      - name: vm-name
+        value: "WinSrv22"
+
+  templates:
+    - name: main
+      steps:
+        - - name: retrieve-secrets
+            templateRef:
+              name: retrieve-secrets
+              template: retrieve-secrets
+        - - name: delete-vm
+            template: delete-vm
+            arguments:
+              parameters:
+                - name: admin-password
+                  value: "{{steps.retrieve-secrets.outputs.parameters.admin-password}}"
+                - name: client-id
+                  value: "{{steps.retrieve-secrets.outputs.parameters.client-id}}"
+                - name: client-secret
+                  value: "{{steps.retrieve-secrets.outputs.parameters.client-secret}}"
+                - name: tenant-id
+                  value: "{{steps.retrieve-secrets.outputs.parameters.tenant-id}}"
+                - name: subscription-id
+                  value: "{{workflow.parameters.subscription-id}}"
+                - name: resource-group
+                  value: "{{workflow.parameters.resource-group}}"
+                - name: vm-name
+                  value: "{{workflow.parameters.vm-name}}"
+
+    - name: delete-vm
+      inputs:
+        parameters:
+          - name: admin-password
+          - name: client-id
+          - name: client-secret
+          - name: tenant-id
+          - name: subscription-id
+          - name: resource-group
+          - name: vm-name
+      container:
+        image: bitnami/azure-cli:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            az login --service-principal -u {{inputs.parameters.client-id}} -p {{inputs.parameters.client-secret}} --tenant {{inputs.parameters.tenant-id}} &&
+            az vm delete --resource-group {{inputs.parameters.resource-group}} --name {{inputs.parameters.vm-name}} --yes &&
+            # Fetch NIC ID
+            NIC_ID=$(az network nic show --resource-group {{inputs.parameters.resource-group}} --name {{inputs.parameters.vm-name}}VMNic --query "id" -o tsv) &&
+            az network nic delete --ids $NIC_ID &&
+            # Wait for resources to be deleted
+            sleep 30 &&
+            # Delete Public IP and NSG
+            az network public-ip delete --resource-group {{inputs.parameters.resource-group}} --name {{inputs.parameters.vm-name}}PublicIP &&
+            az network nsg delete --resource-group {{inputs.parameters.resource-group}} --name {{inputs.parameters.vm-name}}NSG
