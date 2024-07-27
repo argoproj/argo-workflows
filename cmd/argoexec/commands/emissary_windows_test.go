@@ -8,6 +8,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEmissary(t *testing.T) {
