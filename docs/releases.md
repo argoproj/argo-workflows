@@ -40,13 +40,10 @@ Otherwise, we typically release every two weeks:
 
 ## Kubernetes Compatibility Matrix
 
-| Argo Workflows \ Kubernetes | 1.17 | 1.18 | 1.19 | 1.20 | 1.21 | 1.22 | 1.23 | 1.24 | 1.25 | 1.26 | 1.27 |
-|-----------------------|------|------|------|------|------|------|------|------|------|------|------|
-| **3.5**           | `x` | `x` | `x` | `?` | `?` | `?` | `?` | `?` | `✓` | `✓` | `✓` |
-| **3.4**           | `x` | `x` | `x` | `?` | `✓` | `✓` | `✓` | `✓` | `✓` | `✓` | `✓` |
-| **3.3**           | `?` | `?` | `?` | `?` | `✓` | `✓` | `✓` | `?` | `?` | `?` | `?` |
-| **3.2**           | `?` | `?` | `✓` | `✓` | `✓` | `?` | `?` | `?` | `?` | `?` | `?` |
-| **3.1**           | `✓` | `✓` | `✓` | `?` | `?` | `?` | `?` | `?` | `?` | `?` | `?` |
+| Argo Workflows \ Kubernetes | 1.28 | 1.29 | 1.30 |
+|-----------------------------|------|------|------|
+| **3.5**                     | `✓`  | `✓`  | `✓`  |
+| **3.4**                     | `?`  | `?`  | `?`  |
 
 * `✓` Fully supported versions.
 * `?` Due to breaking changes might not work. Also, we haven't thoroughly tested against this version.
@@ -60,4 +57,4 @@ Note that Kubernetes [is backward compatible with clients](https://github.com/ku
 The caveats with newer k8s versions are possible changes to experimental APIs and unused new features.
 Argo uses stable Kubernetes APIs such as Pods and ConfigMaps; see the Controller and Server RBAC of your [installation](installation.md) for a full list.
 
-The `release-3.5` branch is currently [tested on Kubernetes 1.25](https://github.com/argoproj/argo-workflows/blob/release-3.5/.github/workflows/ci-build.yaml#L192) and [1.27](https://github.com/argoproj/argo-workflows/blob/release-3.5/.github/workflows/ci-build.yaml#L224).
+The `release-3.5` branch is currently [tested on Kubernetes 1.28](https://github.com/argoproj/argo-workflows/blob/release-3.5/.github/workflows/ci-build.yaml#L191) and [1.30](https://github.com/argoproj/argo-workflows/blob/release-3.5/.github/workflows/ci-build.yaml#L224).
