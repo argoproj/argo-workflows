@@ -78,7 +78,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             .catch(setError);
     }, []);
 
-    const namespaceSuffix = Utils.managedNamespace ? '' : '/' + namespace;
+    const namespaceSuffix = Utils.managedNamespace ? '' : '/' + (namespace || '');
     return (
         <>
             {popupProps && <Popup {...popupProps} />}
