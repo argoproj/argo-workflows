@@ -29,7 +29,7 @@ export function RetryWorkflowNode(props: Props) {
         const opts: RetryOpts = {
             parameters,
             restartSuccessful,
-            nodeFieldSelector: `displayName=${props.nodeId}`
+            nodeFieldSelector: `id=${props.nodeId}`
         };
 
         try {
@@ -79,7 +79,7 @@ export function RetryWorkflowNode(props: Props) {
                 <div key='restart-successful' style={{marginBottom: 25}}>
                     <label>
                         Restart Successful{' '}
-                        <Tooltip content='Leaving this box unchecked to avoids re-running nodes that have run succesfully before'>
+                        <Tooltip content='Leaving this box unchecked avoids re-running nodes that have run successfully before'>
                             <i className='fa fa-question-circle' style={{marginLeft: 4}} />
                         </Tooltip>
                     </label>
