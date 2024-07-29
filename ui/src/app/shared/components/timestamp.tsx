@@ -21,7 +21,7 @@ export function Timestamp({date, timestampKey, displayLocalDateTime, displayISOF
 
     return (
         <span>
-            <span title={`${date.toString()} (${ago(new Date(date))})`}>
+            <span title={date.toString()}>
                 {displayISOFormatValue ? (
                     new Date(date.toString()).toISOString()
                 ) : (
