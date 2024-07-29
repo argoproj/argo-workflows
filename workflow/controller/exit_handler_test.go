@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -24,7 +25,7 @@ spec:
     steps:
     - - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -33,7 +34,7 @@ spec:
         template: whalesay
     - - name: leafB
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -92,7 +93,7 @@ spec:
       tasks:
       - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -102,7 +103,7 @@ spec:
       - name: leafB
         dependencies: [leafA]
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -160,7 +161,7 @@ spec:
     steps:
     - - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               artifacts:
@@ -236,7 +237,7 @@ spec:
       tasks:
       - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               artifacts:
@@ -314,7 +315,7 @@ spec:
         template: whalesay
     - - name: leafB
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -419,7 +420,7 @@ spec:
       - name: leafB
         dependencies: [leafA]
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -750,16 +751,14 @@ func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Empty(t, taskSets.Items)
-	}
+	require.NoError(t, err)
+	assert.Empty(t, taskSets.Items)
 	woc.operate(ctx)
 
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 	taskSets, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Len(t, taskSets.Items, 1)
-	}
+	require.NoError(t, err)
+	assert.Len(t, taskSets.Items, 1)
 }
 
 var testWorkflowOnExitStepsHttpReconciliation = `apiVersion: argoproj.io/v1alpha1
@@ -852,17 +851,15 @@ func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Empty(t, taskSets.Items)
-	}
+	require.NoError(t, err)
+	assert.Empty(t, taskSets.Items)
 
 	woc.operate(ctx)
 
 	assert.Len(t, woc.wf.Status.Nodes, 4)
 	taskSets, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Len(t, taskSets.Items, 1)
-	}
+	require.NoError(t, err)
+	assert.Len(t, taskSets.Items, 1)
 }
 
 func TestWorkflowOnExitWorkflowStatus(t *testing.T) {
@@ -997,9 +994,8 @@ status:
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Empty(t, taskSets.Items)
-	}
+	require.NoError(t, err)
+	assert.Empty(t, taskSets.Items)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }

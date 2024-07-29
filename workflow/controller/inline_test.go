@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -167,7 +168,7 @@ func TestCallTemplateWithInlineSteps(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, pods.Items, 4)
 	count := 0
 	for _, pod := range pods.Items {
@@ -269,7 +270,7 @@ func TestCallTemplateWithInlineDAG(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, pods.Items, 4)
 	count := 0
 	for _, pod := range pods.Items {

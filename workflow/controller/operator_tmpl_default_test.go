@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -128,10 +129,10 @@ func TestSetTemplateDefault(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(defaultWf)
 		woc := newWorkflowOperationCtx(wf, controller)
 		err := woc.setExecWorkflow(context.Background())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, tmpl)
 		assert.Equal(t, intstrutil.ParsePtr("110"), tmpl.ActiveDeadlineSeconds)
 		assert.Equal(t, apiv1.PullNever, tmpl.Container.ImagePullPolicy)
@@ -155,10 +156,10 @@ func TestSetTemplateDefault(t *testing.T) {
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
 		err := woc.setExecWorkflow(context.Background())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, tmpl)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
 		assert.Equal(t, apiv1.PullIfNotPresent, tmpl.Container.ImagePullPolicy)
@@ -185,11 +186,11 @@ func TestSetTemplateDefault(t *testing.T) {
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
 		err := woc.setExecWorkflow(context.Background())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, tmpl)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
 		assert.Nil(t, tmpl.Container)
@@ -197,7 +198,7 @@ func TestSetTemplateDefault(t *testing.T) {
 
 		tmpl1 := woc.execWf.Spec.Templates[1]
 		err = woc.mergedTemplateDefaultsInto(&tmpl1)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, tmpl1)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl1.ActiveDeadlineSeconds)
 		assert.Equal(t, apiv1.PullIfNotPresent, tmpl1.Container.ImagePullPolicy)
@@ -226,11 +227,11 @@ func TestSetTemplateDefault(t *testing.T) {
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
 		err := woc.setExecWorkflow(context.Background())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, tmpl)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
 		assert.Nil(t, tmpl.Container)
@@ -238,7 +239,7 @@ func TestSetTemplateDefault(t *testing.T) {
 
 		tmpl1 := woc.execWf.Spec.Templates[2]
 		err = woc.mergedTemplateDefaultsInto(&tmpl1)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, tmpl1)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl1.ActiveDeadlineSeconds)
 		assert.NotNil(t, tmpl1.Script)
@@ -247,7 +248,7 @@ func TestSetTemplateDefault(t *testing.T) {
 
 		tmpl2 := woc.execWf.Spec.Templates[3]
 		err = woc.mergedTemplateDefaultsInto(&tmpl2)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, tmpl2)
 		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl2.ActiveDeadlineSeconds)
 		assert.Equal(t, apiv1.PullIfNotPresent, tmpl2.Container.ImagePullPolicy)
