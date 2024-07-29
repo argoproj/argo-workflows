@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -425,7 +425,7 @@ func (w *When) WaitForPod(condition PodCondition) *When {
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
-		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: pointer.Int64(int64(timeout.Seconds()))},
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: ptr.To(int64(timeout.Seconds()))},
 	)
 	if err != nil {
 		w.t.Fatal(err)

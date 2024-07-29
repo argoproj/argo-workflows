@@ -106,7 +106,7 @@ class HostPathVolumeSource(ModelNormal):
         """HostPathVolumeSource - a model defined in OpenAPI
 
         Args:
-            path (str): Path of the directory on the host. If the path is a symlink, it will follow the link to the real path. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
+            path (str): path of the directory on the host. If the path is a symlink, it will follow the link to the real path. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -139,7 +139,7 @@ class HostPathVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            type (str): Type for HostPath Volume Defaults to \"\" More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath. [optional]  # noqa: E501
+            type (str): type for HostPath Volume Defaults to \"\" More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -192,7 +192,7 @@ class HostPathVolumeSource(ModelNormal):
         """HostPathVolumeSource - a model defined in OpenAPI
 
         Args:
-            path (str): Path of the directory on the host. If the path is a symlink, it will follow the link to the real path. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
+            path (str): path of the directory on the host. If the path is a symlink, it will follow the link to the real path. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -225,7 +225,7 @@ class HostPathVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            type (str): Type for HostPath Volume Defaults to \"\" More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath. [optional]  # noqa: E501
+            type (str): type for HostPath Volume Defaults to \"\" More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

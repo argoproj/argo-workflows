@@ -288,7 +288,7 @@ endif
 $(GOPATH)/bin/controller-gen:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0
 endif
 $(GOPATH)/bin/go-to-protobuf:
 # update this in Nix when upgrading it here
@@ -613,7 +613,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
-	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
+	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.30.3/kube_codegen.sh \
 	    "deepcopy,client,informer,lister" \
 	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
 	    workflow:v1alpha1 \
@@ -623,7 +623,7 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
-	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.23.3/api/openapi-spec/swagger.json
+	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.30.3/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor

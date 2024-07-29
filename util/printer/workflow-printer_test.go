@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -23,7 +23,7 @@ func TestPrintWorkflows(t *testing.T) {
 				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
 					{Name: "my-param", Value: wfv1.AnyStringPtr("my-value")},
 				}},
-				Priority: pointer.Int32(2),
+				Priority: ptr.To(int32(2)),
 				Templates: []wfv1.Template{
 					{Name: "t0", Container: &corev1.Container{}},
 				},

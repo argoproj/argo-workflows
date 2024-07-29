@@ -28,7 +28,7 @@ import (
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -4097,7 +4097,7 @@ spec:
 			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 			woc = newWorkflowOperationCtx(woc.wf, controller)
 			woc.operate(ctx)
-			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
+			assert.ElementsMatch(t, want, getEventsWithoutAnnotations(controller, len(want)))
 		})
 	}
 }
@@ -4193,18 +4193,27 @@ spec:
 			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 			woc = newWorkflowOperationCtx(woc.wf, controller)
 			woc.operate(ctx)
-			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
+			assert.ElementsMatch(t, want, getEventsWithoutAnnotations(controller, len(want)))
 		})
 	}
 }
 
-func getEvents(controller *WorkflowController, num int) []string {
+func getEventsWithoutAnnotations(controller *WorkflowController, num int) []string {
 	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
 	for i := 0; i < num; i++ {
-		events[i] = <-c
+		event := <-c
+		events[i] = truncateAnnotationsFromEvent(event)
 	}
 	return events
+}
+
+func truncateAnnotationsFromEvent(event string) string {
+	mapIndex := strings.Index(event, " map[")
+	if mapIndex != -1 {
+		return event[:mapIndex]
+	}
+	return event
 }
 
 func TestGetPodByNode(t *testing.T) {
@@ -6283,7 +6292,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 		Parameters: []wfv1.Parameter{
 			{Name: "hello", Value: wfv1.AnyStringPtr("foobar")},
 		},
-		ExitCode: pointer.String("0"),
+		ExitCode: ptr.To("0"),
 	}
 
 	ctx := context.Background()

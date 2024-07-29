@@ -15,8 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
-
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
@@ -33,8 +31,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -1361,7 +1361,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 				}
 				// proceed to mark node as running and daemoned
 				new.Phase = wfv1.NodeRunning
-				new.Daemoned = pointer.Bool(true)
+				new.Daemoned = ptr.To(true)
 				if !old.IsDaemoned() {
 					woc.log.WithField("nodeId", old.ID).Info("Node became daemoned")
 				}
@@ -1451,7 +1451,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		if new.Outputs == nil {
 			new.Outputs = &wfv1.Outputs{}
 		}
-		new.Outputs.ExitCode = pointer.String(fmt.Sprint(*exitCode))
+		new.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
 	}
 
 	for _, c := range pod.Status.InitContainerStatuses {
@@ -1500,7 +1500,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 func getExitCode(pod *apiv1.Pod) *int32 {
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.MainContainerName && c.State.Terminated != nil {
-			return pointer.Int32(c.State.Terminated.ExitCode)
+			return ptr.To(c.State.Terminated.ExitCode)
 		}
 	}
 	return nil

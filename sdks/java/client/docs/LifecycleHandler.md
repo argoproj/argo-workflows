@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **exec** | [**ExecAction**](ExecAction.md) |  |  [optional]
 **httpGet** | [**HTTPGetAction**](HTTPGetAction.md) |  |  [optional]
+**sleep** | [**SleepAction**](SleepAction.md) |  |  [optional]
 **tcpSocket** | [**TCPSocketAction**](TCPSocketAction.md) |  |  [optional]
 
 
