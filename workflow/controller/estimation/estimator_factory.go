@@ -77,7 +77,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 			}
 			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(wf.Namespace, requirements)
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to get archived workflows: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to get archived workflow for estimator: %v", err)
 			}
 			return &estimator{wf, baselineWF}, nil
 		}

@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/labels"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -353,40 +352,6 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 	return wf, nil
 }
 
-func (r *workflowArchive) DeleteWorkflow(uid string) error {
-	rs, err := r.session.SQL().
-		DeleteFrom(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(db.Cond{"uid": uid}).
-		Exec()
-	if err != nil {
-		return err
-	}
-	rowsAffected, err := rs.RowsAffected()
-	if err != nil {
-		return err
-	}
-	log.WithFields(log.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug("Deleted archived workflow")
-	return nil
-}
-
-func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
-	rs, err := r.session.SQL().
-		DeleteFrom(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
-		Exec()
-	if err != nil {
-		return err
-	}
-	rowsAffected, err := rs.RowsAffected()
-	if err != nil {
-		return err
-	}
-	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Info("Deleted archived workflows")
-	return nil
-}
-
 func (r *workflowArchive) GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
 	selector := r.session.SQL().
 		Select("name", "namespace", "uid", "startedat", "finishedat").
@@ -425,6 +390,40 @@ func (r *workflowArchive) GetWorkflowForEstimator(namespace string, requirements
 		},
 	}, nil
 
+}
+
+func (r *workflowArchive) DeleteWorkflow(uid string) error {
+	rs, err := r.session.SQL().
+		DeleteFrom(archiveTableName).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
+		And(db.Cond{"uid": uid}).
+		Exec()
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := rs.RowsAffected()
+	if err != nil {
+		return err
+	}
+	log.WithFields(log.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug("Deleted archived workflow")
+	return nil
+}
+
+func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
+	rs, err := r.session.SQL().
+		DeleteFrom(archiveTableName).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
+		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
+		Exec()
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := rs.RowsAffected()
+	if err != nil {
+		return err
+	}
+	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Info("Deleted archived workflows")
+	return nil
 }
 
 func selectArchivedWorkflowQuery(t dbType) (*db.RawExpr, error) {
