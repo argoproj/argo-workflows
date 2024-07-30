@@ -114,10 +114,6 @@ func (_m *WorkflowArchive) GetWorkflow(uid string, namespace string, name string
 func (_m *WorkflowArchive) GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*v1alpha1.Workflow, error) {
 	ret := _m.Called(namespace, requirements)
 
-	if len(ret) == 0 {
-		panic("no return value specified for GetWorkflowForEstimator")
-	}
-
 	var r0 *v1alpha1.Workflow
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string, []labels.Requirement) (*v1alpha1.Workflow, error)); ok {
