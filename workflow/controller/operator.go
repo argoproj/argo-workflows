@@ -34,8 +34,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
-
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -51,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	argoruntime "github.com/argoproj/argo-workflows/v3/util/runtime"
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"

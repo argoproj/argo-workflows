@@ -8,14 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/utils/ptr"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/ptr"
 )
 
 func TestWorkflows(t *testing.T) {

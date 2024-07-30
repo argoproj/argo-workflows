@@ -293,7 +293,7 @@ endif
 $(GOPATH)/bin/go-to-protobuf:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.21.5
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.30.3
 endif
 $(GOPATH)/src/github.com/gogo/protobuf:
 # update this in Nix when upgrading it here
