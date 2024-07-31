@@ -24,7 +24,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestGeneratePEM(t *testing.T) {
-	t.Run("Create PEM from certficate options", func(t *testing.T) {
+	t.Run("Create PEM from certificate options", func(t *testing.T) {
 		cert, key, err := generatePEM()
 		assert.NoError(t, err)
 		assert.NotNil(t, cert)
