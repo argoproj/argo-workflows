@@ -1,5 +1,6 @@
 import * as models from '../../models';
 import {NODE_PHASE, Parameter} from '../../models';
+import {NameFilterKeys} from '../workflows/components/workflow-filters/workflow-filters';
 import {Pagination} from './pagination';
 
 const managedNamespaceKey = 'managedNamespace';
@@ -124,6 +125,7 @@ export const Utils = {
         name?: string;
         namePrefix?: string;
         namePattern?: string;
+        nameFilter?: NameFilterKeys;
         phases?: Array<string>;
         labels?: Array<string>;
         createdAfter?: Date;
@@ -153,6 +155,9 @@ export const Utils = {
         }
         if (filter.namePattern) {
             queryParams.push(`namePattern=${filter.namePattern}`);
+        }
+        if (filter.nameFilter) {
+            queryParams.push(`nameFilter=${filter.nameFilter}`);
         }
         if (filter.resourceVersion) {
             queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);

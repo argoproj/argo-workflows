@@ -23,7 +23,8 @@ import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowCreator} from '../workflow-creator';
-import {WorkflowFilters} from '../workflow-filters/workflow-filters';
+import {NAME_FILTER_KEYS, WorkflowFilters} from '../workflow-filters/workflow-filters';
+import type {NameFilterKeys} from '../workflow-filters/workflow-filters';
 import {WorkflowsRow} from '../workflows-row/workflows-row';
 import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflows-summary-container';
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
@@ -34,6 +35,9 @@ interface WorkflowListRenderOptions {
     paginationLimit: number;
     phases: WorkflowPhase[];
     labels: string[];
+    name: string;
+    namePrefix: string;
+    namePattern: string;
 }
 
 const actions = Actions.WorkflowOperationsMap;
@@ -82,6 +86,12 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
     const [error, setError] = useState<Error>();
+    const [nameValue, setNameValue] = useState<string>(() => {
+        return queryParams.get(NAME_FILTER_KEYS.find(key => queryParams.get(key))) || '';
+    });
+    const [nameFilter, setNameFilter] = useState<NameFilterKeys>(() => {
+        return NAME_FILTER_KEYS.find(key => queryParams.get(key)) || 'Contains';
+    });
 
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
         const nowDisabled: any = {...allBatchActionsEnabled};
@@ -133,12 +143,15 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
         }
+        if (nameValue) {
+            params.append(nameFilter, nameValue);
+        }
         history.push(historyUrl('workflows' + (Utils.managedNamespace ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter]); // referential equality, so use values, not refs
 
     useEffect(() => {
         const listWatch = new ListWatch(
-            () => services.workflows.list(namespace, phases, labels, pagination),
+            () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
             metadata => {
                 setError(null);
@@ -156,7 +169,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
@@ -212,6 +225,10 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                 setFinishedBefore(date);
                                 clearSelectedWorkflows(); // date filters are client-side, but clear similar to the server-side ones for consistency
                             }}
+                            nameFilter={nameFilter}
+                            nameValue={nameValue}
+                            setNameFilter={setNameFilter}
+                            setNameValue={setNameValue}
                         />
                     </div>
                 </div>
