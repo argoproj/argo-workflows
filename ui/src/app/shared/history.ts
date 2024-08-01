@@ -1,5 +1,5 @@
 import {uiUrl} from './base';
-import {Utils} from './utils';
+import * as nsUtils from './namespaces';
 
 /**
  * Return a URL suitable to use with `history.push(..)`. Optionally saving the "namespace" parameter as the current namespace.
@@ -20,7 +20,7 @@ export function historyUrl(path: string, params: {[key: string]: any}) {
                 queryParams.push(k + '=' + v);
             }
             if (k === 'namespace') {
-                Utils.currentNamespace = v;
+                nsUtils.setCurrentNamespace(v);
             }
         });
     const extraString = extraSearchParams ? '&' + extraSearchParams.toString() : '';

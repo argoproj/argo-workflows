@@ -20,10 +20,10 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {SensorCreator} from './sensor-creator';
 import {SensorSidePanel} from './sensor-side-panel';
-import {Utils as EventsUtils} from './utils';
+import {statusIconClasses} from './utils';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
 
@@ -33,7 +33,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
 
@@ -48,7 +48,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
     useEffect(
         () =>
             history.push(
-                historyUrl('sensors' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('sensors' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel,
                     selectedNode
@@ -130,10 +130,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
                                 key={`${s.metadata.namespace}/${s.metadata.name}`}
                                 to={uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <i
-                                        className={classNames('fa', EventsUtils.statusIconClasses(s.status != null ? s.status.conditions : [], 'fa-satellite-dish'))}
-                                        aria-hidden='true'
-                                    />
+                                    <i className={classNames('fa', statusIconClasses(s.status != null ? s.status.conditions : [], 'fa-satellite-dish'))} aria-hidden='true' />
                                 </div>
                                 <div className='columns small-4'>{s.metadata.name}</div>
                                 <div className='columns small-3'>{s.metadata.namespace}</div>

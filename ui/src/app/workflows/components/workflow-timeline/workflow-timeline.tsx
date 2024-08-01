@@ -4,7 +4,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {fromEvent, interval, Subscription} from 'rxjs';
 
 import * as models from '../../../../models';
-import {Utils} from '../../../shared/utils';
+import {shortNodeName} from '../../utils';
 
 import './workflow-timeline.scss';
 
@@ -121,7 +121,7 @@ export function WorkflowTimeline(props: WorkflowTimelineProps) {
                         className={classNames('workflow-timeline__row', {'workflow-timeline__row--selected': node.id === props.selectedNodeId})}
                         onClick={() => props.nodeClicked && props.nodeClicked(node)}>
                         <div className='workflow-timeline__node-name'>
-                            <span title={Utils.shortNodeName(node)}>{Utils.shortNodeName(node)}</span>
+                            <span title={shortNodeName(node)}>{shortNodeName(node)}</span>
                         </div>
                         <div style={{left: node.left, width: node.width}} className={`workflow-timeline__node workflow-timeline__node--${node.phase.toLocaleLowerCase()}`} />
                     </div>

@@ -14,7 +14,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
 import {ClusterWorkflowTemplateEditor} from './cluster-workflow-template-editor';
 
@@ -64,7 +64,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
         (async () => {
             try {
                 const info = await services.info.getInfo();
-                setNamespace(Utils.getNamespaceWithDefault(info.managedNamespace));
+                setNamespace(nsUtils.getNamespaceWithDefault(info.managedNamespace));
                 setError(null);
             } catch (err) {
                 setError(err);

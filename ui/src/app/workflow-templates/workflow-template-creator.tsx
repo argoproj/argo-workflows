@@ -8,11 +8,11 @@ import {ExampleManifests} from '../shared/components/example-manifests';
 import {UploadButton} from '../shared/components/upload-button';
 import {exampleWorkflowTemplate} from '../shared/examples';
 import {services} from '../shared/services';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
 export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) {
-    const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(Utils.getNamespaceWithDefault(namespace)));
+    const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -22,7 +22,7 @@ export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: strin
                     icon='plus'
                     onClick={async () => {
                         try {
-                            const newTemplate = await services.workflowTemplate.create(template, Utils.getNamespaceWithDefault(template.metadata.namespace));
+                            const newTemplate = await services.workflowTemplate.create(template, nsUtils.getNamespaceWithDefault(template.metadata.namespace));
                             onCreate(newTemplate);
                         } catch (err) {
                             setError(err);

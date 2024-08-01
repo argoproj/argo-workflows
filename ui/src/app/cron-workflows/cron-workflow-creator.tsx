@@ -8,11 +8,11 @@ import {ExampleManifests} from '../shared/components/example-manifests';
 import {UploadButton} from '../shared/components/upload-button';
 import {exampleCronWorkflow} from '../shared/examples';
 import {services} from '../shared/services';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
 export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) {
-    const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>(exampleCronWorkflow(Utils.getNamespaceWithDefault(namespace)));
+    const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>(exampleCronWorkflow(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -22,7 +22,7 @@ export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; o
                     icon='plus'
                     onClick={async () => {
                         try {
-                            const newCronWorkflow = await services.cronWorkflows.create(cronWorkflow, Utils.getNamespaceWithDefault(cronWorkflow.metadata.namespace));
+                            const newCronWorkflow = await services.cronWorkflows.create(cronWorkflow, nsUtils.getNamespaceWithDefault(cronWorkflow.metadata.namespace));
                             onCreate(newCronWorkflow);
                         } catch (err) {
                             setError(err);

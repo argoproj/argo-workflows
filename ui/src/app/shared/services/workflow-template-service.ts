@@ -1,6 +1,6 @@
 import * as models from '../../../models';
 import {Pagination} from '../pagination';
-import {Utils} from '../utils';
+import {queryParams} from './utils';
 import requests from './requests';
 
 export const WorkflowTemplateService = {
@@ -13,7 +13,7 @@ export const WorkflowTemplateService = {
 
     list(namespace: string, labels?: string[], namePattern?: string, pagination?: Pagination) {
         return requests
-            .get(`api/v1/workflow-templates/${namespace}?${Utils.queryParams({labels, namePattern, pagination}).join('&')}`)
+            .get(`api/v1/workflow-templates/${namespace}?${queryParams({labels, namePattern, pagination}).join('&')}`)
             .then(res => res.body as models.WorkflowTemplateList);
     },
 

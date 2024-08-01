@@ -9,7 +9,7 @@ import {ExampleManifests} from '../../shared/components/example-manifests';
 import {UploadButton} from '../../shared/components/upload-button';
 import {exampleWorkflow} from '../../shared/examples';
 import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
+import * as nsUtils from '../../shared/namespaces';
 import {SubmitWorkflowPanel} from './submit-workflow-panel';
 import {WorkflowEditor} from './workflow-editor';
 
@@ -33,7 +33,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
     useEffect(() => {
         if (stage !== 'full-editor') return;
         if (!workflowTemplate) {
-            setWorkflow(exampleWorkflow(Utils.getNamespaceWithDefault(namespace)));
+            setWorkflow(exampleWorkflow(nsUtils.getNamespaceWithDefault(namespace)));
             return;
         }
 
@@ -106,7 +106,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                             icon='plus'
                             onClick={async () => {
                                 try {
-                                    const newWorkflow = await services.workflows.create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace));
+                                    const newWorkflow = await services.workflows.create(workflow, nsUtils.getNamespaceWithDefault(workflow.metadata.namespace));
                                     onCreate(newWorkflow);
                                 } catch (err) {
                                     setError(err);

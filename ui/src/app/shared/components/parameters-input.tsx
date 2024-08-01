@@ -3,7 +3,14 @@ import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import React from 'react';
 
 import {Parameter} from '../../../models';
-import {Utils} from '../utils';
+
+export function getValueFromParameter(p: Parameter) {
+    if (p.value === undefined) {
+        return p.default;
+    } else {
+        return p.value;
+    }
+}
 
 interface ParametersInputProps {
     parameters: Parameter[];
@@ -14,7 +21,7 @@ export function ParametersInput(props: ParametersInputProps) {
     function onParameterChange(parameter: Parameter, value: string) {
         const newParameters: Parameter[] = props.parameters.map(p => ({
             ...p,
-            value: p.name === parameter.name ? value : Utils.getValueFromParameter(p)
+            value: p.name === parameter.name ? value : getValueFromParameter(p)
         }));
         props.onChange(newParameters);
     }
@@ -23,7 +30,7 @@ export function ParametersInput(props: ParametersInputProps) {
         return (
             <Select
                 key={parameter.name}
-                value={Utils.getValueFromParameter(parameter)}
+                value={getValueFromParameter(parameter)}
                 options={parameter.enum.map(value => ({
                     value,
                     title: value
@@ -34,7 +41,7 @@ export function ParametersInput(props: ParametersInputProps) {
     }
 
     function displayInputFieldForSingleValue(parameter: Parameter) {
-        return <textarea className='argo-field' value={Utils.getValueFromParameter(parameter)} onChange={e => onParameterChange(parameter, e.target.value)} />;
+        return <textarea className='argo-field' value={getValueFromParameter(parameter)} onChange={e => onParameterChange(parameter, e.target.value)} />;
     }
 
     return (
