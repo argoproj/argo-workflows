@@ -293,7 +293,7 @@ type WorkflowSpec struct {
 	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" protobuf:"bytes,6,opt,name=volumeClaimTemplates"`
 
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
-	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,7,opt,name=parallelism"`
+	Parallelism *intstr.IntOrString `json:"parallelism,omitempty" protobuf:"bytes,7,opt,name=parallelism"`
 
 	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
 	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,8,opt,name=artifactRepositoryRef"`

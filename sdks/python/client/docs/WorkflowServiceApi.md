@@ -969,7 +969,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     "key": "key_example",
                 },
                 on_exit="on_exit_example",
-                parallelism=1,
+                parallelism="parallelism_example",
                 pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
@@ -17547,7 +17547,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         "key": "key_example",
                     },
                     on_exit="on_exit_example",
-                    parallelism=1,
+                    parallelism="parallelism_example",
                     pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                         max_unavailable="max_unavailable_example",
                         min_available="min_available_example",
@@ -28523,7 +28523,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     "key": "key_example",
                 },
                 on_exit="on_exit_example",
-                parallelism=1,
+                parallelism="parallelism_example",
                 pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
@@ -45101,7 +45101,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         "key": "key_example",
                     },
                     on_exit="on_exit_example",
-                    parallelism=1,
+                    parallelism="parallelism_example",
                     pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                         max_unavailable="max_unavailable_example",
                         min_available="min_available_example",

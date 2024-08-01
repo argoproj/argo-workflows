@@ -2750,8 +2750,13 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
 func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
-	if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
-		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.execWf.Spec.Parallelism)
+	parallelism, err := intstr.Int64(woc.execWf.Spec.Parallelism)
+	if err != nil {
+		return err
+	}
+
+	if parallelism != nil && woc.activePods >= *parallelism {
+		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *parallelism)
 		return ErrParallelismReached
 	}
 

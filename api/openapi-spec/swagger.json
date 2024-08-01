@@ -11711,7 +11711,7 @@
         },
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
-          "type": "integer"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "podDisruptionBudget": {
           "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.",

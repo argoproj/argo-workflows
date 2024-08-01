@@ -7787,8 +7787,8 @@
           "type": "string"
         },
         "parallelism": {
-          "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
-          "type": "integer"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+          "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
         },
         "podDisruptionBudget": {
           "$ref": "#/definitions/io.k8s.api.policy.v1.PodDisruptionBudgetSpec",
