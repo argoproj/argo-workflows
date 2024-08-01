@@ -12,7 +12,7 @@ import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
 import {Context} from '../../../shared/context';
 import {useLocalStorage} from '../../../shared/hooks/uselocalstorage';
-import {getPodName} from '../../../shared/pod-name';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
