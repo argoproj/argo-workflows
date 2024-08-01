@@ -12,7 +12,7 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {Node} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
-import {Timestamp} from '../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -24,6 +24,7 @@ import {Utils} from '../shared/utils';
 import {SensorCreator} from './sensor-creator';
 import {SensorSidePanel} from './sensor-side-panel';
 import {Utils as EventsUtils} from './utils';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
 
@@ -83,6 +84,8 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
     const loading = !error && !sensors;
     const zeroState = (sensors || []).length === 0;
 
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.SENSOR_LIST_CREATION);
+
     return (
         <Page
             title='Sensors'
@@ -121,7 +124,9 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
                             <div className='columns small-1' />
                             <div className='columns small-4'>NAME</div>
                             <div className='columns small-3'>NAMESPACE</div>
-                            <div className='columns small-2'>CREATED</div>
+                            <div className='columns small-2'>
+                                CREATED <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                            </div>
                             <div className='columns small-2'>LOGS</div>
                         </div>
                         {sensors.map(s => (
@@ -138,7 +143,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
                                 <div className='columns small-4'>{s.metadata.name}</div>
                                 <div className='columns small-3'>{s.metadata.namespace}</div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={s.metadata.creationTimestamp} />
+                                    <Timestamp date={s.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
                                 </div>
                                 <div className='columns small-2'>
                                     <div

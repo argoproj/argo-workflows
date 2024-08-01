@@ -23,6 +23,8 @@ import {CronWorkflowEditor} from './cron-workflow-editor';
 
 import '../workflows/components/workflow-details/workflow-details.scss';
 import './cron-workflow-details.scss';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
+import {TimestampSwitch} from '../shared/components/timestamp';
 
 export function CronWorkflowDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
@@ -83,6 +85,9 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     }, []);
 
     useCollectEvent('openedCronWorkflowDetails');
+
+    const [storedDisplayISOFormatStart, setStoredDisplayISOFormatStart] = useTimestamp(TIMESTAMP_KEYS.CRON_ROW_STARTED);
+    const [storedDisplayISOFormatFinished, setStoredDisplayISOFormatFinished] = useTimestamp(TIMESTAMP_KEYS.CRON_ROW_FINISHED);
 
     const suspendButton =
         cronWorkflow && !cronWorkflow.spec.suspend
@@ -232,8 +237,13 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                                 <div className='row small-11'>
                                     <div className='columns small-2'>NAME</div>
                                     <div className='columns small-1'>NAMESPACE</div>
-                                    <div className='columns small-1'>STARTED</div>
-                                    <div className='columns small-1'>FINISHED</div>
+                                    <div className='columns small-1'>
+                                        STARTED <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormatStart} setStoredDisplayISOFormat={setStoredDisplayISOFormatStart} />
+                                    </div>
+                                    <div className='columns small-1'>
+                                        FINISHED{' '}
+                                        <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormatFinished} setStoredDisplayISOFormat={setStoredDisplayISOFormatFinished} />
+                                    </div>
                                     <div className='columns small-1'>DURATION</div>
                                     <div className='columns small-1'>PROGRESS</div>
                                     <div className='columns small-2'>MESSAGE</div>
@@ -250,7 +260,18 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                             </div>
                             {/* checkboxes are not visible and are unused on this page */}
                             {workflows.map(wf => {
-                                return <WorkflowsRow workflow={wf} key={wf.metadata.uid} checked={false} columns={columns} onChange={null} select={null} />;
+                                return (
+                                    <WorkflowsRow
+                                        workflow={wf}
+                                        key={wf.metadata.uid}
+                                        checked={false}
+                                        columns={columns}
+                                        onChange={null}
+                                        select={null}
+                                        displayISOFormatStart={storedDisplayISOFormatStart}
+                                        displayISOFormatFinished={storedDisplayISOFormatFinished}
+                                    />
+                                );
                             })}
                         </div>
                     )}
