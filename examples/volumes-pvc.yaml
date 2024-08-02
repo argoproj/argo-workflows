@@ -1,4 +1,4 @@
-# This example demonstrates the ability for a workflow to create a 
+# This example demonstrates the ability for a workflow to create a
 # temporary, ephemeral volume used by the workflow, and delete it
 # when the workflow completes. It uses the same volumeClaimTemplates
 # syntax as statefulsets.
@@ -21,20 +21,20 @@ spec:
   - name: volumes-pvc-example
     steps:
     - - name: generate
-        template: whalesay
+        template: hello-world-to-file
     - - name: print
-        template: print-message
+        template: print-message-from-file
 
-  - name: whalesay
+  - name: hello-world-to-file
     container:
-      image: docker/whalesay:latest
+      image: busybox
       command: [sh, -c]
-      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
+      args: ["echo generating message in volume; echo hello world | tee /mnt/vol/hello_world.txt"]
       volumeMounts:
       - name: workdir
         mountPath: /mnt/vol
 
-  - name: print-message
+  - name: print-message-from-file
     container:
       image: alpine:latest
       command: [sh, -c]
