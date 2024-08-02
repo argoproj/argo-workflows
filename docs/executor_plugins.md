@@ -30,6 +30,19 @@ controller:
       value: "true"
 ```
 
+If you want to modify a running Controller:
+
+```bash
+kubectl patch deployment \
+  workflow-controller \
+  --namespace argo \
+  -p '{"spec":{"template":{"spec":{"containers":[{"name":"workflow-controller","env":[{"name":"ARGO_EXECUTOR_PLUGINS","value":"true"}]}]}}}}'
+```
+
+### Permissions
+
+Plugins use the Argo Agent, which executes the requests independently of the controller. In order to use the Argo Agent, you will need to ensure that you have added the appropriate [workflow RBAC](workflow-rbac.md) to add an agent role with to Argo Workflows. An example agent role can be found in [the quick-start manifests](https://github.com/argoproj/argo-workflows/tree/main/manifests/quick-start/base/agent-role.yaml).
+
 ## Template Executor
 
 This is a plugin that runs custom "plugin" templates, e.g. for non-pod tasks such as Tekton builds, Spark jobs, sending
@@ -162,7 +175,7 @@ spec:
         - containerPort: 4355
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534 # nobody
+        runAsUser: 1000
       resources:
         requests:
           memory: "64Mi"
