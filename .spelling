@@ -183,6 +183,7 @@ memoizing
 metadata
 minikube
 mutex
+mutexes
 namespace
 namespaces
 natively

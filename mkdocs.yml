@@ -122,6 +122,7 @@ nav:
           - retries.md
           - lifecyclehook.md
           - synchronization.md
+          - parallelism.md
           - memoization.md
           - template-defaults.md
           - enhanced-depends-logic.md
