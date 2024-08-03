@@ -55,16 +55,17 @@ If you are incorrectly configured, the workflow controller will error on start-u
 
 #### Actions
 
-You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):
+You don't need to configure images that use v2 manifests anymore, such as `argoproj/argosay:v2`.
+You can remove them:
 
 ```bash
 % docker manifest inspect argoproj/argosay:v2
-...
+# ...
 "schemaVersion": 2,
-...
+# ...
 ```
 
-For v1 manifests (e.g. docker/whalesay:latest):
+For v1 manifests, such as `docker/whalesay:latest`:
 
 ```bash
 % docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' docker/whalesay:latest

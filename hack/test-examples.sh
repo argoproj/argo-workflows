@@ -7,7 +7,7 @@ kubectl apply -f examples/configmaps/simple-parameters-configmap.yaml
 echo "Checking for banned images..."
 grep -lR 'workflows.argoproj.io/test' examples/*  | while read f ; do
   echo " - $f"
-  test 0 == $(grep -o 'image: .*' $f | grep -cv 'argoproj/argosay:v2\|python:alpine3.6')
+  test 0 == $(grep -o 'image: .*' $f | grep -cv 'argoproj/argosay:v2\|python:alpine3.6\|busybox')
 done
 
 trap 'kubectl get wf' EXIT

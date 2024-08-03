@@ -3,13 +3,13 @@ kind: Workflow
 metadata:
   generateName: cluster-workflow-template-hello-world-
 spec:
-  entrypoint: whalesay-template
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message
         value: "hello world"
   workflowTemplateRef:
-    name: cluster-workflow-template-whalesay-template
+    name: cluster-workflow-template-print-message
     clusterScope: true
 
 
