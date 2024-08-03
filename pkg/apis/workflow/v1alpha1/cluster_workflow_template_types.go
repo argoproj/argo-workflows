@@ -15,7 +15,8 @@ import (
 type ClusterWorkflowTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              WorkflowSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Spec              WorkflowSpec           `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status            WorkflowTemplateStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 type ClusterWorkflowTemplates []ClusterWorkflowTemplate
