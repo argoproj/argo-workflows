@@ -473,7 +473,7 @@ spec:
 
 func TestTemplateClusterScope(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testTemplateClusterScopeWorkflowYaml)
-	cwftmpl := wfv1.MustUnmarshalClusterWorkflow(testTemplateClusterScopeWorkflowTemplateYaml1)
+	cwftmpl := wfv1.MustUnmarshalClusterWorkflowTemplate(testTemplateClusterScopeWorkflowTemplateYaml1)
 	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWorkflowTemplateYaml2)
 
 	cancel, controller := newController(wf, cwftmpl, wftmpl)
