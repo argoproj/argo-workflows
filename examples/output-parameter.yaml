@@ -5,8 +5,8 @@
 # instead of stdout (as with script templates). Secondly, there can
 # be multiple 'output.parameters.xxx' in a single template, versus
 # a single 'output.result' from a script template.
-# 
-# In this example, the 'whalesay' template produces an output
+#
+# In this example, the 'hello-world-to-file' template produces an output
 # parameter named 'hello-param', taken from the file contents of
 # /tmp/hello_world.txt. This parameter is passed to a subsequent
 # step as an input parameter to the template, 'print-message'.
@@ -20,7 +20,7 @@ spec:
   - name: output-parameter
     steps:
     - - name: generate-parameter
-        template: whalesay
+        template: hello-world-to-file
     - - name: consume-parameter
         template: print-message
         arguments:
@@ -28,9 +28,9 @@ spec:
           - name: message
             value: "{{steps.generate-parameter.outputs.parameters.hello-param}}"
 
-  - name: whalesay
+  - name: hello-world-to-file
     container:
-      image: docker/whalesay:latest
+      image: busybox
       command: [sh, -c]
       args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
     outputs:
@@ -45,6 +45,6 @@ spec:
       parameters:
       - name: message
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]

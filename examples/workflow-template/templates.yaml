@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: workflow-template-whalesay-template
+  name: workflow-template-print-message
 spec:
-  entrypoint: whalesay-template
+  entrypoint: print-message
   templates:
-  - name: whalesay-template
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ---
 apiVersion: argoproj.io/v1alpha1
@@ -35,34 +35,34 @@ metadata:
   name: workflow-template-inner-steps
 spec:
   templates:
-  - name: whalesay-template
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
   - name: inner-steps
     steps:
     - - name: inner-hello1
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message
             value: "inner-hello1"
     - - name: inner-hello2a
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message
             value: "inner-hello2a"
       - name: inner-hello2b
-        template: whalesay-template
+        template: print-message
         arguments:
           parameters:
           - name: message
@@ -81,35 +81,35 @@ metadata:
   name: workflow-template-inner-dag
 spec:
   templates:
-  - name: whalesay-template
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
   - name: inner-diamond
     dag:
       tasks:
       - name: inner-A
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message
             value: inner-A
       - name: inner-B
         depends: "inner-A"
-        template: whalesay-template
+        template: print-message
         arguments:
           parameters:
           - name: message
             value: inner-B
       - name: inner-C
         depends: "inner-A"
-        template: whalesay-template
+        template: print-message
         arguments:
           parameters:
           - name: message
@@ -117,8 +117,8 @@ spec:
       - name: inner-D
         depends: "inner-B && inner-C"
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message
@@ -129,17 +129,17 @@ kind: WorkflowTemplate
 metadata:
   name: workflow-template-submittable
 spec:
-  entrypoint: whalesay-template
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message
         value: hello world
   templates:
-    - name: whalesay-template
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]

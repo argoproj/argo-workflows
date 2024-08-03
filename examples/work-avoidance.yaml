@@ -49,7 +49,7 @@ spec:
                 name: my-minio-cred
                 key: secretkey
       container:
-        image: docker/whalesay:latest
+        image: busybox
         command:
           - mkdir
           - -p
@@ -63,7 +63,7 @@ spec:
         parameters:
           - name: num
       script:
-        image: docker/whalesay:latest
+        image: busybox
         command:
           - bash
           - -eux
@@ -86,7 +86,7 @@ spec:
 
     - name: save-markers
       container:
-        image: docker/whalesay:latest
+        image: busybox
         command:
           - "true"
         volumeMounts:
