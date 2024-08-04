@@ -8,6 +8,7 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -77,7 +78,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
 
@@ -89,14 +90,14 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
 	woc.cronWf.SetSchedule("0 * * * *")
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Run the same test in a different timezone
@@ -118,7 +119,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	// Reset last-used-schedule as if the current schedule has been used before
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
 
@@ -130,14 +131,14 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
 	woc.cronWf.SetSchedule("0 * * * *")
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 }
 
@@ -245,7 +246,7 @@ func TestSpecError(t *testing.T) {
 	}
 
 	err := woc.validateCronWorkflow()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
@@ -270,7 +271,7 @@ func TestScheduleTimeParam(t *testing.T) {
 	}
 	woc.Run()
 	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, wsl.Items.Len())
 	wf := wsl.Items[0]
 	assert.NotNil(t, wf)
@@ -320,9 +321,8 @@ func TestLastUsedSchedule(t *testing.T) {
 	}
 
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
-	if assert.NoError(t, err) {
-		assert.Equal(t, time.Time{}, missedExecutionTime)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, time.Time{}, missedExecutionTime)
 
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 
@@ -392,7 +392,7 @@ func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
 		}
 		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 		missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, missedExecutionTime.IsZero())
 	})
 }
@@ -449,7 +449,7 @@ func TestMultipleSchedules(t *testing.T) {
 	}
 	woc.Run()
 	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, wsl.Items.Len())
 	wf := wsl.Items[0]
 	assert.NotNil(t, wf)
@@ -509,7 +509,7 @@ func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
 	}
 
 	err := woc.validateCronWorkflow()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
@@ -568,7 +568,7 @@ func TestSpecErrorWithValidAndInvalidSchedules(t *testing.T) {
 	}
 
 	err := woc.validateCronWorkflow()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
@@ -604,7 +604,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	}
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
 
@@ -616,14 +616,14 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
 	woc.cronWf.SetSchedules([]string{"0 * * * *,1 * * * *"})
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Run the same test in a different timezone
@@ -645,7 +645,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	// Reset last-used-schedule as if the current schedule has been used before
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
 	assert.Equal(t, inferScheduledTime().Unix(), missedExecutionTime.Unix())
 
@@ -657,13 +657,13 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
 	woc.cronWf.SetSchedules([]string{"0 * * * *,1 * * * *"})
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 }

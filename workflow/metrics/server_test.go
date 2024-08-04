@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDisableMetricsServer(t *testing.T) {
@@ -31,7 +32,7 @@ func TestDisableMetricsServer(t *testing.T) {
 		defer resp.Body.Close()
 	}
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "connection refused") // expect that the metrics server not to start
 }
 
@@ -49,13 +50,13 @@ func TestMetricsServer(t *testing.T) {
 	m.RunServer(ctx, false)
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	defer resp.Body.Close()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	bodyString := string(bodyBytes)
 	assert.NotEmpty(t, bodyString)
@@ -75,13 +76,13 @@ func TestDummyMetricsServer(t *testing.T) {
 	m.RunServer(ctx, true)
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	defer resp.Body.Close()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	bodyString := string(bodyBytes)
 

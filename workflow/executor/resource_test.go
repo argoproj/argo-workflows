@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -42,20 +43,20 @@ func TestResourceFlags(t *testing.T) {
 		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 	args, err := we.getKubectlArguments("fake", manifestPath, fakeFlags)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, args, fakeFlags[0])
 
 	_, err = we.getKubectlArguments("fake", manifestPath, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = we.getKubectlArguments("fake", "unknown-location", fakeFlags)
 	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, "open unknown-location: The system cannot find the file specified.")
+		require.EqualError(t, err, "open unknown-location: The system cannot find the file specified.")
 	} else {
-		assert.EqualError(t, err, "open unknown-location: no such file or directory")
+		require.EqualError(t, err, "open unknown-location: no such file or directory")
 	}
 
 	emptyFile, err := os.CreateTemp("/tmp", "empty-manifest")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() { _ = os.Remove(emptyFile.Name()) }()
 	_, err = we.getKubectlArguments("fake", emptyFile.Name(), nil)
 	assert.EqualError(t, err, "Must provide at least one of flags or manifest.")
@@ -119,7 +120,7 @@ func TestResourcePatchFlags(t *testing.T) {
 			}
 			args, err := we.getKubectlArguments("patch", tt.manifestPath, fakeFlags)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, expectedArgs, args)
 		})
 	}
@@ -130,28 +131,28 @@ func TestResourcePatchFlags(t *testing.T) {
 func TestResourceConditionsMatching(t *testing.T) {
 	var successReqs labels.Requirements
 	successSelector, err := labels.Parse("status.phase == Succeeded")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	successReqs, _ = successSelector.Requirements()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	var failReqs labels.Requirements
 	failSelector, err := labels.Parse("status.phase == Error")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	failReqs, _ = failSelector.Requirements()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	jsonBytes := []byte(`{"name": "test","status":{"phase":"Error"}`)
 	finished, err := matchConditions(jsonBytes, successReqs, failReqs)
-	assert.Error(t, err, `failure condition '{status.phase == [Error]}' evaluated true`)
+	require.Error(t, err, `failure condition '{status.phase == [Error]}' evaluated true`)
 	assert.False(t, finished)
 
 	jsonBytes = []byte(`{"name": "test","status":{"phase":"Succeeded"}`)
 	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, finished)
 
 	jsonBytes = []byte(`{"name": "test","status":{"phase":"Pending"}`)
 	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
-	assert.Error(t, err, "Neither success condition nor the failure condition has been matched. Retrying...")
+	require.Error(t, err, "Neither success condition nor the failure condition has been matched. Retrying...")
 	assert.True(t, finished)
 }
 
@@ -218,8 +219,7 @@ func TestResourceExecRetry(t *testing.T) {
 	t.Setenv("PATH", dirname+"/testdata")
 
 	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no more retries")
+	require.ErrorContains(t, err, "no more retries")
 }
 
 func Test_jqFilter(t *testing.T) {
@@ -234,7 +234,7 @@ func Test_jqFilter(t *testing.T) {
 		t.Run(string(testCase.input), func(t *testing.T) {
 			ctx := context.Background()
 			got, err := jqFilter(ctx, testCase.input, testCase.filter)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, testCase.want, got)
 		})
 	}
@@ -242,6 +242,6 @@ func Test_jqFilter(t *testing.T) {
 
 func Test_runKubectl(t *testing.T) {
 	out, err := runKubectl("kubectl", "version", "--client=true", "--output", "json")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(out), "clientVersion")
 }
