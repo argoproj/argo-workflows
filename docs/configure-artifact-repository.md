@@ -343,7 +343,11 @@ data:
 Create an Azure Storage account and a container within your account.
 You can use the [Azure Portal](https://portal.azure.com), the [CLI](https://docs.microsoft.com/en-us/cli/azure/), or other tools.
 
-You can authenticate Argo to your Azure storage account in multiple ways.
+You can authenticate Argo to your Azure storage account in multiple ways:
+
+- [Managed Identities](#using-azure-managed-identities)
+- [Access Keys](#using-azure-access-keys)
+- [Shared Access Signatures (SAS)](#using-azure-shared-access-signatures-sas)
 
 ### Using Azure Managed Identities
 
