@@ -182,6 +182,9 @@ create the service account key and store it as a Kubernetes secret,
 `serviceAccountKeySecret` is also not needed in this case. Please follow the
 link to configure Workload Identity
 (<https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity>).
+If using the artifact repository to archive logs, Workload Identity will have to be associated with two Kubernetes service accounts: 
+- The service account used to execute the workflow to write logs
+- The service account used by Argo Server (default: `argo-server`) to retrieve logs
 
 ### Use S3 APIs
 
