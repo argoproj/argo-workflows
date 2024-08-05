@@ -381,7 +381,7 @@ artifacts:
     az storage account keys list -n mystorageaccountname --query '[0].value' -otsv
     ```
 
-3. Create a Kubernetes secret to hold the storage account key.
+3. Create a Kubernetes Secret to hold the storage account key:
 
     ```bash
     kubectl create secret generic my-azure-storage-credentials \
