@@ -411,7 +411,7 @@ artifacts:
 
 > v3.6 and after
 
-If you do not wish to use an Access Key, you may also use a [shared access signature (SAS)](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json).
+You can also use a [Shared Access Signature (SAS)](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json).
 Create an Azure Storage account and a container within that account.
 You can do this using the [Azure Portal](https://portal.azure.com) or the [CLI](https://docs.microsoft.com/en-us/cli/azure/).
 
