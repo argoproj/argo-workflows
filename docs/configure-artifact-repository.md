@@ -370,7 +370,6 @@ artifacts:
       useSDKCreds: true  
 ```
 
-
 ### Using Azure Access Keys
 
 1. Retrieve the blob service endpoint for the storage account.
