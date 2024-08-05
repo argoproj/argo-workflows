@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -356,7 +356,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: pointer.String("ok"), Parameters: []wfv1.Parameter{{}}}))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: ptr.To("ok"), Parameters: []wfv1.Parameter{{}}}))
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)

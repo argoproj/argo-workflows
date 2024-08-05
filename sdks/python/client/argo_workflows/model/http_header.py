@@ -106,7 +106,7 @@ class HTTPHeader(ModelNormal):
         """HTTPHeader - a model defined in OpenAPI
 
         Args:
-            name (str): The header field name
+            name (str): The header field name. This will be canonicalized upon output, so case-variant names will be understood as the same header.
             value (str): The header field value
 
         Keyword Args:
@@ -193,7 +193,7 @@ class HTTPHeader(ModelNormal):
         """HTTPHeader - a model defined in OpenAPI
 
         Args:
-            name (str): The header field name
+            name (str): The header field name. This will be canonicalized upon output, so case-variant names will be understood as the same header.
             value (str): The header field value
 
         Keyword Args:

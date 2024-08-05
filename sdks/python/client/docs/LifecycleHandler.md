@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **_exec** | [**ExecAction**](ExecAction.md) |  | [optional] 
 **http_get** | [**HTTPGetAction**](HTTPGetAction.md) |  | [optional] 
+**sleep** | [**SleepAction**](SleepAction.md) |  | [optional] 
 **tcp_socket** | [**TCPSocketAction**](TCPSocketAction.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

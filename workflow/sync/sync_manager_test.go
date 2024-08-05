@@ -12,7 +12,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -394,7 +394,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		wf2.Spec.Priority = pointer.Int32(5)
+		wf2.Spec.Priority = ptr.To(int32(5))
 		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
 		assert.NoError(t, err)

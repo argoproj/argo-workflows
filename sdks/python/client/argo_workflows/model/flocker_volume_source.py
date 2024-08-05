@@ -136,8 +136,8 @@ class FlockerVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            dataset_name (str): Name of the dataset stored as metadata -> name on the dataset for Flocker should be considered as deprecated. [optional]  # noqa: E501
-            dataset_uuid (str): UUID of the dataset. This is unique identifier of a Flocker dataset. [optional]  # noqa: E501
+            dataset_name (str): datasetName is Name of the dataset stored as metadata -> name on the dataset for Flocker should be considered as deprecated. [optional]  # noqa: E501
+            dataset_uuid (str): datasetUUID is the UUID of the dataset. This is unique identifier of a Flocker dataset. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -219,8 +219,8 @@ class FlockerVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            dataset_name (str): Name of the dataset stored as metadata -> name on the dataset for Flocker should be considered as deprecated. [optional]  # noqa: E501
-            dataset_uuid (str): UUID of the dataset. This is unique identifier of a Flocker dataset. [optional]  # noqa: E501
+            dataset_name (str): datasetName is Name of the dataset stored as metadata -> name on the dataset for Flocker should be considered as deprecated. [optional]  # noqa: E501
+            dataset_uuid (str): datasetUUID is the UUID of the dataset. This is unique identifier of a Flocker dataset. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

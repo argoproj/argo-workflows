@@ -26,7 +26,7 @@ import (
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -163,7 +163,7 @@ func (s *E2ESuite) DeleteResources() {
 					s.CheckError(err)
 				}
 			}
-			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64(2)}, metav1.ListOptions{LabelSelector: l(r)}))
+			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
 			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
 			s.CheckError(err)
 			if len(ls.Items) == 0 {

@@ -106,7 +106,7 @@ class PersistentVolumeClaimVolumeSource(ModelNormal):
         """PersistentVolumeClaimVolumeSource - a model defined in OpenAPI
 
         Args:
-            claim_name (str): ClaimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+            claim_name (str): claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -139,7 +139,7 @@ class PersistentVolumeClaimVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            read_only (bool): Will force the ReadOnly setting in VolumeMounts. Default false.. [optional]  # noqa: E501
+            read_only (bool): readOnly Will force the ReadOnly setting in VolumeMounts. Default false.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -192,7 +192,7 @@ class PersistentVolumeClaimVolumeSource(ModelNormal):
         """PersistentVolumeClaimVolumeSource - a model defined in OpenAPI
 
         Args:
-            claim_name (str): ClaimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+            claim_name (str): claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -225,7 +225,7 @@ class PersistentVolumeClaimVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            read_only (bool): Will force the ReadOnly setting in VolumeMounts. Default false.. [optional]  # noqa: E501
+            read_only (bool): readOnly Will force the ReadOnly setting in VolumeMounts. Default false.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

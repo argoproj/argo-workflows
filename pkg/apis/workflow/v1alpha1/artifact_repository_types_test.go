@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestArtifactRepository(t *testing.T) {
@@ -15,9 +15,9 @@ func TestArtifactRepository(t *testing.T) {
 		assert.Nil(t, l)
 	})
 	t.Run("ArchiveLogs", func(t *testing.T) {
-		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{}, ArchiveLogs: pointer.Bool(true)}
+		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{}, ArchiveLogs: ptr.To(true)}
 		l := r.ToArtifactLocation()
-		assert.Equal(t, pointer.Bool(true), l.ArchiveLogs)
+		assert.Equal(t, ptr.To(true), l.ArchiveLogs)
 	})
 	t.Run("Artifactory", func(t *testing.T) {
 		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{RepoURL: "http://my-repo"}}
@@ -71,6 +71,6 @@ func TestArtifactRepository(t *testing.T) {
 
 func TestArtifactRepository_IsArchiveLogs(t *testing.T) {
 	assert.False(t, (&ArtifactRepository{}).IsArchiveLogs())
-	assert.False(t, (&ArtifactRepository{ArchiveLogs: pointer.Bool(false)}).IsArchiveLogs())
-	assert.True(t, (&ArtifactRepository{ArchiveLogs: pointer.Bool(true)}).IsArchiveLogs())
+	assert.False(t, (&ArtifactRepository{ArchiveLogs: ptr.To(false)}).IsArchiveLogs())
+	assert.True(t, (&ArtifactRepository{ArchiveLogs: ptr.To(true)}).IsArchiveLogs())
 }
