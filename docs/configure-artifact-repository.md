@@ -344,7 +344,10 @@ Create an Azure Storage account and a container within your account.
 You can use the [Azure Portal](https://portal.azure.com), the [CLI](https://docs.microsoft.com/en-us/cli/azure/), or other tools.
 
 You can authenticate Argo to your Azure storage account in multiple ways.
-The preferred method is via [Azure managed identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity).
+
+### Using Azure Managed Identities
+
+The preferred method is via [Azure Managed Identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity).
 If a managed identity has been assigned to the machines running the workflow then `useSDKCreds` can be set to true in the workflow YAML.
 If `useSDKCreds` is set to `true`, then the `accountKeySecret` value is not
 used and authentication with Azure will be attempted using
