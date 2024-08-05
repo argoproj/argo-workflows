@@ -372,6 +372,8 @@ artifacts:
 
 ### Using Azure Access Keys
 
+You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal).
+
 1. Retrieve the blob service endpoint for the storage account.
 
     ```bash
