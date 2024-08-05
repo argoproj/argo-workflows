@@ -180,9 +180,10 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 	valid := false
 	var mode Mode
 	var authorization string
+	var err error
 
 	for _, token := range authorizations {
-		mode, valid = s.Modes.GetMode(token)
+		mode, valid, err = s.Modes.GetMode(token)
 		// Stop checking after the first valid token
 		if valid {
 			authorization = token
@@ -190,7 +191,9 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		}
 	}
 	if !valid {
-		return nil, nil, status.Error(codes.Unauthenticated, "token not valid. see https://argo-workflows.readthedocs.io/en/latest/faq/")
+		// this could be just an improperly formatted token, or it could be indicative of a misconfiguration, which is common when setting up auth
+		log.WithError(err).Warn("token not valid. if you're setting up auth, you might have a misconfiguration: https://argo-workflows.readthedocs.io/en/latest/faq/")
+		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 	switch mode {
 	case Client:

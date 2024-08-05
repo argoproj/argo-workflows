@@ -25,6 +25,7 @@ import {ChatButton} from './shared/components/chat-button';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
 import {Utils} from './shared/utils';
+import {getCookie, AUTH_COOKIE} from './shared/cookie';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
@@ -55,31 +56,41 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
     const [navBarBackgroundColor, setNavBarBackgroundColor] = useState<string>();
     const setError = (error: Error) => {
         notificationsManager.show({
-            content: 'Failed to load version/info ' + error,
+            content: 'Login failed: ' + error,
             type: NotificationType.Error
         });
     };
     Utils.onNamespaceChange = setNamespace;
+
     useEffect(() => {
         const sub = popupManager.popupProps.subscribe(setPopupProps);
         return () => sub.unsubscribe();
     }, [popupManager]);
+
     useEffect(() => {
-        services.info.getUserInfo().then(userInfo => {
-            Utils.userNamespace = userInfo.serviceAccountNamespace;
-            setNamespace(Utils.currentNamespace);
-        });
-        services.info
-            .getInfo()
-            .then(info => {
+        (async () => {
+            try {
+                const [userInfo, info, version] = await Promise.all([services.info.getUserInfo(), services.info.getInfo(), services.info.getVersion()]);
+                Utils.userNamespace = userInfo.serviceAccountNamespace;
+                setNamespace(Utils.currentNamespace);
+
                 Utils.managedNamespace = info.managedNamespace;
                 setNamespace(Utils.currentNamespace);
                 setModals(info.modals);
                 setNavBarBackgroundColor(info.navColor);
-            })
-            .then(() => services.info.getVersion())
-            .then(setVersion)
-            .catch(setError);
+
+                setVersion(version);
+            } catch (err) {
+                // don't show error if there is no cookie, that means you haven't tried logging in yet or just logged out
+                // this can also happen if SSO failed, but we have a different error for that
+                // there should also be no error in server auth mode
+                if (!getCookie(AUTH_COOKIE)) {
+                    console.debug('ignoring auth error as no cookie was present');
+                    return;
+                }
+                setError(err);
+            }
+        })();
     }, []);
 
     const namespaceSuffix = Utils.managedNamespace ? '' : '/' + (namespace || '');
