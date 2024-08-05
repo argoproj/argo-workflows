@@ -418,8 +418,6 @@ You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage
 > v3.6 and after
 
 You can also use a [Shared Access Signature (SAS)](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json).
-Create an Azure Storage account and a container within that account.
-You can do this using the [Azure Portal](https://portal.azure.com) or the [CLI](https://docs.microsoft.com/en-us/cli/azure/).
 
 1. Retrieve the blob service endpoint for the storage account.
 
