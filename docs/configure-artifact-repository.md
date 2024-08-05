@@ -340,9 +340,8 @@ data:
 
 ## Configuring Azure Blob Storage
 
-Create an Azure Storage account and a container within your account. There are several
-ways to accomplish this, including the [Azure Portal](https://portal.azure.com) or the
-[CLI](https://docs.microsoft.com/en-us/cli/azure/).
+Create an Azure Storage account and a container within your account.
+You can use the [Azure Portal](https://portal.azure.com), the [CLI](https://docs.microsoft.com/en-us/cli/azure/), or other tools.
 
 There are multiple ways to allow Argo to authenticate its access to your Azure storage account.
 The preferred method is via [Azure managed identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity).
