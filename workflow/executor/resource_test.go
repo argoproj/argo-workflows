@@ -64,63 +64,65 @@ func TestResourceFlags(t *testing.T) {
 // TestResourcePatchFlags tests whether Resource Flags
 // are properly passed to `kubectl patch` command
 func TestResourcePatchFlags(t *testing.T) {
+	fakeFlags := []string{"pod", "mypod"}
 	fakeClientset := fake.NewSimpleClientset()
-	manifestPath := "../../examples/hello-world.yaml"
-	buff, err := os.ReadFile(manifestPath)
-	assert.NoError(t, err)
-	fakeFlags := []string{"kubectl", "patch", "--type", "strategic", "-p", string(buff), "-f", manifestPath, "-o", "json"}
-
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
-	template := wfv1.Template{
-		Resource: &wfv1.ResourceTemplate{
-			Action: "patch",
-			Flags:  fakeFlags,
+	tests := []struct {
+		name           string
+		patchType      string
+		appendFileFlag bool
+		manifestPath   string
+	}{
+		{
+			name:           "strategic -f --patch-file",
+			patchType:      "strategic",
+			appendFileFlag: true,
+			manifestPath:   "../../examples/hello-world.yaml", // any YAML with a `kind`
+		},
+		{
+			name:           "json --patch-file",
+			patchType:      "json",
+			appendFileFlag: false,
+			manifestPath:   "../../.golangci.yml", // any YAML without a `kind`
+		},
+		{
+			name:           "merge --patch-file",
+			patchType:      "merge",
+			appendFileFlag: false,
+			manifestPath:   "../../.golangci.yml", // any YAML without a `kind`
 		},
 	}
 
-	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        template,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedArgs := []string{"kubectl", "patch", "--type", tt.patchType, "--patch-file", tt.manifestPath}
+			expectedArgs = append(expectedArgs, fakeFlags...)
+			if tt.appendFileFlag {
+				expectedArgs = append(expectedArgs, "-f", tt.manifestPath)
+			}
+			expectedArgs = append(expectedArgs, "-o", "json")
+
+			template := wfv1.Template{
+				Resource: &wfv1.ResourceTemplate{
+					Action:        "patch",
+					Flags:         fakeFlags,
+					MergeStrategy: tt.patchType,
+				},
+			}
+			we := WorkflowExecutor{
+				PodName:         fakePodName,
+				Template:        template,
+				ClientSet:       fakeClientset,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: &mockRuntimeExecutor,
+			}
+			args, err := we.getKubectlArguments("patch", tt.manifestPath, fakeFlags)
+
+			assert.NoError(t, err)
+			assert.Equal(t, expectedArgs, args)
+		})
 	}
-	args, err := we.getKubectlArguments("patch", manifestPath, nil)
-
-	assert.NoError(t, err)
-	assert.Equal(t, args, fakeFlags)
-}
-
-// TestResourcePatchFlagsJson tests whether Resource Flags
-// are properly passed to `kubectl patch` command in json patches
-func TestResourcePatchFlagsJson(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
-	manifestPath := "../../examples/hello-world.yaml"
-	buff, err := os.ReadFile(manifestPath)
-	assert.NoError(t, err)
-	fakeFlags := []string{"kubectl", "patch", "--type", "json", "-p", string(buff), "-o", "json"}
-
-	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-
-	template := wfv1.Template{
-		Resource: &wfv1.ResourceTemplate{
-			Action:        "patch",
-			Flags:         fakeFlags,
-			MergeStrategy: "json",
-		},
-	}
-
-	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        template,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
-	}
-	args, err := we.getKubectlArguments("patch", manifestPath, nil)
-	assert.NoError(t, err)
-	assert.Equal(t, args, fakeFlags)
 }
 
 // TestResourceConditionsMatching tests whether the JSON response match

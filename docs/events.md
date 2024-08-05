@@ -40,7 +40,7 @@ The event endpoint will always return in under 10 seconds because the event will
 ## Workflow Template triggered by the event
 
 Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
-The following one takes in input the "message" parameter specified into the API call body, passed through the `WorkflowEventBinding` parameters section, and finally resolved here as the message of the `whalesay` image.
+The following one takes in input the "message" parameter specified into the API call body, passed through the `WorkflowEventBinding` parameters section, and finally resolved here as the message of the `main` template.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -56,8 +56,8 @@ spec:
           - name: message
             value: "{{workflow.parameters.message}}"
       container:
-        image: docker/whalesay:latest
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]
   entrypoint: main
 ```

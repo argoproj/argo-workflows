@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-patch-
+  generateName: k8s-patch-json-pod-
   labels:
     workflows.argoproj.io/test: "true"
   annotations:
@@ -14,6 +14,7 @@ spec:
     resource:
       action: patch
       mergeStrategy: json
+      # patch an annotation to own Pod
       flags:
       - pod
       - "{{pod.name}}"

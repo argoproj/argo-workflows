@@ -8,6 +8,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEmissary(t *testing.T) {
@@ -17,13 +18,13 @@ func TestEmissary(t *testing.T) {
 	includeScriptOutput = true
 
 	err := os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Run("Exit0", func(t *testing.T) {
 		err := run("exit")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/exitcode")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "0", string(data))
 	})
 
@@ -31,13 +32,13 @@ func TestEmissary(t *testing.T) {
 		err := run("exit 1")
 		assert.Equal(t, 1, err.(errors.Exited).ExitCode())
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/exitcode")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "1", string(data))
 	})
 	t.Run("Exit13", func(t *testing.T) {
 		err := run("exit 13")
 		assert.Equal(t, 13, err.(errors.Exited).ExitCode())
-		assert.EqualError(t, err, "exit status 13")
+		require.EqualError(t, err, "exit status 13")
 	})
 }
 

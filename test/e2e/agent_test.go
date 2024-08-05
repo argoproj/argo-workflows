@@ -63,7 +63,7 @@ spec:
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			// Ensure that the workflow ran for less than 10 seconds
-			assert.True(t, status.FinishedAt.Sub(status.StartedAt.Time) < time.Duration(10*fixtures.EnvFactor)*time.Second)
+			assert.Less(t, status.FinishedAt.Sub(status.StartedAt.Time), time.Duration(10*fixtures.EnvFactor)*time.Second)
 
 			var finishedTimes []time.Time
 			var startTimes []time.Time
@@ -80,14 +80,14 @@ spec:
 					return finishedTimes[i].Before(finishedTimes[j])
 				})
 				// Everything finished with a two second tolerance window
-				assert.True(t, finishedTimes[3].Sub(finishedTimes[0]) < time.Duration(2)*time.Second)
+				assert.Less(t, finishedTimes[3].Sub(finishedTimes[0]), time.Duration(2)*time.Second)
 			}
 			if assert.Len(t, startTimes, 4) {
 				sort.Slice(startTimes, func(i, j int) bool {
 					return startTimes[i].Before(startTimes[j])
 				})
 				// Everything started with same time
-				assert.True(t, startTimes[3].Sub(startTimes[0]) == 0)
+				assert.Equal(t, time.Duration(0), startTimes[3].Sub(startTimes[0]))
 			}
 		})
 }

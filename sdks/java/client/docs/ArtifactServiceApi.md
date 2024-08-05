@@ -64,7 +64,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
- **idDiscriminator** | **String**|  | [enum: workflow, archived-workflows ]
+ **idDiscriminator** | **String**|  | [enum: workflow, archived-workflows]
  **id** | **String**|  |
  **nodeId** | **String**|  |
  **artifactName** | **String**|  |

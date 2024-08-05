@@ -818,7 +818,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
-	// Pods may be be labeled multiple times.
+	// Pods may be labeled multiple times.
 	woc.queuePodsForCleanup()
 }
 
@@ -1126,7 +1126,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			return
 		}
 		if woc.isAgentPod(pod) {
-			woc.updateAgentPodStatus(ctx, pod)
+			woc.updateAgentPodStatus(pod)
 			return
 		}
 		nodeID := woc.nodeID(pod)

@@ -34,7 +34,7 @@ spec:
 
 func TestDAGCycle(t *testing.T) {
 	err := validate(dagCycle)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "cycle")
 	}
 }
@@ -63,7 +63,7 @@ spec:
 
 func TestAnyWithoutExpandingTask(t *testing.T) {
 	err := validate(dagAnyWithoutExpandingTask)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "does not contain any items")
 	}
 }
@@ -85,7 +85,7 @@ spec:
 
 func TestDAGUndefinedTemplate(t *testing.T) {
 	err := validate(dagUndefinedTemplate)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "undefined")
 	}
 }
@@ -310,14 +310,14 @@ spec:
 
 func TestDAGVariableResolution(t *testing.T) {
 	err := validate(dagUnresolvedVar)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.A.outputs.parameters.unresolvable}}")
 	}
 	err = validate(dagResolvedVar)
 	assert.NoError(t, err)
 
 	err = validate(dagResolvedVarNotAncestor)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "templates.unresolved.tasks.C missing dependency 'B' for parameter 'message'")
 	}
 
@@ -620,12 +620,12 @@ func TestDAGStatusReference(t *testing.T) {
 
 	err = validate(dagStatusNoFutureReferenceSimple)
 	// Can't reference the status of steps that have not run yet
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
 	}
 	err = validate(dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
 	// Can't reference the status of steps that have not run yet, even if the referenced steps have children
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
 	}
 
@@ -635,7 +635,7 @@ func TestDAGStatusReference(t *testing.T) {
 	err = validate(dagStatusOnlyDirectAncestors)
 	// Can't reference steps that are not direct ancestors of node
 	// Here Node E references the status of Node B, even though it is not its descendent
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
 	}
 }
@@ -672,7 +672,7 @@ spec:
 
 func TestDAGNonExistantTarget(t *testing.T) {
 	err := validate(dagNonexistantTarget)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "target 'DOESNTEXIST' is not defined")
 	}
 }
@@ -747,7 +747,7 @@ spec:
 
 func TestDAGTargetMissingInputParam(t *testing.T) {
 	err := validate(dagTargetMissingInputParam)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 var dagDependsAndDependencies = `
@@ -862,7 +862,7 @@ spec:
 
 func TestDAGDependsDigit(t *testing.T) {
 	err := validate(dagDependsDigit)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
 	}
 }
@@ -916,7 +916,7 @@ spec:
 
 func TestDAGDependenciesDigit(t *testing.T) {
 	err := validate(dagDependenciesDigit)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "templates.diamond.tasks.5A name cannot begin with a digit when using either 'depends' or 'dependencies'")
 	}
 }
@@ -1074,7 +1074,7 @@ spec:
 
 func TestDAGMissingParamValueInTask(t *testing.T) {
 	err := validate(dagMissingParamValueInTask)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), ".valueFrom only allows: default, configMapKeyRef and supplied")
 	}
 }
@@ -1139,7 +1139,7 @@ spec:
 
 func TestFailDAGArgParamValueFromPathInTask(t *testing.T) {
 	err := validate(failDagArgParamValueFromPathInTask)
-	if assert.NotNil(t, err) {
+	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "valueFrom only allows: default, configMapKeyRef and supplied")
 	}
 }
