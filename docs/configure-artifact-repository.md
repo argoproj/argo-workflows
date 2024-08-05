@@ -384,7 +384,7 @@ You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage
 2. Retrieve the Access Key for the storage account.
 
     ```bash
-    az storage account keys list -n mystorageaccountname --query '[0].value' -otsv
+    ACCESS_KEY="$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
     ```
 
 3. Create a Kubernetes Secret to hold the storage account key:
