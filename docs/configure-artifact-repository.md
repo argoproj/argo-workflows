@@ -388,7 +388,7 @@ artifacts:
       --from-literal "account-access-key=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
     ```
 
-4. Configure `azure` artifact as follows in the YAML.
+4. Configure an `azure` artifact:
 
     ```yaml
     artifacts:
