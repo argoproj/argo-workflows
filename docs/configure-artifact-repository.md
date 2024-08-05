@@ -378,6 +378,7 @@ You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage
 
     ```bash
     az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
+    # https://mystorageaccountname.blob.core.windows.net
     ```
 
 2. Retrieve the Access Key for the storage account.
