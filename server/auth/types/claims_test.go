@@ -244,7 +244,7 @@ func TestGetUserInfoGroups(t *testing.T) {
 
 		claims := &Claims{}
 		groups, err := claims.GetUserInfoGroups(httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
-		assert.Equal(t, groups, []string{"Everyone"})
-		assert.Equal(t, nil, err)
+		assert.Equal(t, []string{"Everyone"}, groups)
+		assert.NoError(t, err)
 	})
 }

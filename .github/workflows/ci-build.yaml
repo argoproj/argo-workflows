@@ -215,13 +215,13 @@ jobs:
           - test: test-python-sdk
             profile: minimal
           - test: test-executor
-            install_k3s_version: v1.26.15+k3s1
+            install_k3s_version: v1.28.11+k3s1
             profile: minimal
           - test: test-corefunctional
-            install_k3s_version: v1.26.15+k3s1
+            install_k3s_version: v1.28.11+k3s1
             profile: minimal
           - test: test-functional
-            install_k3s_version: v1.26.15+k3s1
+            install_k3s_version: v1.28.11+k3s1
             profile: minimal
     steps:
       - name: Install socat (needed by Kubernetes)
@@ -247,7 +247,7 @@ jobs:
       - name: Install and start K3S
         run: |
           if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
-            export INSTALL_K3S_VERSION=v1.29.3+k3s1
+            export INSTALL_K3S_VERSION=v1.30.2+k3s1
           else
             export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
           fi

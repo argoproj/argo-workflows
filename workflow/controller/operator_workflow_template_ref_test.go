@@ -531,7 +531,7 @@ func TestWFTWithVol(t *testing.T) {
 	woc.operate(ctx)
 	pvc, err = controller.kubeclientset.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
-	assert.Len(t, pvc.Items, 0)
+	assert.Empty(t, pvc.Items)
 }
 
 const wfTmp = `
@@ -621,7 +621,7 @@ func TestWorkflowTemplateWithDynamicRef(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 	pod := pods.Items[0]
 	assert.Contains(t, pod.Name, "hello-world")
 	assert.Equal(t, "docker/whalesay", pod.Spec.Containers[1].Image)

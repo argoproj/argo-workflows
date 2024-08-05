@@ -15,16 +15,16 @@ can be created cluster scoped like `ClusterRole` and can be accessed across all 
 apiVersion: argoproj.io/v1alpha1
 kind: ClusterWorkflowTemplate
 metadata:
-  name: cluster-workflow-template-whalesay-template
+  name: cluster-workflow-template-print-message
 spec:
   templates:
-  - name: whalesay-template
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ```
 
@@ -41,14 +41,14 @@ kind: Workflow
 metadata:
   generateName: workflow-template-hello-world-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     steps:                              # You should only reference external "templates" in a "steps" or "dag" "template".
-      - - name: call-whalesay-template
+      - - name: call-print-message
           templateRef:                  # You can reference a "template" from another "WorkflowTemplate or ClusterWorkflowTemplate" using this field
-            name: cluster-workflow-template-whalesay-template   # This is the name of the "WorkflowTemplate or ClusterWorkflowTemplate" CRD that contains the "template" you want
-            template: whalesay-template # This is the name of the "template" you want to reference
+            name: cluster-workflow-template-print-message   # This is the name of the "WorkflowTemplate or ClusterWorkflowTemplate" CRD that contains the "template" you want
+            template: print-message     # This is the name of the "template" you want to reference
             clusterScope: true          # This field indicates this templateRef is pointing ClusterWorkflowTemplate
           arguments:                    # You can pass in arguments as normal
             parameters:
@@ -70,19 +70,19 @@ kind: ClusterWorkflowTemplate
 metadata:
   name: cluster-workflow-template-submittable
 spec:
-  entrypoint: whalesay-template
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message
         value: hello world
   templates:
-    - name: whalesay-template
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]
 
 ```
@@ -95,7 +95,7 @@ kind: Workflow
 metadata:
   generateName: cluster-workflow-template-hello-world-
 spec:
-  entrypoint: whalesay-template
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message

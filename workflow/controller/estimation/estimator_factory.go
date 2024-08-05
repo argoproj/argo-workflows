@@ -9,7 +9,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -72,23 +71,15 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 				return &estimator{wf, newestWf}, nil
 			}
 			// we failed to find a base-line in the live set, so we now look in the archive
-			requirements, err := labels.ParseToRequirements(common.LabelKeyPhase + "=" + string(wfv1.NodeSucceeded) + "," + labelName + "=" + labelValue)
+			requirements, err := labels.ParseToRequirements(labelName + "=" + labelValue)
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-			workflows, err := f.wfArchive.ListWorkflows(
-				utils.ListOptions{
-					Namespace:         wf.Namespace,
-					LabelRequirements: requirements,
-					Limit:             1,
-					Offset:            0,
-				})
+			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(wf.Namespace, requirements)
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to list archived workflows: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to get archived workflow for estimator: %v", err)
 			}
-			if len(workflows) > 0 {
-				return &estimator{wf, &workflows[0]}, nil
-			}
+			return &estimator{wf, baselineWF}, nil
 		}
 	}
 	return defaultEstimator, nil

@@ -1,4 +1,4 @@
-# This example demonstrates daemoned steps when used in in DAG templates. It is is equivalent to the
+# This example demonstrates daemoned steps when used in in DAG templates. It is equivalent to the
 # daemon-step.yaml example, but written in DAG format. The IP address of the daemoned step can be
 # referenced using the '{{tasks.taskname.ip}}' variable.
 apiVersion: argoproj.io/v1alpha1

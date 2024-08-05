@@ -41,7 +41,7 @@ func TestController(t *testing.T) {
 		stopCh <- struct{}{}
 		s.Run(stopCh)
 
-		assert.Len(t, s.operationQueue, 0, "all events were processed")
+		assert.Empty(t, s.operationQueue, "all events were processed")
 	})
 	t.Run("Sync", func(t *testing.T) {
 		s := newController(false)

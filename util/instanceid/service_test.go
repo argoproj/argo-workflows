@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -50,14 +51,14 @@ func TestWith(t *testing.T) {
 func TestValidate(t *testing.T) {
 	t.Run("NoInstanceID", func(t *testing.T) {
 		s := NewService("")
-		assert.NoError(t, s.Validate(&wfv1.Workflow{}))
-		assert.Error(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
+		require.NoError(t, s.Validate(&wfv1.Workflow{}))
+		require.Error(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
 	})
 	t.Run("InstanceID", func(t *testing.T) {
 		s := NewService("foo")
-		assert.Error(t, s.Validate(&wfv1.Workflow{}))
-		assert.Error(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
-		assert.NoError(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "foo"}}}))
+		require.Error(t, s.Validate(&wfv1.Workflow{}))
+		require.Error(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
+		require.NoError(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "foo"}}}))
 	})
 }
 

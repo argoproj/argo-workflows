@@ -10,11 +10,11 @@ spec:
     secondsAfterCompletion: 10 # Time to live after workflow is completed, replaces ttlSecondsAfterFinished
     secondsAfterSuccess: 5     # Time to live after workflow is successful
     secondsAfterFailure: 5     # Time to live after workflow fails
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]
 

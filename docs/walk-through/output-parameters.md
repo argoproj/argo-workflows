@@ -13,7 +13,7 @@ spec:
   - name: output-parameter
     steps:
     - - name: generate-parameter
-        template: whalesay
+        template: hello-world-to-file
     - - name: consume-parameter
         template: print-message
         arguments:
@@ -22,9 +22,9 @@ spec:
           - name: message
             value: "{{steps.generate-parameter.outputs.parameters.hello-param}}"
 
-  - name: whalesay
+  - name: hello-world-to-file
     container:
-      image: docker/whalesay:latest
+      image: busybox
       command: [sh, -c]
       args: ["echo -n hello world > /tmp/hello_world.txt"]  # generate the content of hello_world.txt
     outputs:
@@ -38,8 +38,8 @@ spec:
       parameters:
       - name: message
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ```
 

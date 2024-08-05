@@ -23,13 +23,13 @@ var helloWorldWorkflow = wfv1.Workflow{
 		GenerateName: "hello-world-",
 	},
 	Spec: wfv1.WorkflowSpec{
-		Entrypoint: "whalesay",
+		Entrypoint: "hello-world",
 		Templates: []wfv1.Template{
 			{
-				Name: "whalesay",
+				Name: "hello-world",
 				Container: &corev1.Container{
-					Image:   "docker/whalesay:latest",
-					Command: []string{"cowsay", "hello world"},
+					Image:   "busybox",
+					Command: []string{"echo", "hello world"},
 				},
 			},
 		},

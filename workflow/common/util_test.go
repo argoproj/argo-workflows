@@ -147,10 +147,10 @@ func TestUnknownFieldEnforcerForWorkflowStep(t *testing.T) {
 }
 
 func TestParseObjects(t *testing.T) {
-	assert.Equal(t, 1, len(ParseObjects([]byte(validWf), false)))
+	assert.Len(t, ParseObjects([]byte(validWf), false), 1)
 
 	res := ParseObjects([]byte(invalidWf), false)
-	assert.Equal(t, 1, len(res))
+	assert.Len(t, res, 1)
 	assert.NotNil(t, res[0].Object)
 	assert.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
@@ -194,7 +194,7 @@ func TestIsDone(t *testing.T) {
 
 func TestSubstituteConfigMapKeyRefParam(t *testing.T) {
 	res := ParseObjects([]byte(validConfigMapRefWf), false)
-	assert.Equal(t, 1, len(res))
+	assert.Len(t, res, 1)
 
 	obj, ok := res[0].Object.(*wfv1.Workflow)
 	assert.True(t, ok)
@@ -216,7 +216,7 @@ func TestSubstituteConfigMapKeyRefParam(t *testing.T) {
 
 func TestSubstituteConfigMapKeyRefParamWithNoParamsDefined(t *testing.T) {
 	res := ParseObjects([]byte(invalidConfigMapRefWf), false)
-	assert.Equal(t, 1, len(res))
+	assert.Len(t, res, 1)
 
 	obj, ok := res[0].Object.(*wfv1.Workflow)
 	assert.True(t, ok)
@@ -262,13 +262,13 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 	localParams := make(map[string]string)
 
 	newTmpl, err := ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, rawArt.Data)
 
 	inputs.Artifacts = []wfv1.Artifact{inputArt}
 	newTmpl, err = ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, inputRawArt.Data)
 }
@@ -313,12 +313,12 @@ func TestOverridableTemplateInputParamsValue(t *testing.T) {
 	localParams := make(map[string]string)
 
 	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
 	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
 }
@@ -371,12 +371,12 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	localParams := make(map[string]string)
 
 	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
 	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
 }

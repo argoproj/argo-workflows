@@ -10,42 +10,42 @@ func TestRemoveString(t *testing.T) {
 	t.Run("RemoveEmpty", func(t *testing.T) {
 		slice := []string{}
 		newSlice := RemoveString(slice, "1")
-		assert.Equal(t, 0, len(newSlice))
+		assert.Empty(t, newSlice)
 		assert.NotContains(t, newSlice, "1")
 	})
 
 	t.Run("RemoveSingle", func(t *testing.T) {
 		slice := []string{"1"}
 		newSlice := RemoveString(slice, "3")
-		assert.Equal(t, 1, len(newSlice))
+		assert.Len(t, newSlice, 1)
 		assert.Contains(t, newSlice, "1")
 	})
 
 	t.Run("RemoveSingleWithMatch", func(t *testing.T) {
 		slice := []string{"1"}
 		newSlice := RemoveString(slice, "1")
-		assert.Equal(t, 0, len(newSlice))
+		assert.Empty(t, newSlice)
 		assert.NotContains(t, newSlice, "1")
 	})
 
 	t.Run("RemoveFirst", func(t *testing.T) {
 		slice := []string{"1", "2", "3", "4", "5", "6"}
 		newSlice := RemoveString(slice, "1")
-		assert.Equal(t, 5, len(newSlice))
+		assert.Len(t, newSlice, 5)
 		assert.NotContains(t, newSlice, "1")
 	})
 
 	t.Run("RemoveMiddle", func(t *testing.T) {
 		slice := []string{"1", "2", "3", "4", "5", "6"}
 		newSlice := RemoveString(slice, "3")
-		assert.Equal(t, 5, len(newSlice))
+		assert.Len(t, newSlice, 5)
 		assert.NotContains(t, newSlice, "3")
 	})
 
 	t.Run("RemoveLast", func(t *testing.T) {
 		slice := []string{"1", "2", "3", "4", "5", "6"}
 		newSlice := RemoveString(slice, "6")
-		assert.Equal(t, 5, len(newSlice))
+		assert.Len(t, newSlice, 5)
 		assert.NotContains(t, newSlice, "6")
 	})
 }

@@ -17,8 +17,8 @@ spec:
       tasks:
       - name: A
         templateRef:
-          name: cluster-workflow-template-whalesay-template
-          template: whalesay-template
+          name: cluster-workflow-template-print-message
+          template: print-message
           clusterScope: true
         arguments:
           parameters:
@@ -27,8 +27,8 @@ spec:
       - name: B
         depends: "A"
         templateRef:
-          name: cluster-workflow-template-whalesay-template
-          template: whalesay-template
+          name: cluster-workflow-template-print-message
+          template: print-message
           clusterScope: true
         arguments:
           parameters:
@@ -43,8 +43,8 @@ spec:
       - name: D
         depends: "B && C"
         templateRef:
-          name: cluster-workflow-template-whalesay-template
-          template: whalesay-template
+          name: cluster-workflow-template-print-message
+          template: print-message
           clusterScope: true
         arguments:
           parameters:

@@ -3,14 +3,14 @@ kind: Workflow
 metadata:
   generateName: workflow-template-hello-world-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world-from-templateRef
   templates:
-  - name: whalesay
+  - name: hello-world-from-templateRef
     steps:
-      - - name: call-whalesay-template
+      - - name: call-print-message
           templateRef:
-            name: workflow-template-whalesay-template
-            template: whalesay-template
+            name: workflow-template-print-message
+            template: print-message
           arguments:
             parameters:
             - name: message

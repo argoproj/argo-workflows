@@ -11,31 +11,31 @@ spec:
       steps:
         - - name: hello1
             onExit: exit
-            template: whalesay
+            template: print-message
             arguments:
               parameters: [{name: message, value: "hello1"}]
         - - name: hello2a
             onExit: exit
-            template: whalesay
+            template: print-message
             arguments:
               parameters: [{name: message, value: "hello2a"}]
           - name: hello2b
             onExit: exit
-            template: whalesay
+            template: print-message
             arguments:
               parameters: [{name: message, value: "hello2b"}]
 
     - name: exit
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["step cleanup"]
 
-    - name: whalesay
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]

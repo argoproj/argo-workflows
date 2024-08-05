@@ -132,7 +132,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
 	s.bearerToken = ""
 
 	data, err := os.ReadFile("testdata/github-webhook-payload.json")
-	assert.NoError(s.T(), err)
+	s.NoError(err)
 
 	s.Given().
 		WorkflowTemplate(`
@@ -380,9 +380,9 @@ func (s *ArgoServerSuite) TestMultiCookieAuth() {
 func (s *ArgoServerSuite) createServiceAccount(name string) {
 	ctx := context.Background()
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
-	assert.NoError(s.T(), err)
+	s.NoError(err)
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
-	assert.NoError(s.T(), err)
+	s.NoError(err)
 	s.T().Cleanup(func() {
 		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
 		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
@@ -401,11 +401,11 @@ func (s *ArgoServerSuite) TestPermission() {
 	var roleName string
 	s.Run("LoadRoleYaml", func() {
 		obj, err := fixtures.LoadObject("@testdata/argo-server-test-role.yaml")
-		assert.NoError(s.T(), err)
+		s.NoError(err)
 		role, _ := obj.(*rbacv1.Role)
 		roleName = role.Name
 		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(ctx, role, metav1.CreateOptions{})
-		assert.NoError(s.T(), err)
+		s.NoError(err)
 	})
 	defer func() {
 		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(ctx, roleName, metav1.DeleteOptions{})
@@ -424,7 +424,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	}
 	s.Run("CreateRoleBinding", func() {
 		_, err := s.KubeClient.RbacV1().RoleBindings(nsName).Create(ctx, roleBinding, metav1.CreateOptions{})
-		assert.NoError(s.T(), err)
+		s.NoError(err)
 	})
 	defer func() {
 		_ = s.KubeClient.RbacV1().RoleBindings(nsName).Delete(ctx, roleBindingName, metav1.DeleteOptions{})
@@ -438,10 +438,10 @@ func (s *ArgoServerSuite) TestPermission() {
 	var goodToken string
 	s.Run("GetGoodSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, goodSaName, metav1.GetOptions{})
-		if assert.NoError(s.T(), err) {
+		if s.NoError(err) {
 			secretName := secrets.TokenNameForServiceAccount(sAccount)
 			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
-			assert.NoError(s.T(), err)
+			s.NoError(err)
 			goodToken = string(secret.Data["token"])
 		}
 	})
@@ -450,10 +450,10 @@ func (s *ArgoServerSuite) TestPermission() {
 	var badToken string
 	s.Run("GetBadSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, badSaName, metav1.GetOptions{})
-		assert.NoError(s.T(), err)
+		s.NoError(err)
 		secretName := secrets.TokenNameForServiceAccount(sAccount)
 		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
-		assert.NoError(s.T(), err)
+		s.NoError(err)
 		badToken = string(secret.Data["token"])
 	})
 

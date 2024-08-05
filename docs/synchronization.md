@@ -38,17 +38,17 @@ kind: Workflow
 metadata:
   generateName: synchronization-wf-level-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   synchronization:
     semaphore:
       configMapKeyRef:
         name: my-config
         key: workflow
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]
 ```
 
@@ -60,15 +60,15 @@ kind: Workflow
 metadata:
   generateName: synchronization-wf-level-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   synchronization:
     mutex:
       name: workflow
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]
 ```
 

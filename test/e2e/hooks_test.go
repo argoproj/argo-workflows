@@ -51,7 +51,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 		return strings.Contains(status.Name, ".hooks.running")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
@@ -101,7 +101,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowFailed)
+			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 		return strings.Contains(status.Name, ".hooks.running")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
@@ -453,7 +453,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 			assert.Equal(t, status.Progress, v1alpha1.Progress("2/2"))
 			assert.Equal(t, 1, int(status.Progress.N()/status.Progress.M()))
 		}).
@@ -501,7 +501,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 			assert.Equal(t, status.Progress, v1alpha1.Progress("2/2"))
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
@@ -554,7 +554,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 			assert.Equal(t, status.Progress, v1alpha1.Progress("3/3"))
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
@@ -609,22 +609,22 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowFailed)
+			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
 			assert.Equal(t, status.Progress, v1alpha1.Progress("2/4"))
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "test-workflow-level-hooks-with-retry.hooks.running"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
-			assert.Equal(t, true, status.NodeFlag.Hooked)
-			assert.Equal(t, false, status.NodeFlag.Retried)
+			assert.True(t, status.NodeFlag.Hooked)
+			assert.False(t, status.NodeFlag.Retried)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "test-workflow-level-hooks-with-retry.hooks.failed"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
-			assert.Equal(t, true, status.NodeFlag.Hooked)
-			assert.Equal(t, false, status.NodeFlag.Retried)
+			assert.True(t, status.NodeFlag.Hooked)
+			assert.False(t, status.NodeFlag.Retried)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "test-workflow-level-hooks-with-retry"
@@ -637,15 +637,15 @@ spec:
 			return status.Name == "test-workflow-level-hooks-with-retry(0)"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
-			assert.Equal(t, false, status.NodeFlag.Hooked)
-			assert.Equal(t, true, status.NodeFlag.Retried)
+			assert.False(t, status.NodeFlag.Hooked)
+			assert.True(t, status.NodeFlag.Retried)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "test-workflow-level-hooks-with-retry(1)"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
-			assert.Equal(t, false, status.NodeFlag.Hooked)
-			assert.Equal(t, true, status.NodeFlag.Retried)
+			assert.False(t, status.NodeFlag.Hooked)
+			assert.True(t, status.NodeFlag.Retried)
 		})
 }
 
@@ -753,20 +753,20 @@ spec:
 			return status.Name == "retries-with-hooks-and-artifact[0].build(0)"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Contains(t, children, status.ID)
-			assert.Equal(t, false, status.NodeFlag.Hooked)
+			assert.False(t, status.NodeFlag.Hooked)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "retries-with-hooks-and-artifact[0].build.hooks.started"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Contains(t, children, status.ID)
-			assert.Equal(t, true, status.NodeFlag.Hooked)
+			assert.True(t, status.NodeFlag.Hooked)
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "retries-with-hooks-and-artifact[0].build.hooks.success"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Contains(t, children, status.ID)
-			assert.Equal(t, true, status.NodeFlag.Hooked)
+			assert.True(t, status.NodeFlag.Hooked)
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {

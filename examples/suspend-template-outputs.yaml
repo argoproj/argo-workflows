@@ -18,7 +18,7 @@ spec:
     - - name: approve
         template: approve
     - - name: release
-        template: whalesay
+        template: print-message
         arguments:
           parameters:
             - name: message
@@ -32,11 +32,11 @@ spec:
           valueFrom:
             supplied: {}
 
-  - name: whalesay
+  - name: print-message
     inputs:
       parameters:
         - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]

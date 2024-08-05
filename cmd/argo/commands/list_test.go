@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
@@ -18,73 +19,62 @@ import (
 func Test_listWorkflows(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		workflows, err := listEmpty(&metav1.ListOptions{}, listFlags{})
-		if assert.NoError(t, err) {
-			assert.Len(t, workflows, 0)
-		}
+		require.NoError(t, err)
+		assert.Empty(t, workflows)
 	})
 	t.Run("Nothing", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{}, listFlags{})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, workflows)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, workflows)
 	})
 	t.Run("Status", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase in (Pending,Running)"}, listFlags{status: []string{"Running", "Pending"}})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, workflows)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, workflows)
 	})
 	t.Run("Completed", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/completed=true"}, listFlags{completed: true})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, workflows)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, workflows)
 	})
 	t.Run("Running", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/completed!=true"}, listFlags{running: true})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, workflows)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, workflows)
 	})
 	t.Run("Resubmitted", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{LabelSelector: common.LabelKeyPreviousWorkflowName}, listFlags{resubmitted: true})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, workflows)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, workflows)
 	})
 	t.Run("Labels", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{LabelSelector: "foo"}, listFlags{labels: "foo"})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, workflows)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, workflows)
 	})
 	t.Run("Prefix", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{}, listFlags{prefix: "foo-"})
-		if assert.NoError(t, err) {
-			assert.Len(t, workflows, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, workflows, 1)
 	})
 	t.Run("Since", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{}, listFlags{createdSince: "1h"})
-		if assert.NoError(t, err) {
-			assert.Len(t, workflows, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, workflows, 1)
 	})
 	t.Run("Older", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{}, listFlags{finishedBefore: "1h"})
-		if assert.NoError(t, err) {
-			assert.Len(t, workflows, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, workflows, 1)
 	})
 	t.Run("Names", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{FieldSelector: nameFields}, listFlags{fields: nameFields})
-		if assert.NoError(t, err) {
-			assert.Len(t, workflows, 3)
-			// most recent workflow will be shown first
-			assert.Equal(t, "bar-", workflows[0].Name)
-			assert.Equal(t, "baz-", workflows[1].Name)
-			assert.Equal(t, "foo-", workflows[2].Name)
-		}
+		require.NoError(t, err)
+		assert.Len(t, workflows, 3)
+		// most recent workflow will be shown first
+		assert.Equal(t, "bar-", workflows[0].Name)
+		assert.Equal(t, "baz-", workflows[1].Name)
+		assert.Equal(t, "foo-", workflows[2].Name)
 	})
 }
 
