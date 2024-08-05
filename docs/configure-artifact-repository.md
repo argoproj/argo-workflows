@@ -347,7 +347,7 @@ You can authenticate Argo to your Azure storage account in multiple ways.
 
 ### Using Azure Managed Identities
 
-The preferred method is via [Azure Managed Identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity).
+[Azure Managed Identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity) is the preferred method for managing access to Azure resources securely.
 You can set `useSDKCreds: true` if a Managed Identity is assigned.
 In this case, the `accountKeySecret` is not used and authentication uses [`DefaultAzureCredential`](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication).
 
