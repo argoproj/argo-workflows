@@ -366,7 +366,6 @@ artifacts:
       useSDKCreds: true  
 ```
 
-You can also authenticate with [Access Keys](#using-azure-access-keys) and [Shared Access Signatures (SAS)](#using-azure-shared-access-signatures-sas).
 
 ### Using Azure Access Keys
 
