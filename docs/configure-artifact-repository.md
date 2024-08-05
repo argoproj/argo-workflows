@@ -384,8 +384,9 @@ artifacts:
 3. Create a Kubernetes Secret to hold the storage account key:
 
     ```bash
+    export ACCESS_KEY=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)
     kubectl create secret generic my-azure-storage-credentials \
-      --from-literal "account-access-key=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
+      --from-literal "account-access-key=$ACCESS_KEY"
     ```
 
 4. Configure an `azure` artifact:
@@ -430,8 +431,9 @@ You can do this using the [Azure Portal](https://portal.azure.com) or the [CLI](
 3. Create a Kubernetes secret to hold the storage account key.
 
     ```bash
+    export SAS_TOKEN=$(az storage container generate-sas --account-name <storage-account> --name <container> --permissions acdlrw --expiry <date-time> --auth-mode key)
     kubectl create secret generic my-azure-storage-credentials \
-      --from-literal "shared-access-key=$(az storage container generate-sas --account-name <storage-account> --name <container> --permissions acdlrw --expiry <date-time> --auth-mode key)"
+      --from-literal "shared-access-key=$SAS_TOKEN"
     ```
 
 4. Configure `azure` artifact as follows in the YAML.
