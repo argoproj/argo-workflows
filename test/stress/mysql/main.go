@@ -3,18 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/pkg/rand"
-	"github.com/hashicorp/go-uuid"
-	log "github.com/sirupsen/logrus"
-	"github.com/upper/db/v4"
-	"github.com/upper/db/v4/adapter/mysql"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"os"
 	"os/signal"
 	"strconv"
@@ -23,6 +11,20 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/argoproj/pkg/rand"
+	"github.com/hashicorp/go-uuid"
+	log "github.com/sirupsen/logrus"
+	"github.com/upper/db/v4"
+	"github.com/upper/db/v4/adapter/mysql"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
+
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
 type archivedRecord struct {
@@ -62,6 +64,9 @@ func getArchivedWorkflowsCount(session db.Session) (int, error) {
 		log.Warnf("Get archived workflow count error: %s", err)
 		return 0, err
 	}
+	defer func() {
+		rows.Close()
+	}()
 	if rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
@@ -108,6 +113,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer func() {
+		session.Close()
+	}()
 	session.SetMaxOpenConns(5000)
 	session.SetMaxIdleConns(150)
 	session.SetConnMaxLifetime(60 * time.Second)
@@ -176,6 +184,7 @@ func main() {
 					UID:       types.UID(uid),
 					Name:      name,
 					Namespace: "argo-managed",
+					Labels:    map[string]string{},
 				},
 				Status: wfv1.WorkflowStatus{
 					Nodes: map[string]wfv1.NodeStatus{
@@ -308,7 +317,7 @@ func main() {
 		go reconcileWf()
 	}
 
-	stopCh := make(chan os.Signal)
+	stopCh := make(chan os.Signal, 1)
 	signal.Notify(stopCh, os.Interrupt, syscall.SIGTERM)
 
 	stopTimer := time.NewTimer(duration)
@@ -331,7 +340,7 @@ func main() {
 			if err != nil {
 				log.Warnf("Clean up expired archive workflows error: %s", err)
 			}
-			log.Infof("Cleaning %d archives cost %s", archiveCleanSize, time.Now().Sub(startTime))
+			log.Infof("Cleaning %d archives cost %s", archiveCleanSize, time.Since(startTime))
 			cleanTicker.Reset(cleanDuration)
 			log.Infof("Average rate when cleaning archives is: %f", calculateRate(startTime))
 
