@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	gosync "sync"
 	"syscall"
@@ -682,10 +683,16 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 					continue
 				}
 				log.WithField("len_wfs", len(oldRecords)).Info("Deleting old offloads that are not live")
+				maxGoroutines := env.LookupEnvIntOr("WORKFLOW_GC_MAX_WORKER", 10)
+				guard := make(chan struct{}, maxGoroutines)
 				for uid, versions := range oldRecords {
-					if err := wfc.deleteOffloadedNodesForWorkflow(uid, versions); err != nil {
-						log.WithError(err).WithField("uid", uid).Error("Failed to delete old offloaded nodes")
-					}
+					guard <- struct{}{}
+					go func(gUid string, gVersions []sqldb.NodesRecord) {
+						if err := wfc.deleteOffloadedNodesForWorkflow(gUid, gVersions); err != nil {
+							log.WithError(err).WithField("uid", gUid).Error("Failed to delete old offloaded nodes")
+						}
+						<-guard
+					}(uid, versions)
 				}
 				log.Info("Workflow GC finished")
 			}
@@ -693,7 +700,7 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 	}
 }
 
-func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versions []string) error {
+func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versions []sqldb.NodesRecord) error {
 	workflows, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.UIDIndex, uid)
 	if err != nil {
 		return err
@@ -735,12 +742,33 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 	default:
 		return fmt.Errorf("expected no more than 1 workflow, got %d", l)
 	}
+	var updatedAt time.Time
+	if wf != nil {
+		sort.Slice(versions, func(i, j int) bool {
+			return versions[i].UpdatedAt.After(versions[j].UpdatedAt)
+		})
+		historyCount := env.LookupEnvIntOr(common.EnvVarOffloadNodeStatusHistoryCount, 12)
+		if len(versions) > historyCount {
+			versions = versions[historyCount:]
+		} else {
+			// Skip delete offload version for a live workflow if current records count is less than configured count
+			return nil
+		}
+		ttl := env.LookupEnvDurationOr(common.EnvVarOffloadNodeStatusTTL, 5*time.Minute)
+		for _, v := range versions {
+			if v.Version == wf.Status.OffloadNodeStatusVersion {
+				updatedAt = v.UpdatedAt.Add(-ttl)
+				break
+			}
+		}
+	}
 	for _, version := range versions {
 		// skip delete if offload is live
-		if wf != nil && wf.Status.OffloadNodeStatusVersion == version {
+		if wf != nil && (version.Version == wf.Status.OffloadNodeStatusVersion || !updatedAt.IsZero() && !version.UpdatedAt.Before(updatedAt)) {
 			continue
 		}
-		if err := wfc.offloadNodeStatusRepo.Delete(uid, version); err != nil {
+		log.Debugf("Deleting offload version, uid %s, version %s", uid, version.Version)
+		if err := wfc.offloadNodeStatusRepo.Delete(uid, version.Version); err != nil {
 			return err
 		}
 	}
@@ -787,6 +815,44 @@ func (wfc *WorkflowController) runWorker() {
 	ctx := context.Background()
 	for wfc.processNextItem(ctx) {
 	}
+}
+
+func (wfc *WorkflowController) hydrateWorkflow(woc *wfOperationCtx) (bool, error) {
+	err := wfc.hydrator.Hydrate(woc.wf)
+	if err != nil {
+		if os.Getenv(common.EnvVarOffloadNodeStatusErrorFallback) != "true" {
+			return false, err
+		}
+		woc.log.Warnf("hydration failed and will retry, error: %v", err)
+		if woc.wf.Annotations == nil {
+			woc.wf.Annotations = make(map[string]string)
+		}
+		failTimeStr, exist := woc.wf.Annotations[common.AnnotationKeyHydrationFailedTime]
+		if exist {
+			failTime, err := time.Parse(time.RFC3339, failTimeStr)
+			if err != nil {
+				return false, fmt.Errorf("parse hydration failed time error: %w", err)
+			}
+			retryDuration := env.LookupEnvDurationOr(common.EnvVarHydrationFailedRetryDuration, 900*time.Second)
+			if failTime.Add(retryDuration).Before(time.Now()) {
+				return false, fmt.Errorf("retry hydration timeout after waiting %s", retryDuration.String())
+			} else {
+				return false, nil
+			}
+		} else {
+			woc.wf.Annotations[common.AnnotationKeyHydrationFailedTime] = time.Now().Format(time.RFC3339)
+			woc.updated = true
+			return false, nil
+		}
+	}
+	if woc.wf.Annotations != nil && woc.wf.Annotations[common.AnnotationKeyHydrationFailedTime] != "" {
+		delete(woc.wf.Annotations, common.AnnotationKeyHydrationFailedTime)
+		woc.updated = true
+	}
+	if !wfc.hydrator.IsHydrated(woc.orig) {
+		wfc.hydrator.HydrateWithNodes(woc.orig, woc.wf.Status.Nodes.DeepCopy())
+	}
+	return true, nil
 }
 
 // processNextItem is the worker logic for handling workflow updates
@@ -853,12 +919,16 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 			wfc.throttler.Remove(key.(string))
 		}
 	}()
-
-	err = wfc.hydrator.Hydrate(woc.wf)
+	hydrated, err := wfc.hydrateWorkflow(woc)
 	if err != nil {
-		woc.log.Errorf("hydration failed: %v", err)
+		woc.log.Errorf("Hydrate workflow with uid %s version %s failed: %v", woc.wf.UID, woc.wf.Status.OffloadNodeStatusVersion, err)
 		woc.markWorkflowError(ctx, err)
 		woc.persistUpdates(ctx)
+		return true
+	}
+	if !hydrated {
+		woc.persistUpdates(ctx)
+		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", woc.wf.GetNamespace(), woc.wf.GetName()))
 		return true
 	}
 	startTime := time.Now()

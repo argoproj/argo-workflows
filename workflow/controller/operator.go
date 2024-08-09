@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
@@ -37,6 +38,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -738,10 +740,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
-	err := woc.controller.hydrator.Dehydrate(woc.wf)
-	if err != nil {
-		woc.log.Warnf("Failed to dehydrate: %v", err)
-		woc.markWorkflowError(ctx, err)
+	dehydrateErr := woc.controller.hydrator.Dehydrate(woc.wf)
+	if dehydrateErr != nil {
+		woc.log.Warnf("Failed to dehydrate: %v", dehydrateErr)
+		if !woc.wf.Status.Fulfilled() {
+			woc.markWorkflowError(ctx, dehydrateErr)
+		}
 	}
 
 	// Release all acquired lock for completed workflow
@@ -752,9 +756,14 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	// Remove completed taskset status before update workflow.
-	err = woc.removeCompletedTaskSetStatus(ctx)
+	err := woc.removeCompletedTaskSetStatus(ctx)
 	if err != nil {
 		woc.log.WithError(err).Warn("error updating taskset")
+	}
+
+	if sqldb.IsTooLargeError(dehydrateErr) {
+		woc.persistWorkflowSizeLimitErr(ctx, wfClient, dehydrateErr)
+		return
 	}
 
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
@@ -852,9 +861,28 @@ func (woc *wfOperationCtx) writeBackToInformer() error {
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
 // See https://github.com/argoproj/argo-workflows/issues/913
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
+	if woc.orig.Status.Fulfilled() {
+		return
+	}
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(ctx, err)
-	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
+	oldData, err := json.Marshal(woc.orig)
+	if err != nil {
+		woc.log.Warnf("Error marshal woc.orig with error: %v", err)
+		return
+	}
+	newData, err := json.Marshal(woc.wf)
+	if err != nil {
+		woc.log.Warnf("Error marshal woc.wf with error: %v", err)
+		return
+	}
+	patchBytes, err := jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		woc.log.Warnf("Error create merge patch of woc.orig and woc.wf with error: %v", err)
+		return
+	}
+	woc.log.Debugf("Persist workflow size limit error, merge patch: %s", string(patchBytes))
+	_, err = wfClient.Patch(ctx, woc.wf.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow with size error: %v", err)
 	}
@@ -867,10 +895,6 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 	// if this condition is true, then this func will always error
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
 		woc.log.Panic("cannot re-apply update with mismatched resource versions")
-	}
-	err := woc.controller.hydrator.Hydrate(woc.orig)
-	if err != nil {
-		return nil, err
 	}
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)

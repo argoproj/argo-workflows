@@ -89,15 +89,15 @@ func (_m *OffloadNodeStatusRepo) List(namespace string) (map[sqldb.UUIDVersion]v
 }
 
 // ListOldOffloads provides a mock function with given fields: namespace
-func (_m *OffloadNodeStatusRepo) ListOldOffloads(namespace string) (map[string][]string, error) {
+func (_m *OffloadNodeStatusRepo) ListOldOffloads(namespace string) (map[string][]sqldb.NodesRecord, error) {
 	ret := _m.Called(namespace)
 
-	var r0 map[string][]string
-	if rf, ok := ret.Get(0).(func(string) map[string][]string); ok {
+	var r0 map[string][]sqldb.NodesRecord
+	if rf, ok := ret.Get(0).(func(string) map[string][]sqldb.NodesRecord); ok {
 		r0 = rf(namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string][]string)
+			r0 = ret.Get(0).(map[string][]sqldb.NodesRecord)
 		}
 	}
 

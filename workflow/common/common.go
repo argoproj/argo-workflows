@@ -58,6 +58,8 @@ const (
 	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
+	// AnnotationKeyHydrationFailedTime is the time that when hydrate failed, it will be cleared after a successful hydration
+	AnnotationKeyHydrationFailedTime = workflow.WorkflowFullName + "/hydration-failed-time"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
@@ -163,6 +165,14 @@ const (
 	EnvVarProgressFile = "ARGO_PROGRESS_FILE"
 	// EnvVarDefaultRequeueTime is the default requeue time for Workflow Informers. For more info, see rate_limiters.go
 	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
+	// EnvVarOffloadNodeStatusErrorFallback control if we can save node status to workflow as normal when offload failed
+	EnvVarOffloadNodeStatusErrorFallback = "OFFLOAD_NODE_STATUS_ERROR_FALLBACK"
+	// EnvVarOffloadNodeStatusHistoryCount is the number of workflow offload status to keep for a live workflow
+	EnvVarOffloadNodeStatusHistoryCount = "OFFLOAD_NODE_STATUS_HISTORY_COUNT"
+	// EnvVarOffloadNodeStatusTTL is the ttl time of offload node status
+	EnvVarOffloadNodeStatusTTL = "OFFLOAD_NODE_STATUS_TTL"
+	// EnvVarHydrationFailedRetryDuration is the time that we wait before mark it is as failed
+	EnvVarHydrationFailedRetryDuration = "HYDRATION_FAILED_RETRY_DURATION"
 	// EnvAgentTaskWorkers is the number of task workers for the agent pod
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
