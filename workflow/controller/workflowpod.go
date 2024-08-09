@@ -565,7 +565,7 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
 	deadline := time.Time{}
-	if woc.workflowDeadline != nil {
+	if woc.workflowDeadline != nil && !opts.onExitPod {
 		deadline = *woc.workflowDeadline
 	}
 	if !opts.executionDeadline.IsZero() && (deadline.IsZero() || opts.executionDeadline.Before(deadline)) {
