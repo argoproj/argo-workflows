@@ -151,3 +151,18 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 		NextProtos:   []string{"h2"},
 	}, nil
 }
+
+func GetTLSConfig(clientCert, clientKey string, insecureSkipVerify bool) (*tls.Config, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
+	}
+	// Load client certificate if paths are provided
+	if clientCert != "" && clientKey != "" {
+		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+	return tlsConfig, nil
+}
