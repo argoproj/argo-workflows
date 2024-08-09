@@ -7,8 +7,8 @@ spec:
   templates:
   - name: a
     container:
-      image:  docker/whalesay:latest
-      command: [cowsay]
+      image:  busybox
+      command: [echo]
       args: ["hello world"]
   - name: b
     retryStrategy:
@@ -26,8 +26,8 @@ spec:
       args: ["echo intentional failure; exit 2"]
   - name: d
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]
   - name: statis
     dag:

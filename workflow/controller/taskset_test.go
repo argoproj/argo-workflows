@@ -305,8 +305,8 @@ status:
 			assert.NotNil(t, ts)
 			assert.Equal(t, ts.Name, wf.Name)
 			assert.Equal(t, ts.Namespace, wf.Namespace)
-			assert.Len(t, ts.Spec.Tasks, 0)
-			assert.Len(t, ts.Status.Nodes, 0)
+			assert.Empty(t, ts.Spec.Tasks)
+			assert.Empty(t, ts.Status.Nodes)
 		}
 
 	})

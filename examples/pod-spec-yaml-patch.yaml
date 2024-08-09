@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   generateName: pod-spec-patch-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   arguments:
     parameters:
       - name: mem-limit
@@ -15,8 +15,8 @@ spec:
           limits:
             memory: "{{workflow.parameters.mem-limit}}"
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]

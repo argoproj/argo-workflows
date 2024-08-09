@@ -13,19 +13,19 @@ spec:
     timeout: 30s   # timeout value will be applied to all templates
     retryStrategy: # retryStrategy value will be applied to all templates
       limit: "2"
-      
+
   templates:
     - name: main
       steps:
         - - name: retry-backoff
             template: retry-backoff
-        - - name: whalesay
-            template: whalesay
+        - - name: hello-world
+            template: hello-world
 
-    - name: whalesay
+    - name: hello-world
       container:
-        image: argoproj/argosay:v2
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["hello world"]
 
     - name: retry-backoff

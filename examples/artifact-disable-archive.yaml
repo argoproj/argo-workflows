@@ -13,9 +13,9 @@ spec:
   - name: artifact-disable-archive
     steps:
     - - name: generate-artifact
-        template: whalesay
+        template: hello-world-to-file
     - - name: consume-artifact
-        template: print-message
+        template: print-message-from-files
         arguments:
           artifacts:
           - name: etc
@@ -25,11 +25,11 @@ spec:
           - name: hello-txt-nc
             from: "{{steps.generate-artifact.outputs.artifacts.hello-txt-nc}}"
 
-  - name: whalesay
+  - name: hello-world-to-file
     container:
-      image: docker/whalesay:latest
+      image: busybox
       command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt | tee /tmp/hello_world_nc.txt ; sleep 1"]
+      args: ["echo hello world | tee /tmp/hello_world.txt | tee /tmp/hello_world_nc.txt ; sleep 1"]
     outputs:
       artifacts:
       - name: etc
@@ -47,7 +47,7 @@ spec:
             # no compression (also accepts the standard gzip 1 to 9 values)
             compressionLevel: 0
 
-  - name: print-message
+  - name: print-message-from-files
     inputs:
       artifacts:
       - name: etc

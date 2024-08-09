@@ -1,4 +1,7 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
 data:
   executor: |
     resources:
@@ -47,6 +50,3 @@ data:
     - name: Workflow Completed
       type: label
       key: workflows.argoproj.io/completed
-kind: ConfigMap
-metadata:
-  name: workflow-controller-configmap

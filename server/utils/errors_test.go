@@ -62,7 +62,7 @@ func TestRecursiveStatus(t *testing.T) {
 
 func TestNilStatus(t *testing.T) {
 	newErr := ToStatusError(nil, codes.InvalidArgument)
-	assert.Equal(t, nil, newErr)
+	assert.NoError(t, newErr)
 }
 
 func TestArgoError(t *testing.T) {
@@ -96,7 +96,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	t.Run("StatusOk", func(t *testing.T) {
 		code := http.StatusAccepted
 		err, ok := httpToStatusError(code, "msg")
-		assert.Equal(true, ok)
+		assert.True(ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.OK, stat.Code())
 	})
@@ -104,7 +104,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	t.Run("StatusOnRedirect", func(t *testing.T) {
 		code := http.StatusPermanentRedirect
 		err, ok := httpToStatusError(code, "msg")
-		assert.Equal(true, ok)
+		assert.True(ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.Internal, stat.Code())
 	})
@@ -112,7 +112,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	t.Run("StatusTeapot", func(t *testing.T) {
 		code := http.StatusTeapot
 		err, ok := httpToStatusError(code, "msg")
-		assert.Equal(true, ok)
+		assert.True(ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.InvalidArgument, stat.Code())
 	})
@@ -121,7 +121,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	t.Run("StatusInternal", func(t *testing.T) {
 		code := http.StatusVariantAlsoNegotiates
 		err, ok := httpToStatusError(code, "msg")
-		assert.Equal(true, ok)
+		assert.True(ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.Internal, stat.Code())
 	})

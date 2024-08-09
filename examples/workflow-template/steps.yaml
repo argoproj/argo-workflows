@@ -9,8 +9,8 @@ spec:
     steps:
     - - name: hello1
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message
@@ -25,8 +25,8 @@ spec:
             value: "hello2a"
       - name: hello2b
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message

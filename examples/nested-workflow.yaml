@@ -33,10 +33,10 @@ spec:
   # container template which generates an output parameter and artifact
   - name: generate
     container:
-      image: docker/whalesay:latest
+      image: busybox
       command: [sh, -c]
       args: ["
-        cowsay hello world | tee /tmp/my-output-artifact.txt &&
+        echo hello world | tee /tmp/my-output-artifact.txt &&
         echo 'my-output-parameter' > /tmp/my-output-parameter.txt
       "]
     outputs:

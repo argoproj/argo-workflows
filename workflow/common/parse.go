@@ -8,6 +8,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	kjson "sigs.k8s.io/json"
 	"sigs.k8s.io/yaml"
 
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -96,7 +98,19 @@ func toWorkflowTypeYAML(body []byte, kind string, strict bool) (metav1.Object, e
 func toWorkflowTypeJSON(body []byte, kind string, strict bool) (metav1.Object, error) {
 	v := objectForKind(kind)
 	if strict {
-		return v, jsonpkg.UnmarshalStrict(body, v)
+		var strictErrs []error
+		strictJSONErrs, err := kjson.UnmarshalStrict(body, v)
+		if err != nil {
+			// fatal decoding error, not due to strictness
+			return v, err
+		}
+		strictErrs = append(strictErrs, strictJSONErrs...)
+
+		if len(strictErrs) > 0 {
+			// return the successfully decoded object along with the strict errors
+			return v, runtime.NewStrictDecodingError(strictErrs)
+		}
+		return v, err
 	}
 
 	return v, jsonpkg.Unmarshal(body, v)

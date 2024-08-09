@@ -9,7 +9,6 @@ import (
 
 	sqldbmocks "github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/utils"
 	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
@@ -51,17 +50,11 @@ metadata:
     workflows.argoproj.io/phase: Succeeded
 `), wfFailed)
 	wfArchive := &sqldbmocks.WorkflowArchive{}
-	r, err := labels.ParseToRequirements("workflows.argoproj.io/phase=Succeeded,workflows.argoproj.io/workflow-template=my-archived-wftmpl")
+	r, err := labels.ParseToRequirements("workflows.argoproj.io/workflow-template=my-archived-wftmpl")
 	assert.NoError(t, err)
-	wfArchive.On("ListWorkflows", utils.ListOptions{
-		Namespace:         "my-ns",
-		LabelRequirements: r,
-		Limit:             1,
-	}).Return(wfv1.Workflows{
-		*testutil.MustUnmarshalWorkflow(`
+	wfArchive.On("GetWorkflowForEstimator", "my-ns", r).Return(testutil.MustUnmarshalWorkflow(`
 metadata:
-  name: my-archived-wftmpl-baseline`),
-	}, nil)
+  name: my-archived-wftmpl-baseline`), nil)
 	f := NewEstimatorFactory(informer, hydratorfake.Always, wfArchive)
 	t.Run("None", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{})

@@ -17,8 +17,8 @@ spec:
       tasks:
       - name: A
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message
@@ -26,8 +26,8 @@ spec:
       - name: B
         depends: "A"
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message
@@ -40,8 +40,8 @@ spec:
       - name: D
         depends: "B && C"
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-print-message
+          template: print-message
         arguments:
           parameters:
           - name: message

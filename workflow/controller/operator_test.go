@@ -174,7 +174,7 @@ spec:
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, woc.globalParams[common.GlobalVarWorkflowDuration], "0.000000")
+	assert.Equal(t, "0.000000", woc.globalParams[common.GlobalVarWorkflowDuration])
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -405,7 +405,7 @@ func TestSidecarWithVolume(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 	pod := pods.Items[0]
 
 	claimVolFound := false
@@ -536,7 +536,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -546,7 +546,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	retries.Limit = intstrutil.ParsePtr("2")
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
 	// Ensure there are no child nodes yet.
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
@@ -568,14 +568,14 @@ func TestProcessNodeRetries(t *testing.T) {
 	// there should be no retries at this point.
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	// The parent node also gets marked as Succeeded.
-	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 
 	// Mark the parent node as running again and the lastChild as failed.
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
@@ -584,7 +584,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Add a hook node that has Succeeded
 	childHookedNode := "child-node.hooks.running"
@@ -595,7 +595,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Add a third node that has failed.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
@@ -605,7 +605,7 @@ func TestProcessNodeRetries(t *testing.T) {
 	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+	assert.Equal(t, wfv1.NodeFailed, n.Phase)
 }
 
 // TestProcessNodeRetries tests retrying when RetryOn.Error is enabled
@@ -618,7 +618,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -629,7 +629,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
 	// Ensure there are no child nodes yet.
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
@@ -651,14 +651,14 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	// there should be no retries at this point.
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	// The parent node also gets marked as Succeeded.
-	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 
 	// Mark the parent node as running again and the lastChild as errored.
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
@@ -667,7 +667,7 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Add a third node that has errored.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
@@ -676,8 +676,8 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
 
 // TestProcessNodeRetries tests retrying when RetryOnTransientError is enabled
@@ -690,7 +690,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -701,7 +701,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	retries.RetryPolicy = wfv1.RetryPolicyOnTransientError
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
 	// Ensure there are no child nodes yet.
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
@@ -723,14 +723,14 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	// there should be no retries at this point.
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	// The parent node also gets marked as Succeeded.
-	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 
 	// Mark the parent node as running again and the lastChild as errored with a message that indicates the error
 	// is transient.
@@ -743,7 +743,7 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Add a third node that has errored.
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
@@ -752,8 +752,8 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
 
 func TestProcessNodeRetriesWithBackoff(t *testing.T) {
@@ -766,7 +766,7 @@ func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -782,7 +782,7 @@ func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
 	// Ensure there are no child nodes yet.
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
@@ -800,14 +800,14 @@ func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	// there should be no retries at this point.
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	// The parent node also gets marked as Succeeded.
-	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 }
 
 func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
@@ -822,7 +822,7 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.NotNil(woc)
 
 	// Verify that there are no nodes in the wf status.
-	require.Zero(len(woc.wf.Status.Nodes))
+	require.Empty(woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -895,7 +895,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -907,7 +907,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
 	// Ensure there are no child nodes yet.
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
@@ -929,20 +929,20 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	// there should be no retries at this point.
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Mark lastChild Pending.
 	woc.markNodePhase(lastChild.Name, wfv1.NodePending)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	// The parent node also gets marked as Succeeded.
-	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 	assert.Equal(t, "", n.Message)
 
 	// Mark the parent node as running again and the lastChild as errored.
@@ -952,7 +952,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
 	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
 
 	// Add a third node that has failed.
@@ -964,7 +964,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+	assert.Equal(t, wfv1.NodeFailed, n.Phase)
 	assert.Equal(t, "No more retries left", n.Message)
 }
 
@@ -977,7 +977,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -989,7 +989,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
 	// Ensure there are no child nodes yet.
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
@@ -1010,20 +1010,20 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	// No retry related message for running node
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// No retry related message for pending node
 	woc.markNodePhase(lastChild.Name, wfv1.NodePending)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 	assert.Equal(t, "", n.Message)
 
 	// No retry related message for succeeded node
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 	assert.Equal(t, "", n.Message)
 
 	// workflow mark shutdown, no retry is evaluated
@@ -1034,7 +1034,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
 	assert.Equal(t, "Stopped with strategy 'Stop'", n.Message)
 	woc.wf.Spec.Shutdown = ""
 
@@ -1043,7 +1043,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Equal(t, err.Error(), "noExist is not a valid RetryPolicy")
+	assert.Equal(t, "noExist is not a valid RetryPolicy", err.Error())
 
 	// Node status doesn't with retrypolicy, shouldn't evaluate expression
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
@@ -1053,7 +1053,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
 	assert.Equal(t, "", n.Message)
 
 	// Node status aligns with retrypolicy, should evaluate expression
@@ -1064,7 +1064,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+	assert.Equal(t, wfv1.NodeFailed, n.Phase)
 	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
 
 	// Node status aligns with retrypolicy but reach max retry limit, shouldn't evaluate expression
@@ -1076,7 +1076,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	assert.NoError(t, err)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+	assert.Equal(t, wfv1.NodeFailed, n.Phase)
 	assert.Equal(t, "No more retries left", n.Message)
 }
 
@@ -1111,7 +1111,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	// Verify that there are no nodes in the wf status.
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -1122,7 +1122,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
 	// Ensure there are no child nodes yet.
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
@@ -1144,14 +1144,14 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// there should be no retries at this point.
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	// The parent node also gets marked as Succeeded.
-	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 
 	// Mark the parent node as running again and the lastChild as errored.
 	// Parent node should also be errored because retry on error is disabled
@@ -1962,19 +1962,19 @@ func TestWorkflowStepRetry(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(workflowStepRetry)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
 
 	// complete the first pod
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
 	nodeID := woc.nodeID(&pods.Items[0])
 	woc.wf.Status.MarkTaskResultComplete(nodeID)
@@ -1983,12 +1983,12 @@ func TestWorkflowStepRetry(t *testing.T) {
 	// fail the second pod
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err = listPods(woc)
-	assert.Nil(t, err)
-	if assert.Equal(t, 3, len(pods.Items)) {
+	assert.NoError(t, err)
+	if assert.Len(t, pods.Items, 3) {
 		assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
 		assert.Equal(t, "cowsay failure", pods.Items[1].Spec.Containers[1].Args[0])
 
@@ -2099,7 +2099,7 @@ func TestStepsTemplateParallelismLimit(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 
 	// operate again and make sure we don't schedule any more pods
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
@@ -2111,7 +2111,7 @@ func TestStepsTemplateParallelismLimit(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 }
 
 var dagTemplateParallelismLimit = `
@@ -2152,7 +2152,7 @@ func TestDAGTemplateParallelismLimit(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 
 	// operate again and make sure we don't schedule any more pods
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
@@ -2160,7 +2160,7 @@ func TestDAGTemplateParallelismLimit(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 }
 
 var nestedParallelism = `
@@ -2243,7 +2243,7 @@ func TestNestedTemplateParallelismLimit(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 4, len(pods.Items))
+	assert.Len(t, pods.Items, 4)
 }
 
 // TestSidecarResourceLimits verifies resource limits on the sidecar can be set in the controller config
@@ -2304,7 +2304,7 @@ func TestSuspendResume(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
 	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "")
@@ -2316,7 +2316,7 @@ func TestSuspendResume(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 }
 
 var suspendTemplateWithDeadline = `
@@ -2341,23 +2341,23 @@ func TestSuspendWithDeadline(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(suspendTemplateWithDeadline)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	updatedWf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	found := false
 
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypeSuspend {
-			assert.Equal(t, node.Phase, wfv1.NodeFailed)
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
 			assert.Contains(t, node.Message, "Step exceeded its deadline")
 			found = true
 		}
@@ -2394,18 +2394,18 @@ func TestSuspendInputsResolution(t *testing.T) {
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("suspend-template")
 
-	assert.Equal(t, node.Type, wfv1.NodeTypeSuspend)
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeTypeSuspend, node.Type)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
-	assert.Equal(t, node.Inputs.Parameters[0].Name, "param1")
-	assert.Equal(t, node.Inputs.Parameters[0].Value.String(), "{\"enum\": [\"one\", \"two\", \"three\"]}")
-	assert.Equal(t, len(node.Inputs.Parameters[0].Enum), 3)
-	assert.Equal(t, node.Inputs.Parameters[0].Enum[0].String(), "one")
-	assert.Equal(t, node.Inputs.Parameters[0].Enum[1].String(), "two")
-	assert.Equal(t, node.Inputs.Parameters[0].Enum[2].String(), "three")
+	assert.Equal(t, "param1", node.Inputs.Parameters[0].Name)
+	assert.Equal(t, "{\"enum\": [\"one\", \"two\", \"three\"]}", node.Inputs.Parameters[0].Value.String())
+	assert.Len(t, node.Inputs.Parameters[0].Enum, 3)
+	assert.Equal(t, "one", node.Inputs.Parameters[0].Enum[0].String())
+	assert.Equal(t, "two", node.Inputs.Parameters[0].Enum[1].String())
+	assert.Equal(t, "three", node.Inputs.Parameters[0].Enum[2].String())
 
-	assert.Equal(t, node.Inputs.Parameters[1].Name, "param2")
-	assert.Equal(t, node.Inputs.Parameters[1].Value.String(), "value2")
+	assert.Equal(t, "param2", node.Inputs.Parameters[1].Name)
+	assert.Equal(t, "value2", node.Inputs.Parameters[1].Value.String())
 }
 
 var sequence = `
@@ -2461,8 +2461,8 @@ func TestSequence(t *testing.T) {
 			found101 = true
 		}
 	}
-	assert.Equal(t, true, found100)
-	assert.Equal(t, true, found101)
+	assert.True(t, found100)
+	assert.True(t, found101)
 }
 
 var inputParametersAsJson = `
@@ -2521,7 +2521,7 @@ func TestInputParametersAsJson(t *testing.T) {
 			found = true
 		}
 	}
-	assert.Equal(t, true, found)
+	assert.True(t, found)
 }
 
 var expandWithItems = `
@@ -2570,11 +2570,11 @@ func TestExpandWithItems(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
-	assert.Equal(t, 5, len(newSteps))
+	assert.Len(t, newSteps, 5)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 5, len(pods.Items))
+	assert.Len(t, pods.Items, 5)
 }
 
 var expandWithItemsMap = `
@@ -2620,7 +2620,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(newSteps))
+	assert.Len(t, newSteps, 3)
 	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
 }
 
@@ -2677,7 +2677,7 @@ func TestSuspendTemplate(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
 	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "")
@@ -2691,7 +2691,7 @@ func TestSuspendTemplate(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.Len(t, pods.Items, 1)
 }
 
 func TestSuspendTemplateWithFailedResume(t *testing.T) {
@@ -2715,7 +2715,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
 	err = util.StopWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
@@ -2730,7 +2730,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 }
 
 func TestSuspendTemplateWithFilteredResume(t *testing.T) {
@@ -2754,7 +2754,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 
 	// resume the workflow, but with non-matching selector
 	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
@@ -2765,7 +2765,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
@@ -2780,7 +2780,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.Len(t, pods.Items, 1)
 }
 
 var suspendResumeAfterTemplate = `
@@ -2830,7 +2830,7 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 
 	// wait 4 seconds
 	time.Sleep(4 * time.Second)
@@ -2840,7 +2840,7 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.Len(t, pods.Items, 1)
 }
 
 func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
@@ -2864,7 +2864,7 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 
 	// don't wait
 
@@ -2873,7 +2873,7 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.Empty(t, pods.Items)
 }
 
 var volumeWithParam = `
@@ -3081,8 +3081,8 @@ func TestWokflowSchedulingConstraintsDAG(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 2)
 	for _, pod := range pods.Items {
 		assert.Equal(t, "workflows", pod.Spec.NodeSelector["pool"])
 		found := false
@@ -3111,8 +3111,8 @@ func TestWokflowSchedulingConstraintsSteps(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 2)
 	for _, pod := range pods.Items {
 		assert.Equal(t, "workflows", pod.Spec.NodeSelector["pool"])
 		found := false
@@ -3146,7 +3146,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	// Now set it as global. Verify it is added to workflow outputs
 	param.GlobalName = "global-param"
 	woc.addParamToGlobalScope(param)
-	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
+	assert.Len(t, woc.wf.Status.Outputs.Parameters, 1)
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
 	assert.Equal(t, testVal, woc.wf.Status.Outputs.Parameters[0].Value)
 	assert.Equal(t, testVal.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
@@ -3155,7 +3155,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	newValue := wfv1.AnyStringPtr("new-value")
 	param.Value = newValue
 	woc.addParamToGlobalScope(param)
-	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
+	assert.Len(t, woc.wf.Status.Outputs.Parameters, 1)
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
 	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[0].Value)
 	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
@@ -3163,7 +3163,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	// Add a new global parameter
 	param.GlobalName = "global-param2"
 	woc.addParamToGlobalScope(param)
-	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Parameters))
+	assert.Len(t, woc.wf.Status.Outputs.Parameters, 2)
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[1].Name)
 	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[1].Value)
 	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param2"])
@@ -3189,14 +3189,14 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 	// Now mark it as global. Verify it is added to workflow outputs
 	art.GlobalName = "global-art"
 	woc.addArtifactToGlobalScope(art)
-	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Artifacts))
+	assert.Len(t, woc.wf.Status.Outputs.Artifacts, 1)
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[0].Name)
 	assert.Equal(t, "some/key", woc.wf.Status.Outputs.Artifacts[0].S3.Key)
 
 	// Change the value and verify update is reflected
 	art.S3.Key = "new/key"
 	woc.addArtifactToGlobalScope(art)
-	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Artifacts))
+	assert.Len(t, woc.wf.Status.Outputs.Artifacts, 1)
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[0].Name)
 	assert.Equal(t, "new/key", woc.wf.Status.Outputs.Artifacts[0].S3.Key)
 
@@ -3204,7 +3204,7 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 	art.GlobalName = "global-art2"
 	art.S3.Key = "new/new/key"
 	woc.addArtifactToGlobalScope(art)
-	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Artifacts))
+	assert.Len(t, woc.wf.Status.Outputs.Artifacts, 2)
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[1].Name)
 	assert.Equal(t, "new/new/key", woc.wf.Status.Outputs.Artifacts[1].S3.Key)
 }
@@ -3216,10 +3216,10 @@ func TestParamSubstitutionWithArtifact(t *testing.T) {
 	woc.operate(ctx)
 	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wf.Status.Phase, wfv1.WorkflowRunning)
+	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, len(pods.Items), 1)
+	assert.Len(t, pods.Items, 1)
 }
 
 func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
@@ -3229,10 +3229,10 @@ func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
 	woc.operate(ctx)
 	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wf.Status.Phase, wfv1.WorkflowRunning)
+	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, len(pods.Items), 1)
+	assert.Len(t, pods.Items, 1)
 }
 
 func TestExpandWithSequence(t *testing.T) {
@@ -3245,7 +3245,7 @@ func TestExpandWithSequence(t *testing.T) {
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, len(items))
+	assert.Len(t, items, 10)
 	assert.Equal(t, "0", items[0].GetStrVal())
 	assert.Equal(t, "9", items[9].GetStrVal())
 
@@ -3255,7 +3255,7 @@ func TestExpandWithSequence(t *testing.T) {
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, len(items))
+	assert.Len(t, items, 10)
 	assert.Equal(t, "101", items[0].GetStrVal())
 	assert.Equal(t, "110", items[9].GetStrVal())
 
@@ -3265,7 +3265,7 @@ func TestExpandWithSequence(t *testing.T) {
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
-	assert.Equal(t, 11, len(items))
+	assert.Len(t, items, 11)
 	assert.Equal(t, "50", items[0].GetStrVal())
 	assert.Equal(t, "60", items[10].GetStrVal())
 
@@ -3275,7 +3275,7 @@ func TestExpandWithSequence(t *testing.T) {
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
-	assert.Equal(t, 11, len(items))
+	assert.Len(t, items, 11)
 	assert.Equal(t, "60", items[0].GetStrVal())
 	assert.Equal(t, "50", items[10].GetStrVal())
 
@@ -3284,7 +3284,7 @@ func TestExpandWithSequence(t *testing.T) {
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(items))
+	assert.Empty(t, items)
 
 	seq = wfv1.Sequence{
 		Start: intstrutil.ParsePtr("8"),
@@ -3292,7 +3292,7 @@ func TestExpandWithSequence(t *testing.T) {
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(items))
+	assert.Len(t, items, 1)
 	assert.Equal(t, "8", items[0].GetStrVal())
 
 	seq = wfv1.Sequence{
@@ -3302,7 +3302,7 @@ func TestExpandWithSequence(t *testing.T) {
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, len(items))
+	assert.Len(t, items, 10)
 	assert.Equal(t, "testuser01", items[0].GetStrVal())
 	assert.Equal(t, "testuser0A", items[9].GetStrVal())
 }
@@ -3347,7 +3347,7 @@ func TestMetadataPassing(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
 	var (
 		pod       = pods.Items[0]
@@ -3419,7 +3419,7 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
 	assert.Equal(t, []string{
 		"/var/run/argo/argoexec", "emissary",
@@ -3453,7 +3453,7 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
 	tmpl, err := getPodTemplate(&pods.Items[0])
 	assert.NoError(t, err)
@@ -3498,7 +3498,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
-		assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+		assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
 		template, err := getPodTemplate(&pods.Items[0])
 		assert.NoError(t, err)
@@ -3703,13 +3703,13 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 		}
 		objectMetas[cm.Name] = cm.ObjectMeta
 	}
-	if assert.Equal(t, 1, len(objectMetas["resource-cm-1"].OwnerReferences)) {
+	if assert.Len(t, objectMetas["resource-cm-1"].OwnerReferences, 1) {
 		assert.Equal(t, "manual-ref-name", objectMetas["resource-cm-1"].OwnerReferences[0].Name)
 	}
-	if assert.Equal(t, 1, len(objectMetas["resource-cm-2"].OwnerReferences)) {
+	if assert.Len(t, objectMetas["resource-cm-2"].OwnerReferences, 1) {
 		assert.Equal(t, "resource-with-ownerreference-template", objectMetas["resource-cm-2"].OwnerReferences[0].Name)
 	}
-	if assert.Equal(t, 2, len(objectMetas["resource-cm-3"].OwnerReferences)) {
+	if assert.Len(t, objectMetas["resource-cm-3"].OwnerReferences, 2) {
 		assert.Equal(t, "manual-ref-name", objectMetas["resource-cm-3"].OwnerReferences[0].Name)
 		assert.Equal(t, "resource-with-ownerreference-template", objectMetas["resource-cm-3"].OwnerReferences[1].Name)
 	}
@@ -3883,7 +3883,7 @@ func TestWithParamAsJsonList(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 4, len(pods.Items))
+	assert.Len(t, pods.Items, 4)
 }
 
 var stepsOnExit = `
@@ -4005,7 +4005,7 @@ func TestStepsOnExitTimeout(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(onExitTimeout)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -4263,7 +4263,7 @@ spec:
 	invalidNode := wfv1.NodeStatus{Type: wfv1.NodeTypePod, Name: "doesnt-exist"}
 	pod, err = woc.getPodByNode(&invalidNode)
 	assert.Nil(t, pod)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var pdbwf = `
@@ -4397,7 +4397,7 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(nestedOptionalOutputArtifacts)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
@@ -4649,9 +4649,9 @@ func TestDeletePVCDoesNotDeletePVCOnFailedWorkflow(t *testing.T) {
 	assert.NoError(err)
 
 	// Node 1 Succeeded
-	assert.Equal(node1.Phase, wfv1.NodeSucceeded)
+	assert.Equal(wfv1.NodeSucceeded, node1.Phase)
 	// Node 2 Failed
-	assert.Equal(node2.Phase, wfv1.NodeFailed)
+	assert.Equal(wfv1.NodeFailed, node2.Phase)
 	// Hence, PVCs should stick around
 	assert.Len(woc.wf.Status.PersistentVolumeClaims, 1, "PVCs not deleted")
 }
@@ -4888,7 +4888,7 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
 	template, err := getPodTemplate(&pods.Items[0])
 	assert.NoError(t, err)
@@ -4935,7 +4935,7 @@ func TestUnsuppliedArgValue(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
-	assert.Equal(t, woc.wf.Status.Message, "invalid spec: spec.arguments.missing.value or spec.arguments.missing.valueFrom is required")
+	assert.Equal(t, "invalid spec: spec.arguments.missing.value or spec.arguments.missing.valueFrom is required", woc.wf.Status.Message)
 }
 
 var suppliedArgValue = `
@@ -5846,7 +5846,7 @@ func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 			hitCache++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
-			assert.Equal(t, 1, len(node.Children))
+			assert.Len(t, node.Children, 1)
 		}
 	}
 	assert.Equal(t, 1, hitCache)
@@ -5893,7 +5893,7 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 			hitCache++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
-			assert.Equal(t, 1, len(node.Children))
+			assert.Len(t, node.Children, 1)
 		}
 	}
 	assert.Equal(t, 1, hitCache)
@@ -6349,7 +6349,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	assert.NotNil(t, woc)
 	err := woc.setExecWorkflow(context.Background())
 	assert.NoError(t, err)
-	assert.Zero(t, len(woc.wf.Status.Nodes))
+	assert.Empty(t, woc.wf.Status.Nodes)
 
 	// Add the parent node for retries.
 	nodeName := "test-node"
@@ -6473,7 +6473,7 @@ status:
 			case "main":
 				assert.Equal(t, wfv1.NodePending, node.Phase)
 				assert.False(t, node.StartTime().IsZero())
-				assert.Equal(t, woc.wf.Labels[common.LabelKeyPreviousWorkflowName], "my-wf")
+				assert.Equal(t, "my-wf", woc.wf.Labels[common.LabelKeyPreviousWorkflowName])
 			case "":
 			default:
 				assert.Fail(t, "invalid template")
@@ -7098,7 +7098,7 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	assert.NotNil(t, pod)
 	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
-	assert.Equal(t, msg, "Pod failed before main container starts due to ContainerCreating: Container is creating")
+	assert.Equal(t, "Pod failed before main container starts due to ContainerCreating: Container is creating", msg)
 }
 
 var podWithWaitContainerOOM = `
@@ -7332,7 +7332,7 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		woc.operate(ctx)
 		pods, err := listPods(woc)
 		assert.NoError(t, err)
-		assert.True(t, len(pods.Items) > 0)
+		assert.NotEmpty(t, pods.Items)
 		if assert.Len(t, pods.Items, 3) {
 			ctrs := pods.Items[0].Spec.Containers
 			assert.Len(t, ctrs, 2)
@@ -7644,7 +7644,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
 
 	// Ensure there are no child nodes yet.
 	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
@@ -7665,10 +7665,10 @@ func TestRetryOnDiffHost(t *testing.T) {
 	assert.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
 	assert.NoError(t, err)
-	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, n.Phase)
 
 	// Ensure related fields are not set
-	assert.Equal(t, lastChild.HostNodeName, "")
+	assert.Equal(t, "", lastChild.HostNodeName)
 
 	// Set host name
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -7731,7 +7731,7 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.Len(t, pods.Items, 1)
 
 	// First retry
 	pod := pods.Items[0]
@@ -7749,7 +7749,7 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 
 	var podRetry1 apiv1.Pod
 	for _, p := range pods.Items {
@@ -7782,7 +7782,7 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(pods.Items))
+	assert.Len(t, pods.Items, 3)
 
 	var podRetry2 apiv1.Pod
 	for _, p := range pods.Items {
@@ -8456,7 +8456,7 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 			woc := newWorkflowOperationCtx(wf, controller)
 			err := woc.setExecWorkflow(context.Background())
 
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, woc.execWf)
 			assert.Equal(t, tt.expectedMutexName, woc.execWf.Spec.Synchronization.Mutex.Name)
 			assert.Equal(t, tt.expectedSchedulerName, woc.execWf.Spec.SchedulerName)
@@ -8519,7 +8519,7 @@ func TestWfPendingWithNoPod(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.Len(t, pods.Items, 1)
 }
 
 var wfPendingWithSync = `apiVersion: argoproj.io/v1alpha1
@@ -9022,7 +9022,7 @@ func TestOperatorRetryExpression(t *testing.T) {
 	retryNode, err := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
-	assert.Equal(t, 2, len(retryNode.Children))
+	assert.Len(t, retryNode.Children, 2)
 	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
 }
 
@@ -9213,7 +9213,7 @@ func TestOperatorRetryExpressionError(t *testing.T) {
 	retryNode, err := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
-	assert.Equal(t, 3, len(retryNode.Children))
+	assert.Len(t, retryNode.Children, 3)
 }
 
 const operatorRetryExpressionErrorNoExpr = `
@@ -9387,7 +9387,7 @@ func TestOperatorRetryExpressionErrorNoExpr(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, wfv1.NodeError, retryNode.Phase)
-	assert.Equal(t, 2, len(retryNode.Children))
+	assert.Len(t, retryNode.Children, 2)
 	assert.Equal(t, "Error (exit code 1)", retryNode.Message)
 }
 
@@ -9564,7 +9564,7 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	woc.operate(ctx)
 	retryStepNode, err := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1")
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(retryStepNode.Outputs.Parameters))
+	assert.Len(t, retryStepNode.Outputs.Parameters, 1)
 	assert.Equal(t, "hello world", retryStepNode.Outputs.Parameters[0].Value.String())
 	onExitNode, err := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
 	assert.NoError(t, err)
@@ -10258,7 +10258,7 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	t.Log(woc.wf)
-	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
 }
 
@@ -10281,7 +10281,7 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	t.Log(woc.wf)
-	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
 }
 
@@ -10634,7 +10634,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		woc := newWorkflowOperationCtx(wf, controller)
 		assert.NotNil(t, woc)
 		// Verify that there are no nodes in the wf status.
-		assert.Zero(t, len(woc.wf.Status.Nodes))
+		assert.Empty(t, woc.wf.Status.Nodes)
 
 		// Add the parent node for retries.
 		nodeID := woc.wf.NodeID(nodeName)
@@ -10659,7 +10659,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		assert.NoError(t, err)
 		childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, woc.wf.Status.Nodes)
 
-		assert.Equal(t, 2, len(childNodeIds))
+		assert.Len(t, childNodeIds, 2)
 		assert.Equal(t, childNodes[1].ID, lastChildNode.ID)
 	})
 
@@ -10682,7 +10682,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		assert.NoError(t, err)
 		childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, woc.wf.Status.Nodes)
 
-		assert.Equal(t, 2, len(childNodeIds))
+		assert.Len(t, childNodeIds, 2)
 		// ignore the hooked node
 		assert.Equal(t, childNodes[1].ID, lastChildNode.ID)
 	})
@@ -10701,7 +10701,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		assert.NoError(t, err)
 		childNodeIds, lastChildNode := getChildNodeIdsAndLastRetriedNode(node, woc.wf.Status.Nodes)
 
-		assert.Equal(t, 2, len(childNodeIds))
+		assert.Len(t, childNodeIds, 2)
 		assert.Equal(t, childNodes[1].ID, lastChildNode.ID)
 	})
 }
@@ -10896,22 +10896,25 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(needReconcileWorklfow)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
 
 	// complete the first pod
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
+	for _, node := range woc.wf.Status.Nodes {
+		woc.wf.Status.MarkTaskResultIncomplete(node.ID)
+	}
 	err, podReconciliationCompleted := woc.podReconciliation(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.False(t, podReconciliationCompleted)
 
 	for idx, node := range woc.wf.Status.Nodes {
@@ -10929,19 +10932,19 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 		}
 	}
 	err, podReconciliationCompleted = woc.podReconciliation(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, podReconciliationCompleted)
 	woc.operate(ctx)
 
 	// complete the second pod
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err = listPods(woc)
-	assert.Nil(t, err)
-	if assert.Equal(t, 2, len(pods.Items)) {
+	assert.NoError(t, err)
+	if assert.Len(t, pods.Items, 2) {
 		assert.Equal(t, "hello1", pods.Items[0].Spec.Containers[1].Env[0].Value)
 		assert.Equal(t, "steps-need-reconcile", pods.Items[1].Spec.Containers[1].Env[0].Value)
 	}
@@ -11158,7 +11161,7 @@ status:
 
 	delete(wf.Labels, common.LabelKeyCompleted)
 	woc := newWorkflowOperationCtx(wf, controller)
-	assert.True(t, len(woc.wf.Status.Nodes) > 0)
+	assert.NotEmpty(t, woc.wf.Status.Nodes)
 	nodeId := "wf-retry-stopped-pn6mm-1672493720"
 
 	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
@@ -11172,7 +11175,7 @@ status:
 	delete(wf.Labels, common.LabelKeyCompleted)
 	woc = newWorkflowOperationCtx(wf, controller)
 	n := woc.markNodePhase(wf.Name, wfv1.NodeError)
-	assert.Equal(t, n.Phase, wfv1.NodeError)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
 	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -11184,7 +11187,7 @@ status:
 	delete(wf.Labels, common.LabelKeyCompleted)
 	woc = newWorkflowOperationCtx(wf, controller)
 	n = woc.markNodePhase(wf.Name, wfv1.NodeSucceeded)
-	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 	woc.wf.Status.MarkTaskResultIncomplete(nodeId)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -11241,14 +11244,14 @@ func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSet)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(pods.Items))
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
 
 	// mark pod Running
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
@@ -11265,8 +11268,8 @@ func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 	time.Sleep(10 * time.Second)
 	deletePods(ctx, woc)
 	pods, err = listPods(woc)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(pods.Items))
+	assert.NoError(t, err)
+	assert.Empty(t, pods.Items)
 
 	// reconcile
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -11281,4 +11284,150 @@ func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 			assert.Equal(t, "container deleted", node.Message)
 		}
 	}
+}
+
+var dagContainersetWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  name: dag-containerset-qlmzl
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/phase: Running
+spec:
+  entrypoint: pipeline
+  templates:
+  - containerSet:
+      containers:
+      - args:
+        - echo
+        - hello
+        command:
+        - /argosay
+        image: argoproj/argosay:v2
+        name: main
+    name: argosay-container-set
+  - dag:
+      tasks:
+      - name: A
+        template: argosay-container-set
+      - depends: A.Succeeded
+        name: B
+        template: argosay-container-set
+      - depends: A.Succeeded
+        name: C
+        template: argosay-container-set
+    name: pipeline
+status:
+  conditions:
+  - status: "False"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    dag-containerset-qlmzl:
+      children:
+      - dag-containerset-qlmzl-1127450597
+      displayName: dag-containerset-qlmzl
+      finishedAt: null
+      id: dag-containerset-qlmzl
+      name: dag-containerset-qlmzl
+      phase: Running
+      progress: 2/6
+      startedAt: "2024-05-14T02:24:54Z"
+      templateName: pipeline
+      templateScope: local/dag-containerset-qlmzl
+      type: DAG
+    dag-containerset-qlmzl-70023156:
+      boundaryID: dag-containerset-qlmzl-1127450597
+      children:
+      - dag-containerset-qlmzl-1077117740
+      displayName: main
+      finishedAt: "2024-05-14T02:25:28Z"
+      id: dag-containerset-qlmzl-70023156
+      name: dag-containerset-qlmzl.A.main
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2024-05-14T02:24:54Z"
+      templateName: argosay-container-set
+      templateScope: local/dag-containerset-qlmzl
+      type: Container
+    dag-containerset-qlmzl-1077117740:
+      boundaryID: dag-containerset-qlmzl
+      children:
+      - dag-containerset-qlmzl-3500746831
+      displayName: B
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-containerset-qlmzl-1077117740
+      message: PodInitializing
+      name: dag-containerset-qlmzl.B
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-05-14T02:25:30Z"
+      templateName: argosay-container-set
+      templateScope: local/dag-containerset-qlmzl
+      type: Pod
+    dag-containerset-qlmzl-1127450597:
+      boundaryID: dag-containerset-qlmzl
+      children:
+      - dag-containerset-qlmzl-70023156
+      displayName: A
+      finishedAt: "2024-05-14T02:25:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-containerset-qlmzl-1127450597
+      name: dag-containerset-qlmzl.A
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 6
+        memory: 49
+      startedAt: "2024-05-14T02:24:54Z"
+      templateName: argosay-container-set
+      templateScope: local/dag-containerset-qlmzl
+      type: Pod
+    dag-containerset-qlmzl-3500746831:
+      boundaryID: dag-containerset-qlmzl-1077117740
+      displayName: main
+      finishedAt: null
+      id: dag-containerset-qlmzl-3500746831
+      name: dag-containerset-qlmzl.B.main
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-05-14T02:25:30Z"
+      templateName: argosay-container-set
+      templateScope: local/dag-containerset-qlmzl
+      type: Container
+  phase: Running
+  progress: 2/4
+  resourcesDuration:
+    cpu: 6
+    memory: 49
+  startedAt: "2024-05-14T02:24:54Z"
+  taskResultsCompletionStatus:
+    dag-containerset-qlmzl-1077117740: false
+    dag-containerset-qlmzl-1127450597: true
+`
+
+func TestGetOutboundNodesFromDAGContainerset(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagContainersetWf)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	found := false
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Name == "dag-containerset-qlmzl.A.main" {
+			assert.Len(t, node.Children, 2)
+			found = true
+		}
+	}
+	assert.True(t, found)
 }

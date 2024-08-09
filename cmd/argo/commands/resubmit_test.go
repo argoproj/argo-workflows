@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
@@ -28,7 +28,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{"foo", "bar"})
 		c.AssertNumberOfCalls(t, "ResubmitWorkflow", 2)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("Resubmit workflow with memoization", func(t *testing.T) {
@@ -49,7 +49,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 			Memoized:  true,
 		})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("Resubmit workflow by selector", func(t *testing.T) {
@@ -89,7 +89,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 			c.AssertCalled(t, "ResubmitWorkflow", mock.Anything, resubmitReq)
 		}
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("Resubmit workflow by selector and name", func(t *testing.T) {
@@ -139,7 +139,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 			Memoized:  false,
 		})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("Resubmit workflow list error", func(t *testing.T) {
@@ -151,7 +151,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 		cliSubmitOpts := common.CliSubmitOpts{}
 		c.On("ListWorkflows", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("mock error"))
 		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{})
-		assert.Errorf(t, err, "mock error")
+		require.Errorf(t, err, "mock error")
 	})
 
 	t.Run("Resubmit workflow error", func(t *testing.T) {
@@ -162,6 +162,6 @@ func Test_resubmitWorkflows(t *testing.T) {
 		cliSubmitOpts := common.CliSubmitOpts{}
 		c.On("ResubmitWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("mock error"))
 		err := resubmitWorkflows(context.Background(), c, resubmitOpts, cliSubmitOpts, []string{"foo"})
-		assert.Errorf(t, err, "mock error")
+		require.Errorf(t, err, "mock error")
 	})
 }

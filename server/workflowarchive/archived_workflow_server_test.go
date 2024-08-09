@@ -167,7 +167,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "metadata.name=my-name,spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z,ext.showRemainingItemCount=true", Limit: 1}, NamePrefix: "my-"})
 		if assert.NoError(t, err) {
 			assert.Len(t, resp.Items, 1)
-			assert.Equal(t, *resp.ListMeta.RemainingItemCount, int64(4))
+			assert.Equal(t, int64(4), *resp.ListMeta.RemainingItemCount)
 			assert.Empty(t, resp.Continue)
 		}
 		/////// Currently, for the purpose of backward compatibility, namespace is supported both as its own query parameter and as part of the field selector
@@ -245,7 +245,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.False(t, matchLabelKeyPattern("wrong key"))
 		resp, err = w.ListArchivedWorkflowLabelValues(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest{ListOptions: &metav1.ListOptions{LabelSelector: "my-key"}})
 		assert.NoError(t, err)
-		assert.Len(t, resp.Items, 0)
+		assert.Empty(t, resp.Items)
 	})
 	t.Run("RetryArchivedWorkflow", func(t *testing.T) {
 		_, err := w.RetryArchivedWorkflow(ctx, &workflowarchivepkg.RetryArchivedWorkflowRequest{Uid: "failed-uid"})

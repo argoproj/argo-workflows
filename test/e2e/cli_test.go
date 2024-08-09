@@ -1,5 +1,4 @@
 //go:build cli
-// +build cli
 
 package e2e
 
@@ -21,6 +20,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const (
@@ -224,6 +224,42 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 		})
 }
 
+func (s *CLISuite) TestSubmitWorkflowTemplateDryRun() {
+	s.Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		When().
+		CreateWorkflowTemplates().
+		RunCli([]string{"submit", "--dry-run", "--from", "workflowtemplate/workflow-template-whalesay-template", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "generateName: workflow-template-whalesay-template-")
+				// dry-run should never get a UID
+				assert.NotContains(t, output, "uid:")
+			}
+		}).
+		Then().
+		ExpectWorkflowList(metav1.ListOptions{LabelSelector: common.LabelKeyWorkflowTemplate + "=workflow-template-whalesay-template"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
+			assert.Empty(t, wfList.Items)
+		})
+}
+
+func (s *CLISuite) TestSubmitWorkflowTemplateServerDryRun() {
+	s.Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		When().
+		CreateWorkflowTemplates().
+		RunCli([]string{"submit", "--server-dry-run", "--from", "workflowtemplate/workflow-template-whalesay-template", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "generateName: workflow-template-whalesay-template-")
+				// server-dry-run should get a UID
+				assert.Contains(t, output, "uid:")
+			}
+		}).
+		Then().
+		ExpectWorkflowList(metav1.ListOptions{LabelSelector: common.LabelKeyWorkflowTemplate + "=workflow-template-whalesay-template"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
+			assert.Empty(t, wfList.Items)
+		})
+}
+
 func (s *CLISuite) TestTokenArg() {
 	if os.Getenv("CI") != "true" {
 		s.T().Skip("we only set-up the KUBECONFIG on CI")
@@ -238,7 +274,7 @@ func (s *CLISuite) TestTokenArg() {
 	var goodToken string
 	s.Run("GetSAToken", func() {
 		token, err := s.GetServiceAccountToken()
-		assert.NoError(s.T(), err)
+		s.NoError(err)
 		goodToken = token
 	})
 	s.Run("ListWithGoodToken", func() {
@@ -387,7 +423,7 @@ func (s *CLISuite) TestLogProblems() {
 
 func (s *CLISuite) TestParametersFile() {
 	err := os.WriteFile("/tmp/parameters-file.yaml", []byte("message: hello"), os.ModePerm)
-	assert.NoError(s.T(), err)
+	s.NoError(err)
 	s.Given().
 		RunCli([]string{"submit", "testdata/parameters-workflow.yaml", "-l", "workflows.argoproj.io/test=true", "--parameter-file=/tmp/parameters-file.yaml"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
@@ -938,7 +974,7 @@ func (s *CLISuite) TestRetryWorkflowWithContinueOn() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
-			assert.Equal(t, 7, len(status.Nodes))
+			assert.Len(t, status.Nodes, 7)
 		}).
 		RunCli([]string{"retry", workflowName}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err, output) {
@@ -954,12 +990,12 @@ func (s *CLISuite) TestRetryWorkflowWithContinueOn() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Equal(t, 7, len(status.Nodes))
+			assert.Len(t, status.Nodes, 7)
 		}).
 		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
 			return strings.Contains(status.Name, ".success")
 		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
-			assert.Equal(t, 2, len(status.Children))
+			assert.Len(t, status.Children, 2)
 		})
 }
 
@@ -1111,7 +1147,7 @@ func (s *CLISuite) TestTemplateCommands() {
 		s.Given().RunCli([]string{"template", "lint", "testdata/workflow-templates"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
 			assert.Contains(t, output, "invalid-workflowtemplate.yaml")
-			assert.Contains(t, output, `unknown field "entrypoints"`)
+			assert.Contains(t, output, `unknown field "spec.entrypoints"`)
 			assert.Contains(t, output, "linting errors found!")
 		})
 	})
@@ -1248,7 +1284,7 @@ func (s *CLISuite) TestWorkflowResubmitDAGWithDependencies() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Equal(t, 5, len(status.Nodes))
+			assert.Len(t, status.Nodes, 5)
 		}).
 		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
 			return strings.Contains(status.Name, ".A")
@@ -1827,7 +1863,7 @@ func (s *CLISuite) TestArchiveLabel() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, wfv1.WorkflowSucceeded)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 	s.Run("ListKeys", func() {
 		s.Given().

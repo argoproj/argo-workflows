@@ -271,7 +271,7 @@ func TestScheduleTimeParam(t *testing.T) {
 	woc.Run()
 	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wsl.Items.Len(), 1)
+	assert.Equal(t, 1, wsl.Items.Len())
 	wf := wsl.Items[0]
 	assert.NotNil(t, wf)
 	assert.Len(t, wf.GetAnnotations(), 1)
@@ -450,7 +450,7 @@ func TestMultipleSchedules(t *testing.T) {
 	woc.Run()
 	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wsl.Items.Len(), 1)
+	assert.Equal(t, 1, wsl.Items.Len())
 	wf := wsl.Items[0]
 	assert.NotNil(t, wf)
 	assert.Len(t, wf.GetAnnotations(), 1)

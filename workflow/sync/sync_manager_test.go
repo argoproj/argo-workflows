@@ -44,7 +44,6 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-prtl9
   uid: 790f5c47-211f-4a3b-8949-514ae916633b
 spec:
-  
   entrypoint: whalesay
   synchronization:
     semaphore:
@@ -52,8 +51,7 @@ spec:
         key: workflow
         name: my-config
   templates:
-  - 
-    container:
+  - container:
       args:
       - hello world
       command:
@@ -118,17 +116,14 @@ metadata:
   name: semaphore-tmpl-level-xjvln
   namespace: default
 spec:
-  
   entrypoint: semaphore-tmpl-level-example
   templates:
-  - 
-    inputs: {}
+  - inputs: {}
     metadata: {}
     name: semaphore-tmpl-level-example
     outputs: {}
     steps:
-    - - 
-        name: generate
+    - - name: generate
         template: gen-number-list
     - - arguments:
           parameters:
@@ -137,8 +132,7 @@ spec:
         name: sleep
         template: sleep-n-sec
         withParam: '{{steps.generate.outputs.result}}'
-  - 
-    inputs: {}
+  - inputs: {}
     metadata: {}
     name: gen-number-list
     outputs: {}
@@ -152,8 +146,7 @@ spec:
         import json
         import sys
         json.dump([i for i in range(1, 3)], sys.stdout)
-  - 
-    container:
+  - container:
       args:
       - echo sleeping for {{inputs.parameters.seconds}} seconds; sleep 10; echo done
       command:
@@ -352,7 +345,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		concurrenyMgr.Initialize(wfList.Items)
-		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
+		assert.Len(t, concurrenyMgr.syncLockMap, 1)
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
@@ -364,7 +357,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		concurrenyMgr.Initialize(wfList.Items)
-		assert.Equal(t, 0, len(concurrenyMgr.syncLockMap))
+		assert.Empty(t, concurrenyMgr.syncLockMap)
 	})
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
@@ -419,7 +412,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		concurrenyMgr.Release(wf, "", wf.Spec.Synchronization)
 		assert.Equal(t, holderKey2, nextKey)
 		assert.NotNil(t, wf.Status.Synchronization)
-		assert.Equal(t, 0, len(wf.Status.Synchronization.Semaphore.Holding[0].Holders))
+		assert.Empty(t, wf.Status.Synchronization.Semaphore.Holding[0].Holders)
 
 		// Low priority workflow try to acquire the lock
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
@@ -447,7 +440,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		concurrenyMgr.ReleaseAll(wf1)
 		assert.Len(t, sema.pending.items, 1)
 		concurrenyMgr.ReleaseAll(wf3)
-		assert.Len(t, sema.pending.items, 0)
+		assert.Empty(t, sema.pending.items)
 	})
 }
 
@@ -654,13 +647,13 @@ func TestMutexWfLevel(t *testing.T) {
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		mutex := concurrenyMgr.syncLockMap["default/Mutex/my-mutex"].(*PriorityMutex)
+		mutex := concurrenyMgr.syncLockMap["default/Mutex/my-mutex"].(*PrioritySemaphore)
 		assert.NotNil(t, mutex)
-		assert.Len(t, mutex.mutex.pending.items, 2)
+		assert.Len(t, mutex.pending.items, 2)
 		concurrenyMgr.ReleaseAll(wf1)
-		assert.Len(t, mutex.mutex.pending.items, 1)
+		assert.Len(t, mutex.pending.items, 1)
 		concurrenyMgr.ReleaseAll(wf2)
-		assert.Len(t, mutex.mutex.pending.items, 0)
+		assert.Empty(t, mutex.pending.items)
 	})
 }
 
@@ -692,7 +685,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		_, _, _, _ = concurrenyMgr.TryAcquire(wfMutex1, "", wfMutex.Spec.Synchronization)
 		_, _, _, _ = concurrenyMgr.TryAcquire(wfSema, "", wfSema.Spec.Synchronization)
 		_, _, _, _ = concurrenyMgr.TryAcquire(wfSema1, "", wfSema.Spec.Synchronization)
-		mutex := concurrenyMgr.syncLockMap["default/Mutex/my-mutex"].(*PriorityMutex)
+		mutex := concurrenyMgr.syncLockMap["default/Mutex/my-mutex"].(*PrioritySemaphore)
 		semaphore := concurrenyMgr.syncLockMap["default/ConfigMap/my-config/workflow"]
 
 		assert.Len(mutex.getCurrentHolders(), 1)
@@ -700,10 +693,10 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		assert.Len(semaphore.getCurrentHolders(), 1)
 		assert.Len(semaphore.getCurrentPending(), 1)
 		concurrenyMgr.CheckWorkflowExistence()
-		assert.Len(mutex.getCurrentHolders(), 0)
+		assert.Empty(mutex.getCurrentHolders())
 		assert.Len(mutex.getCurrentPending(), 1)
-		assert.Len(semaphore.getCurrentHolders(), 0)
-		assert.Len(semaphore.getCurrentPending(), 0)
+		assert.Empty(semaphore.getCurrentHolders())
+		assert.Empty(semaphore.getCurrentPending())
 	})
 }
 

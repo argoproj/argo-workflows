@@ -24,7 +24,7 @@ spec:
   templates:
   - name: main
     container:
-      image: docker/whalesay:latest
+      image: busybox
 ```
 
 [template defaults example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/template-defaults.yaml)

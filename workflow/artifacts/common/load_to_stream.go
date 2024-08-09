@@ -12,6 +12,8 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
+const loadToStreamPrefix = `wfstream-`
+
 // wrapper around os.File enables us to remove the file when it gets closed
 type selfDestructingFile struct {
 	os.File
@@ -28,7 +30,7 @@ func (w selfDestructingFile) Close() error {
 func LoadToStream(a *wfv1.Artifact, g ArtifactDriver) (io.ReadCloser, error) {
 	log.Infof("Efficient artifact streaming is not supported for type %v: see https://github.com/argoproj/argo-workflows/issues/8489",
 		reflect.TypeOf(g))
-	filename := "/tmp/" + rand.String(32)
+	filename := "/tmp/" + loadToStreamPrefix + rand.String(32)
 	if err := g.Load(a, filename); err != nil {
 		return nil, err
 	}

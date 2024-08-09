@@ -818,7 +818,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
-	// Pods may be be labeled multiple times.
+	// Pods may be labeled multiple times.
 	woc.queuePodsForCleanup()
 }
 
@@ -1126,7 +1126,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			return
 		}
 		if woc.isAgentPod(pod) {
-			woc.updateAgentPodStatus(ctx, pod)
+			woc.updateAgentPodStatus(pod)
 			return
 		}
 		nodeID := woc.nodeID(pod)
@@ -1889,7 +1889,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	defer func() { woc.currentStackDepth-- }()
 
 	if woc.currentStackDepth >= woc.controller.maxStackDepth && os.Getenv("DISABLE_MAX_RECURSION") != "true" {
-		return woc.initializeNodeOrMarkError(node, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, opts.nodeFlag, ErrMaxDepthExceeded), ErrMaxDepthExceeded
+		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, ErrMaxDepthExceeded), ErrMaxDepthExceeded
 	}
 
 	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(orgTmpl)
@@ -2397,7 +2397,9 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 		}
 		woc.updated = true
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		if woc.hasTaskSetNodes() {
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		}
 	}
 }
 
@@ -2857,7 +2859,16 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 		}
 		outboundNodes := make([]string, 0)
 		for _, child := range node.Children {
-			outboundNodes = append(outboundNodes, woc.getOutboundNodes(child)...)
+			childNode, err := woc.wf.Status.Nodes.Get(child)
+			if err != nil {
+				woc.log.Panicf("was unable to obtain child node for %s", child)
+			}
+			// child node has different boundaryID meaning current node is the deepest outbound node
+			if node.Type == wfv1.NodeTypeContainer && node.BoundaryID != childNode.BoundaryID {
+				outboundNodes = append(outboundNodes, node.ID)
+			} else {
+				outboundNodes = append(outboundNodes, woc.getOutboundNodes(child)...)
+			}
 		}
 		return outboundNodes
 	case wfv1.NodeTypeRetry:

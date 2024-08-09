@@ -198,7 +198,7 @@ func TestWFLevelServiceAccount(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, pod.Spec.ServiceAccountName, "foo")
+	assert.Equal(t, "foo", pod.Spec.ServiceAccountName)
 }
 
 // TestTmplServiceAccount verifies the ability to carry forward the Template level service account name
@@ -218,7 +218,7 @@ func TestTmplServiceAccount(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, pod.Spec.ServiceAccountName, "tmpl")
+	assert.Equal(t, "tmpl", pod.Spec.ServiceAccountName)
 }
 
 // TestWFLevelAutomountServiceAccountToken verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
@@ -240,7 +240,7 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+	assert.False(t, *pod.Spec.AutomountServiceAccountToken)
 }
 
 // TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
@@ -264,7 +264,7 @@ func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+	assert.False(t, *pod.Spec.AutomountServiceAccountToken)
 }
 
 // verifyServiceAccountTokenVolumeMount is a helper function to verify service account token volume in a container.
@@ -375,7 +375,7 @@ func TestImagePullSecrets(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, pod.Spec.ImagePullSecrets[0].Name, "secret-name")
+	assert.Equal(t, "secret-name", pod.Spec.ImagePullSecrets[0].Name)
 }
 
 // TestAffinity verifies the ability to carry forward affinity rules
@@ -433,7 +433,7 @@ func TestTolerations(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.NotNil(t, pod.Spec.Tolerations)
-	assert.Equal(t, pod.Spec.Tolerations[0].Key, "nvidia.com/gpu")
+	assert.Equal(t, "nvidia.com/gpu", pod.Spec.Tolerations[0].Key)
 }
 
 // TestMetadata verifies ability to carry forward annotations and labels
@@ -801,10 +801,10 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 3, len(pod.Spec.Volumes))
+	assert.Len(t, pod.Spec.Volumes, 3)
 	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
 	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
-	assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
+	assert.Len(t, pod.Spec.Containers[1].VolumeMounts, 2)
 	assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
 }
 
@@ -889,7 +889,7 @@ func TestPriority(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, pod.Spec.PriorityClassName, "foo")
+	assert.Equal(t, "foo", pod.Spec.PriorityClassName)
 	assert.Equal(t, pod.Spec.Priority, &priority)
 }
 
@@ -906,7 +906,7 @@ func TestSchedulerName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, pod.Spec.SchedulerName, "foo")
+	assert.Equal(t, "foo", pod.Spec.SchedulerName)
 }
 
 // TestInitContainers verifies the ability to set up initContainers
@@ -961,13 +961,13 @@ func TestInitContainers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 2, len(pod.Spec.InitContainers))
+	assert.Len(t, pod.Spec.InitContainers, 2)
 	foo := pod.Spec.InitContainers[1]
 	assert.Equal(t, "init-foo", foo.Name)
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 3, len(foo.VolumeMounts))
+	assert.Len(t, foo.VolumeMounts, 3)
 	assert.Equal(t, "init-volume-name", foo.VolumeMounts[0].Name)
 	assert.Equal(t, "volume-name", foo.VolumeMounts[1].Name)
 	assert.Equal(t, "var-run-argo", foo.VolumeMounts[2].Name)
@@ -1026,14 +1026,14 @@ func TestSidecars(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 3, len(pod.Spec.Containers))
+	assert.Len(t, pod.Spec.Containers, 3)
 	assert.Equal(t, "wait", pod.Spec.Containers[0].Name)
 	assert.Equal(t, "main", pod.Spec.Containers[1].Name)
 	assert.Equal(t, "side-foo", pod.Spec.Containers[2].Name)
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 3, len(pod.Spec.Containers[2].VolumeMounts))
+	assert.Len(t, pod.Spec.Containers[2].VolumeMounts, 3)
 	assert.Equal(t, "sidecar-volume-name", pod.Spec.Containers[2].VolumeMounts[0].Name)
 	assert.Equal(t, "volume-name", pod.Spec.Containers[2].VolumeMounts[1].Name)
 }
@@ -1437,7 +1437,7 @@ func TestPodSpecPatchPodName(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 		pods, err := listPods(woc)
 		assert.NoError(t, err)
-		assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+		assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 		template, err := getPodTemplate(&pods.Items[0])
 		assert.NoError(t, err)
 		parameterValue := template.Outputs.Parameters[0].Value
@@ -1596,12 +1596,12 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 		assert.Errorf(t, err, "could not find wait ctr index")
 	}
 	for _, mnt := range pod.Spec.Containers[waitCtrIdx].VolumeMounts {
-		assert.NotEqual(t, mnt.Name, "unc")
+		assert.NotEqual(t, "unc", mnt.Name)
 	}
 	for _, initCtr := range pod.Spec.InitContainers {
 		if initCtr.Name == common.InitContainerName {
 			for _, mnt := range initCtr.VolumeMounts {
-				assert.NotEqual(t, mnt.Name, "unc")
+				assert.NotEqual(t, "unc", mnt.Name)
 			}
 		}
 	}

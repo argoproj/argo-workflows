@@ -1,5 +1,4 @@
 //go:build executor
-// +build executor
 
 package e2e
 
@@ -162,6 +161,18 @@ func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
 			for _, value := range status.TaskResultsCompletionStatus {
 				assert.True(t, value)
 			}
+		})
+}
+
+func (s *ResourceTemplateSuite) TestResourceTemplateFailed() {
+	s.Given().
+		Workflow("@testdata/resource-templates/failed.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 		})
 }
 

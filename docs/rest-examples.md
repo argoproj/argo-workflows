@@ -30,16 +30,16 @@ curl --request POST \
      "spec": {
        "templates": [
         {
-         "name": "whalesay",
+         "name": "hello-world",
          "arguments": {},
          "inputs": {},
          "outputs": {},
          "metadata": {},
          "container": {
           "name": "",
-          "image": "docker/whalesay:latest",
+          "image": "busybox",
           "command": [
-            "cowsay"
+            "echo"
           ],
           "args": [
             "hello world"
@@ -48,7 +48,7 @@ curl --request POST \
         }
       }
     ],
-    "entrypoint": "whalesay",
+    "entrypoint": "hello-world",
     "arguments": {}
   }
 }

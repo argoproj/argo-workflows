@@ -103,3 +103,11 @@ rules:
     - create
     - get
     - delete
+- apiGroups:
+    - ""
+  resources:
+    - secrets
+  verbs:
+    - get
+  resourceNames:
+    - argo-workflows-agent-ca-certificates

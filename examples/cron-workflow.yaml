@@ -11,10 +11,10 @@ spec:
   failedJobsHistoryLimit: 4         # Default 1
   suspend: false                    # Set to "true" to suspend scheduling
   workflowSpec:
-    entrypoint: whalesay
+    entrypoint: hello-world-with-time
     templates:
-      - name: whalesay
+      - name: hello-world-with-time
         container:
-          image: docker/whalesay:latest
-          command: [cowsay]
+          image: busybox
+          command: [echo]
           args: ["🕓 hello world. Scheduled on: {{workflow.scheduledTime}}"]

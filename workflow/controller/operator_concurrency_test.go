@@ -180,7 +180,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		woc.operate(ctx)
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -215,7 +215,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		woc_two.operate(ctx)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -241,7 +241,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		woc.operate(ctx)
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -275,7 +275,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		woc_two.operate(ctx)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -302,7 +302,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		woc.operate(ctx)
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -337,7 +337,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		woc_two.operate(ctx)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -363,7 +363,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		woc.operate(ctx)
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -398,7 +398,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		woc_two.operate(ctx)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -901,7 +901,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
 			if n.Name == "[0].step1(0)" {
-				assert.Equal(n.Phase, wfv1.NodePending)
+				assert.Equal(wfv1.NodePending, n.Phase)
 			}
 		}
 		// Updating Pod state
@@ -910,17 +910,17 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
 			if n.Name == "[0].step1(0)" {
-				assert.Equal(n.Phase, wfv1.NodeRunning)
+				assert.Equal(wfv1.NodeRunning, n.Phase)
 			}
 		}
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
 			if n.Name == "[0].step1(0)" {
-				assert.Equal(n.Phase, wfv1.NodeFailed)
+				assert.Equal(wfv1.NodeFailed, n.Phase)
 			}
 			if n.Name == "[0].step1(1)" {
-				assert.Equal(n.Phase, wfv1.NodePending)
+				assert.Equal(wfv1.NodePending, n.Phase)
 			}
 		}
 	})
@@ -963,7 +963,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		woc.operate(ctx)
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Mutex)
-		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Mutex.Holding))
+		assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
 
 		// Create the second workflow and try to acquire the lock, which should not be available.
 		wfTwo := wf.DeepCopy()
@@ -1007,7 +1007,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		woc.operate(ctx)
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Mutex)
-		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Mutex.Holding))
+		assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
 
 		// Create the second workflow and try to acquire the lock, which should not be available.
 		wfTwo := wf.DeepCopy()
@@ -1036,7 +1036,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.execWf.Status.Phase)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Mutex)
-		assert.Equal(t, 1, len(wocTwo.wf.Status.Synchronization.Mutex.Waiting))
+		assert.Len(t, wocTwo.wf.Status.Synchronization.Mutex.Waiting, 1)
 
 		// Mark the first workflow as succeeded
 		woc.wf.Status.Phase = wfv1.WorkflowSucceeded

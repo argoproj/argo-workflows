@@ -51,7 +51,7 @@
             "required": true,
             "enum": [
               "workflow",
-              "archived-workflows "
+              "archived-workflows"
             ]
           },
           {
