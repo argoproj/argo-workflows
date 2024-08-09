@@ -7,6 +7,6 @@ import (
 )
 
 func TestOpts_String(t *testing.T) {
-	assert.Equal(t, "(argoServerOpts=(url=,path=,secure=false,insecureSkipVerify=false,http=false),instanceID=)", Opts{}.String())
-	assert.Equal(t, "(argoServerOpts=(url=,path=,secure=false,insecureSkipVerify=false,http=false),instanceID=my-instanceid)", Opts{InstanceID: "my-instanceid"}.String())
+	assert.Equal(t, "(argoServerOpts=(url=,path=,secure=false,insecureSkipVerify=false,http=false,clientCert=,clientKey=),instanceID=)", Opts{}.String())
+	assert.Equal(t, "(argoServerOpts=(url=,path=,secure=false,insecureSkipVerify=false,http=false,clientCert=,clientKey=),instanceID=my-instanceid)", Opts{InstanceID: "my-instanceid"}.String())
 }
