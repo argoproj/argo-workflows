@@ -116,7 +116,7 @@ func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
 	out += fmt.Sprintf(fmtStr, "Name:", cwf.ObjectMeta.Name)
 	out += fmt.Sprintf(fmtStr, "Namespace:", cwf.ObjectMeta.Namespace)
 	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(cwf.ObjectMeta.CreationTimestamp.Time))
-	out += fmt.Sprintf(fmtStr, "Schedule:", cwf.Spec.GetScheduleString())
+	out += fmt.Sprintf(fmtStr, "Schedules:", cwf.Spec.GetScheduleString())
 	out += fmt.Sprintf(fmtStr, "Suspended:", cwf.Spec.Suspend)
 	if cwf.Spec.Timezone != "" {
 		out += fmt.Sprintf(fmtStr, "Timezone:", cwf.Spec.Timezone)

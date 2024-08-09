@@ -1397,7 +1397,7 @@ func (s *CLISuite) TestCronCommands() {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 				assert.Contains(t, output, "Created:")
-				assert.Contains(t, output, "Schedule:")
+				assert.Contains(t, output, "Schedules:")
 				assert.Contains(t, output, "Suspended:")
 				assert.Contains(t, output, "StartingDeadlineSeconds:")
 				assert.Contains(t, output, "ConcurrencyPolicy:")
@@ -1414,7 +1414,7 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Create Schedule Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--schedule", "1 2 3 * *", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Schedule:                      1 2 3 * *")
+				assert.Contains(t, output, "Schedules:                     1 2 3 * *")
 			}
 		})
 	})
@@ -1422,7 +1422,7 @@ func (s *CLISuite) TestCronCommands() {
 		s.Given().
 			RunCli([]string{"cron", "update", "cron/basic-update.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Schedule:                      5 5 5 * *")
+					assert.Contains(t, output, "Schedules:                     5 5 5 * *")
 				}
 			})
 	})
@@ -1442,7 +1442,7 @@ func (s *CLISuite) TestCronCommands() {
 		s.Given().
 			RunCli([]string{"cron", "update", "cron/basic-update-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Schedule:                      5 5 5 * *")
+					assert.Contains(t, output, "Schedules:                     5 5 5 * *")
 				}
 			})
 	})
@@ -1539,7 +1539,7 @@ func (s *CLISuite) TestCronCommands() {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 				assert.Contains(t, output, "Created:")
-				assert.Contains(t, output, "Schedule:")
+				assert.Contains(t, output, "Schedules:")
 				assert.Contains(t, output, "Suspended:")
 				assert.Contains(t, output, "StartingDeadlineSeconds:")
 				assert.Contains(t, output, "ConcurrencyPolicy:")
@@ -1549,7 +1549,7 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Create Multiple Schedules", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/multiple-schedules.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Schedule:                      * * * * *,*/2 * * * *")
+				assert.Contains(t, output, "Schedules:                     * * * * *,*/2 * * * *")
 			}
 		})
 	})

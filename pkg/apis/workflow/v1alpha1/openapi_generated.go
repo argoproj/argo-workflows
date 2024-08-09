@@ -2183,7 +2183,6 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					"schedule": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Schedule is a schedule to run the Workflow in Cron format",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2244,7 +2243,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"schedules": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Schedules is a list of schedules to run the Workflow in Cron format",
+							Description: "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2258,7 +2257,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 						},
 					},
 				},
-				Required: []string{"workflowSpec", "schedule"},
+				Required: []string{"workflowSpec"},
 			},
 		},
 		Dependencies: []string{
