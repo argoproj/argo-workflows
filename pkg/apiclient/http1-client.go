@@ -46,6 +46,6 @@ func (h httpClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncService
 	return http1.SyncServiceClient(h), nil
 }
 
-func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client) (context.Context, Client, error) {
-	return ctx, httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient)), nil
+func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client, clientCert, clientKey string) (context.Context, Client, error) {
+	return ctx, httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient, clientCert, clientKey)), nil
 }

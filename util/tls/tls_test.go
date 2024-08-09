@@ -38,3 +38,62 @@ func TestGeneratePEM(t *testing.T) {
 		assert.NotNil(t, cert)
 	})
 }
+
+func TestGetTLSConfig(t *testing.T) {
+	tests := []struct {
+		name               string
+		clientCert         string
+		clientKey          string
+		insecureSkipVerify bool
+		wantErr            bool
+	}{
+		{
+			name:               "Valid certificate and key",
+			clientCert:         "testdata/valid_tls_cert.pem",
+			clientKey:          "testdata/valid_tls_key.pem",
+			insecureSkipVerify: false,
+			wantErr:            false,
+		},
+		{
+			name:               "Empty certificate and key",
+			clientCert:         "",
+			clientKey:          "",
+			insecureSkipVerify: true,
+			wantErr:            false,
+		},
+		{
+			name:       "Invalid certificate and key",
+			clientCert: "testdata/empty_tls.crt",
+			clientKey:  "testdata/empty_tls.key",
+			wantErr:    true,
+		},
+		{
+			name:       "Missing key file",
+			clientCert: "testdata/valid_tls_cert.pem",
+			clientKey:  "testdata/nonexistent.key",
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config, err := GetTLSConfig(tt.clientCert, tt.clientKey, tt.insecureSkipVerify)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Nil(t, config)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, config)
+			require.Equal(t, tt.insecureSkipVerify, config.InsecureSkipVerify)
+
+			if tt.clientCert != "" && tt.clientKey != "" {
+				require.Len(t, config.Certificates, 1)
+			} else {
+				require.Len(t, config.Certificates, 0)
+			}
+		})
+	}
+}
