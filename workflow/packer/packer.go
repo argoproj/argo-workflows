@@ -108,15 +108,15 @@ func compressWorkflow(wf *wfv1.Workflow) error {
 		return err
 	}
 	if large {
-		compressedSize, err1 := getSize(wf)
-		nodesSize, err2 := getNodeStatusSize(wf)
 		wf.Status.CompressedNodes = ""
 		wf.Status.Nodes = nodes
-		if err1 != nil {
+		compressedSize, err := getSize(wf)
+		if err != nil {
 			return err
 		}
-		if err2 != nil {
-			return err2
+		nodesSize, err := getNodeStatusSize(wf)
+		if err != nil {
+			return err
 		}
 		return fmt.Errorf("%s compressed size %d > maxSize %d or node status size %d > maxNodeStatusSize %d",
 			tooLarge, compressedSize, getMaxWorkflowSize(), nodesSize, getMaxNodeStatusSize())
