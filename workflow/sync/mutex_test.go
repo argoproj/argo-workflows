@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
@@ -72,7 +73,7 @@ spec:
     mutex:
       name: test
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -120,7 +121,7 @@ func TestMutexLock(t *testing.T) {
 
 		ctx := context.Background()
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		concurrenyMgr.Initialize(wfList.Items)
 		assert.Len(t, concurrenyMgr.syncLockMap, 1)
 	})
@@ -134,7 +135,7 @@ func TestMutexLock(t *testing.T) {
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
 		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
@@ -145,14 +146,14 @@ func TestMutexLock(t *testing.T) {
 
 		// Try to acquire again
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
 		assert.False(t, wfUpdate)
 
 		wf1.Name = "two"
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
@@ -161,14 +162,14 @@ func TestMutexLock(t *testing.T) {
 		wf2.Spec.Priority = pointer.Int32(5)
 		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
 		wf3.Name = "four"
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", wf3.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
@@ -180,14 +181,14 @@ func TestMutexLock(t *testing.T) {
 
 		// Low priority workflow try to acquire the lock
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
 		// High Priority workflow acquires the lock
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
@@ -208,7 +209,7 @@ func TestMutexLock(t *testing.T) {
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
 		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
@@ -219,7 +220,7 @@ func TestMutexLock(t *testing.T) {
 
 		// Try to acquire again
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
 		assert.False(t, wfUpdate)
@@ -227,7 +228,7 @@ func TestMutexLock(t *testing.T) {
 		wf1.Name = "two"
 		wf1.Namespace = "two"
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
@@ -237,7 +238,7 @@ func TestMutexLock(t *testing.T) {
 		wf2.Spec.Priority = pointer.Int32(5)
 		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
@@ -245,7 +246,7 @@ func TestMutexLock(t *testing.T) {
 		wf3.Name = "four"
 		wf3.Namespace = "four"
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", wf3.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
@@ -257,14 +258,14 @@ func TestMutexLock(t *testing.T) {
 
 		// Low priority workflow try to acquire the lock
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
 		// High Priority workflow acquires the lock
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
@@ -388,7 +389,7 @@ func TestMutexTmplLevel(t *testing.T) {
 		tmpl := wf.Spec.Templates[1]
 
 		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
@@ -398,13 +399,13 @@ func TestMutexTmplLevel(t *testing.T) {
 
 		// Try to acquire again
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", tmpl.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, wfUpdate)
 		assert.False(t, status)
 		assert.NotEmpty(t, msg)
 
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-1432992664", tmpl.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, wfUpdate)
 		assert.False(t, status)
@@ -416,7 +417,7 @@ func TestMutexTmplLevel(t *testing.T) {
 		assert.Empty(t, wf.Status.Synchronization.Mutex.Holding)
 
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", tmpl.Synchronization)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
