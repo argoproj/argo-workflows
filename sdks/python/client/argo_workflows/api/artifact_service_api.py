@@ -79,7 +79,7 @@ class ArtifactServiceApi(object):
                     ('id_discriminator',): {
 
                         "WORKFLOW": "workflow",
-                        "ARCHIVED-WORKFLOWS_": "archived-workflows "
+                        "ARCHIVED-WORKFLOWS": "archived-workflows"
                     },
                     ('artifact_discriminator',): {
 
