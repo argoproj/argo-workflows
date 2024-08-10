@@ -4222,17 +4222,13 @@ spec:
 	time.Sleep(time.Second)
 	// Parent dag node has no pod
 	parentNode, err := woc.wf.GetNodeByName("dag-events")
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
 	pod, err := woc.getPodByNode(parentNode)
 	assert.Nil(t, pod)
 	require.Error(t, err, "Expected node type Pod, got DAG")
 	// Pod node should return a pod
 	podNode, err := woc.wf.GetNodeByName("dag-events.a")
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
 	pod, err = woc.getPodByNode(podNode)
 	require.NoError(t, err)
 	assert.NotNil(t, pod)
