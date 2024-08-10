@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -51,14 +52,15 @@ metadata:
 `), wfFailed)
 	wfArchive := &sqldbmocks.WorkflowArchive{}
 	r, err := labels.ParseToRequirements("workflows.argoproj.io/workflow-template=my-archived-wftmpl")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	wfArchive.On("GetWorkflowForEstimator", "my-ns", r).Return(testutil.MustUnmarshalWorkflow(`
 metadata:
   name: my-archived-wftmpl-baseline`), nil)
 	f := NewEstimatorFactory(informer, hydratorfake.Always, wfArchive)
 	t.Run("None", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{})
-		if assert.NoError(t, err) && assert.NotNil(t, p) {
+		require.NoError(t, err)
+		if assert.NotNil(t, p) {
 			e := p.(*estimator)
 			assert.Nil(t, e.baselineWF)
 		}
@@ -67,7 +69,8 @@ metadata:
 		p, err := f.NewEstimator(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-wftmpl"}},
 		})
-		if assert.NoError(t, err) && assert.NotNil(t, p) {
+		require.NoError(t, err)
+		if assert.NotNil(t, p) {
 			e := p.(*estimator)
 			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
 				assert.Equal(t, "my-wftmpl-baseline", e.baselineWF.Name)
@@ -78,7 +81,8 @@ metadata:
 		p, err := f.NewEstimator(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyClusterWorkflowTemplate: "my-cwft"}},
 		})
-		if assert.NoError(t, err) && assert.NotNil(t, p) {
+		require.NoError(t, err)
+		if assert.NotNil(t, p) {
 			e := p.(*estimator)
 			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
 				assert.Equal(t, "my-cwft-baseline", e.baselineWF.Name)
@@ -89,7 +93,8 @@ metadata:
 		p, err := f.NewEstimator(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyCronWorkflow: "my-cwf"}},
 		})
-		if assert.NoError(t, err) && assert.NotNil(t, p) {
+		require.NoError(t, err)
+		if assert.NotNil(t, p) {
 			e := p.(*estimator)
 			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
 				assert.Equal(t, "my-cwf-baseline", e.baselineWF.Name)
@@ -100,7 +105,8 @@ metadata:
 		p, err := f.NewEstimator(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-archived-wftmpl"}},
 		})
-		if assert.NoError(t, err) && assert.NotNil(t, p) {
+		require.NoError(t, err)
+		if assert.NotNil(t, p) {
 			e := p.(*estimator)
 			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
 				assert.Equal(t, "my-archived-wftmpl-baseline", e.baselineWF.Name)
