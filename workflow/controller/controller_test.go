@@ -836,16 +836,14 @@ func TestInvalidWorkflowMetadata(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	err := woc.setExecWorkflow(context.Background())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid label value")
+	require.ErrorContains(t, err, "invalid label value")
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabels)
 	cancel, controller = newController(wf)
 	defer cancel()
 	woc = newWorkflowOperationCtx(wf, controller)
 	err = woc.setExecWorkflow(context.Background())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid label value")
+	require.ErrorContains(t, err, "invalid label value")
 }
 
 func TestIsArchivable(t *testing.T) {
