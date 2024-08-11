@@ -827,8 +827,6 @@ status:
       type: Steps
     hello-world-647r7-1045616760:
       boundaryID: hello-world-647r7-206029318
-      children:
-      - hello-world-647r7-370991976
       displayName: '[0]'
       finishedAt: null
       id: hello-world-647r7-1045616760
