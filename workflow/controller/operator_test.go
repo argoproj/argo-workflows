@@ -9867,7 +9867,7 @@ func TestRetryLoopWithOutputParam(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var workflowShuttingDownWithNodesInPendingAfterReconsiliation = `apiVersion: argoproj.io/v1alpha1
+var workflowShuttingDownWithNodesInPendingAfterReconciliation = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   annotations:
@@ -9964,12 +9964,12 @@ status:
       type: Container
 `
 
-func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
+func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
 	t.Run("Shutdown", func(t *testing.T) {
-		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconsiliation)
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
 		woc := newWorkflowOperationCtx(workflow, controller)
 
 		woc.execWf.Spec.Shutdown = "Terminate"
@@ -9997,14 +9997,14 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step2NodeName].Phase)
 
-		woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+		woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown()
 
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
 
 	t.Run("Deadline", func(t *testing.T) {
-		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconsiliation)
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
 		woc := newWorkflowOperationCtx(workflow, controller)
 
 		woc.execWf.Spec.Shutdown = ""
@@ -10032,7 +10032,7 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[step2NodeName].Phase)
 
-		woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+		woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown()
 
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)

@@ -350,7 +350,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err, podReconciliationCompleted := woc.podReconciliation(ctx)
 		if err == nil {
-			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+			// Execution control has been applied to the nodes with created pods after pod reconciliation.
+			// However, pending and suspended nodes do not have created pods, and taskset nodes use the agent pod.
+			// Apply execution control to these nodes now since pod reconciliation does not take effect on them.
+			woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown()
 		}
 
 		if err != nil {
@@ -468,7 +471,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
-	// Reconcile TaskSet and Agent for HTTP templates
+
+	// Reconcile TaskSet and Agent for HTTP/Plugin templates
 	woc.taskSetReconciliation(ctx)
 
 	// Check all hooks are completes
@@ -1307,18 +1311,26 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
-func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() {
-	for _, node := range woc.wf.Status.Nodes {
-		// fail suspended nodes when shuting down
-		if woc.GetShutdownStrategy().Enabled() && node.IsActiveSuspendNode() {
-			message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+// failNodesWithoutCreatedPodsAfterDeadlineOrShutdown mark the nodes without created pods failed when shutting down or exceeding deadline.
+func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown() {
+	nodes := woc.wf.Status.Nodes
+	for _, node := range nodes {
+		if node.Fulfilled() {
 			continue
 		}
+		// Only fail nodes that are not part of exit handler if we are "Stopping" or all pods if we are "Terminating"
+		if woc.GetShutdownStrategy().Enabled() && !woc.GetShutdownStrategy().ShouldExecute(node.IsPartOfExitHandler(nodes)) {
+			// fail suspended nodes or taskset nodes when shutting down
+			if node.IsActiveSuspendNode() || node.IsTaskSetNode() {
+				message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+				continue
+			}
+		}
 
-		// fail all pending and suspended nodes when exceeding deadline
+		// fail pending and suspended nodes that are not part of exit handler when exceeding deadline
 		deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
-		if deadlineExceeded && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
+		if deadlineExceeded && !node.IsPartOfExitHandler(nodes) && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
 			message := "Step exceeded its deadline"
 			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			continue

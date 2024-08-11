@@ -14,6 +14,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type HooksSuite struct {
@@ -772,6 +773,101 @@ spec:
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})
+}
+
+func (s *HooksSuite) TestExitHandlerWithWorkflowLevelDeadline() {
+	var onExitNodeName string
+	(s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handler-with-workflow-level-deadline
+spec:
+  entrypoint: main
+  activeDeadlineSeconds: 1
+  hooks:
+    exit:
+      template: exit-handler
+  templates:
+    - name: main
+      steps:
+      - - name: sleep
+          template: sleep
+    - name: exit-handler
+      steps:
+      - - name: sleep
+          template: sleep
+    - name: sleep
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "5"]
+`).When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		WaitForWorkflow(fixtures.Condition(func(wf *v1alpha1.Workflow) (bool, string) {
+			onExitNodeName = common.GenerateOnExitNodeName(wf.ObjectMeta.Name)
+			onExitNode := wf.Status.Nodes.FindByDisplayName(onExitNodeName)
+			return onExitNode.Completed(), "exit handler completed"
+		})).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowFailed)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.DisplayName == onExitNodeName
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.Equal(t, true, status.NodeFlag.Hooked)
+			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		}))
+}
+
+func (s *HooksSuite) TestHttpExitHandlerWithWorkflowLevelDeadline() {
+	var onExitNodeName string
+	(s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-exit-handler-with-workflow-level-deadline
+spec:
+  entrypoint: main
+  activeDeadlineSeconds: 1
+  hooks:
+    exit:
+      template: exit-handler
+  templates:
+    - name: main
+      steps:
+      - - name: sleep
+          template: sleep
+    - name: sleep
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "5"]
+    - name: exit-handler
+      steps:
+      - - name: http
+          template: http
+    - name: http
+      http:
+        url: http://dummy.restapiexample.com/api/v1/employees
+`).When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		WaitForWorkflow(fixtures.Condition(func(wf *v1alpha1.Workflow) (bool, string) {
+			onExitNodeName = common.GenerateOnExitNodeName(wf.ObjectMeta.Name)
+			onExitNode := wf.Status.Nodes.FindByDisplayName(onExitNodeName)
+			return onExitNode.Completed(), "exit handler completed"
+		})).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowFailed)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.DisplayName == onExitNodeName
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.Equal(t, true, status.NodeFlag.Hooked)
+			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		}))
 }
 
 func TestHooksSuite(t *testing.T) {
