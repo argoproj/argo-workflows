@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -348,7 +349,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
 	err := woc.processArtifactGCStrategy(ctx, wfv1.ArtifactGCOnWorkflowCompletion)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	wfatcs := controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.GetNamespace())
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
@@ -571,7 +572,7 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	// - Conditions
 
 	_, err := woc.processCompletedWorkflowArtifactGCTask(wfat, "OnWorkflowCompletion")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	for _, expectedArtifact := range []struct {
 		nodeName     string

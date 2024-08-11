@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -69,12 +70,11 @@ func TestMetrics(t *testing.T) {
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
 	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
-	if assert.NoError(t, err) {
-		assert.NotNil(t, m.GetCustomMetric("metric"))
-	}
+	require.NoError(t, err)
+	assert.NotNil(t, m.GetCustomMetric("metric"))
 
 	err = m.UpsertCustomMetric("metric2", "", newCounter("test", "new test", nil), false)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	badMetric, err := constructOrUpdateGaugeMetric(nil, &v1alpha1.Prometheus{
 		Name:   "count",
@@ -84,18 +84,17 @@ func TestMetrics(t *testing.T) {
 			Value: "1",
 		},
 	})
-	if assert.NoError(t, err) {
-		err = m.UpsertCustomMetric("asdf", "", badMetric, false)
-		assert.Error(t, err)
-	}
+	require.NoError(t, err)
+	err = m.UpsertCustomMetric("asdf", "", badMetric, false)
+	require.Error(t, err)
 }
 
 func TestErrors(t *testing.T) {
 	_, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "invalid.name"}, func() float64 { return 0.0 })
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	_, err = ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name", Labels: []*v1alpha1.MetricLabel{{Key: "invalid-key", Value: "value"}}}, func() float64 { return 0.0 })
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestMetricGC(t *testing.T) {
@@ -109,9 +108,8 @@ func TestMetricGC(t *testing.T) {
 	assert.Empty(t, m.customMetrics)
 
 	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
-	if assert.NoError(t, err) {
-		assert.Len(t, m.customMetrics, 1)
-	}
+	require.NoError(t, err)
+	assert.Len(t, m.customMetrics, 1)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -142,9 +140,8 @@ func TestRealtimeMetricGC(t *testing.T) {
 	assert.Empty(t, m.customMetrics)
 
 	err := m.UpsertCustomMetric("realtime_metric", "workflow-uid", newCounter("test", "test", nil), true)
-	if assert.NoError(t, err) {
-		assert.Len(t, m.customMetrics, 1)
-	}
+	require.NoError(t, err)
+	assert.Len(t, m.customMetrics, 1)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -211,10 +208,10 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	m := New(config, config)
 
 	rtMetric, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name", Help: "hello"}, func() float64 { return 0.0 })
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = m.UpsertCustomMetric("metrickey", "123", rtMetric, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, m.workflows["123"])
 	assert.Len(t, m.customMetrics, 1)
 
@@ -223,10 +220,10 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	assert.Empty(t, m.customMetrics)
 
 	metric, err := ConstructOrUpdateMetric(nil, &v1alpha1.Prometheus{Name: "name", Help: "hello", Gauge: &v1alpha1.Gauge{Value: "1"}})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = m.UpsertCustomMetric("metrickey", "456", metric, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, m.workflows["456"])
 	assert.Len(t, m.customMetrics, 1)
 

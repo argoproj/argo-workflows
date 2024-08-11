@@ -9,6 +9,7 @@ import (
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -566,7 +567,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		defer cancel()
 		workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 		err := controller.setWorkflowDefaults(workflow)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(helloWorldWf))
 	})
 	t.Run("WithDefaults", func(t *testing.T) {
@@ -574,7 +575,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		defer cancel()
 		defaultWorkflowSpec := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 		err := controller.setWorkflowDefaults(defaultWorkflowSpec)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, defaultWorkflowSpec.Spec.HostNetwork, &ans)
 		assert.NotEqual(t, defaultWorkflowSpec, wfv1.MustUnmarshalWorkflow(helloWorldWf))
 		assert.True(t, *defaultWorkflowSpec.Spec.HostNetwork)
@@ -590,7 +591,7 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 	assert.Nil(t, workflow.Spec.TTLStrategy)
 	assert.Contains(t, workflow.Labels, "foo")
 	err := controller.setWorkflowDefaults(workflow)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWf))
 	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
 	assert.Equal(t, "whalesay", workflow.Spec.ServiceAccountName)
@@ -607,7 +608,7 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	var ten int32 = 10
 	var five int32 = 5
 	err := controller.setWorkflowDefaults(workflow)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWfTTL))
 	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
 	assert.Equal(t, "whalesay", workflow.Spec.ServiceAccountName)
@@ -623,7 +624,7 @@ func TestAddingWorkflowDefaultVolumeClaimTemplate(t *testing.T) {
 	defer cancel()
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
 	err := controller.setWorkflowDefaults(workflow)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultVolumeClaimTemplateWf))
 }
 
@@ -784,7 +785,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	err := woc.setExecWorkflow(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
 
@@ -835,18 +836,14 @@ func TestInvalidWorkflowMetadata(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	err := woc.setExecWorkflow(context.Background())
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "invalid label value")
-	}
+	require.ErrorContains(t, err, "invalid label value")
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabels)
 	cancel, controller = newController(wf)
 	defer cancel()
 	woc = newWorkflowOperationCtx(wf, controller)
 	err = woc.setExecWorkflow(context.Background())
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "invalid label value")
-	}
+	require.ErrorContains(t, err, "invalid label value")
 }
 
 func TestIsArchivable(t *testing.T) {
@@ -867,7 +864,7 @@ func TestIsArchivable(t *testing.T) {
 	})
 	t.Run("ConfiguredSelector", func(t *testing.T) {
 		selector, err := metav1.LabelSelectorAsSelector(&lblSelector)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		controller.archiveLabelSelector = selector
 		assert.False(t, controller.isArchivable(workflow))
 		workflow.Labels = make(map[string]string)
@@ -1175,7 +1172,7 @@ spec:
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 }
 
@@ -1229,13 +1226,13 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	cms, err := controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.ObjectMeta.Name})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, cms.Items, 1)
 	assert.Contains(t, cms.Items[0].Data, common.EnvVarTemplate)
 
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	found := false
