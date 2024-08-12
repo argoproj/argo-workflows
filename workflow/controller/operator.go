@@ -126,7 +126,7 @@ var (
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
-	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth))
+	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth()))
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
