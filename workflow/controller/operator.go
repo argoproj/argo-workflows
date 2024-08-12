@@ -1462,6 +1462,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.PodIP = pod.Status.PodIP
 	}
 
+	// If `AnnotationKeyReportOutputsCompleted` is set, it means RBAC prevented WorkflowTaskResult from being written.
 	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
 		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/release-3.5/workflow-rbac/")
 		resultName := woc.nodeID(pod)
@@ -1470,16 +1471,23 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		} else {
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
-	}
 
-	if x, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/release-3.5/workflow-rbac/")
-		if new.Outputs == nil {
-			new.Outputs = &wfv1.Outputs{}
+		// Get node outputs from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
+		if x, ok = pod.Annotations[common.AnnotationKeyOutputs]; ok {
+			if new.Outputs == nil {
+				new.Outputs = &wfv1.Outputs{}
+			}
+			if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
+				new.Phase = wfv1.NodeError
+				new.Message = err.Error()
+			}
 		}
-		if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
-			new.Phase = wfv1.NodeError
-			new.Message = err.Error()
+
+		// Get node progress from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
+		if x, ok = pod.Annotations[common.AnnotationKeyProgress]; ok {
+			if p, ok := wfv1.ParseProgress(x); ok {
+				new.Progress = p
+			}
 		}
 	}
 
@@ -1487,13 +1495,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 
 	if !new.Progress.IsValid() {
 		new.Progress = wfv1.ProgressDefault
-	}
-
-	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/release-3.5/workflow-rbac/")
-		if p, ok := wfv1.ParseProgress(x); ok {
-			new.Progress = p
-		}
 	}
 
 	// We capture the exit-code after we look for the task-result.

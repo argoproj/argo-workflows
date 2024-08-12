@@ -251,6 +251,18 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
 
+	// Set initial progress from pod metadata if exists.
+	if x, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyProgress]; ok {
+		if p, ok := wfv1.ParseProgress(x); ok {
+			node, err := woc.wf.Status.Nodes.Get(nodeID)
+			if err != nil {
+				woc.log.Panicf("was unable to obtain node for %s", nodeID)
+			}
+			node.Progress = p
+			woc.wf.Status.Nodes.Set(nodeID, *node)
+		}
+	}
+
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
