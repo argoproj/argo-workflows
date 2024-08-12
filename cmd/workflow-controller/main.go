@@ -82,13 +82,17 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// start a controller on instances of our custom resource
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
 			version := argo.GetVersion()
 			config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-controller", version.Version))
 			config.Burst = burst
 			config.QPS = qps
 
 			logs.AddK8SLogTransportWrapper(config)
-			metrics.AddMetricsTransportWrapper(config)
+			metrics.AddMetricsTransportWrapper(ctx, config)
 
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
@@ -106,10 +110,6 @@ func NewRootCommand() *cobra.Command {
 				managedNamespace = namespace
 			}
 
-			// start a controller on instances of our custom resource
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins)
 			errors.CheckError(err)
 
@@ -118,7 +118,7 @@ func NewRootCommand() *cobra.Command {
 				log.Info("Leader election is turned off. Running in single-instance mode")
 				log.WithField("id", "single-instance").Info("starting leading")
 				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers)
-				go wfController.RunMetricsServer(ctx, false)
+				go wfController.RunPrometheusServer(ctx, false)
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
@@ -133,7 +133,7 @@ func NewRootCommand() *cobra.Command {
 				// for controlling the dummy metrics server
 				dummyCtx, dummyCancel := context.WithCancel(context.Background())
 				defer dummyCancel()
-				go wfController.RunMetricsServer(dummyCtx, true)
+				go wfController.RunPrometheusServer(dummyCtx, true)
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -148,12 +148,12 @@ func NewRootCommand() *cobra.Command {
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers)
-							go wfController.RunMetricsServer(ctx, false)
+							go wfController.RunPrometheusServer(ctx, false)
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info("stopped leading")
 							cancel()
-							go wfController.RunMetricsServer(dummyCtx, true)
+							go wfController.RunPrometheusServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {
 							log.WithField("leader", identity).Info("new leader")

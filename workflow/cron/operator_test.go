@@ -181,7 +181,8 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(invalidWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	testMetrics, err := metrics.New(context.Background(), metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
+	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
@@ -215,7 +216,7 @@ spec:
   workflowSpec:
     entrypoint: whalesay
     templates:
-    - 
+    -
       container:
         args:
         - "\U0001F553 hello world"
@@ -235,7 +236,9 @@ func TestSpecError(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(specError), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	ctx := context.Background()
+	testMetrics, err := metrics.New(ctx, metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
+	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
@@ -245,7 +248,7 @@ func TestSpecError(t *testing.T) {
 		metrics:     testMetrics,
 	}
 
-	err := woc.validateCronWorkflow()
+	err = woc.validateCronWorkflow(ctx)
 	require.Error(t, err)
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
@@ -259,7 +262,7 @@ func TestScheduleTimeParam(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	testMetrics, _ := metrics.New(context.Background(), metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
@@ -309,7 +312,8 @@ func TestLastUsedSchedule(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(lastUsedSchedule), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	testMetrics, err := metrics.New(context.Background(), metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
+	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
@@ -409,7 +413,7 @@ var multipleSchedulesWf = `
     selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
-    schedules: 
+    schedules:
     - "* * * * *"
     - "0 * * * *"
     startingDeadlineSeconds: 30
@@ -437,7 +441,8 @@ func TestMultipleSchedules(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(multipleSchedulesWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	testMetrics, err := metrics.New(context.Background(), metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
+	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
@@ -470,7 +475,7 @@ var specErrWithScheduleAndSchedules = `
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedule: "* * * * *"
-    schedules: 
+    schedules:
     - "* * * * *"
     - "0 * * * *"
     startingDeadlineSeconds: 30
@@ -498,7 +503,9 @@ func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(specErrWithScheduleAndSchedules), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	ctx := context.Background()
+	testMetrics, err := metrics.New(ctx, metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
+	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
@@ -508,7 +515,7 @@ func TestSpecErrorWithScheduleAndSchedules(t *testing.T) {
 		metrics:     testMetrics,
 	}
 
-	err := woc.validateCronWorkflow()
+	err = woc.validateCronWorkflow(ctx)
 	require.Error(t, err)
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
@@ -529,7 +536,7 @@ var specErrWithValidAndInvalidSchedules = `
     selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
-    schedules: 
+    schedules:
     - "* * * * *"
     - "10 * * 12737123 *"
     startingDeadlineSeconds: 30
@@ -557,7 +564,9 @@ func TestSpecErrorWithValidAndInvalidSchedules(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(specErrWithValidAndInvalidSchedules), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	ctx := context.Background()
+	testMetrics, err := metrics.New(ctx, metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
+	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
@@ -567,7 +576,7 @@ func TestSpecErrorWithValidAndInvalidSchedules(t *testing.T) {
 		metrics:     testMetrics,
 	}
 
-	err := woc.validateCronWorkflow()
+	err = woc.validateCronWorkflow(ctx)
 	require.Error(t, err)
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]

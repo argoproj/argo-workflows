@@ -1903,7 +1903,7 @@ spec:
 
 func TestInvalidMetricName(t *testing.T) {
 	err := validate(invalidMetricName)
-	require.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters, '_', or ':'")
+	require.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters or '_'")
 }
 
 var invalidMetricLabelName = `
@@ -1930,7 +1930,7 @@ spec:
 
 func TestInvalidMetricLabelName(t *testing.T) {
 	err := validate(invalidMetricLabelName)
-	require.EqualError(t, err, "metric label 'invalid.key' is invalid: keys may only contain alphanumeric characters, '_', or ':'")
+	require.EqualError(t, err, "metric label 'invalid.key' is invalid: keys may only contain alphanumeric characters or '_'")
 }
 
 var invalidMetricHelp = `

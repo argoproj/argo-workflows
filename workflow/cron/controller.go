@@ -71,7 +71,7 @@ func init() {
 	log.WithField("cronSyncPeriod", cronSyncPeriod).Info("cron config")
 }
 
-func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics,
+func NewCronController(ctx context.Context, wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics,
 	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
@@ -81,7 +81,7 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cron:                 newCronFacade(),
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
-		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
 		wftmplInformer:       wftmplInformer,
@@ -175,7 +175,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 
 	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
 
-	err = cronWorkflowOperationCtx.validateCronWorkflow()
+	err = cronWorkflowOperationCtx.validateCronWorkflow(ctx)
 	if err != nil {
 		logCtx.WithError(err).Error("invalid cron workflow")
 		return true

@@ -247,6 +247,9 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 	Secrets: []apiv1.ObjectReference{{}},
 }
 
+// test exporter extract metric values from the metrics subsystem
+var testExporter *metrics.TestExporter
+
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects, coreObjects []runtime.Object
@@ -306,7 +309,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 
 	// always compare to NewWorkflowController to see what this block of code should be doing
 	{
-		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+		wfc.metrics, testExporter, _ = metrics.CreateDefaultTestMetrics()
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.throttler = wfc.newThrottler()

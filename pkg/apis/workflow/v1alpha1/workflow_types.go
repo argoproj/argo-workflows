@@ -3601,7 +3601,7 @@ func (p *Prometheus) SetValueString(val string) {
 	}
 }
 
-func (p *Prometheus) GetDesc() string {
+func (p *Prometheus) GetKey() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
 	labels := p.GetMetricLabels()
