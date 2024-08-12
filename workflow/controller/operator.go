@@ -234,7 +234,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.addArtifactGCFinalizer()
 
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
-	woc.taskResultReconciliation()
+	err = woc.taskResultReconciliation()
+	if err != nil {
+		woc.markWorkflowError(ctx, fmt.Errorf("failed to reconcile: %v", err))
+	}
 
 	// Do artifact GC if task result reconciliation is complete.
 	if woc.wf.Status.Fulfilled() {
@@ -2249,7 +2252,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 
 		if !retryNode.Fulfilled() && node.Fulfilled() { // if the retry child has completed we need to update outself
-
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
