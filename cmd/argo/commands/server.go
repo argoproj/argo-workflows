@@ -64,7 +64,7 @@ func NewServerCommand() *cobra.Command {
 		Use:   "server",
 		Short: "start the Argo Server",
 		Example: fmt.Sprintf(`
-See %s`, help.ArgoServer),
+See %s`, help.ArgoServer()),
 		RunE: func(c *cobra.Command, args []string) error {
 			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
