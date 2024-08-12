@@ -36,7 +36,7 @@ func TestErrors(t *testing.T) {
 	err = m.UpsertCustomMetric(m.ctx, &wfv1.Prometheus{
 		Name: "invalid.name",
 	}, "owner", func() float64 { return 0.0 })
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	err = m.UpsertCustomMetric(m.ctx, &wfv1.Prometheus{
 		Name: "name",
@@ -72,7 +72,7 @@ func TestMetricGC(t *testing.T) {
 	baseCm := m.GetCustomMetric(key)
 	assert.NotNil(t, baseCm)
 
-	cm := baseCm.customUserdata()
+	cm := baseCm.customUserdata(true)
 	assert.Len(t, cm, 1)
 
 	// Ensure we get at least one TTL run
@@ -199,7 +199,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	m.StopRealtimeMetricsForWfUID("456")
 	assert.Empty(t, m.realtimeWorkflows["456"])
 
-	cm := baseCm.customUserdata()
+	cm := baseCm.customUserdata(true)
 	assert.Len(t, cm, 1)
 	assert.Len(t, m.realtimeWorkflows["123"], 1)
 

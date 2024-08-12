@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"runtime/debug"
 	"strconv"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/metric"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -42,36 +40,27 @@ func (cmv *customMetricValue) getLabels() instAttribs {
 	return labels
 }
 
-func (i *instrument) customUserdata() map[string]*customMetricValue {
+func (i *instrument) customUserdata(requireSuccess bool) map[string]*customMetricValue {
 	switch val := i.userdata.(type) {
 	case map[string]*customMetricValue:
 		return val
 	default:
-		log.Errorf("internal error: unexpected userdata on custom metric %s", i.name)
-		debug.PrintStack()
-		return make(map[string]*customMetricValue)
-	}
-}
-
-// TODO refactor these together?
-func (i *instrument) maybeCustomUserdata() map[string]*customMetricValue {
-	switch val := i.userdata.(type) {
-	case map[string]*customMetricValue:
-		return val
-	default:
+		if requireSuccess {
+			panic(fmt.Errorf("internal error: unexpected userdata on custom metric %s", i.name))
+		}
 		return make(map[string]*customMetricValue)
 	}
 }
 
 func (i *instrument) getOrCreateValue(key string, labels []*wfv1.MetricLabel) *customMetricValue {
-	if value, ok := i.customUserdata()[key]; ok {
+	if value, ok := i.customUserdata(true)[key]; ok {
 		return value
 	}
 	newValue := customMetricValue{
 		key:    key,
 		labels: labels,
 	}
-	i.customUserdata()[key] = &newValue
+	i.customUserdata(true)[key] = &newValue
 	return &newValue
 }
 
@@ -80,7 +69,7 @@ func (i *instrument) getOrCreateValue(key string, labels []*wfv1.MetricLabel) *c
 // For non-realtime we have to fake observability as prometheus provides
 // up/down and set on the same gauge type, which otel forbids.
 func (i *instrument) customCallback(_ context.Context, o metric.Observer) error {
-	for _, value := range i.customUserdata() {
+	for _, value := range i.customUserdata(true) {
 		if value.rtValueFunc != nil {
 			i.observeFloat(o, value.rtValueFunc(), value.getLabels())
 		} else {
@@ -268,7 +257,7 @@ func (m *Metrics) runCustomGC(ttl time.Duration) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	for _, baseMetric := range m.allInstruments {
-		custom := baseMetric.maybeCustomUserdata()
+		custom := baseMetric.customUserdata(false)
 		for key, value := range custom {
 			if time.Since(value.lastUpdated) > ttl {
 				delete(custom, key)
@@ -304,7 +293,7 @@ func (m *Metrics) StopRealtimeMetricsForWfUID(key string) {
 
 	realtimeMetrics := m.realtimeWorkflows[key]
 	for _, metric := range realtimeMetrics {
-		delete(metric.inst.customUserdata(), metric.key)
+		delete(metric.inst.customUserdata(true), metric.key)
 	}
 
 	delete(m.realtimeWorkflows, key)
