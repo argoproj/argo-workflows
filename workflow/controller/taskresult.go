@@ -110,7 +110,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 		if foundPod {
 			woc.log.Debugf("Got pod %s with phase %s for task result %s and node id %s with label %s", pod.Name, pod.Status.Phase, resultName, result.Name, label)
 			woc.log.Debugf("The node phase was %s for node named %s", node.Phase, node.Name)
-		} else {
+		} else if !foundPod && !foundLabel {
 			woc.log.Debugf("couldn't find pod")
 			timeout := shouldErrorPodTimeout(node)
 			if timeout {
