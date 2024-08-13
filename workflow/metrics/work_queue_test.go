@@ -19,7 +19,7 @@ func TestMetricsWorkQueue(t *testing.T) {
 
 	m.newWorker("test")
 	assert.Len(t, m.workersBusy, 1)
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
+	assert.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
 
 	m.newWorker("test")
 	assert.Len(t, m.workersBusy, 1)
@@ -28,11 +28,11 @@ func TestMetricsWorkQueue(t *testing.T) {
 	defer queue.ShutDown()
 
 	queue.Add("A")
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
+	assert.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
 
 	queue.Get()
-	assert.Equal(t, float64(1), *write(m.workersBusy["test"]).Gauge.Value)
+	assert.InDelta(t, float64(1), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
 
 	queue.Done("A")
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
+	assert.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
 }

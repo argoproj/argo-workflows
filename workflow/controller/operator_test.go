@@ -5348,7 +5348,7 @@ func TestPanicMetric(t *testing.T) {
 			var writtenMetric dto.Metric
 			err := metric.Write(&writtenMetric)
 			require.NoError(t, err)
-			assert.Equal(t, float64(1), *writtenMetric.Counter.Value)
+			assert.InEpsilon(t, float64(1), *writtenMetric.Counter.Value, 0.001)
 		}
 	}
 	assert.True(t, seen)
