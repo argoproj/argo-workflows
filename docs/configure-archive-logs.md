@@ -34,12 +34,12 @@ metadata:
   generateName: archive-location-
 spec:
   archiveLogs: true
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]
 ```
 
@@ -51,12 +51,12 @@ kind: Workflow
 metadata:
   generateName: archive-location-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]
     archiveLocation:
       archiveLogs: true

@@ -10,7 +10,7 @@ kind: Workflow
 metadata:
   generateName: secret-example-
 spec:
-  entrypoint: whalesay
+  entrypoint: print-secrets
   # To access secrets as files, add a volume entry in spec.volumes[] and
   # then in the container template spec, add a mount using volumeMounts.
   volumes:
@@ -18,7 +18,7 @@ spec:
     secret:
       secretName: my-secret     # name of an existing k8s secret
   templates:
-  - name: whalesay
+  - name: print-secrets
     container:
       image: alpine:3.7
       command: [sh, -c]

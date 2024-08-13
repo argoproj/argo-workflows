@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -167,8 +168,8 @@ func TestCallTemplateWithInlineSteps(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.Nil(t, err)
-	assert.Equal(t, 4, len(pods.Items))
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 4)
 	count := 0
 	for _, pod := range pods.Items {
 		nodeName := pod.Annotations["workflows.argoproj.io/node-name"]
@@ -183,10 +184,10 @@ func TestCallTemplateWithInlineSteps(t *testing.T) {
 	assert.Equal(t, 2, count)
 	for name, storedTemplate := range woc.wf.Status.StoredTemplates {
 		if strings.Contains(name, "inline-a") {
-			assert.Equal(t, storedTemplate.Container.Args[0], "{{ inputs.parameters.arg }} a")
+			assert.Equal(t, "{{ inputs.parameters.arg }} a", storedTemplate.Container.Args[0])
 		}
 		if strings.Contains(name, "inline-b") {
-			assert.Equal(t, storedTemplate.Container.Args[0], "{{ inputs.parameters.arg }} b")
+			assert.Equal(t, "{{ inputs.parameters.arg }} b", storedTemplate.Container.Args[0])
 		}
 	}
 }
@@ -269,8 +270,8 @@ func TestCallTemplateWithInlineDAG(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
-	assert.Nil(t, err)
-	assert.Equal(t, 4, len(pods.Items))
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 4)
 	count := 0
 	for _, pod := range pods.Items {
 		nodeName := pod.Annotations["workflows.argoproj.io/node-name"]
@@ -285,10 +286,10 @@ func TestCallTemplateWithInlineDAG(t *testing.T) {
 	assert.Equal(t, 2, count)
 	for name, storedTemplate := range woc.wf.Status.StoredTemplates {
 		if strings.Contains(name, "inline-a") {
-			assert.Equal(t, storedTemplate.Container.Args[0], "{{ inputs.parameters.arg }} a")
+			assert.Equal(t, "{{ inputs.parameters.arg }} a", storedTemplate.Container.Args[0])
 		}
 		if strings.Contains(name, "inline-b") {
-			assert.Equal(t, storedTemplate.Container.Args[0], "{{ inputs.parameters.arg }} b")
+			assert.Equal(t, "{{ inputs.parameters.arg }} b", storedTemplate.Container.Args[0])
 		}
 	}
 }

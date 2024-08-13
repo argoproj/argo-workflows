@@ -8,10 +8,10 @@ metadata:
     workflows.argoproj.io/description: |
       This is a simple hello world example.
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]

@@ -12,10 +12,10 @@ metadata:
       `This is a simple hello world example.`
       This is an embedded link to the docs: https://argo-workflows.readthedocs.io/en/latest/title-and-description/
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]

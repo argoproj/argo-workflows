@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -27,11 +28,9 @@ func TestCanI(t *testing.T) {
 
 	ctx := context.Background()
 	allowed, err := CanI(ctx, kubeClient, "get", "workflow", "", "")
-	if assert.NoError(t, err) {
-		assert.True(t, allowed)
-	}
+	require.NoError(t, err)
+	assert.True(t, allowed)
 	notAllowed, err := CanI(ctx, kubeClient, "list", "workflow", "", "")
-	if assert.NoError(t, err) {
-		assert.False(t, notAllowed)
-	}
+	require.NoError(t, err)
+	assert.False(t, notAllowed)
 }

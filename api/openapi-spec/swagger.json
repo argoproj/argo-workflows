@@ -3718,7 +3718,7 @@
           {
             "enum": [
               "workflow",
-              "archived-workflows "
+              "archived-workflows"
             ],
             "type": "string",
             "name": "idDiscriminator",

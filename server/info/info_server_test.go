@@ -55,8 +55,8 @@ func Test_infoServer_GetInfo(t *testing.T) {
 		info, err := i.GetInfo(context.TODO(), nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "", info.ManagedNamespace)
-			assert.Equal(t, 0, len(info.Links))
-			assert.Equal(t, 0, len(info.Columns))
+			assert.Empty(t, info.Links)
+			assert.Empty(t, info.Columns)
 			assert.Equal(t, "", info.NavColor)
 		}
 	})

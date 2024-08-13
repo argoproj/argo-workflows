@@ -126,7 +126,7 @@ var (
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
-	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth))
+	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth()))
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -306,7 +306,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err, podReconciliationCompleted := woc.podReconciliation(ctx)
 		if err == nil {
-			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+			// Execution control has been applied to the nodes with created pods after pod reconciliation.
+			// However, pending and suspended nodes do not have created pods, and taskset nodes use the agent pod.
+			// Apply execution control to these nodes now since pod reconciliation does not take effect on them.
+			woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown()
 		}
 
 		if err != nil {
@@ -424,7 +427,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
-	// Reconcile TaskSet and Agent for HTTP templates when is not shutdown
+	// Reconcile TaskSet and Agent for HTTP/Plugin templates when is not shutdown
 	if !woc.execWf.Spec.Shutdown.Enabled() {
 		woc.taskSetReconciliation(ctx)
 	}
@@ -818,7 +821,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
-	// Pods may be be labeled multiple times.
+	// Pods may be labeled multiple times.
 	woc.queuePodsForCleanup()
 }
 
@@ -1267,18 +1270,26 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
-func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() {
-	for _, node := range woc.wf.Status.Nodes {
-		// fail suspended nodes or plugin nodes when shuting down
-		if woc.GetShutdownStrategy().Enabled() && (node.IsActiveSuspendNode() || node.IsActivePluginNode()) {
-			message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+// failNodesWithoutCreatedPodsAfterDeadlineOrShutdown mark the nodes without created pods failed when shutting down or exceeding deadline.
+func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown() {
+	nodes := woc.wf.Status.Nodes
+	for _, node := range nodes {
+		if node.Fulfilled() {
 			continue
 		}
+		// Only fail nodes that are not part of exit handler if we are "Stopping" or all pods if we are "Terminating"
+		if woc.GetShutdownStrategy().Enabled() && !woc.GetShutdownStrategy().ShouldExecute(node.IsPartOfExitHandler(nodes)) {
+			// fail suspended nodes or taskset nodes when shutting down
+			if node.IsActiveSuspendNode() || node.IsTaskSetNode() {
+				message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+				continue
+			}
+		}
 
-		// fail all pending and suspended nodes when exceeding deadline
+		// fail pending and suspended nodes that are not part of exit handler when exceeding deadline
 		deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
-		if deadlineExceeded && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
+		if deadlineExceeded && !node.IsPartOfExitHandler(nodes) && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
 			message := "Step exceeded its deadline"
 			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			continue
@@ -1410,6 +1421,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.PodIP = pod.Status.PodIP
 	}
 
+	// If `AnnotationKeyReportOutputsCompleted` is set, it means RBAC prevented WorkflowTaskResult from being written.
 	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
 		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		resultName := woc.nodeID(pod)
@@ -1418,16 +1430,23 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		} else {
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
-	}
 
-	if x, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		if new.Outputs == nil {
-			new.Outputs = &wfv1.Outputs{}
+		// Get node outputs from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
+		if x, ok = pod.Annotations[common.AnnotationKeyOutputs]; ok {
+			if new.Outputs == nil {
+				new.Outputs = &wfv1.Outputs{}
+			}
+			if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
+				new.Phase = wfv1.NodeError
+				new.Message = err.Error()
+			}
 		}
-		if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
-			new.Phase = wfv1.NodeError
-			new.Message = err.Error()
+
+		// Get node progress from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
+		if x, ok = pod.Annotations[common.AnnotationKeyProgress]; ok {
+			if p, ok := wfv1.ParseProgress(x); ok {
+				new.Progress = p
+			}
 		}
 	}
 
@@ -1435,13 +1454,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 
 	if !new.Progress.IsValid() {
 		new.Progress = wfv1.ProgressDefault
-	}
-
-	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		if p, ok := wfv1.ParseProgress(x); ok {
-			new.Progress = p
-		}
 	}
 
 	// We capture the exit-code after we look for the task-result.

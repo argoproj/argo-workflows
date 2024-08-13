@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: k8s-patch-workflow-
+  generateName: k8s-patch-json-workflow-
   annotations:
     workflows.argoproj.io/description: |
       This example shows how to patch a workflow with json mergeStrategy
@@ -12,6 +12,7 @@ spec:
       resource:
         action: patch
         mergeStrategy: json
+        # patch an annotation to self
         flags:
           - workflow
           - "{{workflow.name}}"
