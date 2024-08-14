@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -58,7 +58,7 @@ spec:
 		DeleteConfigMap("cmref-parameters").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -102,7 +102,7 @@ spec:
 		DeleteConfigMap("cmref-parameters").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -181,7 +181,7 @@ spec:
 		DeleteConfigMap("cmref-parameters").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -221,8 +221,8 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "default value", status.Nodes[metadata.Name].Outputs.Parameters[0].Value.String())
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, "default value", status.Nodes[metadata.Name].Outputs.Parameters[0].Value.String())
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 

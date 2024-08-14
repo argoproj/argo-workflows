@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPodNameV1(t *testing.T) {
@@ -17,24 +17,24 @@ func TestPodNameV1(t *testing.T) {
 
 	expected := fmt.Sprintf("%s-%s", shortWfName, shortTemplateName)
 	actual := ensurePodNamePrefixLength(expected)
-	assert.Equal(t, expected, actual)
+	require.Equal(t, expected, actual)
 
 	name := GeneratePodName(shortWfName, nodeName, shortTemplateName, nodeID, PodNameV1)
-	assert.Equal(t, nodeID, name)
+	require.Equal(t, nodeID, name)
 
 	// long case
 	longWfName := "alongworkflownamethatincludeslotsofdetailsandisessentiallyalargerunonsentencewithpoorstyleandnopunctuationtobehadwhatsoever"
 	longTemplateName := "alongtemplatenamethatincludessliightlymoredetailsandiscertainlyalargerunonstnencewithevenworsestylisticconcernsandpreposterouslyeliminatespunctuation"
 
 	sum := len(longWfName) + len(longTemplateName)
-	assert.Greater(t, sum, maxK8sResourceNameLength-k8sNamingHashLength)
+	require.Greater(t, sum, maxK8sResourceNameLength-k8sNamingHashLength)
 
 	expected = fmt.Sprintf("%s-%s", longWfName, longTemplateName)
 	actual = ensurePodNamePrefixLength(expected)
 
-	assert.Len(t, actual, maxK8sResourceNameLength-k8sNamingHashLength-1)
+	require.Len(t, actual, maxK8sResourceNameLength-k8sNamingHashLength-1)
 
 	name = GeneratePodName(longWfName, nodeName, longTemplateName, nodeID, PodNameV1)
-	assert.Equal(t, nodeID, name)
+	require.Equal(t, nodeID, name)
 
 }

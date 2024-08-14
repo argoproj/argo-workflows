@@ -5,7 +5,7 @@ package e2e
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -28,8 +28,8 @@ func (s *EstimatedDurationSuite) TestWorkflowTemplate() {
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.NotEmpty(t, status.EstimatedDuration)
-			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
+			require.NotEmpty(t, status.EstimatedDuration)
+			require.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
 		})
 }
 

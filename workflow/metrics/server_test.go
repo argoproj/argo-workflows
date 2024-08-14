@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,7 +32,7 @@ func TestDisableMetricsServer(t *testing.T) {
 	}
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "connection refused") // expect that the metrics server not to start
+	require.Contains(t, err.Error(), "connection refused") // expect that the metrics server not to start
 }
 
 func TestMetricsServer(t *testing.T) {
@@ -51,7 +50,7 @@ func TestMetricsServer(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	defer resp.Body.Close()
 
@@ -59,7 +58,7 @@ func TestMetricsServer(t *testing.T) {
 	require.NoError(t, err)
 
 	bodyString := string(bodyBytes)
-	assert.NotEmpty(t, bodyString)
+	require.NotEmpty(t, bodyString)
 }
 
 func TestDummyMetricsServer(t *testing.T) {
@@ -77,7 +76,7 @@ func TestDummyMetricsServer(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	defer resp.Body.Close()
 
@@ -86,5 +85,5 @@ func TestDummyMetricsServer(t *testing.T) {
 
 	bodyString := string(bodyBytes)
 
-	assert.Empty(t, bodyString) // expect the dummy metrics server to provide no metrics responses
+	require.Empty(t, bodyString) // expect the dummy metrics server to provide no metrics responses
 }

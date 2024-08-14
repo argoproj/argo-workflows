@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -26,10 +26,10 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 		},
 	}, controller)
 
-	assert.NotNil(t, woc.wf.Status.Nodes["a"].Daemoned)
+	require.NotNil(t, woc.wf.Status.Nodes["a"].Daemoned)
 	// Error will be that it cannot find the pod, but we only care about the node status for this test
 	woc.killDaemonedChildren("a")
-	assert.Nil(t, woc.wf.Status.Nodes["a"].Daemoned)
+	require.Nil(t, woc.wf.Status.Nodes["a"].Daemoned)
 }
 
 var workflowWithContainerSetPodInPending = `apiVersion: argoproj.io/v1alpha1
@@ -140,11 +140,11 @@ func TestHandleExecutionControlErrorMarksProvidedNode(t *testing.T) {
 
 	containerSetNodeName := "container-set-termination-demopw5vv-842041608"
 
-	assert.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[containerSetNodeName].Phase)
+	require.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[containerSetNodeName].Phase)
 
 	woc.handleExecutionControlError(containerSetNodeName, &sync.RWMutex{}, "terminated")
 
-	assert.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[containerSetNodeName].Phase)
+	require.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[containerSetNodeName].Phase)
 }
 
 func TestHandleExecutionControlErrorMarksChildNodes(t *testing.T) {
@@ -159,11 +159,11 @@ func TestHandleExecutionControlErrorMarksChildNodes(t *testing.T) {
 	step1NodeName := "container-set-termination-demopw5vv-893664226"
 	step2NodeName := "container-set-termination-demopw5vv-876886607"
 
-	assert.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[step1NodeName].Phase)
-	assert.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[step2NodeName].Phase)
+	require.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[step1NodeName].Phase)
+	require.Equal(t, v1alpha1.NodePending, woc.wf.Status.Nodes[step2NodeName].Phase)
 
 	woc.handleExecutionControlError(containerSetNodeName, &sync.RWMutex{}, "terminated")
 
-	assert.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[step1NodeName].Phase)
-	assert.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
+	require.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[step1NodeName].Phase)
+	require.Equal(t, v1alpha1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 }

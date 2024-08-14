@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +18,7 @@ func Test_nullSSO_HandleCallback(t *testing.T) {
 	NullSSO.HandleCallback(recorder, &http.Request{})
 	result := recorder.Result()
 	defer result.Body.Close()
-	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
+	require.Equal(t, http.StatusNotImplemented, result.StatusCode)
 }
 
 func Test_nullSSO_HandleRedirect(t *testing.T) {
@@ -27,5 +26,5 @@ func Test_nullSSO_HandleRedirect(t *testing.T) {
 	NullSSO.HandleRedirect(recorder, &http.Request{})
 	result := recorder.Result()
 	defer result.Body.Close()
-	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
+	require.Equal(t, http.StatusNotImplemented, result.StatusCode)
 }

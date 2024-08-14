@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/sync/mocks"
 )
@@ -17,8 +17,8 @@ func TestChainThrottler(t *testing.T) {
 
 	c := ChainThrottler{m}
 	c.Add("foo", 1, time.Time{})
-	assert.False(t, c.Admit("foo"))
+	require.False(t, c.Admit("foo"))
 	c.Remove("foo")
 
-	assert.True(t, ChainThrottler{}.Admit("foo"))
+	require.True(t, ChainThrottler{}.Admit("foo"))
 }

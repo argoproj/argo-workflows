@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-jose/go-jose/v3/jwt"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
@@ -61,9 +60,9 @@ metadata:
 			CronWorkflow: &cronWf,
 		})
 		require.NoError(t, err)
-		assert.NotNil(t, created)
-		assert.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
-		assert.Contains(t, created.Labels, common.LabelKeyCreator)
+		require.NotNil(t, created)
+		require.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
+		require.Contains(t, created.Labels, common.LabelKeyCreator)
 	})
 	t.Run("LintWorkflow", func(t *testing.T) {
 		wf, err := server.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{
@@ -71,20 +70,20 @@ metadata:
 			CronWorkflow: &cronWf,
 		})
 		require.NoError(t, err)
-		assert.NotNil(t, wf)
-		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
-		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
+		require.NotNil(t, wf)
+		require.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+		require.Contains(t, wf.Labels, common.LabelKeyCreator)
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})
 		require.NoError(t, err)
-		assert.Len(t, cronWfs.Items, 1)
+		require.Len(t, cronWfs.Items, 1)
 	})
 	t.Run("GetCronWorkflow", func(t *testing.T) {
 		t.Run("Labelled", func(t *testing.T) {
 			cronWf, err := server.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{Namespace: "my-ns", Name: "my-name"})
 			require.NoError(t, err)
-			assert.NotNil(t, cronWf)
+			require.NotNil(t, cronWf)
 		})
 		t.Run("Unlabelled", func(t *testing.T) {
 			_, err := server.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{Namespace: "my-ns", Name: "unlabelled"})
@@ -101,7 +100,7 @@ metadata:
 		t.Run("Labelled", func(t *testing.T) {
 			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &cronWf})
 			require.NoError(t, err)
-			assert.NotNil(t, cronWf)
+			require.NotNil(t, cronWf)
 		})
 		t.Run("Unlabelled", func(t *testing.T) {
 			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &unlabelled})

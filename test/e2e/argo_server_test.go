@@ -16,7 +16,7 @@ import (
 
 	"github.com/gavv/httpexpect/v2"
 	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -173,7 +173,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
-			assert.Equal(t, "github-webhook", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
+			require.Equal(t, "github-webhook", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
 		})
 }
 
@@ -241,7 +241,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
-			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
+			require.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
 		})
 }
 
@@ -284,7 +284,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
-			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyClusterWorkflowTemplate])
+			require.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyClusterWorkflowTemplate])
 		})
 }
 
@@ -309,9 +309,9 @@ metadata:
 				return event.InvolvedObject.Name == "malformed" && event.InvolvedObject.Kind == workflow.WorkflowEventBindingKind
 			}, 1,
 			func(t *testing.T, e []corev1.Event) {
-				assert.Equal(t, "argo", e[0].InvolvedObject.Namespace)
-				assert.Equal(t, "WorkflowEventBindingError", e[0].Reason)
-				assert.Contains(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF", e[0].Message)
+				require.Equal(t, "argo", e[0].InvolvedObject.Namespace)
+				require.Equal(t, "WorkflowEventBindingError", e[0].Reason)
+				require.Contains(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF", e[0].Message)
 			},
 		)
 }
@@ -1232,8 +1232,8 @@ func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (
 			_ = resp.Body.Close()
 		}
 	}()
-	assert.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
+	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
 	if t.Failed() {
 		t.FailNow()
 	}
@@ -1271,9 +1271,9 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 	s.Run("Watch", func() {
 		s.stream("/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name="+name, func(t *testing.T, line string) (done bool) {
 			if strings.Contains(line, `status:`) {
-				assert.Contains(t, line, `"offloadNodeStatus":true`)
+				require.Contains(t, line, `"offloadNodeStatus":true`)
 				// so that we get this
-				assert.Contains(t, line, `"nodes":`)
+				require.Contains(t, line, `"nodes":`)
 			}
 			return strings.Contains(line, "Succeeded")
 		})
@@ -1297,7 +1297,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		s.Run(tt.name, func() {
 			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
 				if strings.Contains(line, "data: ") {
-					assert.Contains(t, line, fmt.Sprintf(`"podName":"%s"`, name))
+					require.Contains(t, line, fmt.Sprintf(`"podName":"%s"`, name))
 					return true
 				}
 				return false
@@ -1868,14 +1868,14 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 	s.Run("WatchEventSources", func() {
 		s.stream("/api/v1/stream/event-sources/argo", func(t *testing.T, line string) (done bool) {
-			assert.Contains(t, line, "test-event-source")
+			require.Contains(t, line, "test-event-source")
 			return true
 		})
 	})
 	s.Run("EventSourcesLogs", func() {
 		s.T().Skip("we do not install the controllers, so we won't get any logs")
 		s.stream("/api/v1/stream/event-sources/argo/logs", func(t *testing.T, line string) (done bool) {
-			assert.Contains(t, line, "test-event-source")
+			require.Contains(t, line, "test-event-source")
 			return true
 		})
 	})
@@ -1978,14 +1978,14 @@ func (s *ArgoServerSuite) TestSensorService() {
 	})
 	s.Run("WatchSensors", func() {
 		s.stream("/api/v1/stream/sensors/argo", func(t *testing.T, line string) (done bool) {
-			assert.Contains(t, line, "test-sensor")
+			require.Contains(t, line, "test-sensor")
 			return true
 		})
 	})
 	s.Run("SensorsLogs", func() {
 		s.T().Skip("we do not install the controllers, so we won't get any logs")
 		s.stream("/api/v1/stream/sensors/argo/logs", func(t *testing.T, line string) (done bool) {
-			assert.Contains(t, line, "test-sensor")
+			require.Contains(t, line, "test-sensor")
 			return true
 		})
 	})

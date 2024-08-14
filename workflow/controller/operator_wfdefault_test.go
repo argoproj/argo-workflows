@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
@@ -194,7 +194,7 @@ var storedSpecResult = `
 `
 
 func TestWFDefaultsWithWorkflow(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 
 	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefaults)
 	wf := wfv1.MustUnmarshalWorkflow(simpleWf)
@@ -207,20 +207,20 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 	controller.Config.WorkflowDefaults = wfDefault
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(woc.wf.Spec, wfResult.Spec)
-	assert.Contains(woc.wf.Labels, "testLabel")
-	assert.Contains(woc.wf.Annotations, "testAnnotation")
+	require.Equal(woc.wf.Spec, wfResult.Spec)
+	require.Contains(woc.wf.Labels, "testLabel")
+	require.Contains(woc.wf.Annotations, "testAnnotation")
 
 	wf1.Spec.Entrypoint = ""
 	woc = newWorkflowOperationCtx(wf1, controller)
 	woc.operate(ctx)
-	assert.Equal(woc.wf.Spec, wfResult.Spec)
-	assert.Contains(woc.wf.Labels, "testLabel")
-	assert.Contains(woc.wf.Annotations, "testAnnotation")
+	require.Equal(woc.wf.Spec, wfResult.Spec)
+	require.Contains(woc.wf.Labels, "testLabel")
+	require.Contains(woc.wf.Annotations, "testAnnotation")
 }
 
 func TestWFDefaultWithWFTAndWf(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefaults)
 	wft := wfv1.MustUnmarshalWorkflowTemplate(simpleWFT)
 	var resultSpec wfv1.WorkflowSpec
@@ -236,8 +236,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		woc := newWorkflowOperationCtx(&wf, controller)
 		woc.operate(ctx)
 		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
-		assert.Equal(resultSpec, woc.execWf.Spec)
-		assert.Equal(&resultSpec, woc.wf.Status.StoredWorkflowSpec)
+		require.Equal(resultSpec, woc.execWf.Spec)
+		require.Equal(&resultSpec, woc.wf.Status.StoredWorkflowSpec)
 	})
 
 	t.Run("SubmitComplexWorkflowRef", func(t *testing.T) {
@@ -263,8 +263,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 
 		woc := newWorkflowOperationCtx(&wf, controller)
 		woc.operate(ctx)
-		assert.Equal(resultSpec, woc.execWf.Spec)
-		assert.Equal(&resultSpec, woc.wf.Status.StoredWorkflowSpec)
+		require.Equal(resultSpec, woc.execWf.Spec)
+		require.Equal(&resultSpec, woc.wf.Status.StoredWorkflowSpec)
 	})
 
 	t.Run("SubmitComplexWorkflowRefWithArguments", func(t *testing.T) {
@@ -306,7 +306,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 
 		woc := newWorkflowOperationCtx(&wf, controller)
 		woc.operate(ctx)
-		assert.Contains(woc.execWf.Spec.Arguments.Parameters, param)
-		assert.Contains(woc.wf.Status.StoredWorkflowSpec.Arguments.Artifacts, art)
+		require.Contains(woc.execWf.Spec.Arguments.Parameters, param)
+		require.Contains(woc.wf.Status.StoredWorkflowSpec.Arguments.Artifacts, art)
 	})
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -26,9 +26,9 @@ func Test_submitWorkflows(t *testing.T) {
 		arg := c.Mock.Calls[0].Arguments[1]
 		wfC, ok := arg.(*workflowpkg.WorkflowCreateRequest)
 		if !ok {
-			assert.Fail(t, "type is not WorkflowCreateRequest")
+			require.Fail(t, "type is not WorkflowCreateRequest")
 		}
-		assert.Equal(t, priority, *wfC.Workflow.Spec.Priority)
+		require.Equal(t, priority, *wfC.Workflow.Spec.Priority)
 
 	})
 
@@ -46,8 +46,8 @@ func Test_submitWorkflows(t *testing.T) {
 		arg := c.Mock.Calls[0].Arguments[1]
 		wfC, ok := arg.(*workflowpkg.WorkflowCreateRequest)
 		if !ok {
-			assert.Fail(t, "type is not WorkflowCreateRequest")
+			require.Fail(t, "type is not WorkflowCreateRequest")
 		}
-		assert.Equal(t, priorityCLI, *wfC.Workflow.Spec.Priority)
+		require.Equal(t, priorityCLI, *wfC.Workflow.Spec.Priority)
 	})
 }

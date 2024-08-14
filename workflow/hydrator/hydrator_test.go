@@ -3,7 +3,6 @@ package hydrator
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,32 +22,32 @@ func TestHydrator(t *testing.T) {
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{CompressedNodes: "foo"}}
 			err := hydrator.Dehydrate(wf)
 			require.NoError(t, err)
-			assert.NotEmpty(t, wf.Status.CompressedNodes)
+			require.NotEmpty(t, wf.Status.CompressedNodes)
 		})
 		t.Run("Offloaded", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{OffloadNodeStatusVersion: "foo"}}
 			err := hydrator.Dehydrate(wf)
 			require.NoError(t, err)
-			assert.True(t, wf.Status.IsOffloadNodeStatus())
+			require.True(t, wf.Status.IsOffloadNodeStatus())
 		})
 		t.Run("Noop", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}}}}
 			err := hydrator.Dehydrate(wf)
 			require.NoError(t, err)
-			assert.NotEmpty(t, wf.Status.Nodes)
-			assert.Empty(t, wf.Status.CompressedNodes)
-			assert.False(t, wf.Status.IsOffloadNodeStatus())
+			require.NotEmpty(t, wf.Status.Nodes)
+			require.Empty(t, wf.Status.CompressedNodes)
+			require.False(t, wf.Status.IsOffloadNodeStatus())
 		})
 		t.Run("Pack", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}}}}
 			err := hydrator.Dehydrate(wf)
 			require.NoError(t, err)
-			assert.Empty(t, wf.Status.Nodes)
-			assert.NotEmpty(t, wf.Status.CompressedNodes)
-			assert.False(t, wf.Status.IsOffloadNodeStatus())
+			require.Empty(t, wf.Status.Nodes)
+			require.NotEmpty(t, wf.Status.CompressedNodes)
+			require.False(t, wf.Status.IsOffloadNodeStatus())
 		})
 		t.Run("Offload", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
@@ -61,10 +60,10 @@ func TestHydrator(t *testing.T) {
 			}
 			err := hydrator.Dehydrate(wf)
 			require.NoError(t, err)
-			assert.Empty(t, wf.Status.Nodes)
-			assert.Empty(t, wf.Status.CompressedNodes)
-			assert.True(t, wf.Status.IsOffloadNodeStatus())
-			assert.Equal(t, "my-offload-version", wf.Status.OffloadNodeStatusVersion)
+			require.Empty(t, wf.Status.Nodes)
+			require.Empty(t, wf.Status.CompressedNodes)
+			require.True(t, wf.Status.IsOffloadNodeStatus())
+			require.Equal(t, "my-offload-version", wf.Status.OffloadNodeStatusVersion)
 		})
 		t.Run("WorkflowTooLargeButOffloadNotSupported", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
@@ -90,9 +89,9 @@ func TestHydrator(t *testing.T) {
 			}
 			err := hydrator.Hydrate(wf)
 			require.NoError(t, err)
-			assert.NotEmpty(t, wf.Status.Nodes)
-			assert.Empty(t, wf.Status.CompressedNodes)
-			assert.False(t, wf.Status.IsOffloadNodeStatus())
+			require.NotEmpty(t, wf.Status.Nodes)
+			require.Empty(t, wf.Status.CompressedNodes)
+			require.False(t, wf.Status.IsOffloadNodeStatus())
 		})
 		t.Run("OffloadingDisabled", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
@@ -113,9 +112,9 @@ func TestHydrator(t *testing.T) {
 			}
 			err := hydrator.Hydrate(wf)
 			require.NoError(t, err)
-			assert.NotEmpty(t, wf.Status.Nodes)
-			assert.Empty(t, wf.Status.CompressedNodes)
-			assert.False(t, wf.Status.IsOffloadNodeStatus())
+			require.NotEmpty(t, wf.Status.Nodes)
+			require.Empty(t, wf.Status.CompressedNodes)
+			require.False(t, wf.Status.IsOffloadNodeStatus())
 		})
 		t.Run("Hydrated", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})

@@ -3,7 +3,7 @@ package controller
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -35,7 +35,7 @@ func TestNodeRequiresHttpReconciliation(t *testing.T) {
 		},
 	}
 
-	assert.False(t, woc.nodeRequiresTaskSetReconciliation("not-needed"))
-	assert.True(t, woc.nodeRequiresTaskSetReconciliation("child-http"))
-	assert.True(t, woc.nodeRequiresTaskSetReconciliation("parent"))
+	require.False(t, woc.nodeRequiresTaskSetReconciliation("not-needed"))
+	require.True(t, woc.nodeRequiresTaskSetReconciliation("child-http"))
+	require.True(t, woc.nodeRequiresTaskSetReconciliation("parent"))
 }

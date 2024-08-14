@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetAuthString(t *testing.T) {
 	t.Setenv("ARGO_TOKEN", "my-token")
-	assert.Equal(t, "my-token", GetAuthString())
+	require.Equal(t, "my-token", GetAuthString())
 }
 
 func TestNamespace(t *testing.T) {
 	t.Setenv("ARGO_NAMESPACE", "my-ns")
-	assert.Equal(t, "my-ns", Namespace())
+	require.Equal(t, "my-ns", Namespace())
 }
 
 func TestCreateOfflineClient(t *testing.T) {
@@ -28,7 +28,7 @@ func TestCreateOfflineClient(t *testing.T) {
 		OfflineFiles = []string{}
 		NewAPIClient(context.TODO())
 
-		assert.False(t, fatal, "should have exited")
+		require.False(t, fatal, "should have exited")
 	})
 
 	t.Run("creating an offline client with a non-existing file should fail", func(t *testing.T) {
@@ -40,6 +40,6 @@ func TestCreateOfflineClient(t *testing.T) {
 		OfflineFiles = []string{"non-existing-file"}
 		NewAPIClient(context.TODO())
 
-		assert.True(t, fatal, "should have exited")
+		require.True(t, fatal, "should have exited")
 	})
 }

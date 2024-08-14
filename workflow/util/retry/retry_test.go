@@ -3,7 +3,7 @@ package retry
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -11,10 +11,10 @@ import (
 
 func TestRemoveDuplicates(t *testing.T) {
 	t.Run("EmptySlice", func(t *testing.T) {
-		assert.Equal(t, []string{}, RemoveDuplicates([]string{}))
+		require.Equal(t, []string{}, RemoveDuplicates([]string{}))
 	})
 	t.Run("RemoveDuplicates", func(t *testing.T) {
-		assert.ElementsMatch(t, []string{"a", "c", "d"}, RemoveDuplicates([]string{"a", "c", "c", "d"}))
+		require.ElementsMatch(t, []string{"a", "c", "d"}, RemoveDuplicates([]string{"a", "c", "c", "d"}))
 	})
 }
 
@@ -64,19 +64,19 @@ func TestGetFailHosts(t *testing.T) {
 		},
 	}
 	t.Run("NotExistParent", func(t *testing.T) {
-		assert.Equal(t, []string{}, GetFailHosts(nodes, "not-exist-node"))
+		require.Equal(t, []string{}, GetFailHosts(nodes, "not-exist-node"))
 	})
 	t.Run("ParentWithoutChildrenPodTypeError", func(t *testing.T) {
-		assert.Equal(t, []string{"hostn3"}, GetFailHosts(nodes, "n3"))
+		require.Equal(t, []string{"hostn3"}, GetFailHosts(nodes, "n3"))
 	})
 	t.Run("ParentWithoutChildrenPodTypeRunning", func(t *testing.T) {
-		assert.Equal(t, []string{}, GetFailHosts(nodes, "n2"))
+		require.Equal(t, []string{}, GetFailHosts(nodes, "n2"))
 	})
 	t.Run("ParentWithChildrenFromRetryNode", func(t *testing.T) {
-		assert.ElementsMatch(t, GetFailHosts(nodes, "retry"), []string{"hostn1", "hostn3"})
+		require.ElementsMatch(t, GetFailHosts(nodes, "retry"), []string{"hostn1", "hostn3"})
 	})
 	t.Run("ParentWithChildrenFromNonRetryNode", func(t *testing.T) {
-		assert.ElementsMatch(t, GetFailHosts(nodes, "steps"), []string{"hostn3"})
+		require.ElementsMatch(t, GetFailHosts(nodes, "steps"), []string{"hostn3"})
 	})
 }
 
@@ -98,7 +98,7 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			Operator: apiv1.NodeSelectorOpNotIn,
 			Values:   hostNames,
 		}
-		assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+		require.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 	})
 	t.Run("EmptyNodeAffinity", func(t *testing.T) {
 		type retryNode struct {
@@ -117,7 +117,7 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			Operator: apiv1.NodeSelectorOpNotIn,
 			Values:   hostNames,
 		}
-		assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+		require.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 	})
 	t.Run("EmptyRequiredDuringSchedulingIgnoredDuringExecution", func(t *testing.T) {
 		type retryNode struct {
@@ -138,7 +138,7 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			Operator: apiv1.NodeSelectorOpNotIn,
 			Values:   hostNames,
 		}
-		assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+		require.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 	})
 	t.Run("EmptyNodeSelectorTerms", func(t *testing.T) {
 		type retryNode struct {
@@ -161,7 +161,7 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			Operator: apiv1.NodeSelectorOpNotIn,
 			Values:   hostNames,
 		}
-		assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+		require.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 	})
 	t.Run("EmptyMatchExpressions", func(t *testing.T) {
 		type retryNode struct {
@@ -188,7 +188,7 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			Operator: apiv1.NodeSelectorOpNotIn,
 			Values:   hostNames,
 		}
-		assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+		require.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 	})
 	t.Run("AddMatchExpressions", func(t *testing.T) {
 		type retryNode struct {
@@ -224,8 +224,8 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			targetNode.targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 		targetNodeSelectorRequirement1 :=
 			targetNode.targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[1]
-		assert.Equal(t, sourceNodeSelectorRequirement0, targetNodeSelectorRequirement0)
-		assert.Equal(t, sourceNodeSelectorRequirement1, targetNodeSelectorRequirement1)
+		require.Equal(t, sourceNodeSelectorRequirement0, targetNodeSelectorRequirement0)
+		require.Equal(t, sourceNodeSelectorRequirement1, targetNodeSelectorRequirement1)
 	})
 	t.Run("AddMatchExpressionsSameHostSelector", func(t *testing.T) {
 		type retryNode struct {
@@ -261,8 +261,8 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			targetNode.targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 		targetNodeSelectorRequirement1 :=
 			targetNode.targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[1]
-		assert.Equal(t, sourceNodeSelectorRequirement0, targetNodeSelectorRequirement0)
-		assert.Equal(t, sourceNodeSelectorRequirement1, targetNodeSelectorRequirement1)
+		require.Equal(t, sourceNodeSelectorRequirement0, targetNodeSelectorRequirement0)
+		require.Equal(t, sourceNodeSelectorRequirement1, targetNodeSelectorRequirement1)
 	})
 	t.Run("AddMatchExpressionsSameOperator", func(t *testing.T) {
 		type retryNode struct {
@@ -298,8 +298,8 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			targetNode.targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 		targetNodeSelectorRequirement1 :=
 			targetNode.targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[1]
-		assert.Equal(t, sourceNodeSelectorRequirement0, targetNodeSelectorRequirement0)
-		assert.Equal(t, sourceNodeSelectorRequirement1, targetNodeSelectorRequirement1)
+		require.Equal(t, sourceNodeSelectorRequirement0, targetNodeSelectorRequirement0)
+		require.Equal(t, sourceNodeSelectorRequirement1, targetNodeSelectorRequirement1)
 	})
 	t.Run("MergeMatchExpressionsWithDuplicates", func(t *testing.T) {
 		type retryNode struct {
@@ -333,7 +333,7 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 		targetNode.targetAffinity = AddHostnamesToAffinity(hostSelector, hostNames, targetNode.targetAffinity)
 		targetNodeSelectorRequirement :=
 			targetNode.targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
-		assert.Equal(t, sourceNodeSelectorRequirementMerged, targetNodeSelectorRequirement)
+		require.Equal(t, sourceNodeSelectorRequirementMerged, targetNodeSelectorRequirement)
 	})
 	t.Run("MergeWithExistingSpecAffinity", func(t *testing.T) {
 		existingNode := &apiv1.Affinity{
@@ -409,6 +409,6 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 			},
 		}
 		targetNode := AddHostnamesToAffinity(hostSelector, hostNames, existingNode)
-		assert.Equal(t, targetNode, mergedNode)
+		require.Equal(t, targetNode, mergedNode)
 	})
 }

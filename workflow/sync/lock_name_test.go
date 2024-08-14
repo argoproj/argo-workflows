@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDecodeLockName(t *testing.T) {
@@ -15,7 +15,7 @@ func TestDecodeLockName(t *testing.T) {
 		name    string
 		args    args
 		want    *LockName
-		wantErr assert.ErrorAssertionFunc
+		wantErr require.ErrorAssertionFunc
 	}{
 		{
 			"TestMutexLockNameValidation",
@@ -26,7 +26,7 @@ func TestDecodeLockName(t *testing.T) {
 				Key:          "",
 				Kind:         LockKindMutex,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t require.TestingT, err error, i ...interface{}) bool {
 				return true
 			},
 		},
@@ -39,7 +39,7 @@ func TestDecodeLockName(t *testing.T) {
 				Key:          "",
 				Kind:         LockKindMutex,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t require.TestingT, err error, i ...interface{}) bool {
 				return true
 			},
 		},
@@ -52,7 +52,7 @@ func TestDecodeLockName(t *testing.T) {
 				Key:          "bar",
 				Kind:         LockKindConfigMap,
 			},
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t require.TestingT, err error, i ...interface{}) bool {
 				return true
 			},
 		},
@@ -60,7 +60,7 @@ func TestDecodeLockName(t *testing.T) {
 			"TestConfigMapKeysCannotContainSlashes",
 			args{"default/ConfigMap/foo/bar/baz/qux"},
 			nil,
-			func(t assert.TestingT, err error, i ...interface{}) bool {
+			func(t require.TestingT, err error, i ...interface{}) bool {
 				return err == nil // this should error
 			},
 		},
@@ -71,7 +71,7 @@ func TestDecodeLockName(t *testing.T) {
 			if !tt.wantErr(t, err, fmt.Sprintf("DecodeLockName(%v)", tt.args.lockName)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "DecodeLockName(%v)", tt.args.lockName)
+			require.Equalf(t, tt.want, got, "DecodeLockName(%v)", tt.args.lockName)
 			got.ValidateEncoding(tt.args.lockName)
 		})
 	}

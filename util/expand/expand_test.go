@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExpand(t *testing.T) {
@@ -18,8 +18,8 @@ func TestExpand(t *testing.T) {
 				"abb":   5, // should be kept
 			}
 			after := Expand(before)
-			assert.Len(t, before, 5, "original map unchanged")
-			assert.Equal(t, map[string]interface{}{
+			require.Len(t, before, 5, "original map unchanged")
+			require.Equal(t, map[string]interface{}{
 				"a": map[string]interface{}{
 					"b": 1,
 					"c": map[string]interface{}{

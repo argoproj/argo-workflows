@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -31,7 +30,7 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 		}
 		strategy, err := set.GetRetryStrategy()
 		require.NoError(t, err)
-		assert.Equal(t, wait.Backoff{Steps: 100}, strategy)
+		require.Equal(t, wait.Backoff{Steps: 100}, strategy)
 	})
 
 	t.Run("DurationSet", func(t *testing.T) {
@@ -45,7 +44,7 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 		}
 		strategy, err := set.GetRetryStrategy()
 		require.NoError(t, err)
-		assert.Equal(t, wait.Backoff{
+		require.Equal(t, wait.Backoff{
 			Steps:    100,
 			Duration: time.Duration(20 * time.Second),
 		}, strategy)
@@ -55,28 +54,28 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 func TestContainerSetTemplate(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		x := &ContainerSetTemplate{}
-		assert.Empty(t, x.GetGraph())
-		assert.Empty(t, x.GetContainers())
-		assert.False(t, x.HasSequencedContainers())
+		require.Empty(t, x.GetGraph())
+		require.Empty(t, x.GetContainers())
+		require.False(t, x.HasSequencedContainers())
 	})
 	t.Run("Single", func(t *testing.T) {
 		x := &ContainerSetTemplate{Containers: []ContainerNode{{}}}
-		assert.Len(t, x.GetGraph(), 1)
-		assert.Len(t, x.GetContainers(), 1)
-		assert.False(t, x.HasSequencedContainers())
+		require.Len(t, x.GetGraph(), 1)
+		require.Len(t, x.GetContainers(), 1)
+		require.False(t, x.HasSequencedContainers())
 	})
 	t.Run("Parallel", func(t *testing.T) {
 		x := &ContainerSetTemplate{Containers: []ContainerNode{{}, {}}}
-		assert.Len(t, x.GetGraph(), 2)
-		assert.Len(t, x.GetContainers(), 2)
-		assert.False(t, x.HasSequencedContainers())
+		require.Len(t, x.GetGraph(), 2)
+		require.Len(t, x.GetContainers(), 2)
+		require.False(t, x.HasSequencedContainers())
 	})
 	t.Run("Graph", func(t *testing.T) {
 		x := &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "a"}}, {Dependencies: []string{"a"}}}}
-		assert.Len(t, x.GetGraph(), 2)
-		assert.Len(t, x.GetContainers(), 2)
-		assert.True(t, x.HasSequencedContainers())
-		assert.True(t, x.HasContainerNamed("a"))
+		require.Len(t, x.GetGraph(), 2)
+		require.Len(t, x.GetContainers(), 2)
+		require.True(t, x.HasSequencedContainers())
+		require.True(t, x.HasContainerNamed("a"))
 	})
 }
 

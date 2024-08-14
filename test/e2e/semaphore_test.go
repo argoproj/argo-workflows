@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -64,7 +64,7 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 		WaitForWorkflow(fixtures.ToBeRunning, 90*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.True(t, status.Nodes.Any(func(n wfv1.NodeStatus) bool {
+			require.True(t, status.Nodes.Any(func(n wfv1.NodeStatus) bool {
 				return strings.Contains(n.Message, "Waiting for")
 			}))
 		}).

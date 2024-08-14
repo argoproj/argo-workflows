@@ -17,7 +17,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,7 +36,7 @@ func TestDetermineAccountName(t *testing.T) {
 		require.NoError(t, err)
 		accountName, err := determineAccountName(u)
 		require.NoError(t, err)
-		assert.Equal(t, "accountname", accountName)
+		require.Equal(t, "accountname", accountName)
 	}
 
 	invalidUrls := []string{
@@ -48,7 +47,7 @@ func TestDetermineAccountName(t *testing.T) {
 		require.NoError(t, err)
 		accountName, err := determineAccountName(u)
 		require.Error(t, err)
-		assert.Equal(t, "", accountName)
+		require.Equal(t, "", accountName)
 	}
 }
 
@@ -132,7 +131,7 @@ func testContainerClientReadWriteOperations(t *testing.T, containerClient *conta
 	dstDir := t.TempDir()
 	err = driver.DownloadDirectory(containerClient, &argoArtifact, filepath.Join(dstDir, "dir"))
 	require.NoError(t, err)
-	assert.FileExists(t, filepath.Join(dstDir, "dir", "subdir", "file-in-subdir.txt"))
+	require.FileExists(t, filepath.Join(dstDir, "dir", "subdir", "file-in-subdir.txt"))
 }
 
 func TestIsSASAccountKey(t *testing.T) {
@@ -152,7 +151,7 @@ func TestIsSASAccountKey(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.accountKey, func(t *testing.T) {
 			result := isSASAccountKey(tc.accountKey)
-			assert.Equal(t, tc.expected, result)
+			require.Equal(t, tc.expected, result)
 		})
 	}
 }

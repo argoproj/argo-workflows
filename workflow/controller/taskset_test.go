@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -70,21 +69,21 @@ spec:
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, tslist.Items)
-		assert.Len(t, tslist.Items, 1)
+		require.NotEmpty(t, tslist.Items)
+		require.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
-			assert.NotNil(t, ts)
-			assert.Equal(t, ts.Name, wf.Name)
-			assert.Equal(t, ts.Namespace, wf.Namespace)
-			assert.Len(t, ts.Spec.Tasks, 1)
+			require.NotNil(t, ts)
+			require.Equal(t, ts.Name, wf.Name)
+			require.Equal(t, ts.Namespace, wf.Namespace)
+			require.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, pods.Items)
-		assert.Len(t, pods.Items, 1)
+		require.NotEmpty(t, pods.Items)
+		require.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
-			assert.NotNil(t, pod)
-			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
+			require.NotNil(t, pod)
+			require.True(t, strings.HasSuffix(pod.Name, "-agent"))
 		}
 	})
 	t.Run("CreateTaskSetWithInstanceID", func(t *testing.T) {
@@ -95,22 +94,22 @@ spec:
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, tslist.Items)
-		assert.Len(t, tslist.Items, 1)
+		require.NotEmpty(t, tslist.Items)
+		require.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
-			assert.NotNil(t, ts)
-			assert.Equal(t, ts.Name, wf.Name)
-			assert.Equal(t, ts.Namespace, wf.Namespace)
-			assert.Len(t, ts.Spec.Tasks, 1)
+			require.NotNil(t, ts)
+			require.Equal(t, ts.Name, wf.Name)
+			require.Equal(t, ts.Namespace, wf.Namespace)
+			require.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, pods.Items)
-		assert.Len(t, pods.Items, 1)
+		require.NotEmpty(t, pods.Items)
+		require.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
-			assert.NotNil(t, pod)
-			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
-			assert.Equal(t, "testID", pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID])
+			require.NotNil(t, pod)
+			require.True(t, strings.HasSuffix(pod.Name, "-agent"))
+			require.Equal(t, "testID", pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID])
 		}
 	})
 }
@@ -299,15 +298,15 @@ status:
 		require.NoError(t, err)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, tslist.Items)
-		assert.Len(t, tslist.Items, 1)
+		require.NotEmpty(t, tslist.Items)
+		require.Len(t, tslist.Items, 1)
 
 		for _, ts := range tslist.Items {
-			assert.NotNil(t, ts)
-			assert.Equal(t, ts.Name, wf.Name)
-			assert.Equal(t, ts.Namespace, wf.Namespace)
-			assert.Empty(t, ts.Spec.Tasks)
-			assert.Empty(t, ts.Status.Nodes)
+			require.NotNil(t, ts)
+			require.Equal(t, ts.Name, wf.Name)
+			require.Equal(t, ts.Namespace, wf.Namespace)
+			require.Empty(t, ts.Spec.Tasks)
+			require.Empty(t, ts.Status.Nodes)
 		}
 
 	})
@@ -404,6 +403,6 @@ status:
 		require.NoError(t, err)
 		memo, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "cache-demo-1", v1.GetOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, memo.Data["cache-demo-1"])
+		require.NotEmpty(t, memo.Data["cache-demo-1"])
 	})
 }

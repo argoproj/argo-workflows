@@ -3,8 +3,6 @@ package artifactrepositories
 import (
 	"context"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,15 +34,15 @@ s3:
 
 		ref, err := i.Resolve(ctx, &wfv1.ArtifactRepositoryRef{Key: "my-key"}, "my-wf-ns")
 		require.NoError(t, err)
-		assert.Equal(t, "my-wf-ns", ref.Namespace)
-		assert.Equal(t, "artifact-repositories", ref.ConfigMap)
-		assert.Equal(t, "my-key", ref.Key)
-		assert.False(t, ref.Default)
-		assert.NotNil(t, ref.ArtifactRepository)
+		require.Equal(t, "my-wf-ns", ref.Namespace)
+		require.Equal(t, "artifact-repositories", ref.ConfigMap)
+		require.Equal(t, "my-key", ref.Key)
+		require.False(t, ref.Default)
+		require.NotNil(t, ref.ArtifactRepository)
 
 		repo, err := i.Get(ctx, ref)
 		require.NoError(t, err)
-		assert.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
+		require.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
 
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		require.NoError(t, err)
@@ -62,15 +60,15 @@ s3:
 
 		ref, err := i.Resolve(ctx, &wfv1.ArtifactRepositoryRef{Key: "my-key"}, "my-wf-ns")
 		require.NoError(t, err)
-		assert.Equal(t, "my-ctrl-ns", ref.Namespace)
-		assert.Equal(t, "artifact-repositories", ref.ConfigMap)
-		assert.Equal(t, "my-key", ref.Key)
-		assert.False(t, ref.Default)
-		assert.NotNil(t, ref.ArtifactRepository)
+		require.Equal(t, "my-ctrl-ns", ref.Namespace)
+		require.Equal(t, "artifact-repositories", ref.ConfigMap)
+		require.Equal(t, "my-key", ref.Key)
+		require.False(t, ref.Default)
+		require.NotNil(t, ref.ArtifactRepository)
 
 		repo, err := i.Get(ctx, ref)
 		require.NoError(t, err)
-		assert.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
+		require.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
 
 		err = k.CoreV1().ConfigMaps("my-ctrl-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		require.NoError(t, err)
@@ -109,15 +107,15 @@ s3:
 
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
 		require.NoError(t, err)
-		assert.Equal(t, "my-wf-ns", ref.Namespace)
-		assert.Equal(t, "artifact-repositories", ref.ConfigMap)
-		assert.Equal(t, "default-v1", ref.Key)
-		assert.False(t, ref.Default)
-		assert.NotNil(t, ref.ArtifactRepository)
+		require.Equal(t, "my-wf-ns", ref.Namespace)
+		require.Equal(t, "artifact-repositories", ref.ConfigMap)
+		require.Equal(t, "default-v1", ref.Key)
+		require.False(t, ref.Default)
+		require.NotNil(t, ref.ArtifactRepository)
 
 		repo, err := i.Get(ctx, ref)
 		require.NoError(t, err)
-		assert.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
+		require.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
 
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		require.NoError(t, err)
@@ -133,7 +131,7 @@ s3:
 
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
 		require.NoError(t, err)
-		assert.Equal(t, defaultArtifactRepositoryRefStatus, ref)
+		require.Equal(t, defaultArtifactRepositoryRefStatus, ref)
 
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		require.NoError(t, err)
@@ -142,6 +140,6 @@ s3:
 		ctx := context.Background()
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
 		require.NoError(t, err)
-		assert.Equal(t, defaultArtifactRepositoryRefStatus, ref)
+		require.Equal(t, defaultArtifactRepositoryRefStatus, ref)
 	})
 }

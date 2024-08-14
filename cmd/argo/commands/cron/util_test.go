@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -57,15 +56,15 @@ Conditions:
 func TestPrintCronWorkflow(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
 	out := getCronWorkflowGet(cronWf)
-	assert.Contains(t, out, expectedOut)
+	require.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
 	next, err := GetNextRuntime(cronWf)
 	require.NoError(t, err)
-	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
-	assert.Greater(t, next.Unix(), time.Now().Unix())
+	require.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
+	require.Greater(t, next.Unix(), time.Now().Unix())
 }
 
 var cronMultipleSchedules = `
@@ -96,6 +95,6 @@ func TestNextRuntimeWithMultipleSchedules(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(cronMultipleSchedules)
 	next, err := GetNextRuntime(cronWf)
 	require.NoError(t, err)
-	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
-	assert.Greater(t, next.Unix(), time.Now().Unix())
+	require.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
+	require.Greater(t, next.Unix(), time.Now().Unix())
 }

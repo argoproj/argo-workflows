@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/go-jose/go-jose/v3/jwt"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +24,7 @@ import (
 func Test_metaData(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		data := metaData(context.TODO())
-		assert.Empty(t, data)
+		require.Empty(t, data)
 	})
 	t.Run("Headers", func(t *testing.T) {
 		ctx := metadata.NewIncomingContext(context.TODO(), metadata.MD{
@@ -33,8 +32,8 @@ func Test_metaData(t *testing.T) {
 			"ignored": []string{"false"},
 		})
 		data := metaData(ctx)
-		if assert.Len(t, data, 1) {
-			assert.Equal(t, []string{"true"}, data["x-valid"])
+		if require.Len(t, data, 1) {
+			require.Equal(t, []string{"true"}, data["x-valid"])
 		}
 	})
 }
@@ -178,23 +177,23 @@ func TestNewOperation(t *testing.T) {
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 	require.NoError(t, err)
-	if assert.Len(t, list.Items, 4) {
+	if require.Len(t, list.Items, 4) {
 		for _, wf := range list.Items {
-			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
-			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
-			assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
-			assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
+			require.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
+			require.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
+			require.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
+			require.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
 			paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
 		}
 		sort.Strings(paramValues)
-		assert.Equal(t, expectedParamValues, paramValues)
+		require.Equal(t, expectedParamValues, paramValues)
 	}
-	assert.Contains(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to get workflow template: workflowtemplates.argoproj.io \"not-found\" not found", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to validate workflow template instanceid: 'my-wft-3' is not managed by the current Argo Server", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token Operator(\"!\") (1:8)\n | garbage!!!!!!\n | .......^", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unable to cast expression result 'garbage' to bool", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to compile workflow template parameter my-param expression: unexpected token Operator(\"!\") (1:8)\n | rubbish!!!\n | .......^", <-recorder.Events)
+	require.Contains(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to get workflow template: workflowtemplates.argoproj.io \"not-found\" not found", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to validate workflow template instanceid: 'my-wft-3' is not managed by the current Argo Server", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token Operator(\"!\") (1:8)\n | garbage!!!!!!\n | .......^", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unable to cast expression result 'garbage' to bool", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to compile workflow template parameter my-param expression: unexpected token Operator(\"!\") (1:8)\n | rubbish!!!\n | .......^", <-recorder.Events)
 }
 
 func Test_populateWorkflowMetadata(t *testing.T) {
@@ -361,7 +360,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 
 	require.NoError(t, err)
-	assert.Len(t, list.Items, 4)
+	require.Len(t, list.Items, 4)
 
 	expectedNames := []string{
 		"my-wfeb-2",
@@ -378,38 +377,38 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 		}
 	}
 
-	assert.True(t, hasExpectGenerateName)
+	require.True(t, hasExpectGenerateName)
 
 	// ordering not guaranteed
-	assert.Subset(t, actualNames, expectedNames)
+	require.Subset(t, actualNames, expectedNames)
 
 	for _, item := range list.Items {
 		if _, ok := item.Labels["aLabel"]; !ok {
-			assert.Contains(t, item.Name, "my-wft")
+			require.Contains(t, item.Name, "my-wft")
 			continue
 		}
 
 		label := item.Labels["aLabel"]
 		annotation := item.Annotations["anAnnotation"]
-		assert.True(t, label == "someValue" || label == "one")
-		assert.True(t, annotation == "otherValue" || annotation == "two")
+		require.True(t, label == "someValue" || label == "one")
+		require.True(t, annotation == "otherValue" || annotation == "two")
 	}
 
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow name expression: unexpected token Operator(\"..\") (1:10)\n | payload.......foo[.numeric]\n | .........^", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow label \"invalidLabel\" expression: cannot use pointer accessor outside closure (1:6)\n | foo...bar\n | .....^", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow annotation \"invalidAnnotation\" expression: expected name (1:6)\n | foo.[..]bar\n | .....^", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a float64", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a bool", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a map[string]interface {}", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a []interface {}", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a <nil>", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow name expression: unexpected token Operator(\"..\") (1:10)\n | payload.......foo[.numeric]\n | .........^", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow label \"invalidLabel\" expression: cannot use pointer accessor outside closure (1:6)\n | foo...bar\n | .....^", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow annotation \"invalidAnnotation\" expression: expected name (1:6)\n | foo.[..]bar\n | .....^", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a float64", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a bool", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a map[string]interface {}", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a []interface {}", <-recorder.Events)
+	require.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a <nil>", <-recorder.Events)
 }
 
 func Test_expressionEnvironment(t *testing.T) {
 	env, err := expressionEnvironment(context.TODO(), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
 	require.NoError(t, err)
-	assert.Equal(t, "my-ns", env["namespace"])
-	assert.Equal(t, "my-d", env["discriminator"])
-	assert.Contains(t, env, "metadata")
-	assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
+	require.Equal(t, "my-ns", env["namespace"])
+	require.Equal(t, "my-d", env["discriminator"])
+	require.Contains(t, env, "metadata")
+	require.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
 }

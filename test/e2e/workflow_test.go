@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +52,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*11).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -84,7 +84,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*11).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -133,11 +133,11 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed, time.Minute*11).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			for _, node := range status.Nodes {
 				if node.Type == wfv1.NodeTypePod {
-					assert.Equal(t, wfv1.NodeFailed, node.Phase)
-					assert.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
+					require.Equal(t, wfv1.NodeFailed, node.Phase)
+					require.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
 				}
 			}
 		}).
@@ -146,9 +146,9 @@ spec:
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			for _, c := range pod.Status.ContainerStatuses {
 				if c.Name == common.WaitContainerName && c.State.Terminated == nil {
-					assert.NotNil(t, c.State.Waiting)
-					assert.Contains(t, c.State.Waiting.Reason, "PodInitializing")
-					assert.Nil(t, c.State.Running)
+					require.NotNil(t, c.State.Waiting)
+					require.Contains(t, c.State.Waiting.Reason, "PodInitializing")
+					require.Nil(t, c.State.Running)
 				}
 			}
 		}).
@@ -157,9 +157,9 @@ spec:
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			for _, c := range pod.Status.ContainerStatuses {
 				if c.Name == common.WaitContainerName && c.State.Terminated == nil {
-					assert.NotNil(t, c.State.Waiting)
-					assert.Contains(t, c.State.Waiting.Reason, "PodInitializing")
-					assert.Nil(t, c.State.Running)
+					require.NotNil(t, c.State.Waiting)
+					require.Contains(t, c.State.Waiting.Reason, "PodInitializing")
+					require.Nil(t, c.State.Running)
 				}
 			}
 		})).
@@ -168,9 +168,9 @@ spec:
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			for _, c := range pod.Status.ContainerStatuses {
 				if c.Name == common.WaitContainerName && c.State.Terminated == nil {
-					assert.NotNil(t, c.State.Waiting)
-					assert.Contains(t, c.State.Waiting.Reason, "PodInitializing")
-					assert.Nil(t, c.State.Running)
+					require.NotNil(t, c.State.Waiting)
+					require.Contains(t, c.State.Waiting.Reason, "PodInitializing")
+					require.Nil(t, c.State.Running)
 				}
 			}
 		}).
@@ -179,9 +179,9 @@ spec:
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			for _, c := range pod.Status.ContainerStatuses {
 				if c.Name == common.WaitContainerName && c.State.Terminated == nil {
-					assert.NotNil(t, c.State.Waiting)
-					assert.Contains(t, c.State.Waiting.Reason, "PodInitializing")
-					assert.Nil(t, c.State.Running)
+					require.NotNil(t, c.State.Waiting)
+					require.Contains(t, c.State.Waiting.Reason, "PodInitializing")
+					require.Nil(t, c.State.Running)
 				}
 			}
 		})
@@ -214,12 +214,12 @@ spec:
 		WaitForWorkflow(fixtures.ToBeCompleted, time.Minute*1).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, "a")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-			assert.NotContains(t, pod.Name, "--")
+			require.NotContains(t, pod.Name, "--")
 		})
 }
 

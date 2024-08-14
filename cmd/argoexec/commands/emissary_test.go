@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
@@ -30,15 +29,15 @@ func TestEmissary(t *testing.T) {
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/exitcode")
 		require.NoError(t, err)
-		assert.Equal(t, "0", string(data))
+		require.Equal(t, "0", string(data))
 	})
 
 	t.Run("Exit1", func(t *testing.T) {
 		err := run("exit 1")
-		assert.Equal(t, 1, err.(errors.Exited).ExitCode())
+		require.Equal(t, 1, err.(errors.Exited).ExitCode())
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/exitcode")
 		require.NoError(t, err)
-		assert.Equal(t, "1", string(data))
+		require.Equal(t, "1", string(data))
 	})
 	t.Run("Stdout", func(t *testing.T) {
 		_ = os.Remove(varRunArgo + "/ctr/main/stdout")
@@ -46,7 +45,7 @@ func TestEmissary(t *testing.T) {
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
 		require.NoError(t, err)
-		assert.Contains(t, string(data), "hello")
+		require.Contains(t, string(data), "hello")
 	})
 	t.Run("Sub-process", func(t *testing.T) {
 		_ = os.Remove(varRunArgo + "/ctr/main/stdout")
@@ -54,14 +53,14 @@ func TestEmissary(t *testing.T) {
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
 		require.NoError(t, err)
-		assert.Equal(t, "hello", string(data))
+		require.Equal(t, "hello", string(data))
 	})
 	t.Run("Combined", func(t *testing.T) {
 		err := run("echo hello > /dev/stderr")
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/combined")
 		require.NoError(t, err)
-		assert.Contains(t, string(data), "hello")
+		require.Contains(t, string(data), "hello")
 	})
 	t.Run("Signal", func(t *testing.T) {
 		for signal := range map[syscall.Signal]string{
@@ -95,7 +94,7 @@ func TestEmissary(t *testing.T) {
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		require.NoError(t, err)
-		assert.NotEmpty(t, string(data)) // data is tgz format
+		require.NotEmpty(t, string(data)) // data is tgz format
 	})
 	t.Run("ArtifactWithTrailingAndLeadingSlash", func(t *testing.T) {
 		err = os.WriteFile(varRunArgo+"/template", []byte(`
@@ -112,7 +111,7 @@ func TestEmissary(t *testing.T) {
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		require.NoError(t, err)
-		assert.NotEmpty(t, string(data)) // data is tgz format
+		require.NotEmpty(t, string(data)) // data is tgz format
 	})
 	t.Run("Parameter", func(t *testing.T) {
 		err = os.WriteFile(varRunArgo+"/template", []byte(`
@@ -131,7 +130,7 @@ func TestEmissary(t *testing.T) {
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/outputs/parameters/tmp/parameter")
 		require.NoError(t, err)
-		assert.Contains(t, string(data), "hello")
+		require.Contains(t, string(data), "hello")
 	})
 	t.Run("RetryContainerSetFail", func(t *testing.T) {
 		err = os.WriteFile(varRunArgo+"/template", []byte(`
@@ -161,7 +160,7 @@ func TestEmissary(t *testing.T) {
 		require.Error(t, err)
 		data, err := os.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		require.NoError(t, err)
-		assert.NotEmpty(t, string(data)) // data is tgz format
+		require.NotEmpty(t, string(data)) // data is tgz format
 	})
 	t.Run("RetryContainerSetSuccess", func(t *testing.T) {
 		err = os.WriteFile(varRunArgo+"/template", []byte(`
@@ -191,7 +190,7 @@ func TestEmissary(t *testing.T) {
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		require.NoError(t, err)
-		assert.NotEmpty(t, string(data)) // data is tgz format
+		require.NotEmpty(t, string(data)) // data is tgz format
 	})
 }
 

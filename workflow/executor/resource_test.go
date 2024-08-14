@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -44,7 +43,7 @@ func TestResourceFlags(t *testing.T) {
 	}
 	args, err := we.getKubectlArguments("fake", manifestPath, fakeFlags)
 	require.NoError(t, err)
-	assert.Contains(t, args, fakeFlags[0])
+	require.Contains(t, args, fakeFlags[0])
 
 	_, err = we.getKubectlArguments("fake", manifestPath, nil)
 	require.NoError(t, err)
@@ -121,7 +120,7 @@ func TestResourcePatchFlags(t *testing.T) {
 			args, err := we.getKubectlArguments("patch", tt.manifestPath, fakeFlags)
 
 			require.NoError(t, err)
-			assert.Equal(t, expectedArgs, args)
+			require.Equal(t, expectedArgs, args)
 		})
 	}
 }
@@ -143,17 +142,17 @@ func TestResourceConditionsMatching(t *testing.T) {
 	jsonBytes := []byte(`{"name": "test","status":{"phase":"Error"}`)
 	finished, err := matchConditions(jsonBytes, successReqs, failReqs)
 	require.Error(t, err, `failure condition '{status.phase == [Error]}' evaluated true`)
-	assert.False(t, finished)
+	require.False(t, finished)
 
 	jsonBytes = []byte(`{"name": "test","status":{"phase":"Succeeded"}`)
 	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
 	require.NoError(t, err)
-	assert.False(t, finished)
+	require.False(t, finished)
 
 	jsonBytes = []byte(`{"name": "test","status":{"phase":"Pending"}`)
 	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
 	require.Error(t, err, "Neither success condition nor the failure condition has been matched. Retrying...")
-	assert.True(t, finished)
+	require.True(t, finished)
 }
 
 // TestInferSelfLink tests whether the inferred self link for k8s objects are correct.
@@ -166,28 +165,28 @@ func TestInferSelfLink(t *testing.T) {
 		Version: "v1",
 		Kind:    "Pod",
 	})
-	assert.Equal(t, "api/v1/namespaces/test-namespace/pods/test-name", inferObjectSelfLink(obj))
+	require.Equal(t, "api/v1/namespaces/test-namespace/pods/test-name", inferObjectSelfLink(obj))
 
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "test.group",
 		Version: "v1",
 		Kind:    "TestKind",
 	})
-	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/testkinds/test-name", inferObjectSelfLink(obj))
+	require.Equal(t, "apis/test.group/v1/namespaces/test-namespace/testkinds/test-name", inferObjectSelfLink(obj))
 
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "test.group",
 		Version: "v1",
 		Kind:    "Duty",
 	})
-	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/duties/test-name", inferObjectSelfLink(obj))
+	require.Equal(t, "apis/test.group/v1/namespaces/test-namespace/duties/test-name", inferObjectSelfLink(obj))
 
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "test.group",
 		Version: "v1",
 		Kind:    "IngressGateway",
 	})
-	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/ingressgateways/test-name", inferObjectSelfLink(obj))
+	require.Equal(t, "apis/test.group/v1/namespaces/test-namespace/ingressgateways/test-name", inferObjectSelfLink(obj))
 
 	obj.SetNamespace("")
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
@@ -195,7 +194,7 @@ func TestInferSelfLink(t *testing.T) {
 		Version: "v1",
 		Kind:    "Namespace",
 	})
-	assert.Equal(t, "api/v1/namespaces/test-name", inferObjectSelfLink(obj))
+	require.Equal(t, "api/v1/namespaces/test-name", inferObjectSelfLink(obj))
 
 }
 
@@ -235,7 +234,7 @@ func Test_jqFilter(t *testing.T) {
 			ctx := context.Background()
 			got, err := jqFilter(ctx, testCase.input, testCase.filter)
 			require.NoError(t, err)
-			assert.Equal(t, testCase.want, got)
+			require.Equal(t, testCase.want, got)
 		})
 	}
 }
@@ -243,5 +242,5 @@ func Test_jqFilter(t *testing.T) {
 func Test_runKubectl(t *testing.T) {
 	out, err := runKubectl("kubectl", "version", "--client=true", "--output", "json")
 	require.NoError(t, err)
-	assert.Contains(t, string(out), "clientVersion")
+	require.Contains(t, string(out), "clientVersion")
 }

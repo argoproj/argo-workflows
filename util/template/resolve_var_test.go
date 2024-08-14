@@ -3,7 +3,6 @@ package template
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,12 +11,12 @@ func Test_ResolveVar(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
 			v, err := ResolveVar("{{foo}}", map[string]interface{}{"foo": "bar"})
 			require.NoError(t, err)
-			assert.Equal(t, "bar", v)
+			require.Equal(t, "bar", v)
 		})
 		t.Run("Whitespace", func(t *testing.T) {
 			v, err := ResolveVar("{{ foo }}", map[string]interface{}{"foo": "bar"})
 			require.NoError(t, err)
-			assert.Equal(t, "bar", v)
+			require.Equal(t, "bar", v)
 		})
 		t.Run("Unresolved", func(t *testing.T) {
 			_, err := ResolveVar("{{foo}}", nil)
@@ -28,7 +27,7 @@ func Test_ResolveVar(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
 			v, err := ResolveVar("{{=foo}}", map[string]interface{}{"foo": "bar"})
 			require.NoError(t, err)
-			assert.Equal(t, "bar", v)
+			require.Equal(t, "bar", v)
 		})
 		t.Run("Unresolved", func(t *testing.T) {
 			_, err := ResolveVar("{{=foo}}", nil)

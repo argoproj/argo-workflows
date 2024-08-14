@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,7 +37,7 @@ func TestSimpleStartCloser(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		expected = "A123456789B123456789C123456789D123456789E123456789\\c\r\n"
 	}
-	assert.Equal(t, expected, stdoutWriter.String())
+	require.Equal(t, expected, stdoutWriter.String())
 }
 
 type SlowWriter struct {

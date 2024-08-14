@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,13 +58,13 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 
 	entry, err := c.Load(ctx, "hi-there-world")
 	require.NoError(t, err)
-	assert.True(t, entry.LastHitTimestamp.Time.After(entry.CreationTimestamp.Time))
+	require.True(t, entry.LastHitTimestamp.Time.After(entry.CreationTimestamp.Time))
 
 	outputs := entry.Outputs
 	require.NoError(t, err)
-	if assert.Len(t, outputs.Parameters, 1) {
-		assert.Equal(t, "hello", outputs.Parameters[0].Name)
-		assert.Equal(t, "foobar", outputs.Parameters[0].Value.String())
+	if require.Len(t, outputs.Parameters, 1) {
+		require.Equal(t, "hello", outputs.Parameters[0].Name)
+		require.Equal(t, "foobar", outputs.Parameters[0].Value.String())
 	}
 }
 
@@ -79,7 +78,7 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
 	entry, err := c.Load(ctx, "hi-there-world")
 	require.NoError(t, err)
-	assert.Nil(t, entry)
+	require.Nil(t, entry)
 }
 
 func TestConfigMapCacheSave(t *testing.T) {
@@ -100,8 +99,8 @@ func TestConfigMapCacheSave(t *testing.T) {
 
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.NotNil(t, cm)
+	require.NotNil(t, cm)
 	var entry cache.Entry
 	wfv1.MustUnmarshal([]byte(cm.Data["hi-there-world"]), &entry)
-	assert.Equal(t, entry.LastHitTimestamp.Time, entry.CreationTimestamp.Time)
+	require.Equal(t, entry.LastHitTimestamp.Time, entry.CreationTimestamp.Time)
 }

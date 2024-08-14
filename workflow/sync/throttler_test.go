@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
@@ -15,7 +14,7 @@ import (
 )
 
 func Test_NamespaceBucket(t *testing.T) {
-	assert.Equal(t, "a", NamespaceBucket("a/b"))
+	require.Equal(t, "a", NamespaceBucket("a/b"))
 }
 
 func TestNoParallelismSamePriority(t *testing.T) {
@@ -25,9 +24,9 @@ func TestNoParallelismSamePriority(t *testing.T) {
 	throttler.Add("b", 0, time.Now().Add(1*time.Hour))
 	throttler.Add("a", 0, time.Now())
 
-	assert.True(t, throttler.Admit("a"))
-	assert.True(t, throttler.Admit("b"))
-	assert.True(t, throttler.Admit("c"))
+	require.True(t, throttler.Admit("a"))
+	require.True(t, throttler.Admit("b"))
+	require.True(t, throttler.Admit("c"))
 }
 
 func TestNoParallelismMultipleBuckets(t *testing.T) {
@@ -41,11 +40,11 @@ func TestNoParallelismMultipleBuckets(t *testing.T) {
 	throttler.Add("b/0", 0, time.Now())
 	throttler.Add("b/1", 0, time.Now())
 
-	assert.True(t, throttler.Admit("a/0"))
-	assert.False(t, throttler.Admit("a/1"))
-	assert.True(t, throttler.Admit("b/0"))
+	require.True(t, throttler.Admit("a/0"))
+	require.False(t, throttler.Admit("a/1"))
+	require.True(t, throttler.Admit("b/0"))
 	throttler.Remove("a/0")
-	assert.True(t, throttler.Admit("a/1"))
+	require.True(t, throttler.Admit("a/1"))
 }
 
 func TestWithParallelismLimitAndPriority(t *testing.T) {
@@ -57,24 +56,24 @@ func TestWithParallelismLimitAndPriority(t *testing.T) {
 	throttler.Add("c", 3, time.Now())
 	throttler.Add("d", 4, time.Now())
 
-	assert.True(t, throttler.Admit("a"), "is started, even though low priority")
-	assert.True(t, throttler.Admit("b"), "is started, even though low priority")
-	assert.False(t, throttler.Admit("c"), "cannot start")
-	assert.False(t, throttler.Admit("d"), "cannot start")
-	assert.Equal(t, "b", queuedKey)
+	require.True(t, throttler.Admit("a"), "is started, even though low priority")
+	require.True(t, throttler.Admit("b"), "is started, even though low priority")
+	require.False(t, throttler.Admit("c"), "cannot start")
+	require.False(t, throttler.Admit("d"), "cannot start")
+	require.Equal(t, "b", queuedKey)
 	queuedKey = ""
 
 	throttler.Remove("a")
-	assert.True(t, throttler.Admit("b"), "stays running")
-	assert.True(t, throttler.Admit("d"), "top priority")
-	assert.False(t, throttler.Admit("c"))
-	assert.Equal(t, "d", queuedKey)
+	require.True(t, throttler.Admit("b"), "stays running")
+	require.True(t, throttler.Admit("d"), "top priority")
+	require.False(t, throttler.Admit("c"))
+	require.Equal(t, "d", queuedKey)
 	queuedKey = ""
 
 	throttler.Remove("b")
-	assert.True(t, throttler.Admit("d"), "top priority")
-	assert.True(t, throttler.Admit("c"), "now running too")
-	assert.Equal(t, "c", queuedKey)
+	require.True(t, throttler.Admit("d"), "top priority")
+	require.True(t, throttler.Admit("c"), "now running too")
+	require.Equal(t, "c", queuedKey)
 }
 
 func TestInitWithWorkflows(t *testing.T) {
@@ -127,27 +126,27 @@ status:
 	require.NoError(t, err)
 	err = throttler.Init(wfList.Items)
 	require.NoError(t, err)
-	assert.True(t, throttler.Admit("default/a"))
-	assert.True(t, throttler.Admit("default/b"))
+	require.True(t, throttler.Admit("default/a"))
+	require.True(t, throttler.Admit("default/b"))
 
 	throttler.Add("default/c", 0, time.Now())
 	throttler.Add("default/d", 0, time.Now())
-	assert.False(t, throttler.Admit("default/c"))
-	assert.False(t, throttler.Admit("default/d"))
+	require.False(t, throttler.Admit("default/c"))
+	require.False(t, throttler.Admit("default/d"))
 
 	throttler.Remove("default/a")
-	assert.Equal(t, "", queuedKey)
-	assert.False(t, throttler.Admit("default/c"))
-	assert.False(t, throttler.Admit("default/d"))
+	require.Equal(t, "", queuedKey)
+	require.False(t, throttler.Admit("default/c"))
+	require.False(t, throttler.Admit("default/d"))
 
 	queuedKey = ""
 	throttler.Remove("default/b")
-	assert.Equal(t, "default/c", queuedKey)
-	assert.True(t, throttler.Admit("default/c"))
-	assert.False(t, throttler.Admit("default/d"))
+	require.Equal(t, "default/c", queuedKey)
+	require.True(t, throttler.Admit("default/c"))
+	require.False(t, throttler.Admit("default/d"))
 
 	queuedKey = ""
 	throttler.Remove("default/c")
-	assert.Equal(t, "default/d", queuedKey)
-	assert.True(t, throttler.Admit("default/d"))
+	require.Equal(t, "default/d", queuedKey)
+	require.True(t, throttler.Admit("default/d"))
 }

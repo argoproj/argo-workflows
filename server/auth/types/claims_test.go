@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/go-jose/go-jose/v3/jwt"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -171,8 +170,8 @@ func TestUnmarshalJSON(t *testing.T) {
 		claims := &Claims{}
 		err := json.Unmarshal([]byte(test.data), &claims)
 
-		assert.Equal(t, test.expectedErr, err, test.description)
-		assert.Equal(t, test.expectedClaims, claims, test.description)
+		require.Equal(t, test.expectedErr, err, test.description)
+		require.Equal(t, test.expectedClaims, claims, test.description)
 	}
 }
 
@@ -194,7 +193,7 @@ func TestGetCustomGroup(t *testing.T) {
 		}}
 		groups, err := claims.GetCustomGroup(("ad_groups"))
 		require.NoError(t, err)
-		assert.Equal(t, []string{"my-group"}, groups)
+		require.Equal(t, []string{"my-group"}, groups)
 	})
 	t.Run("CustomGroupNotString", func(t *testing.T) {
 		tGroup := []int{0}
@@ -240,7 +239,7 @@ func TestGetUserInfoGroups(t *testing.T) {
 
 		claims := &Claims{}
 		groups, err := claims.GetUserInfoGroups(httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
-		assert.Equal(t, []string{"Everyone"}, groups)
+		require.Equal(t, []string{"Everyone"}, groups)
 		require.NoError(t, err)
 	})
 }

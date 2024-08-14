@@ -10,7 +10,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-query-replace-regexpfunc TestMetaNamespaceLabelIndex(t *testing.T) {
+func TestMetaNamespaceLabelIndex(t *testing.T) {
 	require.Equal(t, "my-ns/my-label", MetaNamespaceLabelIndex("my-ns", "my-label"))
 }
 

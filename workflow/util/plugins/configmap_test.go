@@ -3,7 +3,6 @@ package plugin
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -47,13 +46,13 @@ func TestToConfigMap(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		assert.Equal(t, "my-plug-executor-plugin", cm.Name)
-		assert.Len(t, cm.Annotations, 1)
-		assert.Equal(t, map[string]string{
+		require.Equal(t, "my-plug-executor-plugin", cm.Name)
+		require.Len(t, cm.Annotations, 1)
+		require.Equal(t, map[string]string{
 			"my-label":                             "my-value",
 			"workflows.argoproj.io/configmap-type": "ExecutorPlugin",
 		}, cm.Labels)
-		assert.Equal(t, map[string]string{
+		require.Equal(t, map[string]string{
 			"sidecar.automountServiceAccountToken": "true",
 			"sidecar.container":                    "name: \"\"\nports:\n- containerPort: 1234\nresources: {}\nsecurityContext: {}\n",
 		}, cm.Data)
@@ -84,12 +83,12 @@ func TestFromConfigMap(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		assert.Equal(t, "ExecutorPlugin", p.Kind)
-		assert.Equal(t, "my-plug", p.Name)
-		assert.Len(t, p.Annotations, 1)
-		assert.Len(t, p.Labels, 1)
-		assert.True(t, p.Spec.Sidecar.AutomountServiceAccountToken)
-		assert.Equal(t, apiv1.Container{
+		require.Equal(t, "ExecutorPlugin", p.Kind)
+		require.Equal(t, "my-plug", p.Name)
+		require.Len(t, p.Annotations, 1)
+		require.Len(t, p.Labels, 1)
+		require.True(t, p.Spec.Sidecar.AutomountServiceAccountToken)
+		require.Equal(t, apiv1.Container{
 			Name:  "my-name",
 			Ports: []apiv1.ContainerPort{{}},
 			Resources: apiv1.ResourceRequirements{

@@ -6,8 +6,6 @@ import (
 	"os"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -34,7 +32,7 @@ func TestLoad(t *testing.T) {
 
 	dat, err := os.ReadFile(lf.Name())
 	require.NoError(t, err)
-	assert.Equal(t, content, string(dat))
+	require.Equal(t, content, string(dat))
 }
 
 func TestOpenStream(t *testing.T) {
@@ -50,5 +48,5 @@ func TestOpenStream(t *testing.T) {
 
 	dat, err := io.ReadAll(rc)
 	require.NoError(t, err)
-	assert.Equal(t, content, string(dat))
+	require.Equal(t, content, string(dat))
 }

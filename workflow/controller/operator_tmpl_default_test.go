@@ -3,8 +3,6 @@ package controller
 import (
 	"context"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 
@@ -133,9 +131,9 @@ func TestSetTemplateDefault(t *testing.T) {
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
 		require.NoError(t, err)
-		assert.NotNil(t, tmpl)
-		assert.Equal(t, intstrutil.ParsePtr("110"), tmpl.ActiveDeadlineSeconds)
-		assert.Equal(t, apiv1.PullNever, tmpl.Container.ImagePullPolicy)
+		require.NotNil(t, tmpl)
+		require.Equal(t, intstrutil.ParsePtr("110"), tmpl.ActiveDeadlineSeconds)
+		require.Equal(t, apiv1.PullNever, tmpl.Container.ImagePullPolicy)
 	})
 	t.Run("tmplDefaultInWf", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(defaultWf)
@@ -160,12 +158,12 @@ func TestSetTemplateDefault(t *testing.T) {
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
 		require.NoError(t, err)
-		assert.NotNil(t, tmpl)
-		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
-		assert.Equal(t, apiv1.PullIfNotPresent, tmpl.Container.ImagePullPolicy)
-		assert.Len(t, tmpl.Container.Env, 1)
-		assert.Equal(t, "test", tmpl.Container.Env[0].Name)
-		assert.Nil(t, tmpl.Script)
+		require.NotNil(t, tmpl)
+		require.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
+		require.Equal(t, apiv1.PullIfNotPresent, tmpl.Container.ImagePullPolicy)
+		require.Len(t, tmpl.Container.Env, 1)
+		require.Equal(t, "test", tmpl.Container.Env[0].Name)
+		require.Nil(t, tmpl.Script)
 	})
 	t.Run("stepTmplDefaultWf", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(stepWf)
@@ -191,20 +189,20 @@ func TestSetTemplateDefault(t *testing.T) {
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
 
 		require.NoError(t, err)
-		assert.NotNil(t, tmpl)
-		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
-		assert.Nil(t, tmpl.Container)
-		assert.Equal(t, wfv1.TemplateTypeSteps, tmpl.GetType())
+		require.NotNil(t, tmpl)
+		require.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
+		require.Nil(t, tmpl.Container)
+		require.Equal(t, wfv1.TemplateTypeSteps, tmpl.GetType())
 
 		tmpl1 := woc.execWf.Spec.Templates[1]
 		err = woc.mergedTemplateDefaultsInto(&tmpl1)
 		require.NoError(t, err)
-		assert.NotNil(t, tmpl1)
-		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl1.ActiveDeadlineSeconds)
-		assert.Equal(t, apiv1.PullIfNotPresent, tmpl1.Container.ImagePullPolicy)
-		assert.Len(t, tmpl1.Container.Env, 1)
-		assert.Equal(t, "test", tmpl1.Container.Env[0].Name)
-		assert.Nil(t, tmpl1.Script)
+		require.NotNil(t, tmpl1)
+		require.Equal(t, intstrutil.ParsePtr("150"), tmpl1.ActiveDeadlineSeconds)
+		require.Equal(t, apiv1.PullIfNotPresent, tmpl1.Container.ImagePullPolicy)
+		require.Len(t, tmpl1.Container.Env, 1)
+		require.Equal(t, "test", tmpl1.Container.Env[0].Name)
+		require.Nil(t, tmpl1.Script)
 	})
 	t.Run("DagTmplDefaultWf", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(dagWf)
@@ -232,28 +230,28 @@ func TestSetTemplateDefault(t *testing.T) {
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
 
 		require.NoError(t, err)
-		assert.NotNil(t, tmpl)
-		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
-		assert.Nil(t, tmpl.Container)
-		assert.Equal(t, wfv1.TemplateTypeDAG, tmpl.GetType())
+		require.NotNil(t, tmpl)
+		require.Equal(t, intstrutil.ParsePtr("150"), tmpl.ActiveDeadlineSeconds)
+		require.Nil(t, tmpl.Container)
+		require.Equal(t, wfv1.TemplateTypeDAG, tmpl.GetType())
 
 		tmpl1 := woc.execWf.Spec.Templates[2]
 		err = woc.mergedTemplateDefaultsInto(&tmpl1)
 		require.NoError(t, err)
-		assert.NotNil(t, tmpl1)
-		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl1.ActiveDeadlineSeconds)
-		assert.NotNil(t, tmpl1.Script)
-		assert.Len(t, tmpl1.Script.Env, 1)
-		assert.Equal(t, "test", tmpl1.Script.Env[0].Name)
+		require.NotNil(t, tmpl1)
+		require.Equal(t, intstrutil.ParsePtr("150"), tmpl1.ActiveDeadlineSeconds)
+		require.NotNil(t, tmpl1.Script)
+		require.Len(t, tmpl1.Script.Env, 1)
+		require.Equal(t, "test", tmpl1.Script.Env[0].Name)
 
 		tmpl2 := woc.execWf.Spec.Templates[3]
 		err = woc.mergedTemplateDefaultsInto(&tmpl2)
 		require.NoError(t, err)
-		assert.NotNil(t, tmpl2)
-		assert.Equal(t, intstrutil.ParsePtr("150"), tmpl2.ActiveDeadlineSeconds)
-		assert.Equal(t, apiv1.PullIfNotPresent, tmpl2.Container.ImagePullPolicy)
-		assert.Len(t, tmpl2.Container.Env, 1)
-		assert.Equal(t, "test", tmpl2.Container.Env[0].Name)
-		assert.Nil(t, tmpl2.Script)
+		require.NotNil(t, tmpl2)
+		require.Equal(t, intstrutil.ParsePtr("150"), tmpl2.ActiveDeadlineSeconds)
+		require.Equal(t, apiv1.PullIfNotPresent, tmpl2.Container.ImagePullPolicy)
+		require.Len(t, tmpl2.Container.Env, 1)
+		require.Equal(t, "test", tmpl2.Container.Env[0].Name)
+		require.Nil(t, tmpl2.Script)
 	})
 }

@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/argoproj/pkg/sync"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -568,7 +567,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 		err := controller.setWorkflowDefaults(workflow)
 		require.NoError(t, err)
-		assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(helloWorldWf))
+		require.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(helloWorldWf))
 	})
 	t.Run("WithDefaults", func(t *testing.T) {
 		cancel, controller := newControllerWithDefaults()
@@ -576,9 +575,9 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		defaultWorkflowSpec := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 		err := controller.setWorkflowDefaults(defaultWorkflowSpec)
 		require.NoError(t, err)
-		assert.Equal(t, defaultWorkflowSpec.Spec.HostNetwork, &ans)
-		assert.NotEqual(t, defaultWorkflowSpec, wfv1.MustUnmarshalWorkflow(helloWorldWf))
-		assert.True(t, *defaultWorkflowSpec.Spec.HostNetwork)
+		require.Equal(t, defaultWorkflowSpec.Spec.HostNetwork, &ans)
+		require.NotEqual(t, defaultWorkflowSpec, wfv1.MustUnmarshalWorkflow(helloWorldWf))
+		require.True(t, *defaultWorkflowSpec.Spec.HostNetwork)
 	})
 }
 
@@ -587,18 +586,18 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 	defer cancel()
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
 	var ten int32 = 10
-	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
-	assert.Nil(t, workflow.Spec.TTLStrategy)
-	assert.Contains(t, workflow.Labels, "foo")
+	require.Equal(t, "whalesay", workflow.Spec.Entrypoint)
+	require.Nil(t, workflow.Spec.TTLStrategy)
+	require.Contains(t, workflow.Labels, "foo")
 	err := controller.setWorkflowDefaults(workflow)
 	require.NoError(t, err)
-	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWf))
-	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
-	assert.Equal(t, "whalesay", workflow.Spec.ServiceAccountName)
-	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
-	assert.Contains(t, workflow.Labels, "foo")
-	assert.Contains(t, workflow.Labels, "label")
-	assert.Contains(t, workflow.Annotations, "annotation")
+	require.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWf))
+	require.Equal(t, "whalesay", workflow.Spec.Entrypoint)
+	require.Equal(t, "whalesay", workflow.Spec.ServiceAccountName)
+	require.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+	require.Contains(t, workflow.Labels, "foo")
+	require.Contains(t, workflow.Labels, "label")
+	require.Contains(t, workflow.Annotations, "annotation")
 }
 
 func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
@@ -609,14 +608,14 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	var five int32 = 5
 	err := controller.setWorkflowDefaults(workflow)
 	require.NoError(t, err)
-	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWfTTL))
-	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
-	assert.Equal(t, "whalesay", workflow.Spec.ServiceAccountName)
-	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
-	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
-	assert.NotContains(t, workflow.Labels, "foo")
-	assert.Contains(t, workflow.Labels, "label")
-	assert.Contains(t, workflow.Annotations, "annotation")
+	require.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWfTTL))
+	require.Equal(t, "whalesay", workflow.Spec.Entrypoint)
+	require.Equal(t, "whalesay", workflow.Spec.ServiceAccountName)
+	require.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
+	require.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+	require.NotContains(t, workflow.Labels, "foo")
+	require.Contains(t, workflow.Labels, "label")
+	require.Contains(t, workflow.Annotations, "annotation")
 }
 
 func TestAddingWorkflowDefaultVolumeClaimTemplate(t *testing.T) {
@@ -625,7 +624,7 @@ func TestAddingWorkflowDefaultVolumeClaimTemplate(t *testing.T) {
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
 	err := controller.setWorkflowDefaults(workflow)
 	require.NoError(t, err)
-	assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultVolumeClaimTemplateWf))
+	require.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultVolumeClaimTemplateWf))
 }
 
 func TestNamespacedController(t *testing.T) {
@@ -642,7 +641,7 @@ func TestNamespacedController(t *testing.T) {
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
-	assert.Nil(t, controller.cwftmplInformer)
+	require.Nil(t, controller.cwftmplInformer)
 }
 
 func TestClusterController(t *testing.T) {
@@ -659,7 +658,7 @@ func TestClusterController(t *testing.T) {
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
-	assert.NotNil(t, controller.cwftmplInformer)
+	require.NotNil(t, controller.cwftmplInformer)
 }
 
 func TestParallelism(t *testing.T) {
@@ -708,24 +707,24 @@ spec:
 			)
 			defer cancel()
 			ctx := context.Background()
-			assert.True(t, controller.processNextItem(ctx))
-			assert.True(t, controller.processNextItem(ctx))
-			assert.True(t, controller.processNextItem(ctx))
+			require.True(t, controller.processNextItem(ctx))
+			require.True(t, controller.processNextItem(ctx))
+			require.True(t, controller.processNextItem(ctx))
 
 			expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+				if require.NotNil(t, wf) {
+					require.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 				}
 			})
 			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+				if require.NotNil(t, wf) {
+					require.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+					require.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 				}
 			})
 			expectWorkflow(ctx, controller, "my-wf-2", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
+				if require.NotNil(t, wf) {
+					require.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
 				}
 			})
 		})
@@ -786,7 +785,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	err := woc.setExecWorkflow(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
+	require.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
 
 const wfWithInvalidMetadataLabelsFrom = `
@@ -856,20 +855,20 @@ func TestIsArchivable(t *testing.T) {
 	workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	t.Run("EverythingSelector", func(t *testing.T) {
 		controller.archiveLabelSelector = labels.Everything()
-		assert.True(t, controller.isArchivable(workflow))
+		require.True(t, controller.isArchivable(workflow))
 	})
 	t.Run("NothingSelector", func(t *testing.T) {
 		controller.archiveLabelSelector = labels.Nothing()
-		assert.False(t, controller.isArchivable(workflow))
+		require.False(t, controller.isArchivable(workflow))
 	})
 	t.Run("ConfiguredSelector", func(t *testing.T) {
 		selector, err := metav1.LabelSelectorAsSelector(&lblSelector)
 		require.NoError(t, err)
 		controller.archiveLabelSelector = selector
-		assert.False(t, controller.isArchivable(workflow))
+		require.False(t, controller.isArchivable(workflow))
 		workflow.Labels = make(map[string]string)
 		workflow.Labels["workflows.argoproj.io/archive-strategy"] = "true"
-		assert.True(t, controller.isArchivable(workflow))
+		require.True(t, controller.isArchivable(workflow))
 	})
 }
 
@@ -913,7 +912,7 @@ spec:
 `
 
 func TestNotifySemaphoreConfigUpdate(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(wfWithSema)
 	wf1 := wf.DeepCopy()
 	wf1.Name = "one"
@@ -928,18 +927,18 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 		Name:      "my-config",
 		Namespace: "default",
 	}}
-	assert.Equal(3, controller.wfQueue.Len())
+	require.Equal(3, controller.wfQueue.Len())
 
 	// Remove all Wf from Worker queue
 	for i := 0; i < 3; i++ {
 		key, _ := controller.wfQueue.Get()
 		controller.wfQueue.Done(key)
 	}
-	assert.Equal(0, controller.wfQueue.Len())
+	require.Equal(0, controller.wfQueue.Len())
 
 	controller.notifySemaphoreConfigUpdate(&cm)
 	time.Sleep(2 * time.Second)
-	assert.Equal(2, controller.wfQueue.Len())
+	require.Equal(2, controller.wfQueue.Len())
 }
 
 func TestParallelismWithInitializeRunningWorkflows(t *testing.T) {
@@ -990,20 +989,20 @@ status:
 			ctx := context.Background()
 
 			// process my-wf-0; update status to Pending
-			assert.True(t, controller.processNextItem(ctx))
+			require.True(t, controller.processNextItem(ctx))
 			expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+				if require.NotNil(t, wf) {
+					require.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+					require.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 				}
 			})
 
 			// process my-wf-1; update status to Pending
-			assert.True(t, controller.processNextItem(ctx))
+			require.True(t, controller.processNextItem(ctx))
 			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+				if require.NotNil(t, wf) {
+					require.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+					require.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 				}
 			})
 		})
@@ -1082,13 +1081,13 @@ status:
 			ns0PendingWfTested := false
 			ns1PendingWfTested := false
 			for {
-				assert.True(t, controller.processNextItem(ctx))
+				require.True(t, controller.processNextItem(ctx))
 				if !ns0PendingWfTested {
 					expectNamespacedWorkflow(ctx, controller, "ns-0", "my-ns-0-wf-0", func(wf *wfv1.Workflow) {
-						if assert.NotNil(t, wf) {
+						if require.NotNil(t, wf) {
 							if wf.Status.Phase != "" {
-								assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-								assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+								require.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+								require.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 								ns0PendingWfTested = true
 							}
 						}
@@ -1096,10 +1095,10 @@ status:
 				}
 				if !ns1PendingWfTested {
 					expectNamespacedWorkflow(ctx, controller, "ns-1", "my-ns-1-wf-0", func(wf *wfv1.Workflow) {
-						if assert.NotNil(t, wf) {
+						if require.NotNil(t, wf) {
 							if wf.Status.Phase != "" {
-								assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-								assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+								require.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+								require.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 								ns1PendingWfTested = true
 							}
 						}
@@ -1129,18 +1128,18 @@ spec:
 	defer cancel()
 
 	ctx := context.Background()
-	assert.True(t, controller.processNextItem(ctx))
+	require.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc.operate(ctx)
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	require.True(t, controller.processNextPodCleanupItem(ctx))
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	podCleanupKey := "test/my-wf/labelPodCompleted"
-	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
+	require.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
 }
 
 func TestPodCleanupDeletePendingPodWhenTerminate(t *testing.T) {
@@ -1159,21 +1158,21 @@ spec:
 	defer cancel()
 
 	ctx := context.Background()
-	assert.True(t, controller.processNextItem(ctx))
+	require.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodPending)
 	woc.execWf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
 	woc.operate(ctx)
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
-	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	require.True(t, controller.processNextPodCleanupItem(ctx))
+	require.True(t, controller.processNextPodCleanupItem(ctx))
+	require.True(t, controller.processNextPodCleanupItem(ctx))
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
-	assert.Empty(t, pods.Items)
+	require.Empty(t, pods.Items)
 }
 
 func TestPendingPodWhenTerminate(t *testing.T) {
@@ -1185,13 +1184,13 @@ func TestPendingPodWhenTerminate(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	assert.True(t, controller.processNextItem(ctx))
+	require.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	for _, node := range woc.wf.Status.Nodes {
-		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		require.Equal(t, wfv1.NodeFailed, node.Phase)
 	}
 }
 
@@ -1201,16 +1200,16 @@ func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	assert.True(t, controller.processNextItem(ctx))
+	require.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc.operate(ctx)
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	require.True(t, controller.processNextPodCleanupItem(ctx))
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 func TestWorkflowWithLongArguments(t *testing.T) {
@@ -1219,33 +1218,33 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	assert.True(t, controller.processNextItem(ctx))
+	require.True(t, controller.processNextItem(ctx))
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	cms, err := controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.ObjectMeta.Name})
 	require.NoError(t, err)
-	assert.Len(t, cms.Items, 1)
-	assert.Contains(t, cms.Items[0].Data, common.EnvVarTemplate)
+	require.Len(t, cms.Items, 1)
+	require.Contains(t, cms.Items[0].Data, common.EnvVarTemplate)
 
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	require.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
+	require.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	found := false
 	for _, vol := range pod.Spec.Volumes {
 		if vol.Name == "argo-env-config" {
-			assert.Equal(t, cms.Items[0].Name, vol.ConfigMap.Name)
+			require.Equal(t, cms.Items[0].Name, vol.ConfigMap.Name)
 			found = true
 		}
 	}
-	assert.True(t, found)
+	require.True(t, found)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc.operate(ctx)
-	assert.True(t, controller.processNextPodCleanupItem(ctx))
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	require.True(t, controller.processNextPodCleanupItem(ctx))
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

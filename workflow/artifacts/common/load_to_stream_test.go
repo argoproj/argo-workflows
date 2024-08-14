@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -106,7 +105,7 @@ func TestLoadToStream(t *testing.T) {
 			stream, err := LoadToStream(&wfv1.Artifact{}, tc.artifactDriver)
 			if tc.errMsg == "" {
 				require.NoError(t, err)
-				assert.NotNil(t, stream)
+				require.NotNil(t, stream)
 				stream.Close()
 
 				// make sure the new file got deleted when we called stream.Close() above
@@ -114,10 +113,10 @@ func TestLoadToStream(t *testing.T) {
 				if err != nil {
 					panic(err)
 				}
-				assert.Equal(t, len(filesBefore), len(filesAfter))
+				require.Equal(t, len(filesBefore), len(filesAfter))
 			} else {
 				require.Error(t, err)
-				assert.Equal(t, tc.errMsg, err.Error())
+				require.Equal(t, tc.errMsg, err.Error())
 			}
 		})
 	}

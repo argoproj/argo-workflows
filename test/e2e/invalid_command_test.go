@@ -5,7 +5,7 @@ package e2e
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -25,7 +25,7 @@ func (s *InvalidCommandSuite) TestInvalidCommand() {
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, status.Message, "executable file not found")
+			require.Contains(t, status.Message, "executable file not found")
 		})
 }
 

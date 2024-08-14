@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMustUnmarshalClusterWorkflowTemplate(t *testing.T) {
@@ -11,7 +11,7 @@ func TestMustUnmarshalClusterWorkflowTemplate(t *testing.T) {
 		if r := recover(); r == nil {
 			t.Fatalf("The code did not panic but should have")
 		} else {
-			assert.Equal(t, "no text to unmarshal", r.(string))
+			require.Equal(t, "no text to unmarshal", r.(string))
 		}
 	}()
 	_ = MustUnmarshalClusterWorkflowTemplate([]byte(""))

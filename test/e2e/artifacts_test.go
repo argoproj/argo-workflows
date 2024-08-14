@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -118,7 +117,7 @@ func (s *ArtifactsSuite) TestGlobalArtifactPassing() {
 				}
 				value := buf.String()
 
-				assert.Equal(t, tt.expectedArtifact.value, value)
+				require.Equal(t, tt.expectedArtifact.value, value)
 			})
 
 		then.
@@ -274,7 +273,7 @@ func (s *ArtifactsSuite) TestDeleteWorkflow() {
 		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
 		ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+			require.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
 		})
 
 	when = then.When()
@@ -406,7 +405,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			Then().
 			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				if tt.hasGC {
-					assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+					require.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
 				}
 			})
 
@@ -584,7 +583,7 @@ func (s *ArtifactsSuite) TestInsufficientRole() {
 						failCondition = true
 					}
 				}
-				assert.True(t, failCondition)
+				require.True(t, failCondition)
 			}).
 			ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				if tt.forceFinalizerRemoval {
@@ -637,7 +636,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			require.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 				if node.Outputs != nil {
 					for _, param := range node.Outputs.Parameters {
 						if param.Value != nil && param.Value.String() == "Default value" {
@@ -667,9 +666,9 @@ func (s *ArtifactsSuite) TestOutputResult() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			n := status.Nodes.FindByDisplayName("a")
-			if assert.NotNil(t, n) {
-				assert.NotNil(t, n.Outputs.ExitCode)
-				assert.NotNil(t, n.Outputs.Result)
+			if require.NotNil(t, n) {
+				require.NotNil(t, n.Outputs.ExitCode)
+				require.NotNil(t, n.Outputs.Result)
 			}
 		})
 }
@@ -744,8 +743,8 @@ spec:
 						},
 					},
 				}
-				if assert.NotNil(t, n) {
-					assert.Equal(t, expectedOutputs, n.Outputs)
+				if require.NotNil(t, n) {
+					require.Equal(t, expectedOutputs, n.Outputs)
 				}
 			})
 	})

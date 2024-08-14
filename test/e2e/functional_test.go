@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
@@ -66,7 +65,7 @@ func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeTypeRetry, status.Nodes[metadata.Name].Type)
+			require.Equal(t, wfv1.NodeTypeRetry, status.Nodes[metadata.Name].Type)
 		})
 }
 
@@ -95,7 +94,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "bar", metadata.Labels["my-label"])
+			require.Equal(t, "bar", metadata.Labels["my-label"])
 		})
 }
 
@@ -107,13 +106,13 @@ func (s *FunctionalSuite) TestWhenExpressions() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, 150*time.Second).
 		Then().
 		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-govaluate"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+			require.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
 		}).
 		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-expr"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+			require.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
 		}).
 		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-expr-json"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+			require.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
 		})
 }
 
@@ -128,10 +127,10 @@ func (s *FunctionalSuite) TestJSONVariables() {
 		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
-					assert.Len(t, c.Args, 3)
-					assert.Equal(t, "myLabelValue", c.Args[0])
-					assert.Equal(t, "myAnnotationValue", c.Args[1])
-					assert.Equal(t, "myParamValue", c.Args[2])
+					require.Len(t, c.Args, 3)
+					require.Equal(t, "myLabelValue", c.Args[0])
+					require.Equal(t, "myAnnotationValue", c.Args[1])
+					require.Equal(t, "myParamValue", c.Args[2])
 				}
 			}
 		})
@@ -192,7 +191,7 @@ func (s *FunctionalSuite) TestResourceQuota() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -236,12 +235,12 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Len(t, status.Nodes, 7)
+			require.Len(t, status.Nodes, 7)
 			nodeStatus := status.Nodes.FindByDisplayName("B")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
-				assert.Len(t, nodeStatus.Children, 1)
-				assert.Len(t, nodeStatus.OutboundNodes, 1)
+			if require.NotNil(t, nodeStatus) {
+				require.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+				require.Len(t, nodeStatus.Children, 1)
+				require.Len(t, nodeStatus.OutboundNodes, 1)
 			}
 		})
 }
@@ -281,8 +280,8 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("F").Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("P").Phase)
+			require.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("F").Phase)
+			require.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("P").Phase)
 		})
 }
 
@@ -334,16 +333,16 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 				for _, e := range es {
 					switch e.Reason {
 					case "WorkflowNodeRunning":
-						assert.Contains(t, e.Message, "Running node failed-step-event-")
+						require.Contains(t, e.Message, "Running node failed-step-event-")
 					case "WorkflowRunning":
 					case "WorkflowNodeFailed":
-						assert.Contains(t, e.Message, "Failed node failed-step-event-")
-						assert.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
-						assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
+						require.Contains(t, e.Message, "Failed node failed-step-event-")
+						require.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
+						require.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
 					case "WorkflowFailed":
-						assert.Contains(t, e.Message, "exit code 1")
+						require.Contains(t, e.Message, "exit code 1")
 					default:
-						assert.Fail(t, e.Reason)
+						require.Fail(t, e.Reason)
 					}
 				}
 			},
@@ -370,16 +369,16 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 					println(e.Reason, e.Message)
 					switch e.Reason {
 					case "WorkflowNodeRunning":
-						assert.Contains(t, e.Message, "Running node success-event-")
+						require.Contains(t, e.Message, "Running node success-event-")
 					case "WorkflowRunning":
 					case "WorkflowNodeSucceeded":
-						assert.Contains(t, e.Message, "Succeeded node success-event-")
-						assert.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
-						assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
+						require.Contains(t, e.Message, "Succeeded node success-event-")
+						require.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
+						require.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
 					case "WorkflowSucceeded":
-						assert.Equal(t, "Workflow completed", e.Message)
+						require.Equal(t, "Workflow completed", e.Message)
 					default:
-						assert.Fail(t, e.Reason)
+						require.Fail(t, e.Reason)
 					}
 				}
 			},
@@ -402,10 +401,10 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			2,
 			func(t *testing.T, e []apiv1.Event) {
-				assert.Equal(t, "WorkflowRunning", e[0].Reason)
+				require.Equal(t, "WorkflowRunning", e[0].Reason)
 
-				assert.Equal(t, "WorkflowFailed", e[1].Reason)
-				assert.Contains(t, e[1].Message, "pvc create error")
+				require.Equal(t, "WorkflowFailed", e[1].Reason)
+				require.Contains(t, e[1].Message, "pvc create error")
 			},
 		)
 }
@@ -418,20 +417,20 @@ func (s *FunctionalSuite) TestArtifactRepositoryRef() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.NotEmpty(t, status.ArtifactRepositoryRef) {
-				assert.Equal(t, "argo", status.ArtifactRepositoryRef.Namespace)
-				assert.Equal(t, "artifact-repositories", status.ArtifactRepositoryRef.ConfigMap)
-				assert.Equal(t, "my-key", status.ArtifactRepositoryRef.Key)
-				assert.False(t, status.ArtifactRepositoryRef.Default)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			if require.NotEmpty(t, status.ArtifactRepositoryRef) {
+				require.Equal(t, "argo", status.ArtifactRepositoryRef.Namespace)
+				require.Equal(t, "artifact-repositories", status.ArtifactRepositoryRef.ConfigMap)
+				require.Equal(t, "my-key", status.ArtifactRepositoryRef.Key)
+				require.False(t, status.ArtifactRepositoryRef.Default)
 			}
 			// these should never be set because we must get them from the artifactRepositoryRef
 			generated := status.Nodes.FindByDisplayName("generate").Outputs.Artifacts[0].S3
-			assert.Empty(t, generated.Bucket)
-			assert.NotEmpty(t, generated.Key)
+			require.Empty(t, generated.Bucket)
+			require.NotEmpty(t, generated.Key)
 			consumed := status.Nodes.FindByDisplayName("consume").Inputs.Artifacts[0].S3
-			assert.Empty(t, consumed.Bucket)
-			assert.NotEmpty(t, consumed.Key)
+			require.Empty(t, consumed.Bucket)
+			require.NotEmpty(t, consumed.Key)
 		})
 }
 
@@ -443,11 +442,11 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.Len(t, status.Nodes, 5) {
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			if require.Len(t, status.Nodes, 5) {
 				nodeStatus := status.Nodes.FindByDisplayName("sleep")
-				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
-				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+				require.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+				require.Equal(t, "Skipped, empty params", nodeStatus.Message)
 			}
 		})
 }
@@ -460,11 +459,11 @@ func (s *FunctionalSuite) TestDAGEmptyParam() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.Len(t, status.Nodes, 3) {
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			if require.Len(t, status.Nodes, 3) {
 				nodeStatus := status.Nodes.FindByDisplayName("sleep")
-				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
-				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+				require.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+				require.Equal(t, "Skipped, empty params", nodeStatus.Message)
 			}
 		})
 }
@@ -565,10 +564,10 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 		WaitForWorkflow(time.Second * 90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("print(0:res:1)")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			if require.NotNil(t, nodeStatus) {
+				require.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
 		})
 }
@@ -581,9 +580,9 @@ func (s *FunctionalSuite) TestDAGDepends() {
 		WaitForWorkflow(time.Second * 90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("should-execute-1").Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("should-execute-2").Phase)
-			assert.Equal(t, wfv1.NodeOmitted, status.Nodes.FindByDisplayName("should-not-execute").Phase)
+			require.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("should-execute-1").Phase)
+			require.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("should-execute-2").Phase)
+			require.Equal(t, wfv1.NodeOmitted, status.Nodes.FindByDisplayName("should-not-execute").Phase)
 		})
 }
 
@@ -595,7 +594,7 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -610,8 +609,8 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			assert.Empty(t, status.Message)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Empty(t, status.Message)
 		})
 }
 
@@ -646,7 +645,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, status.Message, "invalid spec")
+			require.Contains(t, status.Message, "invalid spec")
 		})
 }
 
@@ -692,8 +691,8 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			assert.Empty(t, status.Message)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Empty(t, status.Message)
 		})
 }
 
@@ -705,12 +704,12 @@ func (s *FunctionalSuite) TestWorkflowHookParameterTemplates() {
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(wfv1.NodeWithDisplayName("workflow-hook-parameter.onExit"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
-			assert.Equal(t, "Succeeded", n.Inputs.Parameters[0].Value.String())
-			assert.Equal(t, "Succeeded", n.Inputs.Parameters[1].Value.String())
+			require.Equal(t, wfv1.NodeSucceeded, n.Phase)
+			require.Equal(t, "Succeeded", n.Inputs.Parameters[0].Value.String())
+			require.Equal(t, "Succeeded", n.Inputs.Parameters[1].Value.String())
 		})
 }
 
@@ -742,7 +741,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.Equal(t, int64(5), *p.Spec.ActiveDeadlineSeconds)
+			require.Equal(t, int64(5), *p.Spec.ActiveDeadlineSeconds)
 		})
 }
 
@@ -775,10 +774,10 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			node := status.Nodes[md.Name]
-			assert.Contains(t, node.Message, "No more retries left")
-			assert.Len(t, status.Nodes, 3)
+			require.Contains(t, node.Message, "No more retries left")
+			require.Len(t, status.Nodes, 3)
 		})
 }
 
@@ -883,12 +882,12 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.Equal(t, int64(5), *p.Spec.TerminationGracePeriodSeconds)
+			require.Equal(t, int64(5), *p.Spec.TerminationGracePeriodSeconds)
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
-					assert.Equal(t, "100m", c.Resources.Limits.Cpu().String())
+					require.Equal(t, "100m", c.Resources.Limits.Cpu().String())
 				} else if c.Name == "wait" {
-					assert.Equal(t, "101m", c.Resources.Limits.Cpu().String())
+					require.Equal(t, "101m", c.Resources.Limits.Cpu().String())
 				}
 			}
 		})
@@ -910,15 +909,15 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			paths := status.Nodes.FindByDisplayName("get-artifact-path")
-			if assert.NotNil(t, paths) {
-				assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
+			if require.NotNil(t, paths) {
+				require.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
 			}
-			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
-			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
+			require.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
+			require.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
 			for _, value := range status.TaskResultsCompletionStatus {
-				assert.True(t, value)
+				require.True(t, value)
 			}
 		})
 }
@@ -932,9 +931,9 @@ func (s *FunctionalSuite) TestHTTPOutputs() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			httpNode := status.Nodes.FindByDisplayName("http")
-			assert.NotNil(t, httpNode.Outputs.Result)
+			require.NotNil(t, httpNode.Outputs.Result)
 			echoNode := status.Nodes.FindByDisplayName("echo")
-			assert.Equal(t, *httpNode.Outputs.Result, echoNode.Inputs.Parameters[0].Value.String())
+			require.Equal(t, *httpNode.Outputs.Result, echoNode.Inputs.Parameters[0].Value.String())
 		})
 }
 
@@ -1060,7 +1059,7 @@ spec:
 					memoHit = true
 				}
 			}
-			assert.True(t, memoHit)
+			require.True(t, memoHit)
 
 		})
 
@@ -1120,7 +1119,7 @@ spec:
 					memoHit = true
 				}
 			}
-			assert.True(t, memoHit)
+			require.True(t, memoHit)
 
 		})
 
@@ -1186,7 +1185,7 @@ spec:
 					memoHit = true
 				}
 			}
-			assert.True(t, memoHit)
+			require.True(t, memoHit)
 
 		})
 
@@ -1247,7 +1246,7 @@ spec:
 					memoHit = true
 				}
 			}
-			assert.True(t, memoHit)
+			require.True(t, memoHit)
 
 		})
 
@@ -1328,8 +1327,8 @@ func (s *FunctionalSuite) TestEntrypointName() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflowNode(wfv1.NodeWithDisplayName("step"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
-			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
-			assert.Equal(t, "bar", n.Inputs.Parameters[0].Value.String())
+			require.Equal(t, wfv1.NodeSucceeded, n.Phase)
+			require.Equal(t, "bar", n.Inputs.Parameters[0].Value.String())
 		})
 
 }
@@ -1342,9 +1341,9 @@ func (s *FunctionalSuite) TestMissingStepsInUI() {
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflowNode(wfv1.NodeWithName(`missing-steps[0].step1[0].execute-script`), func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
-			assert.NotNil(t, n)
-			assert.NotNil(t, n.Children)
-			assert.Len(t, n.Children, 1)
+			require.NotNil(t, n)
+			require.NotNil(t, n.Children)
+			require.Len(t, n.Children, 1)
 		})
 }
 
@@ -1374,9 +1373,9 @@ func (s *FunctionalSuite) TestTerminateWorkflowWhileOnExitHandlerRunning() {
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			for _, node := range status.Nodes {
 				if node.Type == wfv1.NodeTypeStepGroup || node.Type == wfv1.NodeTypeSteps {
-					assert.Equal(t, wfv1.NodeFailed, node.Phase)
+					require.Equal(t, wfv1.NodeFailed, node.Phase)
 				}
 			}
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
 		})
 }

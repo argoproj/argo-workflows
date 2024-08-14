@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 	apiv1 "k8s.io/api/core/v1"
@@ -67,11 +66,11 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
-	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
-	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
-	assert.Equal(t, "argo_groups", ssoObject.customClaimName)
-	assert.Equal(t, "", config.IssuerAlias)
-	assert.Equal(t, 10*time.Hour, ssoObject.expiry)
+	require.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
+	require.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
+	require.Equal(t, "argo_groups", ssoObject.customClaimName)
+	require.Equal(t, "", config.IssuerAlias)
+	require.Equal(t, 10*time.Hour, ssoObject.expiry)
 }
 
 func TestNewSsoWithIssuerAlias(t *testing.T) {
@@ -111,7 +110,7 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
-	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
+	require.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 }
 
 func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
@@ -124,7 +123,7 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 	}
 	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
 	require.Error(t, err)
-	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
+	require.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
 }
 
 func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
@@ -145,12 +144,12 @@ func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
 	}
 	_, err = newSso(fakeOidcFactory, config, fakeClient, "/", false)
 	require.Error(t, err)
-	assert.Regexp(t, "If you have already defined a Secret named sso, delete it and retry", err.Error())
+	require.Regexp(t, "If you have already defined a Secret named sso, delete it and retry", err.Error())
 }
 
 func TestGetSessionExpiry(t *testing.T) {
 	config := Config{
 		SessionExpiry: metav1.Duration{Duration: 5 * time.Hour},
 	}
-	assert.Equal(t, 5*time.Hour, config.GetSessionExpiry())
+	require.Equal(t, 5*time.Hour, config.GetSessionExpiry())
 }

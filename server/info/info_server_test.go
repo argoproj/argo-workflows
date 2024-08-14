@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-jose/go-jose/v3/jwt"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -18,13 +17,13 @@ func Test_infoServer_GetUserInfo(t *testing.T) {
 	ctx := context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Issuer: "my-iss", Subject: "my-sub"}, Groups: []string{"my-group"}, Name: "myname", Email: "my@email", EmailVerified: true, ServiceAccountName: "my-sa"})
 	info, err := i.GetUserInfo(ctx, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "my-iss", info.Issuer)
-	assert.Equal(t, "my-sub", info.Subject)
-	assert.Equal(t, []string{"my-group"}, info.Groups)
-	assert.Equal(t, "myname", info.Name)
-	assert.Equal(t, "my@email", info.Email)
-	assert.True(t, info.EmailVerified)
-	assert.Equal(t, "my-sa", info.ServiceAccountName)
+	require.Equal(t, "my-iss", info.Issuer)
+	require.Equal(t, "my-sub", info.Subject)
+	require.Equal(t, []string{"my-group"}, info.Groups)
+	require.Equal(t, "myname", info.Name)
+	require.Equal(t, "my@email", info.Email)
+	require.True(t, info.EmailVerified)
+	require.Equal(t, "my-sa", info.ServiceAccountName)
 }
 
 func Test_infoServer_GetInfo(t *testing.T) {
@@ -41,21 +40,21 @@ func Test_infoServer_GetInfo(t *testing.T) {
 		}
 		info, err := i.GetInfo(context.TODO(), nil)
 		require.NoError(t, err)
-		assert.Equal(t, "argo", info.ManagedNamespace)
-		assert.Equal(t, "link-name", info.Links[0].Name)
-		assert.Equal(t, "red", info.NavColor)
-		assert.Equal(t, "Workflow Completed", info.Columns[0].Name)
-		assert.Equal(t, "label", info.Columns[0].Type)
-		assert.Equal(t, "workflows.argoproj.io/completed", info.Columns[0].Key)
+		require.Equal(t, "argo", info.ManagedNamespace)
+		require.Equal(t, "link-name", info.Links[0].Name)
+		require.Equal(t, "red", info.NavColor)
+		require.Equal(t, "Workflow Completed", info.Columns[0].Name)
+		require.Equal(t, "label", info.Columns[0].Type)
+		require.Equal(t, "workflows.argoproj.io/completed", info.Columns[0].Key)
 	})
 
 	t.Run("Min Fields", func(t *testing.T) {
 		i := &infoServer{}
 		info, err := i.GetInfo(context.TODO(), nil)
 		require.NoError(t, err)
-		assert.Equal(t, "", info.ManagedNamespace)
-		assert.Empty(t, info.Links)
-		assert.Empty(t, info.Columns)
-		assert.Equal(t, "", info.NavColor)
+		require.Equal(t, "", info.ManagedNamespace)
+		require.Empty(t, info.Links)
+		require.Empty(t, info.Columns)
+		require.Equal(t, "", info.NavColor)
 	})
 }

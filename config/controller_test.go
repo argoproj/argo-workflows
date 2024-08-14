@@ -3,7 +3,6 @@ package config
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 )
@@ -28,7 +27,7 @@ func Test_parseConfigMap(t *testing.T) {
         name: my-minio-cred
         key: secretkey`}}, c)
 		require.NoError(t, err)
-		assert.NotEmpty(t, c.ArtifactRepository)
+		require.NotEmpty(t, c.ArtifactRepository)
 	})
 	t.Run("Garbage", func(t *testing.T) {
 		c := &Config{}

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -37,7 +37,7 @@ func Test_estimator(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, wfv1.EstimatedDuration(1), p.EstimateWorkflowDuration())
-	assert.Equal(t, wfv1.EstimatedDuration(1), p.EstimateNodeDuration("my-wf"))
-	assert.Equal(t, wfv1.EstimatedDuration(1), p.EstimateNodeDuration("1"))
+	require.Equal(t, wfv1.EstimatedDuration(1), p.EstimateWorkflowDuration())
+	require.Equal(t, wfv1.EstimatedDuration(1), p.EstimateNodeDuration("my-wf"))
+	require.Equal(t, wfv1.EstimatedDuration(1), p.EstimateNodeDuration("1"))
 }

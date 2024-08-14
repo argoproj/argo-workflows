@@ -7,7 +7,6 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
@@ -131,18 +130,18 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx, err := g.Context(x("Bearer "))
 		require.NoError(t, err)
-		assert.NotEqual(t, wfClient, GetWfClient(ctx))
-		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
-		assert.Nil(t, GetClaims(ctx))
+		require.NotEqual(t, wfClient, GetWfClient(ctx))
+		require.NotEqual(t, kubeClient, GetKubeClient(ctx))
+		require.Nil(t, GetClaims(ctx))
 	})
 	t.Run("Server", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "", "", true, resourceCache)
 		require.NoError(t, err)
 		ctx, err := g.Context(x(""))
 		require.NoError(t, err)
-		assert.Equal(t, wfClient, GetWfClient(ctx))
-		assert.Equal(t, kubeClient, GetKubeClient(ctx))
-		assert.NotNil(t, GetClaims(ctx))
+		require.Equal(t, wfClient, GetWfClient(ctx))
+		require.Equal(t, kubeClient, GetKubeClient(ctx))
+		require.NotNil(t, GetClaims(ctx))
 	})
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
@@ -152,10 +151,10 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx, err := g.Context(x("Bearer v2:whatever"))
 		require.NoError(t, err)
-		assert.Equal(t, wfClient, GetWfClient(ctx))
-		assert.Equal(t, kubeClient, GetKubeClient(ctx))
-		if assert.NotNil(t, GetClaims(ctx)) {
-			assert.Equal(t, "my-sub", GetClaims(ctx).Subject)
+		require.Equal(t, wfClient, GetWfClient(ctx))
+		require.Equal(t, kubeClient, GetKubeClient(ctx))
+		if require.NotNil(t, GetClaims(ctx)) {
+			require.Equal(t, "my-sub", GetClaims(ctx).Subject)
 		}
 	})
 	hook := &test.Hook{}
@@ -169,15 +168,15 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx, err := g.Context(x("Bearer v2:whatever"))
 		require.NoError(t, err)
-		assert.NotEqual(t, clients, GetWfClient(ctx))
-		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+		require.NotEqual(t, clients, GetWfClient(ctx))
+		require.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "my-sa", claims.ServiceAccountName)
-			assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
+		if require.NotNil(t, claims) {
+			require.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+			require.Equal(t, "my-sa", claims.ServiceAccountName)
+			require.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 		}
-		assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
+		require.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=2, Delegated", func(t *testing.T) {
 		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
@@ -188,15 +187,15 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
 		require.NoError(t, err)
-		assert.NotEqual(t, clients, GetWfClient(ctx))
-		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+		require.NotEqual(t, clients, GetWfClient(ctx))
+		require.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "user1-sa", claims.ServiceAccountName)
-			assert.Equal(t, "user1-ns", claims.ServiceAccountNamespace)
+		if require.NotNil(t, claims) {
+			require.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+			require.Equal(t, "user1-sa", claims.ServiceAccountName)
+			require.Equal(t, "user1-ns", claims.ServiceAccountNamespace)
 		}
-		assert.Equal(t, "user1-sa", hook.LastEntry().Data["serviceAccount"])
+		require.Equal(t, "user1-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC, Namespace delegation OFF, precedence=2, Not Delegated", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
@@ -206,15 +205,15 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
 		require.NoError(t, err)
-		assert.NotEqual(t, clients, GetWfClient(ctx))
-		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+		require.NotEqual(t, clients, GetWfClient(ctx))
+		require.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "my-sa", claims.ServiceAccountName)
-			assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
+		if require.NotNil(t, claims) {
+			require.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+			require.Equal(t, "my-sa", claims.ServiceAccountName)
+			require.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 		}
-		assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
+		require.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=0, Not delegated", func(t *testing.T) {
 		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
@@ -225,15 +224,15 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user2-ns"))
 		require.NoError(t, err)
-		assert.NotEqual(t, clients, GetWfClient(ctx))
-		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+		require.NotEqual(t, clients, GetWfClient(ctx))
+		require.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "my-sa", claims.ServiceAccountName)
-			assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
+		if require.NotNil(t, claims) {
+			require.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+			require.Equal(t, "my-sa", claims.ServiceAccountName)
+			require.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 		}
-		assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
+		require.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=1, Not delegated", func(t *testing.T) {
 		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
@@ -244,15 +243,15 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user3-ns"))
 		require.NoError(t, err)
-		assert.NotEqual(t, clients, GetWfClient(ctx))
-		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+		require.NotEqual(t, clients, GetWfClient(ctx))
+		require.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "my-sa", claims.ServiceAccountName)
-			assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
+		if require.NotNil(t, claims) {
+			require.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+			require.Equal(t, "my-sa", claims.ServiceAccountName)
+			require.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 		}
-		assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
+		require.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC,precedence=0", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
@@ -262,8 +261,8 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx, err := g.Context(x("Bearer v2:whatever"))
 		require.NoError(t, err)
-		assert.Equal(t, "my-other-sa", hook.LastEntry().Data["serviceAccount"])
-		assert.Equal(t, "my-other-sa", GetClaims(ctx).ServiceAccountName)
+		require.Equal(t, "my-other-sa", hook.LastEntry().Data["serviceAccount"])
+		require.Equal(t, "my-other-sa", GetClaims(ctx).ServiceAccountName)
 	})
 	t.Run("SSO+RBAC,denied", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
@@ -282,5 +281,5 @@ func x(authorization string) context.Context {
 
 func TestGetClaimSet(t *testing.T) {
 	// we should be able to get nil claim set
-	assert.Nil(t, GetClaims(context.TODO()))
+	require.Nil(t, GetClaims(context.TODO()))
 }

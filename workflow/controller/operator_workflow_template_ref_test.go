@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,13 +20,13 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(wfWithTmplRef), controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl).Spec.Templates, woc.execWf.Spec.Templates)
-	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
+	require.Equal(t, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl).Spec.Templates, woc.execWf.Spec.Templates)
+	require.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
 	// verify we copy these values
-	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
+	require.Len(t, woc.volumes, 1, "volumes from workflow template")
 	// and these
-	assert.Equal(t, "my-sa", woc.globalParams["workflow.serviceAccountName"])
-	assert.Equal(t, "77", woc.globalParams["workflow.priority"])
+	require.Equal(t, "my-sa", woc.globalParams["workflow.serviceAccountName"])
+	require.Equal(t, "77", woc.globalParams["workflow.priority"])
 }
 
 func TestWorkflowTemplateRefWithArgs(t *testing.T) {
@@ -47,7 +46,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
+		require.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
 	})
 }
 
@@ -68,7 +67,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
+		require.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
 	})
 
 	t.Run("CheckMergingWFDefaults", func(t *testing.T) {
@@ -82,7 +81,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wfDefaultActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
+		require.Equal(t, wfDefaultActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
 	})
 	t.Run("CheckMergingWFTandWF", func(t *testing.T) {
 		wfActiveS := int64(10)
@@ -100,12 +99,12 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		wf.Spec.ActiveDeadlineSeconds = &wfActiveS
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wfActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
+		require.Equal(t, wfActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
 
 		wf.Spec.ActiveDeadlineSeconds = nil
 		woc = newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wftActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
+		require.Equal(t, wftActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
 	})
 }
 
@@ -129,7 +128,7 @@ func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		require.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	})
 }
 
@@ -212,7 +211,7 @@ func TestWorkflowTemplateRefParamMerge(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
+		require.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
 	})
 }
 
@@ -280,11 +279,11 @@ func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Len(t, woc.execWf.Spec.Arguments.Artifacts, 3)
+		require.Len(t, woc.execWf.Spec.Arguments.Artifacts, 3)
 
-		assert.Equal(t, "own-file", woc.execWf.Spec.Arguments.Artifacts[0].Name)
-		assert.Equal(t, "binary-file", woc.execWf.Spec.Arguments.Artifacts[1].Name)
-		assert.Equal(t, "data-file", woc.execWf.Spec.Arguments.Artifacts[2].Name)
+		require.Equal(t, "own-file", woc.execWf.Spec.Arguments.Artifacts[0].Name)
+		require.Equal(t, "binary-file", woc.execWf.Spec.Arguments.Artifacts[1].Name)
+		require.Equal(t, "data-file", woc.execWf.Spec.Arguments.Artifacts[2].Name)
 	})
 }
 
@@ -296,15 +295,15 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
+		require.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
 		wf1 := woc.wf.DeepCopy()
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
 		wf1.Status.StoredWorkflowSpec.Entrypoint = ""
 		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
-		assert.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Entrypoint)
-		assert.Equal(t, woc.wf.Spec.Entrypoint, woc1.wf.Status.StoredWorkflowSpec.Entrypoint)
+		require.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Entrypoint)
+		require.Equal(t, woc.wf.Spec.Entrypoint, woc1.wf.Status.StoredWorkflowSpec.Entrypoint)
 	})
 
 	t.Run("WorkflowTemplateRefWithSuspend", func(t *testing.T) {
@@ -314,15 +313,15 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
+		require.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
 		wf1 := woc.wf.DeepCopy()
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
 		wf1.Spec.Suspend = pointer.Bool(true)
 		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
-		assert.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Suspend)
-		assert.True(t, *woc1.wf.Status.StoredWorkflowSpec.Suspend)
+		require.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Suspend)
+		require.True(t, *woc1.wf.Status.StoredWorkflowSpec.Suspend)
 	})
 	t.Run("WorkflowTemplateRefWithShutdownTerminate", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
@@ -331,19 +330,19 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Empty(t, woc.wf.Status.StoredWorkflowSpec.Shutdown)
+		require.Empty(t, woc.wf.Status.StoredWorkflowSpec.Shutdown)
 		wf1 := woc.wf.DeepCopy()
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
 		wf1.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
 		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
-		assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
-		assert.Equal(t, wfv1.ShutdownStrategyTerminate, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
+		require.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
+		require.Equal(t, wfv1.ShutdownStrategyTerminate, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
 		for _, node := range woc1.wf.Status.Nodes {
-			if assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "workflow shutdown with strategy")
-				assert.Contains(t, node.Message, "Terminate")
+			if require.NotNil(t, node) {
+				require.Contains(t, node.Message, "workflow shutdown with strategy")
+				require.Contains(t, node.Message, "Terminate")
 			}
 		}
 	})
@@ -354,19 +353,19 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Empty(t, woc.wf.Status.StoredWorkflowSpec.Shutdown)
+		require.Empty(t, woc.wf.Status.StoredWorkflowSpec.Shutdown)
 		wf1 := woc.wf.DeepCopy()
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
 		wf1.Spec.Shutdown = wfv1.ShutdownStrategyStop
 		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
-		assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
-		assert.Equal(t, wfv1.ShutdownStrategyStop, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
+		require.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
+		require.Equal(t, wfv1.ShutdownStrategyStop, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
 		for _, node := range woc1.wf.Status.Nodes {
-			if assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "workflow shutdown with strategy")
-				assert.Contains(t, node.Message, "Stop")
+			if require.NotNil(t, node) {
+				require.Contains(t, node.Message, "workflow shutdown with strategy")
+				require.Contains(t, node.Message, "Stop")
 			}
 		}
 	})
@@ -432,11 +431,11 @@ func TestSuspendResumeWorkflowTemplateRef(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.True(t, *woc.wf.Status.StoredWorkflowSpec.Suspend)
+	require.True(t, *woc.wf.Status.StoredWorkflowSpec.Suspend)
 	woc.wf.Spec.Suspend = nil
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-	assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
+	require.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
 }
 
 const wfTmplUpt = `
@@ -480,16 +479,16 @@ func TestWorkflowTemplateUpdateScenario(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.NotEmpty(t, woc.wf.Status.StoredWorkflowSpec)
-	assert.NotEmpty(t, woc.wf.Status.StoredWorkflowSpec.Templates[0].Container)
+	require.NotEmpty(t, woc.wf.Status.StoredWorkflowSpec)
+	require.NotEmpty(t, woc.wf.Status.StoredWorkflowSpec.Templates[0].Container)
 
 	cancel, controller = newController(woc.wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmplUpt))
 	defer cancel()
 	ctx = context.Background()
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
-	assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec)
-	assert.Equal(t, woc.wf.Status.StoredWorkflowSpec, woc1.wf.Status.StoredWorkflowSpec)
+	require.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec)
+	require.Equal(t, woc.wf.Status.StoredWorkflowSpec, woc1.wf.Status.StoredWorkflowSpec)
 }
 
 const wfTmplWithVol = `
@@ -527,12 +526,12 @@ func TestWFTWithVol(t *testing.T) {
 	woc.operate(ctx)
 	pvc, err := controller.kubeclientset.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
 	require.NoError(t, err)
-	assert.Len(t, pvc.Items, 1)
+	require.Len(t, pvc.Items, 1)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
 	pvc, err = controller.kubeclientset.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
 	require.NoError(t, err)
-	assert.Empty(t, pvc.Items)
+	require.Empty(t, pvc.Items)
 }
 
 const wfTmp = `
@@ -559,7 +558,7 @@ func TestSubmitWorkflowTemplateRefWithoutRBAC(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.controller.cwftmplInformer = nil
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
 const wfTemplateHello = `
@@ -619,19 +618,19 @@ func TestWorkflowTemplateWithDynamicRef(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(wfWithDynamicRef), controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
-	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
+	require.NotEmpty(t, pods.Items, "pod was not created successfully")
 	pod := pods.Items[0]
-	assert.Contains(t, pod.Name, "hello-world")
-	assert.Equal(t, "docker/whalesay", pod.Spec.Containers[1].Image)
-	assert.Contains(t, "hello", pod.Spec.Containers[1].Args[0])
+	require.Contains(t, pod.Name, "hello-world")
+	require.Equal(t, "docker/whalesay", pod.Spec.Containers[1].Image)
+	require.Contains(t, "hello", pod.Spec.Containers[1].Args[0])
 	pod = pods.Items[1]
-	assert.Contains(t, pod.Name, "hello-world")
-	assert.Equal(t, "docker/whalesay", pod.Spec.Containers[1].Image)
-	assert.Contains(t, "hello", pod.Spec.Containers[1].Args[0])
+	require.Contains(t, pod.Name, "hello-world")
+	require.Equal(t, "docker/whalesay", pod.Spec.Containers[1].Image)
+	require.Contains(t, "hello", pod.Spec.Containers[1].Args[0])
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

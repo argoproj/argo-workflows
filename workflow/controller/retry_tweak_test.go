@@ -3,7 +3,7 @@ package controller
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -81,14 +81,14 @@ func TestFindRetryNode(t *testing.T) {
 	}
 	t.Run("Expect to find retry node", func(t *testing.T) {
 		node := allNodes["B2"]
-		assert.Equal(t, FindRetryNode(allNodes, "D2"), &node)
+		require.Equal(t, FindRetryNode(allNodes, "D2"), &node)
 	})
 	t.Run("Expect to get nil", func(t *testing.T) {
 		a := FindRetryNode(allNodes, "A1")
-		assert.Nil(t, a)
+		require.Nil(t, a)
 	})
 	t.Run("Expect to find retry node has TemplateRef", func(t *testing.T) {
 		node := allNodes["E1"]
-		assert.Equal(t, FindRetryNode(allNodes, "E2"), &node)
+		require.Equal(t, FindRetryNode(allNodes, "E2"), &node)
 	})
 }

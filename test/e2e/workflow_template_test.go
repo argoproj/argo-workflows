@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +48,7 @@ spec:
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -61,7 +61,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -74,7 +74,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWorkflowMetadataSubsti
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -87,7 +87,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateResourceUnquotedExpres
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -100,7 +100,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithParallelStepsRequi
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectPVCDeleted()
 }
@@ -121,8 +121,8 @@ spec:
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowError, status.Phase)
-			assert.Contains(t, status.Message, "error in exit template execution")
+			require.Equal(t, v1alpha1.WorkflowError, status.Phase)
+			require.Contains(t, status.Message, "error in exit template execution")
 		}).
 		ExpectPVCDeleted()
 }
@@ -143,17 +143,17 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, "hooks.running")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+			require.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, "hooks.succeed")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+			require.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})
 }
 
@@ -173,8 +173,8 @@ spec:
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowError, status.Phase)
-			assert.Contains(t, status.Message, "error in entry template execution")
+			require.Equal(t, v1alpha1.WorkflowError, status.Phase)
+			require.Contains(t, status.Message, "error in entry template execution")
 		}).
 		ExpectPVCDeleted()
 }

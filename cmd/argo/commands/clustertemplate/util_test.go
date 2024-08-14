@@ -3,7 +3,7 @@ package clustertemplate
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,5 +42,5 @@ spec:
 func TestUnmarshalCWFT(t *testing.T) {
 	clusterwfts, err := unmarshalClusterWorkflowTemplates([]byte(cwfts), false)
 	require.NoError(t, err)
-	assert.Len(t, clusterwfts, 2)
+	require.Len(t, clusterwfts, 2)
 }

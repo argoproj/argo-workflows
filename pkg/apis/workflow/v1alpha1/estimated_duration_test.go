@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEstimatedDuration(t *testing.T) {
 	duration := NewEstimatedDuration(time.Minute)
-	assert.Equal(t, EstimatedDuration(60), duration)
-	assert.Equal(t, time.Duration(time.Minute), duration.ToDuration())
+	require.Equal(t, EstimatedDuration(60), duration)
+	require.Equal(t, time.Duration(time.Minute), duration.ToDuration())
 }

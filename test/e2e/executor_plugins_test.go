@@ -5,7 +5,7 @@ package e2e
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -30,44 +30,44 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, s *wfv1.WorkflowStatus) {
 			n := s.Nodes[md.Name]
-			assert.Contains(t, n.Message, "Hello")
-			assert.Len(t, n.Outputs.Parameters, 1)
+			require.Contains(t, n.Message, "Hello")
+			require.Len(t, n.Outputs.Parameters, 1)
 		}).
 		ExpectPods(func(t *testing.T, pods []apiv1.Pod) {
-			if assert.Len(t, pods, 1) {
+			if require.Len(t, pods, 1) {
 				pod := pods[0]
 				spec := pod.Spec
-				assert.Equal(t, pointer.Bool(false), spec.AutomountServiceAccountToken)
-				assert.Equal(t, &apiv1.PodSecurityContext{
+				require.Equal(t, pointer.Bool(false), spec.AutomountServiceAccountToken)
+				require.Equal(t, &apiv1.PodSecurityContext{
 					RunAsUser:      pointer.Int64(8737),
 					RunAsNonRoot:   pointer.Bool(true),
 					SeccompProfile: &v1.SeccompProfile{Type: "RuntimeDefault"},
 				}, spec.SecurityContext)
-				if assert.Len(t, spec.Volumes, 4) {
-					assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
-					assert.Equal(t, "var-run-argo", spec.Volumes[1].Name)
-					assert.Contains(t, spec.Volumes[2].Name, "kube-api-access-")
-					assert.Equal(t, "argo-workflows-agent-ca-certificates", spec.Volumes[3].Name)
+				if require.Len(t, spec.Volumes, 4) {
+					require.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
+					require.Equal(t, "var-run-argo", spec.Volumes[1].Name)
+					require.Contains(t, spec.Volumes[2].Name, "kube-api-access-")
+					require.Equal(t, "argo-workflows-agent-ca-certificates", spec.Volumes[3].Name)
 				}
-				if assert.Len(t, spec.Containers, 2) {
+				if require.Len(t, spec.Containers, 2) {
 					{
 						plug := spec.Containers[0]
-						if assert.Equal(t, "hello-executor-plugin", plug.Name) {
-							if assert.Len(t, plug.VolumeMounts, 2) {
-								assert.Equal(t, "var-run-argo", plug.VolumeMounts[0].Name)
-								assert.Contains(t, plug.VolumeMounts[1].Name, "kube-api-access-")
+						if require.Equal(t, "hello-executor-plugin", plug.Name) {
+							if require.Len(t, plug.VolumeMounts, 2) {
+								require.Equal(t, "var-run-argo", plug.VolumeMounts[0].Name)
+								require.Contains(t, plug.VolumeMounts[1].Name, "kube-api-access-")
 							}
 						}
 					}
 					{
 						agent := spec.Containers[1]
-						if assert.Equal(t, "main", agent.Name) {
-							if assert.Len(t, agent.VolumeMounts, 3) {
-								assert.Equal(t, "var-run-argo", agent.VolumeMounts[0].Name)
-								assert.Contains(t, agent.VolumeMounts[1].Name, "kube-api-access-")
-								assert.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[2].Name)
+						if require.Equal(t, "main", agent.Name) {
+							if require.Len(t, agent.VolumeMounts, 3) {
+								require.Equal(t, "var-run-argo", agent.VolumeMounts[0].Name)
+								require.Contains(t, agent.VolumeMounts[1].Name, "kube-api-access-")
+								require.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[2].Name)
 							}
-							assert.Equal(t, &apiv1.SecurityContext{
+							require.Equal(t, &apiv1.SecurityContext{
 								RunAsUser:                pointer.Int64(8737),
 								RunAsNonRoot:             pointer.Bool(true),
 								AllowPrivilegeEscalation: pointer.Bool(false),
@@ -82,10 +82,10 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			}
 		}).
 		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
-			assert.NotNil(t, wfts)
-			assert.Empty(t, wfts.Spec.Tasks)
-			assert.Empty(t, wfts.Status.Nodes)
-			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
+			require.NotNil(t, wfts)
+			require.Empty(t, wfts.Spec.Tasks)
+			require.Empty(t, wfts.Status.Nodes)
+			require.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
 		})
 }
 

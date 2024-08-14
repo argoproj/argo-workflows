@@ -3,7 +3,6 @@ package util
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -48,14 +47,14 @@ func TestMergeWorkflows(t *testing.T) {
 
 	err := MergeTo(patchWf, targetWf)
 	require.NoError(t, err)
-	assert.Equal(t, "start", targetWf.Spec.Entrypoint)
-	assert.Equal(t, "argo1", targetWf.Spec.ServiceAccountName)
-	assert.Equal(t, "message", targetWf.Spec.Arguments.Parameters[0].Name)
-	assert.Equal(t, "patch", targetWf.Spec.Arguments.Parameters[0].Value.String())
+	require.Equal(t, "start", targetWf.Spec.Entrypoint)
+	require.Equal(t, "argo1", targetWf.Spec.ServiceAccountName)
+	require.Equal(t, "message", targetWf.Spec.Arguments.Parameters[0].Name)
+	require.Equal(t, "patch", targetWf.Spec.Arguments.Parameters[0].Value.String())
 }
 
 func TestMergeMetaDataTo(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	meta1 := &metav1.ObjectMeta{
 		Labels: map[string]string{
 			"test": "test", "welcome": "welcome",
@@ -73,9 +72,9 @@ func TestMergeMetaDataTo(t *testing.T) {
 		},
 	}
 	mergeMetaDataTo(meta2, meta1)
-	assert.Contains(meta1.Labels, "test1")
-	assert.Contains(meta1.Annotations, "test1")
-	assert.NotContains(meta2.Labels, "test")
+	require.Contains(meta1.Labels, "test1")
+	require.Contains(meta1.Annotations, "test1")
+	require.NotContains(meta2.Labels, "test")
 }
 
 var wfDefault = `
@@ -361,7 +360,7 @@ spec:
 `
 
 func TestJoinWfSpecs(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
 	wf1 := wfv1.MustUnmarshalWorkflow(wf)
 	// wf1 := wfv1.MustUnmarshalWorkflow(wf1)
@@ -370,41 +369,41 @@ func TestJoinWfSpecs(t *testing.T) {
 
 	targetWf, err := JoinWorkflowSpec(&wf1.Spec, wft.GetWorkflowSpec(), &wfDefault.Spec)
 	require.NoError(t, err)
-	assert.Equal(result.Spec, targetWf.Spec)
-	assert.Len(targetWf.Spec.Templates, 3)
-	assert.Equal("whalesay", targetWf.Spec.Entrypoint)
+	require.Equal(result.Spec, targetWf.Spec)
+	require.Len(targetWf.Spec.Templates, 3)
+	require.Equal("whalesay", targetWf.Spec.Entrypoint)
 }
 
 func TestJoinWfSpecArguments(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(wfArguments)
 	wft := wfv1.MustUnmarshalWorkflowTemplate(wfArgumentsTemplate)
 	result := wfv1.MustUnmarshalWorkflow(wfArgumentsResult)
 
 	targetWf, err := JoinWorkflowSpec(&wf.Spec, wft.GetWorkflowSpec(), nil)
 	require.NoError(t, err)
-	assert.Equal(result.Spec.Arguments, targetWf.Spec.Arguments)
+	require.Equal(result.Spec.Arguments, targetWf.Spec.Arguments)
 }
 
 func TestJoinWorkflowMetaData(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	t.Run("WfDefaultMetaData", func(t *testing.T) {
 		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
 		wf1 := wfv1.MustUnmarshalWorkflow(wf)
 		JoinWorkflowMetaData(&wf1.ObjectMeta, &wfDefault.ObjectMeta)
-		assert.Contains(wf1.Labels, "testLabel")
-		assert.Equal("default", wf1.Labels["testLabel"])
-		assert.Contains(wf1.Annotations, "testAnnotation")
-		assert.Equal("default", wf1.Annotations["testAnnotation"])
+		require.Contains(wf1.Labels, "testLabel")
+		require.Equal("default", wf1.Labels["testLabel"])
+		require.Contains(wf1.Annotations, "testAnnotation")
+		require.Equal("default", wf1.Annotations["testAnnotation"])
 	})
 	t.Run("WFTMetadata", func(t *testing.T) {
 		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
 		wf2 := wfv1.MustUnmarshalWorkflow(wf)
 		JoinWorkflowMetaData(&wf2.ObjectMeta, &wfDefault.ObjectMeta)
-		assert.Contains(wf2.Labels, "testLabel")
-		assert.Equal("default", wf2.Labels["testLabel"])
-		assert.Contains(wf2.Annotations, "testAnnotation")
-		assert.Equal("default", wf2.Annotations["testAnnotation"])
+		require.Contains(wf2.Labels, "testLabel")
+		require.Equal("default", wf2.Labels["testLabel"])
+		require.Contains(wf2.Annotations, "testAnnotation")
+		require.Equal("default", wf2.Annotations["testAnnotation"])
 	})
 	t.Run("WfMetadata", func(t *testing.T) {
 		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
@@ -412,10 +411,10 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 		wf2.Labels = map[string]string{"testLabel": "wf"}
 		wf2.Annotations = map[string]string{"testAnnotation": "wf"}
 		JoinWorkflowMetaData(&wf2.ObjectMeta, &wfDefault.ObjectMeta)
-		assert.Contains(wf2.Labels, "testLabel")
-		assert.Equal("wf", wf2.Labels["testLabel"])
-		assert.Contains(wf2.Annotations, "testAnnotation")
-		assert.Equal("wf", wf2.Annotations["testAnnotation"])
+		require.Contains(wf2.Labels, "testLabel")
+		require.Equal("wf", wf2.Labels["testLabel"])
+		require.Contains(wf2.Annotations, "testAnnotation")
+		require.Equal("wf", wf2.Annotations["testAnnotation"])
 	})
 }
 
@@ -465,7 +464,7 @@ func TestMergeHooks(t *testing.T) {
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		require.NoError(t, err)
-		assert.Nil(t, targetHookWf.Spec.Hooks)
+		require.Nil(t, targetHookWf.Spec.Hooks)
 	})
 
 	t.Run("NilBaseAndNotNilPatch", func(t *testing.T) {
@@ -474,9 +473,9 @@ func TestMergeHooks(t *testing.T) {
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		require.NoError(t, err)
-		assert.Len(t, targetHookWf.Spec.Hooks, 2)
-		assert.Equal(t, "c", targetHookWf.Spec.Hooks[`foo`].Template)
-		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
+		require.Len(t, targetHookWf.Spec.Hooks, 2)
+		require.Equal(t, "c", targetHookWf.Spec.Hooks[`foo`].Template)
+		require.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
 	})
 
 	// Ensure hook bar ends up in result, but foo is unchanged
@@ -486,8 +485,8 @@ func TestMergeHooks(t *testing.T) {
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		require.NoError(t, err)
-		assert.Len(t, targetHookWf.Spec.Hooks, 2)
-		assert.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
-		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
+		require.Len(t, targetHookWf.Spec.Hooks, 2)
+		require.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
+		require.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
 	})
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -27,8 +27,8 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflow() {
 		Wait(3 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "malformed", metadata.Name)
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Equal(t, "malformed", metadata.Name)
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
 		})
 }
 
@@ -41,8 +41,8 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplate() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "wellformed", metadata.Name)
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, "wellformed", metadata.Name)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -54,9 +54,9 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplateRef() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "wellformed", metadata.Name)
-			assert.Equal(t, wfv1.WorkflowError, status.Phase)
-			assert.Contains(t, status.Message, "malformed workflow template")
+			require.Equal(t, "wellformed", metadata.Name)
+			require.Equal(t, wfv1.WorkflowError, status.Phase)
+			require.Contains(t, status.Message, "malformed workflow template")
 		})
 }
 
@@ -69,8 +69,8 @@ func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplate() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "wellformed", metadata.Name)
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, "wellformed", metadata.Name)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
@@ -82,9 +82,9 @@ func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplateRef() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "wellformed", metadata.Name)
-			assert.Equal(t, wfv1.WorkflowError, status.Phase)
-			assert.Contains(t, status.Message, "malformed cluster workflow template")
+			require.Equal(t, "wellformed", metadata.Name)
+			require.Equal(t, wfv1.WorkflowError, status.Phase)
+			require.Contains(t, status.Message, "malformed cluster workflow template")
 		})
 }
 

@@ -5,7 +5,7 @@ package e2e
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -47,7 +47,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.False(t, status.FinishedAt.IsZero())
+			require.False(t, status.FinishedAt.IsZero())
 		})
 }
 
@@ -171,8 +171,8 @@ func (s *DaemonPodSuite) TestMarkDaemonedPodSucceeded() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("daemoned")
-			if assert.NotNil(t, node) {
-				assert.Equal(t, v1alpha1.NodeSucceeded, node.Phase)
+			if require.NotNil(t, node) {
+				require.Equal(t, v1alpha1.NodeSucceeded, node.Phase)
 			}
 		})
 }

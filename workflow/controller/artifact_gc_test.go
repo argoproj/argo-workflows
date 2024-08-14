@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	corev1 "k8s.io/api/core/v1"
@@ -368,8 +367,8 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	//  [ServiceAccount,PodMetadata]
 	// and it should only consist of artifacts labeled with OnWorkflowCompletion
 
-	assert.NotNil(t, pods)
-	assert.Len(t, (*pods).Items, 2)
+	require.NotNil(t, pods)
+	require.Len(t, (*pods).Items, 2)
 	var pod1 *corev1.Pod
 	var pod2 *corev1.Pod
 	for i, pod := range (*pods).Items {
@@ -379,11 +378,11 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960":
 			pod2 = &(*pods).Items[i]
 		default:
-			assert.Fail(t, fmt.Sprintf("pod name '%s' doesn't match expected", pod.Name))
+			require.Fail(t, fmt.Sprintf("pod name '%s' doesn't match expected", pod.Name))
 		}
 	}
 
-	assert.Condition(t, func() bool {
+	require.Condition(t, func() bool {
 		return pod1 != nil && pod2 != nil
 	})
 
@@ -391,26 +390,26 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	//  verify ServiceAccount and Annotations
 	//  verify that the right volume mounts get created
 	//  verify patched pod spec
-	assert.Equal(t, "default", pod1.Spec.ServiceAccountName)
-	assert.Contains(t, pod1.Annotations, "annotation-key-1")
-	assert.Equal(t, "annotation-value-1", pod1.Annotations["annotation-key-1"])
+	require.Equal(t, "default", pod1.Spec.ServiceAccountName)
+	require.Contains(t, pod1.Annotations, "annotation-key-1")
+	require.Equal(t, "annotation-value-1", pod1.Annotations["annotation-key-1"])
 	volumesMap1 := make(map[string]struct{})
 	for _, v := range pod1.Spec.Volumes {
 		volumesMap1[v.Name] = struct{}{}
 	}
-	assert.Contains(t, volumesMap1, "my-minio-cred-1")
-	assert.Contains(t, volumesMap1, "my-minio-cred-2")
+	require.Contains(t, volumesMap1, "my-minio-cred-1")
+	require.Contains(t, volumesMap1, "my-minio-cred-2")
 
-	assert.Equal(t, "default", pod2.Spec.ServiceAccountName)
-	assert.Contains(t, pod2.Annotations, "annotation-key-1")
-	assert.Equal(t, "annotation-value-3", pod2.Annotations["annotation-key-1"])
+	require.Equal(t, "default", pod2.Spec.ServiceAccountName)
+	require.Contains(t, pod2.Annotations, "annotation-key-1")
+	require.Equal(t, "annotation-value-3", pod2.Annotations["annotation-key-1"])
 	volumesMap2 := make(map[string]struct{})
 	for _, v := range pod2.Spec.Volumes {
 		volumesMap2[v.Name] = struct{}{}
 	}
-	assert.Contains(t, volumesMap2, "my-minio-cred-1")
-	assert.NotContains(t, volumesMap2, "my-minio-cred-2")
-	assert.Equal(t, "1G", pod1.Spec.Containers[0].Resources.Limits.Memory().String())
+	require.Contains(t, volumesMap2, "my-minio-cred-1")
+	require.NotContains(t, volumesMap2, "my-minio-cred-2")
+	require.Equal(t, "1G", pod1.Spec.Containers[0].Resources.Limits.Memory().String())
 
 	///////////////////////////////////////////////////////////////////////////////////////////
 	// Verify WorkflowArtifactGCTasks
@@ -422,8 +421,8 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 
 	// We should have on WFAT per Pod (for now until we implement the capability to have multiple)
 
-	assert.NotNil(t, wfats)
-	assert.Len(t, (*wfats).Items, 2)
+	require.NotNil(t, wfats)
+	require.Len(t, (*wfats).Items, 2)
 
 	var wfat1 *wfv1.WorkflowArtifactGCTask
 	var wfat2 *wfv1.WorkflowArtifactGCTask
@@ -434,26 +433,26 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960-0":
 			wfat2 = &(*wfats).Items[i]
 		default:
-			assert.Fail(t, fmt.Sprintf("WorkflowArtifactGCTask name '%s' doesn't match expected", wfat.Name))
+			require.Fail(t, fmt.Sprintf("WorkflowArtifactGCTask name '%s' doesn't match expected", wfat.Name))
 		}
 	}
 
-	assert.Condition(t, func() bool {
+	require.Condition(t, func() bool {
 		return wfat1 != nil && wfat2 != nil
 	})
 
 	// Verify that the ArchiveLocation and list of artifacts on each is correct
-	assert.Contains(t, wfat1.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
-	assert.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-1")
-	assert.NotContains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
-	assert.Contains(t, wfat1.Spec.ArtifactsByNode, "two-artgc-8tcvt-1079173309")
-	assert.Equal(t, "my-bucket-3", wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].ArchiveLocation.S3.Bucket)
-	assert.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "second-on-completion")
-	assert.NotContains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "on-deletion")
+	require.Contains(t, wfat1.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
+	require.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-1")
+	require.NotContains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
+	require.Contains(t, wfat1.Spec.ArtifactsByNode, "two-artgc-8tcvt-1079173309")
+	require.Equal(t, "my-bucket-3", wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].ArchiveLocation.S3.Bucket)
+	require.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "second-on-completion")
+	require.NotContains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "on-deletion")
 
-	assert.Contains(t, wfat2.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
-	assert.Contains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-2")
-	assert.NotContains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
+	require.Contains(t, wfat2.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
+	require.Contains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-2")
+	require.NotContains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
 
 }
 
@@ -601,7 +600,7 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 		if artifact == nil {
 			panic(fmt.Sprintf("can't find artifact named %s in node %s", expectedArtifact.artifactName, expectedArtifact.nodeName))
 		}
-		assert.Equal(t, expectedArtifact.deleted, artifact.Deleted)
+		require.Equal(t, expectedArtifact.deleted, artifact.Deleted)
 
 		if expectedArtifact.deleted {
 			var gcFailureCondition *wfv1.Condition
@@ -611,9 +610,9 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 					break
 				}
 			}
-			assert.NotNil(t, gcFailureCondition)
-			assert.Equal(t, metav1.ConditionTrue, gcFailureCondition.Status)
-			assert.Contains(t, gcFailureCondition.Message, "something went wrong")
+			require.NotNil(t, gcFailureCondition)
+			require.Equal(t, metav1.ConditionTrue, gcFailureCondition.Status)
+			require.Contains(t, gcFailureCondition.Message, "something went wrong")
 		}
 	}
 
@@ -716,7 +715,7 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 
 			hasArtifact := woc.HasArtifactGC()
 
-			assert.Equal(t, tt.expectedResult, hasArtifact)
+			require.Equal(t, tt.expectedResult, hasArtifact)
 		})
 	}
 

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-jose/go-jose/v3/jwt"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -181,16 +180,16 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 		wftReq.Template.Spec.Arguments.Parameters[0].Value = nil
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
 		require.NoError(t, err)
-		assert.NotNil(t, wftRsp)
-		assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
-		assert.Nil(t, wftRsp.Spec.Arguments.Parameters[0].Value)
+		require.NotNil(t, wftRsp)
+		require.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
+		require.Nil(t, wftRsp.Spec.Arguments.Parameters[0].Value)
 	})
 	t.Run("Labelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
 		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
 		require.NoError(t, err)
-		assert.NotNil(t, wftRsp)
+		require.NotNil(t, wftRsp)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
@@ -199,9 +198,9 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 		wftReq.Template.Name = "foo"
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
 		require.NoError(t, err)
-		assert.NotNil(t, wftRsp)
-		assert.Contains(t, wftRsp.Labels, common.LabelKeyControllerInstanceID)
-		assert.Contains(t, wftRsp.Labels, common.LabelKeyCreator)
+		require.NotNil(t, wftRsp)
+		require.Contains(t, wftRsp.Labels, common.LabelKeyControllerInstanceID)
+		require.Contains(t, wftRsp.Labels, common.LabelKeyCreator)
 	})
 }
 
@@ -210,10 +209,10 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 	t.Run("Labelled", func(t *testing.T) {
 		wftRsp, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "workflow-template-whalesay-template2", Namespace: "default"})
 		require.NoError(t, err)
-		assert.NotNil(t, wftRsp)
-		assert.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
-		assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
-		assert.Equal(t, "message description", wftRsp.Spec.Arguments.Parameters[0].Description.String())
+		require.NotNil(t, wftRsp)
+		require.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
+		require.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
+		require.Equal(t, "message description", wftRsp.Spec.Arguments.Parameters[0].Description.String())
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "unlabelled", Namespace: "default"})
@@ -225,10 +224,10 @@ func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
 	wftRsp, err := server.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{Namespace: "default"})
 	require.NoError(t, err)
-	assert.Len(t, wftRsp.Items, 2)
+	require.Len(t, wftRsp.Items, 2)
 	wftRsp, err = server.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{Namespace: "test"})
 	require.NoError(t, err)
-	assert.Empty(t, wftRsp.Items)
+	require.Empty(t, wftRsp.Items)
 }
 
 func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
@@ -249,7 +248,7 @@ func TestWorkflowTemplateServer_LintWorkflowTemplate(t *testing.T) {
 		Template: &v1alpha1.WorkflowTemplate{},
 	})
 	require.NoError(t, err)
-	assert.Contains(t, tmpl.Labels, common.LabelKeyControllerInstanceID)
+	require.Contains(t, tmpl.Labels, common.LabelKeyControllerInstanceID)
 }
 
 func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
@@ -263,7 +262,7 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 			Template:  &wftObj1,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
+		require.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{

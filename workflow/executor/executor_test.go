@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -112,7 +111,7 @@ func TestSaveParameters(t *testing.T) {
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
+	require.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
 }
 
 // TestIsBaseImagePath tests logic of isBaseImagePath which determines if a path is coming from a
@@ -142,19 +141,19 @@ func TestIsBaseImagePath(t *testing.T) {
 		Template: templateWithSameDir,
 	}
 	// 1. unrelated dir/file should be captured from base image layer
-	assert.True(t, we.isBaseImagePath("/foo"))
+	require.True(t, we.isBaseImagePath("/foo"))
 
 	// 2. when input and output directory is same, it should be captured from shared emptyDir
-	assert.False(t, we.isBaseImagePath("/samedir"))
+	require.False(t, we.isBaseImagePath("/samedir"))
 
 	// 3. when output is a sub path of input dir, it should be captured from shared emptyDir
 	we.Template.Outputs.Artifacts[0].Path = "/samedir/inner"
-	assert.False(t, we.isBaseImagePath("/samedir/inner"))
+	require.False(t, we.isBaseImagePath("/samedir/inner"))
 
 	// 4. when output happens to overlap with input (in name only), it should be captured from base image layer
 	we.Template.Inputs.Artifacts[0].Path = "/hello.txt"
 	we.Template.Outputs.Artifacts[0].Path = "/hello.txt-COINCIDENCE"
-	assert.True(t, we.isBaseImagePath("/hello.txt-COINCIDENCE"))
+	require.True(t, we.isBaseImagePath("/hello.txt-COINCIDENCE"))
 
 	// 5. when output is under a user specified volumeMount, it should be captured from shared mount
 	we.Template.Inputs.Artifacts = nil
@@ -165,10 +164,10 @@ func TestIsBaseImagePath(t *testing.T) {
 		},
 	}
 	we.Template.Outputs.Artifacts[0].Path = "/user-mount/some-path"
-	assert.False(t, we.isBaseImagePath("/user-mount"))
-	assert.False(t, we.isBaseImagePath("/user-mount/some-path"))
-	assert.False(t, we.isBaseImagePath("/user-mount/some-path/foo"))
-	assert.True(t, we.isBaseImagePath("/user-mount-coincidence"))
+	require.False(t, we.isBaseImagePath("/user-mount"))
+	require.False(t, we.isBaseImagePath("/user-mount/some-path"))
+	require.False(t, we.isBaseImagePath("/user-mount/some-path/foo"))
+	require.True(t, we.isBaseImagePath("/user-mount-coincidence"))
 }
 
 func TestDefaultParameters(t *testing.T) {
@@ -199,7 +198,7 @@ func TestDefaultParameters(t *testing.T) {
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "Default Value", we.Template.Outputs.Parameters[0].Value.String())
+	require.Equal(t, "Default Value", we.Template.Outputs.Parameters[0].Value.String())
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
@@ -230,7 +229,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "", we.Template.Outputs.Parameters[0].Value.String())
+	require.Equal(t, "", we.Template.Outputs.Parameters[0].Value.String())
 }
 
 func TestIsTarball(t *testing.T) {
@@ -259,7 +258,7 @@ func TestIsTarball(t *testing.T) {
 		} else {
 			require.NoError(t, err, test.path)
 		}
-		assert.Equal(t, test.isTarball, ok, test.path)
+		require.Equal(t, test.isTarball, ok, test.path)
 	}
 }
 
@@ -278,7 +277,7 @@ func TestUnzip(t *testing.T) {
 	// check unzipped file
 	fileInfo, err := os.Stat(destPath)
 	require.NoError(t, err)
-	assert.True(t, fileInfo.Mode().IsRegular())
+	require.True(t, fileInfo.Mode().IsRegular())
 
 	// cleanup
 	err = os.Remove(destPath)
@@ -299,20 +298,20 @@ func TestUntar(t *testing.T) {
 	// check untarred contents
 	fileInfo, err := os.Stat(destPath)
 	require.NoError(t, err)
-	assert.True(t, fileInfo.Mode().IsDir())
+	require.True(t, fileInfo.Mode().IsDir())
 	fileInfo, err = os.Stat(filePath)
 	require.NoError(t, err)
-	assert.True(t, fileInfo.Mode().IsRegular())
+	require.True(t, fileInfo.Mode().IsRegular())
 	dirInfo, err := os.Stat(destPath)
 	require.NoError(t, err)
 	// check that the modification time of the file is retained
-	assert.True(t, fileInfo.ModTime().Before(dirInfo.ModTime()))
+	require.True(t, fileInfo.ModTime().Before(dirInfo.ModTime()))
 	fileInfo, err = os.Stat(linkPath)
 	require.NoError(t, err)
-	assert.True(t, fileInfo.Mode().IsRegular())
+	require.True(t, fileInfo.Mode().IsRegular())
 	fileInfo, err = os.Stat(emptyDirPath)
 	require.NoError(t, err)
-	assert.True(t, fileInfo.Mode().IsDir())
+	require.True(t, fileInfo.Mode().IsDir())
 
 	// cleanup
 	err = os.Remove(linkPath)
@@ -372,12 +371,12 @@ func TestChmod(t *testing.T) {
 		// Check directory mode if set
 		dirPermission, err := os.Stat(tempDir)
 		require.NoError(t, err)
-		assert.Equal(t, dirPermission.Mode().String(), test.permissions.dir)
+		require.Equal(t, dirPermission.Mode().String(), test.permissions.dir)
 
 		// Check file mode mode if set
 		filePermission, err := os.Stat(tempFile.Name())
 		require.NoError(t, err)
-		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
+		require.Equal(t, filePermission.Mode().String(), test.permissions.file)
 	}
 }
 
@@ -488,10 +487,10 @@ func TestSaveArtifacts(t *testing.T) {
 		ctx := context.Background()
 		_, err := tt.workflowExecutor.SaveArtifacts(ctx)
 		if err != nil {
-			assert.True(t, tt.expectError)
+			require.True(t, tt.expectError)
 			continue
 		}
-		assert.False(t, tt.expectError)
+		require.False(t, tt.expectError)
 	}
 }
 
@@ -536,9 +535,9 @@ func TestMonitorProgress(t *testing.T) {
 
 	result, err := taskResults.Get(ctx, fakeNodeID, metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, fakeWorkflow, result.Labels[common.LabelKeyWorkflow])
-	assert.Len(t, result.OwnerReferences, 1)
-	assert.Equal(t, wfv1.Progress("100/100"), result.Progress)
+	require.Equal(t, fakeWorkflow, result.Labels[common.LabelKeyWorkflow])
+	require.Len(t, result.OwnerReferences, 1)
+	require.Equal(t, wfv1.Progress("100/100"), result.Progress)
 }
 
 func TestSaveLogs(t *testing.T) {
@@ -560,7 +559,7 @@ func TestSaveLogs(t *testing.T) {
 		logArtifacts := we.SaveLogs(ctx)
 
 		require.EqualError(t, we.errors[0], artStorageError)
-		assert.Empty(t, logArtifacts)
+		require.Empty(t, logArtifacts)
 	})
 }
 
@@ -589,7 +588,7 @@ func TestReportOutputs(t *testing.T) {
 		err := we.ReportOutputs(ctx, artifacts)
 
 		require.NoError(t, err)
-		assert.Empty(t, we.errors)
+		require.Empty(t, we.errors)
 	})
 
 }

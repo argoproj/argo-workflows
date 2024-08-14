@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 
@@ -33,7 +32,7 @@ func TestController(t *testing.T) {
 		_, err := s.ReceiveEvent(ctx, e1)
 		require.NoError(t, err)
 
-		assert.Len(t, s.operationQueue, 1, "one event to be processed")
+		require.Len(t, s.operationQueue, 1, "one event to be processed")
 
 		_, err = s.ReceiveEvent(ctx, e2)
 		require.EqualError(t, err, "rpc error: code = Unavailable desc = operation queue full", "backpressure when queue is full")
@@ -42,7 +41,7 @@ func TestController(t *testing.T) {
 		stopCh <- struct{}{}
 		s.Run(stopCh)
 
-		assert.Empty(t, s.operationQueue, "all events were processed")
+		require.Empty(t, s.operationQueue, "all events were processed")
 	})
 	t.Run("Sync", func(t *testing.T) {
 		s := newController(false)

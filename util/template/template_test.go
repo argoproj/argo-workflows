@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,7 +44,7 @@ func Test_Template_Replace(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				tmpl := SimpleValue{Value: tc.input}
 				newTmpl := processTemplate(t, tmpl, map[string]string{})
-				assert.Equal(t, tc.want, newTmpl.Value)
+				require.Equal(t, tc.want, newTmpl.Value)
 			})
 		}
 	})
@@ -62,7 +61,7 @@ func Test_Template_Replace(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				tmpl := SimpleValue{Value: tc.input}
 				newTmpl := processTemplate(t, tmpl, tc.replaceMap)
-				assert.Equal(t, tc.want, newTmpl.Value)
+				require.Equal(t, tc.want, newTmpl.Value)
 			})
 		}
 	})
@@ -82,7 +81,7 @@ func Test_Template_Replace(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				tmpl := SimpleValue{Value: tc.input}
 				newTmpl := processTemplate(t, tmpl, map[string]string{})
-				assert.Equal(t, tc.want, newTmpl.Value)
+				require.Equal(t, tc.want, newTmpl.Value)
 			})
 		}
 	})

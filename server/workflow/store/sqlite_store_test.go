@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,7 +24,7 @@ func TestInitDB(t *testing.T) {
 		err = sqlitex.Execute(conn, `select name from sqlite_master where type='table'`, &sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
 				name := stmt.ColumnText(0)
-				assert.Contains(t, []string{workflowTableName, workflowLabelsTableName}, name)
+				require.Contains(t, []string{workflowTableName, workflowLabelsTableName}, name)
 				return nil
 			},
 		})
@@ -34,7 +33,7 @@ func TestInitDB(t *testing.T) {
 	t.Run("TestForeignKeysEnabled", func(t *testing.T) {
 		err = sqlitex.Execute(conn, `pragma foreign_keys`, &sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
-				assert.Equal(t, "1", stmt.ColumnText(0))
+				require.Equal(t, "1", stmt.ColumnText(0))
 				return nil
 			},
 		})
@@ -50,16 +49,16 @@ func TestInitDB(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		assert.Contains(t, indexes, "idx_instanceid")
-		assert.Contains(t, indexes, "idx_name_value")
+		require.Contains(t, indexes, "idx_instanceid")
+		require.Contains(t, indexes, "idx_name_value")
 	})
 	t.Run("TestForeignKeysAdded", func(t *testing.T) {
 		err = sqlitex.Execute(conn, `pragma foreign_key_list('argo_workflows_labels')`, &sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
-				assert.Equal(t, "argo_workflows", stmt.ColumnText(2))
-				assert.Equal(t, "uid", stmt.ColumnText(3))
-				assert.Equal(t, "uid", stmt.ColumnText(4))
-				assert.Equal(t, "CASCADE", stmt.ColumnText(6))
+				require.Equal(t, "argo_workflows", stmt.ColumnText(2))
+				require.Equal(t, "uid", stmt.ColumnText(3))
+				require.Equal(t, "uid", stmt.ColumnText(4))
+				require.Equal(t, "CASCADE", stmt.ColumnText(6))
 				return nil
 			},
 		})
@@ -81,11 +80,11 @@ func TestStoreOperation(t *testing.T) {
 		}
 		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
 		require.NoError(t, err)
-		assert.Equal(t, int64(10), num)
+		require.Equal(t, int64(10), num)
 		// Labels are also added
 		require.NoError(t, sqlitex.Execute(conn, `select count(*) from argo_workflows_labels`, &sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
-				assert.Equal(t, 10*4, stmt.ColumnInt(0))
+				require.Equal(t, 10*4, stmt.ColumnInt(0))
 				return nil
 			},
 		}))
@@ -99,13 +98,13 @@ func TestStoreOperation(t *testing.T) {
 			ResultFunc: func(stmt *sqlite.Stmt) error {
 				w := stmt.ColumnText(0)
 				require.NoError(t, json.Unmarshal([]byte(w), &wf))
-				assert.Len(t, wf.Labels, 5)
+				require.Len(t, wf.Labels, 5)
 				return nil
 			},
 		}))
 		require.NoError(t, sqlitex.Execute(conn, `select count(*) from argo_workflows_labels where name = 'test-label-2' and value = 'value-2'`, &sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
-				assert.Equal(t, 1, stmt.ColumnInt(0))
+				require.Equal(t, 1, stmt.ColumnInt(0))
 				return nil
 			},
 		}))
@@ -116,14 +115,14 @@ func TestStoreOperation(t *testing.T) {
 		// workflow is deleted
 		require.NoError(t, sqlitex.Execute(conn, `select count(*) from argo_workflows where uid = 'uid-0'`, &sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
-				assert.Equal(t, 0, stmt.ColumnInt(0))
+				require.Equal(t, 0, stmt.ColumnInt(0))
 				return nil
 			},
 		}))
 		// labels are also deleted
 		require.NoError(t, sqlitex.Execute(conn, `select count(*) from argo_workflows_labels where uid = 'uid-0'`, &sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
-				assert.Equal(t, 0, stmt.ColumnInt(0))
+				require.Equal(t, 0, stmt.ColumnInt(0))
 				return nil
 			},
 		}))
@@ -131,12 +130,12 @@ func TestStoreOperation(t *testing.T) {
 	t.Run("TestListWorkflows", func(t *testing.T) {
 		wfList, err := store.ListWorkflows(context.Background(), "argo", "", metav1.ListOptions{Limit: 5})
 		require.NoError(t, err)
-		assert.Len(t, wfList.Items, 5)
+		require.Len(t, wfList.Items, 5)
 	})
 	t.Run("TestCountWorkflows", func(t *testing.T) {
 		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
 		require.NoError(t, err)
-		assert.Equal(t, int64(9), num)
+		require.Equal(t, int64(9), num)
 	})
 }
 

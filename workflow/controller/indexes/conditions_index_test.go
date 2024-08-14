@@ -3,7 +3,7 @@ package indexes
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -14,7 +14,7 @@ func TestConditionsIndexFunc(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		un, _ := util.ToUnstructured(&wfv1.Workflow{})
 		strings, _ := ConditionsIndexFunc(un)
-		assert.Nil(t, strings)
+		require.Nil(t, strings)
 	})
 	t.Run("Some", func(t *testing.T) {
 		un, _ := util.ToUnstructured(&wfv1.Workflow{Status: wfv1.WorkflowStatus{
@@ -25,6 +25,6 @@ func TestConditionsIndexFunc(t *testing.T) {
 			}},
 		}})
 		strings, _ := ConditionsIndexFunc(un)
-		assert.Equal(t, []string{"PodRunning/True"}, strings)
+		require.Equal(t, []string{"PodRunning/True"}, strings)
 	})
 }

@@ -3,7 +3,7 @@ package metrics
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -15,24 +15,24 @@ func TestMetricsWorkQueue(t *testing.T) {
 	}
 	m := New(config, config)
 
-	assert.Empty(t, m.workersBusy)
+	require.Empty(t, m.workersBusy)
 
 	m.newWorker("test")
-	assert.Len(t, m.workersBusy, 1)
-	assert.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
+	require.Len(t, m.workersBusy, 1)
+	require.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
 
 	m.newWorker("test")
-	assert.Len(t, m.workersBusy, 1)
+	require.Len(t, m.workersBusy, 1)
 
 	queue := m.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "test")
 	defer queue.ShutDown()
 
 	queue.Add("A")
-	assert.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
+	require.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
 
 	queue.Get()
-	assert.InDelta(t, float64(1), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
+	require.InDelta(t, float64(1), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
 
 	queue.Done("A")
-	assert.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
+	require.InDelta(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value, 0.001)
 }

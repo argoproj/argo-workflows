@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -132,21 +132,21 @@ func TestCounters(t *testing.T) {
 	woc := getWfOperationCtx()
 	var pod v1.Pod
 	v1alpha1.MustUnmarshal([]byte(podStr), &pod)
-	assert.NotNil(t, pod)
+	require.NotNil(t, pod)
 	pod1 := pod.DeepCopy()
 	pod1.Name = "2"
 	cancel, controller := newController()
 	defer cancel()
 	woc.controller = controller
 	syncPodsInformer(context.Background(), woc, pod, *pod1)
-	assert.Equal(t, int64(2), woc.getActivePods("1"))
+	require.Equal(t, int64(2), woc.getActivePods("1"))
 	// No BoundaryID requested
-	assert.Equal(t, int64(4), woc.getActivePods(""))
-	assert.Equal(t, int64(5), woc.getActiveChildren("1"))
-	assert.Equal(t, int64(3), woc.getUnsuccessfulChildren("1"))
-	assert.Equal(t, int64(2), woc.getActivePods("2"))
-	assert.Equal(t, int64(2), woc.getActiveChildren("2"))
-	assert.Equal(t, int64(2), woc.getUnsuccessfulChildren("2"))
+	require.Equal(t, int64(4), woc.getActivePods(""))
+	require.Equal(t, int64(5), woc.getActiveChildren("1"))
+	require.Equal(t, int64(3), woc.getUnsuccessfulChildren("1"))
+	require.Equal(t, int64(2), woc.getActivePods("2"))
+	require.Equal(t, int64(2), woc.getActiveChildren("2"))
+	require.Equal(t, int64(2), woc.getUnsuccessfulChildren("2"))
 
 	testNodePodExists(t, woc)
 }
@@ -158,6 +158,6 @@ func testNodePodExists(t *testing.T, woc *wfOperationCtx) {
 		}
 
 		doesPodExist := woc.nodePodExist(node)
-		assert.True(t, doesPodExist)
+		require.True(t, doesPodExist)
 	}
 }

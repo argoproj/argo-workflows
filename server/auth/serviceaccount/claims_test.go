@@ -4,7 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/rest"
 )
@@ -22,14 +21,14 @@ func TestClaimSetFor(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		claims, err := ClaimSetFor(&rest.Config{})
 		require.NoError(t, err)
-		assert.Nil(t, claims)
+		require.Nil(t, claims)
 	})
 	t.Run("Basic", func(t *testing.T) {
 		const username = "my-username"
 		claims, err := ClaimSetFor(&rest.Config{Username: username})
 		require.NoError(t, err)
-		assert.Empty(t, claims.Issuer)
-		assert.Equal(t, username, claims.Subject)
+		require.Empty(t, claims.Issuer)
+		require.Equal(t, username, claims.Subject)
 	})
 	t.Run("BadBearerToken", func(t *testing.T) {
 		_, err := ClaimSetFor(&rest.Config{BearerToken: "bad"})
@@ -38,8 +37,8 @@ func TestClaimSetFor(t *testing.T) {
 	t.Run("BearerToken", func(t *testing.T) {
 		claims, err := ClaimSetFor(&rest.Config{BearerToken: token})
 		require.NoError(t, err)
-		assert.Empty(t, claims.Issuer)
-		assert.Equal(t, sub, claims.Subject)
+		require.Empty(t, claims.Issuer)
+		require.Equal(t, sub, claims.Subject)
 	})
 
 	// set-up test
@@ -52,16 +51,16 @@ func TestClaimSetFor(t *testing.T) {
 	t.Run("BearerTokenFile", func(t *testing.T) {
 		claims, err := ClaimSetFor(&rest.Config{BearerTokenFile: tmp.Name()})
 		require.NoError(t, err)
-		assert.Empty(t, claims.Issuer)
-		assert.Equal(t, sub, claims.Subject)
+		require.Empty(t, claims.Issuer)
+		require.Equal(t, sub, claims.Subject)
 	})
 
 	t.Run("BearerToken with SA details", func(t *testing.T) {
 		claims, err := ClaimSetFor(&rest.Config{BearerToken: token2})
 		require.NoError(t, err)
-		assert.Equal(t, iss2, claims.Issuer)
-		assert.Equal(t, sub2, claims.Subject)
-		assert.Equal(t, saName2, claims.ServiceAccountName)
-		assert.Equal(t, saNs2, claims.ServiceAccountNamespace)
+		require.Equal(t, iss2, claims.Issuer)
+		require.Equal(t, sub2, claims.Subject)
+		require.Equal(t, saName2, claims.ServiceAccountName)
+		require.Equal(t, saNs2, claims.ServiceAccountNamespace)
 	})
 }

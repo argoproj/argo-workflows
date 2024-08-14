@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -19,7 +18,7 @@ func TestStepsFailedRetries(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/steps-failed-retries.yaml")
 	woc := newWoc(*wf)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 var artifactResolutionWhenSkipped = `
@@ -78,7 +77,7 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var stepsWithParamAndGlobalParam = `
@@ -124,7 +123,7 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 func TestResourceDurationMetric(t *testing.T) {
@@ -167,9 +166,9 @@ func TestResourceDurationMetric(t *testing.T) {
 	var node wfv1.NodeStatus
 	wfv1.MustUnmarshal([]byte(nodeStatus), &node)
 	localScope, _ := woc.prepareMetricScope(&node)
-	assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
-	assert.Equal(t, "24", localScope["resourcesDuration.memory"])
-	assert.Equal(t, "0", localScope["exitCode"])
+	require.Equal(t, "33", localScope["resourcesDuration.cpu"])
+	require.Equal(t, "24", localScope["resourcesDuration.memory"])
+	require.Equal(t, "0", localScope["exitCode"])
 }
 
 func TestResourceDurationMetricDefaultMetricScope(t *testing.T) {
@@ -181,11 +180,11 @@ func TestResourceDurationMetricDefaultMetricScope(t *testing.T) {
 
 	localScope, realTimeScope := woc.prepareDefaultMetricScope()
 
-	assert.Equal(t, "0", localScope["resourcesDuration.cpu"])
-	assert.Equal(t, "0", localScope["resourcesDuration.memory"])
-	assert.Equal(t, "0", localScope["duration"])
-	assert.Equal(t, "Pending", localScope["status"])
-	assert.Less(t, realTimeScope["workflow.duration"](), 1.0)
+	require.Equal(t, "0", localScope["resourcesDuration.cpu"])
+	require.Equal(t, "0", localScope["resourcesDuration.memory"])
+	require.Equal(t, "0", localScope["duration"])
+	require.Equal(t, "Pending", localScope["status"])
+	require.Less(t, realTimeScope["workflow.duration"](), 1.0)
 }
 
 var optionalArgumentAndParameter = `
@@ -313,5 +312,5 @@ func TestOptionalArgumentAndParameter(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }

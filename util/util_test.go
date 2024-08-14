@@ -3,7 +3,7 @@ package util
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -62,23 +62,23 @@ func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
 		})
 	}
 	name := RecoverWorkflowNameFromSelectorStringIfAny("whatever=whalesay")
-	assert.Equal(t, "", name)
-	assert.NotPanics(t, func() {
+	require.Equal(t, "", name)
+	require.NotPanics(t, func() {
 		_ = RecoverWorkflowNameFromSelectorStringIfAny("whatever")
 	})
 }
 
 func TestGetDeletePropagation(t *testing.T) {
 	t.Run("GetDefaultPolicy", func(t *testing.T) {
-		assert.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
+		require.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
 	})
 	t.Run("GetEnvPolicy", func(t *testing.T) {
 		t.Setenv("WF_DEL_PROPAGATION_POLICY", "Foreground")
-		assert.Equal(t, metav1.DeletePropagationForeground, *GetDeletePropagation())
+		require.Equal(t, metav1.DeletePropagationForeground, *GetDeletePropagation())
 	})
 	t.Run("GetEnvPolicyWithEmpty", func(t *testing.T) {
 		t.Setenv("WF_DEL_PROPAGATION_POLICY", "")
-		assert.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
+		require.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
 	})
 }
 
@@ -178,7 +178,7 @@ func TestMergeArtifacts(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, MergeArtifacts(tt.args.artifactSlices...), "MergeArtifacts(%v)", tt.args.artifactSlices)
+			require.Equalf(t, tt.want, MergeArtifacts(tt.args.artifactSlices...), "MergeArtifacts(%v)", tt.args.artifactSlices)
 		})
 	}
 }
@@ -236,7 +236,7 @@ func TestMergeParameters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, MergeParameters(tt.args.params...), "MergeParameters(%v)", tt.args.params)
+			require.Equalf(t, tt.want, MergeParameters(tt.args.params...), "MergeParameters(%v)", tt.args.params)
 		})
 	}
 }

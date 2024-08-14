@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -179,12 +178,12 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 
 		// acquired the lock
 		woc.operate(ctx)
-		assert.NotNil(t, woc.wf.Status.Synchronization)
-		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		require.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		for _, node := range woc.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
 		// Try to Acquire the lock, But lock is not available
@@ -200,7 +199,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		err, _ = woc_two.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range woc_two.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
 		// Updating Pod state
@@ -209,14 +208,14 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
-		assert.Nil(t, woc.wf.Status.Synchronization)
+		require.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
 		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
 		woc_two.operate(ctx)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(t, woc_two.wf.Status.Synchronization)
+		require.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
+		require.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -240,12 +239,12 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 
 		// acquired the lock
 		woc.operate(ctx)
-		assert.NotNil(t, woc.wf.Status.Synchronization)
-		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		require.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		for _, node := range woc.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
 		// Try to Acquire the lock, But lock is not available
@@ -261,7 +260,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		err, _ = woc_two.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range woc_two.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
@@ -269,14 +268,14 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
-		assert.Nil(t, woc.wf.Status.Synchronization)
+		require.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
 		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
 		woc_two.operate(ctx)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(t, woc_two.wf.Status.Synchronization)
+		require.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
+		require.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -301,12 +300,12 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 
 		// acquired the lock
 		woc.operate(ctx)
-		assert.NotNil(t, woc.wf.Status.Synchronization)
-		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		require.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		for _, node := range woc.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
 		// Try to Acquire the lock, But lock is not available
@@ -323,7 +322,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		err, _ = woc_two.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range woc_two.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
@@ -331,14 +330,14 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
-		assert.Nil(t, woc.wf.Status.Synchronization)
+		require.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
 		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
 		woc_two.operate(ctx)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(t, woc_two.wf.Status.Synchronization)
+		require.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
+		require.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -362,12 +361,12 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 
 		// acquired the lock
 		woc.operate(ctx)
-		assert.NotNil(t, woc.wf.Status.Synchronization)
-		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		require.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		for _, node := range woc.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
 		// Try to Acquire the lock, But lock is not available
@@ -383,7 +382,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		err, _ = woc_two.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range woc_two.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
 		// Updating Pod state
@@ -392,14 +391,14 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
-		assert.Nil(t, woc.wf.Status.Synchronization)
+		require.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
 		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
 		woc_two.operate(ctx)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization)
-		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
-		assert.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(t, woc_two.wf.Status.Synchronization)
+		require.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
+		require.Len(t, woc_two.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -420,13 +419,13 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		err, _ = woc.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range woc.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
+			require.Equal(t, wfv1.NodePending, node.Phase)
 		}
 		// Acquire the lock
 		woc.operate(ctx)
-		assert.Nil(t, woc.wf.Status.Synchronization)
+		require.Nil(t, woc.wf.Status.Synchronization)
 		for _, node := range woc.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodeError, node.Phase)
+			require.Equal(t, wfv1.NodeError, node.Phase)
 		}
 	})
 }
@@ -459,7 +458,7 @@ spec:
 `
 
 func TestMutexInDAG(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 
 	cancel, controller := newController()
 	defer cancel()
@@ -474,18 +473,18 @@ func TestMutexInDAG(t *testing.T) {
 		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "dag-mutex.A" {
-				assert.Equal(wfv1.NodePending, node.Phase)
+				require.Equal(wfv1.NodePending, node.Phase)
 			}
 		}
-		assert.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		require.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
 		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 		woc1 := newWorkflowOperationCtx(woc.wf, controller)
 		woc1.operate(ctx)
 		for _, node := range woc1.wf.Status.Nodes {
 			if node.Name == "dag-mutex.B" {
-				assert.Nil(node.SynchronizationStatus)
-				assert.Equal(wfv1.NodePending, node.Phase)
+				require.Nil(node.SynchronizationStatus)
+				require.Equal(wfv1.NodePending, node.Phase)
 			}
 		}
 	})
@@ -531,7 +530,7 @@ spec:
 `
 
 func TestMutexInDAGWithInterpolation(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 
 	cancel, controller := newController()
 	defer cancel()
@@ -546,19 +545,19 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "dag-mutex.A" {
-				assert.Equal(wfv1.NodePending, node.Phase)
+				require.Equal(wfv1.NodePending, node.Phase)
 			}
 		}
-		assert.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		require.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
 		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 		woc1 := newWorkflowOperationCtx(woc.wf, controller)
 		woc1.operate(ctx)
 		for _, node := range woc1.wf.Status.Nodes {
-			assert.NotEqual(wfv1.NodeError, node.Phase)
+			require.NotEqual(wfv1.NodeError, node.Phase)
 			if node.Name == "dag-mutex.B" {
-				assert.Nil(node.SynchronizationStatus)
-				assert.Equal(wfv1.NodePending, node.Phase)
+				require.Nil(node.SynchronizationStatus)
+				require.Equal(wfv1.NodePending, node.Phase)
 			}
 		}
 	})
@@ -597,7 +596,7 @@ spec:
 `
 
 func TestSynchronizationWithRetry(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
@@ -615,7 +614,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "hello1" {
-				assert.Equal(wfv1.NodePending, node.Phase)
+				require.Equal(wfv1.NodePending, node.Phase)
 			}
 		}
 
@@ -627,10 +626,10 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		woc.operate(ctx)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "hello1" {
-				assert.Equal(wfv1.NodeSucceeded, node.Phase)
+				require.Equal(wfv1.NodeSucceeded, node.Phase)
 			}
 			if node.Name == "hello2" {
-				assert.Equal(wfv1.NodePending, node.Phase)
+				require.Equal(wfv1.NodePending, node.Phase)
 			}
 		}
 		// Updating Pod state
@@ -640,7 +639,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate(ctx)
 		// Nobody is waiting for the lock
-		assert.Nil(woc.wf.Status.Synchronization)
+		require.Nil(woc.wf.Status.Synchronization)
 	})
 }
 
@@ -805,7 +804,7 @@ status:
 `
 
 func TestSynchronizationWithStep(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
@@ -823,9 +822,9 @@ func TestSynchronizationWithStep(t *testing.T) {
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.NotNil(woc.wf.Status.Synchronization)
-		assert.NotNil(woc.wf.Status.Synchronization.Semaphore)
-		assert.Len(woc.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(woc.wf.Status.Synchronization)
+		require.NotNil(woc.wf.Status.Synchronization.Semaphore)
+		require.Len(woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
 		// Second workflow try to acquire the lock and wait for lock
 		wf1 := wfv1.MustUnmarshalWorkflow(StepWithSync)
@@ -834,24 +833,24 @@ func TestSynchronizationWithStep(t *testing.T) {
 		require.NoError(t, err)
 		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
-		assert.NotNil(woc1.wf.Status.Synchronization)
-		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore)
-		assert.Nil(woc1.wf.Status.Synchronization.Semaphore.Holding)
-		assert.Len(woc1.wf.Status.Synchronization.Semaphore.Waiting, 1)
+		require.NotNil(woc1.wf.Status.Synchronization)
+		require.NotNil(woc1.wf.Status.Synchronization.Semaphore)
+		require.Nil(woc1.wf.Status.Synchronization.Semaphore.Holding)
+		require.Len(woc1.wf.Status.Synchronization.Semaphore.Waiting, 1)
 
 		// Finished all StepGroup in step
 		wf = wfv1.MustUnmarshalWorkflow(StepWithSyncStatus)
 		woc = newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.Nil(woc.wf.Status.Synchronization)
+		require.Nil(woc.wf.Status.Synchronization)
 
 		// Second workflow acquire the lock
 		woc1 = newWorkflowOperationCtx(woc1.wf, controller)
 		woc1.operate(ctx)
-		assert.NotNil(woc1.wf.Status.Synchronization)
-		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore)
-		assert.NotNil(woc1.wf.Status.Synchronization.Semaphore.Holding)
-		assert.Len(woc1.wf.Status.Synchronization.Semaphore.Holding, 1)
+		require.NotNil(woc1.wf.Status.Synchronization)
+		require.NotNil(woc1.wf.Status.Synchronization.Semaphore)
+		require.NotNil(woc1.wf.Status.Synchronization.Semaphore.Holding)
+		require.Len(woc1.wf.Status.Synchronization.Semaphore.Holding, 1)
 	})
 }
 
@@ -882,7 +881,7 @@ spec:
         args: ["sleep 300"]`
 
 func TestSynchronizationWithStepRetry(t *testing.T) {
-	assert := assert.New(t)
+	assert := require.New(t)
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
@@ -902,7 +901,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
 			if n.Name == "[0].step1(0)" {
-				assert.Equal(wfv1.NodePending, n.Phase)
+				require.Equal(wfv1.NodePending, n.Phase)
 			}
 		}
 		// Updating Pod state
@@ -911,17 +910,17 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
 			if n.Name == "[0].step1(0)" {
-				assert.Equal(wfv1.NodeRunning, n.Phase)
+				require.Equal(wfv1.NodeRunning, n.Phase)
 			}
 		}
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
 		woc.operate(ctx)
 		for _, n := range woc.wf.Status.Nodes {
 			if n.Name == "[0].step1(0)" {
-				assert.Equal(wfv1.NodeFailed, n.Phase)
+				require.Equal(wfv1.NodeFailed, n.Phase)
 			}
 			if n.Name == "[0].step1(1)" {
-				assert.Equal(wfv1.NodePending, n.Phase)
+				require.Equal(wfv1.NodePending, n.Phase)
 			}
 		}
 	})
@@ -962,9 +961,9 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.NotNil(t, woc.wf.Status.Synchronization)
-		assert.NotNil(t, woc.wf.Status.Synchronization.Mutex)
-		assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+		require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
 
 		// Create the second workflow and try to acquire the lock, which should not be available.
 		wfTwo := wf.DeepCopy()
@@ -974,7 +973,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		// This workflow should be pending since the first workflow still holds the lock.
 		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
+		require.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
 		// Shutdown the second workflow that's pending.
 		patchObj := map[string]interface{}{
@@ -990,8 +989,8 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		// The pending workflow that's being shutdown should have succeeded and released the lock.
 		wocTwo = newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowSucceeded, wocTwo.execWf.Status.Phase)
-		assert.Nil(t, wocTwo.wf.Status.Synchronization)
+		require.Equal(t, wfv1.WorkflowSucceeded, wocTwo.execWf.Status.Phase)
+		require.Nil(t, wocTwo.wf.Status.Synchronization)
 	})
 
 	t.Run("PendingShuttingdownStoppingWf", func(t *testing.T) {
@@ -1006,9 +1005,9 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		assert.NotNil(t, woc.wf.Status.Synchronization)
-		assert.NotNil(t, woc.wf.Status.Synchronization.Mutex)
-		assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+		require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
 
 		// Create the second workflow and try to acquire the lock, which should not be available.
 		wfTwo := wf.DeepCopy()
@@ -1018,7 +1017,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		// This workflow should be pending since the first workflow still holds the lock.
 		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
+		require.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
 		// Shutdown the second workflow that's pending.
 		patchObj := map[string]interface{}{
@@ -1034,18 +1033,18 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		// The pending workflow that's being shutdown should still be pending and waiting to acquire the lock.
 		wocTwo = newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowPending, wocTwo.execWf.Status.Phase)
-		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
-		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Mutex)
-		assert.Len(t, wocTwo.wf.Status.Synchronization.Mutex.Waiting, 1)
+		require.Equal(t, wfv1.WorkflowPending, wocTwo.execWf.Status.Phase)
+		require.NotNil(t, wocTwo.wf.Status.Synchronization)
+		require.NotNil(t, wocTwo.wf.Status.Synchronization.Mutex)
+		require.Len(t, wocTwo.wf.Status.Synchronization.Mutex.Waiting, 1)
 
 		// Mark the first workflow as succeeded
 		woc.wf.Status.Phase = wfv1.WorkflowSucceeded
 		woc.operate(ctx)
-		assert.Nil(t, woc.wf.Status.Synchronization)
+		require.Nil(t, woc.wf.Status.Synchronization)
 		// The pending workflow should now be running normally
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowRunning, wocTwo.execWf.Status.Phase)
+		require.Equal(t, wfv1.WorkflowRunning, wocTwo.execWf.Status.Phase)
 	})
 }
 
@@ -1115,7 +1114,7 @@ spec:
 			}
 		}
 	}
-	assert.True(t, job1AcquiredLock)
+	require.True(t, job1AcquiredLock)
 
 	// Make job-1's pod succeed
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded, func(pod *apiv1.Pod) {
@@ -1129,11 +1128,11 @@ spec:
 	for _, node := range woc.wf.Status.Nodes {
 		switch node.DisplayName {
 		case "job-1":
-			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-			assert.False(t, node.MemoizationStatus.Hit)
+			require.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			require.False(t, node.MemoizationStatus.Hit)
 		case "job-2":
-			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-			assert.True(t, node.MemoizationStatus.Hit)
+			require.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			require.True(t, node.MemoizationStatus.Hit)
 		}
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -67,7 +67,7 @@ func (s *MetricsSuite) TestRetryMetrics() {
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			s.e(s.T()).GET("").
 				Expect().
 				Status(200).
@@ -84,7 +84,7 @@ func (s *MetricsSuite) TestDAGMetrics() {
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			s.e(s.T()).GET("").
 				Expect().
 				Status(200).
@@ -101,7 +101,7 @@ func (s *MetricsSuite) TestFailedMetric() {
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			s.e(s.T()).GET("").
 				Expect().
 				Status(200).

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -92,7 +91,7 @@ spec:
 
 		runLint(context.Background(), []string{workflowPath}, true, nil, "pretty", true)
 
-		assert.True(t, fatal, "should have exited")
+		require.True(t, fatal, "should have exited")
 	})
 
 	t.Run("linting a workflow missing a workflow template ref", func(t *testing.T) {
@@ -102,7 +101,7 @@ spec:
 
 		runLint(context.Background(), []string{workflowPath, clusterWftmplPath}, true, nil, "pretty", true)
 
-		assert.True(t, fatal, "should have exited")
+		require.True(t, fatal, "should have exited")
 	})
 
 	t.Run("linting a workflow missing a cluster workflow template ref", func(t *testing.T) {
@@ -112,7 +111,7 @@ spec:
 
 		runLint(context.Background(), []string{workflowPath, wftmplPath}, true, nil, "pretty", true)
 
-		assert.True(t, fatal, "should have exited")
+		require.True(t, fatal, "should have exited")
 	})
 
 	t.Run("linting a workflow template on its own", func(t *testing.T) {
@@ -122,7 +121,7 @@ spec:
 
 		runLint(context.Background(), []string{wftmplPath}, true, nil, "pretty", true)
 
-		assert.False(t, fatal, "should not have exited")
+		require.False(t, fatal, "should not have exited")
 	})
 
 	t.Run("linting a cluster workflow template on its own", func(t *testing.T) {
@@ -132,7 +131,7 @@ spec:
 
 		runLint(context.Background(), []string{clusterWftmplPath}, true, nil, "pretty", true)
 
-		assert.False(t, fatal, "should not have exited")
+		require.False(t, fatal, "should not have exited")
 	})
 
 	t.Run("linting a workflow and templates", func(t *testing.T) {
@@ -142,7 +141,7 @@ spec:
 
 		runLint(context.Background(), []string{workflowPath, wftmplPath, clusterWftmplPath}, true, nil, "pretty", true)
 
-		assert.False(t, fatal, "should not have exited")
+		require.False(t, fatal, "should not have exited")
 	})
 
 	t.Run("linting a directory", func(t *testing.T) {
@@ -152,7 +151,7 @@ spec:
 
 		runLint(context.Background(), []string{dir}, true, nil, "pretty", true)
 
-		assert.False(t, fatal, "should not have exited")
+		require.False(t, fatal, "should not have exited")
 	})
 
 	t.Run("linting one file from stdin", func(t *testing.T) {
@@ -170,7 +169,7 @@ spec:
 
 		runLint(context.Background(), []string{workflowPath, wftmplPath, "-"}, true, nil, "pretty", true)
 
-		assert.False(t, fatal, "should not have exited")
+		require.False(t, fatal, "should not have exited")
 	})
 
 	workflowCaseSensitivePath := filepath.Join(subdir, "workflowCaseSensitive.yaml")
@@ -201,7 +200,7 @@ spec:
 
 		runLint(context.Background(), []string{workflowCaseSensitivePath}, true, nil, "pretty", true)
 
-		assert.True(t, fatal, "should have exited")
+		require.True(t, fatal, "should have exited")
 	})
 
 	t.Run("linting a workflow with case sensitive fields and strict disabled", func(t *testing.T) {
@@ -211,6 +210,6 @@ spec:
 
 		runLint(context.Background(), []string{workflowCaseSensitivePath}, true, nil, "pretty", false)
 
-		assert.False(t, fatal, "should not have exited")
+		require.False(t, fatal, "should not have exited")
 	})
 }

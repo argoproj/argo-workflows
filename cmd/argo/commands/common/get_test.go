@@ -7,7 +7,6 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +42,7 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getA
 	}
 	err := w.Flush()
 	require.NoError(t, err)
-	assert.Equal(t, expected, result.String())
+	require.Equal(t, expected, result.String())
 }
 
 // TestPrintNode
@@ -139,7 +138,7 @@ func TestPrintNode(t *testing.T) {
 
 func TestStatusToNodeFieldSelector(t *testing.T) {
 	one := statusToNodeFieldSelector("Running")
-	assert.Equal(t, "phase=Running", one)
+	require.Equal(t, "phase=Running", one)
 }
 
 func Test_printWorkflowHelper(t *testing.T) {
@@ -151,7 +150,7 @@ status:
   progress: 1/2
 `, &wf)
 		output := PrintWorkflowHelper(&wf, GetFlags{})
-		assert.Regexp(t, `Progress: *1/2`, output)
+		require.Regexp(t, `Progress: *1/2`, output)
 	})
 	t.Run("EstimatedDuration", func(t *testing.T) {
 		var wf wfv1.Workflow
@@ -161,7 +160,7 @@ status:
   phase: Running
 `, &wf)
 		output := PrintWorkflowHelper(&wf, GetFlags{})
-		assert.Regexp(t, `EstimatedDuration: *1 second`, output)
+		require.Regexp(t, `EstimatedDuration: *1 second`, output)
 	})
 	t.Run("IndexOrdering", func(t *testing.T) {
 		var wf wfv1.Workflow
@@ -400,13 +399,13 @@ status:
 
 		// derive expected pod name:
 		expectedPodName := util.GeneratePodName(wf.GetObjectMeta().GetName(), "many-items-z26lj[0].sleep(9:nine)", "sleep", "many-items-z26lj-2619926859", util.GetPodNameVersion())
-		assert.Contains(t, output, fmt.Sprintf("sleep(9:nine)     sleep           %s  19s", expectedPodName))
+		require.Contains(t, output, fmt.Sprintf("sleep(9:nine)     sleep           %s  19s", expectedPodName))
 
 		expectedPodName = util.GeneratePodName(wf.GetObjectMeta().GetName(), "many-items-z26lj[0].sleep(10:ten)", "sleep", "many-items-z26lj-1052882686", util.GetPodNameVersion())
-		assert.Contains(t, output, fmt.Sprintf("sleep(10:ten)     sleep           %s  23s", expectedPodName))
+		require.Contains(t, output, fmt.Sprintf("sleep(10:ten)     sleep           %s  23s", expectedPodName))
 
 		expectedPodName = util.GeneratePodName(wf.GetObjectMeta().GetName(), "many-items-z26lj[0].sleep(11:eleven)", "sleep", "many-items-z26lj-3011405271", util.GetPodNameVersion())
-		assert.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s  22s", expectedPodName))
+		require.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s  22s", expectedPodName))
 	})
 }
 
@@ -427,6 +426,6 @@ func Test_printWorkflowHelperNudges(t *testing.T) {
 
 	t.Run("SecuredWorkflow", func(t *testing.T) {
 		output := PrintWorkflowHelper(&securedWf, GetFlags{})
-		assert.NotContains(t, output, securityNudges)
+		require.NotContains(t, output, securityNudges)
 	})
 }

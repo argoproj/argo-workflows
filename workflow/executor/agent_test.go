@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -33,8 +33,8 @@ func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 	}
 
 	response := <-responseQueue
-	assert.Equal(t, v1alpha1.NodeError, response.Result.Phase)
-	assert.Contains(t, response.Result.Message, "agent cannot execute: unknown task type")
+	require.Equal(t, v1alpha1.NodeError, response.Result.Phase)
+	require.Contains(t, response.Result.Message, "agent cannot execute: unknown task type")
 }
 
 func TestAgentPluginExecuteTaskSet(t *testing.T) {

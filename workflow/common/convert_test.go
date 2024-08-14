@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 
@@ -81,7 +80,7 @@ status:
 	wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime] = "2021-02-19T10:29:05-08:00"
 	wfString, err := yaml.Marshal(wf)
 	require.NoError(t, err)
-	assert.Equal(t, expectedWf, string(wfString))
+	require.Equal(t, expectedWf, string(wfString))
 
 	cronWfInstanceIdString := `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -109,8 +108,8 @@ spec:
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	require.NoError(t, err)
 	wf = ConvertCronWorkflowToWorkflow(&cronWf)
-	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
-		assert.Equal(t, "test-controller", wf.GetLabels()[LabelKeyControllerInstanceID])
+	if require.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
+		require.Equal(t, "test-controller", wf.GetLabels()[LabelKeyControllerInstanceID])
 	}
 
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
@@ -118,9 +117,9 @@ spec:
 	scheduledTime, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05-07:00")
 	require.NoError(t, err)
 	wf = ConvertCronWorkflowToWorkflowWithProperties(&cronWf, "test-name", scheduledTime)
-	assert.Equal(t, "test-name", wf.Name)
-	assert.Len(t, wf.GetAnnotations(), 2)
-	assert.NotEmpty(t, wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime])
+	require.Equal(t, "test-name", wf.Name)
+	require.Len(t, wf.GetAnnotations(), 2)
+	require.NotEmpty(t, wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime])
 }
 
 const workflowTmpl = `
@@ -156,27 +155,27 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
 	t.Run("ConvertWorkflowFromWFT", func(t *testing.T) {
 		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
-		assert.NotNil(t, wf)
-		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
-		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
-		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
-		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+		require.NotNil(t, wf)
+		require.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
+		require.NotNil(t, wf.Spec.WorkflowTemplateRef)
+		require.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+		require.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
 	})
 	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadata", func(t *testing.T) {
 		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
-		assert.NotNil(t, wf)
-		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
-		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
-		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
-		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+		require.NotNil(t, wf)
+		require.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
+		require.NotNil(t, wf.Spec.WorkflowTemplateRef)
+		require.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+		require.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
 	})
 	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadataLabels", func(t *testing.T) {
 		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
-		assert.NotNil(t, wf)
-		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
-		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
-		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
-		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+		require.NotNil(t, wf)
+		require.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
+		require.NotNil(t, wf.Spec.WorkflowTemplateRef)
+		require.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+		require.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
 	})
 }
 
@@ -184,9 +183,9 @@ func TestConvertClusterWorkflowTemplateToWorkflow(t *testing.T) {
 	var wfTmpl v1alpha1.WorkflowTemplate
 	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
 	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, true)
-	assert.NotNil(t, wf)
-	assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/cluster-workflow-template"])
-	assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
-	assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
-	assert.True(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+	require.NotNil(t, wf)
+	require.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/cluster-workflow-template"])
+	require.NotNil(t, wf.Spec.WorkflowTemplateRef)
+	require.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+	require.True(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
 }

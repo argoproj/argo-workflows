@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1254,8 +1253,8 @@ spec:
 func TestInvalidArgumentNoValue(t *testing.T) {
 	err := validate(invalidArgumentNoValue)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), ".value or ")
-	assert.Contains(t, err.Error(), ".valueFrom is required")
+	require.Contains(t, err.Error(), ".value or ")
+	require.Contains(t, err.Error(), ".valueFrom is required")
 }
 
 var validWithItems = `
@@ -2694,13 +2693,13 @@ spec:
 
 func TestSubstituteResourceManifestExpressions(t *testing.T) {
 	replaced := SubstituteResourceManifestExpressions(resourceManifestWithExpressions)
-	assert.NotEqual(t, resourceManifestWithExpressions, replaced)
+	require.NotEqual(t, resourceManifestWithExpressions, replaced)
 
 	// despite spacing in the expr itself we should have only 1 placeholder here
 	patt, _ := regexp.Compile(`placeholder\-\d+`)
 	matches := patt.FindAllString(replaced, -1)
-	assert.Len(t, matches, 2)
-	assert.Equal(t, matches[0], matches[1])
+	require.Len(t, matches, 2)
+	require.Equal(t, matches[0], matches[1])
 }
 
 var validWorkflowTemplateWithResourceManifest = `
@@ -2943,7 +2942,7 @@ spec:
 	for _, task := range tmpl.DAG.Tasks {
 		taskOrderAfterSort = append(taskOrderAfterSort, task.Name)
 	}
-	assert.Equal(t, expectedOrder, taskOrderAfterSort)
+	require.Equal(t, expectedOrder, taskOrderAfterSort)
 }
 
 func TestValidateStartedATVariable(t *testing.T) {

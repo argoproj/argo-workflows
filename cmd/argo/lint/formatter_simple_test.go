@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimpleSummarize(t *testing.T) {
@@ -13,7 +13,7 @@ func TestSimpleSummarize(t *testing.T) {
 			Success: true,
 		})
 		expected := "no linting errors found!\n"
-		assert.Equal(t, expected, msg)
+		require.Equal(t, expected, msg)
 	})
 	t.Run("Nothing linted", func(t *testing.T) {
 		msg := formatterSimple{}.Summarize(&LintResults{
@@ -21,7 +21,7 @@ func TestSimpleSummarize(t *testing.T) {
 			Success:        false,
 		})
 		expected := "found nothing to lint in the specified paths, failing...\n"
-		assert.Equal(t, expected, msg)
+		require.Equal(t, expected, msg)
 	})
 }
 
@@ -38,7 +38,7 @@ func TestSimpleFormat(t *testing.T) {
 		expected := `test1: some error
 test1: some error2
 `
-		assert.Equal(t, expected, msg)
+		require.Equal(t, expected, msg)
 	})
 
 	t.Run("One", func(t *testing.T) {
@@ -50,7 +50,7 @@ test1: some error2
 			Linted: true,
 		})
 		expected := "test2: some error\n"
-		assert.Equal(t, expected, msg)
+		require.Equal(t, expected, msg)
 	})
 
 	t.Run("NotLinted", func(t *testing.T) {
@@ -59,6 +59,6 @@ test1: some error2
 			Linted: false,
 		})
 		expected := ""
-		assert.Equal(t, expected, msg)
+		require.Equal(t, expected, msg)
 	})
 }

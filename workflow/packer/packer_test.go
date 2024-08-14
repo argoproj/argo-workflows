@@ -3,14 +3,13 @@ package packer
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestDefault(t *testing.T) {
-	assert.Equal(t, 1024*1024, getMaxWorkflowSize())
+	require.Equal(t, 1024*1024, getMaxWorkflowSize())
 }
 
 func TestDecompressWorkflow(t *testing.T) {
@@ -24,15 +23,15 @@ func TestDecompressWorkflow(t *testing.T) {
 		}
 		err := CompressWorkflowIfNeeded(wf)
 		require.NoError(t, err)
-		assert.NotNil(t, wf)
-		assert.NotEmpty(t, wf.Status.Nodes)
-		assert.Empty(t, wf.Status.CompressedNodes)
+		require.NotNil(t, wf)
+		require.NotEmpty(t, wf.Status.Nodes)
+		require.Empty(t, wf.Status.CompressedNodes)
 
 		err = DecompressWorkflow(wf)
 		require.NoError(t, err)
-		assert.NotNil(t, wf)
-		assert.NotEmpty(t, wf.Status.Nodes)
-		assert.Empty(t, wf.Status.CompressedNodes)
+		require.NotNil(t, wf)
+		require.NotEmpty(t, wf.Status.Nodes)
+		require.Empty(t, wf.Status.CompressedNodes)
 	})
 	t.Run("LargeWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -42,15 +41,15 @@ func TestDecompressWorkflow(t *testing.T) {
 		}
 		err := CompressWorkflowIfNeeded(wf)
 		require.NoError(t, err)
-		assert.NotNil(t, wf)
-		assert.Empty(t, wf.Status.Nodes)
-		assert.NotEmpty(t, wf.Status.CompressedNodes)
+		require.NotNil(t, wf)
+		require.Empty(t, wf.Status.Nodes)
+		require.NotEmpty(t, wf.Status.CompressedNodes)
 
 		err = DecompressWorkflow(wf)
 		require.NoError(t, err)
-		assert.NotNil(t, wf)
-		assert.NotEmpty(t, wf.Status.Nodes)
-		assert.Empty(t, wf.Status.CompressedNodes)
+		require.NotNil(t, wf)
+		require.NotEmpty(t, wf.Status.Nodes)
+		require.Empty(t, wf.Status.CompressedNodes)
 	})
 	t.Run("TooLargeToCompressWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -61,10 +60,10 @@ func TestDecompressWorkflow(t *testing.T) {
 		}
 		err := CompressWorkflowIfNeeded(wf)
 		require.Error(t, err)
-		assert.True(t, IsTooLargeError(err))
+		require.True(t, IsTooLargeError(err))
 		// if too large, we want the original back please
-		assert.NotNil(t, wf)
-		assert.NotEmpty(t, wf.Status.Nodes)
-		assert.Empty(t, wf.Status.CompressedNodes)
+		require.NotNil(t, wf)
+		require.NotEmpty(t, wf.Status.Nodes)
+		require.Empty(t, wf.Status.CompressedNodes)
 	})
 }

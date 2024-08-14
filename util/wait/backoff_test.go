@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -26,7 +25,7 @@ func TestExponentialBackoff2(t *testing.T) {
 		err := Backoff(wait.Backoff{Steps: 1}, func() (bool, error) {
 			return false, nil
 		})
-		assert.Equal(t, err, wait.ErrWaitTimeout)
+		require.Equal(t, err, wait.ErrWaitTimeout)
 	})
 	t.Run("TimeoutError", func(t *testing.T) {
 		err := Backoff(wait.Backoff{Steps: 1}, func() (bool, error) {

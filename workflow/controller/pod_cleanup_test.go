@@ -3,7 +3,7 @@ package controller
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -12,8 +12,8 @@ import (
 
 func Test_determinePodCleanupAction(t *testing.T) {
 
-	assert.Equal(t, labelPodCompleted, determinePodCleanupAction(labels.Nothing(), nil, wfv1.PodGCOnPodCompletion, wfv1.WorkflowSucceeded, apiv1.PodSucceeded))
-	assert.Equal(t, labelPodCompleted, determinePodCleanupAction(labels.Everything(), nil, wfv1.PodGCOnPodNone, wfv1.WorkflowSucceeded, apiv1.PodSucceeded))
+	require.Equal(t, labelPodCompleted, determinePodCleanupAction(labels.Nothing(), nil, wfv1.PodGCOnPodCompletion, wfv1.WorkflowSucceeded, apiv1.PodSucceeded))
+	require.Equal(t, labelPodCompleted, determinePodCleanupAction(labels.Everything(), nil, wfv1.PodGCOnPodNone, wfv1.WorkflowSucceeded, apiv1.PodSucceeded))
 
 	type fields = struct {
 		Strategy      wfv1.PodGCStrategy `json:"strategy,omitempty"`
@@ -66,7 +66,7 @@ func Test_determinePodCleanupAction(t *testing.T) {
 				tt.Fields.Strategy,
 				tt.Fields.WorkflowPhase,
 				tt.Fields.PodPhase)
-			assert.Equal(t, tt.Want, action)
+			require.Equal(t, tt.Want, action)
 		})
 	}
 }

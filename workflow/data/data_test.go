@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -30,7 +29,7 @@ func TestProcessSource(t *testing.T) {
 	artifactPathsSource := v1alpha1.DataSource{ArtifactPaths: &v1alpha1.ArtifactPaths{}}
 	data, err := processSource(artifactPathsSource, &testDataSourceProcessor{})
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
+	require.Equal(t, []interface{}{"foo.py", "bar.pdf", "goo/foo.py", "moo/bar.pdf"}, data)
 
 	_, err = processSource(artifactPathsSource, &nullTestDataSourceProcessor{})
 	require.Error(t, err)
@@ -45,37 +44,37 @@ func TestProcessTransformation(t *testing.T) {
 	filterFiles := &v1alpha1.Transformation{{Expression: `filter(data, {# endsWith '.py'})`}}
 	filtered, err := processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py", "goo/foo.py"}, filtered)
+	require.Equal(t, []interface{}{"foo.py", "goo/foo.py"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {# contains '/'})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"goo/foo.py", "moo/bar.pdf"}, filtered)
+	require.Equal(t, []interface{}{"goo/foo.py", "moo/bar.pdf"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {# contains 'foo'})`}}
 	filtered, err = processTransformation(filtered, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"goo/foo.py"}, filtered)
+	require.Equal(t, []interface{}{"goo/foo.py"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {# contains '/'})`}, {Expression: `filter(data, {# contains 'foo'})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"goo/foo.py"}, filtered)
+	require.Equal(t, []interface{}{"goo/foo.py"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {not(# contains '/')})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py", "bar.pdf"}, filtered)
+	require.Equal(t, []interface{}{"foo.py", "bar.pdf"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `map(data, {# + '.processed'})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py.processed", "bar.pdf.processed", "goo/foo.py.processed", "moo/bar.pdf.processed"}, filtered)
+	require.Equal(t, []interface{}{"foo.py.processed", "bar.pdf.processed", "goo/foo.py.processed", "moo/bar.pdf.processed"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {not(# contains '/')})`}, {Expression: `map(data, {# + '.processed'})`}}
 	filtered, err = processTransformation(files, filterFiles)
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"foo.py.processed", "bar.pdf.processed"}, filtered)
+	require.Equal(t, []interface{}{"foo.py.processed", "bar.pdf.processed"}, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `filter(data, {not(# contains '/')})`}, {Expression: `map(data, {# + '.processed'})`}, {}}
 	_, err = processTransformation(files, filterFiles)
@@ -83,11 +82,11 @@ func TestProcessTransformation(t *testing.T) {
 
 	filtered, err = processTransformation(files, nil)
 	require.NoError(t, err)
-	assert.Equal(t, files, filtered)
+	require.Equal(t, files, filtered)
 
 	filtered, err = processTransformation(files, &v1alpha1.Transformation{})
 	require.NoError(t, err)
-	assert.Equal(t, files, filtered)
+	require.Equal(t, files, filtered)
 
 	filterFiles = &v1alpha1.Transformation{{Expression: `map(data, {# + '.processed'}`}}
 	_, err = processTransformation(files, filterFiles)

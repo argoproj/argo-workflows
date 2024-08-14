@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -51,84 +51,84 @@ const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
 
 func TestIsTransientErr(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
-		assert.False(t, IsTransientErr(nil))
+		require.False(t, IsTransientErr(nil))
 	})
 	t.Run("ResourceQuotaConflictErr", func(t *testing.T) {
-		assert.False(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{}, "", nil)))
-		assert.True(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{Group: "v1", Resource: "resourcequotas"}, "", nil)))
+		require.False(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{}, "", nil)))
+		require.True(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{Group: "v1", Resource: "resourcequotas"}, "", nil)))
 	})
 	t.Run("ResourceQuotaTimeoutErr", func(t *testing.T) {
-		assert.False(t, IsTransientErr(apierr.NewInternalError(errors.New(""))))
-		assert.True(t, IsTransientErr(apierr.NewInternalError(errors.New("resource quota evaluation timed out"))))
+		require.False(t, IsTransientErr(apierr.NewInternalError(errors.New(""))))
+		require.True(t, IsTransientErr(apierr.NewInternalError(errors.New("resource quota evaluation timed out"))))
 	})
 	t.Run("ExceededQuotaErr", func(t *testing.T) {
-		assert.False(t, IsTransientErr(apierr.NewForbidden(schema.GroupResource{}, "", nil)))
-		assert.True(t, IsTransientErr(apierr.NewForbidden(schema.GroupResource{Group: "v1", Resource: "pods"}, "", errors.New("exceeded quota"))))
+		require.False(t, IsTransientErr(apierr.NewForbidden(schema.GroupResource{}, "", nil)))
+		require.True(t, IsTransientErr(apierr.NewForbidden(schema.GroupResource{Group: "v1", Resource: "pods"}, "", errors.New("exceeded quota"))))
 	})
 	t.Run("TooManyRequestsDNS", func(t *testing.T) {
-		assert.True(t, IsTransientErr(apierr.NewTooManyRequests("", 0)))
+		require.True(t, IsTransientErr(apierr.NewTooManyRequests("", 0)))
 	})
 	t.Run("DNSError", func(t *testing.T) {
-		assert.True(t, IsTransientErr(&net.DNSError{}))
+		require.True(t, IsTransientErr(&net.DNSError{}))
 	})
 	t.Run("OpError", func(t *testing.T) {
-		assert.True(t, IsTransientErr(&net.OpError{}))
+		require.True(t, IsTransientErr(&net.OpError{}))
 	})
 	t.Run("UnknownNetworkError", func(t *testing.T) {
-		assert.True(t, IsTransientErr(net.UnknownNetworkError("")))
+		require.True(t, IsTransientErr(net.UnknownNetworkError("")))
 	})
 	t.Run("TLSHandshakeTimeout", func(t *testing.T) {
-		assert.True(t, IsTransientErr(tlsHandshakeTimeoutErr))
+		require.True(t, IsTransientErr(tlsHandshakeTimeoutErr))
 	})
 	t.Run("IOHandshakeTimeout", func(t *testing.T) {
-		assert.True(t, IsTransientErr(ioTimeoutErr))
+		require.True(t, IsTransientErr(ioTimeoutErr))
 	})
 	t.Run("ConnectionTimeout", func(t *testing.T) {
-		assert.True(t, IsTransientErr(connectionTimedoutErr))
+		require.True(t, IsTransientErr(connectionTimedoutErr))
 	})
 	t.Run("ConnectionReset", func(t *testing.T) {
-		assert.True(t, IsTransientErr(connectionResetErr))
+		require.True(t, IsTransientErr(connectionResetErr))
 	})
 	t.Run("TransientErrorPattern", func(t *testing.T) {
 		t.Setenv(transientEnvVarKey, "this error is transient")
-		assert.True(t, IsTransientErr(transientErr))
-		assert.True(t, IsTransientErr(&transientExitErr))
+		require.True(t, IsTransientErr(transientErr))
+		require.True(t, IsTransientErr(&transientExitErr))
 
 		t.Setenv(transientEnvVarKey, "this error is not transient")
-		assert.False(t, IsTransientErr(transientErr))
-		assert.False(t, IsTransientErr(&transientExitErr))
+		require.False(t, IsTransientErr(transientErr))
+		require.False(t, IsTransientErr(&transientExitErr))
 
 		t.Setenv(transientEnvVarKey, "")
-		assert.False(t, IsTransientErr(transientErr))
+		require.False(t, IsTransientErr(transientErr))
 	})
 	t.Run("ExplicitTransientErr", func(t *testing.T) {
-		assert.True(t, IsTransientErr(NewErrTransient("")))
+		require.True(t, IsTransientErr(NewErrTransient("")))
 	})
 	t.Run("ConnectionRefusedTransientErr", func(t *testing.T) {
-		assert.True(t, IsTransientErr(connectionRefusedErr))
+		require.True(t, IsTransientErr(connectionRefusedErr))
 	})
 }
 
 func TestIsTransientUErr(t *testing.T) {
 	t.Run("NonExceptionalUErr", func(t *testing.T) {
-		assert.False(t, IsTransientErr(&url.Error{Err: errors.New("")}))
+		require.False(t, IsTransientErr(&url.Error{Err: errors.New("")}))
 	})
 	t.Run("ConnectionClosedUErr", func(t *testing.T) {
-		assert.True(t, IsTransientErr(connectionClosedUErr))
+		require.True(t, IsTransientErr(connectionClosedUErr))
 	})
 	t.Run("TLSHandshakeTimeoutUErr", func(t *testing.T) {
-		assert.True(t, IsTransientErr(tlsHandshakeTimeoutUErr))
+		require.True(t, IsTransientErr(tlsHandshakeTimeoutUErr))
 	})
 	t.Run("IOHandshakeTimeoutUErr", func(t *testing.T) {
-		assert.True(t, IsTransientErr(ioTimeoutUErr))
+		require.True(t, IsTransientErr(ioTimeoutUErr))
 	})
 	t.Run("ConnectionTimeoutUErr", func(t *testing.T) {
-		assert.True(t, IsTransientErr(connectionTimedoutUErr))
+		require.True(t, IsTransientErr(connectionTimedoutUErr))
 	})
 	t.Run("ConnectionResetUErr", func(t *testing.T) {
-		assert.True(t, IsTransientErr(connectionResetUErr))
+		require.True(t, IsTransientErr(connectionResetUErr))
 	})
 	t.Run("EOFUErr", func(t *testing.T) {
-		assert.True(t, IsTransientErr(EOFUErr))
+		require.True(t, IsTransientErr(EOFUErr))
 	})
 }

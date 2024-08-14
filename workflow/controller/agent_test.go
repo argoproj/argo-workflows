@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,22 +94,22 @@ status:
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, tslist.Items)
-		assert.Len(t, tslist.Items, 1)
+		require.NotEmpty(t, tslist.Items)
+		require.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
-			assert.NotNil(t, ts)
-			assert.Equal(t, ts.Name, wf.Name)
-			assert.Equal(t, ts.Namespace, wf.Namespace)
-			assert.Len(t, ts.Spec.Tasks, 1)
+			require.NotNil(t, ts)
+			require.Equal(t, ts.Name, wf.Name)
+			require.Equal(t, ts.Namespace, wf.Namespace)
+			require.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, pods.Items)
-		assert.Len(t, pods.Items, 1)
+		require.NotEmpty(t, pods.Items)
+		require.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
-			assert.NotNil(t, pod)
-			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
-			assert.Equal(t, "virtual-node", pod.Spec.NodeName)
+			require.NotNil(t, pod)
+			require.True(t, strings.HasSuffix(pod.Name, "-agent"))
+			require.Equal(t, "virtual-node", pod.Spec.NodeName)
 		}
 	})
 	t.Run("CreateTaskSetWithInstanceID", func(t *testing.T) {
@@ -121,23 +120,23 @@ status:
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, tslist.Items)
-		assert.Len(t, tslist.Items, 1)
+		require.NotEmpty(t, tslist.Items)
+		require.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
-			assert.NotNil(t, ts)
-			assert.Equal(t, ts.Name, wf.Name)
-			assert.Equal(t, ts.Namespace, wf.Namespace)
-			assert.Len(t, ts.Spec.Tasks, 1)
+			require.NotNil(t, ts)
+			require.Equal(t, ts.Name, wf.Name)
+			require.Equal(t, ts.Namespace, wf.Namespace)
+			require.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
-		assert.NotEmpty(t, pods.Items)
-		assert.Len(t, pods.Items, 1)
+		require.NotEmpty(t, pods.Items)
+		require.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
-			assert.NotNil(t, pod)
-			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
-			assert.Equal(t, "testID", pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID])
-			assert.Equal(t, "virtual-node", pod.Spec.NodeName)
+			require.NotNil(t, pod)
+			require.True(t, strings.HasSuffix(pod.Name, "-agent"))
+			require.Equal(t, "testID", pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID])
+			require.Equal(t, "virtual-node", pod.Spec.NodeName)
 		}
 	})
 }
@@ -148,8 +147,8 @@ func TestAssessAgentPodStatus(t *testing.T) {
 			Status: apiv1.PodStatus{Phase: apiv1.PodFailed},
 		}
 		nodeStatus, msg := assessAgentPodStatus(pod1)
-		assert.Equal(t, wfv1.NodeFailed, nodeStatus)
-		assert.Equal(t, "", msg)
+		require.Equal(t, wfv1.NodeFailed, nodeStatus)
+		require.Equal(t, "", msg)
 	})
 	t.Run("Running", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
@@ -157,16 +156,16 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		}
 
 		nodeStatus, msg := assessAgentPodStatus(pod1)
-		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
-		assert.Equal(t, "", msg)
+		require.Equal(t, wfv1.NodePhase(""), nodeStatus)
+		require.Equal(t, "", msg)
 	})
 	t.Run("Success", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodSucceeded},
 		}
 		nodeStatus, msg := assessAgentPodStatus(pod1)
-		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
-		assert.Equal(t, "", msg)
+		require.Equal(t, wfv1.NodePhase(""), nodeStatus)
+		require.Equal(t, "", msg)
 	})
 
 }

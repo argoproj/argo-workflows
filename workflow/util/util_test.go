@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v3/jwt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"Github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -52,8 +51,8 @@ spec:
 	ctx := context.Background()
 	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, &wfv1.SubmitOpts{DryRun: true})
 	require.NoError(t, err)
-	assert.Equal(t, wf.Spec, newWf.Spec)
-	assert.Equal(t, wf.Status, newWf.Status)
+	require.Equal(t, wf.Spec, newWf.Spec)
+	require.Equal(t, wf.Status, newWf.Status)
 }
 
 // TestResubmitWorkflowWithOnExit ensures we do not carry over the onExit node even if successful
@@ -80,7 +79,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
-	assert.False(t, ok)
+	require.False(t, ok)
 }
 
 // TestReadFromSingleorMultiplePath ensures we can read the content of a single file or multiple files correctly using the ReadFromFilePathsOrUrls function
@@ -113,10 +112,10 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				}
 			}
 			body, err := ReadFromFilePathsOrUrls(filePaths...)
-			assert.Equal(t, len(body), len(filePaths))
+			require.Equal(t, len(body), len(filePaths))
 			require.NoError(t, err)
 			for i := range body {
-				assert.Equal(t, body[i], []byte(tc.contents[i]))
+				require.Equal(t, body[i], []byte(tc.contents[i]))
 			}
 		})
 	}
@@ -163,7 +162,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 			}
 			body, err := ReadFromFilePathsOrUrls(filePaths...)
 			require.Error(t, err)
-			assert.Empty(t, body)
+			require.Empty(t, body)
 		})
 	}
 }
@@ -258,7 +257,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		// displayName didn't match suspend node so should still be running
 		wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+		require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
 		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
 		require.NoError(t, err)
@@ -266,8 +265,8 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		// displayName matched node so has succeeded
 		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-		assert.Equal(t, "", wf.Status.Nodes.FindByDisplayName("approve").Message)
+		require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+		require.Equal(t, "", wf.Status.Nodes.FindByDisplayName("approve").Message)
 	})
 
 	t.Run("With user info", func(t *testing.T) {
@@ -288,7 +287,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		// displayName didn't match suspend node so should still be running
 		wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+		require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
 		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
 		require.NoError(t, err)
@@ -296,8 +295,8 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 		// displayName matched node so has succeeded
 		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-		assert.Equal(t, fmt.Sprintf("Resumed by: %v", uim), wf.Status.Nodes.FindByDisplayName("approve").Message)
+		require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+		require.Equal(t, fmt.Sprintf("Resumed by: %v", uim), wf.Status.Nodes.FindByDisplayName("approve").Message)
 	})
 }
 
@@ -316,7 +315,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	// displayName didn't match suspend node so should still be running
 	wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
 	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "error occurred")
 	require.NoError(t, err)
@@ -324,7 +323,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	// displayName matched node so has succeeded
 	wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	require.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
 	origWf.Status = wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded}
 	origWf.Name = "succeeded-wf"
@@ -356,7 +355,7 @@ func TestAddParamToGlobalScopeValueNil(t *testing.T) {
 		Value:      nil,
 		GlobalName: "test",
 	})
-	assert.False(t, p)
+	require.False(t, p)
 }
 
 var susWorkflow = `
@@ -481,7 +480,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	// make sure global variable was updated
 	wf, err := wfIf.Get(ctx, "suspend-template", metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, "Hello World 2", wf.Status.Outputs.Parameters[0].Value.String())
+	require.Equal(t, "Hello World 2", wf.Status.Outputs.Parameters[0].Value.String())
 
 	noSpaceWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 	noSpaceWf.Name = "suspend-template-no-outputs"
@@ -546,9 +545,9 @@ func TestSelectorMatchesNode(t *testing.T) {
 			selector, err := fields.ParseSelector(tc.selector)
 			require.NoError(t, err)
 			if tc.outcome {
-				assert.True(t, SelectorMatchesNode(selector, node))
+				require.True(t, SelectorMatchesNode(selector, node))
 			} else {
-				assert.False(t, SelectorMatchesNode(selector, node))
+				require.False(t, SelectorMatchesNode(selector, node))
 			}
 		})
 	}
@@ -556,12 +555,12 @@ func TestSelectorMatchesNode(t *testing.T) {
 
 func TestGetNodeType(t *testing.T) {
 	t.Run("getNodeType", func(t *testing.T) {
-		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}))
-		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Container: &v1.Container{}}))
-		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Resource: &wfv1.ResourceTemplate{}}))
-		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Steps: []wfv1.ParallelSteps{}}))
-		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{DAG: &wfv1.DAGTemplate{}}))
-		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Suspend: &wfv1.SuspendTemplate{}}))
+		require.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}))
+		require.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Container: &v1.Container{}}))
+		require.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Resource: &wfv1.ResourceTemplate{}}))
+		require.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Steps: []wfv1.ParallelSteps{}}))
+		require.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{DAG: &wfv1.DAGTemplate{}}))
+		require.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Suspend: &wfv1.SuspendTemplate{}}))
 	})
 }
 
@@ -576,15 +575,15 @@ func TestApplySubmitOpts(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1,b=1"})
 		require.NoError(t, err)
-		assert.Len(t, wf.GetLabels(), 2)
+		require.Len(t, wf.GetLabels(), 2)
 	})
 	t.Run("MergeLabels", func(t *testing.T) {
 		wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"a": "0", "b": "0"}}}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1"})
 		require.NoError(t, err)
-		if assert.Len(t, wf.GetLabels(), 2) {
-			assert.Equal(t, "1", wf.GetLabels()["a"])
-			assert.Equal(t, "0", wf.GetLabels()["b"])
+		if require.Len(t, wf.GetLabels(), 2) {
+			require.Equal(t, "1", wf.GetLabels()["a"])
+			require.Equal(t, "0", wf.GetLabels()["b"])
 		}
 	})
 	t.Run("InvalidParameters", func(t *testing.T) {
@@ -601,16 +600,16 @@ func TestApplySubmitOpts(t *testing.T) {
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=81861780812"}})
 		require.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
-		if assert.Len(t, parameters, 1) {
-			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", parameters[0].Value.String())
+		if require.Len(t, parameters, 1) {
+			require.Equal(t, "a", parameters[0].Name)
+			require.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
 	t.Run("PodPriorityClassName", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{PodPriorityClassName: "abc"})
 		require.NoError(t, err)
-		assert.Equal(t, "abc", wf.Spec.PodPriorityClassName)
+		require.Equal(t, "abc", wf.Spec.PodPriorityClassName)
 	})
 }
 
@@ -624,8 +623,8 @@ func TestReadParametersFile(t *testing.T) {
 	err = ReadParametersFile(file.Name(), opts)
 	require.NoError(t, err)
 	parameters := opts.Parameters
-	if assert.Len(t, parameters, 1) {
-		assert.Equal(t, "a=81861780812", parameters[0])
+	if require.Len(t, parameters, 1) {
+		require.Equal(t, "a=81861780812", parameters[0])
 	}
 }
 
@@ -653,18 +652,18 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		}
 		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
 		require.NoError(t, err)
-		assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
-		assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
-		assert.Contains(t, wf.GetLabels(), common.LabelKeyCronWorkflow)
-		assert.Contains(t, wf.GetLabels(), common.LabelKeyWorkflowTemplate)
-		assert.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
-		assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
-		assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
-		assert.NotContains(t, wf.GetLabels(), common.LabelKeyWorkflowArchivingStatus)
-		assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
-		assert.Len(t, wf.OwnerReferences, 1)
-		assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
-		assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
+		require.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
+		require.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
+		require.Contains(t, wf.GetLabels(), common.LabelKeyCronWorkflow)
+		require.Contains(t, wf.GetLabels(), common.LabelKeyWorkflowTemplate)
+		require.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
+		require.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
+		require.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
+		require.NotContains(t, wf.GetLabels(), common.LabelKeyWorkflowArchivingStatus)
+		require.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
+		require.Len(t, wf.OwnerReferences, 1)
+		require.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
+		require.Equal(t, "testObj", wf.OwnerReferences[0].Name)
 	})
 	t.Run("OverrideCreatorLabels", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -689,9 +688,9 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		})
 		wf, err := FormulateResubmitWorkflow(ctx, wf, false, nil)
 		require.NoError(t, err)
-		assert.Equal(t, "yyyy-yyyy-yyyy-yyyy", wf.Labels[common.LabelKeyCreator])
-		assert.Equal(t, "bar.at.example.com", wf.Labels[common.LabelKeyCreatorEmail])
-		assert.Equal(t, "bar", wf.Labels[common.LabelKeyCreatorPreferredUsername])
+		require.Equal(t, "yyyy-yyyy-yyyy-yyyy", wf.Labels[common.LabelKeyCreator])
+		require.Equal(t, "bar.at.example.com", wf.Labels[common.LabelKeyCreatorEmail])
+		require.Equal(t, "bar", wf.Labels[common.LabelKeyCreatorPreferredUsername])
 	})
 	t.Run("UnlabelCreatorLabels", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -711,9 +710,9 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		}
 		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
 		require.NoError(t, err)
-		assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
-		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
-		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorPreferredUsername], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorPreferredUsername)
+		require.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
+		require.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
+		require.Emptyf(t, wf.Labels[common.LabelKeyCreatorPreferredUsername], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorPreferredUsername)
 
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
@@ -726,7 +725,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		}
 		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, []string{"message=modified"})
 		require.NoError(t, err)
-		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+		require.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 	})
 }
 
@@ -892,7 +891,7 @@ func TestDeepDeleteNodes(t *testing.T) {
 	require.NoError(t, err)
 	newWfBytes, err := yaml.Marshal(newWf)
 	require.NoError(t, err)
-	assert.NotContains(t, string(newWfBytes), "steps-9fkqc-3224593506")
+	require.NotContains(t, string(newWfBytes), "steps-9fkqc-3224593506")
 }
 
 var exitHandler = `
@@ -1023,7 +1022,7 @@ func TestRetryExitHandler(t *testing.T) {
 	newWfBytes, err := yaml.Marshal(newWf)
 	require.NoError(t, err)
 	t.Log(string(newWfBytes))
-	assert.NotContains(t, string(newWfBytes), "retry-script-6xt68-3924170365")
+	require.NotContains(t, string(newWfBytes), "retry-script-6xt68-3924170365")
 }
 
 func TestFormulateRetryWorkflow(t *testing.T) {
@@ -1053,23 +1052,23 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-		assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
-		assert.True(t, wf.Status.StartedAt.After(createdTime.Time))
-		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
-		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
+		require.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+		require.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
+		require.True(t, wf.Status.StartedAt.After(createdTime.Time))
+		require.NotContains(t, wf.Labels, common.LabelKeyCompleted)
+		require.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
 		for _, node := range wf.Status.Nodes {
 			switch node.Phase {
 			case wfv1.NodeSucceeded:
-				assert.Equal(t, "succeeded", node.Message)
-				assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-				assert.Equal(t, createdTime, node.StartedAt)
-				assert.Equal(t, finishedTime, node.FinishedAt)
+				require.Equal(t, "succeeded", node.Message)
+				require.Equal(t, wfv1.NodeSucceeded, node.Phase)
+				require.Equal(t, createdTime, node.StartedAt)
+				require.Equal(t, finishedTime, node.FinishedAt)
 			case wfv1.NodeFailed:
-				assert.Equal(t, "", node.Message)
-				assert.Equal(t, wfv1.NodeRunning, node.Phase)
-				assert.Equal(t, metav1.Time{}, node.FinishedAt)
-				assert.True(t, node.StartedAt.After(createdTime.Time))
+				require.Equal(t, "", node.Message)
+				require.Equal(t, wfv1.NodeRunning, node.Phase)
+				require.Equal(t, metav1.Time{}, node.FinishedAt)
+				require.True(t, node.StartedAt.After(createdTime.Time))
 			}
 		}
 
@@ -1090,8 +1089,8 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		if assert.Len(t, wf.Status.Nodes, 1) {
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
+		if require.Len(t, wf.Status.Nodes, 1) {
+			require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
 		}
 	})
 	t.Run("Skipped and Suspended Nodes", func(t *testing.T) {
@@ -1123,15 +1122,15 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
 		require.NoError(t, err)
-		if assert.Len(t, wf.Status.Nodes, 3) {
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
-			assert.Equal(t, wfv1.Parameter{
+		if require.Len(t, wf.Status.Nodes, 3) {
+			require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
+			require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
+			require.Equal(t, wfv1.Parameter{
 				Name:      "param-1",
 				Value:     nil,
 				ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
 			}, wf.Status.Nodes["suspended"].Outputs.Parameters[0])
-			assert.Equal(t, wfv1.NodeSkipped, wf.Status.Nodes["skipped"].Phase)
+			require.Equal(t, wfv1.NodeSkipped, wf.Status.Nodes["skipped"].Phase)
 		}
 	})
 	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
@@ -1155,11 +1154,11 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
 		require.NoError(t, err)
 		// Node #3, #4 are deleted and will be recreated so only 3 nodes left in wf.Status.Nodes
-		if assert.Len(t, wf.Status.Nodes, 3) {
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+		if require.Len(t, wf.Status.Nodes, 3) {
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
 			// The parent group nodes should be running.
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
+			require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+			require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 		}
 	})
 	t.Run("Nested DAG without Node Selected", func(t *testing.T) {
@@ -1183,12 +1182,12 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
 		require.NoError(t, err)
 		// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
-		if assert.Len(t, wf.Status.Nodes, 4) {
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-			assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
+		if require.Len(t, wf.Status.Nodes, 4) {
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+			require.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
 		}
 
 	})
@@ -1211,7 +1210,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
-		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+		require.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 
 	})
 
@@ -1239,8 +1238,8 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
-		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
-		assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
+		require.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+		require.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
 
 	})
 
@@ -1319,12 +1318,12 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=4", nil)
 		require.NoError(t, err)
 		// Node #4 is deleted and will be recreated so only 4 nodes left in wf.Status.Nodes
-		if assert.Len(t, wf.Status.Nodes, 4) {
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["successful-workflow-2"].Phase)
+		if require.Len(t, wf.Status.Nodes, 4) {
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["successful-workflow-2"].Phase)
 			// The parent group nodes should be running.
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+			require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
 		}
 	})
 
@@ -1349,10 +1348,10 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		if assert.Len(t, wf.Status.Nodes, 4) {
-			assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes["2"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-			assert.Len(t, podsToDelete, 2)
+		if require.Len(t, wf.Status.Nodes, 4) {
+			require.Equal(t, wfv1.NodeFailed, wf.Status.Nodes["2"].Phase)
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+			require.Len(t, podsToDelete, 2)
 		}
 	})
 
@@ -1377,10 +1376,10 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
 		require.NoError(t, err)
-		if assert.Len(t, wf.Status.Nodes, 2) {
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow-2"].Phase)
-			assert.Len(t, podsToDelete, 4)
+		if require.Len(t, wf.Status.Nodes, 2) {
+			require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+			require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow-2"].Phase)
+			require.Len(t, podsToDelete, 4)
 		}
 	})
 }
@@ -1412,9 +1411,9 @@ func TestToUnstructured(t *testing.T) {
 	un, err := ToUnstructured(&wfv1.Workflow{})
 	require.NoError(t, err)
 	gv := un.GetObjectKind().GroupVersionKind()
-	assert.Equal(t, workflow.WorkflowKind, gv.Kind)
-	assert.Equal(t, workflow.Group, gv.Group)
-	assert.Equal(t, workflow.Version, gv.Version)
+	require.Equal(t, workflow.WorkflowKind, gv.Kind)
+	require.Equal(t, workflow.Group, gv.Group)
+	require.Equal(t, workflow.Version, gv.Version)
 }
 
 func TestGetTemplateFromNode(t *testing.T) {
@@ -1444,7 +1443,7 @@ func TestGetTemplateFromNode(t *testing.T) {
 
 	for _, tc := range cases {
 		actual := GetTemplateFromNode(tc.inputNode)
-		assert.Equal(t, tc.expectedTemplateName, actual)
+		require.Equal(t, tc.expectedTemplateName, actual)
 	}
 }
 
@@ -1925,195 +1924,195 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	// Retry top individual pod node
 	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step1", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 1)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Len(t, podsToDelete, 6)
+	require.Len(t, wf.Status.Nodes, 1)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Len(t, podsToDelete, 6)
 
 	// Retry top individual suspend node
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step2", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 3)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
-	assert.Len(t, podsToDelete, 5)
+	require.Len(t, wf.Status.Nodes, 3)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, podsToDelete, 5)
 
 	// Retry the starting on first DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 12)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, wf.Status.Nodes, 12)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	// All nodes in the other branch remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
 	// The nodes in the retrying branch are reset
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Len(t, podsToDelete, 3)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	require.Len(t, podsToDelete, 3)
 
 	// Retry the starting on second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 12)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, wf.Status.Nodes, 12)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	// All nodes in the other branch remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
 	// The nodes in the retrying branch are reset
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Len(t, podsToDelete, 3)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	require.Len(t, podsToDelete, 3)
 
 	// Retry the first individual node (suspended node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 12)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, wf.Status.Nodes, 12)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	// All nodes in the other branch remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
 	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Len(t, podsToDelete, 3)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	require.Len(t, podsToDelete, 3)
 
 	// Retry the second individual node (pod node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 12)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, wf.Status.Nodes, 12)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	// All nodes in the other branch remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
 	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	// The suspended node remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Len(t, podsToDelete, 3)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	require.Len(t, podsToDelete, 3)
 
 	// Retry the third individual node (pod node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step3", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 13)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, wf.Status.Nodes, 13)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	// All nodes in the other branch remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
 	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	// The suspended node remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
-	assert.Len(t, podsToDelete, 2)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
+	require.Len(t, podsToDelete, 2)
 
 	// Retry the last individual node (suspend node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 15)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, wf.Status.Nodes, 15)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	// All nodes in the other branch remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
 	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	// The suspended node remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
-	assert.Len(t, podsToDelete, 1)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
+	require.Len(t, podsToDelete, 1)
 
 	// Retry the node that connects the two branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step4", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 16)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, wf.Status.Nodes, 16)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	// All nodes in two branches remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
-	assert.Len(t, podsToDelete, 1)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
+	require.Len(t, podsToDelete, 1)
 
 	// Retry the last node (failing node)
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step5-tofail", nil)
 	require.NoError(t, err)
-	assert.Len(t, wf.Status.Nodes, 16)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	require.Len(t, wf.Status.Nodes, 16)
+	require.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	// All nodes in two branches remains succeeded
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
-	assert.Len(t, podsToDelete, 1)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
+	require.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
+	require.Len(t, podsToDelete, 1)
 }

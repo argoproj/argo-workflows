@@ -3,7 +3,6 @@ package estimation
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -60,9 +59,9 @@ metadata:
 	t.Run("None", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
+		if require.NotNil(t, p) {
 			e := p.(*estimator)
-			assert.Nil(t, e.baselineWF)
+			require.Nil(t, e.baselineWF)
 		}
 	})
 	t.Run("WorkflowTemplate", func(t *testing.T) {
@@ -70,10 +69,10 @@ metadata:
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-wftmpl"}},
 		})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
+		if require.NotNil(t, p) {
 			e := p.(*estimator)
-			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
-				assert.Equal(t, "my-wftmpl-baseline", e.baselineWF.Name)
+			if require.NotNil(t, e) && require.NotNil(t, e.baselineWF) {
+				require.Equal(t, "my-wftmpl-baseline", e.baselineWF.Name)
 			}
 		}
 	})
@@ -82,10 +81,10 @@ metadata:
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyClusterWorkflowTemplate: "my-cwft"}},
 		})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
+		if require.NotNil(t, p) {
 			e := p.(*estimator)
-			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
-				assert.Equal(t, "my-cwft-baseline", e.baselineWF.Name)
+			if require.NotNil(t, e) && require.NotNil(t, e.baselineWF) {
+				require.Equal(t, "my-cwft-baseline", e.baselineWF.Name)
 			}
 		}
 	})
@@ -94,10 +93,10 @@ metadata:
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyCronWorkflow: "my-cwf"}},
 		})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
+		if require.NotNil(t, p) {
 			e := p.(*estimator)
-			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
-				assert.Equal(t, "my-cwf-baseline", e.baselineWF.Name)
+			if require.NotNil(t, e) && require.NotNil(t, e.baselineWF) {
+				require.Equal(t, "my-cwf-baseline", e.baselineWF.Name)
 			}
 		}
 	})
@@ -106,10 +105,10 @@ metadata:
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-archived-wftmpl"}},
 		})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
+		if require.NotNil(t, p) {
 			e := p.(*estimator)
-			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
-				assert.Equal(t, "my-archived-wftmpl-baseline", e.baselineWF.Name)
+			if require.NotNil(t, e) && require.NotNil(t, e.baselineWF) {
+				require.Equal(t, "my-archived-wftmpl-baseline", e.baselineWF.Name)
 			}
 		}
 	})

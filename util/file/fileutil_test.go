@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
@@ -27,7 +26,7 @@ func TestCompressContentString(t *testing.T) {
 
 		resultString, _ := file.DecodeDecompressString(compString)
 
-		assert.Equal(t, content, resultString)
+		require.Equal(t, content, resultString)
 	}
 }
 
@@ -44,7 +43,7 @@ func TestGetGzipReader(t *testing.T) {
 		require.NoError(t, err)
 		res, err := io.ReadAll(reader)
 		require.NoError(t, err)
-		assert.Equal(t, rawContent, string(res))
+		require.Equal(t, rawContent, string(res))
 	}
 }
 
@@ -139,7 +138,7 @@ func TestExistsInTar(t *testing.T) {
 			t.Parallel()
 			tarReader := newTarReader(t, tc.files)
 			actual := file.ExistsInTar(tc.sourcePath, tarReader)
-			assert.Equalf(t, tc.expected, actual, "sourcePath %s not found", tc.sourcePath)
+			require.Equalf(t, tc.expected, actual, "sourcePath %s not found", tc.sourcePath)
 		})
 	}
 }

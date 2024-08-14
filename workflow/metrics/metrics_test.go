@@ -7,7 +7,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/util/workqueue"
 
@@ -35,24 +34,24 @@ func TestServerConfig_SameServerAs(t *testing.T) {
 		Port:    DefaultMetricsServerPort,
 	}
 
-	assert.True(t, a.SameServerAs(b))
+	require.True(t, a.SameServerAs(b))
 
 	b.Enabled = false
 	a.Enabled = false
-	assert.False(t, a.SameServerAs(b))
+	require.False(t, a.SameServerAs(b))
 
 	b.Enabled = true
 	a.Enabled = true
 	b.Port = 9091
-	assert.False(t, a.SameServerAs(b))
+	require.False(t, a.SameServerAs(b))
 
 	b.Port = DefaultMetricsServerPort
 	b.Path = "/telemetry"
-	assert.False(t, a.SameServerAs(b))
+	require.False(t, a.SameServerAs(b))
 
 	b.Path = DefaultMetricsServerPath
 	b.Secure = true
-	assert.False(t, a.SameServerAs(b))
+	require.False(t, a.SameServerAs(b))
 }
 
 func TestMetrics(t *testing.T) {
@@ -65,13 +64,13 @@ func TestMetrics(t *testing.T) {
 
 	// Default buckets: {5, 10, 15, 20, 25, 30}
 	m.OperationCompleted(5)
-	assert.Equal(t, 1, int(*write(m.operationDurations).Histogram.Bucket[1].CumulativeCount))
+	require.Equal(t, 1, int(*write(m.operationDurations).Histogram.Bucket[1].CumulativeCount))
 
-	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
+	require.Nil(t, m.GetCustomMetric("does-not-exist"))
 
 	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
 	require.NoError(t, err)
-	assert.NotNil(t, m.GetCustomMetric("metric"))
+	require.NotNil(t, m.GetCustomMetric("metric"))
 
 	err = m.UpsertCustomMetric("metric2", "", newCounter("test", "new test", nil), false)
 	require.Error(t, err)
@@ -105,11 +104,11 @@ func TestMetricGC(t *testing.T) {
 		TTL:     1 * time.Second,
 	}
 	m := New(config, config)
-	assert.Empty(t, m.customMetrics)
+	require.Empty(t, m.customMetrics)
 
 	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
 	require.NoError(t, err)
-	assert.Len(t, m.customMetrics, 1)
+	require.Len(t, m.customMetrics, 1)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -126,7 +125,7 @@ func TestMetricGC(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	assert.Empty(t, m.customMetrics)
+	require.Empty(t, m.customMetrics)
 }
 
 func TestRealtimeMetricGC(t *testing.T) {
@@ -137,11 +136,11 @@ func TestRealtimeMetricGC(t *testing.T) {
 		TTL:     1 * time.Second,
 	}
 	m := New(config, config)
-	assert.Empty(t, m.customMetrics)
+	require.Empty(t, m.customMetrics)
 
 	err := m.UpsertCustomMetric("realtime_metric", "workflow-uid", newCounter("test", "test", nil), true)
 	require.NoError(t, err)
-	assert.Len(t, m.customMetrics, 1)
+	require.Len(t, m.customMetrics, 1)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -158,7 +157,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 		// Sleep to prevent overloading test worker CPU.
 		time.Sleep(100 * time.Millisecond)
 	}
-	assert.Len(t, m.customMetrics, 1)
+	require.Len(t, m.customMetrics, 1)
 
 	// simulate workflow is completed.
 	m.StopRealtimeMetricsForKey("workflow-uid")
@@ -172,7 +171,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 		// Sleep to prevent overloading test worker CPU.
 		time.Sleep(100 * time.Millisecond)
 	}
-	assert.Empty(t, m.customMetrics)
+	require.Empty(t, m.customMetrics)
 }
 
 func TestWorkflowQueueMetrics(t *testing.T) {
@@ -187,14 +186,14 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	wfQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
 	defer wfQueue.ShutDown()
 
-	assert.NotNil(t, m.workqueueMetrics["workflow_queue-depth"])
-	assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"])
-	assert.NotNil(t, m.workqueueMetrics["workflow_queue-latency"])
+	require.NotNil(t, m.workqueueMetrics["workflow_queue-depth"])
+	require.NotNil(t, m.workqueueMetrics["workflow_queue-adds"])
+	require.NotNil(t, m.workqueueMetrics["workflow_queue-latency"])
 
 	wfQueue.Add("hello")
 
-	if assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"]) {
-		assert.InEpsilon(t, 1.0, *write(m.workqueueMetrics["workflow_queue-adds"]).Counter.Value, 0.001)
+	if require.NotNil(t, m.workqueueMetrics["workflow_queue-adds"]) {
+		require.InEpsilon(t, 1.0, *write(m.workqueueMetrics["workflow_queue-adds"]).Counter.Value, 0.001)
 	}
 }
 
@@ -212,22 +211,22 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 
 	err = m.UpsertCustomMetric("metrickey", "123", rtMetric, true)
 	require.NoError(t, err)
-	assert.NotEmpty(t, m.workflows["123"])
-	assert.Len(t, m.customMetrics, 1)
+	require.NotEmpty(t, m.workflows["123"])
+	require.Len(t, m.customMetrics, 1)
 
 	m.DeleteRealtimeMetricsForKey("123")
-	assert.Empty(t, m.workflows["123"])
-	assert.Empty(t, m.customMetrics)
+	require.Empty(t, m.workflows["123"])
+	require.Empty(t, m.customMetrics)
 
 	metric, err := ConstructOrUpdateMetric(nil, &v1alpha1.Prometheus{Name: "name", Help: "hello", Gauge: &v1alpha1.Gauge{Value: "1"}})
 	require.NoError(t, err)
 
 	err = m.UpsertCustomMetric("metrickey", "456", metric, false)
 	require.NoError(t, err)
-	assert.Empty(t, m.workflows["456"])
-	assert.Len(t, m.customMetrics, 1)
+	require.Empty(t, m.workflows["456"])
+	require.Len(t, m.customMetrics, 1)
 
 	m.DeleteRealtimeMetricsForKey("456")
-	assert.Empty(t, m.workflows["456"])
-	assert.Len(t, m.customMetrics, 1)
+	require.Empty(t, m.workflows["456"])
+	require.Len(t, m.customMetrics, 1)
 }

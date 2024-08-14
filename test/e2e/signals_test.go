@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -33,18 +33,18 @@ func (s *SignalsSuite) TestStopBehavior() {
 		WaitForWorkflow(killDuration + 15*time.Second). // this one takes especially long in CI
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
+			require.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Contains(t, []wfv1.NodePhase{wfv1.NodeFailed, wfv1.NodeError}, nodeStatus.Phase)
+			if require.NotNil(t, nodeStatus) {
+				require.Contains(t, []wfv1.NodePhase{wfv1.NodeFailed, wfv1.NodeError}, nodeStatus.Phase)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("A.onExit")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			if require.NotNil(t, nodeStatus) {
+				require.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			if require.NotNil(t, nodeStatus) {
+				require.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
 		})
 }
@@ -59,10 +59,10 @@ func (s *SignalsSuite) TestStopBehaviorWithDaemon() {
 		WaitForWorkflow(killDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
+			require.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("Daemon")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			if require.NotNil(t, nodeStatus) {
+				require.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
 		})
 }
@@ -77,15 +77,15 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		WaitForWorkflow(killDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
+			require.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Contains(t, []wfv1.NodePhase{wfv1.NodeFailed, wfv1.NodeError}, nodeStatus.Phase)
+			if require.NotNil(t, nodeStatus) {
+				require.Contains(t, []wfv1.NodePhase{wfv1.NodeFailed, wfv1.NodeError}, nodeStatus.Phase)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("A.onExit")
-			assert.Nil(t, nodeStatus)
+			require.Nil(t, nodeStatus)
 			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
-			assert.Nil(t, nodeStatus)
+			require.Nil(t, nodeStatus)
 		})
 }
 
@@ -100,13 +100,13 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 		WaitForWorkflow(killDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			if require.NotNil(t, nodeStatus) {
+				require.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("B")
-			assert.Nil(t, nodeStatus)
+			require.Nil(t, nodeStatus)
 		})
 }
 
@@ -143,8 +143,8 @@ func (s *SignalsSuite) TestSignaled() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Contains(t, status.Message, "(exit code 143)")
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Contains(t, status.Message, "(exit code 143)")
 		})
 }
 
@@ -156,17 +156,17 @@ func (s *SignalsSuite) TestSignaledContainerSet() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Contains(t, status.Message, "(exit code 137)")
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Contains(t, status.Message, "(exit code 137)")
 			one := status.Nodes.FindByDisplayName("one")
-			if assert.NotNil(t, one) {
-				assert.Equal(t, wfv1.NodeFailed, one.Phase)
-				assert.Contains(t, one.Message, "(exit code 137)")
+			if require.NotNil(t, one) {
+				require.Equal(t, wfv1.NodeFailed, one.Phase)
+				require.Contains(t, one.Message, "(exit code 137)")
 			}
 			two := status.Nodes.FindByDisplayName("two")
-			if assert.NotNil(t, two) {
-				assert.Equal(t, wfv1.NodeFailed, two.Phase)
-				assert.Contains(t, two.Message, "(exit code 143)")
+			if require.NotNil(t, two) {
+				require.Equal(t, wfv1.NodeFailed, two.Phase)
+				require.Contains(t, two.Message, "(exit code 143)")
 			}
 		})
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,8 +63,8 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.False(t, wf.Status.IsOffloadNodeStatus())
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	require.False(t, wf.Status.IsOffloadNodeStatus())
+	require.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
 // TestPersistErrorWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
@@ -85,7 +84,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.WorkflowError, wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowError, wf.Status.Phase)
 }
 
 // TestPersistWithLargeWfSupport verifies persistence with largeWFsuppport
@@ -105,15 +104,15 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	// check the saved version has been offloaded
-	assert.True(t, wf.Status.IsOffloadNodeStatus())
-	assert.Empty(t, wf.Status.Nodes)
-	assert.Empty(t, wf.Status.CompressedNodes)
+	require.True(t, wf.Status.IsOffloadNodeStatus())
+	require.Empty(t, wf.Status.Nodes)
+	require.Empty(t, wf.Status.CompressedNodes)
 	// check the updated in-memory version is pre-offloaded state
-	assert.False(t, woc.wf.Status.IsOffloadNodeStatus())
-	assert.NotEmpty(t, woc.wf.Status.Nodes)
-	assert.Empty(t, woc.wf.Status.CompressedNodes)
+	require.False(t, woc.wf.Status.IsOffloadNodeStatus())
+	require.NotEmpty(t, woc.wf.Status.Nodes)
+	require.Empty(t, woc.wf.Status.CompressedNodes)
 }
 
 // TestPersistErrorWithLargeWfSupport verifies persistence error with largeWFsuppport
@@ -133,15 +132,15 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	// check the saved version has not been offloaded
-	assert.False(t, wf.Status.IsOffloadNodeStatus())
-	assert.NotEmpty(t, woc.wf.Status.Nodes)
-	assert.Empty(t, woc.wf.Status.CompressedNodes)
+	require.False(t, wf.Status.IsOffloadNodeStatus())
+	require.NotEmpty(t, woc.wf.Status.Nodes)
+	require.Empty(t, woc.wf.Status.CompressedNodes)
 	// check the updated in-memory version is pre-offloaded state
-	assert.False(t, woc.wf.Status.IsOffloadNodeStatus())
-	assert.NotEmpty(t, woc.wf.Status.Nodes)
-	assert.Empty(t, woc.wf.Status.CompressedNodes)
+	require.False(t, woc.wf.Status.IsOffloadNodeStatus())
+	require.NotEmpty(t, woc.wf.Status.Nodes)
+	require.Empty(t, woc.wf.Status.CompressedNodes)
 }
 
 func makeMax() func() {

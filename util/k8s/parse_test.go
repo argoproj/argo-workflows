@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ParseRequest(t *testing.T) {
@@ -30,8 +30,8 @@ func Test_ParseRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			x, _ := url.Parse(tt.url)
 			verb, kind := ParseRequest(&http.Request{Method: tt.method, URL: x})
-			assert.Equal(t, tt.wantVerb, verb)
-			assert.Equal(t, tt.wantKind, kind)
+			require.Equal(t, tt.wantVerb, verb)
+			require.Equal(t, tt.wantKind, kind)
 		})
 	}
 }

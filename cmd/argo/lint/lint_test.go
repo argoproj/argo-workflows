@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,8 +88,8 @@ func TestLintFile(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.False(t, res.Success)
-	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
+	require.False(t, res.Success)
+	require.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNotCalled(t, "LintWorkflowTemplate")
 }
@@ -120,9 +119,9 @@ func TestLintMultipleKinds(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.False(t, res.Success)
-	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
-	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "foo" (WorkflowTemplate): lint error`, file.Name()))
+	require.False(t, res.Success)
+	require.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, file.Name()))
+	require.Contains(t, res.msg, fmt.Sprintf(`%s: in "foo" (WorkflowTemplate): lint error`, file.Name()))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 1)
 }
@@ -173,10 +172,10 @@ func TestLintWithOutput(t *testing.T) {
 	mw.AssertCalled(t, "Write", []byte(expected[1]))
 	mw.AssertCalled(t, "Write", []byte(expected[2]))
 	require.NoError(t, err)
-	assert.False(t, res.Success)
+	require.False(t, res.Success)
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 2)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 2)
-	assert.Equal(t, strings.Join(expected, ""), res.Msg())
+	require.Equal(t, strings.Join(expected, ""), res.Msg())
 }
 
 func TestLintStdin(t *testing.T) {
@@ -207,8 +206,8 @@ func TestLintStdin(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.False(t, res.Success)
-	assert.Contains(t, res.msg, `stdin: in "steps-" (Workflow): lint error`)
+	require.False(t, res.Success)
+	require.Contains(t, res.msg, `stdin: in "steps-" (Workflow): lint error`)
 	assert.Contains(t, res.msg, `stdin: in "foo" (WorkflowTemplate): lint error`)
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 1)
@@ -244,8 +243,8 @@ func TestLintDeviceFile(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.False(t, res.Success)
-	assert.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, deviceFileName))
+	require.False(t, res.Success)
+	require.Contains(t, res.msg, fmt.Sprintf(`%s: in "steps-" (Workflow): lint error`, deviceFileName))
 	wfServiceClientMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 	wftServiceSclientMock.AssertNotCalled(t, "LintWorkflowTemplate")
 }
@@ -297,7 +296,7 @@ func TestGetFormatter(t *testing.T) {
 
 			r, err := Lint(context.Background(), &LintOptions{Formatter: fmtr})
 			require.NoError(t, err)
-			assert.Equal(t, test.expectedOutput, r.Msg())
+			require.Equal(t, test.expectedOutput, r.Msg())
 		})
 	}
 }
@@ -339,7 +338,7 @@ func TestGetObjectName(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, test.expected, getObjectName(test.kind, test.obj, test.objIndex))
+			require.Equal(t, test.expected, getObjectName(test.kind, test.obj, test.objIndex))
 		})
 	}
 }

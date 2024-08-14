@@ -3,7 +3,7 @@ package flatten
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
@@ -38,7 +38,7 @@ func Test_flatten(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, Flatten(tt.in))
+			require.Equal(t, tt.want, Flatten(tt.in))
 		})
 	}
 }

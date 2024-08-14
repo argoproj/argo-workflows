@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,22 +48,22 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
-			assert.Equal(t, "No more retries left", status.Message)
-			assert.Equal(t, v1alpha1.Progress("0/1"), status.Progress)
+			require.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
+			require.Equal(t, "No more retries left", status.Message)
+			require.Equal(t, v1alpha1.Progress("0/1"), status.Progress)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "test-retry-limit"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
-			assert.Equal(t, v1alpha1.NodeTypeRetry, status.Type)
-			assert.Nil(t, status.NodeFlag)
+			require.Equal(t, v1alpha1.NodeFailed, status.Phase)
+			require.Equal(t, v1alpha1.NodeTypeRetry, status.Type)
+			require.Nil(t, status.NodeFlag)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "test-retry-limit(0)"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
-			assert.True(t, status.NodeFlag.Retried)
+			require.Equal(t, v1alpha1.NodeFailed, status.Phase)
+			require.True(t, status.NodeFlag.Retried)
 		})
 }
 
@@ -91,8 +91,8 @@ spec:
 		WaitForWorkflow(time.Second * 90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
-			assert.LessOrEqual(t, len(status.Nodes), 10)
+			require.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
+			require.LessOrEqual(t, len(status.Nodes), 10)
 		})
 	s.Given().
 		Workflow(`
@@ -117,8 +117,8 @@ spec:
 		WaitForWorkflow(time.Second * 90).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
-			assert.LessOrEqual(t, len(status.Nodes), 10)
+			require.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
+			require.LessOrEqual(t, len(status.Nodes), 10)
 		})
 }
 
@@ -140,7 +140,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			require.Equal(t, wfv1.WorkflowFailed, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "workflow-template-containerset"
@@ -221,13 +221,13 @@ spec:
 			if status.Phase == wfv1.WorkflowFailed {
 				nodeStatus := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(0)")
 				nodeStatusRetry := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(1)")
-				assert.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
+				require.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
 			}
 			if status.Phase == wfv1.WorkflowRunning {
 				nodeStatus := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(0)")
 				nodeStatusRetry := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(1)")
-				assert.Contains(t, nodeStatusRetry.Message, "1 node(s) didn't match Pod's node affinity/selector")
-				assert.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
+				require.Contains(t, nodeStatusRetry.Message, "1 node(s) didn't match Pod's node affinity/selector")
+				require.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
 			}
 		})
 }

@@ -10,7 +10,7 @@ import (
 
 	"github.com/argoproj/pkg/humanize"
 	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,8 +70,8 @@ spec:
 			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				require.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
+				require.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestBasicTimezone", func() {
@@ -109,8 +109,8 @@ spec:
 			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				require.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
+				require.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestSuspend", func() {
@@ -142,7 +142,7 @@ spec:
 			SuspendCronWorkflow().
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.True(t, cronWf.Spec.Suspend)
+				require.True(t, cronWf.Spec.Suspend)
 			})
 	})
 	s.Run("TestResume", func() {
@@ -174,7 +174,7 @@ spec:
 			ResumeCronWorkflow("test-cron-wf-basic-resume").
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.False(t, cronWf.Spec.Suspend)
+				require.False(t, cronWf.Spec.Suspend)
 			})
 	})
 	s.Run("TestBasicForbid", func() {
@@ -207,8 +207,8 @@ spec:
 			Wait(2 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Len(t, cronWf.Status.Active, 1)
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.Before(time.Now().Add(-1*time.Minute)))
+				require.Len(t, cronWf.Status.Active, 1)
+				require.True(t, cronWf.Status.LastScheduledTime.Time.Before(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestBasicAllow", func() {
@@ -243,7 +243,7 @@ spec:
 			Wait(2 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Len(t, cronWf.Status.Active, 2)
+				require.Len(t, cronWf.Status.Active, 2)
 			})
 	})
 	s.Run("TestBasicReplace", func() {
@@ -276,9 +276,9 @@ spec:
 			Wait(2*time.Minute + 20*time.Second).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Len(t, cronWf.Status.Active, 1)
-				if assert.NotNil(t, cronWf.Status.LastScheduledTime) {
-					assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				require.Len(t, cronWf.Status.Active, 1)
+				if require.NotNil(t, cronWf.Status.LastScheduledTime) {
+					require.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 				}
 			})
 	})
@@ -313,8 +313,8 @@ spec:
 			Wait(2*time.Minute+25*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.Len(t, wfList.Items, 1)
-				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+				require.Len(t, wfList.Items, 1)
+				require.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestFailedJobHistoryLimit", func() {
@@ -349,8 +349,8 @@ spec:
 			Wait(2*time.Minute+25*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.Len(t, wfList.Items, 1)
-				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+				require.Len(t, wfList.Items, 1)
+				require.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestStoppingConditionWithSucceeded", func() {
@@ -385,10 +385,10 @@ spec:
 			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, int64(0), cronWf.Status.Failed)
-				assert.Equal(t, int64(1), cronWf.Status.Succeeded)
-				assert.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
-				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
+				require.Equal(t, int64(0), cronWf.Status.Failed)
+				require.Equal(t, int64(1), cronWf.Status.Succeeded)
+				require.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
+				require.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
 			})
 	})
 	s.Run("TestStoppingConditionWithFailed", func() {
@@ -420,10 +420,10 @@ spec:
 			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, int64(0), cronWf.Status.Succeeded)
-				assert.Equal(t, int64(1), cronWf.Status.Failed)
-				assert.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
-				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
+				require.Equal(t, int64(0), cronWf.Status.Succeeded)
+				require.Equal(t, int64(1), cronWf.Status.Failed)
+				require.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
+				require.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
 			})
 	})
 	s.Run("TestMultipleWithTimezone", func() {
@@ -458,8 +458,8 @@ spec:
 			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				require.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
+				require.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 }
@@ -476,16 +476,16 @@ func (s *CronSuite) TestMalformedCronWorkflow() {
 		WaitForWorkflow(2*time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			require.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
+			require.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObjectWithName(workflow.CronWorkflowKind, "malformed"),
 			1,
 			func(t *testing.T, e []corev1.Event) {
-				assert.Equal(t, corev1.EventTypeWarning, e[0].Type)
-				assert.Equal(t, "Malformed", e[0].Reason)
-				assert.Equal(t, "cannot restore slice from map", e[0].Message)
+				require.Equal(t, corev1.EventTypeWarning, e[0].Type)
+				require.Equal(t, "Malformed", e[0].Reason)
+				require.Equal(t, "cannot restore slice from map", e[0].Message)
 			},
 		)
 }

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -38,12 +37,12 @@ func Test_BasicAuthString(t *testing.T) {
 		require.NoError(t, err)
 		authString, err := GetAuthString(restConfig, "")
 		require.NoError(t, err)
-		assert.True(t, IsBasicAuthScheme(authString))
+		require.True(t, IsBasicAuthScheme(authString))
 		token := strings.TrimSpace(strings.TrimPrefix(authString, BasicAuthScheme))
 		uname, pwd, ok := decodeBasicAuthToken(token)
-		if assert.True(t, ok) {
-			assert.Equal(t, "admin", uname)
-			assert.Equal(t, "admin", pwd)
+		if require.True(t, ok) {
+			require.Equal(t, "admin", uname)
+			require.Equal(t, "admin", pwd)
 		}
 		file, err := os.CreateTemp("", "config.yaml")
 		require.NoError(t, err)
@@ -54,7 +53,7 @@ func Test_BasicAuthString(t *testing.T) {
 		t.Setenv("KUBECONFIG", file.Name())
 		config, err := GetRestConfig(authString)
 		require.NoError(t, err)
-		assert.Equal(t, "admin", config.Username)
-		assert.Equal(t, "admin", config.Password)
+		require.Equal(t, "admin", config.Username)
+		require.Equal(t, "admin", config.Password)
 	})
 }

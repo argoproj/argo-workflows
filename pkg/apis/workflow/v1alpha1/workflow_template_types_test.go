@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,9 +15,9 @@ func TestWorkflowTemplates(t *testing.T) {
 		{ObjectMeta: v1.ObjectMeta{Name: "0"}},
 	}
 	sort.Sort(tmpls)
-	if assert.Len(t, tmpls, 3) {
-		assert.Equal(t, "0", tmpls[0].Name)
-		assert.Equal(t, "1", tmpls[1].Name)
-		assert.Equal(t, "2", tmpls[2].Name)
+	if require.Len(t, tmpls, 3) {
+		require.Equal(t, "0", tmpls[0].Name)
+		require.Equal(t, "1", tmpls[1].Name)
+		require.Equal(t, "2", tmpls[2].Name)
 	}
 }

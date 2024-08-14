@@ -8,7 +8,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -38,7 +37,7 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 		require.NoError(t, err)
 		_, err = os.Stat("/tmp/found-with-request-headers")
 		require.NoError(t, err)
-		assert.FileExists(t, "/tmp/found-with-request-headers")
+		require.FileExists(t, "/tmp/found-with-request-headers")
 	})
 	t.Run("NotFound", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
@@ -48,8 +47,8 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 		}, "/tmp/not-found")
 		require.Error(t, err)
 		argoError, ok := err.(errors.ArgoError)
-		if assert.True(t, ok) {
-			assert.Equal(t, errors.CodeNotFound, argoError.Code())
+		if require.True(t, ok) {
+			require.Equal(t, errors.CodeNotFound, argoError.Code())
 		}
 	})
 }
@@ -64,8 +63,8 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 		}, "/tmp/not-found")
 		require.Error(t, err)
 		argoError, ok := err.(errors.ArgoError)
-		if assert.True(t, ok) {
-			assert.Equal(t, errors.CodeNotFound, argoError.Code())
+		if require.True(t, ok) {
+			require.Equal(t, errors.CodeNotFound, argoError.Code())
 		}
 	})
 	t.Run("Found", func(t *testing.T) {
@@ -105,7 +104,7 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 			buf := new(bytes.Buffer)
 			_, err = buf.ReadFrom(r.Body)
 			require.NoError(t, err)
-			assert.Equal(t, content, buf.String())
+			require.Equal(t, content, buf.String())
 
 			w.WriteHeader(http.StatusCreated)
 		}

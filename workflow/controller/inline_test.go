@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -39,7 +38,7 @@ spec:
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, wfc)
 	woc.operate(context.Background())
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 func TestInlineSteps(t *testing.T) {
@@ -70,11 +69,11 @@ spec:
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, wfc)
 	woc.operate(context.Background())
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("a")
-	assert.Equal(t, "message", node.Inputs.Parameters[0].Name)
-	assert.Equal(t, "foo", node.Inputs.Parameters[0].Value.String())
+	require.Equal(t, "message", node.Inputs.Parameters[0].Name)
+	require.Equal(t, "foo", node.Inputs.Parameters[0].Value.String())
 }
 
 var workflowCallTemplateWithInline = `
@@ -169,25 +168,25 @@ func TestCallTemplateWithInlineSteps(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
-	assert.Len(t, pods.Items, 4)
+	require.Len(t, pods.Items, 4)
 	count := 0
 	for _, pod := range pods.Items {
 		nodeName := pod.Annotations["workflows.argoproj.io/node-name"]
 		if strings.Contains(nodeName, "foo") {
 			count++
-			assert.Contains(t, pod.Spec.Containers[1].Args[0], "foo")
+			require.Contains(t, pod.Spec.Containers[1].Args[0], "foo")
 		}
 		if strings.Contains(nodeName, "bar") {
-			assert.Contains(t, pod.Spec.Containers[1].Args[0], "bar")
+			require.Contains(t, pod.Spec.Containers[1].Args[0], "bar")
 		}
 	}
-	assert.Equal(t, 2, count)
+	require.Equal(t, 2, count)
 	for name, storedTemplate := range woc.wf.Status.StoredTemplates {
 		if strings.Contains(name, "inline-a") {
-			assert.Equal(t, "{{ inputs.parameters.arg }} a", storedTemplate.Container.Args[0])
+			require.Equal(t, "{{ inputs.parameters.arg }} a", storedTemplate.Container.Args[0])
 		}
 		if strings.Contains(name, "inline-b") {
-			assert.Equal(t, "{{ inputs.parameters.arg }} b", storedTemplate.Container.Args[0])
+			require.Equal(t, "{{ inputs.parameters.arg }} b", storedTemplate.Container.Args[0])
 		}
 	}
 }
@@ -271,25 +270,25 @@ func TestCallTemplateWithInlineDAG(t *testing.T) {
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
-	assert.Len(t, pods.Items, 4)
+	require.Len(t, pods.Items, 4)
 	count := 0
 	for _, pod := range pods.Items {
 		nodeName := pod.Annotations["workflows.argoproj.io/node-name"]
 		if strings.Contains(nodeName, "foo") {
 			count++
-			assert.Contains(t, pod.Spec.Containers[1].Args[0], "foo")
+			require.Contains(t, pod.Spec.Containers[1].Args[0], "foo")
 		}
 		if strings.Contains(nodeName, "bar") {
-			assert.Contains(t, pod.Spec.Containers[1].Args[0], "bar")
+			require.Contains(t, pod.Spec.Containers[1].Args[0], "bar")
 		}
 	}
-	assert.Equal(t, 2, count)
+	require.Equal(t, 2, count)
 	for name, storedTemplate := range woc.wf.Status.StoredTemplates {
 		if strings.Contains(name, "inline-a") {
-			assert.Equal(t, "{{ inputs.parameters.arg }} a", storedTemplate.Container.Args[0])
+			require.Equal(t, "{{ inputs.parameters.arg }} a", storedTemplate.Container.Args[0])
 		}
 		if strings.Contains(name, "inline-b") {
-			assert.Equal(t, "{{ inputs.parameters.arg }} b", storedTemplate.Container.Args[0])
+			require.Equal(t, "{{ inputs.parameters.arg }} b", storedTemplate.Container.Args[0])
 		}
 	}
 }

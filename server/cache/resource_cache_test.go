@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -79,15 +79,15 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 
 	t.Run("List Service Accounts in different namespaces", func(t *testing.T) {
 		sa, _ := cache.ServiceAccountLister.ServiceAccounts("ns1").List(labels.Everything())
-		assert.Len(t, sa, 2)
-		assert.True(t, checkServiceAccountExists(sa, "sa1"))
-		assert.True(t, checkServiceAccountExists(sa, "sa2"))
+		require.Len(t, sa, 2)
+		require.True(t, checkServiceAccountExists(sa, "sa1"))
+		require.True(t, checkServiceAccountExists(sa, "sa2"))
 
 		sa, _ = cache.ServiceAccountLister.ServiceAccounts("ns2").List(labels.Everything())
-		assert.Len(t, sa, 1)
-		assert.True(t, checkServiceAccountExists(sa, "sa3"))
+		require.Len(t, sa, 1)
+		require.True(t, checkServiceAccountExists(sa, "sa3"))
 
 		secret, _ := cache.GetSecret(ctx, "ns1", "s1")
-		assert.NotNil(t, secret)
+		require.NotNil(t, secret)
 	})
 }

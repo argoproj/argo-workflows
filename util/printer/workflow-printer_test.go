@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,63 +48,63 @@ func TestPrintWorkflows(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(emptyWorkflows, &b, PrintOpts{}))
-		assert.Equal(t, `No workflows found
+		require.Equal(t, `No workflows found
 `, b.String())
 	})
 	t.Run("EmptyJSON", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(emptyWorkflows, &b, PrintOpts{Output: "json"}))
-		assert.Equal(t, `[]
+		require.Equal(t, `[]
 `, b.String())
 	})
 	t.Run("EmptyYAML", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(emptyWorkflows, &b, PrintOpts{Output: "yaml"}))
-		assert.Equal(t, `[]
+		require.Equal(t, `[]
 `, b.String())
 	})
 	t.Run("Default", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{}))
-		assert.Equal(t, `NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE
+		require.Equal(t, `NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE
 my-wf   Running   0s    3s         2          test-message
 `, b.String())
 	})
 	t.Run("NoHeader", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{NoHeaders: true}))
-		assert.Equal(t, `my-wf   Running   0s   3s   2   test-message
+		require.Equal(t, `my-wf   Running   0s   3s   2   test-message
 `, b.String())
 	})
 	t.Run("Namespace", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Namespace: true}))
-		assert.Equal(t, `NAMESPACE   NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE
+		require.Equal(t, `NAMESPACE   NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE
 my-ns       my-wf   Running   0s    3s         2          test-message
 `, b.String())
 	})
 	t.Run("Wide", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Output: "wide"}))
-		assert.Equal(t, `NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE        P/R/C   PARAMETERS
+		require.Equal(t, `NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE        P/R/C   PARAMETERS
 my-wf   Running   0s    3s         2          test-message   1/2/3   my-param=my-value
 `, b.String())
 	})
 	t.Run("Name", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Output: "name"}))
-		assert.Equal(t, `my-wf
+		require.Equal(t, `my-wf
 `, b.String())
 	})
 	t.Run("JSON", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Output: "json"}))
-		assert.NotEmpty(t, b.String())
+		require.NotEmpty(t, b.String())
 	})
 	t.Run("YAML", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Output: "yaml"}))
-		assert.NotEmpty(t, b.String())
+		require.NotEmpty(t, b.String())
 	})
 }
 
@@ -134,21 +132,21 @@ func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 	t.Run("CostOptimizationOnCompletedWorkflows", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(completedWorkflows, &b, PrintOpts{}))
-		assert.Contains(t, b.String(), "\nYou have at least 101 completed workflows. "+
+		require.Contains(t, b.String(), "\nYou have at least 101 completed workflows. "+
 			"Reducing the total number of workflows will reduce your costs."+
 			"\nLearn more at https://argo-workflows.readthedocs.io/en/latest/cost-optimisation/\n")
 	})
 	t.Run("CostOptimizationOnIncompleteWorkflows", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(incompleteWorkflows, &b, PrintOpts{}))
-		assert.Contains(t, b.String(), "\nYou have at least 101 incomplete workflows. "+
+		require.Contains(t, b.String(), "\nYou have at least 101 incomplete workflows. "+
 			"Reducing the total number of workflows will reduce your costs."+
 			"\nLearn more at https://argo-workflows.readthedocs.io/en/latest/cost-optimisation/\n")
 	})
 	t.Run("CostOptimizationOnCompletedAndIncompleteWorkflows", func(t *testing.T) {
 		var b bytes.Buffer
 		require.NoError(t, PrintWorkflows(completedAndIncompleteWorkflows, &b, PrintOpts{}))
-		assert.Contains(t, b.String(), "\nYou have at least 101 incomplete and 101 completed workflows. "+
+		require.Contains(t, b.String(), "\nYou have at least 101 incomplete and 101 completed workflows. "+
 			"Reducing the total number of workflows will reduce your costs."+
 			"\nLearn more at https://argo-workflows.readthedocs.io/en/latest/cost-optimisation/\n")
 	})
