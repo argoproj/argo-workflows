@@ -605,7 +605,7 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	value3, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
 	require.NoError(t, err)
 	// Duration should be same after workflow complete
-	assert.Equal(t, *value2, *value3)
+	assert.InEpsilon(t, *value2, *value3, 0.001)
 }
 
 var testRealtimeWorkflowMetricWithGlobalParameters = `

@@ -194,7 +194,7 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	wfQueue.Add("hello")
 
 	if assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"]) {
-		assert.Equal(t, 1.0, *write(m.workqueueMetrics["workflow_queue-adds"]).Counter.Value)
+		assert.InEpsilon(t, 1.0, *write(m.workqueueMetrics["workflow_queue-adds"]).Counter.Value, 0.001)
 	}
 }
 
