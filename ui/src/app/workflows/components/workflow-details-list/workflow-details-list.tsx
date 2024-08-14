@@ -34,7 +34,7 @@ export function WorkflowDetailsList(props: WorkflowDetailsList) {
                     })}
                 </div>
             </div>
-            {/* checkboxes are not visible and are unused on this page */}
+            {/* checkboxes are not visible and are unused in details pages */}
             {props.workflows.map(wf => {
                 return <WorkflowsRow workflow={wf} key={wf.metadata.uid} checked={false} columns={props.columns} onChange={null} select={null} />;
             })}
