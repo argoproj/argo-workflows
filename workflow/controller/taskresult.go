@@ -1,24 +1,17 @@
 package controller
 
 import (
-	"context"
-	"encoding/json"
 	"reflect"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
-
-	"k8s.io/apimachinery/pkg/util/wait"
-	retryutil "k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
@@ -70,7 +63,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
 
-	taskResultClient := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace)
+	// we iterate over the entire task results anyway, so this is completely safe
+	woc.wf.Status.TaskResultsCompletionStatus = nil
+
 	podMap, err := woc.getAllWorkflowPodsMap()
 	if err != nil {
 		return err
@@ -83,6 +78,15 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 		woc.log.Debugf("task result name:\n%+v", resultName)
 
 		label := result.Labels[common.LabelKeyReportOutputsCompleted]
+
+		// If the task result is completed, set the state to true.
+		if label == "true" {
+			woc.log.Debugf("Marking task result complete %s", resultName)
+			woc.wf.Status.MarkTaskResultComplete(resultName)
+		} else {
+			woc.log.Debugf("Marking task result incomplete %s", resultName)
+			woc.wf.Status.MarkTaskResultIncomplete(resultName)
+		}
 
 		_, foundPod := podMap[result.Name]
 		node, err := woc.wf.Status.Nodes.Get(result.Name)
@@ -100,49 +104,10 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 				woc.log.Infof("Determined controller should timeout for %s", result.Name)
 				result.Labels[common.LabelKeyReportOutputsCompleted] = "true"
 
-				// patch the label
-				if label != "true" {
-					err := retryutil.OnError(wait.Backoff{
-						Duration: time.Second,
-						Factor:   2,
-						Jitter:   0.1,
-						Steps:    5,
-						Cap:      30 * time.Second,
-					}, errorsutil.IsTransientErr, func() error {
-						data, err := json.Marshal(&wfv1.WorkflowTaskResult{
-							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{
-									common.LabelKeyReportOutputsCompleted: "true",
-								},
-							},
-						})
-						if err != nil {
-							return err
-						}
-						_, err = taskResultClient.Patch(context.Background(),
-							result.Name,
-							types.MergePatchType,
-							data,
-							metav1.PatchOptions{},
-						)
-						return err
-					})
-					if err != nil {
-						woc.log.Errorf("couldn't patch taskresult, got error: %s", err)
-					}
-				}
 				woc.markNodePhase(node.Name, wfv1.NodeFailed, "pod was absent")
 			} else {
 				woc.log.Debugf("Determined controller shouldn't timeout %s", result.Name)
 			}
-		}
-		// If the task result is completed, set the state to true.
-		if label == "true" {
-			woc.log.Debugf("Marking task result complete %s", resultName)
-			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else if label == "false" {
-			woc.log.Debugf("Marking task result incomplete %s", resultName)
-			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
 
 		nodeID := result.Name
