@@ -475,7 +475,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 				if tt.isDirectory {
 					fmt.Printf("got directory listing:\n%s\n", all)
 					// verify that the files are contained in the listing we got back
-					assert.Equal(t, len(tt.directoryFiles), strings.Count(string(all), "<li>"))
+					assert.Len(t, tt.directoryFiles, strings.Count(string(all), "<li>"))
 					for _, file := range tt.directoryFiles {
 						assert.True(t, strings.Contains(string(all), file))
 					}
