@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
@@ -163,9 +164,9 @@ func TestNewOperation(t *testing.T) {
 			},
 		},
 	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}, "formatted": "My%Test%"}`)})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = operation.Dispatch(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	expectedParamValues := []string{
 		`My%Test%`,
@@ -176,7 +177,8 @@ func TestNewOperation(t *testing.T) {
 	var paramValues []string
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
-	if assert.NoError(t, err) && assert.Len(t, list.Items, 4) {
+	require.NoError(t, err)
+	if assert.Len(t, list.Items, 4) {
 		for _, wf := range list.Items {
 			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
 			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
@@ -352,13 +354,13 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	}, "my-ns", "my-discriminator",
 		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true, "pr": 112}, "list": ["one", "two"]}`)})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = operation.Dispatch(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, list.Items, 4)
 
 	expectedNames := []string{
@@ -405,10 +407,9 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 
 func Test_expressionEnvironment(t *testing.T) {
 	env, err := expressionEnvironment(context.TODO(), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
-	if assert.NoError(t, err) {
-		assert.Equal(t, "my-ns", env["namespace"])
-		assert.Equal(t, "my-d", env["discriminator"])
-		assert.Contains(t, env, "metadata")
-		assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "my-ns", env["namespace"])
+	assert.Equal(t, "my-d", env["discriminator"])
+	assert.Contains(t, env, "metadata")
+	assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
 }

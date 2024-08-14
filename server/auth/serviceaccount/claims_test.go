@@ -21,43 +21,39 @@ const token2 = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ijc5dVprMUl0VHZkTXFpLWc4dVQwVkV1Y05U
 func TestClaimSetFor(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		claims, err := ClaimSetFor(&rest.Config{})
-		if assert.NoError(t, err) {
-			assert.Nil(t, claims)
-		}
+		require.NoError(t, err)
+		assert.Nil(t, claims)
 	})
 	t.Run("Basic", func(t *testing.T) {
 		const username = "my-username"
 		claims, err := ClaimSetFor(&rest.Config{Username: username})
-		if assert.NoError(t, err) {
-			assert.Empty(t, claims.Issuer)
-			assert.Equal(t, username, claims.Subject)
-		}
+		require.NoError(t, err)
+		assert.Empty(t, claims.Issuer)
+		assert.Equal(t, username, claims.Subject)
 	})
 	t.Run("BadBearerToken", func(t *testing.T) {
 		_, err := ClaimSetFor(&rest.Config{BearerToken: "bad"})
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 	t.Run("BearerToken", func(t *testing.T) {
 		claims, err := ClaimSetFor(&rest.Config{BearerToken: token})
-		if assert.NoError(t, err) {
-			assert.Empty(t, claims.Issuer)
-			assert.Equal(t, sub, claims.Subject)
-		}
+		require.NoError(t, err)
+		assert.Empty(t, claims.Issuer)
+		assert.Equal(t, sub, claims.Subject)
 	})
 
 	// set-up test
 	tmp, err := os.CreateTemp("", "")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = os.WriteFile(tmp.Name(), []byte(token), 0o600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() { _ = os.Remove(tmp.Name()) }()
 
 	t.Run("BearerTokenFile", func(t *testing.T) {
 		claims, err := ClaimSetFor(&rest.Config{BearerTokenFile: tmp.Name()})
-		if assert.NoError(t, err) {
-			assert.Empty(t, claims.Issuer)
-			assert.Equal(t, sub, claims.Subject)
-		}
+		require.NoError(t, err)
+		assert.Empty(t, claims.Issuer)
+		assert.Equal(t, sub, claims.Subject)
 	})
 
 	t.Run("BearerToken with SA details", func(t *testing.T) {

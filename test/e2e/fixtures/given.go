@@ -9,6 +9,7 @@ import (
 
 	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -182,15 +183,14 @@ func (g *Given) CronWorkflow(text string) *Given {
 
 var NoError = func(t *testing.T, output string, err error) {
 	t.Helper()
-	assert.NoError(t, err, output)
+	require.NoError(t, err, output)
 }
 
 var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) {
 	return func(t *testing.T, output string, err error) {
 		t.Helper()
-		if assert.NoError(t, err, output) {
-			assert.Regexp(t, rx, output)
-		}
+		require.NoError(t, err, output)
+		assert.Regexp(t, rx, output)
 	}
 }
 

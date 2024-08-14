@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_nullSSO_Authorize(t *testing.T) {
 	_, err := NullSSO.Authorize("")
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_nullSSO_HandleCallback(t *testing.T) {
