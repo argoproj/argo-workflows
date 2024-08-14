@@ -3,6 +3,8 @@ package informer
 import (
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -25,6 +27,9 @@ func NewTolerantClusterWorkflowTemplateInformer(dynamicInterface dynamic.Interfa
 		// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
 		// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
 		options.ResourceVersion = ""
+		if options.Limit == 0 {
+			options.Limit = common.DefaultPageSize
+		}
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural})}
 }
 

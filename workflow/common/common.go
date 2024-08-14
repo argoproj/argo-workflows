@@ -260,6 +260,9 @@ const (
 	ArgoProgressPath = VarRunArgoPath + "/progress"
 
 	ConfigMapName = "workflow-controller-configmap"
+
+	// DefaultPageSize is the limit value of the request k8s apiserver
+	DefaultPageSize = 500
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
