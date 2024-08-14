@@ -34,6 +34,6 @@ spec:
         parameters:
           - name: hello-param
       container:
-        image: argoproj/argosay:v1
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["Hello param: {{inputs.parameters.hello-param}}"]
