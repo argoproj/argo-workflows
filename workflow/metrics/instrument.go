@@ -5,7 +5,7 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v3/util/help"
 )
 
 type instrument struct {
@@ -23,11 +23,7 @@ func (m *Metrics) preCreateCheck(name string) error {
 }
 
 func addHelpLink(name, description string) string {
-	version := `latest`
-	if major, minor, _, err := argo.GetVersion().Components(); err == nil {
-		version = fmt.Sprintf("release-%s.%s", major, minor)
-	}
-	return fmt.Sprintf("%s https://argo-workflows.readthedocs.io/en/%s/metrics/#%s", description, version, name)
+	return fmt.Sprintf("%s %s", description, help.MetricHelp(name))
 }
 
 type instrumentType int

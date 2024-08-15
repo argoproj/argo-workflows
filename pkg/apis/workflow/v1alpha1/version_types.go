@@ -18,10 +18,10 @@ type Version struct {
 
 var verRe = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)`)
 
-// BrokenDown returns the major, minor and release components
+// MajorMinorPatch returns the major, minor and patch components
 // of the version number, or error if this is not a release
 // The error path is considered "normal" in a non-release build.
-func (v Version) Components() (string, string, string, error) {
+func (v Version) MajorMinorPatch() (string, string, string, error) {
 	matches := verRe.FindStringSubmatch(v.Version)
 	if matches == nil || matches[1] == "0" {
 		return ``, ``, ``, errors.New("Not a formal release")
