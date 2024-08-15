@@ -58,7 +58,7 @@ func NewRootCommand() *cobra.Command {
 		workflowTTLWorkers      int    // --workflow-ttl-workers
 		podCleanupWorkers       int    // --pod-cleanup-workers
 		cronWorkflowWorkers     int    // --cron-workflow-workers
-		workflowArchiveWorkers  int    // --archived-workflow-workers
+		workflowArchiveWorkers  int    // --workflow-archive-workers
 		burst                   int
 		qps                     float32
 		namespaced              bool   // --namespaced
