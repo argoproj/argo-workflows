@@ -49,6 +49,11 @@ Custom metrics, as defined by a workflow, could be defined as one type (say coun
 
 `metricsTTL` for histogram metrics is not functional as opentelemetry doesn't allow deletion of metrics. This is faked via asynchronous meters for the other metric types.
 
+#### TLS
+
+The Prometheus `/metrics` endpoint now has TLS enabled by default.
+To disable this set `metricsConfig.secure` to `false`.
+
 ## Upgrading to v3.5
 
 There are no known breaking changes in this release.

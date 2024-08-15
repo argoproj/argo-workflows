@@ -260,7 +260,7 @@ type MetricsConfig struct {
 	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
-	// Secure is a flag that starts the metrics servers using TLS
+	// Secure is a flag that starts the metrics servers using TLS, defaults to true
 	Secure *bool `json:"secure,omitempty"`
 }
 
