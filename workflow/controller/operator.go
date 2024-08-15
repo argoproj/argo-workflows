@@ -2274,9 +2274,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	if processedTmpl.Metrics != nil {
-		// Check if the node was just created, if it was emit realtime metrics.
+		// Check if the node was just created or not fulfilled, if it was emit realtime metrics.
 		// If the node did not previously exist, we can infer that it was created during the current operation, emit real time metrics.
-		if _, ok := woc.preExecutionNodePhases[node.ID]; !ok {
+		if _, ok := woc.preExecutionNodePhases[node.ID]; !ok || !node.Fulfilled() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
 		}
