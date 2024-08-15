@@ -36,7 +36,7 @@ It will not be enabled if left blank, unlike some other implementations.
 
 You can configure the protocol using the environment variables documented in [standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
 
-The [configuration options](#common) in the controller ConfigMap `metricsTTL` and `temporality` affect the OpenTelemetry behavior, but the other parameters do not.
+The [configuration options](#common) in the controller ConfigMap `metricsTTL`, `modifiers` and `temporality` affect the OpenTelemetry behavior, but the other parameters do not.
 
 To use the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/) you can configure it
 
@@ -95,7 +95,44 @@ You can adjust various elements of the metrics configuration by changing values 
 metricsConfig: |
   # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared. Histogram metrics are never cleared.
   metricsTTL: "10m"
+  # Modifiers allows tuning of each of the emitted metrics
+  modifiers:
+    pod_missing:
+      disabled: true
+    cronworkflows_triggered_total:
+      disabledAttributes:
+        - name
+    k8s_request_duration:
+      histogramBuckets: [ 1.0, 2.0, 10.0 ]
 ```
+
+### Modifiers
+
+Using modifiers you can manipulate the metrics created by the workflow controller.
+These modifiers apply to the built-in metrics and any custom metrics you create.
+Each modifier applies to the named metric only, and to all output methods.
+
+`disabled: true` will disable the emission of the metric from the system.
+
+```yaml
+  disabledAttributes:
+    - namespace
+```
+
+Will disable the attribute (label) from being emitted.
+The metric will be emitted with the attribute missing, the remaining attributes will still be emitted with the values correctly aggregated.
+This can be used to reduce cardinality of metrics.
+
+```yaml
+  histogramBuckets:
+    - 1.0
+    - 2.0
+    - 5.0
+    - 10.0
+```
+
+For histogram metrics only, this will change the boundary values for the histogram buckets.
+All values must be floating point numbers.
 
 ## Metrics and metrics in Argo
 
@@ -210,6 +247,8 @@ A histogram of durations of operations. An operation is a single workflow reconc
 It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
 
 This metric has no attributes.
+
+The environment variables `OPERATION_DURATION_METRIC_BUCKET_COUNT` and `MAX_OPERATION_TIME` configure the bucket sizes for this metric, unless they are specified using an `histogramBuckets` modifier in the `metricsConfig` block.
 
 #### `pods_gauge`
 

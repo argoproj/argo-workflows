@@ -30,6 +30,16 @@ The following are new metrics:
 * `queue_retries`
 * `queue_unfinished_work`
 
+and can be disabled with
+
+```yaml
+metricsConfig: |
+  modifiers:
+    build_info:
+      disable: true
+...
+```
+
 #### Renamed metrics
 
 If you are using these metrics in your recording rules, dashboards, or alerts, you will need to update their names after the upgrade:
