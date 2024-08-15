@@ -2248,11 +2248,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	if processedTmpl.Metrics != nil {
-		// Check if the node did not fulfilled, we should compute real time metrics.
-		if _, ok := woc.preExecutionNodePhases[node.ID]; !ok || !node.Fulfilled() {
-			localScope, realTimeScope := woc.prepareMetricScope(node)
-			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
-		}
+		localScope, realTimeScope := woc.prepareMetricScope(node)
+		woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
 		// Check if the node completed during this execution, if it did emit metrics
 		//
 		// This check is necessary because sometimes a node will be marked completed during the current execution and will
