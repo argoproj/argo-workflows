@@ -33,6 +33,7 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
+    - testifylint
     - typecheck
     - unparam
     - unused

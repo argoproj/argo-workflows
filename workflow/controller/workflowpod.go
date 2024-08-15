@@ -258,6 +258,18 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.addSchedulingConstraints(pod, wfSpec, tmpl, nodeName)
 	woc.addMetadata(pod, tmpl)
 
+	// Set initial progress from pod metadata if exists.
+	if x, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyProgress]; ok {
+		if p, ok := wfv1.ParseProgress(x); ok {
+			node, err := woc.wf.Status.Nodes.Get(nodeID)
+			if err != nil {
+				woc.log.Panicf("was unable to obtain node for %s", nodeID)
+			}
+			node.Progress = p
+			woc.wf.Status.Nodes.Set(nodeID, *node)
+		}
+	}
+
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
@@ -524,7 +536,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
-			return created, nil
+			// get a reference to the currently existing Pod since the created pod returned before was nil.
+			if existing, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
+				return existing, nil
+			}
 		}
 		if errorsutil.IsTransientErr(err) {
 			return nil, err
@@ -562,7 +577,7 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
 	deadline := time.Time{}
-	if woc.workflowDeadline != nil {
+	if woc.workflowDeadline != nil && !opts.onExitPod {
 		deadline = *woc.workflowDeadline
 	}
 	if !opts.executionDeadline.IsZero() && (deadline.IsZero() || opts.executionDeadline.Before(deadline)) {

@@ -264,7 +264,7 @@ export interface Script {
 }
 
 /**
- * UserContainer is is a container specified by a user.
+ * UserContainer is a container specified by a user.
  */
 export interface UserContainer {
     /**

@@ -283,7 +283,7 @@ swagger: \
 $(GOPATH)/bin/mockery:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/vektra/mockery/v2@v2.42.0
+	go install github.com/vektra/mockery/v2@v2.42.2
 endif
 $(GOPATH)/bin/controller-gen:
 # update this in Nix when upgrading it here
@@ -679,7 +679,7 @@ docs-spellcheck: /usr/local/bin/mdspell
 	# check docs for spelling mistakes
 	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
-	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "sort" }' | uniq | tee .spelling > /dev/null)
+	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq | tee .spelling > /dev/null)
 
 /usr/local/bin/markdown-link-check:
 # update this in Nix when upgrading it here

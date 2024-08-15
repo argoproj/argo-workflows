@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -17,17 +18,17 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 
 	// Ensure that normal artifact resolution without adding subpaths works
 	resolvedArtifact, err := scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that we allow whitespaces in between names and brackets
 	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in an error being thrown
 	_, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtifactString string) {
@@ -41,19 +42,19 @@ func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtif
 
 	// Ensure that normal artifact resolution without adding subpaths works
 	resolvedArtifact, err := scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in artifact key being modified
 	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 
 	// Ensure that subpath template values are also resolved
 	scope.addParamToScope("steps.test.outputs.parameters.subkey", "some")
 
 	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "{{steps.test.outputs.parameters.subkey}}/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 	assert.Equal(t, artifact, originalArtifact)
 }
@@ -269,34 +270,34 @@ func TestResolveParameters(t *testing.T) {
 		Expression: "inputs.parameters.one == '1' ? inputs.parameters.two: steps.t1.outputs.parameters.result",
 	}
 	result, err := scope.resolveParameter(valFrom)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal("2", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Parameter: "{{steps.t1.outputs.parameters.result}}",
 	}
 	result, err = scope.resolveParameter(valFrom)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal("4", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result :workflows.arguments.param",
 	}
 	result, err = scope.resolveParameter(valFrom)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal("head", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result :workflows.arguments.param",
 	}
 	result, err = scope.resolveParameter(valFrom)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal("5", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result :workflows.arguments.param",
 	}
 	result, err = scope.resolveParameter(valFrom)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal("5", result)
 }

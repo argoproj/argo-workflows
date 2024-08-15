@@ -37,6 +37,7 @@ CRDs
 CloudSQL
 ClusterRoleBinding
 ClusterRoles
+ClusterWorkflowTemplate
 Codespaces
 ConfigMap
 ConfigMaps
@@ -92,6 +93,7 @@ OAuth
 OAuth2
 Okta
 OpenAPI
+OpenTelemetry
 PDBs
 PProf
 PVCs
@@ -247,4 +249,5 @@ webHDFS
 webhook
 webhooks
 workflow-controller-configmap
+workqueue
 yaml
