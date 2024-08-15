@@ -11,6 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
@@ -53,9 +54,19 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 	return informer
 }
 
-func (woc *wfOperationCtx) taskResultReconciliation() {
+func podAbsentTimeout(node *wfv1.NodeStatus) bool {
+	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("POD_ABSENT_TIMEOUT", 2*time.Minute)
+}
+
+func (woc *wfOperationCtx) taskResultReconciliation() error {
+
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
+
+	podMap, err := woc.getAllWorkflowPodsMap()
+	if err != nil {
+		return err
+	}
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
 		resultName := result.GetName()
@@ -63,13 +74,37 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		woc.log.Debugf("task result:\n%+v", result)
 		woc.log.Debugf("task result name:\n%+v", resultName)
 
+		label := result.Labels[common.LabelKeyReportOutputsCompleted]
+
 		// If the task result is completed, set the state to true.
-		if result.Labels[common.LabelKeyReportOutputsCompleted] == "true" {
+		if label == "true" {
 			woc.log.Debugf("Marking task result complete %s", resultName)
 			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else {
+		} else if label == "false" {
 			woc.log.Debugf("Marking task result incomplete %s", resultName)
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
+		}
+
+		_, foundPod := podMap[result.Name]
+		node, err := woc.wf.Status.Nodes.Get(result.Name)
+		if err != nil {
+			if foundPod {
+				// how does this path make any sense?
+				// pod created but informer not yet updated
+				woc.log.Errorf("couldn't obtain node for %s, but found pod, this is not expected, doing nothing", result.Name)
+			}
+			continue
+		}
+
+		if !foundPod && !node.Completed() {
+			if podAbsentTimeout(node) {
+				woc.log.Infof("Determined controller should timeout for %s", result.Name)
+				woc.wf.Status.MarkTaskResultComplete(resultName)
+
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, "pod was absent")
+			} else {
+				woc.log.Debugf("Determined controller shouldn't timeout %s", result.Name)
+			}
 		}
 
 		nodeID := result.Name
@@ -98,4 +133,5 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.updated = true
 		}
 	}
+	return nil
 }
