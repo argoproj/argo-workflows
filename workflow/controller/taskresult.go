@@ -33,7 +33,9 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 			options.LabelSelector = labelSelector
 			// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
 			// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-			options.ResourceVersion = ""
+			if options.ResourceVersion == "0" {
+				options.ResourceVersion = ""
+			}
 			if options.Limit == 0 {
 				options.Limit = common.DefaultPageSize
 			}
