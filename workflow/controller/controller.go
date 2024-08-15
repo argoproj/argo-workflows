@@ -126,6 +126,7 @@ type WorkflowController struct {
 	configMapInformer     cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
+	wfArchiveQueue        workqueue.RateLimitingInterface
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               db.Session
@@ -236,6 +237,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, &fixedItemIntervalRateLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
+	wfc.wfArchiveQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "workflow_archive_queue")
 
 	return &wfc, nil
 }
@@ -278,7 +280,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts a Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	// init DB after leader election (if enabled)
@@ -298,6 +300,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	log.WithField("workflowWorkers", wfWorkers).
 		WithField("workflowTtlWorkers", workflowTTLWorkers).
 		WithField("podCleanup", podCleanupWorkers).
+		WithField("workflowArchive", wfArchiveWorkers).
 		Info("Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
@@ -362,6 +365,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	for i := 0; i < wfWorkers; i++ {
 		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+	}
+	for i := 0; i < wfArchiveWorkers; i++ {
+		go wait.Until(wfc.runArchiveWorker, time.Second, ctx.Done())
 	}
 	if cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
@@ -798,6 +804,14 @@ func (wfc *WorkflowController) runWorker() {
 	}
 }
 
+func (wfc *WorkflowController) runArchiveWorker() {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	ctx := context.Background()
+	for wfc.processNextArchiveItem(ctx) {
+	}
+}
+
 // processNextItem is the worker logic for handling workflow updates
 func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	key, quit := wfc.wfQueue.Get()
@@ -878,6 +892,26 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// so we can requeue the work for a later time
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	// c.handleErr(err, key)
+	return true
+}
+
+func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool {
+	key, quit := wfc.wfArchiveQueue.Get()
+	if quit {
+		return false
+	}
+	defer wfc.wfArchiveQueue.Done(key)
+
+	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
+	if err != nil {
+		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+		return true
+	}
+	if !exists {
+		return true
+	}
+
+	wfc.archiveWorkflow(ctx, obj)
 	return true
 }
 
@@ -1090,10 +1124,16 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				wfc.archiveWorkflow(ctx, obj)
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err == nil {
+					wfc.wfArchiveQueue.Add(key)
+				}
 			},
 			UpdateFunc: func(_, obj interface{}) {
-				wfc.archiveWorkflow(ctx, obj)
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err == nil {
+					wfc.wfArchiveQueue.Add(key)
+				}
 			},
 		},
 	})
