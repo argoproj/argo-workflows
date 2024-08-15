@@ -11,10 +11,19 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/file"
 )
 
-const envVarName = "MAX_WORKFLOW_SIZE"
+const envVarMaxWorkflowSize = "MAX_WORKFLOW_SIZE"
+const envVarMaxNodeStatusSize = "MAX_NODE_STATUS_SIZE"
 
 func getMaxWorkflowSize() int {
-	s, _ := strconv.Atoi(os.Getenv(envVarName))
+	s, _ := strconv.Atoi(os.Getenv(envVarMaxWorkflowSize))
+	if s == 0 {
+		s = 1024 * 1024
+	}
+	return s
+}
+
+func getMaxNodeStatusSize() int {
+	s, _ := strconv.Atoi(os.Getenv(envVarMaxNodeStatusSize))
 	if s == 0 {
 		s = 1024 * 1024
 	}
@@ -22,8 +31,8 @@ func getMaxWorkflowSize() int {
 }
 
 func SetMaxWorkflowSize(s int) func() {
-	_ = os.Setenv(envVarName, strconv.Itoa(s))
-	return func() { _ = os.Unsetenv(envVarName) }
+	_ = os.Setenv(envVarMaxWorkflowSize, strconv.Itoa(s))
+	return func() { _ = os.Unsetenv(envVarMaxWorkflowSize) }
 }
 
 func DecompressWorkflow(wf *wfv1.Workflow) error {
@@ -48,7 +57,20 @@ func getSize(wf *wfv1.Workflow) (int, error) {
 	return len(nodeContent), nil
 }
 
+// getNodeStatusSize return the workflow node status json string size
+func getNodeStatusSize(wf *wfv1.Workflow) (int, error) {
+	nodeContent, err := json.Marshal(wf.Status.Nodes)
+	if err != nil {
+		return 0, err
+	}
+	return len(nodeContent) + len(wf.Status.CompressedNodes), nil
+}
+
 func IsLargeWorkflow(wf *wfv1.Workflow) (bool, error) {
+	nodesSize, err := getNodeStatusSize(wf)
+	if nodesSize > getMaxNodeStatusSize() {
+		return true, err
+	}
 	size, err := getSize(wf)
 	return size > getMaxWorkflowSize(), err
 }
@@ -86,13 +108,18 @@ func compressWorkflow(wf *wfv1.Workflow) error {
 		return err
 	}
 	if large {
-		compressedSize, err := getSize(wf)
 		wf.Status.CompressedNodes = ""
 		wf.Status.Nodes = nodes
+		compressedSize, err := getSize(wf)
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, getMaxWorkflowSize())
+		nodesSize, err := getNodeStatusSize(wf)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("%s compressed size %d > maxSize %d or node status size %d > maxNodeStatusSize %d",
+			tooLarge, compressedSize, getMaxWorkflowSize(), nodesSize, getMaxNodeStatusSize())
 	}
 	return nil
 }
