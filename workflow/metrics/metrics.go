@@ -100,6 +100,7 @@ func New(ctx context.Context, serviceName string, config *Config, callbacks Call
 		addErrorCounter,
 		addLogCounter,
 		addK8sRequests,
+		addVersion,
 		addWorkflowConditionGauge,
 		addWorkQueueMetrics,
 	)

@@ -29,6 +29,7 @@ The following are new metrics:
 * `queue_longest_running`
 * `queue_retries`
 * `queue_unfinished_work`
+* `version`
 
 and can be disabled with
 
