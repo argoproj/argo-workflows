@@ -63,9 +63,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
 
-	// we iterate over the entire task results anyway, so this is completely safe
-	woc.wf.Status.TaskResultsCompletionStatus = nil
-
 	podMap, err := woc.getAllWorkflowPodsMap()
 	if err != nil {
 		return err
