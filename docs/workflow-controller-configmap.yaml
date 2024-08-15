@@ -221,7 +221,7 @@ data:
     path: /metrics
     # Port is the port where metrics are emitted. Default is "9090"
     port: 8080
-    # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
+    # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared. Histogram metrics are never cleared.
     metricsTTL: "10m"
     # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
     ignoreErrors: false

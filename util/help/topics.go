@@ -8,7 +8,7 @@ import (
 
 func root() string {
 	version := `latest`
-	if major, minor, _, err := argo.GetVersion().Components(); err == nil {
+	if major, minor, _, err := argo.GetVersion().MajorMinorPatch(); err == nil {
 		version = fmt.Sprintf("release-%s.%s", major, minor)
 	}
 	return fmt.Sprintf("https://argo-workflows.readthedocs.io/en/%s", version)
@@ -32,4 +32,12 @@ func scaling() string {
 // ConfigureMaximumRecursionDepth returns a URL to the maximum recursion depth documentation
 func ConfigureMaximumRecursionDepth() string {
 	return scaling() + "#maximum-recursion-depth"
+}
+
+func metrics() string {
+	return root() + "/metrics/"
+}
+
+func MetricHelp(metricName string) string {
+	return fmt.Sprintf("%s#%s", metrics(), metricName)
 }

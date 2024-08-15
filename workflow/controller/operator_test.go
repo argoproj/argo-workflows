@@ -12,10 +12,9 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/strftime"
-	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -5331,27 +5330,10 @@ func TestPanicMetric(t *testing.T) {
 	woc.preExecutionNodePhases = nil
 	woc.operate(ctx)
 
-	metricsChan := make(chan prometheus.Metric)
-	go func() {
-		woc.controller.metrics.Collect(metricsChan)
-		close(metricsChan)
-	}()
-
-	seen := false
-	for {
-		metric, ok := <-metricsChan
-		if !ok {
-			break
-		}
-		if strings.Contains(metric.Desc().String(), "OperationPanic") {
-			seen = true
-			var writtenMetric dto.Metric
-			err := metric.Write(&writtenMetric)
-			require.NoError(t, err)
-			assert.InEpsilon(t, float64(1), *writtenMetric.Counter.Value, 0.001)
-		}
-	}
-	assert.True(t, seen)
+	attribs := attribute.NewSet(attribute.String("cause", "OperationPanic"))
+	val, err := testExporter.GetInt64CounterValue("error_count", &attribs)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), val)
 }
 
 // Assert Workflows cannot be run without using workflowTemplateRef in reference mode
