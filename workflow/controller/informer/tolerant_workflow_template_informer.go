@@ -3,8 +3,6 @@ package informer
 import (
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -15,6 +13,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	extwfv1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type tolerantWorkflowTemplateInformer struct {
