@@ -77,6 +77,25 @@ func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time
 	return informer
 }
 
+// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
+// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
+// The reflector will record `lastSyncResourceVersion`. If `ResourceVersion != "0"`, we should use the value
+// recorded by the reflector. see https://github.com/argoproj/argo-workflows/pull/13466
+func CheckResourceVersion(options *metav1.ListOptions) {
+	if options.ResourceVersion == "0" {
+		options.ResourceVersion = ""
+	}
+}
+
+// The reflector will set the Limit to `0` when `ResourceVersion != "" && ResourceVersion != "0"`, which will fail
+// to limit the number of workflow returns. Timeouts and other errors may occur when there are a lots of workflows.
+// see https://github.com/kubernetes/client-go/blob/ee1a5aaf793a9ace9c433f5fb26a19058ed5f37c/tools/cache/reflector.go#L286
+func CheckLimit(options *metav1.ListOptions) {
+	if options.Limit == 0 {
+		options.Limit = common.DefaultPageSize
+	}
+}
+
 // InstanceIDRequirement returns the label requirement to filter against a controller instance (or not)
 func InstanceIDRequirement(instanceID string) labels.Requirement {
 	var instanceIDReq *labels.Requirement

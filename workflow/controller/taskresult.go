@@ -13,6 +13,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndexInformer {
@@ -31,19 +32,8 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 		},
 		func(options *metav1.ListOptions) {
 			options.LabelSelector = labelSelector
-			// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
-			// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-			// The reflector will record `lastSyncResourceVersion`. If `ResourceVersion != "0"`, we should use the value
-			// recorded by the reflector. see https://github.com/argoproj/argo-workflows/pull/13466
-			if options.ResourceVersion == "0" {
-				options.ResourceVersion = ""
-			}
-			// The reflector will set the Limit to `0` when `ResourceVersion != "" && ResourceVersion != "0"`, which will fail
-			// to limit the number of workflow returns. Timeouts and other errors may occur when there are a lots of workflows.
-			// see https://github.com/kubernetes/client-go/blob/ee1a5aaf793a9ace9c433f5fb26a19058ed5f37c/tools/cache/reflector.go#L286
-			if options.Limit == 0 {
-				options.Limit = common.DefaultPageSize
-			}
+			util.CheckResourceVersion(options)
+			util.CheckLimit(options)
 		},
 	)
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
