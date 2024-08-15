@@ -6,6 +6,7 @@ You can use synchronization to limit the parallel execution of workflows or temp
 You can use mutexes to restrict workflows or templates to only having a single concurrent section.
 You can use semaphores to restrict workflows or templates to a configured number of parallel runs.
 This documentation refers "locks" to mean mutexes and semaphores.
+You can use parallelism to restrict concurrent tasks or steps within a single workflow.
 
 You can create multiple synchronization configurations in the `ConfigMap` that can be referred to from a workflow or template.
 
@@ -160,6 +161,19 @@ The queue is then ordered by `CreationTimestamp` of the Workflow; older Workflow
 
 Workflows are only be allowed to take a lock if they are at the front of the queue for that lock.
 
+## Workflow level parallelism
+
+You can restrict parallelism within a workflow using `parallelism` within a workflow or template.
+This only restricts total concurrent executions of steps or tasks within the same workflow.
+
+Examples:
+
+1. [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-limit.yaml) restricts the parallelism of a [loop](./walk-through/loops.md)
+1. [`parallelism-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested.yaml) restricts the parallelism of a nested loop
+1. [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested-dag.yaml) restricts the number of dag tasks that can be run at any one time
+1. [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested-workflow.yaml) shows how parallelism is inherited by children
+1. [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-template-limit.yaml) shows how parallelism of looped templates is also restricted
+
 ## Other Parallelism support
 
-You can also [restrict parallelism in other ways](parallelism.md).
+You can also [restrict parallelism at the system level](parallelism.md).
