@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -68,12 +69,12 @@ func TestMetrics(t *testing.T) {
 
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
-	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
+	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false, nil)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, m.GetCustomMetric("metric"))
 	}
 
-	err = m.UpsertCustomMetric("metric2", "", newCounter("test", "new test", nil), false)
+	err = m.UpsertCustomMetric("metric2", "", newCounter("test", "new test", nil), false, nil)
 	assert.Error(t, err)
 
 	badMetric, err := constructOrUpdateGaugeMetric(nil, &v1alpha1.Prometheus{
@@ -85,7 +86,7 @@ func TestMetrics(t *testing.T) {
 		},
 	})
 	if assert.NoError(t, err) {
-		err = m.UpsertCustomMetric("asdf", "", badMetric, false)
+		err = m.UpsertCustomMetric("asdf", "", badMetric, false, nil)
 		assert.Error(t, err)
 	}
 }
@@ -108,7 +109,7 @@ func TestMetricGC(t *testing.T) {
 	m := New(config, config)
 	assert.Empty(t, m.customMetrics)
 
-	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
+	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false, nil)
 	if assert.NoError(t, err) {
 		assert.Len(t, m.customMetrics, 1)
 	}
@@ -141,7 +142,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 	m := New(config, config)
 	assert.Empty(t, m.customMetrics)
 
-	err := m.UpsertCustomMetric("realtime_metric", "workflow-uid", newCounter("test", "test", nil), true)
+	err := m.UpsertCustomMetric("realtime_metric", "workflow-uid", newCounter("test", "test", nil), true, nil)
 	if assert.NoError(t, err) {
 		assert.Len(t, m.customMetrics, 1)
 	}
@@ -213,7 +214,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	rtMetric, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name", Help: "hello"}, func() float64 { return 0.0 })
 	assert.NoError(t, err)
 
-	err = m.UpsertCustomMetric("metrickey", "123", rtMetric, true)
+	err = m.UpsertCustomMetric("metrickey", "123", rtMetric, true, nil)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, m.workflows["123"])
 	assert.Len(t, m.customMetrics, 1)
@@ -225,7 +226,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	metric, err := ConstructOrUpdateMetric(nil, &v1alpha1.Prometheus{Name: "name", Help: "hello", Gauge: &v1alpha1.Gauge{Value: "1"}})
 	assert.NoError(t, err)
 
-	err = m.UpsertCustomMetric("metrickey", "456", metric, false)
+	err = m.UpsertCustomMetric("metrickey", "456", metric, false, nil)
 	assert.NoError(t, err)
 	assert.Empty(t, m.workflows["456"])
 	assert.Len(t, m.customMetrics, 1)
@@ -233,4 +234,56 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	m.DeleteRealtimeMetricsForKey("456")
 	assert.Empty(t, m.workflows["456"])
 	assert.Len(t, m.customMetrics, 1)
+}
+
+func TestRealTimeWhenFunction(t *testing.T) {
+	config := ServerConfig{
+		Enabled: true,
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
+		TTL:     1 * time.Second,
+	}
+	m := New(config, config)
+
+	rtMetric, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name1", Help: "hello"}, func() float64 { return 0.0 })
+	assert.NoError(t, err)
+
+	realTimeWhenFalseFunc := func() bool {
+		return false
+	}
+	err = m.UpsertCustomMetric("metricFalseKey", "123", rtMetric, true, realTimeWhenFalseFunc)
+	assert.NoError(t, err)
+	metrics := m.allCustomMetrics()
+	assert.Empty(t, metrics)
+	assert.Len(t, metrics, 0)
+
+	metric, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name2", Help: "hello2"}, func() float64 { return 1.0 })
+	assert.NoError(t, err)
+	realTimeWhenTrueFunc := func() bool {
+		return true
+	}
+	err = m.UpsertCustomMetric("metrickey", "456", metric, false, realTimeWhenTrueFunc)
+	assert.NoError(t, err)
+	metrics = m.allCustomMetrics()
+	assert.NotEmpty(t, metrics)
+	assert.Len(t, metrics, 1)
+	tmpMetrics := &dto.Metric{}
+	metrics[0].Write(tmpMetrics)
+	value := tmpMetrics.Gauge.Value
+	assert.Equal(t, *value, float64(1))
+
+	name2found := false
+	name1found := false
+	allMetrics := m.allMetrics()
+	for _, metric := range allMetrics {
+		if strings.Contains(metric.Desc().String(), "name2") {
+			name2found = true
+		}
+
+		if strings.Contains(metric.Desc().String(), "name1") {
+			name1found = false
+		}
+	}
+	assert.True(t, name2found)
+	assert.False(t, name1found)
 }

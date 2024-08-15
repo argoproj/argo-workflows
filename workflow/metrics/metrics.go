@@ -40,10 +40,11 @@ func (s ServerConfig) SameServerAs(other ServerConfig) bool {
 }
 
 type metric struct {
-	metric      prometheus.Metric
-	lastUpdated time.Time
-	realtime    bool
-	completed   bool
+	metric           prometheus.Metric
+	lastUpdated      time.Time
+	realtime         bool
+	completed        bool
+	realTimeWhenFunc func() bool
 }
 
 type Metrics struct {
@@ -141,10 +142,26 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	for _, metric := range m.workersBusy {
 		allMetrics = append(allMetrics, metric)
 	}
-	for _, metric := range m.customMetrics {
-		allMetrics = append(allMetrics, metric.metric)
-	}
+	allCustomMetrics := m.allCustomMetrics()
+	allMetrics = append(allMetrics, allCustomMetrics...)
+
 	return allMetrics
+}
+
+func (m *Metrics) allCustomMetrics() []prometheus.Metric {
+	allCustomMetrics := []prometheus.Metric{}
+	for _, metric := range m.customMetrics {
+		if metric.realtime {
+			if metric.realTimeWhenFunc == nil {
+				allCustomMetrics = append(allCustomMetrics, metric.metric)
+			} else if metric.realTimeWhenFunc() {
+				allCustomMetrics = append(allCustomMetrics, metric.metric)
+			}
+		} else {
+			allCustomMetrics = append(allCustomMetrics, metric.metric)
+		}
+	}
+	return allCustomMetrics
 }
 
 func (m *Metrics) StopRealtimeMetricsForKey(key string) {
@@ -195,7 +212,7 @@ func (m *Metrics) GetCustomMetric(key string) prometheus.Metric {
 	return m.customMetrics[key].metric
 }
 
-func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prometheus.Metric, realtime bool) error {
+func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prometheus.Metric, realtime bool, realTimeWhenFunc func() bool) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -209,7 +226,7 @@ func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prom
 	} else {
 		m.metricNameHelps[name] = help
 	}
-	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now(), realtime: realtime}
+	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now(), realtime: realtime, realTimeWhenFunc: realTimeWhenFunc}
 
 	// If this is a realtime metric, track it
 	if realtime {
