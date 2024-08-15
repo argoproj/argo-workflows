@@ -83,7 +83,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 		if label == "true" {
 			woc.log.Debugf("Marking task result complete %s", resultName)
 			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else {
+		} else if label == "false" {
 			woc.log.Debugf("Marking task result incomplete %s", resultName)
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
@@ -102,7 +102,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 		if !foundPod && !node.Completed() {
 			if podAbsentTimeout(node) {
 				woc.log.Infof("Determined controller should timeout for %s", result.Name)
-				result.Labels[common.LabelKeyReportOutputsCompleted] = "true"
+				woc.wf.Status.MarkTaskResultComplete(resultName)
 
 				woc.markNodePhase(node.Name, wfv1.NodeFailed, "pod was absent")
 			} else {
