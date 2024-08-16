@@ -49,8 +49,8 @@ func TestGetTLSConfig(t *testing.T) {
 	}{
 		{
 			name:               "Valid certificate and key",
-			clientCert:         "testdata/valid_tls_cert.pem",
-			clientKey:          "testdata/valid_tls_key.pem",
+			clientCert:         "testdata/valid_tls.crt",
+			clientKey:          "testdata/valid_tls.key",
 			insecureSkipVerify: false,
 			wantErr:            false,
 		},
@@ -69,7 +69,7 @@ func TestGetTLSConfig(t *testing.T) {
 		},
 		{
 			name:       "Missing key file",
-			clientCert: "testdata/valid_tls_cert.pem",
+			clientCert: "testdata/valid_tls.crt",
 			clientKey:  "testdata/nonexistent.key",
 			wantErr:    true,
 		},
@@ -81,18 +81,18 @@ func TestGetTLSConfig(t *testing.T) {
 
 			if tt.wantErr {
 				require.Error(t, err)
-				require.Nil(t, config)
+				assert.Nil(t, config)
 				return
 			}
 
 			require.NoError(t, err)
 			require.NotNil(t, config)
-			require.Equal(t, tt.insecureSkipVerify, config.InsecureSkipVerify)
+			assert.Equal(t, tt.insecureSkipVerify, config.InsecureSkipVerify)
 
 			if tt.clientCert != "" && tt.clientKey != "" {
-				require.Len(t, config.Certificates, 1)
+				assert.Len(t, config.Certificates, 1)
 			} else {
-				require.Len(t, config.Certificates, 0)
+				assert.Empty(t, config.Certificates)
 			}
 		})
 	}
