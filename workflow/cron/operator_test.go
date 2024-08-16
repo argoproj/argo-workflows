@@ -684,27 +684,27 @@ func TestEvaluateWhen(t *testing.T) {
 	cronWf.Spec.When = "{{= lastScheduledTimeNull || ( (now() - lastScheduledTime).Seconds() > 30) }}"
 	result, err := evalWhen(&cronWf)
 	require.NoError(t, err)
-	require.Equal(t, true, result)
+	require.True(t, result)
 
 	cronWf.Spec.When = "{{= !lastScheduledTimeNull && ( (now() - lastScheduledTime).Seconds() > 30) }}"
 	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
-	require.Equal(t, false, result)
+	require.False(t, result)
 
 	cronWf.Status.LastScheduledTime = nil
 	cronWf.Spec.When = "{{= !lastScheduledTimeNull }}"
 	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
-	require.Equal(t, true, result)
+	require.True(t, result)
 
 	cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(time.Minute * -30)}
 	cronWf.Spec.When = "{{= (now() - lastScheduledTime).Minutes() >= 30 }}"
 	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
-	require.Equal(t, true, result)
+	require.True(t, result)
 
 	cronWf.Spec.When = "{{= (now() - lastScheduledTime).Minutes() <  50 }}"
 	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
-	require.Equal(t, true, result)
+	require.True(t, result)
 }
