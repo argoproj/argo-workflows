@@ -121,6 +121,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
+                when="when_example",
                 workflow_metadata=ObjectMeta(
                     annotations={
                         "key": "key_example",
@@ -11255,6 +11256,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
+                when="when_example",
                 workflow_metadata=ObjectMeta(
                     annotations={
                         "key": "key_example",
@@ -22474,6 +22476,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
+                when="when_example",
                 workflow_metadata=ObjectMeta(
                     annotations={
                         "key": "key_example",

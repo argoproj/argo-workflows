@@ -507,6 +507,10 @@ message CronWorkflowSpec {
 
   // Schedules is a list of schedules to run the Workflow in Cron format
   repeated string schedules = 11;
+
+  // v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled.
+  // This new When clause allows for the full expressivity of expr-lang.
+  optional string when = 12;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow

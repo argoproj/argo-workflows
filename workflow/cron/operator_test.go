@@ -386,8 +386,8 @@ func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
 	v1alpha1.MustUnmarshal([]byte(forbidMissedSchedule), &cronWf)
 	// StartingDeadlineSeconds is after the current second, so cron should be run
-	//startingDeadlineSeconds := int64(35)
-	//cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
+	// startingDeadlineSeconds := int64(35)
+	// cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	t.Run("ForbiddenWithMissedScheduleAfterCron", func(t *testing.T) {
 		cronWf.Spec.StartingDeadlineSeconds = nil
 		woc := &cronWfOperationCtx{
@@ -675,4 +675,36 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	require.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
+}
+
+func TestEvaluateWhen(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+
+	cronWf.Spec.When = "{{= lastScheduledTimeNull || ( (now() - lastScheduledTime).Seconds() > 30) }}"
+	result, err := evalWhen(&cronWf)
+	require.NoError(t, err)
+	require.Equal(t, true, result)
+
+	cronWf.Spec.When = "{{= !lastScheduledTimeNull && ( (now() - lastScheduledTime).Seconds() > 30) }}"
+	result, err = evalWhen(&cronWf)
+	require.NoError(t, err)
+	require.Equal(t, false, result)
+
+	cronWf.Status.LastScheduledTime = nil
+	cronWf.Spec.When = "{{= !lastScheduledTimeNull }}"
+	result, err = evalWhen(&cronWf)
+	require.NoError(t, err)
+	require.Equal(t, true, result)
+
+	cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(time.Minute * -30)}
+	cronWf.Spec.When = "{{= (now() - lastScheduledTime).Minutes() >= 30 }}"
+	result, err = evalWhen(&cronWf)
+	require.NoError(t, err)
+	require.Equal(t, true, result)
+
+	cronWf.Spec.When = "{{= (now() - lastScheduledTime).Minutes() <  50 }}"
+	result, err = evalWhen(&cronWf)
+	require.NoError(t, err)
+	require.Equal(t, true, result)
 }

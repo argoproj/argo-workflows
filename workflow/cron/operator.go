@@ -7,10 +7,13 @@ import (
 	"sort"
 	"time"
 
+	"github.com/Knetic/govaluate"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
@@ -21,6 +24,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -179,6 +183,67 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 	}
 }
 
+// TODO: refactor shouldExecute in steps.go
+func shouldExecute(when string) (bool, error) {
+	if when == "" {
+		return true, nil
+	}
+	expression, err := govaluate.NewEvaluableExpression(when)
+	if err != nil {
+		return false, err
+	}
+
+	result, err := expression.Evaluate(nil)
+	if err != nil {
+		return false, err
+	}
+
+	boolRes, ok := result.(bool)
+	if !ok {
+		return false, argoerrs.Errorf(argoerrs.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", when, result)
+	}
+	return boolRes, nil
+}
+
+func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
+	if cron.Spec.When == "" {
+		return true, nil
+	}
+	cronBytes, err := json.Marshal(cron)
+	if err != nil {
+		return false, err
+	}
+	m := make(map[string]interface{})
+	tm := time.Date(0, 1,
+		1, 0, 0, 0, 0, time.UTC)
+
+	m["lastScheduledTimeNull"] = false
+
+	if cron.Status.LastScheduledTime != nil {
+		tm = cron.Status.LastScheduledTime.Time
+		m["lastScheduledTimeNull"] = true
+	}
+
+	m["lastScheduledTime"] = tm
+
+	t, err := template.NewTemplate(string(cronBytes))
+	if err != nil {
+		return false, err
+	}
+
+	newCronStr, err := t.Replace(m, false)
+	if err != nil {
+		return false, err
+	}
+
+	var newCron v1alpha1.CronWorkflow
+	err = json.Unmarshal([]byte(newCronStr), &newCron)
+	if err != nil {
+		return false, err
+	}
+	return shouldExecute(newCron.Spec.When)
+}
+
 func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, error) {
 	if woc.cronWf.Spec.Suspend {
 		woc.log.Infof("%s is suspended, skipping execution", woc.name)
@@ -188,6 +253,11 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, 
 	if woc.cronWf.Status.Phase == v1alpha1.StoppedPhase {
 		woc.log.Infof("CronWorkflow %s is marked as stopped since it achieved the stopping condition", woc.cronWf.Name)
 		return false, nil
+	}
+
+	canProceed, err := evalWhen(woc.cronWf)
+	if err != nil || !canProceed {
+		return canProceed, err
 	}
 
 	if woc.cronWf.Spec.ConcurrencyPolicy != "" {

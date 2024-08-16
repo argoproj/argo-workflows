@@ -8846,6 +8846,10 @@
           "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
           "type": "string"
         },
+        "when": {
+          "description": "v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled.",
+          "type": "string"
+        },
         "workflowMetadata": {
           "description": "WorkflowMetadata contains some metadata of the workflow to be run",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"

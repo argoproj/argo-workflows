@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **successfulJobsHistoryLimit** | **Integer** | SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time |  [optional]
 **suspend** | **Boolean** | Suspend is a flag that will stop new CronWorkflows from running if set to true |  [optional]
 **timezone** | **String** | Timezone is the timezone against which the cron schedule will be calculated, e.g. \&quot;Asia/Tokyo\&quot;. Default is machine&#39;s local time. |  [optional]
+**when** | **String** | v3.6 and after: When clause can be used to determine a run should or shouldn&#39;t be scheduled. |  [optional]
 **workflowMetadata** | [**io.kubernetes.client.openapi.models.V1ObjectMeta**](io.kubernetes.client.openapi.models.V1ObjectMeta.md) |  |  [optional]
 **workflowSpec** | [**IoArgoprojWorkflowV1alpha1WorkflowSpec**](IoArgoprojWorkflowV1alpha1WorkflowSpec.md) |  | 
 

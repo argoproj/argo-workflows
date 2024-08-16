@@ -7263,6 +7263,11 @@ func (m *CronWorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.When)
+	copy(dAtA[i:], m.When)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.When)))
+	i--
+	dAtA[i] = 0x62
 	if len(m.Schedules) > 0 {
 		for iNdEx := len(m.Schedules) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.Schedules[iNdEx])
@@ -14924,6 +14929,8 @@ func (m *CronWorkflowSpec) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
+	l = len(m.When)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -17941,6 +17948,7 @@ func (this *CronWorkflowSpec) String() string {
 		`WorkflowMetadata:` + strings.Replace(fmt.Sprintf("%v", this.WorkflowMetadata), "ObjectMeta", "v11.ObjectMeta", 1) + `,`,
 		`StopStrategy:` + strings.Replace(this.StopStrategy.String(), "StopStrategy", "StopStrategy", 1) + `,`,
 		`Schedules:` + fmt.Sprintf("%v", this.Schedules) + `,`,
+		`When:` + fmt.Sprintf("%v", this.When) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -26460,6 +26468,38 @@ func (m *CronWorkflowSpec) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Schedules = append(m.Schedules, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field When", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.When = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
