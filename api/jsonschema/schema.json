@@ -4902,7 +4902,7 @@
           "type": "string"
         },
         "when": {
-          "description": "v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled.",
+          "description": "v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled. This new When clause allows for the full expressivity of expr-lang.",
           "type": "string"
         },
         "workflowMetadata": {
