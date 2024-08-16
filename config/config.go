@@ -163,6 +163,11 @@ func (c *Config) Sanitize(allowedProtocol []string) error {
 		if err != nil {
 			return err
 		}
+		// If the scheme is empty then we're allowing relative links for
+		// the UI.
+		if u.Scheme == "" {
+			continue
+		}
 		err = c.ValidateProtocol(u.Scheme, allowedProtocol)
 		if err != nil {
 			return err
