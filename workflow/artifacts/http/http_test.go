@@ -104,8 +104,9 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 			// check that content is really there
 			buf := new(bytes.Buffer)
 			_, err = buf.ReadFrom(r.Body)
-			require.NoError(t, err)
-			assert.Equal(t, content, buf.String())
+			if assert.NoError(t, err) {
+				assert.Equal(t, content, buf.String())
+			}
 
 			w.WriteHeader(http.StatusCreated)
 		}

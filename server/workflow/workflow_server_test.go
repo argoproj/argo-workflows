@@ -690,7 +690,7 @@ func TestWatchWorkflows(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, &testWatchWorkflowServer{testServerStream{ctx}})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}()
 	cancel()
 }
@@ -708,7 +708,7 @@ func TestWatchLatestWorkflow(t *testing.T) {
 				FieldSelector: util.GenerateFieldSelectorFromWorkflowName("@latest"),
 			},
 		}, &testWatchWorkflowServer{testServerStream{ctx}})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}()
 	cancel()
 }
@@ -912,7 +912,7 @@ func TestPodLogs(t *testing.T) {
 			Namespace:  "workflows",
 			LogOptions: &corev1.PodLogOptions{},
 		}, &testPodLogsServer{testServerStream{ctx}})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}()
 	cancel()
 }
