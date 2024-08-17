@@ -374,14 +374,14 @@ artifacts:
 
 You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal).
 
-1. Retrieve the blob service endpoint for the storage account.
+1. Retrieve the blob service endpoint for the storage account:
 
     ```bash
     az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
     # https://mystorageaccountname.blob.core.windows.net
     ```
 
-2. Retrieve the Access Key for the storage account.
+2. Retrieve the Access Key for the storage account:
 
     ```bash
     ACCESS_KEY="$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
@@ -419,7 +419,7 @@ You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage
 
 You can also use a [Shared Access Signature (SAS)](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json).
 
-1. Retrieve the blob service endpoint for the storage account.
+1. Retrieve the blob service endpoint for the storage account:
 
     ```bash
     az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
