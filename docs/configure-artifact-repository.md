@@ -390,7 +390,6 @@ You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage
 3. Create a Kubernetes Secret to hold the storage account key:
 
     ```bash
-    export ACCESS_KEY=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)
     kubectl create secret generic my-azure-storage-credentials \
       --from-literal "account-access-key=$ACCESS_KEY"
     ```
@@ -424,23 +423,23 @@ You can also use a [Shared Access Signature (SAS)](https://learn.microsoft.com/e
 
     ```bash
     az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
+    # https://mystorageaccountname.blob.core.windows.net
     ```
 
-2. Retrieve the shared access signature for the storage account.
+2. Generate a Shared Access Signature for the storage account:
 
     ```bash
-    az storage container generate-sas --account-name <storage-account> --name <container> --permissions acdlrw --expiry <date-time> --auth-mode key
+    SAS_TOKEN="$(az storage container generate-sas --account-name <storage-account> --name <container> --permissions acdlrw --expiry <date-time> --auth-mode key)"
     ```
 
-3. Create a Kubernetes secret to hold the storage account key.
+3. Create a Kubernetes Secret to hold the storage account key:
 
     ```bash
-    export SAS_TOKEN=$(az storage container generate-sas --account-name <storage-account> --name <container> --permissions acdlrw --expiry <date-time> --auth-mode key)
     kubectl create secret generic my-azure-storage-credentials \
       --from-literal "shared-access-key=$SAS_TOKEN"
     ```
 
-4. Configure `azure` artifact as follows in the YAML.
+4. Configure an `azure` artifact:
 
     ```yaml
     artifacts:
