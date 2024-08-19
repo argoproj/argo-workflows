@@ -1,0 +1,21 @@
+# Example of how a "when" clause can be used
+# to control concurrency
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: sleep-when-limit-concurrency
+spec:
+  schedule: "* * * * *"
+  timezone: "America/Los_Angeles"   # Default to local machine timezone
+  startingDeadlineSeconds: 0
+  suspend: false                    # Set to "true" to suspend scheduling
+  concurrencyPolicy: "Allow"
+  when: "{{= cronworkflows.numActive < 2 }}"
+  workflowSpec:
+    entrypoint: sleep-busybox
+    templates:
+      - name: sleep-busybox
+        container:
+          image: busybox
+          command: [sleep]
+          args: ["240"]
