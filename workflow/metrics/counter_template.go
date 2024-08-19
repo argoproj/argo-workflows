@@ -25,9 +25,9 @@ func templateLabels(name, namespace string, cluster bool) instAttribs {
 	}
 }
 
-func (m *Metrics) CountWorkflowTemplate(ctx context.Context, phase, name, namespace string, cluster bool) {
+func (m *Metrics) CountWorkflowTemplate(ctx context.Context, phase MetricWorkflowPhase, name, namespace string, cluster bool) {
 	labels := templateLabels(name, namespace, cluster)
-	labels = append(labels, instAttrib{name: labelWorkflowPhase, value: phase})
+	labels = append(labels, instAttrib{name: labelWorkflowPhase, value: string(phase)})
 
 	m.addInt(ctx, nameWFTemplateTriggered, 1, labels)
 }
