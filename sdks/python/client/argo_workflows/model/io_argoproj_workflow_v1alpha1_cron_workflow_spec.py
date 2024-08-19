@@ -178,7 +178,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
             successful_jobs_history_limit (int): SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time. [optional]  # noqa: E501
             suspend (bool): Suspend is a flag that will stop new CronWorkflows from running if set to true. [optional]  # noqa: E501
             timezone (str): Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.. [optional]  # noqa: E501
-            when (str): v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled. This new When clause allows for the full expressivity of expr-lang.. [optional]  # noqa: E501
+            when (str): v3.6 and after: When is an expression that determines if a run should be scheduled.. [optional]  # noqa: E501
             workflow_metadata (ObjectMeta): [optional]  # noqa: E501
         """
 
@@ -275,7 +275,7 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
             successful_jobs_history_limit (int): SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time. [optional]  # noqa: E501
             suspend (bool): Suspend is a flag that will stop new CronWorkflows from running if set to true. [optional]  # noqa: E501
             timezone (str): Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.. [optional]  # noqa: E501
-            when (str): v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled. This new When clause allows for the full expressivity of expr-lang.. [optional]  # noqa: E501
+            when (str): v3.6 and after: When is an expression that determines if a run should be scheduled.. [optional]  # noqa: E501
             workflow_metadata (ObjectMeta): [optional]  # noqa: E501
         """
 

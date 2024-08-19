@@ -2259,7 +2259,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"when": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled. This new When clause allows for the full expressivity of expr-lang.",
+							Description: "v3.6 and after: When is an expression that determines if a run should be scheduled.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

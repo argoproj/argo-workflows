@@ -1259,7 +1259,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 |`successfulJobsHistoryLimit`|`integer`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`suspend`|`boolean`|Suspend is a flag that will stop new CronWorkflows from running if set to true|
 |`timezone`|`string`|Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.|
-|`when`|`string`|v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled. This new When clause allows for the full expressivity of expr-lang.|
+|`when`|`string`|v3.6 and after: When is an expression that determines if a run should be scheduled.|
 |`workflowMetadata`|[`ObjectMeta`](#objectmeta)|WorkflowMetadata contains some metadata of the workflow to be run|
 |`workflowSpec`|[`WorkflowSpec`](#workflowspec)|WorkflowSpec is the spec of the workflow to be run|
 

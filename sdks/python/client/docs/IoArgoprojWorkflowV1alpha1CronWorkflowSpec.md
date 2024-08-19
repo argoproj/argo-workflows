@@ -15,7 +15,7 @@ Name | Type | Description | Notes
 **successful_jobs_history_limit** | **int** | SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time | [optional] 
 **suspend** | **bool** | Suspend is a flag that will stop new CronWorkflows from running if set to true | [optional] 
 **timezone** | **str** | Timezone is the timezone against which the cron schedule will be calculated, e.g. \&quot;Asia/Tokyo\&quot;. Default is machine&#39;s local time. | [optional] 
-**when** | **str** | v3.6 and after: When clause can be used to determine a run should or shouldn&#39;t be scheduled. This new When clause allows for the full expressivity of expr-lang. | [optional] 
+**when** | **str** | v3.6 and after: When is an expression that determines if a run should be scheduled. | [optional] 
 **workflow_metadata** | [**ObjectMeta**](ObjectMeta.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
