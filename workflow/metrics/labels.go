@@ -16,7 +16,9 @@ const (
 
 	labelNodePhase string = `node_phase`
 
-	labelPodPhase  string = `phase`
+	labelPodPhase     string = `phase`
+	labelPodNamespace string = `namespace`
+
 	labelQueueName string = `queue_name`
 
 	labelRecentlyStarted string = `recently_started`

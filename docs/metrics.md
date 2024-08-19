@@ -293,6 +293,16 @@ You should only see this under high load.
 
 `recently_started` is controlled by the [environment variable](environment-variables.md) `RECENTLY_STARTED_POD_DURATION` and defaults to 10 seconds.
 
+#### `pods_total_count`
+
+A gauge of the number of pods which have entered each phase and then observed by the controller.
+This is not directly controlled by the workflow controller, so it is possible for some pod phases to be missed.
+
+| attribute   | explanation                               |
+|-------------|-------------------------------------------|
+| `phase`     | The phase that the pod is in              |
+| `namespace` | The namespace in which the pod is running |
+
 #### `queue_adds_count`
 
 A counter of additions to the work queues inside the controller.
