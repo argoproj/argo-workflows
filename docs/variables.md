@@ -186,7 +186,7 @@ Only available for `successCondition`
 
 ### CronWorkflow Templates
 
-> v3.6 and after, note that the the variables here can be used with the full power of expr-lang expression.
+> v3.6 and after
 
 | Variable | Description|
 |----------|------------|
