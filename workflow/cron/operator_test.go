@@ -28,7 +28,7 @@ var scheduledWf = `
     name: hello-world
     namespace: argo
     resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflow.hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedule: '* * * * *'
@@ -339,7 +339,7 @@ var forbidMissedSchedule = `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   annotations:
-    cronworkflows.argoproj.io/last-used-schedule: CRON_TZ=America/Los_Angeles 0-36/1
+    cronworkflow.argoproj.io/last-used-schedule: CRON_TZ=America/Los_Angeles 0-36/1
       21-22 * * *
   creationTimestamp: "2022-02-04T05:33:24Z"
   generation: 2
@@ -410,7 +410,7 @@ var multipleSchedulesWf = `
     name: hello-world
     namespace: argo
     resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflow.hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedules:
@@ -471,7 +471,7 @@ var specErrWithScheduleAndSchedules = `
     name: hello-world
     namespace: argo
     resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflow.hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedule: "* * * * *"
@@ -533,7 +533,7 @@ var specErrWithValidAndInvalidSchedules = `
     name: hello-world
     namespace: argo
     resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflow.hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedules:
@@ -681,29 +681,29 @@ func TestEvaluateWhen(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
 	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
 
-	cronWf.Spec.When = "{{= cronworkflows.lastScheduledTimeNull || ( (now() - cronworkflows.lastScheduledTime).Seconds() > 30) }}"
+	cronWf.Spec.When = "{{= cronworkflow.hasLastScheduledTime || ( (now() - cronworkflow.lastScheduledTime).Seconds() > 30) }}"
 	result, err := evalWhen(&cronWf)
 	require.NoError(t, err)
 	assert.True(t, result)
 
-	cronWf.Spec.When = "{{= !cronworkflows.lastScheduledTimeNull && ( (now() - cronworkflows.lastScheduledTime).Seconds() < 30) }}"
+	cronWf.Spec.When = "{{= !cronworkflow.hasLastScheduledTime && ( (now() - cronworkflow.lastScheduledTime).Seconds() < 30) }}"
 	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
 	assert.False(t, result)
 
 	cronWf.Status.LastScheduledTime = nil
-	cronWf.Spec.When = "{{= !cronworkflows.lastScheduledTimeNull }}"
+	cronWf.Spec.When = "{{= !cronworkflow.hasLastScheduledTime }}"
 	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
 	assert.False(t, result)
 
 	cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(time.Minute * -30)}
-	cronWf.Spec.When = "{{= (now() - cronworkflows.lastScheduledTime).Minutes() >= 30 }}"
+	cronWf.Spec.When = "{{= (now() - cronworkflow.lastScheduledTime).Minutes() >= 30 }}"
 	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
 	assert.True(t, result)
 
-	cronWf.Spec.When = "{{= (now() - cronworkflows.lastScheduledTime).Minutes() <  50 }}"
+	cronWf.Spec.When = "{{= (now() - cronworkflow.lastScheduledTime).Minutes() <  50 }}"
 	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
 	assert.True(t, result)

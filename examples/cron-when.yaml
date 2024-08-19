@@ -4,9 +4,6 @@ metadata:
   name: sleep-when
 spec:
   schedule: "* * * * *"
-  timezone: "America/Los_Angeles"   # Default to local machine timezone
-  startingDeadlineSeconds: 0
-  suspend: false                    # Set to "true" to suspend scheduling
   concurrencyPolicy: "Allow"
   when: "{{= cronworkflows.lastScheduledTimeNull || (now() - cronworkflows.lastScheduledTime).Seconds() > 360 }}"
   workflowSpec:

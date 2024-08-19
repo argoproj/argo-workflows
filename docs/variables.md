@@ -184,17 +184,15 @@ Only available for `successCondition`
 | `response.body` | Response body (`string`) |
 | `response.headers` | Response headers (`map[string][]string`) |
 
-### CronWorkflow Templates
+### CronWorkflows
 
 > v3.6 and after
 
 | Variable | Description|
 |----------|------------|
-| `cronworkflows.name` | Name of the CronWorkflow method (`string`) |
-| `cronworkflows.numActive` | Number of running CronWorkflows (`int`) |
-| `cronworkflows.lastScheduledTimeNull` | When `cronworkflows.lastScheduledTime` is a sane value this is set to `false` else `true` (`bool`) |
-| `cronworkflows.lastScheduledTime` | The time since this workflow was last scheduled (`time.Time`) |
-| `cronworkflows.phase` | Phase is an enum of `Active` or `Stopped`. It changes to `Stopped` when `stopStrategy.condition` is true (`string`) |
+| `cronworkflow.name` | Name of the CronWorkflow (`string`)
+| `cronworkflow.hasLastScheduledTime` | When `cronworkflows.lastScheduledTime` is a sane value this is set to `false` else `true` (`bool`) |
+| `cronworkflow.lastScheduledTime` | The time since this workflow was last scheduled (`time.Time`) |
 
 ### `RetryStrategy`
 

@@ -218,15 +218,14 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 
 	m := make(map[string]interface{})
 	addSetField := func(name string, value interface{}) {
-		m[fmt.Sprintf("cronworkflows.%s", name)] = value
+		m[fmt.Sprintf("cronworkflow.%s", name)] = value
 	}
 
 	addSetField("name", cron.Name)
-	addSetField("numActive", len(cron.Status.Active))
 	tm := time.Date(0, 1,
 		1, 0, 0, 0, 0, time.UTC)
 
-	addSetField("lastScheduledTimeNull", true)
+	addSetField("hasLastScheduledTime", true)
 
 	if cron.Status.LastScheduledTime != nil {
 		tm = cron.Status.LastScheduledTime.Time
@@ -234,8 +233,6 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 	}
 
 	addSetField("lastScheduledTime", tm)
-
-	addSetField("phase", cron.Status.Phase)
 
 	t, err := template.NewTemplate(string(cronBytes))
 	if err != nil {

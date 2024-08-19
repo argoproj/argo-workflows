@@ -6,9 +6,6 @@ metadata:
   name: sleep-when-limit-concurrency
 spec:
   schedule: "* * * * *"
-  timezone: "America/Los_Angeles"   # Default to local machine timezone
-  startingDeadlineSeconds: 0
-  suspend: false                    # Set to "true" to suspend scheduling
   concurrencyPolicy: "Allow"
   when: "{{= cronworkflows.numActive < 2 }}"
   workflowSpec:
