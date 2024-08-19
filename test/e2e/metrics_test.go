@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/assert"
@@ -106,6 +107,22 @@ func (s *MetricsSuite) TestFailedMetric() {
 				Status(200).
 				Body().
 				Contains(`argo_workflows_task_failure 1`)
+		})
+}
+
+func (s *MetricsSuite) TestCronTriggeredCounter() {
+	s.Given().
+		CronWorkflow(`@testdata/cronworkflow-metrics.yaml`).
+		When().
+		CreateCronWorkflow().
+		Wait(1 * time.Minute). // This pattern is used in cron_test.go too
+		Then().
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`cronworkflows_triggered_total{name="test-cron-metric",namespace="argo"} 1`)
 		})
 }
 
