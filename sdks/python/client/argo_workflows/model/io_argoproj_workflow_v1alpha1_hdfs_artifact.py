@@ -91,6 +91,7 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifact(ModelNormal):
         return {
             'path': (str,),  # noqa: E501
             'addresses': ([str],),  # noqa: E501
+            'data_transfer_protection': (str,),  # noqa: E501
             'force': (bool,),  # noqa: E501
             'hdfs_user': (str,),  # noqa: E501
             'krb_c_cache_secret': (SecretKeySelector,),  # noqa: E501
@@ -109,6 +110,7 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifact(ModelNormal):
     attribute_map = {
         'path': 'path',  # noqa: E501
         'addresses': 'addresses',  # noqa: E501
+        'data_transfer_protection': 'dataTransferProtection',  # noqa: E501
         'force': 'force',  # noqa: E501
         'hdfs_user': 'hdfsUser',  # noqa: E501
         'krb_c_cache_secret': 'krbCCacheSecret',  # noqa: E501
@@ -164,6 +166,7 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifact(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             addresses ([str]): Addresses is accessible addresses of HDFS name nodes. [optional]  # noqa: E501
+            data_transfer_protection (str): DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.. [optional]  # noqa: E501
             force (bool): Force copies a file forcibly even if it exists. [optional]  # noqa: E501
             hdfs_user (str): HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.. [optional]  # noqa: E501
             krb_c_cache_secret (SecretKeySelector): [optional]  # noqa: E501
@@ -258,6 +261,7 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifact(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             addresses ([str]): Addresses is accessible addresses of HDFS name nodes. [optional]  # noqa: E501
+            data_transfer_protection (str): DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.. [optional]  # noqa: E501
             force (bool): Force copies a file forcibly even if it exists. [optional]  # noqa: E501
             hdfs_user (str): HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.. [optional]  # noqa: E501
             krb_c_cache_secret (SecretKeySelector): [optional]  # noqa: E501

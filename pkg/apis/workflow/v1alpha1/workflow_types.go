@@ -2745,6 +2745,11 @@ type HDFSConfig struct {
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
 	HDFSUser string `json:"hdfsUser,omitempty" protobuf:"bytes,3,opt,name=hdfsUser"`
+
+	// DataTransferProtection is the protection level for HDFS data transfer.
+	// It corresponds to the dfs.data.transfer.protection configuration in HDFS.
+	// It can be one of the following values: "authentication", "integrity", "privacy", or empty.
+	DataTransferProtection string `json:"dataTransferProtection,omitempty" protobuf:"bytes,4,opt,name=dataTransferProtection"`
 }
 
 // HDFSKrbConfig is auth configurations for Kerberos

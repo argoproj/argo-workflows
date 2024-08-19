@@ -2926,6 +2926,13 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"dataTransferProtection": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"path": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Path is a file path in HDFS",
@@ -3018,6 +3025,13 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifactRepository(ref common.Referen
 							Format:      "",
 						},
 					},
+					"dataTransferProtection": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"pathFormat": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PathFormat is defines the format of path to store a file. Can reference workflow variables",
@@ -3104,6 +3118,13 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref common.ReferenceCallback) 
 					"hdfsUser": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"dataTransferProtection": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
