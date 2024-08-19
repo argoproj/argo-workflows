@@ -225,11 +225,11 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 	tm := time.Date(0, 1,
 		1, 0, 0, 0, 0, time.UTC)
 
-	addSetField("hasLastScheduledTime", true)
+	addSetField("hasLastScheduledTime", false)
 
 	if cron.Status.LastScheduledTime != nil {
 		tm = cron.Status.LastScheduledTime.Time
-		addSetField("lastScheduledTimeNull", false)
+		addSetField("hasLastScheduledTime", true)
 	}
 
 	addSetField("lastScheduledTime", tm)
