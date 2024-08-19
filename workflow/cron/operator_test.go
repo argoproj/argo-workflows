@@ -681,18 +681,18 @@ func TestEvaluateWhen(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
 	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
 
-	// cronWf.Spec.When = "{{= cronworkflow.hasLastScheduledTime || ( (now() - cronworkflow.lastScheduledTime).Seconds() > 30) }}"
-	// result, err := evalWhen(&cronWf)
-	// require.NoError(t, err)
-	// assert.True(t, result)
+	cronWf.Spec.When = "{{= cronworkflow.hasLastScheduledTime || ( (now() - cronworkflow.lastScheduledTime).Seconds() > 30) }}"
+	result, err := evalWhen(&cronWf)
+	require.NoError(t, err)
+	assert.True(t, result)
 
-	// cronWf.Spec.When = "{{= !cronworkflow.hasLastScheduledTime && ( (now() - cronworkflow.lastScheduledTime).Seconds() < 30) }}"
-	// result, err = evalWhen(&cronWf)
-	// require.NoError(t, err)
-	// assert.False(t, result)
+	cronWf.Spec.When = "{{= !cronworkflow.hasLastScheduledTime && ( (now() - cronworkflow.lastScheduledTime).Seconds() < 30) }}"
+	result, err = evalWhen(&cronWf)
+	require.NoError(t, err)
+	assert.False(t, result)
 
 	cronWf.Spec.When = "{{= cronworkflow.hasLastScheduledTime }}"
-	result, err := evalWhen(&cronWf)
+	result, err = evalWhen(&cronWf)
 	require.NoError(t, err)
 	assert.True(t, result)
 
