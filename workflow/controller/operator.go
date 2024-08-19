@@ -3521,7 +3521,7 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 }
 
 func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {
-	replaceMap := make(map[string]string)
+	replaceMap := make(map[string]interface{})
 	var newName string
 
 	switch item.GetType() {
@@ -3562,18 +3562,14 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
 	var newStepStr string
-	interReplaceMap := make(map[string]interface{})
-	for k, v := range replaceMap {
-		interReplaceMap[k] = v
-	}
 	// If when is not parameterised and evaluated to false, we are not executing nor resolving artifact,
 	// we allow parameter substitution to be Unresolved
 	// The parameterised when will get handle by the task-expansion
 	proceed, err := shouldExecute(whenCondition)
 	if err == nil && !proceed {
-		newStepStr, err = tmpl.Replace(interReplaceMap, true)
+		newStepStr, err = tmpl.Replace(replaceMap, true)
 	} else {
-		newStepStr, err = tmpl.Replace(interReplaceMap, false)
+		newStepStr, err = tmpl.Replace(replaceMap, false)
 	}
 	if err != nil {
 		return "", err
