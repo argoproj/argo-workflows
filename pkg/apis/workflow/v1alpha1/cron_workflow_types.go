@@ -66,7 +66,6 @@ type CronWorkflowSpec struct {
 	// Schedules is a list of schedules to run the Workflow in Cron format
 	Schedules []string `json:"schedules,omitempty" protobuf:"bytes,11,opt,name=schedules"`
 	// v3.6 and after: When is an expression that determines if a run should be scheduled.
-	// This new When clause allows for the full expressivity of expr-lang.
 	When string `json:"when,omitempty" protobuf:"bytes,12,opt,name=when"`
 }
 
