@@ -194,7 +194,7 @@ Only available for `successCondition`
 | `cronworkflows.numActive` | Number of running CronWorkflows (`int`) |
 | `cronworkflows.lastScheduledTimeNull` | When `cronworkflows.lastScheduledTime` is a sane value this is set to `false` else `true` (`bool`) |
 | `cronworkflows.lastScheduledTime` | The time since this workflow was last scheduled (`time.Time`) |
-| `cronworkflows.phase` | Phase is an enum of `Active` or `Stopped`. It changes to `Stopped` when stopStrategy.condition is true (`string`) |
+| `cronworkflows.phase` | Phase is an enum of `Active` or `Stopped`. It changes to `Stopped` when `stopStrategy.condition` is true (`string`) |
 
 ### `RetryStrategy`
 
