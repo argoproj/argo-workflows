@@ -65,7 +65,7 @@ type CronWorkflowSpec struct {
 	StopStrategy *StopStrategy `json:"stopStrategy,omitempty" protobuf:"bytes,10,opt,name=stopStrategy"`
 	// Schedules is a list of schedules to run the Workflow in Cron format
 	Schedules []string `json:"schedules,omitempty" protobuf:"bytes,11,opt,name=schedules"`
-	// v3.6 and after: When clause can be used to determine a run should or shouldn't be scheduled.
+	// v3.6 and after: When is an expression that determines if a run should be scheduled.
 	// This new When clause allows for the full expressivity of expr-lang.
 	When string `json:"when,omitempty" protobuf:"bytes,12,opt,name=when"`
 }
