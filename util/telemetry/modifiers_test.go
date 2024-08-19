@@ -1,4 +1,4 @@
-package metrics
+package telemetry
 
 import (
 	"context"
@@ -13,42 +13,38 @@ func TestViewDisable(t *testing.T) {
 	// Same metric as TestMetrics, but disabled by a view
 	m, te, err := createTestMetrics(&Config{
 		Modifiers: map[string]Modifier{
-			nameOperationDuration: {
+			nameTestingHistogram: {
 				Disabled: true,
 			},
 		},
-	},
-		Callbacks{},
-	)
+	})
 	require.NoError(t, err)
-	m.OperationCompleted(m.ctx, 5)
+	m.TestingHistogramRecord(m.Ctx, 5)
 	attribs := attribute.NewSet()
-	_, err = te.GetFloat64HistogramData(nameOperationDuration, &attribs)
+	_, err = te.GetFloat64HistogramData(nameTestingHistogram, &attribs)
 	require.Error(t, err)
 }
 
 func TestViewDisabledAttributes(t *testing.T) {
-	// Disable the error cause label
+	// Disable the error cause attribute
 	m, te, err := createTestMetrics(&Config{
 		Modifiers: map[string]Modifier{
-			nameErrorCount: {
-				DisabledAttributes: []string{labelErrorCause},
+			nameTestingCounter: {
+				DisabledAttributes: []string{AttribErrorCause},
 			},
 		},
-	},
-		Callbacks{},
-	)
+	})
 	require.NoError(t, err)
 	// Submit a couple of errors
-	m.OperationPanic(context.Background())
-	m.CronWorkflowSubmissionError(context.Background())
+	m.TestingErrorA(context.Background())
+	m.TestingErrorB(context.Background())
 	// See if we can find this with the attributes, we should not be able to
-	attribsFail := attribute.NewSet(attribute.String(labelErrorCause, string(ErrorCauseOperationPanic)))
-	_, err = te.GetInt64CounterValue(nameErrorCount, &attribsFail)
+	attribsFail := attribute.NewSet(attribute.String(AttribErrorCause, string(errorCauseTestingA)))
+	_, err = te.GetInt64CounterValue(nameTestingCounter, &attribsFail)
 	require.Error(t, err)
 	// Find a sum of all error types
 	attribsSuccess := attribute.NewSet()
-	val, err := te.GetInt64CounterValue(nameErrorCount, &attribsSuccess)
+	val, err := te.GetInt64CounterValue(nameTestingCounter, &attribsSuccess)
 	require.NoError(t, err)
 	// Sum of the two submitted errors is 2
 	assert.Equal(t, int64(2), val)
@@ -59,17 +55,15 @@ func TestViewHistogramBuckets(t *testing.T) {
 	bounds := []float64{1.0, 3.0, 5.0, 10.0}
 	m, te, err := createTestMetrics(&Config{
 		Modifiers: map[string]Modifier{
-			nameOperationDuration: {
+			nameTestingHistogram: {
 				HistogramBuckets: bounds,
 			},
 		},
-	},
-		Callbacks{},
-	)
+	})
 	require.NoError(t, err)
-	m.OperationCompleted(m.ctx, 5)
+	m.TestingHistogramRecord(m.Ctx, 5)
 	attribs := attribute.NewSet()
-	val, err := te.GetFloat64HistogramData(nameOperationDuration, &attribs)
+	val, err := te.GetFloat64HistogramData(nameTestingHistogram, &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, bounds, val.Bounds)
 	assert.Equal(t, []uint64{0, 0, 1, 0, 0}, val.BucketCounts)

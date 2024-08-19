@@ -1,4 +1,4 @@
-package metrics
+package telemetry
 
 import (
 	"context"
@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	defaultPrometheusServerPort = 9090
-	defaultPrometheusServerPath = "/metrics"
+	DefaultPrometheusServerPort = 9090
+	DefaultPrometheusServerPath = "/metrics"
 )
 
 func (config *Config) prometheusMetricsExporter(namespace string) (*prometheus.Exporter, error) {
@@ -39,14 +39,14 @@ func (config *Config) prometheusMetricsExporter(namespace string) (*prometheus.E
 
 func (config *Config) path() string {
 	if config.Path == "" {
-		return defaultPrometheusServerPath
+		return DefaultPrometheusServerPath
 	}
 	return config.Path
 }
 
 func (config *Config) port() int {
 	if config.Port == 0 {
-		return defaultPrometheusServerPort
+		return DefaultPrometheusServerPort
 	}
 	return config.Port
 }
