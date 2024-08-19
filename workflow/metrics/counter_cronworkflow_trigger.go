@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
 const (
@@ -9,17 +11,17 @@ const (
 )
 
 func addCronWfTriggerCounter(_ context.Context, m *Metrics) error {
-	return m.createInstrument(int64Counter,
+	return m.CreateInstrument(telemetry.Int64Counter,
 		nameCronTriggered,
 		"Total number of cron workflows triggered",
 		"{cronworkflow}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 }
 
 func (m *Metrics) CronWfTrigger(ctx context.Context, name, namespace string) {
-	m.addInt(ctx, nameCronTriggered, 1, instAttribs{
-		{name: labelCronWFName, value: name},
-		{name: labelWorkflowNamespace, value: namespace},
+	m.AddInt(ctx, nameCronTriggered, 1, telemetry.InstAttribs{
+		{Name: telemetry.AttribCronWFName, Value: name},
+		{Name: telemetry.AttribWorkflowNamespace, Value: namespace},
 	})
 }

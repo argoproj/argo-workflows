@@ -6,11 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
 func TestIsLeader(t *testing.T) {
 	_, te, err := createTestMetrics(
-		&Config{},
+		&telemetry.Config{},
 		Callbacks{
 			IsLeader: func() bool {
 				return true
@@ -27,7 +29,7 @@ func TestIsLeader(t *testing.T) {
 
 func TestNotLeader(t *testing.T) {
 	_, te, err := createTestMetrics(
-		&Config{},
+		&telemetry.Config{},
 		Callbacks{
 			IsLeader: func() bool {
 				return false

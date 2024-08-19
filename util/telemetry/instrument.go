@@ -1,4 +1,4 @@
-package metrics
+package telemetry
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/help"
 )
 
-type instrument struct {
+type Instrument struct {
 	name        string
 	description string
 	otel        interface{}
@@ -17,7 +17,7 @@ type instrument struct {
 }
 
 func (m *Metrics) preCreateCheck(name string) error {
-	if _, exists := m.allInstruments[name]; exists {
+	if _, exists := m.AllInstruments[name]; exists {
 		return fmt.Errorf("Instrument called %s already exists", name)
 	}
 	return nil
@@ -30,13 +30,13 @@ func addHelpLink(name, description string) string {
 type instrumentType int
 
 const (
-	float64ObservableGauge instrumentType = iota
-	float64Histogram
-	float64UpDownCounter
-	float64ObservableUpDownCounter
-	int64ObservableGauge
-	int64UpDownCounter
-	int64Counter
+	Float64ObservableGauge instrumentType = iota
+	Float64Histogram
+	Float64UpDownCounter
+	Float64ObservableUpDownCounter
+	Int64ObservableGauge
+	Int64UpDownCounter
+	Int64Counter
 )
 
 // InstrumentOption applies options to all instruments.
@@ -47,13 +47,13 @@ type instrumentOptions struct {
 
 type instrumentOption func(*instrumentOptions)
 
-func withAsBuiltIn() instrumentOption {
+func WithAsBuiltIn() instrumentOption {
 	return func(o *instrumentOptions) {
 		o.builtIn = true
 	}
 }
 
-func withDefaultBuckets(buckets []float64) instrumentOption {
+func WithDefaultBuckets(buckets []float64) instrumentOption {
 	return func(o *instrumentOptions) {
 		o.defaultBuckets = buckets
 	}
@@ -67,10 +67,10 @@ func collectOptions(options ...instrumentOption) instrumentOptions {
 	return o
 }
 
-func (m *Metrics) createInstrument(instType instrumentType, name, desc, unit string, options ...instrumentOption) error {
+func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit string, options ...instrumentOption) error {
 	opts := collectOptions(options...)
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
 	err := m.preCreateCheck(name)
 	if err != nil {
 		return err
@@ -81,14 +81,14 @@ func (m *Metrics) createInstrument(instType instrumentType, name, desc, unit str
 	}
 	var instPtr interface{}
 	switch instType {
-	case float64ObservableGauge:
+	case Float64ObservableGauge:
 		inst, insterr := (*m.otelMeter).Float64ObservableGauge(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
 		)
 		instPtr = &inst
 		err = insterr
-	case float64Histogram:
+	case Float64Histogram:
 		inst, insterr := (*m.otelMeter).Float64Histogram(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
@@ -96,35 +96,35 @@ func (m *Metrics) createInstrument(instType instrumentType, name, desc, unit str
 		)
 		instPtr = &inst
 		err = insterr
-	case float64UpDownCounter:
+	case Float64UpDownCounter:
 		inst, insterr := (*m.otelMeter).Float64UpDownCounter(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
 		)
 		instPtr = &inst
 		err = insterr
-	case float64ObservableUpDownCounter:
+	case Float64ObservableUpDownCounter:
 		inst, insterr := (*m.otelMeter).Float64ObservableUpDownCounter(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
 		)
 		instPtr = &inst
 		err = insterr
-	case int64ObservableGauge:
+	case Int64ObservableGauge:
 		inst, insterr := (*m.otelMeter).Int64ObservableGauge(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
 		)
 		instPtr = &inst
 		err = insterr
-	case int64UpDownCounter:
+	case Int64UpDownCounter:
 		inst, insterr := (*m.otelMeter).Int64UpDownCounter(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
 		)
 		instPtr = &inst
 		err = insterr
-	case int64Counter:
+	case Int64Counter:
 		inst, insterr := (*m.otelMeter).Int64Counter(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
@@ -137,7 +137,7 @@ func (m *Metrics) createInstrument(instType instrumentType, name, desc, unit str
 	if err != nil {
 		return err
 	}
-	m.allInstruments[name] = &instrument{
+	m.AllInstruments[name] = &Instrument{
 		name:        name,
 		description: desc,
 		otel:        instPtr,
@@ -154,4 +154,24 @@ func (m *Metrics) buckets(name string, defaultBuckets []float64) []float64 {
 		}
 	}
 	return defaultBuckets
+}
+
+func (i *Instrument) GetName() string {
+	return i.name
+}
+
+func (i *Instrument) GetDescription() string {
+	return i.description
+}
+
+func (i *Instrument) GetOtel() interface{} {
+	return i.otel
+}
+
+func (i *Instrument) SetUserdata(data interface{}) {
+	i.userdata = data
+}
+
+func (i *Instrument) GetUserdata() interface{} {
+	return i.userdata
 }

@@ -12,13 +12,14 @@ import (
 	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
 func TestMetrics(t *testing.T) {
 	m, te, err := CreateDefaultTestMetrics()
 	require.NoError(t, err)
 	// Default buckets: {5, 10, 15, 20, 25, 30}
-	m.OperationCompleted(m.ctx, 5)
+	m.OperationCompleted(m.Ctx, 5)
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
 	val, err := te.GetFloat64HistogramData(nameOperationDuration, &attribs)
@@ -33,12 +34,12 @@ func TestErrors(t *testing.T) {
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
 	require.NoError(t, err)
-	err = m.UpsertCustomMetric(m.ctx, &wfv1.Prometheus{
+	err = m.UpsertCustomMetric(m.Ctx, &wfv1.Prometheus{
 		Name: "invalid.name",
 	}, "owner", func() float64 { return 0.0 })
 	require.Error(t, err)
 
-	err = m.UpsertCustomMetric(m.ctx, &wfv1.Prometheus{
+	err = m.UpsertCustomMetric(m.Ctx, &wfv1.Prometheus{
 		Name: "name",
 		Labels: []*wfv1.MetricLabel{{
 			Key:   "invalid-key",
@@ -49,10 +50,10 @@ func TestErrors(t *testing.T) {
 }
 
 func TestMetricGC(t *testing.T) {
-	config := Config{
+	config := telemetry.Config{
 		Enabled: true,
-		Path:    defaultPrometheusServerPath,
-		Port:    defaultPrometheusServerPort,
+		Path:    telemetry.DefaultPrometheusServerPath,
+		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
 
@@ -63,7 +64,7 @@ func TestMetricGC(t *testing.T) {
 	labels := []*wfv1.MetricLabel{
 		{Key: "foo", Value: "bar"},
 	}
-	err = m.UpsertCustomMetric(m.ctx, &wfv1.Prometheus{
+	err = m.UpsertCustomMetric(m.Ctx, &wfv1.Prometheus{
 		Name:    key,
 		Labels:  labels,
 		Help:    "none",
@@ -73,7 +74,7 @@ func TestMetricGC(t *testing.T) {
 	baseCm := m.GetCustomMetric(key)
 	assert.NotNil(t, baseCm)
 
-	cm := baseCm.customUserdata(true)
+	cm := customUserdata(baseCm, true)
 	assert.Len(t, cm, 1)
 
 	// Ensure we get at least one TTL run
@@ -92,15 +93,15 @@ func TestMetricGC(t *testing.T) {
 }
 
 func TestRealtimeMetricGC(t *testing.T) {
-	config := Config{
+	config := telemetry.Config{
 		Enabled: true,
-		Path:    defaultPrometheusServerPath,
-		Port:    defaultPrometheusServerPort,
+		Path:    telemetry.DefaultPrometheusServerPath,
+		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	m, err := New(ctx, TestScopeName, &config, Callbacks{})
+	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &config, Callbacks{})
 	require.NoError(t, err)
 
 	labels := []*wfv1.MetricLabel{
@@ -108,7 +109,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 	}
 	name := "realtime_metric"
 	wfKey := "workflow-uid"
-	err = m.UpsertCustomMetric(m.ctx, &wfv1.Prometheus{
+	err = m.UpsertCustomMetric(m.Ctx, &wfv1.Prometheus{
 		Name:   name,
 		Labels: labels,
 		Help:   "None",
@@ -146,31 +147,31 @@ func TestRealtimeMetricGC(t *testing.T) {
 func TestWorkflowQueueMetrics(t *testing.T) {
 	m, te, err := getSharedMetrics()
 	require.NoError(t, err)
-	attribs := attribute.NewSet(attribute.String(labelQueueName, "workflow_queue"))
-	wfQueue := m.RateLimiterWithBusyWorkers(m.ctx, workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	attribs := attribute.NewSet(attribute.String(telemetry.AttribQueueName, "workflow_queue"))
+	wfQueue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultControllerRateLimiter(), "workflow_queue")
 	defer wfQueue.ShutDown()
 
-	assert.NotNil(t, m.allInstruments[nameWorkersQueueDepth])
-	assert.NotNil(t, m.allInstruments[nameWorkersQueueLatency])
+	assert.NotNil(t, m.AllInstruments[nameWorkersQueueDepth])
+	assert.NotNil(t, m.AllInstruments[nameWorkersQueueLatency])
 
 	wfQueue.Add("hello")
 
-	require.NotNil(t, m.allInstruments[nameWorkersQueueAdds])
+	require.NotNil(t, m.AllInstruments[nameWorkersQueueAdds])
 	val, err := te.GetInt64CounterValue(nameWorkersQueueAdds, &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }
 
 func TestRealTimeMetricDeletion(t *testing.T) {
-	config := Config{
+	config := telemetry.Config{
 		Enabled: true,
-		Path:    defaultPrometheusServerPath,
-		Port:    defaultPrometheusServerPort,
+		Path:    telemetry.DefaultPrometheusServerPath,
+		Port:    telemetry.DefaultPrometheusServerPort,
 		TTL:     1 * time.Second,
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	m, err := New(ctx, TestScopeName, &config, Callbacks{})
+	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &config, Callbacks{})
 	require.NoError(t, err)
 
 	// We've not yet fed a metric in for 123
@@ -200,7 +201,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 	m.StopRealtimeMetricsForWfUID("456")
 	assert.Empty(t, m.realtimeWorkflows["456"])
 
-	cm := baseCm.customUserdata(true)
+	cm := customUserdata(baseCm, true)
 	assert.Len(t, cm, 1)
 	assert.Len(t, m.realtimeWorkflows["123"], 1)
 
