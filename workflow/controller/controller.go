@@ -295,6 +295,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+	wfc.addInformerErrorHandler(wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.taskResultInformer)
 	err := wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -483,6 +484,10 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
+		if err := wfc.cwftmplInformer.Informer().SetWatchErrorHandler(util.WatchInformerErrorHandler); err != nil {
+			log.Fatal(err)
+		}
+		wfc.addInformerErrorHandler(wfc.cwftmplInformer.Informer())
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 
 		// since the above call is asynchronous, make sure we populate our cache before we try to use it later
@@ -914,7 +919,6 @@ func (wfc *WorkflowController) tweakListRequestListOptions(options *metav1.ListO
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 	util.CheckResourceVersion(options)
-	util.CheckLimit(options)
 }
 
 func (wfc *WorkflowController) tweakWatchRequestListOptions(options *metav1.ListOptions) {
@@ -1475,4 +1479,12 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 			},
 		})
 	return informer
+}
+
+func (wfc *WorkflowController) addInformerErrorHandler(informers ...cache.SharedInformer) {
+	for _, informer := range informers {
+		if err := informer.SetWatchErrorHandler(util.WatchInformerErrorHandler); err != nil {
+			log.Fatal(err)
+		}
+	}
 }

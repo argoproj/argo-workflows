@@ -33,7 +33,6 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 		func(options *metav1.ListOptions) {
 			options.LabelSelector = labelSelector
 			util.CheckResourceVersion(options)
-			util.CheckLimit(options)
 		},
 	)
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)

@@ -24,7 +24,6 @@ type tolerantClusterWorkflowTemplateInformer struct {
 func NewTolerantClusterWorkflowTemplateInformer(dynamicInterface dynamic.Interface, defaultResync time.Duration) extwfv1.ClusterWorkflowTemplateInformer {
 	return &tolerantClusterWorkflowTemplateInformer{delegate: dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicInterface, defaultResync, "", func(options *metav1.ListOptions) {
 		util.CheckResourceVersion(options)
-		util.CheckLimit(options)
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural})}
 }
 
