@@ -330,6 +330,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		if err := wfc.wfInformer.SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
 			panic(err)
 		}
+
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
