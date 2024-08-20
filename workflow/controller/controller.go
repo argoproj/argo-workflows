@@ -309,12 +309,19 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		Info("Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+	if err := wfc.wfInformer.SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+		log.Fatal(err)
+	}
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
-
+	if err := wfc.wftmplInformer.Informer().SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+		log.Fatal(err)
+	}
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
-	wfc.addInformerErrorHandler(wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.taskResultInformer)
+	if err := wfc.taskResultInformer.SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+		log.Fatal(err)
+	}
 	err := wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -504,7 +511,9 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
-		wfc.addInformerErrorHandler(wfc.cwftmplInformer.Informer())
+		if err := wfc.cwftmplInformer.Informer().SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			log.Fatal(err)
+		}
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 
 		// since the above call is asynchronous, make sure we populate our cache before we try to use it later
@@ -1528,22 +1537,14 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 func (wfc *WorkflowController) IsLeader() bool {
 	// the wfc.wfInformer is nil if it is not the leader
 	return !(wfc.wfInformer == nil)
-
-func (wfc *WorkflowController) addInformerErrorHandler(informers ...cache.SharedInformer) {
-	// The reflector will set the Limit to `0` when `ResourceVersion != "" && ResourceVersion != "0"`, which will fail
-	// to limit the number of workflow returns. Timeouts and other errors may occur when there are a lots of workflows.
-	// see https://github.com/kubernetes/client-go/blob/ee1a5aaf793a9ace9c433f5fb26a19058ed5f37c/tools/cache/reflector.go#L286
-	watchHandler := func(r *cache.Reflector, err error) {
-		cache.DefaultWatchErrorHandler(r, err)
-		if err != io.EOF {
-			r.WatchListPageSize = common.DefaultPageSize
-			wfc.WatchListPageSize = r.WatchListPageSize
-		}
-	}
-
-	for _, informer := range informers {
-		if err := informer.SetWatchErrorHandler(watchHandler); err != nil {
-			log.Fatal(err)
-		}
-	}
 }
+
+func (wfc *WorkflowController) WatchErrorHandler(r *cache.Reflector, err error) {
+	cache.DefaultWatchErrorHandler(r, err)
+	if err != io.EOF {
+		// The reflector will set the Limit to `0` when `ResourceVersion != "" && ResourceVersion != "0"`, which will fail
+		// to limit the number of workflow returns. Timeouts and other errors may occur when there are a lots of workflows.
+		// see https://github.com/kubernetes/client-go/blob/ee1a5aaf793a9ace9c433f5fb26a19058ed5f37c/tools/cache/reflector.go#L286
+		r.WatchListPageSize = common.DefaultPageSize
+		wfc.WatchListPageSize = r.WatchListPageSize
+	}

@@ -327,16 +327,24 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+		if err := wfc.wfInformer.SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			panic(err)
+		}
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+		if err := wfc.taskResultInformer.SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			panic(err)
+		}
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+		if err := wfc.wftmplInformer.Informer().SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			panic(err)
+		}
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
 		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
-		wfc.addInformerErrorHandler(wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.taskResultInformer)
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
@@ -344,7 +352,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
-		wfc.addInformerErrorHandler(wfc.cwftmplInformer.Informer())
+		if err := wfc.cwftmplInformer.Informer().SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			panic(err)
+		}
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
