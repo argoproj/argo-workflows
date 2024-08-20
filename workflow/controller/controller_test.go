@@ -2,12 +2,12 @@ package controller
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/watch"
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
