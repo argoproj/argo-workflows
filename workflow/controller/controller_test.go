@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/watch"
 	"testing"
 	"time"
 
@@ -249,16 +251,21 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects, coreObjects []runtime.Object
+	var dynamicClient *dynamicfake.FakeDynamicClient
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case *apiv1.ServiceAccount:
 			coreObjects = append(coreObjects, v)
 		case runtime.Object:
 			objects = append(objects, v)
+		case *dynamicfake.FakeDynamicClient:
+			dynamicClient = v
 		}
 	}
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
-	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
+	if dynamicClient == nil {
+		dynamicClient = dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
+	}
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset(coreObjects...)
@@ -325,7 +332,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
-
+		wfc.addInformerErrorHandler(wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.taskResultInformer)
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
@@ -333,6 +340,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
+		wfc.addInformerErrorHandler(wfc.cwftmplInformer.Informer())
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
@@ -1251,4 +1259,21 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	woc.operate(ctx)
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestInformerPagination(t *testing.T) {
+	watcher := watch.NewFake()
+	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme)
+	dynamicClient.Fake.PrependWatchReactor("workflows", func(action k8stesting.Action) (handled bool, ret watch.Interface, err error) {
+		err2 := errors.StatusError{
+			ErrStatus: metav1.Status{
+				Reason: metav1.StatusReasonTimeout,
+			},
+		}
+		return true, watcher, &err2
+	})
+
+	cancel, controller := newController(dynamicClient)
+	defer cancel()
+	assert.Equal(t, int64(common.DefaultPageSize), controller.WatchListPageSize)
 }

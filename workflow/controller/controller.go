@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	gosync "sync"
@@ -151,6 +152,9 @@ type WorkflowController struct {
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
 	recentCompletions recentCompletions
+
+	// just used for unit tests
+	WatchListPageSize int64
 }
 
 type PatchOperation struct {
@@ -484,9 +488,6 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
-		if err := wfc.cwftmplInformer.Informer().SetWatchErrorHandler(util.WatchInformerErrorHandler); err != nil {
-			log.Fatal(err)
-		}
 		wfc.addInformerErrorHandler(wfc.cwftmplInformer.Informer())
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 
@@ -1482,8 +1483,19 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 }
 
 func (wfc *WorkflowController) addInformerErrorHandler(informers ...cache.SharedInformer) {
+	// The reflector will set the Limit to `0` when `ResourceVersion != "" && ResourceVersion != "0"`, which will fail
+	// to limit the number of workflow returns. Timeouts and other errors may occur when there are a lots of workflows.
+	// see https://github.com/kubernetes/client-go/blob/ee1a5aaf793a9ace9c433f5fb26a19058ed5f37c/tools/cache/reflector.go#L286
+	watchHandler := func(r *cache.Reflector, err error) {
+		cache.DefaultWatchErrorHandler(r, err)
+		if err != io.EOF {
+			r.WatchListPageSize = common.DefaultPageSize
+			wfc.WatchListPageSize = r.WatchListPageSize
+		}
+	}
+
 	for _, informer := range informers {
-		if err := informer.SetWatchErrorHandler(util.WatchInformerErrorHandler); err != nil {
+		if err := informer.SetWatchErrorHandler(watchHandler); err != nil {
 			log.Fatal(err)
 		}
 	}

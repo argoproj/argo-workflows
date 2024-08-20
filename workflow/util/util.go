@@ -87,16 +87,6 @@ func CheckResourceVersion(options *metav1.ListOptions) {
 	}
 }
 
-// The reflector will set the Limit to `0` when `ResourceVersion != "" && ResourceVersion != "0"`, which will fail
-// to limit the number of workflow returns. Timeouts and other errors may occur when there are a lots of workflows.
-// see https://github.com/kubernetes/client-go/blob/ee1a5aaf793a9ace9c433f5fb26a19058ed5f37c/tools/cache/reflector.go#L286
-func WatchInformerErrorHandler(r *cache.Reflector, err error) {
-	cache.DefaultWatchErrorHandler(r, err)
-	if err != io.EOF {
-		r.WatchListPageSize = common.DefaultPageSize
-	}
-}
-
 // InstanceIDRequirement returns the label requirement to filter against a controller instance (or not)
 func InstanceIDRequirement(instanceID string) labels.Requirement {
 	var instanceIDReq *labels.Requirement
