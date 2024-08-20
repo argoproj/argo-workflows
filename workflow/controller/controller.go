@@ -1548,3 +1548,4 @@ func (wfc *WorkflowController) WatchErrorHandler(r *cache.Reflector, err error) 
 		r.WatchListPageSize = common.DefaultPageSize
 		wfc.WatchListPageSize = r.WatchListPageSize
 	}
+}
