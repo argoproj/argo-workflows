@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -19,15 +20,15 @@ func TestCreateOauth2Client(t *testing.T) {
 func TestCreateClientWithCertificateInvalidCert(t *testing.T) {
 	client, err := CreateClientWithCertificate([]byte("invalidCert"), []byte("invalidKey"))
 
+	require.Error(t, err)
 	assert.Nil(t, client)
-	assert.Error(t, err)
 }
 
 func TestCreateClientWithCertificateValidCert(t *testing.T) {
 	client, err := CreateClientWithCertificate([]byte(CERT_PEM), []byte(KEY_PEM))
 
+	require.NoError(t, err)
 	assert.NotNil(t, client)
-	assert.NoError(t, err)
 }
 
 // test certificate pair

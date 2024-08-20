@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,7 +118,6 @@ func (s *FunctionalSuite) TestWhenExpressions() {
 }
 
 func (s *FunctionalSuite) TestJSONVariables() {
-
 	s.Given().
 		Workflow("@testdata/json-variables.yaml").
 		When().
@@ -305,10 +305,9 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 					t.FailNow()
 				case <-ticker.C:
 					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
-					if assert.NoError(t, err) {
-						if len(list.Items) == 0 {
-							return
-						}
+					require.NoError(t, err)
+					if len(list.Items) == 0 {
+						return
 					}
 				}
 			}
@@ -1061,9 +1060,7 @@ spec:
 				}
 			}
 			assert.True(t, memoHit)
-
 		})
-
 }
 
 func (s *FunctionalSuite) TestStepLevelMemoizeNoOutput() {
@@ -1121,9 +1118,7 @@ spec:
 				}
 			}
 			assert.True(t, memoHit)
-
 		})
-
 }
 
 func (s *FunctionalSuite) TestDAGLevelMemoize() {
@@ -1187,9 +1182,7 @@ spec:
 				}
 			}
 			assert.True(t, memoHit)
-
 		})
-
 }
 
 func (s *FunctionalSuite) TestDAGLevelMemoizeNoOutput() {
@@ -1248,9 +1241,7 @@ spec:
 				}
 			}
 			assert.True(t, memoHit)
-
 		})
-
 }
 
 func (s *FunctionalSuite) TestContainerSetRetryFail() {
@@ -1331,7 +1322,6 @@ func (s *FunctionalSuite) TestEntrypointName() {
 			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 			assert.Equal(t, "bar", n.Inputs.Parameters[0].Value.String())
 		})
-
 }
 
 func (s *FunctionalSuite) TestMissingStepsInUI() {
@@ -1378,5 +1368,37 @@ func (s *FunctionalSuite) TestTerminateWorkflowWhileOnExitHandlerRunning() {
 				}
 			}
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+		})
+}
+
+// Exit handler ensure when failed steps ensure no crash and output parameter
+func (s *FunctionalSuite) TestWorkflowExitHandlerCrashEnsureNodeIsPresent() {
+	s.Given().
+		Workflow("@expectedfailures/exit-handler-fail-missing-output.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			var hasExitNode bool
+			var exitNodeName string
+
+			for _, node := range status.Nodes {
+				if !node.IsExitNode() {
+					continue
+				}
+				hasExitNode = true
+				exitNodeName = node.DisplayName
+			}
+			assert.True(t, hasExitNode)
+			assert.NotEmpty(t, exitNodeName)
+
+			hookNode := status.Nodes.FindByDisplayName(exitNodeName)
+
+			require.NotNil(t, hookNode)
+			assert.NotNil(t, hookNode.Inputs)
+			require.Len(t, hookNode.Inputs.Parameters, 1)
+			assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
 		})
 }
