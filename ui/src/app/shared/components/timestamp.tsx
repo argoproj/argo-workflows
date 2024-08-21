@@ -43,7 +43,7 @@ export function Timestamp({date, timestampKey, displayLocalDateTime, displayISOF
 
 export function TimestampSwitch({storedDisplayISOFormat, setStoredDisplayISOFormat}: {storedDisplayISOFormat: boolean; setStoredDisplayISOFormat: (value: boolean) => void}) {
     return (
-        <Tooltip content='Switch time format'>
+        <Tooltip content={storedDisplayISOFormat ? 'Switch to relative time format' : 'Switch to ISO time format'}>
             <a>
                 <i
                     className={'fa fa-clock'}
