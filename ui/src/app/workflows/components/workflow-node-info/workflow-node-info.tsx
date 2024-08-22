@@ -5,6 +5,7 @@ import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import moment from 'moment';
 import * as React from 'react';
 import {useState} from 'react';
+import LinkifyIt from 'linkify-it';
 
 import * as models from '../../../../models';
 import {Artifact, NodeStatus, Workflow} from '../../../../models';
@@ -70,10 +71,40 @@ interface Props {
     onRetryNode?: () => void;
 }
 
+const linkify = new LinkifyIt();
+
+function linkifyText(text: string) {
+    const matches = linkify.match(text);
+    if (!matches) {
+        return text;
+    }
+
+    const parts = [];
+    let lastIndex = 0;
+
+    matches.forEach(match => {
+        if (match.index > lastIndex) {
+            parts.push(<span key={`text-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>);
+        }
+        parts.push(
+            <a key={`link-${match.index}-${match.text}`} href={match.url} target='_blank' rel='noopener noreferrer' className='underline'>
+                {match.text}
+            </a>
+        );
+        lastIndex = match.lastIndex;
+    });
+
+    if (lastIndex < text.length) {
+        parts.push(<span key={'text-end'}>{text.slice(lastIndex)}</span>);
+    }
+
+    return parts;
+}
+
 const AttributeRow = (attr: {title: string; value: any}) => (
     <React.Fragment key={attr.title}>
         <div>{attr.title}</div>
-        <div>{attr.value}</div>
+        <div>{linkifyText(attr.value)}</div>
     </React.Fragment>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
