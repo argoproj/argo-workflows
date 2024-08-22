@@ -48,9 +48,13 @@ type Config struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
-	// MetricsConfig specifies configuration for metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
+	// MetricsConfig specifies configuration for the workflow controller metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
 	// by default.
 	MetricsConfig MetricsConfig `json:"metricsConfig,omitempty"`
+
+	// ServerMetricsConfig specifies configuration for argo server metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
+	// by default.
+	ServerMetricsConfig MetricsConfig `json:"serverMetricsConfig,omitempty"`
 
 	// TelemetryConfig specifies configuration for telemetry emission. Telemetry is enabled and emitted in the same endpoint
 	// as metrics by default, but can be overridden using this config.
