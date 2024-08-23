@@ -157,6 +157,56 @@ func (s *MetricsSuite) TestPodPendingMetric() {
 		WaitForWorkflowDeletion()
 }
 
+func (s *MetricsSuite) TestTemplateMetrics() {
+	s.Given().
+		Workflow(`@testdata/templateref-metrics.yaml`).
+		WorkflowTemplate(`@testdata/basic-workflowtemplate.yaml`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`total_count{namespace="argo",phase="Running"}`). // Count for this depends on other tests
+				Contains(`total_count{namespace="argo",phase="Succeeded"}`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="New"} 1`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="Running"} 1`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="Succeeded"} 1`).
+				Contains(`workflowtemplate_runtime_count{cluster_scope="false",name="basic",namespace="argo"} 1`).
+				Contains(`workflowtemplate_runtime_bucket{cluster_scope="false",name="basic",namespace="argo",le="0"} 0`).
+				Contains(`workflowtemplate_runtime_bucket{cluster_scope="false",name="basic",namespace="argo",le="+Inf"} 1`)
+		})
+}
+
+func (s *MetricsSuite) TestClusterTemplateMetrics() {
+	s.Given().
+		Workflow(`@testdata/clustertemplateref-metrics.yaml`).
+		ClusterWorkflowTemplate(`@testdata/basic-clusterworkflowtemplate.yaml`).
+		When().
+		CreateClusterWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="New"} 1`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="Running"} 1`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="Succeeded"} 1`).
+				Contains(`workflowtemplate_runtime_count{cluster_scope="true",name="basic",namespace="argo"} 1`).
+				Contains(`workflowtemplate_runtime_bucket{cluster_scope="true",name="basic",namespace="argo",le="0"} 0`).
+				Contains(`workflowtemplate_runtime_bucket{cluster_scope="true",name="basic",namespace="argo",le="+Inf"} 1`)
+		})
+}
+
 func TestMetricsSuite(t *testing.T) {
 	suite.Run(t, new(MetricsSuite))
 }
