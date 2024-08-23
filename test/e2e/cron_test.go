@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -277,9 +278,8 @@ spec:
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Len(t, cronWf.Status.Active, 1)
-				if assert.NotNil(t, cronWf.Status.LastScheduledTime) {
-					assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
-				}
+				require.NotNil(t, cronWf.Status.LastScheduledTime)
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestSuccessfulJobHistoryLimit", func() {

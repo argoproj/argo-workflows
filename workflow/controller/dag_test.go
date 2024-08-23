@@ -3365,14 +3365,11 @@ func TestDAGReferTaskAggregatedOutputs(t *testing.T) {
 	woc.operate(ctx)
 
 	dagNode := woc.wf.Status.Nodes.FindByDisplayName("parameter-aggregation-dag-h8b82")
-	if assert.NotNil(t, dagNode) {
-		if assert.NotNil(t, dagNode.Outputs) {
-			if assert.Len(t, dagNode.Outputs.Parameters, 2) {
-				assert.Equal(t, `["1","2"]`, dagNode.Outputs.Parameters[0].Value.String())
-				assert.Equal(t, `["odd","even"]`, dagNode.Outputs.Parameters[1].Value.String())
-			}
-		}
-	}
+	require.NotNil(t, dagNode)
+	require.NotNil(t, dagNode.Outputs)
+	require.Len(t, dagNode.Outputs.Parameters, 2)
+	assert.Equal(t, `["1","2"]`, dagNode.Outputs.Parameters[0].Value.String())
+	assert.Equal(t, `["odd","even"]`, dagNode.Outputs.Parameters[1].Value.String())
 }
 
 var dagHttpChildrenAssigned = `apiVersion: argoproj.io/v1alpha1
@@ -3450,11 +3447,9 @@ func TestDagHttpChildrenAssigned(t *testing.T) {
 	assert.NotNil(t, dagNode)
 
 	dagNode = woc.wf.Status.Nodes.FindByDisplayName("good1")
-	if assert.NotNil(t, dagNode) {
-		if assert.Len(t, dagNode.Children, 1) {
-			assert.Equal(t, "http-template-nv52d-495103493", dagNode.Children[0])
-		}
-	}
+	require.NotNil(t, dagNode)
+	require.Len(t, dagNode.Children, 1)
+	assert.Equal(t, "http-template-nv52d-495103493", dagNode.Children[0])
 }
 
 var retryTypeDagTaskRunExitNodeAfterCompleted = `

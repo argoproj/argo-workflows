@@ -341,10 +341,9 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
 		assert.Equal(t, wfv1.ShutdownStrategyTerminate, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
 		for _, node := range woc1.wf.Status.Nodes {
-			if assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "workflow shutdown with strategy")
-				assert.Contains(t, node.Message, "Terminate")
-			}
+			require.NotNil(t, node)
+			assert.Contains(t, node.Message, "workflow shutdown with strategy")
+			assert.Contains(t, node.Message, "Terminate")
 		}
 	})
 	t.Run("WorkflowTemplateRefWithShutdownStop", func(t *testing.T) {
@@ -364,10 +363,9 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
 		assert.Equal(t, wfv1.ShutdownStrategyStop, woc1.wf.Status.StoredWorkflowSpec.Shutdown)
 		for _, node := range woc1.wf.Status.Nodes {
-			if assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "workflow shutdown with strategy")
-				assert.Contains(t, node.Message, "Stop")
-			}
+			require.NotNil(t, node)
+			assert.Contains(t, node.Message, "workflow shutdown with strategy")
+			assert.Contains(t, node.Message, "Stop")
 		}
 	})
 }

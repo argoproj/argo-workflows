@@ -33,9 +33,8 @@ func Test_metaData(t *testing.T) {
 			"ignored": []string{"false"},
 		})
 		data := metaData(ctx)
-		if assert.Len(t, data, 1) {
-			assert.Equal(t, []string{"true"}, data["x-valid"])
-		}
+		require.Len(t, data, 1)
+		assert.Equal(t, []string{"true"}, data["x-valid"])
 	})
 }
 
@@ -178,17 +177,17 @@ func TestNewOperation(t *testing.T) {
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 	require.NoError(t, err)
-	if assert.Len(t, list.Items, 4) {
-		for _, wf := range list.Items {
-			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
-			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
-			assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
-			assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
-			paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
-		}
-		sort.Strings(paramValues)
-		assert.Equal(t, expectedParamValues, paramValues)
+	require.Len(t, list.Items, 4)
+	for _, wf := range list.Items {
+		assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
+		assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
+		assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
+		assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
+		paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
 	}
+	sort.Strings(paramValues)
+	assert.Equal(t, expectedParamValues, paramValues)
+
 	assert.Contains(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to get workflow template: workflowtemplates.argoproj.io \"not-found\" not found", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to validate workflow template instanceid: 'my-wft-3' is not managed by the current Argo Server", <-recorder.Events)

@@ -582,10 +582,9 @@ func TestApplySubmitOpts(t *testing.T) {
 		wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"a": "0", "b": "0"}}}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1"})
 		require.NoError(t, err)
-		if assert.Len(t, wf.GetLabels(), 2) {
-			assert.Equal(t, "1", wf.GetLabels()["a"])
-			assert.Equal(t, "0", wf.GetLabels()["b"])
-		}
+		require.Len(t, wf.GetLabels(), 2)
+		assert.Equal(t, "1", wf.GetLabels()["a"])
+		assert.Equal(t, "0", wf.GetLabels()["b"])
 	})
 	t.Run("InvalidParameters", func(t *testing.T) {
 		require.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Parameters: []string{"a"}}))
@@ -601,10 +600,9 @@ func TestApplySubmitOpts(t *testing.T) {
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=81861780812"}})
 		require.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
-		if assert.Len(t, parameters, 1) {
-			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", parameters[0].Value.String())
-		}
+		require.Len(t, parameters, 1)
+		assert.Equal(t, "a", parameters[0].Name)
+		assert.Equal(t, "81861780812", parameters[0].Value.String())
 	})
 	t.Run("PodPriorityClassName", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
@@ -624,9 +622,8 @@ func TestReadParametersFile(t *testing.T) {
 	err = ReadParametersFile(file.Name(), opts)
 	require.NoError(t, err)
 	parameters := opts.Parameters
-	if assert.Len(t, parameters, 1) {
-		assert.Equal(t, "a=81861780812", parameters[0])
-	}
+	require.Len(t, parameters, 1)
+	assert.Equal(t, "a=81861780812", parameters[0])
 }
 
 func TestFormulateResubmitWorkflow(t *testing.T) {
@@ -1090,9 +1087,8 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		if assert.Len(t, wf.Status.Nodes, 1) {
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
-		}
+		require.Len(t, wf.Status.Nodes, 1)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
 	})
 	t.Run("Skipped and Suspended Nodes", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1123,16 +1119,15 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
 		require.NoError(t, err)
-		if assert.Len(t, wf.Status.Nodes, 3) {
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
-			assert.Equal(t, wfv1.Parameter{
-				Name:      "param-1",
-				Value:     nil,
-				ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
-			}, wf.Status.Nodes["suspended"].Outputs.Parameters[0])
-			assert.Equal(t, wfv1.NodeSkipped, wf.Status.Nodes["skipped"].Phase)
-		}
+		require.Len(t, wf.Status.Nodes, 3)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
+		assert.Equal(t, wfv1.Parameter{
+			Name:      "param-1",
+			Value:     nil,
+			ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
+		}, wf.Status.Nodes["suspended"].Outputs.Parameters[0])
+		assert.Equal(t, wfv1.NodeSkipped, wf.Status.Nodes["skipped"].Phase)
 	})
 	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1155,12 +1150,11 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
 		require.NoError(t, err)
 		// Node #3, #4 are deleted and will be recreated so only 3 nodes left in wf.Status.Nodes
-		if assert.Len(t, wf.Status.Nodes, 3) {
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
-			// The parent group nodes should be running.
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
-		}
+		require.Len(t, wf.Status.Nodes, 3)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+		// The parent group nodes should be running.
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 	})
 	t.Run("Nested DAG without Node Selected", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1183,13 +1177,12 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
 		require.NoError(t, err)
 		// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
-		if assert.Len(t, wf.Status.Nodes, 4) {
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-			assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
-		}
+		require.Len(t, wf.Status.Nodes, 4)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+		assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
 
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
@@ -1319,13 +1312,12 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=4", nil)
 		require.NoError(t, err)
 		// Node #4 is deleted and will be recreated so only 4 nodes left in wf.Status.Nodes
-		if assert.Len(t, wf.Status.Nodes, 4) {
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["successful-workflow-2"].Phase)
-			// The parent group nodes should be running.
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-		}
+		require.Len(t, wf.Status.Nodes, 4)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["successful-workflow-2"].Phase)
+		// The parent group nodes should be running.
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
 	})
 
 	t.Run("Retry continue on failed workflow", func(t *testing.T) {
@@ -1349,11 +1341,10 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		if assert.Len(t, wf.Status.Nodes, 4) {
-			assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes["2"].Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-			assert.Len(t, podsToDelete, 2)
-		}
+		require.Len(t, wf.Status.Nodes, 4)
+		assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes["2"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+		assert.Len(t, podsToDelete, 2)
 	})
 
 	t.Run("Retry continue on failed workflow with restartSuccessful and nodeFieldSelector", func(t *testing.T) {
@@ -1377,11 +1368,10 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
 		require.NoError(t, err)
-		if assert.Len(t, wf.Status.Nodes, 2) {
-			assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
-			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow-2"].Phase)
-			assert.Len(t, podsToDelete, 4)
-		}
+		require.Len(t, wf.Status.Nodes, 2)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow-2"].Phase)
+		assert.Len(t, podsToDelete, 4)
 	})
 }
 

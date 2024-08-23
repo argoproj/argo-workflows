@@ -1062,11 +1062,9 @@ spec:
 
 	hookNode := woc.wf.Status.Nodes.FindByDisplayName(exitNodeName)
 
-	if assert.NotNil(t, hookNode) {
-		assert.NotNil(t, hookNode.Inputs)
-		if assert.Len(t, hookNode.Inputs.Parameters, 1) {
-			assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
-			assert.Equal(t, hookNode.Inputs.Parameters[0].Value.String(), string(apiv1.PodFailed))
-		}
-	}
+	require.NotNil(t, hookNode)
+	assert.NotNil(t, hookNode.Inputs)
+	require.Len(t, hookNode.Inputs.Parameters, 1)
+	assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
+	assert.Equal(t, hookNode.Inputs.Parameters[0].Value.String(), string(apiv1.PodFailed))
 }
