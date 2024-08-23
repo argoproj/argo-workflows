@@ -201,14 +201,25 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
     Some metric attributes may have high cardinality and are marked with ⚠️ to warn you. You may need to disable this metric or disable the attribute.
 <!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
 <!-- titles are without argo_workflows prefix -->
-#### `cronworkflows_triggered_total`
+#### `cronworkflows_concurrencypolicy_triggered`
 
-A counter of the number of times a CronWorkflow has been
+A counter of the number of times a CronWorkflow has triggered it's `concurrencyPolicy` to limit the number of workflows running.
 
 | attribute   | explanation                               |
 |-------------|-------------------------------------------|
-| `name`     | ⚠️ The name of the CronWorkflow. |
-| `namespace` | The namespace in which the pod is running |
+| `name`     | ⚠️ The name of the CronWorkflow |
+| `namespace` | The namespace of the CronWorkflow |
+| `concurrency_policy` | The concurrency policy which was triggered, will be either `Forbid` or `Replace` |
+
+#### `cronworkflows_triggered_total`
+
+A counter of the number of times a CronWorkflow has been triggered.
+Suppressed runs due to `concurrencyPolicy: Forbid` will not be counted.
+
+| attribute   | explanation                               |
+|-------------|-------------------------------------------|
+| `name`     | ⚠️ The name of the CronWorkflow |
+| `namespace` | The namespace of the CronWorkflow |
 
 #### `gauge`
 
@@ -229,8 +240,8 @@ A counter of certain errors incurred by the controller.
 The currently tracked specific errors are
 
 - `OperationPanic` - the controller `panic()` on a programming bug
-- `CronWorkflowSubmissionError` - A cron workflow failed submission
-- `CronWorkflowSpecError` - A cron workflow has an invalid specification
+- `CronWorkflowSubmissionError` - A CronWorkflow failed submission
+- `CronWorkflowSpecError` - A CronWorkflow has an invalid specification
 
 #### `k8s_request_total`
 
