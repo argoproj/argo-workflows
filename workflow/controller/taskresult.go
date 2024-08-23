@@ -123,7 +123,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 		if result.Progress.IsValid() {
 			newNode.Progress = result.Progress
 		}
-		if !reflect.DeepEqual(&old, newNode) {
+		if !reflect.DeepEqual(old, newNode) {
 			woc.log.
 				WithField("nodeID", nodeID).
 				Info("task-result changed")
