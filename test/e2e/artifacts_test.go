@@ -388,6 +388,14 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
 			},
 		},
+		// Workflow defined output artifact but execution failed, no artifacts to be gced
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-artifact-not-written-failed.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        false,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts:            []artifactState{},
+		},
 	} {
 		// for each test make sure that:
 		// 1. the finalizer gets added
