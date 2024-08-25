@@ -30,6 +30,10 @@ const (
 	labelRequestVerb = `verb`
 	labelRequestCode = `status_code`
 
+	labelTemplateName      string = `name`
+	labelTemplateNamespace string = `namespace`
+	labelTemplateCluster   string = `cluster_scope`
+
 	labelWorkerType string = `worker_type`
 
 	labelWorkflowNamespace string = `namespace`
