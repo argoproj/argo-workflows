@@ -17,7 +17,6 @@ type ArgoServerOpts struct {
 	// use custom http client
 	HTTP1Client *http.Client
 	Headers     []string
-
 	// client certificate
 	ClientCert string
 	ClientKey  string
