@@ -5,7 +5,6 @@ import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import moment from 'moment';
 import * as React from 'react';
 import {useState} from 'react';
-import LinkifyIt from 'linkify-it';
 
 import * as models from '../../../../models';
 import {Artifact, NodeStatus, Workflow} from '../../../../models';
@@ -13,6 +12,7 @@ import {Button} from '../../../shared/components/button';
 import {ClipboardText} from '../../../shared/components/clipboard-text';
 import {DurationPanel} from '../../../shared/components/duration-panel';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
+import LinkifiedText from '../../../shared/components/linkified-text';
 import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
@@ -20,9 +20,9 @@ import {getPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
 import './workflow-node-info.scss';
-import {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
 function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
     const endTime = node.finishedAt ? moment(node.finishedAt) : now;
@@ -71,43 +71,13 @@ interface Props {
     onRetryNode?: () => void;
 }
 
-const linkify = new LinkifyIt();
-
-function linkifyText(text: string) {
-    const matches = linkify.match(text);
-    if (!matches) {
-        return text;
-    }
-
-    const parts = [];
-    let lastIndex = 0;
-
-    matches.forEach(match => {
-        if (match.index > lastIndex) {
-            parts.push(<span key={`text-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>);
-        }
-        parts.push(
-            <a key={`link-${match.index}-${match.text}`} href={match.url} target='_blank' rel='noopener noreferrer' className='underline'>
-                {match.text}
-            </a>
-        );
-        lastIndex = match.lastIndex;
-    });
-
-    if (lastIndex < text.length) {
-        parts.push(<span key={'text-end'}>{text.slice(lastIndex)}</span>);
-    }
-
-    return parts;
-}
-
-const AttributeRow = (attr: {title: string; value: any}) => (
+const AttributeRow = (attr: {title: string; value: string | React.JSX.Element}) => (
     <React.Fragment key={attr.title}>
         <div>{attr.title}</div>
-        <div>{linkifyText(attr.value)}</div>
+        <div>{typeof attr.value === 'string' ? <LinkifiedText text={attr.value} /> : attr.value}</div>
     </React.Fragment>
 );
-const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
+const AttributeRows = (props: {attributes: {title: string; value: string | React.JSX.Element}[]}) => (
     <div className='workflow-details__attribute-grid'>
         {props.attributes.map(attr => (
             <AttributeRow key={attr.title} {...attr} />
