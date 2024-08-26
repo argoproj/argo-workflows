@@ -514,7 +514,6 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}
 
-	anyPodSuccess := false
 	for _, obj := range pods {
 		pod := obj.(*corev1.Pod)
 		if pod.Labels[common.LabelKeyComponent] != artifactGCComponent { // make sure it's an Artifact GC Pod
@@ -540,10 +539,8 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 			if err != nil {
 				return err
 			}
+
 			woc.wf.Status.ArtifactGCStatus.SetArtifactGCPodRecouped(pod.Name, true)
-			if phase == corev1.PodSucceeded {
-				anyPodSuccess = true
-			}
 			woc.updated = true
 		}
 	}
@@ -554,7 +551,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
 	} else {
 		// check if all artifacts have been deleted and if so remove Finalizer
-		removeFinalizer = anyPodSuccess && woc.allArtifactsDeleted()
+		removeFinalizer = woc.allArtifactsDeleted()
 	}
 	if removeFinalizer {
 		woc.log.Infof("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", forceFinalizerRemoval)
