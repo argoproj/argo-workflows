@@ -247,7 +247,9 @@ export function GraphPanel(props: Props) {
                                 .filter(([n, label]) => label.x !== null && visible(n))
                                 .map(([n, label]) => (
                                     <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`}>
-                                        <title>{n}</title>
+                                        <title>
+                                            {n} ({label.label})
+                                        </title>
                                         <g
                                             className={`node ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
                                             style={{strokeWidth: nodeSize / 15}}

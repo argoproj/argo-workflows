@@ -13,6 +13,7 @@ import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel
 export interface WorkflowDagRenderOptions {
     expandNodes: Set<string>;
     showArtifacts: boolean;
+    showInvokingTemplateName: boolean;
 }
 
 interface WorkflowDagProps {
@@ -36,18 +37,6 @@ function getNodeLabelTemplateName(n: NodeStatus): string {
     return n.templateName || (n.templateRef && n.templateRef.template + '/' + n.templateRef.name) || 'no template';
 }
 
-function nodeLabel(n: NodeStatus) {
-    const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
-    return {
-        label: shortNodeName(n),
-        genre: n.type,
-        icon: icons[phase] || icons.Pending,
-        progress: phase === 'Running' && progress(n),
-        classNames: phase,
-        tags: new Set([getNodeLabelTemplateName(n)])
-    };
-}
-
 const classNames = (() => {
     const v: {[label: string]: boolean} = {
         Artifact: true,
@@ -65,7 +54,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         super(props);
         this.state = {
             expandNodes: new Set(),
-            showArtifacts: localStorage.getItem('showArtifacts') !== 'false'
+            showArtifacts: localStorage.getItem('showArtifacts') !== 'false',
+            showInvokingTemplateName: localStorage.getItem('showInvokingTemplateName') !== 'false'
         };
     }
 
@@ -100,8 +90,27 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         );
     }
 
+    private nodeLabel(n: NodeStatus, parent?: NodeStatus) {
+        const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
+        let label = shortNodeName(n);
+
+        if (this.state.showInvokingTemplateName) {
+            label = `${parent?.templateRef?.name ?? parent?.templateName ?? n.templateName}:${label}`;
+        }
+
+        return {
+            label,
+            genre: n.type,
+            icon: icons[phase] || icons.Pending,
+            progress: phase === 'Running' && progress(n),
+            classNames: phase,
+            tags: new Set([getNodeLabelTemplateName(n)])
+        };
+    }
+
     private saveOptions(newChanges: WorkflowDagRenderOptions) {
         localStorage.setItem('showArtifacts', newChanges.showArtifacts ? 'true' : 'false');
+        localStorage.setItem('showInvokingTemplateName', newChanges.showInvokingTemplateName ? 'true' : 'false');
         this.setState(newChanges);
     }
 
@@ -201,7 +210,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 }
                 const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
 
-                nodes.set(item.nodeName, nodeLabel(child));
+                nodes.set(item.nodeName, this.nodeLabel(child, allNodes[item.parent]));
                 edges.set({v: item.parent, w: item.nodeName}, {});
 
                 // If we have already considered the children of this node, don't consider them again
@@ -232,7 +241,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         if (onExitHandlerNodeId) {
             this.getOutboundNodes(this.props.workflowName).forEach(v => {
                 const exitHandler = allNodes[onExitHandlerNodeId.id];
-                nodes.set(onExitHandlerNodeId.id, nodeLabel(exitHandler));
+                nodes.set(onExitHandlerNodeId.id, this.nodeLabel(exitHandler));
                 if (nodes.has(v)) {
                     edges.set({v, w: onExitHandlerNodeId.id}, {});
                 }
