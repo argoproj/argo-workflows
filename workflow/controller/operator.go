@@ -3285,9 +3285,38 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	// Adding per-output aggregated value placeholders
 	for outputName, valueList := range outputParamValueLists {
 		key = fmt.Sprintf("%s.outputs.parameters.%s", prefix, outputName)
-		valueListJSON, err := json.Marshal(valueList)
-		if err != nil {
-			return err
+		unmarshalSuccess := true
+		var unmarshalledList []interface{}
+		for _, value := range valueList {
+			// Only try to unmarshal things that look like json lists or dicts
+			// and especially avoid unstringified numbers which are valid JSON
+			valueTrim := strings.Trim(value, " ")
+			valueTrimLen := len(valueTrim)
+			if valueTrimLen > 0 &&
+				!((valueTrim[0] == '{' && valueTrim[valueTrimLen-1] == '}') ||
+					(valueTrim[0] == '[' && valueTrim[valueTrimLen-1] == ']')) {
+				unmarshalSuccess = false
+				break // This isn't a json list or dict, leave it
+			}
+			var unmarshalledValue interface{}
+			err := json.Unmarshal([]byte(value), &unmarshalledValue)
+			if err != nil {
+				unmarshalSuccess = false
+				break // Unmarshal failed, fall back to strings
+			}
+			unmarshalledList = append(unmarshalledList, unmarshalledValue)
+		}
+		var valueListJSON []byte
+		if unmarshalSuccess {
+			valueListJSON, err = json.Marshal(unmarshalledList)
+			if err != nil {
+				return err
+			}
+		} else {
+			valueListJSON, err = json.Marshal(valueList)
+			if err != nil {
+				return err
+			}
 		}
 		scope.addParamToScope(key, string(valueListJSON))
 	}
