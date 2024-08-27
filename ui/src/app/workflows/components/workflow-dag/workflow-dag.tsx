@@ -14,6 +14,7 @@ export interface WorkflowDagRenderOptions {
     expandNodes: Set<string>;
     showArtifacts: boolean;
     showInvokingTemplateName: boolean;
+    showTemplateRefsGrouping: boolean;
 }
 
 interface WorkflowDagProps {
@@ -55,7 +56,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.state = {
             expandNodes: new Set(),
             showArtifacts: localStorage.getItem('showArtifacts') !== 'false',
-            showInvokingTemplateName: localStorage.getItem('showInvokingTemplateName') !== 'false'
+            showInvokingTemplateName: localStorage.getItem('showInvokingTemplateName') !== 'false',
+            showTemplateRefsGrouping: localStorage.getItem('showTemplateRefsGrouping') !== 'false'
         };
     }
 
@@ -111,6 +113,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private saveOptions(newChanges: WorkflowDagRenderOptions) {
         localStorage.setItem('showArtifacts', newChanges.showArtifacts ? 'true' : 'false');
         localStorage.setItem('showInvokingTemplateName', newChanges.showInvokingTemplateName ? 'true' : 'false');
+        localStorage.setItem('showTemplateRefsGrouping', newChanges.showTemplateRefsGrouping ? 'true' : 'false');
         this.setState(newChanges);
     }
 
@@ -142,6 +145,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             if (!allNodes[nodeId] || !allNodes[nodeId].children) {
                 return [];
             }
+
+            if (this.state.showTemplateRefsGrouping) {
+                return Object.values(allNodes)
+                    .filter(node => node.boundaryID === nodeId && genres[node.type])
+                    .map(node => node.id);
+            }
+
             return allNodes[nodeId].children.filter(child => allNodes[child]);
         };
         const pushChildren = (nodeId: string, isExpanded: boolean, queue: PrepareNode[]): void => {
@@ -172,14 +182,22 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     children: getChildren(children[children.length - 1])
                 });
             } else {
-                // Node will not be collapsed
-                children.map(child =>
-                    queue.push({
-                        nodeName: child,
-                        parent: nodeId,
+                // Node will not be collapsed if no templateRefs are present
+                children.map(child => {
+                    let parentNodeId = nodeId;
+                    let nodeName = child;
+
+                    if (allNodes[nodeId].templateRef && this.state.showTemplateRefsGrouping) {
+                        parentNodeId = allNodes[child].boundaryID;
+                        nodeName = !isExpanded ? getCollapsedNodeName(nodeId, `template:${allNodes[nodeId].templateRef.name}`, allNodes[child].type) : child;
+                    }
+
+                    return queue.push({
+                        nodeName,
+                        parent: parentNodeId,
                         children: getChildren(child)
-                    })
-                );
+                    });
+                });
             }
         };
 

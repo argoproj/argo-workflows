@@ -50,6 +50,17 @@ export function WorkflowDagRenderOptionsPanel(props: WorkflowDagRenderOptions & 
                 title='Show invoking template name'>
                 <i className='fa fa-tag fa-fw' data-fa-transform='rotate-45' />
             </a>
+            <a
+                onClick={() =>
+                    props.onChange({
+                        ...workflowDagRenderOptions(),
+                        showTemplateRefsGrouping: !workflowDagRenderOptions().showTemplateRefsGrouping
+                    })
+                }
+                className={workflowDagRenderOptions().showTemplateRefsGrouping ? 'active' : ''}
+                title='Group by templateRefs'>
+                <i className='fa fa-sitemap fa-fw' />
+            </a>
         </>
     );
 }
