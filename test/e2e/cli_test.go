@@ -932,6 +932,47 @@ func (s *CLISuite) TestRetryWorkflowWithContinueOn() {
 		})
 }
 
+func (s *CLISuite) TestRetryWorkflowWithFailedExitHandler() {
+	var workflowName string
+	s.Given().
+		Workflow(`@testdata/retry-workflow-with-failed-exit-handler.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			workflowName = metadata.Name
+			assert.Len(t, status.Nodes, 2)
+		}).
+		RunCli([]string{"retry", workflowName}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err, output) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		})
+
+	s.Given().
+		When().
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			workflowName = metadata.Name
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Len(t, status.Nodes, 2)
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return status.Name == workflowName
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".onExit")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Contains(t, status.Message, "exit code 1")
+		})
+}
+
 func (s *CLISuite) TestWorkflowStop() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
