@@ -942,7 +942,7 @@ func (s *CLISuite) TestRetryWorkflowWithFailedExitHandler() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
-			assert.Equal(t, 2, len(status.Nodes))
+			assert.Len(t, status.Nodes, 2)
 		}).
 		RunCli([]string{"retry", workflowName}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err, output) {
@@ -958,7 +958,7 @@ func (s *CLISuite) TestRetryWorkflowWithFailedExitHandler() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			workflowName = metadata.Name
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			assert.Equal(t, 2, len(status.Nodes))
+			assert.Len(t, status.Nodes, 2)
 		}).
 		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
 			return status.Name == workflowName
