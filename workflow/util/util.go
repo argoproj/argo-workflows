@@ -989,13 +989,6 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			// Do not allow retry of workflows with pods in Running/Pending phase
 			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
-
-		if node.Name == wf.ObjectMeta.Name {
-			log.Debugf("Reset root node: %s", node.Name)
-			newNode := node.DeepCopy()
-			newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
-			continue
-		}
 	}
 
 	if len(deletedNodes) > 0 {
