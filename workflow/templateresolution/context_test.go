@@ -191,7 +191,7 @@ func TestGetCurrentTemplateBase(t *testing.T) {
 	// Get the template base of existing template name.
 	tmplBase := ctx.GetCurrentTemplateBase()
 	wftmpl, ok := tmplBase.(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "base-workflow-template", wftmpl.Name)
 }
 
@@ -214,7 +214,7 @@ func TestWithTemplateHolder(t *testing.T) {
 	newCtx, err := ctx.WithTemplateHolder(&tmplHolder)
 	require.NoError(t, err)
 	tmplGetter, ok := newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "base-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of unexisting template name.
@@ -222,7 +222,7 @@ func TestWithTemplateHolder(t *testing.T) {
 	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
 	require.NoError(t, err)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "base-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of existing template reference.
@@ -230,7 +230,7 @@ func TestWithTemplateHolder(t *testing.T) {
 	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
 	require.NoError(t, err)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of unexisting template reference.
@@ -255,7 +255,7 @@ func TestResolveTemplate(t *testing.T) {
 	ctx, tmpl, _, err := ctx.ResolveTemplate(&tmplHolder)
 	require.NoError(t, err)
 	wftmpl, ok := ctx.tmplBase.(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "base-workflow-template", wftmpl.Name)
 	assert.Equal(t, "whalesay", tmpl.Name)
 
@@ -266,7 +266,7 @@ func TestResolveTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
@@ -277,7 +277,7 @@ func TestResolveTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "local-whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Steps)
@@ -288,7 +288,7 @@ func TestResolveTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "another-whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Steps)
@@ -301,7 +301,7 @@ func TestResolveTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "whalesay-with-arguments", tmpl.Name)
 
@@ -313,7 +313,7 @@ func TestResolveTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	tmplGetter, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "nested-whalesay-with-arguments", tmpl.Name)
 }
@@ -328,7 +328,7 @@ func TestWithTemplateBase(t *testing.T) {
 	// Get the template base of existing template name.
 	newCtx := ctx.WithTemplateBase(anotherWftmpl)
 	wftmpl, ok := newCtx.tmplBase.(*wfv1.WorkflowTemplate)
-	require.True(t, ok)
+	require.True(t, ok, "tmplBase is not a WorkflowTemplate")
 	assert.Equal(t, "another-workflow-template", wftmpl.Name)
 }
 
