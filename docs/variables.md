@@ -190,9 +190,13 @@ Only available for `successCondition`
 
 | Variable | Description|
 |----------|------------|
-| `cronworkflow.name` | Name of the CronWorkflow (`string`)
-| `cronworkflow.hasLastScheduledTime` | When `cronworkflows.lastScheduledTime` is a sane value this is set to `false` else `true` (`bool`) |
-| `cronworkflow.lastScheduledTime` | The time since this workflow was last scheduled (`time.Time`) |
+| `cronworkflow.name` | Name of the CronWorkflow (`string`) |
+| `cronworkflow.namespace` | Namespace of the CronWorkflow (`string`) |
+| `cronworkflow.labels.<NAME>` | CronWorkflow labels (`string`) |
+| `cronworkflow.labels.json` | CronWorkflow labels as a JSON string (`string`) |
+| `cronworkflow.annotations.<NAME>` | CronWorkflow annotations (`string`) |
+| `cronworkflow.annotations.json` | CronWorkflow annotations as a JSON string (`string`) |
+| `cronworkflow.lastScheduledTime` | The time since this workflow was last scheduled, value is nil on first run (`*time.Time`) |
 
 ### `RetryStrategy`
 

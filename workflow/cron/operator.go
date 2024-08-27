@@ -222,14 +222,30 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 	}
 
 	addSetField("name", cron.Name)
-	tm := time.Date(0, 1,
-		1, 0, 0, 0, 0, time.UTC)
+	addSetField("namespace", cron.Namespace)
+	addSetField("labels", cron.Labels)
+	addSetField("annotations", cron.Labels)
 
-	addSetField("hasLastScheduledTime", false)
+	labelsStr, err := json.Marshal(&cron.Labels)
+	if err != nil {
+		// We shouldn't hit this
+		return false, err
+	}
+
+	annotationsStr, err := json.Marshal(&cron.Annotations)
+	if err != nil {
+		// We shouldn't hit this
+		return false, err
+	}
+
+	addSetField("annotations.json", annotationsStr)
+	addSetField("labels.json", labelsStr)
+
+	var tm *time.Time
+	tm = nil
 
 	if cron.Status.LastScheduledTime != nil {
-		tm = cron.Status.LastScheduledTime.Time
-		addSetField("hasLastScheduledTime", true)
+		tm = &cron.Status.LastScheduledTime.Time
 	}
 
 	addSetField("lastScheduledTime", tm)
