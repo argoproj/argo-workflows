@@ -39,6 +39,17 @@ export function WorkflowDagRenderOptionsPanel(props: WorkflowDagRenderOptions & 
                 title='Expand all nodes'>
                 <i className='fa fa-expand fa-fw' data-fa-transform='rotate-45' />
             </a>
+            <a
+                onClick={() =>
+                    props.onChange({
+                        ...workflowDagRenderOptions(),
+                        showInvokingTemplateName: !workflowDagRenderOptions().showInvokingTemplateName
+                    })
+                }
+                className={workflowDagRenderOptions().showInvokingTemplateName ? 'active' : ''}
+                title='Show invoking template name'>
+                <i className='fa fa-tag fa-fw' data-fa-transform='rotate-45' />
+            </a>
         </>
     );
 }
