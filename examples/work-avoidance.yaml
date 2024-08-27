@@ -65,7 +65,7 @@ spec:
       script:
         image: busybox
         command:
-          - bash
+          - sh
           - -eux
         source: |
           marker=/work/markers/$(date +%Y-%m-%d)-echo-{{inputs.parameters.num}}
