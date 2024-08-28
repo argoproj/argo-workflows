@@ -22,9 +22,20 @@ Workflows that are executing but restricted from running more nodes due to the o
 
 ### Priority
 
-Workflows can have a `priority` set in their specification.
+You can set a priority on Workflows using the `priority` field in the specification
 
-Workflows with a higher priority number that have not started due to controller level parallelism will be started before lower priority workflows.
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: priority-
+spec:
+  priority: 3
+  ...
+````
+
+Workflows that have not started due to controller level parallelism will be queued: Workflows with higher priority numbers will start before lower priority ones.
+The default workflow priority is `0`.
 
 ## Synchronization
 
