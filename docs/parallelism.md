@@ -1,17 +1,17 @@
 # Limiting parallelism
 
-You can restrict the number of simultaneous workflow executions.
+You can restrict the number of parallel workflow executions.
 
 ## Controller level
 
-You can limit the total number of workflows that can execute at any one time in the [workflow controller ConfigMap](./workflow-controller-configmap.yaml).
+You can limit the total number of parallel workflow executions in the [workflow controller ConfigMap](workflow-controller-configmap.yaml):
 
 ```yaml
 data:
   parallelism: "10"
 ```
 
-You can also limit the number of workflows that can execute in a single namespace.
+You can also limit the total number of parallel workflow executions in a single namespace:
 
 ```yaml
 data:
@@ -28,4 +28,4 @@ Workflows with a higher priority number that have not started due to controller 
 
 ## Synchronization
 
-You can use [mutexes, semaphores and parallelism](./synchronization.md) to control the parallel execution of sections of a workflow.
+You can also use [mutexes, semaphores, and parallelism](synchronization.md) to control the parallel execution of workflows and templates.
