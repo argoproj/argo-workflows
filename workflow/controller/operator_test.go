@@ -81,13 +81,11 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 		// now force a re-apply update
 		updatedWf, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
 		require.NoError(t, err)
-		if assert.NotNil(t, updatedWf) {
-			assert.True(t, woc.controller.hydrator.IsHydrated(updatedWf))
-			if assert.Contains(t, updatedWf.Status.Nodes, "foo") {
-				assert.Equal(t, "my-foo", updatedWf.Status.Nodes["foo"].Name)
-				assert.Equal(t, wfv1.NodeSucceeded, updatedWf.Status.Nodes["foo"].Phase, "phase is merged")
-			}
-		}
+		require.NotNil(t, updatedWf)
+		assert.True(t, woc.controller.hydrator.IsHydrated(updatedWf))
+		require.Contains(t, updatedWf.Status.Nodes, "foo")
+		assert.Equal(t, "my-foo", updatedWf.Status.Nodes["foo"].Name)
+		assert.Equal(t, wfv1.NodeSucceeded, updatedWf.Status.Nodes["foo"].Phase, "phase is merged")
 	})
 	t.Run("ErrUpdatingCompletedWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -369,9 +367,8 @@ func TestGlobalParams(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
-		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
-	}
+	require.Contains(t, woc.globalParams, "workflow.creationTimestamp")
+	assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
 	for char := range strftime.FormatChars {
 		assert.Contains(t, woc.globalParams, fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
 	}
@@ -1987,13 +1984,12 @@ func TestWorkflowStepRetry(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	require.NoError(t, err)
-	if assert.Len(t, pods.Items, 3) {
-		assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
-		assert.Equal(t, "cowsay failure", pods.Items[1].Spec.Containers[1].Args[0])
+	require.Len(t, pods.Items, 3)
+	assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
+	assert.Equal(t, "cowsay failure", pods.Items[1].Spec.Containers[1].Args[0])
 
-		// verify that after the cowsay failure pod failed, we are retrying cowsay success
-		assert.Equal(t, "cowsay success", pods.Items[2].Spec.Containers[1].Args[0])
-	}
+	// verify that after the cowsay failure pod failed, we are retrying cowsay success
+	assert.Equal(t, "cowsay success", pods.Items[2].Spec.Containers[1].Args[0])
 }
 
 var workflowParallelismLimit = `
@@ -2277,10 +2273,10 @@ func TestSidecarResourceLimits(t *testing.T) {
 			break
 		}
 	}
-	if assert.NotNil(t, waitCtr) && assert.NotNil(t, waitCtr.Resources) {
-		assert.Len(t, waitCtr.Resources.Limits, 2)
-		assert.Len(t, waitCtr.Resources.Requests, 2)
-	}
+	require.NotNil(t, waitCtr)
+	require.NotNil(t, waitCtr.Resources)
+	assert.Len(t, waitCtr.Resources.Limits, 2)
+	assert.Len(t, waitCtr.Resources.Requests, 2)
 }
 
 // TestSuspendResume tests the suspend and resume feature
@@ -3690,16 +3686,15 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 		require.NoError(t, err)
 		objectMetas[cm.Name] = cm.ObjectMeta
 	}
-	if assert.Len(t, objectMetas["resource-cm-1"].OwnerReferences, 1) {
-		assert.Equal(t, "manual-ref-name", objectMetas["resource-cm-1"].OwnerReferences[0].Name)
-	}
-	if assert.Len(t, objectMetas["resource-cm-2"].OwnerReferences, 1) {
-		assert.Equal(t, "resource-with-ownerreference-template", objectMetas["resource-cm-2"].OwnerReferences[0].Name)
-	}
-	if assert.Len(t, objectMetas["resource-cm-3"].OwnerReferences, 2) {
-		assert.Equal(t, "manual-ref-name", objectMetas["resource-cm-3"].OwnerReferences[0].Name)
-		assert.Equal(t, "resource-with-ownerreference-template", objectMetas["resource-cm-3"].OwnerReferences[1].Name)
-	}
+	require.Len(t, objectMetas["resource-cm-1"].OwnerReferences, 1)
+	assert.Equal(t, "manual-ref-name", objectMetas["resource-cm-1"].OwnerReferences[0].Name)
+
+	require.Len(t, objectMetas["resource-cm-2"].OwnerReferences, 1)
+	assert.Equal(t, "resource-with-ownerreference-template", objectMetas["resource-cm-2"].OwnerReferences[0].Name)
+
+	require.Len(t, objectMetas["resource-cm-3"].OwnerReferences, 2)
+	assert.Equal(t, "manual-ref-name", objectMetas["resource-cm-3"].OwnerReferences[0].Name)
+	assert.Equal(t, "resource-with-ownerreference-template", objectMetas["resource-cm-3"].OwnerReferences[1].Name)
 }
 
 var stepScriptTmpl = `
@@ -4832,11 +4827,12 @@ func TestNestedStepGroupGlobalParams(t *testing.T) {
 	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("generate")
-	if assert.NotNil(t, node) && assert.NotNil(t, node.Outputs) && assert.Len(t, node.Outputs.Parameters, 1) {
-		assert.Equal(t, "hello-param", node.Outputs.Parameters[0].Name)
-		assert.Equal(t, "global-param", node.Outputs.Parameters[0].GlobalName)
-		assert.Equal(t, "hello world", node.Outputs.Parameters[0].Value.String())
-	}
+	require.NotNil(t, node)
+	require.NotNil(t, node.Outputs)
+	require.Len(t, node.Outputs.Parameters, 1)
+	assert.Equal(t, "hello-param", node.Outputs.Parameters[0].Name)
+	assert.Equal(t, "global-param", node.Outputs.Parameters[0].GlobalName)
+	assert.Equal(t, "hello world", node.Outputs.Parameters[0].Value.String())
 
 	assert.Equal(t, "hello world", woc.wf.Status.Outputs.Parameters[0].Value.String())
 	assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
@@ -5612,13 +5608,12 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
-	if assert.Len(t, woc.wf.Status.Nodes, 1) {
-		for _, node := range woc.wf.Status.Nodes {
-			assert.NotNil(t, node.Outputs)
-			assert.Equal(t, "hello", node.Outputs.Parameters[0].Name)
-			assert.Equal(t, "foobar", node.Outputs.Parameters[0].Value.String())
-			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-		}
+	require.Len(t, woc.wf.Status.Nodes, 1)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.NotNil(t, node.Outputs)
+		assert.Equal(t, "hello", node.Outputs.Parameters[0].Name)
+		assert.Equal(t, "foobar", node.Outputs.Parameters[0].Value.String())
+		assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 	}
 }
 
@@ -5685,11 +5680,10 @@ func TestConfigMapCacheLoadOperateNoOutputs(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
-	if assert.Len(t, woc.wf.Status.Nodes, 1) {
-		for _, node := range woc.wf.Status.Nodes {
-			assert.Nil(t, node.Outputs)
-			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-		}
+	require.Len(t, woc.wf.Status.Nodes, 1)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Nil(t, node.Outputs)
+		assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 	}
 }
 
@@ -5931,13 +5925,12 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
-	if assert.Len(t, woc.wf.Status.Nodes, 1) {
-		for _, node := range woc.wf.Status.Nodes {
-			assert.NotNil(t, node.Outputs)
-			assert.Equal(t, "hello", node.Outputs.Parameters[0].Name)
-			assert.Equal(t, "foobar", node.Outputs.Parameters[0].Value.String())
-			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-		}
+	require.Len(t, woc.wf.Status.Nodes, 1)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.NotNil(t, node.Outputs)
+		assert.Equal(t, "hello", node.Outputs.Parameters[0].Name)
+		assert.Equal(t, "foobar", node.Outputs.Parameters[0].Value.String())
+		assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 	}
 
 	cancel()
@@ -5951,11 +5944,10 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
-	if assert.Len(t, woc.wf.Status.Nodes, 1) {
-		for _, node := range woc.wf.Status.Nodes {
-			assert.Nil(t, node.Outputs)
-			assert.Equal(t, wfv1.NodePending, node.Phase)
-		}
+	require.Len(t, woc.wf.Status.Nodes, 1)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Nil(t, node.Outputs)
+		assert.Equal(t, wfv1.NodePending, node.Phase)
 	}
 }
 
@@ -6199,11 +6191,10 @@ func TestConfigMapCacheLoadNoLabels(t *testing.T) {
 	assert.NotPanics(t, fn)
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 
-	if assert.Len(t, woc.wf.Status.Nodes, 1) {
-		for _, node := range woc.wf.Status.Nodes {
-			assert.Nil(t, node.Outputs)
-			assert.Equal(t, wfv1.NodeError, node.Phase)
-		}
+	require.Len(t, woc.wf.Status.Nodes, 1)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Nil(t, node.Outputs)
+		assert.Equal(t, wfv1.NodeError, node.Phase)
 	}
 }
 
@@ -6240,12 +6231,11 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 	}
 	assert.NotPanics(t, fn)
 
-	if assert.Len(t, woc.wf.Status.Nodes, 1) {
-		for _, node := range woc.wf.Status.Nodes {
-			assert.NotNil(t, node.Outputs)
-			assert.False(t, node.Outputs.HasOutputs())
-			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-		}
+	require.Len(t, woc.wf.Status.Nodes, 1)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.NotNil(t, node.Outputs)
+		assert.False(t, node.Outputs.HasOutputs())
+		assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 	}
 }
 
@@ -6277,9 +6267,8 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	var entry cache.Entry
 	wfv1.MustUnmarshal(rawEntry, &entry)
 
-	if assert.NotNil(t, entry.Outputs) {
-		assert.Equal(t, sampleOutputs, *entry.Outputs)
-	}
+	require.NotNil(t, entry.Outputs)
+	assert.Equal(t, sampleOutputs, *entry.Outputs)
 }
 
 var propagate = `
@@ -6705,9 +6694,10 @@ func TestGlobalVarsOnExit(t *testing.T) {
 	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes["hello-world-6gphm-8n22g-3224262006"]
-	if assert.NotNil(t, node) && assert.NotNil(t, node.Inputs) && assert.NotEmpty(t, node.Inputs.Parameters) {
-		assert.Equal(t, "nononono", node.Inputs.Parameters[0].Value.String())
-	}
+	require.NotNil(t, node)
+	require.NotNil(t, node.Inputs)
+	require.NotEmpty(t, node.Inputs.Parameters)
+	assert.Equal(t, "nononono", node.Inputs.Parameters[0].Value.String())
 }
 
 var deadlineWf = `
@@ -7291,13 +7281,12 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		pods, err := listPods(woc)
 		require.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
-		if assert.Len(t, pods.Items, 3) {
-			ctrs := pods.Items[0].Spec.Containers
-			assert.Len(t, ctrs, 2)
-			envs := ctrs[1].Env
-			assert.Len(t, envs, 8)
-			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[3])
-		}
+		require.Len(t, pods.Items, 3)
+		ctrs := pods.Items[0].Spec.Containers
+		assert.Len(t, ctrs, 2)
+		envs := ctrs[1].Env
+		assert.Len(t, envs, 8)
+		assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[3])
 	})
 }
 
@@ -7492,18 +7481,14 @@ func TestParamAggregation(t *testing.T) {
 	woc.operate(ctx)
 
 	evenNode := woc.wf.Status.Nodes.FindByDisplayName("print-evenness")
-	if assert.NotNil(t, evenNode) {
-		if assert.Len(t, evenNode.Inputs.Parameters, 1) {
-			assert.Equal(t, `["odd","even"]`, evenNode.Inputs.Parameters[0].Value.String())
-		}
-	}
+	require.NotNil(t, evenNode)
+	require.Len(t, evenNode.Inputs.Parameters, 1)
+	assert.Equal(t, `["odd","even"]`, evenNode.Inputs.Parameters[0].Value.String())
 
 	numNode := woc.wf.Status.Nodes.FindByDisplayName("print-nums")
-	if assert.NotNil(t, numNode) {
-		if assert.Len(t, numNode.Inputs.Parameters, 1) {
-			assert.Equal(t, `["1","2"]`, numNode.Inputs.Parameters[0].Value.String())
-		}
-	}
+	require.NotNil(t, numNode)
+	require.Len(t, numNode.Inputs.Parameters, 1)
+	assert.Equal(t, `["1","2"]`, numNode.Inputs.Parameters[0].Value.String())
 }
 
 func TestPodHasContainerNeedingTermination(t *testing.T) {
@@ -7700,10 +7685,9 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("retry-fail(0)")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeFailed, node.Phase)
-		assert.Equal(t, "node0", node.HostNodeName)
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, "node0", node.HostNodeName)
 
 	pods, err = listPods(woc)
 	require.NoError(t, err)
@@ -7733,10 +7717,9 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	woc.operate(ctx)
 
 	node1 := woc.wf.Status.Nodes.FindByDisplayName("retry-fail(1)")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeFailed, node1.Phase)
-		assert.Equal(t, "node1", node1.HostNodeName)
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node1.Phase)
+	assert.Equal(t, "node1", node1.HostNodeName)
 
 	pods, err = listPods(woc)
 	require.NoError(t, err)
@@ -7784,10 +7767,9 @@ func TestNoPodsWhenShutdown(t *testing.T) {
 	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeFailed, node.Phase)
-		assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
 }
 
 var wfscheVariable = `
@@ -7934,10 +7916,9 @@ spec:
 		woc1.operate(ctx)
 
 		node := woc1.wf.Status.Nodes.FindByDisplayName("whalesay")
-		if assert.NotNil(t, node) {
-			assert.Contains(t, node.Message, "workflow shutdown with strategy")
-			assert.Contains(t, node.Message, "Stop")
-		}
+		require.NotNil(t, node)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy")
+		assert.Contains(t, node.Message, "Stop")
 	})
 
 	t.Run("TerminateStrategy", func(t *testing.T) {
@@ -7956,10 +7937,9 @@ spec:
 		woc1 := newWorkflowOperationCtx(wfOut, controller)
 		woc1.operate(ctx)
 		for _, node := range woc1.wf.Status.Nodes {
-			if assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "workflow shutdown with strategy")
-				assert.Contains(t, node.Message, "Terminate")
-			}
+			require.NotNil(t, node)
+			assert.Contains(t, node.Message, "workflow shutdown with strategy")
+			assert.Contains(t, node.Message, "Terminate")
 		}
 	})
 }
@@ -8201,13 +8181,12 @@ func TestStepsFailFast(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	node := woc.wf.Status.Nodes.FindByDisplayName("iteration(0:a)")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeFailed, node.Phase)
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+
 	node = woc.wf.Status.Nodes.FindByDisplayName("seq-loop-pz4hh")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeFailed, node.Phase)
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }
 
 func TestGetStepOrDAGTaskName(t *testing.T) {
@@ -10527,10 +10506,9 @@ func TestMaxDepth(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	node := woc.wf.Status.Nodes["hello-world-713168755"]
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeError, node.Phase)
-		assert.Contains(t, node.Message, "Maximum recursion depth exceeded")
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeError, node.Phase)
+	assert.Contains(t, node.Message, "Maximum recursion depth exceeded")
 
 	// Max depth is enabled, but not too small, no error expected
 	controller.maxStackDepth = 3
@@ -10540,9 +10518,8 @@ func TestMaxDepth(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	node = woc.wf.Status.Nodes["hello-world-713168755"]
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodePending, node.Phase)
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
@@ -10568,9 +10545,8 @@ func TestMaxDepthEnvVariable(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	node := woc.wf.Status.Nodes["hello-world-713168755"]
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodePending, node.Phase)
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
@@ -10902,10 +10878,9 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	require.NoError(t, err)
-	if assert.Len(t, pods.Items, 2) {
-		assert.Equal(t, "hello1", pods.Items[0].Spec.Containers[1].Env[0].Value)
-		assert.Equal(t, "steps-need-reconcile", pods.Items[1].Spec.Containers[1].Env[0].Value)
-	}
+	require.Len(t, pods.Items, 2)
+	assert.Equal(t, "hello1", pods.Items[0].Spec.Containers[1].Env[0].Value)
+	assert.Equal(t, "steps-need-reconcile", pods.Items[1].Spec.Containers[1].Env[0].Value)
 }
 
 func TestWorkflowRunningButLabelCompleted(t *testing.T) {

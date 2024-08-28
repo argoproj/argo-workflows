@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -75,20 +76,19 @@ spec:
 				finishedTimes = append(finishedTimes, node.FinishedAt.Time)
 			}
 
-			if assert.Len(t, finishedTimes, 4) {
-				sort.Slice(finishedTimes, func(i, j int) bool {
-					return finishedTimes[i].Before(finishedTimes[j])
-				})
-				// Everything finished with a two second tolerance window
-				assert.Less(t, finishedTimes[3].Sub(finishedTimes[0]), time.Duration(2)*time.Second)
-			}
-			if assert.Len(t, startTimes, 4) {
-				sort.Slice(startTimes, func(i, j int) bool {
-					return startTimes[i].Before(startTimes[j])
-				})
-				// Everything started with same time
-				assert.Equal(t, time.Duration(0), startTimes[3].Sub(startTimes[0]))
-			}
+			require.Len(t, finishedTimes, 4)
+			sort.Slice(finishedTimes, func(i, j int) bool {
+				return finishedTimes[i].Before(finishedTimes[j])
+			})
+			// Everything finished with a two second tolerance window
+			assert.Less(t, finishedTimes[3].Sub(finishedTimes[0]), time.Duration(2)*time.Second)
+
+			require.Len(t, startTimes, 4)
+			sort.Slice(startTimes, func(i, j int) bool {
+				return startTimes[i].Before(startTimes[j])
+			})
+			// Everything started with same time
+			assert.Equal(t, time.Duration(0), startTimes[3].Sub(startTimes[0]))
 		})
 }
 
@@ -145,21 +145,20 @@ spec:
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 
 			containsFails := status.Nodes.FindByDisplayName("http-body-contains-google-fails")
-			if assert.NotNil(t, containsFails) {
-				assert.Equal(t, wfv1.NodeFailed, containsFails.Phase)
-			}
+			require.NotNil(t, containsFails)
+			assert.Equal(t, wfv1.NodeFailed, containsFails.Phase)
+
 			containsSucceeds := status.Nodes.FindByDisplayName("http-body-contains-google-succeeds")
-			if assert.NotNil(t, containsFails) {
-				assert.Equal(t, wfv1.NodeSucceeded, containsSucceeds.Phase)
-			}
+			require.NotNil(t, containsFails)
+			assert.Equal(t, wfv1.NodeSucceeded, containsSucceeds.Phase)
+
 			statusFails := status.Nodes.FindByDisplayName("http-status-is-201-fails")
-			if assert.NotNil(t, statusFails) {
-				assert.Equal(t, wfv1.NodeFailed, statusFails.Phase)
-			}
+			require.NotNil(t, statusFails)
+			assert.Equal(t, wfv1.NodeFailed, statusFails.Phase)
+
 			statusSucceeds := status.Nodes.FindByDisplayName("http-status-is-201-succeeds")
-			if assert.NotNil(t, statusFails) {
-				assert.Equal(t, wfv1.NodeSucceeded, statusSucceeds.Phase)
-			}
+			require.NotNil(t, statusFails)
+			assert.Equal(t, wfv1.NodeSucceeded, statusSucceeds.Phase)
 		})
 }
 

@@ -41,10 +41,10 @@ func Test_BasicAuthString(t *testing.T) {
 		assert.True(t, IsBasicAuthScheme(authString))
 		token := strings.TrimSpace(strings.TrimPrefix(authString, BasicAuthScheme))
 		uname, pwd, ok := decodeBasicAuthToken(token)
-		if assert.True(t, ok) {
-			assert.Equal(t, "admin", uname)
-			assert.Equal(t, "admin", pwd)
-		}
+		require.True(t, ok)
+		assert.Equal(t, "admin", uname)
+		assert.Equal(t, "admin", pwd)
+
 		file, err := os.CreateTemp("", "config.yaml")
 		require.NoError(t, err)
 		_, err = file.WriteString(config)

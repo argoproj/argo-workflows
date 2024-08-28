@@ -730,34 +730,30 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		if assert.Len(t, pod.Spec.Volumes, 3) {
-			assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-			assert.Equal(t, "tmp-dir-argo", pod.Spec.Volumes[1].Name)
-			assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
-		}
-		if assert.Len(t, pod.Spec.InitContainers, 1) {
-			init := pod.Spec.InitContainers[0]
-			if assert.Len(t, init.VolumeMounts, 1) {
-				assert.Equal(t, "var-run-argo", init.VolumeMounts[0].Name)
-			}
-		}
+		require.Len(t, pod.Spec.Volumes, 3)
+		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "tmp-dir-argo", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+
+		require.Len(t, pod.Spec.InitContainers, 1)
+		init := pod.Spec.InitContainers[0]
+		require.Len(t, init.VolumeMounts, 1)
+		assert.Equal(t, "var-run-argo", init.VolumeMounts[0].Name)
+
 		containers := pod.Spec.Containers
-		if assert.Len(t, containers, 2) {
-			wait := containers[0]
-			if assert.Len(t, wait.VolumeMounts, 3) {
-				assert.Equal(t, "volume-name", wait.VolumeMounts[0].Name)
-				assert.Equal(t, "tmp-dir-argo", wait.VolumeMounts[1].Name)
-				assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
-			}
-			main := containers[1]
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
-				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
-				"--", "cowsay"}, main.Command)
-			if assert.Len(t, main.VolumeMounts, 2) {
-				assert.Equal(t, "volume-name", main.VolumeMounts[0].Name)
-				assert.Equal(t, "var-run-argo", main.VolumeMounts[1].Name)
-			}
-		}
+		require.Len(t, containers, 2)
+		wait := containers[0]
+		require.Len(t, wait.VolumeMounts, 3)
+		assert.Equal(t, "volume-name", wait.VolumeMounts[0].Name)
+		assert.Equal(t, "tmp-dir-argo", wait.VolumeMounts[1].Name)
+		assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
+		main := containers[1]
+		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+			"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+			"--", "cowsay"}, main.Command)
+		require.Len(t, main.VolumeMounts, 2)
+		assert.Equal(t, "volume-name", main.VolumeMounts[0].Name)
+		assert.Equal(t, "var-run-argo", main.VolumeMounts[1].Name)
 	})
 }
 
@@ -1478,9 +1474,8 @@ func TestMainContainerCustomization(t *testing.T) {
 		require.NoError(t, err)
 		ctr := pod.Spec.Containers[1]
 		assert.NotNil(t, ctr.SecurityContext)
-		if assert.NotNil(t, pod.Spec.Containers[1].Resources) {
-			assert.Equal(t, "0.200", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
-		}
+		require.NotNil(t, pod.Spec.Containers[1].Resources)
+		assert.Equal(t, "0.200", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	})
 
 	// Workflow spec's main container takes precedence over config in controller
