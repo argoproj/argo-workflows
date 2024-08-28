@@ -12,7 +12,7 @@ import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
 import {PaginationPanel} from '../shared/components/pagination-panel';
-import {Timestamp} from '../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -27,6 +27,7 @@ import {WorkflowTemplateCreator} from './workflow-template-creator';
 import {WorkflowTemplateFilters} from './workflow-template-filters';
 
 import './workflow-template-list.scss';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-templates/'>Learn more</a>;
 
@@ -85,6 +86,8 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
 
     useCollectEvent('openedWorkflowTemplateList');
 
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.WORKFLOW_TEMPLATE_LIST_CREATION);
+
     return (
         <Page
             title='Workflow Templates'
@@ -138,7 +141,9 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                                     <div className='columns small-1' />
                                     <div className='columns small-5'>NAME</div>
                                     <div className='columns small-3'>NAMESPACE</div>
-                                    <div className='columns small-3'>CREATED</div>
+                                    <div className='columns small-3'>
+                                        CREATED <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                                    </div>
                                 </div>
                                 {templates.map(t => (
                                     <Link
@@ -154,7 +159,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                                         </div>
                                         <div className='columns small-3'>{t.metadata.namespace}</div>
                                         <div className='columns small-3'>
-                                            <Timestamp date={t.metadata.creationTimestamp} />
+                                            <Timestamp date={t.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
                                         </div>
                                     </Link>
                                 ))}
