@@ -1531,13 +1531,33 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		}
 	}
 
+	waitContainerCleanedUp := true
 	// We cannot fail the node if the wait container is still running because it may be busy saving outputs, and these
 	// would not get captured successfully.
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Running != nil && new.Phase.Completed() {
-			woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
-			new.Phase = old.Phase
+		if c.Name == common.WaitContainerName {
+			waitContainerCleanedUp = false
+			switch {
+			case c.State.Running != nil && new.Phase.Completed():
+				woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
+				new.Phase = old.Phase
+			case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
+				// Mark its taskResult as completed directly since wait container did not exit normally,
+				// and it will never have a chance to report taskResult correctly.
+				nodeID := woc.nodeID(pod)
+				woc.log.WithFields(log.Fields{"nodeID": nodeID, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
+					Warn("marking its taskResult as completed since wait container did not exit normally")
+				woc.wf.Status.MarkTaskResultComplete(nodeID)
+			}
 		}
+	}
+	if pod.Status.Phase == apiv1.PodFailed && pod.Status.Reason == "Evicted" && waitContainerCleanedUp {
+		// Mark its taskResult as completed directly since wait container has been cleaned up because of pod evicted,
+		// and it will never have a chance to report taskResult correctly.
+		nodeID := woc.nodeID(pod)
+		woc.log.WithFields(log.Fields{"nodeID": nodeID}).
+			Warn("marking its taskResult as completed since wait container has been cleaned up.")
+		woc.wf.Status.MarkTaskResultComplete(nodeID)
 	}
 
 	// if we are transitioning from Pending to a different state, clear out unchanged message
