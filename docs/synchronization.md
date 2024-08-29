@@ -30,8 +30,7 @@ data:
 
 ## Workflow-level Synchronization
 
-You can limit parallel execution of a workflow by using Workflow-level synchronization.
-If multiple workflows have the same synchronization reference they will be limited by that synchronization reference.
+You can limit parallel execution of workflows by using the same synchronization reference.
 
 In this example the synchronization key `workflow` is configured as limit `"1"`, so only one workflow instance will execute at a time even if multiple workflows are created.
 
@@ -79,8 +78,7 @@ spec:
 
 ## Template-level Synchronization
 
-You can limit parallel execution of a template by using Template-level synchronization.
-If templates have the same synchronization reference they will be limited by that synchronization reference, across all workflows.
+You can limit parallel execution of templates by using the same synchronization reference.
 
 In this example the synchronization key `template` is configured as limit `"2"`, so a maximum of two instances of the `acquire-lock` template will execute at a time.
 This applies even when multiple steps or tasks within a workflow or different workflows refer to the same template.
