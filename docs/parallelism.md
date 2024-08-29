@@ -18,7 +18,8 @@ data:
   namespaceParallelism: "4"
 ```
 
-Workflows that are executing but restricted from running more nodes due to the other mechanisms will still count towards the parallelism limits.
+!!! Note
+    Workflows that are executing but restricted from running more nodes due to other mechanisms will still count toward parallelism limits.
 
 ### Priority
 
