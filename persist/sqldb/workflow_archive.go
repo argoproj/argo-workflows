@@ -163,15 +163,19 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 		return nil, err
 	}
 
-	selector := r.session.SQL().
-		Select(selectQuery).
+	subSelector := r.session.SQL().
+		Select(db.Raw("uid")).
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+	subSelector, err = BuildArchivedWorkflowSelector(subSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
 	if err != nil {
 		return nil, err
 	}
+
+	selector := r.session.SQL().Select(selectQuery).From(archiveTableName).Where(
+		r.clusterManagedNamespaceAndInstanceID().And(db.Cond{"uid IN": subSelector}),
+	)
 
 	err = selector.All(&archivedWfs)
 	if err != nil {
