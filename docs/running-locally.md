@@ -108,6 +108,8 @@ You can use the `TARGET_PLATFORM` environment variable to compile images for spe
 make argoexec-image TARGET_PLATFORM=linux/arm64,linux/amd64
 ```
 
+!!! Note "expected 'package', found signal..." If you see this error, you need to set git `core.symlinks=true`, just run `git config --global core.symlinks true` or `git -c core.symlinks=true clone`.
+
 To also start the API on <http://localhost:2746>:
 
 ```bash
