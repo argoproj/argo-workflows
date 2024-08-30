@@ -1563,6 +1563,10 @@ data:
     enabled: true
     path: /metrics
     port: 9090
+  serverMetricsConfig: |
+    enabled: true
+    path: /metrics
+    port: 9090
   namespaceParallelism: "10"
   retentionPolicy: |
     completed: 10

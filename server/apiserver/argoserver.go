@@ -51,6 +51,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/event"
 	"github.com/argoproj/argo-workflows/v3/server/eventsource"
 	"github.com/argoproj/argo-workflows/v3/server/info"
+	"github.com/argoproj/argo-workflows/v3/server/metrics"
 	"github.com/argoproj/argo-workflows/v3/server/sensor"
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
@@ -261,6 +262,9 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if as.tlsConfig != nil {
 		conn = tls.NewListener(conn, as.tlsConfig)
 	}
+
+	metricsServer, err := metrics.New(ctx, `argo-server`, `argo_server`, metrics.GetServerConfig(config))
+	go metricsServer.RunPrometheusServer(ctx, false)
 
 	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
 	tcpm := cmux.New(conn)
