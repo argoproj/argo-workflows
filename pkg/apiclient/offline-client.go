@@ -58,17 +58,17 @@ func newOfflineClient(paths []string) (context.Context, Client, error) {
 				if obj == nil {
 					continue // could not parse to kubernetes object
 				}
-	
+
 				objName := obj.GetName()
 				namespace := obj.GetNamespace()
-				
-				switch v:= obj.(type) {
-				case  *wfv1.ClusterWorkflowTemplate:		
+
+				switch v := obj.(type) {
+				case *wfv1.ClusterWorkflowTemplate:
 					if _, ok := clusterWorkflowTemplateGetter.clusterWorkflowTemplates[objName]; ok {
 						return fmt.Errorf("duplicate ClusterWorkflowTemplate found: %q", objName)
 					}
 					clusterWorkflowTemplateGetter.clusterWorkflowTemplates[objName] = v
-	
+
 				case *wfv1.WorkflowTemplate:
 					getter, ok := workflowTemplateGetters[namespace]
 					if !ok {
@@ -78,14 +78,14 @@ func newOfflineClient(paths []string) (context.Context, Client, error) {
 						}
 						workflowTemplateGetters[namespace] = getter
 					}
-	
+
 					if _, ok := getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[objName]; ok {
 						return fmt.Errorf("duplicate WorkflowTemplate found: %q", objName)
 					}
-					getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[objName] = v	
+					getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[objName] = v
 				}
 
-			}		
+			}
 			return nil
 		})
 
