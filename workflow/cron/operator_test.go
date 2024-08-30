@@ -28,7 +28,7 @@ var scheduledWf = `
     name: hello-world
     namespace: argo
     resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflow.hello-world
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows.hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedule: '* * * * *'
@@ -339,7 +339,7 @@ var forbidMissedSchedule = `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   annotations:
-    cronworkflow.argoproj.io/last-used-schedule: CRON_TZ=America/Los_Angeles 0-36/1
+    cronworkflows.argoproj.io/last-used-schedule: CRON_TZ=America/Los_Angeles 0-36/1
       21-22 * * *
   creationTimestamp: "2022-02-04T05:33:24Z"
   generation: 2
@@ -410,7 +410,7 @@ var multipleSchedulesWf = `
     name: hello-world
     namespace: argo
     resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflow.hello-world
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows.hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedules:
@@ -471,7 +471,7 @@ var specErrWithScheduleAndSchedules = `
     name: hello-world
     namespace: argo
     resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflow.hello-world
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows.hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedule: "* * * * *"
@@ -533,7 +533,7 @@ var specErrWithValidAndInvalidSchedules = `
     name: hello-world
     namespace: argo
     resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflow.hello-world
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows.hello-world
     uid: f230ee83-2ddc-435e-b27c-f0ca63293100
   spec:
     schedules:
