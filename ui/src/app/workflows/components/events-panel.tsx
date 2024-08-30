@@ -4,11 +4,12 @@ import {map} from 'rxjs/operators';
 import {Event} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Notice} from '../../shared/components/notice';
-import {Timestamp} from '../../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../../shared/components/timestamp';
 import {ToggleButton} from '../../shared/components/toggle-button';
 import debounce from '../../shared/debounce';
 import {ListWatch} from '../../shared/list-watch';
 import {services} from '../../shared/services';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 
 export function EventsPanel({namespace, name, kind}: {namespace: string; name: string; kind: string}) {
     const [showAll, setShowAll] = useState(false);
@@ -87,6 +88,8 @@ export function EventsPanel({namespace, name, kind}: {namespace: string; name: s
         };
     });
 
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.EVENTS_PANEL_LAST);
+
     return (
         <>
             <div style={{margin: 20}}>
@@ -106,7 +109,9 @@ export function EventsPanel({namespace, name, kind}: {namespace: string; name: s
                 <div ref={tableRef} className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1'>Type</div>
-                        <div className='columns small-2'>Last Seen</div>
+                        <div className='columns small-2'>
+                            Last Seen <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                        </div>
                         <div className='columns small-2'>Reason</div>
                         <div className='columns small-2'>Object</div>
                         <div className='columns small-5'>Message</div>
@@ -120,7 +125,7 @@ export function EventsPanel({namespace, name, kind}: {namespace: string; name: s
                                     {e.type === 'Normal' ? <i className='fa fa-check-circle status-icon--init' /> : <i className='fa fa-exclamation-circle status-icon--pending' />}
                                 </div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={e.lastTimestamp} />
+                                    <Timestamp date={e.lastTimestamp} displayISOFormat={storedDisplayISOFormat} />
                                 </div>
                                 <div className='columns small-2'>{e.reason}</div>
                                 <div className='columns small-2'>

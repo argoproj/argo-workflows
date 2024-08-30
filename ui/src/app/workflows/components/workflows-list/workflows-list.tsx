@@ -29,6 +29,8 @@ import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflow
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
 import './workflows-list.scss';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
+import {TimestampSwitch} from '../../../shared/components/timestamp';
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
@@ -160,6 +162,9 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     useCollectEvent('openedWorkflowList');
 
+    const [storedDisplayISOFormatStart, setStoredDisplayISOFormatStart] = useTimestamp(TIMESTAMP_KEYS.WORKFLOWS_ROW_STARTED);
+    const [storedDisplayISOFormatFinished, setStoredDisplayISOFormatFinished] = useTimestamp(TIMESTAMP_KEYS.WORKFLOWS_ROW_FINISHED);
+
     return (
         <Page
             title='Workflows'
@@ -256,8 +261,17 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                     <div className='row small-11'>
                                         <div className='columns small-2'>NAME</div>
                                         <div className='columns small-1'>NAMESPACE</div>
-                                        <div className='columns small-1'>STARTED</div>
-                                        <div className='columns small-1'>FINISHED</div>
+                                        <div className='columns small-1'>
+                                            STARTED{' '}
+                                            <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormatStart} setStoredDisplayISOFormat={setStoredDisplayISOFormatStart} />
+                                        </div>
+                                        <div className='columns small-1'>
+                                            FINISHED{' '}
+                                            <TimestampSwitch
+                                                storedDisplayISOFormat={storedDisplayISOFormatFinished}
+                                                setStoredDisplayISOFormat={setStoredDisplayISOFormatFinished}
+                                            />
+                                        </div>
                                         <div className='columns small-1'>DURATION</div>
                                         <div className='columns small-1'>PROGRESS</div>
                                         <div className='columns small-2'>MESSAGE</div>
@@ -305,6 +319,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                                 }
                                                 setSelectedWorkflows(newSelections);
                                             }}
+                                            displayISOFormatStart={storedDisplayISOFormatStart}
+                                            displayISOFormatFinished={storedDisplayISOFormatFinished}
                                         />
                                     );
                                 })}

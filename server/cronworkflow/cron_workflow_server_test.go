@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -59,39 +60,35 @@ metadata:
 			Namespace:    "my-ns",
 			CronWorkflow: &cronWf,
 		})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, created)
-			assert.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
-			assert.Contains(t, created.Labels, common.LabelKeyCreator)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, created)
+		assert.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
+		assert.Contains(t, created.Labels, common.LabelKeyCreator)
 	})
 	t.Run("LintWorkflow", func(t *testing.T) {
 		wf, err := server.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{
 			Namespace:    "my-ns",
 			CronWorkflow: &cronWf,
 		})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, wf)
-			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
-			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})
-		if assert.NoError(t, err) {
-			assert.Len(t, cronWfs.Items, 1)
-		}
+		require.NoError(t, err)
+		assert.Len(t, cronWfs.Items, 1)
 	})
 	t.Run("GetCronWorkflow", func(t *testing.T) {
 		t.Run("Labelled", func(t *testing.T) {
 			cronWf, err := server.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{Namespace: "my-ns", Name: "my-name"})
-			if assert.NoError(t, err) {
-				assert.NotNil(t, cronWf)
-			}
+			require.NoError(t, err)
+			assert.NotNil(t, cronWf)
 		})
 		t.Run("Unlabelled", func(t *testing.T) {
 			_, err := server.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{Namespace: "my-ns", Name: "unlabelled"})
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 	})
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
@@ -99,27 +96,26 @@ metadata:
 			x := cronWf.DeepCopy()
 			x.Spec.Schedule = "invalid"
 			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: x})
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 		t.Run("Labelled", func(t *testing.T) {
 			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &cronWf})
-			if assert.NoError(t, err) {
-				assert.NotNil(t, cronWf)
-			}
+			require.NoError(t, err)
+			assert.NotNil(t, cronWf)
 		})
 		t.Run("Unlabelled", func(t *testing.T) {
 			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &unlabelled})
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 	})
 	t.Run("DeleteCronWorkflow", func(t *testing.T) {
 		t.Run("Labelled", func(t *testing.T) {
 			_, err := server.DeleteCronWorkflow(ctx, &cronworkflowpkg.DeleteCronWorkflowRequest{Name: "my-name", Namespace: "my-ns"})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 		t.Run("Unlabelled", func(t *testing.T) {
 			_, err := server.DeleteCronWorkflow(ctx, &cronworkflowpkg.DeleteCronWorkflowRequest{Name: "unlabelled", Namespace: "my-ns"})
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 	})
 }

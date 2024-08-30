@@ -62,7 +62,7 @@ func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
 		})
 	}
 	name := RecoverWorkflowNameFromSelectorStringIfAny("whatever=whalesay")
-	assert.Equal(t, name, "")
+	assert.Equal(t, "", name)
 	assert.NotPanics(t, func() {
 		_ = RecoverWorkflowNameFromSelectorStringIfAny("whatever")
 	})

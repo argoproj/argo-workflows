@@ -18,6 +18,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDetermineAccountName(t *testing.T) {
@@ -33,9 +34,9 @@ func TestDetermineAccountName(t *testing.T) {
 	}
 	for _, u := range validUrls {
 		u, err := url.Parse(u)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		accountName, err := determineAccountName(u)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "accountname", accountName)
 	}
 
@@ -44,9 +45,9 @@ func TestDetermineAccountName(t *testing.T) {
 	}
 	for _, u := range invalidUrls {
 		u, err := url.Parse(u)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		accountName, err := determineAccountName(u)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Equal(t, "", accountName)
 	}
 }
@@ -62,11 +63,11 @@ func TestArtifactDriver_WithServiceKey_DownloadDirectory_Subdir(t *testing.T) {
 
 	// ensure container exists
 	containerClient, err := driver.newAzureContainerClient()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = containerClient.Create(context.Background(), nil)
 	var responseError *azcore.ResponseError
 	if err != nil && !(errors.As(err, &responseError) && responseError.ErrorCode == "ContainerAlreadyExists") {
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	// test read/write operations to the azurite container  using the container client
@@ -106,7 +107,7 @@ func TestArtifactDriver_WithSASToken_DownloadDirectory_Subdir(t *testing.T) {
 
 	// ensure container exists
 	containerClient, err := driver.newAzureContainerClient()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// test read/write operations to the azurite container  using the container client
 	testContainerClientReadWriteOperations(t, containerClient, driver)
@@ -118,7 +119,7 @@ func testContainerClientReadWriteOperations(t *testing.T, containerClient *conta
 	// download the dir, containing a subdir
 	blobClient := containerClient.NewBlockBlobClient("dir/subdir/file-in-subdir.txt")
 	_, err := blobClient.UploadBuffer(context.Background(), []byte("foo"), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	azureArtifact := wfv1.AzureArtifact{
 		Blob: "dir",
@@ -130,7 +131,7 @@ func testContainerClientReadWriteOperations(t *testing.T, containerClient *conta
 	}
 	dstDir := t.TempDir()
 	err = driver.DownloadDirectory(containerClient, &argoArtifact, filepath.Join(dstDir, "dir"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, filepath.Join(dstDir, "dir", "subdir", "file-in-subdir.txt"))
 }
 

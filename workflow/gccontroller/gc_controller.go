@@ -40,7 +40,7 @@ type Controller struct {
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
+func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, retentionPolicy *config.RetentionPolicy) *Controller {
 	orderedQueue := map[wfv1.WorkflowPhase]*gcHeap{
 		wfv1.WorkflowFailed:    NewHeap(),
 		wfv1.WorkflowError:     NewHeap(),
@@ -49,7 +49,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	controller := &Controller{
 		wfclientset:     wfClientset,
 		wfInformer:      wfInformer,
-		workqueue:       metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
+		workqueue:       metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "workflow_ttl_queue"),
 		clock:           clock.RealClock{},
 		metrics:         metrics,
 		orderedQueue:    orderedQueue,

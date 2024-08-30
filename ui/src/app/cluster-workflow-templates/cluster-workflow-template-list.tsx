@@ -10,7 +10,7 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
-import {Timestamp} from '../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -20,6 +20,7 @@ import {services} from '../shared/services';
 import {ClusterWorkflowTemplateCreator} from './cluster-workflow-template-creator';
 
 import './cluster-workflow-template-list.scss';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 export function ClusterWorkflowTemplateList({history, location}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);
@@ -51,6 +52,8 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
 
     useCollectEvent('openedClusterWorkflowTemplateList');
 
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.CLUSTER_WORKFLOW_TEMPLATE_LIST);
+
     function renderTemplates() {
         if (error) {
             return <ErrorNotice error={error} />;
@@ -75,7 +78,9 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
                         <div className='columns small-5'>NAME</div>
-                        <div className='columns small-3'>CREATED</div>
+                        <div className='columns small-3'>
+                            CREATED <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                        </div>
                     </div>
                     {templates.map(t => (
                         <Link className='row argo-table-list__row' key={t.metadata.uid} to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
@@ -84,7 +89,7 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                             </div>
                             <div className='columns small-5'>{t.metadata.name}</div>
                             <div className='columns small-3'>
-                                <Timestamp date={t.metadata.creationTimestamp} />
+                                <Timestamp date={t.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
                             </div>
                         </Link>
                     ))}
