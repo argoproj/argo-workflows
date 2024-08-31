@@ -2,7 +2,7 @@
 
 You can restrict the number of parallel workflow executions.
 
-## Controller level
+## Controller-level
 
 You can limit the total number of parallel workflow executions in the [workflow controller ConfigMap](workflow-controller-configmap.yaml):
 
@@ -35,7 +35,7 @@ spec:
   ...
 ````
 
-Workflows that have not started due to controller level parallelism will be queued: Workflows with higher priority numbers will start before lower priority ones.
+Workflows that have not started due to Controller-level parallelism will be queued: workflows with higher priority numbers will start before lower priority ones.
 The default workflow priority is `0`.
 
 ## Synchronization
