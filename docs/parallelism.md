@@ -23,7 +23,7 @@ data:
 
 ### Priority
 
-You can set a priority on Workflows using the `priority` field in the specification
+You can set a `priority` on workflows:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
