@@ -108,6 +108,10 @@ You can use the `TARGET_PLATFORM` environment variable to compile images for spe
 make argoexec-image TARGET_PLATFORM=linux/arm64,linux/amd64
 ```
 
+!!! Note "Error `expected 'package', found signal_darwin`"
+    You may see this error if symlinks are not configured for your `git` installation.
+    Run `git config core.symlinks true` to correct this.
+
 To also start the API on <http://localhost:2746>:
 
 ```bash
