@@ -5149,7 +5149,7 @@ ObjectReference contains enough information to let you inspect or modify the ref
 
 ## Duration
 
-Duration is a wrapper around time.Duration which supports correct marshaling to YAML and JSON. In particular, it marshals into strings, which can be used as map keys in json.
+_No description available_
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -5158,11 +5158,6 @@ Duration is a wrapper around time.Duration which supports correct marshaling to 
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy.yaml)
 </details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`duration`|`string`|_No description available_|
 
 ## LabelSelector
 
