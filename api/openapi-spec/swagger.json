@@ -10171,7 +10171,7 @@
       "properties": {
         "deleteDelayDuration": {
           "description": "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+          "type": "string"
         },
         "labelSelector": {
           "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.",

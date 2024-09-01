@@ -6229,8 +6229,8 @@
       "description": "PodGC describes how to delete completed pods as they complete",
       "properties": {
         "deleteDelayDuration": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration",
-          "description": "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted."
+          "description": "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.",
+          "type": "string"
         },
         "labelSelector": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
