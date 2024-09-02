@@ -53,18 +53,14 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 	return informer
 }
 
-func podAbsentTimeout(node *wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("POD_ABSENT_TIMEOUT", 2*time.Minute)
+func recentlyDeleted(node *wfv1.NodeStatus) bool {
+	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 10*time.Second)
 }
 
-func (woc *wfOperationCtx) taskResultReconciliation() error {
+func (woc *wfOperationCtx) taskResultReconciliation() {
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
 
-	podMap, err := woc.getAllWorkflowPodsMap()
-	if err != nil {
-		return err
-	}
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
 		resultName := result.GetName()
@@ -73,7 +69,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 		woc.log.Debugf("task result name:\n%+v", resultName)
 
 		label := result.Labels[common.LabelKeyReportOutputsCompleted]
-
 		// If the task result is completed, set the state to true.
 		if label == "true" {
 			woc.log.Debugf("Marking task result complete %s", resultName)
@@ -83,32 +78,24 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
 
-		_, foundPod := podMap[result.Name]
-		node, err := woc.wf.Status.Nodes.Get(result.Name)
-		if err != nil {
-			if foundPod {
-				// how does this path make any sense?
-				// pod created but informer not yet updated
-				woc.log.Errorf("couldn't obtain node for %s, but found pod, this is not expected, doing nothing", result.Name)
-			}
-			continue
-		}
-
-		if !foundPod && !node.Completed() {
-			if podAbsentTimeout(node) {
-				woc.log.Infof("Determined controller should timeout for %s", result.Name)
-				woc.wf.Status.MarkTaskResultComplete(resultName)
-
-				woc.markNodePhase(node.Name, wfv1.NodeFailed, "pod was absent")
-			} else {
-				woc.log.Debugf("Determined controller shouldn't timeout %s", result.Name)
-			}
-		}
-
 		nodeID := result.Name
 		old, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
 			continue
+		}
+		// Mark task result as completed if it has no chance to be completed.
+		if label == "false" && old.IsPodDeleted() {
+			if recentlyDeleted(old) {
+				woc.log.WithField("nodeID", nodeID).Debug("Wait for marking task result as completed because pod is recently deleted.")
+				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
+				// In this case, the workflow will only be requeued after the resync period (20m). This means
+				// workflow will not update for 20m. Requeuing here prevents that happening.
+				woc.requeue()
+				continue
+			} else {
+				woc.log.WithField("nodeID", nodeID).Info("Marking task result as completed because pod has been deleted for a while.")
+				woc.wf.Status.MarkTaskResultComplete(nodeID)
+			}
 		}
 		newNode := old.DeepCopy()
 		if result.Outputs.HasOutputs() {
@@ -131,5 +118,4 @@ func (woc *wfOperationCtx) taskResultReconciliation() error {
 			woc.updated = true
 		}
 	}
-	return nil
 }

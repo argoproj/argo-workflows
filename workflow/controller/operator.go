@@ -278,10 +278,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.addArtifactGCFinalizer()
 
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
-	err = woc.taskResultReconciliation()
-	if err != nil {
-		woc.markWorkflowError(ctx, fmt.Errorf("failed to reconcile: %v", err))
-	}
+	woc.taskResultReconciliation()
 
 	// Do artifact GC if task result reconciliation is complete.
 	if woc.wf.Status.Fulfilled() {
@@ -1268,7 +1265,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			}
 
 			if recentlyStarted {
-				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
+				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
 				// workflow will not update for 20m. Requeuing here prevents that happening.
 				woc.requeue()
@@ -1356,19 +1353,6 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 		pods[i] = pod
 	}
 	return pods, nil
-}
-
-func (woc *wfOperationCtx) getAllWorkflowPodsMap() (map[string]*apiv1.Pod, error) {
-	podList, err := woc.getAllWorkflowPods()
-	if err != nil {
-		return nil, err
-	}
-	podMap := make(map[string]*apiv1.Pod)
-	for _, pod := range podList {
-		nodeID := woc.nodeID(pod)
-		podMap[nodeID] = pod
-	}
-	return podMap, nil
 }
 
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
