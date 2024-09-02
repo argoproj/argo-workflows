@@ -69,7 +69,16 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 			continue
 		}
 		wf := event.Object
-		if wf != nil && !wf.Status.FinishedAt.IsZero() {
+
+		isWorkflowInTerminalState := func(wf *wfv1.Workflow) bool {
+			if !wf.Status.FinishedAt.IsZero() {
+				return true
+			} else {
+				return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError || wf.Status.Phase == wfv1.WorkflowSucceeded
+			}
+		}
+
+		if wf != nil && isWorkflowInTerminalState(wf) {
 			if !quiet {
 				fmt.Printf("%s %s at %v\n", wfName, wf.Status.Phase, wf.Status.FinishedAt)
 			}
