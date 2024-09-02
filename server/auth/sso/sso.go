@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"net/http"
@@ -109,8 +108,20 @@ func newSso(
 	if err != nil {
 		return nil, err
 	}
-	// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.
-	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}, Proxy: http.ProxyFromEnvironment}}
+
+	httpClientConfig := HttpClientConfig{
+		ClientCert:         c.ClientCert,
+		ClientKey:          c.ClientKey,
+		InsecureSkipVerify: c.InsecureSkipVerify,
+		CACert:             c.CACert,
+	}
+
+	// Create http client
+	httpClient, err := createHttpClient(httpClientConfig)
+	if err != nil {
+		log.Fatalf("failed to create HTTP client: %v", err)
+	}
+
 	oidcContext := oidc.ClientContext(ctx, httpClient)
 	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
 	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
