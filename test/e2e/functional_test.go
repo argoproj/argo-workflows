@@ -950,7 +950,7 @@ spec:
     - name: whalesay
       script:
         image: argoproj/argosay:v2
-        command: ["bash"]
+        command: ["bash", "-c"]
         source: |
           ls -l /argo/staging
           cat /argo/stahing/script
