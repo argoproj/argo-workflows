@@ -36,7 +36,7 @@ spec:
 ````
 
 Workflows that have not started due to Controller-level parallelism will be queued: workflows with higher priority numbers will start before lower priority ones.
-The default workflow priority is `0`.
+The default is `priority: 0`.
 
 ## Synchronization
 
