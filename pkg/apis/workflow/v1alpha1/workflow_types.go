@@ -133,6 +133,13 @@ const (
 	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
 )
 
+type HoldingNameVersion int
+
+const (
+	HoldingNameV1 HoldingNameVersion = 1
+	HoldingNameV2 HoldingNameVersion = 2
+)
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -3780,13 +3787,26 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 	return true
 }
 
+func GetHolderKeyVersion() HoldingNameVersion {
+	switch os.Getenv("HOLDER_KEY_VERSION") {
+	case "v2":
+		return HoldingNameV2
+	default:
+		return HoldingNameV1
+	}
+}
+func getHoldingNameV2OrV1(holderKey string) string {
+	switch GetHolderKeyVersion() {
+	case HoldingNameV2:
+		return getHoldingNameV2(holderKey)
+	default:
+		return getHoldingNameV1(holderKey)
+	}
+}
+
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := getHoldingNameV2OrV1(holderKey)
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 		return true
@@ -3800,11 +3820,8 @@ func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolder
 
 func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := getHoldingNameV2OrV1(holderKey)
+
 	if i >= 0 {
 		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
 		ss.Holding[i] = semaphoreHolding
@@ -3867,7 +3884,7 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 	if i < 0 {
 		ms.Waiting = append(ms.Waiting, MutexHolding{Mutex: lockKey, Holder: currentHolders[0]})
 		return true
-	} else if mutexWaiting.Holder != currentHolders[0] {
+	} else if !(mutexWaiting.Holder == currentHolders[0]) {
 		mutexWaiting.Holder = currentHolders[0]
 		ms.Waiting[i] = mutexWaiting
 		return true
@@ -3875,13 +3892,28 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 	return false
 }
 
+func getHoldingNameV1(holderKey string) string {
+	items := strings.Split(holderKey, "/")
+	return items[len(items)-1]
+}
+
+// wf.Namespace/wf.Name
+// or wf.Namespace/wf.Name/nodeName
+func getHoldingNameV2(holderKey string) string {
+	return holderKey
+}
+
+func CheckHolderKeyVersion(holderKey string) HoldingNameVersion {
+	items := strings.Split(holderKey, "/")
+	if len(items) == 2 || len(items) == 3 {
+		return HoldingNameV2
+	}
+	return HoldingNameV1
+}
+
 func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, mutexHolding := ms.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := getHoldingNameV2OrV1(holderKey)
 	if i < 0 {
 		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
 		return true
@@ -3895,11 +3927,7 @@ func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []
 
 func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
 	i, holder := ms.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := getHoldingNameV2OrV1(holderKey)
 	if i >= 0 && holder.Holder == holdingName {
 		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
 		return true

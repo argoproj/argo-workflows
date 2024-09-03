@@ -1097,6 +1097,7 @@ spec:
 
 	ctx := context.Background()
 
+	os.Setenv("HOLDER_KEY_VERSION", "v1")
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 

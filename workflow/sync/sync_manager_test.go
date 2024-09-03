@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -864,4 +865,182 @@ status:
 		assert.NotNil(wf.Status.Synchronization.Semaphore)
 	})
 
+}
+
+func TestMutexMigration(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	kube := fake.NewSimpleClientset()
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+
+	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		// nextKey = key
+	}, WorkflowExistenceFunc)
+
+	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+
+	t.Run("TestBroken", func(t *testing.T) {
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfMutex1 := wfMutex.DeepCopy()
+		wfMutex1.Name = "test1"
+		os.Setenv("HOLDER_KEY_VERSION", "v1")
+		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex1, wfMutex1.Name, wfMutex1.Spec.Synchronization)
+		require.NoError(err)
+		assert.True(status)
+
+		require.Len(wfMutex1.Status.Synchronization.Mutex.Holding, 1)
+		holderKey := getHolderKey(wfMutex1, wfMutex1.Name)
+		items := strings.Split(holderKey, "/")
+		holdingName := items[len(items)-1]
+		assert.Equal(wfMutex1.Status.Synchronization.Mutex.Holding[0].Holder, holdingName)
+
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfs := []wfv1.Workflow{*wfMutex1.DeepCopy()}
+		concurrenyMgr.Initialize(wfs)
+
+		lockName, err := GetLockName(wfMutex1.Spec.Synchronization, wfMutex1.Namespace)
+		require.NoError(err)
+
+		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
+		require.True(found)
+
+		holders := sem.getCurrentHolders()
+		require.Len(holders, 1)
+
+		// PROVE BUG TO EXIST
+		assert.NotEqual(holderKey, holders[0])
+
+		// We should already have this lock since we acquired it above
+		status, _, _, err = concurrenyMgr.TryAcquire(wfMutex1, wfMutex1.Name, wfMutex.Spec.Synchronization)
+		require.NoError(err)
+		// BUG: https://github.com/argoproj/argo-workflows/issues/8684
+		assert.False(status)
+	})
+
+	t.Run("RunMigration", func(t *testing.T) {
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfMutex2 := wfMutex.DeepCopy()
+		wfMutex2.Name = "test1"
+		os.Setenv("HOLDER_KEY_VERSION", "v1")
+		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex2, wfMutex2.Name, wfMutex2.Spec.Synchronization)
+		require.NoError(err)
+		assert.True(status)
+
+		require.Len(wfMutex2.Status.Synchronization.Mutex.Holding, 1)
+		holderKey := getHolderKey(wfMutex2, wfMutex2.Name)
+		items := strings.Split(holderKey, "/")
+		holdingName := items[len(items)-1]
+		assert.Equal(wfMutex2.Status.Synchronization.Mutex.Holding[0].Holder, holdingName)
+
+		os.Setenv("HOLDER_KEY_VERSION", "v2")
+
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfs := []wfv1.Workflow{*wfMutex2.DeepCopy()}
+		concurrenyMgr.Initialize(wfs)
+
+		lockName, err := GetLockName(wfMutex2.Spec.Synchronization, wfMutex2.Namespace)
+		require.NoError(err)
+
+		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
+		require.True(found)
+
+		holders := sem.getCurrentHolders()
+		require.Len(holders, 1)
+
+		// PROVE: bug absent
+		assert.Equal(holderKey, holders[0])
+
+		// We should already have this lock since we acquired it above
+		status, _, _, err = concurrenyMgr.TryAcquire(wfMutex2, wfMutex2.Name, wfMutex.Spec.Synchronization)
+		require.NoError(err)
+		// BUG NOT PRESENT: https://github.com/argoproj/argo-workflows/issues/8684
+		assert.True(status)
+	})
+}
+
+func TestV2Mutex(t *testing.T) {
+	os.Setenv("HOLDER_KEY_VERSION", "v2")
+	assert := assert.New(t)
+	require := require.New(t)
+	kube := fake.NewSimpleClientset()
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+
+	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		// nextKey = key
+	}, WorkflowExistenceFunc)
+
+	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+
+	t.Run("AcquireWorks", func(t *testing.T) {
+		wfMutex1 := wfMutex.DeepCopy()
+		wfMutex1.Name = "test1"
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+
+		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex1, wfMutex1.Name, wfMutex.Spec.Synchronization)
+		require.NoError(err)
+		assert.True(status)
+		assert.Len(concurrenyMgr.syncLockMap, 1)
+
+		lockName, err := GetLockName(wfMutex1.Spec.Synchronization, wfMutex1.Namespace)
+		require.NoError(err)
+		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
+		require.True(found)
+
+		holders := sem.getCurrentHolders()
+		require.Len(holders, 1)
+
+	})
+
+	t.Run("ReleaseWorks", func(t *testing.T) {
+		wfMutex2 := wfMutex.DeepCopy()
+		wfMutex2.Name = "test2"
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex2, wfMutex2.Name, wfMutex.Spec.Synchronization)
+		require.NoError(err)
+		assert.True(status)
+		assert.Len(concurrenyMgr.syncLockMap, 1)
+		// resuse data from previous test
+		concurrenyMgr.Release(wfMutex2, wfMutex2.Name, wfMutex.Spec.Synchronization)
+	})
+}
+
+func TestV2Semaphore(t *testing.T) {
+	os.Setenv("HOLDER_KEY_VERSION", "v2")
+	assert := assert.New(t)
+	require := require.New(t)
+	kube := fake.NewSimpleClientset()
+
+	var cm v1.ConfigMap
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	cm.Data["workflow"] = "2"
+	ctx := context.Background()
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	require.NoError(err)
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+
+	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		// nextKey = key
+	}, WorkflowExistenceFunc)
+
+	wfSemaphore := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+
+	t.Run("AcquireWorks", func(t *testing.T) {
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfSem1 := wfSemaphore.DeepCopy()
+		wfSem1.Name = "test1"
+
+		status, _, _, err := concurrenyMgr.TryAcquire(wfSem1, wfSem1.Name, wfSem1.Spec.Synchronization)
+		require.NoError(err)
+		assert.True(status)
+	})
+
+	t.Run("ReleaseWorks", func(t *testing.T) {
+
+	})
+
+	t.Run("ReleaseAllWorks", func(t *testing.T) {
+	})
 }
