@@ -11,6 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
@@ -36,6 +37,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 			options.ResourceVersion = ""
 		},
 	)
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(new interface{}) {
@@ -52,10 +54,14 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 	return informer
 }
 
-func (woc *wfOperationCtx) taskResultReconciliation() {
+func recentlyDeleted(node *wfv1.NodeStatus) bool {
+	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 10*time.Second)
+}
 
+func (woc *wfOperationCtx) taskResultReconciliation() {
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
+
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
 		resultName := result.GetName()
@@ -63,11 +69,12 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		woc.log.Debugf("task result:\n%+v", result)
 		woc.log.Debugf("task result name:\n%+v", resultName)
 
+		label := result.Labels[common.LabelKeyReportOutputsCompleted]
 		// If the task result is completed, set the state to true.
-		if result.Labels[common.LabelKeyReportOutputsCompleted] == "true" {
+		if label == "true" {
 			woc.log.Debugf("Marking task result complete %s", resultName)
 			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else {
+		} else if label == "false" {
 			woc.log.Debugf("Marking task result incomplete %s", resultName)
 			woc.wf.Status.MarkTaskResultIncomplete(resultName)
 		}
@@ -76,6 +83,20 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		old, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
 			continue
+		}
+		// Mark task result as completed if it has no chance to be completed.
+		if label == "false" && old.IsPodDeleted() {
+			if recentlyDeleted(old) {
+				woc.log.WithField("nodeID", nodeID).Debug("Wait for marking task result as completed because pod is recently deleted.")
+				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
+				// In this case, the workflow will only be requeued after the resync period (20m). This means
+				// workflow will not update for 20m. Requeuing here prevents that happening.
+				woc.requeue()
+				continue
+			} else {
+				woc.log.WithField("nodeID", nodeID).Info("Marking task result as completed because pod has been deleted for a while.")
+				woc.wf.Status.MarkTaskResultComplete(nodeID)
+			}
 		}
 		newNode := old.DeepCopy()
 		if result.Outputs.HasOutputs() {
@@ -90,7 +111,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		if result.Progress.IsValid() {
 			newNode.Progress = result.Progress
 		}
-		if !reflect.DeepEqual(&old, newNode) {
+		if !reflect.DeepEqual(old, newNode) {
 			woc.log.
 				WithField("nodeID", nodeID).
 				Info("task-result changed")

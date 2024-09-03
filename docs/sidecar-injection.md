@@ -15,17 +15,12 @@ See [#1282](https://github.com/argoproj/argo-workflows/issues/1282).
 
 Key:
 
-* Unsupported - this executor is no longer supported
 * Any - we can kill any image
 * KubectlExec - we kill images by running `kubectl exec`
 
 | Executor | Sidecar | Injected Sidecar |
 |---|---|---|
-| `docker` | Any | Unsupported |
 | `emissary` | Any | KubectlExec |
-| `k8sapi` | Shell | KubectlExec |
-| `kubelet` | Shell | KubectlExec |
-| `pns` | Any | Any |
 
 ## How We Kill Sidecars Using `kubectl exec`
 

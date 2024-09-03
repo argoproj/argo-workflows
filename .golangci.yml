@@ -1,18 +1,6 @@
 # https://golangci-lint.run/usage/quick-start/
 run:
   timeout: 12m
-  skip-dirs:
-    - dist
-    - docs
-    - examples
-    - hack
-    - manifests
-    - pkg/client
-    - sdks
-    - ui
-    - vendor
-  skip-files:
-    - server/static/files.go
   build-tags:
     - api
     - cli
@@ -45,6 +33,7 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
+    - testifylint
     - typecheck
     - unparam
     - unused
@@ -66,3 +55,15 @@ issues:
   exclude-rules:
     - path: server/artifacts/artifact_server_test.go
       text: "response body must be closed"
+  exclude-dirs:
+    - dist
+    - docs
+    - examples
+    - hack
+    - manifests
+    - pkg/client
+    - sdks
+    - ui
+    - vendor
+  exclude-files:
+    - server/static/files.go

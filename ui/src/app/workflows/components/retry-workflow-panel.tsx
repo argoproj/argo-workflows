@@ -1,6 +1,8 @@
-import {Checkbox} from 'argo-ui';
-import React, {useState} from 'react';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
+import React, {useContext, useState} from 'react';
+
 import {Parameter, RetryOpts, Workflow} from '../../../models';
+import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {ParametersInput} from '../../shared/components/parameters-input';
@@ -14,6 +16,7 @@ interface Props {
 }
 
 export function RetryWorkflowPanel(props: Props) {
+    const {navigation} = useContext(Context);
     const [overrideParameters, setOverrideParameters] = useState(false);
     const [restartSuccessful, setRestartSuccessful] = useState(false);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflow.spec.arguments.parameters || [])));
@@ -37,7 +40,7 @@ export function RetryWorkflowPanel(props: Props) {
                 props.isArchived && !props.isWorkflowInCluster
                     ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
                     : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
-            document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
+            navigation.goto(uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}#`)); // add # at the end to reset query params to close panel
         } catch (err) {
             setError(err);
             setIsSubmitting(false);

@@ -56,6 +56,7 @@ jobs:
             e2e-tests:
               - *tests
               # plus manifests and SDKs that are used in E2E tests
+              - Dockerfile
               - manifests/**
               - sdks/**
             codegen:
@@ -113,15 +114,17 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.22"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
         with:
           fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   tests-windows:
     name: Windows Unit Tests
@@ -133,7 +136,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.22"
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
       - run: go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
@@ -142,15 +145,23 @@ jobs:
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
         with:
           fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  argoexec-image:
-    name: argoexec-image
+  argo-images:
+    name: argo-images
     # needs: [ lint ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: argoexec
+          - image: argocli
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
@@ -158,21 +169,21 @@ jobs:
         uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
         with:
           context: .
-          tags: quay.io/argoproj/argoexec:latest
-          outputs: type=docker,dest=/tmp/argoexec_image.tar
-          target: argoexec
+          tags: quay.io/argoproj/${{matrix.image}}:latest
+          outputs: type=docker,dest=/tmp/${{matrix.image}}_image.tar
+          target: ${{matrix.image}}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
-          name: argoexec
-          path: /tmp/argoexec_image.tar
+          name: ${{matrix.image}}_image.tar
+          path: /tmp/${{matrix.image}}_image.tar
           if-no-files-found: error
 
   e2e-tests:
     name: E2E Tests
-    needs: [ changed-files, argoexec-image ]
+    needs: [ changed-files, argo-images ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -204,21 +215,21 @@ jobs:
           - test: test-python-sdk
             profile: minimal
           - test: test-executor
-            install_k3s_version: v1.25.11-k3s1
+            install_k3s_version: v1.28.11+k3s1
             profile: minimal
           - test: test-corefunctional
-            install_k3s_version: v1.25.11-k3s1
+            install_k3s_version: v1.28.11+k3s1
             profile: minimal
           - test: test-functional
-            install_k3s_version: v1.25.11-k3s1
+            install_k3s_version: v1.28.11+k3s1
             profile: minimal
     steps:
-      - name: Install socat (needed by Kubernetes v1.25)
+      - name: Install socat (needed by Kubernetes)
         run: sudo apt-get -y install socat
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.22"
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
@@ -236,7 +247,7 @@ jobs:
       - name: Install and start K3S
         run: |
           if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
-            export INSTALL_K3S_VERSION=v1.27.2+k3s1
+            export INSTALL_K3S_VERSION=v1.30.2+k3s1
           else
             export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
           fi
@@ -247,13 +258,16 @@ jobs:
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
-      - name: Download argoexec image
+      - name: Download images
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
-          name: argoexec
+          pattern: '*_image.tar'
           path: /tmp
-      - name: Load argoexec image
-        run: docker load < /tmp/argoexec_image.tar
+      - name: Load images
+        run: |
+          set -eux
+          docker load < /tmp/argoexec_image.tar/argoexec_image.tar
+          docker load < /tmp/argocli_image.tar/argocli_image.tar
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -314,9 +328,9 @@ jobs:
           set -eux
           kubectl get pods -l workflows.argoproj.io/workflow
           kubectl describe pods -l workflows.argoproj.io/workflow
-      - name: Failure debug - Wait container logs
+      - name: Failure debug - Workflow Pod logs
         if: ${{ failure() }}
-        run: kubectl logs -c wait -l workflows.argoproj.io/workflow --prefix
+        run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
 
   # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
   # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
@@ -348,7 +362,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.22"
           cache: true
       - name: Install protoc
         run: |
@@ -385,7 +399,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.22"
           cache: true
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
@@ -415,15 +429,9 @@ jobs:
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
       - run: yarn --cwd ui deduplicate
-      # Deduplicate UI deps for dependabot PRs
-      - if: github.actor == 'dependabot[bot]'
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add ui/yarn.lock
-          git commit -s -m 'chore: deduplicate yarn.lock'
-          git push
-      - run: git diff --exit-code
+      # if lint or deduplicate make changes that are not in the PR, fail the build
+      - name: Check if lint & deduplicate made changes not present in the PR
+        run: git diff --exit-code
       # check to see if it'll start (but not if it'll render)
       - run: yarn --cwd ui start &
       - run: until curl http://localhost:8080 > /dev/null ; do sleep 10s ; done

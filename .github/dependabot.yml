@@ -15,12 +15,22 @@ updates:
     labels:
       - type/dependencies
       - go
+    commit-message:
+      prefix: chore(deps)
 
   - package-ecosystem: "npm"
     directory: "/ui"
     schedule:
       interval: "weekly"
       day: "saturday"
+    # split devDeps and prod deps as typically only prod deps need security backports
+    groups:
+      devDeps:
+        applies-to: security-updates
+        dependency-type: "development"
+      deps:
+        applies-to: security-updates
+        dependency-type: "production"
     ignore:
       - dependency-name: raw-loader
       - dependency-name: style-loader
@@ -31,6 +41,9 @@ updates:
     labels:
       - type/dependencies
       - javascript
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
 
   # build / CI dependencies
   - package-ecosystem: "pip"
@@ -43,6 +56,8 @@ updates:
     labels:
       - type/dependencies
       - python
+    commit-message:
+      prefix: chore(deps)
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -58,3 +73,5 @@ updates:
     labels:
       - type/dependencies
       - github_actions
+    commit-message:
+      prefix: chore(deps-dev)

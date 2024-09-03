@@ -86,6 +86,7 @@ class IoArgoprojEventsV1alpha1TriggerParameterSource(ModelNormal):
             'data_key': (str,),  # noqa: E501
             'data_template': (str,),  # noqa: E501
             'dependency_name': (str,),  # noqa: E501
+            'use_raw_data': (bool,),  # noqa: E501
             'value': (str,),  # noqa: E501
         }
 
@@ -100,6 +101,7 @@ class IoArgoprojEventsV1alpha1TriggerParameterSource(ModelNormal):
         'data_key': 'dataKey',  # noqa: E501
         'data_template': 'dataTemplate',  # noqa: E501
         'dependency_name': 'dependencyName',  # noqa: E501
+        'use_raw_data': 'useRawData',  # noqa: E501
         'value': 'value',  # noqa: E501
     }
 
@@ -149,6 +151,7 @@ class IoArgoprojEventsV1alpha1TriggerParameterSource(ModelNormal):
             data_key (str): DataKey is the JSONPath of the event's (JSON decoded) data key DataKey is a series of keys separated by a dot. A key may contain wildcard characters '*' and '?'. To access an array value use the index as the key. The dot and wildcard characters can be escaped with '\\\\'. See https://github.com/tidwall/gjson#path-syntax for more information on how to use this.. [optional]  # noqa: E501
             data_template (str): [optional]  # noqa: E501
             dependency_name (str): DependencyName refers to the name of the dependency. The event which is stored for this dependency is used as payload for the parameterization. Make sure to refer to one of the dependencies you have defined under Dependencies list.. [optional]  # noqa: E501
+            use_raw_data (bool): [optional]  # noqa: E501
             value (str): Value is the default literal value to use for this parameter source This is only used if the DataKey is invalid. If the DataKey is invalid and this is not defined, this param source will produce an error.. [optional]  # noqa: E501
         """
 
@@ -236,6 +239,7 @@ class IoArgoprojEventsV1alpha1TriggerParameterSource(ModelNormal):
             data_key (str): DataKey is the JSONPath of the event's (JSON decoded) data key DataKey is a series of keys separated by a dot. A key may contain wildcard characters '*' and '?'. To access an array value use the index as the key. The dot and wildcard characters can be escaped with '\\\\'. See https://github.com/tidwall/gjson#path-syntax for more information on how to use this.. [optional]  # noqa: E501
             data_template (str): [optional]  # noqa: E501
             dependency_name (str): DependencyName refers to the name of the dependency. The event which is stored for this dependency is used as payload for the parameterization. Make sure to refer to one of the dependencies you have defined under Dependencies list.. [optional]  # noqa: E501
+            use_raw_data (bool): [optional]  # noqa: E501
             value (str): Value is the default literal value to use for this parameter source This is only used if the DataKey is invalid. If the DataKey is invalid and this is not defined, this param source will produce an error.. [optional]  # noqa: E501
         """
 

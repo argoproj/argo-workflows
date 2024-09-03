@@ -48,7 +48,7 @@ See [managed namespace](managed-namespace.md).
 ### Base HREF
 
 If the server is running behind reverse proxy with a sub-path different from `/` (for example,
-`/argo`), you can set an alternative sub-path with the `--basehref` flag or the `BASE_HREF`
+`/argo`), you can set an alternative sub-path with the `--base-href` flag or the `ARGO_BASE_HREF`
 environment variable.
 
 You probably now should [read how to set-up an ingress](#ingress)
@@ -97,7 +97,7 @@ argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 
 You can get ingress working as follows:
 
-Add `BASE_HREF` as environment variable to `deployment/argo-server`. Do not forget to add a trailing '/' character.
+Add `ARGO_BASE_HREF` as environment variable to `deployment/argo-server`. Do not forget to add a trailing '/' character.
 
 ```yaml
 ---
@@ -118,7 +118,7 @@ spec:
       - args:
         - server
         env:
-          - name: BASE_HREF
+          - name: ARGO_BASE_HREF
             value: /argo/
         image: argoproj/argocli:latest
         name: argo-server
@@ -133,7 +133,7 @@ Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
 >uses `nginx.ingress.kubernetes.io/backend-protocol`
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: argo-server
@@ -143,12 +143,15 @@ metadata:
     nginx.ingress.kubernetes.io/backend-protocol: https # ingress-nginx
 spec:
   rules:
-    - http:
-        paths:
-          - backend:
-              serviceName: argo-server
-              servicePort: 2746
-            path: /argo(/|$)(.*)
+  - http:
+      paths:
+      - path: /argo(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: argo-server
+            port:
+              number: 2746
 ```
 
 [Learn more](https://github.com/argoproj/argo-workflows/issues/3080)

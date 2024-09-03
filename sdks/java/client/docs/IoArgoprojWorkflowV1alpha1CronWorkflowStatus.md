@@ -10,10 +10,10 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **active** | [**List&lt;io.kubernetes.client.openapi.models.V1ObjectReference&gt;**](io.kubernetes.client.openapi.models.V1ObjectReference.md) | Active is a list of active workflows stemming from this CronWorkflow | 
 **conditions** | [**List&lt;IoArgoprojWorkflowV1alpha1Condition&gt;**](IoArgoprojWorkflowV1alpha1Condition.md) | Conditions is a list of conditions the CronWorkflow may have | 
-**failed** | **Integer** | Failed is a counter of how many times a child workflow terminated in failed or errored state | 
+**failed** | **Integer** | v3.6 and after: Failed counts how many times child workflows failed | 
 **lastScheduledTime** | **java.time.Instant** |  | 
-**phase** | **String** | Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running | 
-**succeeded** | **Integer** | Succeeded is a counter of how many times the child workflows had success | 
+**phase** | **String** | v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true | 
+**succeeded** | **Integer** | v3.6 and after: Succeeded counts how many times child workflows succeeded | 
 
 
 

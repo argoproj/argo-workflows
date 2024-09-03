@@ -1,4 +1,4 @@
-import {Ticker} from 'argo-ui/src/index';
+import {Ticker} from 'argo-ui/src/components/ticker';
 import * as React from 'react';
 import {useState} from 'react';
 import {Link} from 'react-router-dom';
@@ -22,6 +22,8 @@ interface WorkflowsRowProps {
     select: (wf: Workflow) => void;
     checked: boolean;
     columns: models.Column[];
+    displayISOFormatStart: boolean;
+    displayISOFormatFinished: boolean;
 }
 
 export function WorkflowsRow(props: WorkflowsRowProps) {
@@ -60,11 +62,11 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                         <div className='wf-rows-name'>{hasAnnotation ? <SuspenseReactMarkdownGfm markdown={markdown} /> : markdown}</div>
                     </Link>
                     <div className='columns small-1'>{wf.metadata.namespace}</div>
-                    <div className='columns small-1'>
-                        <Timestamp date={wf.status.startedAt} />
+                    <div className='columns small-1 workflows-list__timestamp'>
+                        <Timestamp date={wf.status.startedAt} displayISOFormat={props.displayISOFormatStart} />
                     </div>
-                    <div className='columns small-1'>
-                        <Timestamp date={wf.status.finishedAt} />
+                    <div className='columns small-1 workflows-list__timestamp'>
+                        <Timestamp date={wf.status.finishedAt} displayISOFormat={props.displayISOFormatFinished} />
                     </div>
                     <div className='columns small-1'>
                         <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>

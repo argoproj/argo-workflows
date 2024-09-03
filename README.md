@@ -1,5 +1,5 @@
 <!-- markdownlint-disable-next-line MD041 -->
-[![Security Status](https://github.com/argoproj/argo-workflows/workflows/Snyk/badge.svg)](https://github.com/argoproj/argo-workflows/actions/workflows/snyk.yml?query=branch%3Amain)
+[![Security Status](https://github.com/argoproj/argo-workflows/actions/workflows/snyk.yml/badge.svg?branch=main)](https://github.com/argoproj/argo-workflows/actions/workflows/snyk.yml?query=branch%3Amain)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows/badge)](https://api.securityscorecards.dev/projects/github.com/argoproj/argo-workflows)
 [![FOSSA License Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fargoproj%2Fargo-workflows.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fargoproj%2Fargo-workflows?ref=badge_shield)
@@ -9,17 +9,14 @@
 [![Release Version](https://img.shields.io/github/v/release/argoproj/argo-workflows?label=argo-workflows)](https://github.com/argoproj/argo-workflows/releases/latest)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/argo-workflows)](https://artifacthub.io/packages/helm/argo/argo-workflows)
 
-
 ## What is Argo Workflows?
 
-Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo
-Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
+Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes.
+Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
 
-* Define workflows where each step in the workflow is a container.
-* Model multi-step workflows as a sequence of tasks or capture the dependencies between tasks using a directed acyclic
-  graph (DAG).
-* Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo
-  Workflows on Kubernetes.
+* Define workflows where each step is a container.
+* Model multi-step workflows as a sequence of tasks or capture the dependencies between tasks using a directed acyclic graph (DAG).
+* Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo Workflows on Kubernetes.
 
 Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated project.
 
@@ -35,8 +32,7 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 * Argo Workflows is the most popular workflow execution engine for Kubernetes.
 * Light-weight, scalable, and easier to use.
-* Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based
-  environments.
+* Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
 * Cloud agnostic and can run on any Kubernetes cluster.
 
 [Read what people said in our latest survey](https://blog.argoproj.io/argo-workflows-events-2023-user-survey-results-82c53bc30543)
@@ -65,9 +61,9 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 * [Kedro](https://kedro.readthedocs.io/en/stable/)
 * [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
 * [Netflix Metaflow](https://metaflow.org)
-* [Onepanel](https://www.onepanel.ai/)
+* [Onepanel](https://github.com/onepanelio/onepanel)
 * [Orchest](https://github.com/orchest/orchest/)
-* [Piper](https://github.com/rookout/piper)
+* [Piper](https://github.com/quickube/piper)
 * [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
@@ -131,12 +127,10 @@ An incomplete list of features Argo Workflows provide:
 
 ## Community Meetings
 
-We host monthly community meetings where we and the community showcase demos and discuss the current and future state of
-the project. Feel free to join us! For Community Meeting information, minutes and recordings
-please [see here](https://bit.ly/argo-wf-cmty-mtng).
+We host monthly community meetings where we and the community showcase demos and discuss the current and future state of the project. Feel free to join us!
+For Community Meeting information, minutes and recordings, please [see here](https://bit.ly/argo-wf-cmty-mtng).
 
-Participation in the Argo Workflows project is governed by
-the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md)
+Participation in Argo Workflows is governed by the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md)
 
 ## Community Blogs and Presentations
 

@@ -208,6 +208,65 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                 },
+                azure_queue_storage={
+                    "key": IoArgoprojEventsV1alpha1AzureQueueStorageEventSource(
+                        connection_string=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        decode_message=True,
+                        dlq=True,
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        json_body=True,
+                        metadata={
+                            "key": "key_example",
+                        },
+                        queue_name="queue_name_example",
+                        storage_account_name="storage_account_name_example",
+                        wait_time_in_seconds=1,
+                    ),
+                },
+                azure_service_bus={
+                    "key": IoArgoprojEventsV1alpha1AzureServiceBusEventSource(
+                        connection_string=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        fully_qualified_namespace="fully_qualified_namespace_example",
+                        json_body=True,
+                        metadata={
+                            "key": "key_example",
+                        },
+                        queue_name="queue_name_example",
+                        subscription_name="subscription_name_example",
+                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                            ca_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            insecure_skip_verify=True,
+                        ),
+                        topic_name="topic_name_example",
+                    ),
+                },
                 bitbucket={
                     "key": IoArgoprojEventsV1alpha1BitbucketEventSource(
                         auth=IoArgoprojEventsV1alpha1BitbucketAuth(
@@ -301,6 +360,24 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                         repository_slug="repository_slug_example",
+                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                            ca_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            insecure_skip_verify=True,
+                        ),
                         webhook=IoArgoprojEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
@@ -452,6 +529,63 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         url="url_example",
                     ),
                 },
+                gerrit={
+                    "key": IoArgoprojEventsV1alpha1GerritEventSource(
+                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                            password=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            username=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                        ),
+                        delete_hook_on_finish=True,
+                        events=[
+                            "events_example",
+                        ],
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        gerrit_base_url="gerrit_base_url_example",
+                        hook_name="hook_name_example",
+                        metadata={
+                            "key": "key_example",
+                        },
+                        projects=[
+                            "projects_example",
+                        ],
+                        ssl_verify=True,
+                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                            auth_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
+                            metadata={
+                                "key": "key_example",
+                            },
+                            method="method_example",
+                            port="port_example",
+                            server_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            server_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            url="url_example",
+                        ),
+                    ),
+                },
                 github={
                     "key": IoArgoprojEventsV1alpha1GithubEventSource(
                         active=True,
@@ -545,6 +679,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             expression="expression_example",
                         ),
                         gitlab_base_url="gitlab_base_url_example",
+                        groups=[
+                            "groups_example",
+                        ],
                         metadata={
                             "key": "key_example",
                         },
@@ -656,12 +793,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         partition="partition_example",
                         sasl=IoArgoprojEventsV1alpha1SASLConfig(
                             mechanism="mechanism_example",
-                            password=SecretKeySelector(
+                            password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
                             ),
-                            user=SecretKeySelector(
+                            user_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
@@ -701,6 +838,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             key="key_example",
                             name="name_example",
                         ),
+                        ca_certificate=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
                         endpoint="endpoint_example",
                         events=[
                             "events_example",
@@ -723,6 +865,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 mqtt={
                     "key": IoArgoprojEventsV1alpha1MQTTEventSource(
+                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                            password=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            username=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                        ),
                         client_id="client_id_example",
                         connection_backoff=IoArgoprojEventsV1alpha1Backoff(
                             duration=IoArgoprojEventsV1alpha1Int64OrString(
@@ -910,6 +1064,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 pulsar={
                     "key": IoArgoprojEventsV1alpha1PulsarEventSource(
+                        auth_athenz_params={
+                            "key": "key_example",
+                        },
+                        auth_athenz_secret=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
                         auth_token_secret=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -1099,6 +1261,43 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
+                sftp={
+                    "key": IoArgoprojEventsV1alpha1SFTPEventSource(
+                        address=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        event_type="event_type_example",
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        metadata={
+                            "key": "key_example",
+                        },
+                        password=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        poll_interval_duration="poll_interval_duration_example",
+                        ssh_key_secret=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        username=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        watch_path_config=IoArgoprojEventsV1alpha1WatchPathConfig(
+                            directory="directory_example",
+                            path="path_example",
+                            path_regexp="path_regexp_example",
+                        ),
+                    ),
+                },
                 slack={
                     "key": IoArgoprojEventsV1alpha1SlackEventSource(
                         filter=IoArgoprojEventsV1alpha1EventSourceFilter(
@@ -2906,6 +3105,65 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                 },
+                azure_queue_storage={
+                    "key": IoArgoprojEventsV1alpha1AzureQueueStorageEventSource(
+                        connection_string=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        decode_message=True,
+                        dlq=True,
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        json_body=True,
+                        metadata={
+                            "key": "key_example",
+                        },
+                        queue_name="queue_name_example",
+                        storage_account_name="storage_account_name_example",
+                        wait_time_in_seconds=1,
+                    ),
+                },
+                azure_service_bus={
+                    "key": IoArgoprojEventsV1alpha1AzureServiceBusEventSource(
+                        connection_string=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        fully_qualified_namespace="fully_qualified_namespace_example",
+                        json_body=True,
+                        metadata={
+                            "key": "key_example",
+                        },
+                        queue_name="queue_name_example",
+                        subscription_name="subscription_name_example",
+                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                            ca_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            insecure_skip_verify=True,
+                        ),
+                        topic_name="topic_name_example",
+                    ),
+                },
                 bitbucket={
                     "key": IoArgoprojEventsV1alpha1BitbucketEventSource(
                         auth=IoArgoprojEventsV1alpha1BitbucketAuth(
@@ -2999,6 +3257,24 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                         repository_slug="repository_slug_example",
+                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                            ca_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            insecure_skip_verify=True,
+                        ),
                         webhook=IoArgoprojEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
                                 key="key_example",
@@ -3150,6 +3426,63 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         url="url_example",
                     ),
                 },
+                gerrit={
+                    "key": IoArgoprojEventsV1alpha1GerritEventSource(
+                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                            password=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            username=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                        ),
+                        delete_hook_on_finish=True,
+                        events=[
+                            "events_example",
+                        ],
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        gerrit_base_url="gerrit_base_url_example",
+                        hook_name="hook_name_example",
+                        metadata={
+                            "key": "key_example",
+                        },
+                        projects=[
+                            "projects_example",
+                        ],
+                        ssl_verify=True,
+                        webhook=IoArgoprojEventsV1alpha1WebhookContext(
+                            auth_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
+                            metadata={
+                                "key": "key_example",
+                            },
+                            method="method_example",
+                            port="port_example",
+                            server_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            server_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            url="url_example",
+                        ),
+                    ),
+                },
                 github={
                     "key": IoArgoprojEventsV1alpha1GithubEventSource(
                         active=True,
@@ -3243,6 +3576,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             expression="expression_example",
                         ),
                         gitlab_base_url="gitlab_base_url_example",
+                        groups=[
+                            "groups_example",
+                        ],
                         metadata={
                             "key": "key_example",
                         },
@@ -3354,12 +3690,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         partition="partition_example",
                         sasl=IoArgoprojEventsV1alpha1SASLConfig(
                             mechanism="mechanism_example",
-                            password=SecretKeySelector(
+                            password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
                             ),
-                            user=SecretKeySelector(
+                            user_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
@@ -3399,6 +3735,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             key="key_example",
                             name="name_example",
                         ),
+                        ca_certificate=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
                         endpoint="endpoint_example",
                         events=[
                             "events_example",
@@ -3421,6 +3762,18 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 mqtt={
                     "key": IoArgoprojEventsV1alpha1MQTTEventSource(
+                        auth=IoArgoprojEventsV1alpha1BasicAuth(
+                            password=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            username=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                        ),
                         client_id="client_id_example",
                         connection_backoff=IoArgoprojEventsV1alpha1Backoff(
                             duration=IoArgoprojEventsV1alpha1Int64OrString(
@@ -3608,6 +3961,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 pulsar={
                     "key": IoArgoprojEventsV1alpha1PulsarEventSource(
+                        auth_athenz_params={
+                            "key": "key_example",
+                        },
+                        auth_athenz_secret=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
                         auth_token_secret=SecretKeySelector(
                             key="key_example",
                             name="name_example",
@@ -3797,6 +4158,43 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
+                sftp={
+                    "key": IoArgoprojEventsV1alpha1SFTPEventSource(
+                        address=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        event_type="event_type_example",
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        metadata={
+                            "key": "key_example",
+                        },
+                        password=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        poll_interval_duration="poll_interval_duration_example",
+                        ssh_key_secret=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        username=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        watch_path_config=IoArgoprojEventsV1alpha1WatchPathConfig(
+                            directory="directory_example",
+                            path="path_example",
+                            path_regexp="path_regexp_example",
+                        ),
+                    ),
+                },
                 slack={
                     "key": IoArgoprojEventsV1alpha1SlackEventSource(
                         filter=IoArgoprojEventsV1alpha1EventSourceFilter(

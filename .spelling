@@ -37,6 +37,7 @@ CRDs
 CloudSQL
 ClusterRoleBinding
 ClusterRoles
+ClusterWorkflowTemplate
 Codespaces
 ConfigMap
 ConfigMaps
@@ -92,6 +93,7 @@ OAuth
 OAuth2
 Okta
 OpenAPI
+OpenTelemetry
 PDBs
 PProf
 PVCs
@@ -129,6 +131,7 @@ args
 async
 auth
 backend
+backported
 boolean
 booleans
 buildkit
@@ -164,6 +167,7 @@ instantiators
 jenkins
 k3d
 k3s
+k8s
 k8s-jobs
 kube
 kube-apiserver
@@ -201,6 +205,8 @@ sandboxed
 shortcodes
 stateful
 stderr
+symlinks
+temporality
 triaged
 un-reconciled
 v1
@@ -245,4 +251,5 @@ webHDFS
 webhook
 webhooks
 workflow-controller-configmap
+workqueue
 yaml

@@ -1,5 +1,9 @@
-import {Layout, Notifications, NotificationsManager, NotificationType, Popup, PopupManager, PopupProps} from 'argo-ui';
 import * as H from 'history';
+import {Layout} from 'argo-ui/src/components/layout/layout';
+import {NotificationsManager} from 'argo-ui/src/components/notifications/notification-manager';
+import {Notifications, NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
+import {Popup, PopupProps} from 'argo-ui/src/components/popup/popup';
 
 import * as React from 'react';
 import {useEffect, useState} from 'react';
@@ -78,7 +82,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
             .catch(setError);
     }, []);
 
-    const namespaceSuffix = Utils.managedNamespace ? '' : '/' + namespace;
+    const namespaceSuffix = Utils.managedNamespace ? '' : '/' + (namespace || '');
     return (
         <>
             {popupProps && <Popup {...popupProps} />}

@@ -1,4 +1,5 @@
-import {Select, Tooltip} from 'argo-ui';
+import {Select} from 'argo-ui/src/components/select/select';
+import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import React from 'react';
 
 import {Parameter} from '../../../models';
@@ -12,9 +13,8 @@ interface ParametersInputProps {
 export function ParametersInput(props: ParametersInputProps) {
     function onParameterChange(parameter: Parameter, value: string) {
         const newParameters: Parameter[] = props.parameters.map(p => ({
-            name: p.name,
-            value: p.name === parameter.name ? value : Utils.getValueFromParameter(p),
-            enum: p.enum
+            ...p,
+            value: p.name === parameter.name ? value : Utils.getValueFromParameter(p)
         }));
         props.onChange(newParameters);
     }

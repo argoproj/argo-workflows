@@ -1,4 +1,4 @@
-import {Page} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';

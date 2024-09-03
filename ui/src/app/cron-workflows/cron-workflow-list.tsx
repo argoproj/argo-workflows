@@ -1,4 +1,6 @@
-import {Page, SlidingPanel, Ticker} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
+import {Ticker} from 'argo-ui/src/components/ticker';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
@@ -10,7 +12,7 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
-import {Timestamp} from '../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -25,6 +27,7 @@ import {CronWorkflowFilters} from './cron-workflow-filters';
 import {PrettySchedule} from './pretty-schedule';
 
 import './cron-workflow-list.scss';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/cron-workflows/'>Learn more</a>;
 
@@ -37,6 +40,9 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [labels, setLabels] = useState<string[]>([]);
     const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
+
+    const [storedDisplayISOFormatCreation, setStoredDisplayISOFormatCreation] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_CREATION);
+    const [storedDisplayISOFormatNextScheduled, setStoredDisplayISOFormatNextScheduled] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_NEXT_SCHEDULED);
 
     useEffect(
         useQueryParams(history, p => {
@@ -133,13 +139,22 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                             <div className='argo-table-list'>
                                 <div className='row argo-table-list__head'>
                                     <div className='columns small-1' />
-                                    <div className='columns small-3'>NAME</div>
+                                    <div className='columns small-2'>NAME</div>
                                     <div className='columns small-2'>NAMESPACE</div>
                                     <div className='columns small-1'>TimeZone</div>
                                     <div className='columns small-1'>SCHEDULE</div>
-                                    <div className='columns small-2' />
-                                    <div className='columns small-1'>CREATED</div>
-                                    <div className='columns small-1'>NEXT RUN</div>
+                                    <div className='columns small-1' />
+                                    <div className='columns small-2'>
+                                        CREATED{' '}
+                                        <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormatCreation} setStoredDisplayISOFormat={setStoredDisplayISOFormatCreation} />
+                                    </div>
+                                    <div className='columns small-2'>
+                                        NEXT RUN{' '}
+                                        <TimestampSwitch
+                                            storedDisplayISOFormat={storedDisplayISOFormatNextScheduled}
+                                            setStoredDisplayISOFormat={setStoredDisplayISOFormatNextScheduled}
+                                        />
+                                    </div>
                                 </div>
                                 {cronWorkflows.map(w => (
                                     <Link
@@ -147,11 +162,11 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                         key={`${w.metadata.namespace}/${w.metadata.name}`}
                                         to={uiUrl(`cron-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
                                         <div className='columns small-1'>{w.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
-                                        <div className='columns small-3'>
+                                        <div className='columns small-2'>
                                             {w.metadata.annotations?.[ANNOTATION_TITLE] ?? w.metadata.name}
                                             {w.metadata.annotations?.[ANNOTATION_DESCRIPTION] ? <p>{w.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
                                         </div>
-                                        <div className='columns small-2'>{w.metadata.namespace}</div>
+                                        <div className='columns small-1'>{w.metadata.namespace}</div>
                                         <div className='columns small-1'>{w.spec.timezone}</div>
                                         <div className='columns small-1'>
                                             {w.spec.schedule != ''
@@ -177,11 +192,17 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                                 </>
                                             )}
                                         </div>
-                                        <div className='columns small-1'>
-                                            <Timestamp date={w.metadata.creationTimestamp} />
+                                        <div className='columns small-2'>
+                                            <Timestamp date={w.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormatCreation} />
                                         </div>
-                                        <div className='columns small-1'>
-                                            {w.spec.suspend ? '' : <Ticker intervalMs={1000}>{() => <Timestamp date={getCronNextScheduledTime(w.spec)} />}</Ticker>}
+                                        <div className='columns small-2'>
+                                            {w.spec.suspend ? (
+                                                ''
+                                            ) : (
+                                                <Ticker intervalMs={1000}>
+                                                    {() => <Timestamp date={getCronNextScheduledTime(w.spec)} displayISOFormat={storedDisplayISOFormatNextScheduled} />}
+                                                </Ticker>
+                                            )}
                                         </div>
                                     </Link>
                                 ))}

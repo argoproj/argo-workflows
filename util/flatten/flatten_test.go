@@ -23,7 +23,7 @@ func Test_flatten(t *testing.T) {
 			Watch:               false,
 			AllowWatchBookmarks: true,
 			ResourceVersion:     "11",
-			TimeoutSeconds:      pointer.Int64Ptr(22),
+			TimeoutSeconds:      pointer.Int64(22),
 			Limit:               33,
 			Continue:            "44",
 		}}, map[string]string{

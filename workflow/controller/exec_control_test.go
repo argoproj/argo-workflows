@@ -20,7 +20,7 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 				"a": v1alpha1.NodeStatus{
 					ID:         "a",
 					BoundaryID: "a",
-					Daemoned:   pointer.BoolPtr(true),
+					Daemoned:   pointer.Bool(true),
 				},
 			},
 		},
