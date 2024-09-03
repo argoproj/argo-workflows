@@ -166,7 +166,8 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 	selector := r.session.SQL().
 		Select(selectQuery).
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID())
+		Where(r.clusterManagedNamespaceAndInstanceID()).
+		OrderBy("startedat")
 
 	selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
 	if err != nil {
