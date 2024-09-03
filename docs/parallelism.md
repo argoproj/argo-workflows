@@ -32,7 +32,7 @@ metadata:
   generateName: priority-
 spec:
   priority: 3
-  ...
+  # ...
 ````
 
 Workflows that have not started due to Controller-level parallelism will be queued: workflows with higher priority numbers will start before lower priority ones.
