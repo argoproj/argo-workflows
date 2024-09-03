@@ -154,11 +154,11 @@ Examples:
 
 ## Queuing
 
-When a Workflow cannot acquire a lock it will be placed into a ordered queue.
+When a workflow cannot acquire a lock it will be placed into a ordered queue.
 
-You can set a [`priority`](parallelism.md#priority) on Workflows.
+You can set a [`priority`](parallelism.md#priority) on workflows.
 The queue is first ordered by priority: a higher priority number is placed before a lower priority number.
-The queue is then ordered by `creationTimestamp`: older Workflows are placed before newer workflows.
+The queue is then ordered by `creationTimestamp`: older workflows are placed before newer workflows.
 
 Workflows can only acquire a lock if they are at the front of the queue for that lock.
 
