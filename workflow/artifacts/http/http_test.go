@@ -48,9 +48,8 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 		}, "/tmp/not-found")
 		require.Error(t, err)
 		argoError, ok := err.(errors.ArgoError)
-		if assert.True(t, ok) {
-			assert.Equal(t, errors.CodeNotFound, argoError.Code())
-		}
+		require.True(t, ok)
+		assert.Equal(t, errors.CodeNotFound, argoError.Code())
 	})
 }
 
@@ -64,9 +63,8 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 		}, "/tmp/not-found")
 		require.Error(t, err)
 		argoError, ok := err.(errors.ArgoError)
-		if assert.True(t, ok) {
-			assert.Equal(t, errors.CodeNotFound, argoError.Code())
-		}
+		require.True(t, ok)
+		assert.Equal(t, errors.CodeNotFound, argoError.Code())
 	})
 	t.Run("Found", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{

@@ -206,6 +206,7 @@ sandboxed
 shortcodes
 stateful
 stderr
+symlinks
 temporality
 triaged
 un-reconciled

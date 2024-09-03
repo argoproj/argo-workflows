@@ -675,10 +675,9 @@ func (s *ArtifactsSuite) TestOutputResult() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			n := status.Nodes.FindByDisplayName("a")
-			if assert.NotNil(t, n) {
-				assert.NotNil(t, n.Outputs.ExitCode)
-				assert.NotNil(t, n.Outputs.Result)
-			}
+			require.NotNil(t, n)
+			assert.NotNil(t, n.Outputs.ExitCode)
+			assert.NotNil(t, n.Outputs.Result)
 		})
 }
 
@@ -752,9 +751,8 @@ spec:
 						},
 					},
 				}
-				if assert.NotNil(t, n) {
-					assert.Equal(t, expectedOutputs, n.Outputs)
-				}
+				require.NotNil(t, n)
+				assert.Equal(t, expectedOutputs, n.Outputs)
 			})
 	})
 }

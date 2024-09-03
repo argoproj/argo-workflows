@@ -118,14 +118,13 @@ spec:
 		{Name: "input-artifacts", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
-	if assert.Len(t, pod.Spec.InitContainers, 1) {
-		c := pod.Spec.InitContainers[0]
-		assert.ElementsMatch(t, []corev1.VolumeMount{
-			{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
-			{Name: "workspace", MountPath: "/mainctrfs/workspace"},
-			{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
-		}, c.VolumeMounts)
-	}
+	require.Len(t, pod.Spec.InitContainers, 1)
+	c := pod.Spec.InitContainers[0]
+	assert.ElementsMatch(t, []corev1.VolumeMount{
+		{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
+		{Name: "workspace", MountPath: "/mainctrfs/workspace"},
+		{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
+	}, c.VolumeMounts)
 
 	assert.Len(t, pod.Spec.Containers, 2)
 	for _, c := range pod.Spec.Containers {

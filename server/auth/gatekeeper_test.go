@@ -154,9 +154,8 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, wfClient, GetWfClient(ctx))
 		assert.Equal(t, kubeClient, GetKubeClient(ctx))
-		if assert.NotNil(t, GetClaims(ctx)) {
-			assert.Equal(t, "my-sub", GetClaims(ctx).Subject)
-		}
+		require.NotNil(t, GetClaims(ctx))
+		assert.Equal(t, "my-sub", GetClaims(ctx).Subject)
 	})
 	hook := &test.Hook{}
 	log.AddHook(hook)
@@ -172,11 +171,10 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.NotEqual(t, clients, GetWfClient(ctx))
 		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "my-sa", claims.ServiceAccountName)
-			assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
-		}
+		require.NotNil(t, claims)
+		assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+		assert.Equal(t, "my-sa", claims.ServiceAccountName)
+		assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 		assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=2, Delegated", func(t *testing.T) {
@@ -191,11 +189,10 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.NotEqual(t, clients, GetWfClient(ctx))
 		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "user1-sa", claims.ServiceAccountName)
-			assert.Equal(t, "user1-ns", claims.ServiceAccountNamespace)
-		}
+		require.NotNil(t, claims)
+		assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+		assert.Equal(t, "user1-sa", claims.ServiceAccountName)
+		assert.Equal(t, "user1-ns", claims.ServiceAccountNamespace)
 		assert.Equal(t, "user1-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC, Namespace delegation OFF, precedence=2, Not Delegated", func(t *testing.T) {
@@ -209,11 +206,10 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.NotEqual(t, clients, GetWfClient(ctx))
 		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "my-sa", claims.ServiceAccountName)
-			assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
-		}
+		require.NotNil(t, claims)
+		assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+		assert.Equal(t, "my-sa", claims.ServiceAccountName)
+		assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 		assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=0, Not delegated", func(t *testing.T) {
@@ -228,11 +224,10 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.NotEqual(t, clients, GetWfClient(ctx))
 		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "my-sa", claims.ServiceAccountName)
-			assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
-		}
+		require.NotNil(t, claims)
+		assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+		assert.Equal(t, "my-sa", claims.ServiceAccountName)
+		assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 		assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=1, Not delegated", func(t *testing.T) {
@@ -247,11 +242,10 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.NotEqual(t, clients, GetWfClient(ctx))
 		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		claims := GetClaims(ctx)
-		if assert.NotNil(t, claims) {
-			assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
-			assert.Equal(t, "my-sa", claims.ServiceAccountName)
-			assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
-		}
+		require.NotNil(t, claims)
+		assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+		assert.Equal(t, "my-sa", claims.ServiceAccountName)
+		assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 		assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 	})
 	t.Run("SSO+RBAC,precedence=0", func(t *testing.T) {

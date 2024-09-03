@@ -24,10 +24,9 @@ func Test_objectToWorkflowTemplate(t *testing.T) {
 			"spec":     "ops",
 		}})
 		require.EqualError(t, err, "malformed workflow template \"my-ns/my-name\": cannot restore struct from: string")
-		if assert.NotNil(t, v) {
-			assert.Equal(t, "my-ns", v.Namespace)
-			assert.Equal(t, "my-name", v.Name)
-		}
+		require.NotNil(t, v)
+		assert.Equal(t, "my-ns", v.Namespace)
+		assert.Equal(t, "my-name", v.Name)
 	})
 	t.Run("WorkflowTemplate", func(t *testing.T) {
 		v, err := objectToWorkflowTemplate(&unstructured.Unstructured{})

@@ -237,11 +237,10 @@ spec:
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Len(t, status.Nodes, 7)
 			nodeStatus := status.Nodes.FindByDisplayName("B")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
-				assert.Len(t, nodeStatus.Children, 1)
-				assert.Len(t, nodeStatus.OutboundNodes, 1)
-			}
+			require.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			assert.Len(t, nodeStatus.Children, 1)
+			assert.Len(t, nodeStatus.OutboundNodes, 1)
 		})
 }
 
@@ -418,12 +417,12 @@ func (s *FunctionalSuite) TestArtifactRepositoryRef() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.NotEmpty(t, status.ArtifactRepositoryRef) {
-				assert.Equal(t, "argo", status.ArtifactRepositoryRef.Namespace)
-				assert.Equal(t, "artifact-repositories", status.ArtifactRepositoryRef.ConfigMap)
-				assert.Equal(t, "my-key", status.ArtifactRepositoryRef.Key)
-				assert.False(t, status.ArtifactRepositoryRef.Default)
-			}
+			require.NotEmpty(t, status.ArtifactRepositoryRef)
+			assert.Equal(t, "argo", status.ArtifactRepositoryRef.Namespace)
+			assert.Equal(t, "artifact-repositories", status.ArtifactRepositoryRef.ConfigMap)
+			assert.Equal(t, "my-key", status.ArtifactRepositoryRef.Key)
+			assert.False(t, status.ArtifactRepositoryRef.Default)
+
 			// these should never be set because we must get them from the artifactRepositoryRef
 			generated := status.Nodes.FindByDisplayName("generate").Outputs.Artifacts[0].S3
 			assert.Empty(t, generated.Bucket)
@@ -443,11 +442,10 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.Len(t, status.Nodes, 5) {
-				nodeStatus := status.Nodes.FindByDisplayName("sleep")
-				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
-				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
-			}
+			require.Len(t, status.Nodes, 5)
+			nodeStatus := status.Nodes.FindByDisplayName("sleep")
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
 		})
 }
 
@@ -460,11 +458,10 @@ func (s *FunctionalSuite) TestDAGEmptyParam() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			if assert.Len(t, status.Nodes, 3) {
-				nodeStatus := status.Nodes.FindByDisplayName("sleep")
-				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
-				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
-			}
+			require.Len(t, status.Nodes, 3)
+			nodeStatus := status.Nodes.FindByDisplayName("sleep")
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
 		})
 }
 
@@ -566,9 +563,25 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("print(0:res:1)")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-			}
+			require.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestParameterAggregationFromOutputs() {
+	s.Given().
+		Workflow("@functional/param-aggregation-fromoutputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(time.Second * 90).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(0:key1:value1)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(1:key2:value2)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(2:key3:value3)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(0:key4:value4)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(1:key5:value5)"))
 		})
 }
 
@@ -911,9 +924,9 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			paths := status.Nodes.FindByDisplayName("get-artifact-path")
-			if assert.NotNil(t, paths) {
-				assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
-			}
+			require.NotNil(t, paths)
+			assert.Equal(t, `["foo/script.py","script.py"]`, *paths.Outputs.Result)
+
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
 			for _, value := range status.TaskResultsCompletionStatus {

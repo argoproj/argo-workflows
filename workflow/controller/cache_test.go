@@ -63,10 +63,9 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 
 	outputs := entry.Outputs
 	require.NoError(t, err)
-	if assert.Len(t, outputs.Parameters, 1) {
-		assert.Equal(t, "hello", outputs.Parameters[0].Name)
-		assert.Equal(t, "foobar", outputs.Parameters[0].Value.String())
-	}
+	require.Len(t, outputs.Parameters, 1)
+	assert.Equal(t, "hello", outputs.Parameters[0].Name)
+	assert.Equal(t, "foobar", outputs.Parameters[0].Value.String())
 }
 
 func TestConfigMapCacheLoadMiss(t *testing.T) {

@@ -330,9 +330,8 @@ func TestLastUsedSchedule(t *testing.T) {
 
 	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 
-	if assert.NotNil(t, woc.cronWf.Annotations) {
-		assert.Equal(t, woc.cronWf.Spec.GetScheduleString(), woc.cronWf.GetLatestSchedule())
-	}
+	require.NotNil(t, woc.cronWf.Annotations)
+	assert.Equal(t, woc.cronWf.Spec.GetScheduleString(), woc.cronWf.GetLatestSchedule())
 }
 
 var forbidMissedSchedule = `apiVersion: argoproj.io/v1alpha1

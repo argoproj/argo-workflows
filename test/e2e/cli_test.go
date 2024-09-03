@@ -1866,13 +1866,12 @@ spec:
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("release")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())
-			}
+			require.NotNil(t, nodeStatus)
+			assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())
+
 			nodeStatus = status.Nodes.FindByDisplayName("approve")
-			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, "Test message; Resumed by: map[User:system:serviceaccount:argo:argo-server]", nodeStatus.Message)
-			}
+			require.NotNil(t, nodeStatus)
+			assert.Equal(t, "Test message; Resumed by: map[User:system:serviceaccount:argo:argo-server]", nodeStatus.Message)
 		})
 }
 

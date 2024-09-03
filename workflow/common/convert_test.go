@@ -109,9 +109,8 @@ spec:
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	require.NoError(t, err)
 	wf = ConvertCronWorkflowToWorkflow(&cronWf)
-	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
-		assert.Equal(t, "test-controller", wf.GetLabels()[LabelKeyControllerInstanceID])
-	}
+	require.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID)
+	assert.Equal(t, "test-controller", wf.GetLabels()[LabelKeyControllerInstanceID])
 
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	require.NoError(t, err)

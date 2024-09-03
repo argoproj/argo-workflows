@@ -60,57 +60,52 @@ metadata:
 	t.Run("None", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
-			e := p.(*estimator)
-			assert.Nil(t, e.baselineWF)
-		}
+		require.NotNil(t, p)
+		e := p.(*estimator)
+		assert.Nil(t, e.baselineWF)
 	})
 	t.Run("WorkflowTemplate", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-wftmpl"}},
 		})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
-			e := p.(*estimator)
-			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
-				assert.Equal(t, "my-wftmpl-baseline", e.baselineWF.Name)
-			}
-		}
+		require.NotNil(t, p)
+		e := p.(*estimator)
+		require.NotNil(t, e)
+		require.NotNil(t, e.baselineWF)
+		assert.Equal(t, "my-wftmpl-baseline", e.baselineWF.Name)
 	})
 	t.Run("ClusterWorkflowTemplate", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyClusterWorkflowTemplate: "my-cwft"}},
 		})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
-			e := p.(*estimator)
-			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
-				assert.Equal(t, "my-cwft-baseline", e.baselineWF.Name)
-			}
-		}
+		require.NotNil(t, p)
+		e := p.(*estimator)
+		require.NotNil(t, e)
+		require.NotNil(t, e.baselineWF)
+		assert.Equal(t, "my-cwft-baseline", e.baselineWF.Name)
 	})
 	t.Run("CronWorkflowTemplate", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyCronWorkflow: "my-cwf"}},
 		})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
-			e := p.(*estimator)
-			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
-				assert.Equal(t, "my-cwf-baseline", e.baselineWF.Name)
-			}
-		}
+		require.NotNil(t, p)
+		e := p.(*estimator)
+		require.NotNil(t, e)
+		require.NotNil(t, e.baselineWF)
+		assert.Equal(t, "my-cwf-baseline", e.baselineWF.Name)
 	})
 	t.Run("WorkflowArchive", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-archived-wftmpl"}},
 		})
 		require.NoError(t, err)
-		if assert.NotNil(t, p) {
-			e := p.(*estimator)
-			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
-				assert.Equal(t, "my-archived-wftmpl-baseline", e.baselineWF.Name)
-			}
-		}
+		require.NotNil(t, p)
+		e := p.(*estimator)
+		require.NotNil(t, e)
+		require.NotNil(t, e.baselineWF)
+		assert.Equal(t, "my-archived-wftmpl-baseline", e.baselineWF.Name)
 	})
 }

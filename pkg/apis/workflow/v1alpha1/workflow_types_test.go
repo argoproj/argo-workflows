@@ -894,9 +894,7 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 	}
 	stableDesc := metric.GetKey()
 	for i := 0; i < 10; i++ {
-		if !assert.Equal(t, stableDesc, metric.GetKey()) {
-			break
-		}
+		require.Equal(t, stableDesc, metric.GetKey())
 	}
 }
 
