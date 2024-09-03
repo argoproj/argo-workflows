@@ -564,6 +564,23 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 		})
 }
 
+func (s *FunctionalSuite) TestParameterAggregationFromOutputs() {
+	s.Given().
+		Workflow("@functional/param-aggregation-fromoutputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(time.Second * 90).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(0:key1:value1)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(1:key2:value2)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(2:key3:value3)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(0:key4:value4)"))
+			assert.NotNil(t, status.Nodes.FindByDisplayName("task3(1:key5:value5)"))
+		})
+}
+
 func (s *FunctionalSuite) TestDAGDepends() {
 	s.Given().
 		Workflow("@functional/dag-depends.yaml").
