@@ -164,8 +164,8 @@ Workflows can only acquire a lock if they are at the front of the queue for that
 
 ## Workflow-level parallelism
 
-You can restrict parallelism within a workflow using `parallelism` within a workflow or template.
-This only restricts total concurrent executions of steps or tasks within the same workflow.
+You can use `parallelism` within a workflow or template to restrict the total concurrent executions of steps or tasks.
+(Note that this only restricts concurrent executions within the same workflow.)
 
 Examples:
 
