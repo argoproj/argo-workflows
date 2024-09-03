@@ -159,7 +159,7 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	tmpl := unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvided)
 	woc := newWoc()
 	mainCtr := tmpl.Script.Container
-	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	mainCtr.Args = append(mainCtr.Args, common.GetExecutorScriptSourcePath(""))
 	ctx := context.Background()
 	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{})
 	require.NoError(t, err)
@@ -175,7 +175,7 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	wf.Spec.Volumes = append(wf.Spec.Volumes, apiv1.Volume{Name: "my-mount"})
 	woc = newWoc(*wf)
 	mainCtr = tmpl.Script.Container
-	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	mainCtr.Args = append(mainCtr.Args, common.GetExecutorScriptSourcePath(""))
 	pod, err = woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{includeScriptOutput: true})
 	require.NoError(t, err)
 	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)

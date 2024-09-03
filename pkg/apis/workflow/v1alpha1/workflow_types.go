@@ -2966,6 +2966,9 @@ type ScriptTemplate struct {
 
 	// Source contains the source code of the script to execute
 	Source string `json:"source" protobuf:"bytes,2,opt,name=source"`
+
+	// Extension specifies extension for the temporary script file
+	Extension string `json:"extension" protobuf:"bytes,3,opt,name=extension"`
 }
 
 // ResourceTemplate is a template subtype to manipulate kubernetes resources

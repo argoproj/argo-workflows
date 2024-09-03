@@ -269,8 +269,9 @@ func (we *WorkflowExecutor) StageFiles() error {
 	var body []byte
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
-		log.Infof("Loading script source to %s", common.ExecutorScriptSourcePath)
-		filePath = common.ExecutorScriptSourcePath
+		scriptSourcePath := common.GetExecutorScriptSourcePath(we.Template.Script.Extension)
+		log.Infof("Loading script source to %s", scriptSourcePath)
+		filePath = scriptSourcePath
 		body = []byte(we.Template.Script.Source)
 	case wfv1.TemplateTypeResource:
 		if we.Template.Resource.ManifestFrom != nil && we.Template.Resource.ManifestFrom.Artifact != nil {

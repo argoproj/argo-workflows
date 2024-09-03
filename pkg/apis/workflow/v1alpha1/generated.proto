@@ -1437,6 +1437,9 @@ message ScriptTemplate {
 
   // Source contains the source code of the script to execute
   optional string source = 2;
+
+  // Extension specifies extension for the temporary script file
+  optional string extension = 3;
 }
 
 message SemaphoreHolding {

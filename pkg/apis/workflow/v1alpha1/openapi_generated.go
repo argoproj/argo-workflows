@@ -5658,8 +5658,16 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							Format:      "",
 						},
 					},
+					"extension": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Extension specifies extension for the temporary script file",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"name", "source"},
+				Required: []string{"name", "source", "extension"},
 			},
 		},
 		Dependencies: []string{

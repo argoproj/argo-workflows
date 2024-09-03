@@ -4180,6 +4180,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                             ],
+                            extension="extension_example",
                             image="image_example",
                             image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
@@ -8747,6 +8748,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                 ],
+                                extension="extension_example",
                                 image="image_example",
                                 image_pull_policy="image_pull_policy_example",
                                 lifecycle=Lifecycle(
@@ -15196,6 +15198,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                             ],
+                            extension="extension_example",
                             image="image_example",
                             image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
@@ -19763,6 +19766,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                 ],
+                                extension="extension_example",
                                 image="image_example",
                                 image_pull_policy="image_pull_policy_example",
                                 lifecycle=Lifecycle(
@@ -26297,6 +26301,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                             ],
+                            extension="extension_example",
                             image="image_example",
                             image_pull_policy="image_pull_policy_example",
                             lifecycle=Lifecycle(
@@ -30864,6 +30869,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                 ],
+                                extension="extension_example",
                                 image="image_example",
                                 image_pull_policy="image_pull_policy_example",
                                 lifecycle=Lifecycle(

@@ -116,8 +116,8 @@ const (
 
 	// ExecutorStagingEmptyDir is the path of the emptydir which is used as a staging area to transfer a file between init/main container for script/resource templates
 	ExecutorStagingEmptyDir = "/argo/staging"
-	// ExecutorScriptSourcePath is the path which init will write the script source file to for script templates
-	ExecutorScriptSourcePath = "/argo/staging/script"
+	// executorScriptSourcePath is the path which init will write the script source file to for script templates
+	executorScriptSourcePath = "/argo/staging/script"
 	// ExecutorResourceManifestPath is the path which init will write the manifest file to for resource templates
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
@@ -273,4 +273,12 @@ func UnstructuredHasCompletedLabel(obj interface{}) bool {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}
 	return false
+}
+
+func GetExecutorScriptSourcePath(extension string) string {
+	if len(extension) == 0 {
+		return executorScriptSourcePath
+	} else {
+		return executorScriptSourcePath + "." + extension
+	}
 }

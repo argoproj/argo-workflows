@@ -3498,6 +3498,9 @@ definitions:
                 items:
                     $ref: '#/definitions/EnvFromSource'
                 type: array
+            extension:
+                description: Extension specifies extension for the temporary script file
+                type: string
             image:
                 description: |-
                     Container image name.
