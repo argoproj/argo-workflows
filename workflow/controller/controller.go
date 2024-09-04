@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -25,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/apimachinery/pkg/types"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -52,6 +50,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/workflow/archive"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -126,7 +125,6 @@ type WorkflowController struct {
 	configMapInformer     cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
-	wfArchiveQueue        workqueue.RateLimitingInterface
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               db.Session
@@ -238,7 +236,6 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, &fixedItemIntervalRateLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
-	wfc.wfArchiveQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "workflow_archive_queue")
 
 	return &wfc, nil
 }
@@ -267,6 +264,17 @@ func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkfl
 
 	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer)
 	cronController.Run(ctx)
+}
+
+// runArchivecontroller runs the workflow archive controller
+func (wfc *WorkflowController) runArchiveController(ctx context.Context, wfArchiveWorkers int) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	archiveCtrl := archive.NewController(ctx, wfc.wfclientset, wfc.wfInformer, wfc.metrics, wfc.hydrator, wfc.wfArchive, &wfc.workflowKeyLock)
+	err := archiveCtrl.Run(ctx.Done(), wfArchiveWorkers)
+	if err != nil {
+		panic(err)
+	}
 }
 
 var indexers = cache.Indexers{
@@ -361,14 +369,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
 	go wfc.runCronController(ctx, cronWorkflowWorkers)
+	go wfc.runArchiveController(ctx, wfArchiveWorkers)
 
 	go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
 
 	for i := 0; i < wfWorkers; i++ {
 		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
-	}
-	for i := 0; i < wfArchiveWorkers; i++ {
-		go wait.Until(wfc.runArchiveWorker, time.Second, ctx.Done())
 	}
 	if cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
@@ -805,14 +811,6 @@ func (wfc *WorkflowController) runWorker() {
 	}
 }
 
-func (wfc *WorkflowController) runArchiveWorker() {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-	ctx := context.Background()
-	for wfc.processNextArchiveItem(ctx) {
-	}
-}
-
 // processNextItem is the worker logic for handling workflow updates
 func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	key, quit := wfc.wfQueue.Get()
@@ -893,26 +891,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// so we can requeue the work for a later time
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	// c.handleErr(err, key)
-	return true
-}
-
-func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool {
-	key, quit := wfc.wfArchiveQueue.Get()
-	if quit {
-		return false
-	}
-	defer wfc.wfArchiveQueue.Done(key)
-
-	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
-	if err != nil {
-		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
-		return true
-	}
-	if !exists {
-		return true
-	}
-
-	wfc.archiveWorkflow(ctx, obj)
 	return true
 }
 
@@ -1117,30 +1095,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	if err != nil {
 		return err
 	}
-	_, err = wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
-			un, ok := obj.(*unstructured.Unstructured)
-			// no need to check the `common.LabelKeyCompleted` as we already know it must be complete
-			return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
-		},
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wfc.wfArchiveQueue.Add(key)
-				}
-			},
-			UpdateFunc: func(_, obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wfc.wfArchiveQueue.Add(key)
-				}
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
 	_, err = wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			wf, ok := obj.(*unstructured.Unstructured)
@@ -1151,71 +1105,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	})
 	if err != nil {
 		return err
-	}
-	return nil
-}
-
-func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj interface{}) {
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		log.Error("failed to get key for object")
-		return
-	}
-	wfc.workflowKeyLock.Lock(key)
-	defer wfc.workflowKeyLock.Unlock(key)
-	key, err = cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		log.Error("failed to get key for object after locking")
-		return
-	}
-	err = wfc.archiveWorkflowAux(ctx, obj)
-	if err != nil {
-		log.WithField("key", key).WithError(err).Error("failed to archive workflow")
-	}
-}
-
-func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj interface{}) error {
-	un, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		return nil
-	}
-	wf, err := util.FromUnstructured(un)
-	if err != nil {
-		return fmt.Errorf("failed to convert to workflow from unstructured: %w", err)
-	}
-	err = wfc.hydrator.Hydrate(wf)
-	if err != nil {
-		return fmt.Errorf("failed to hydrate workflow: %w", err)
-	}
-	log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "uid": wf.UID}).Info("archiving workflow")
-	err = wfc.wfArchive.ArchiveWorkflow(wf)
-	if err != nil {
-		return fmt.Errorf("failed to archive workflow: %w", err)
-	}
-	data, err := json.Marshal(map[string]interface{}{
-		"metadata": metav1.ObjectMeta{
-			Labels: map[string]string{
-				common.LabelKeyWorkflowArchivingStatus: "Archived",
-			},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to marshal patch: %w", err)
-	}
-	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(
-		ctx,
-		un.GetName(),
-		types.MergePatchType,
-		data,
-		metav1.PatchOptions{},
-	)
-	if err != nil {
-		// from this point on we have successfully archived the workflow, and it is possible for the workflow to have actually
-		// been deleted, so it's not a problem to get a `IsNotFound` error
-		if apierr.IsNotFound(err) {
-			return nil
-		}
-		return fmt.Errorf("failed to archive workflow: %w", err)
 	}
 	return nil
 }
