@@ -17,6 +17,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 )
@@ -989,7 +990,7 @@ func TestV2Mutex(t *testing.T) {
 		require.True(found)
 
 		holders := sem.getCurrentHolders()
-		require.Len(holders, 1)
+		assert.Len(holders, 1)
 
 	})
 
@@ -1003,44 +1004,44 @@ func TestV2Mutex(t *testing.T) {
 		assert.Len(concurrenyMgr.syncLockMap, 1)
 		// resuse data from previous test
 		concurrenyMgr.Release(wfMutex2, wfMutex2.Name, wfMutex.Spec.Synchronization)
+
+		lockName, err := GetLockName(wfMutex2.Spec.Synchronization, wfMutex2.Namespace)
+		require.NoError(err)
+		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
+		require.True(found)
+		holders := sem.getCurrentHolders()
+		assert.Len(holders, 0)
 	})
 }
 
-func TestV2Semaphore(t *testing.T) {
-	os.Setenv("HOLDER_KEY_VERSION", "v2")
-	assert := assert.New(t)
-	require := require.New(t)
-	kube := fake.NewSimpleClientset()
+func TestCheckHolderVersion(t *testing.T) {
 
-	var cm v1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	cm.Data["workflow"] = "2"
-	ctx := context.Background()
-	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
-	require.NoError(err)
+	t.Run("CheckHolderKeyWithNodeName", func(t *testing.T) {
+		assert := assert.New(t)
+		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		key := getHolderKey(wfMutex, wfMutex.Name)
 
-	syncLimitFunc := GetSyncLimitFunc(kube)
+		keyv2 := wfv1.GetHoldingNameV2(key)
+		version := v1alpha1.CheckHolderKeyVersion(keyv2)
+		assert.Equal(wfv1.HoldingNameV2, version)
 
-	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-		// nextKey = key
-	}, WorkflowExistenceFunc)
-
-	wfSemaphore := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
-
-	t.Run("AcquireWorks", func(t *testing.T) {
-		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
-		wfSem1 := wfSemaphore.DeepCopy()
-		wfSem1.Name = "test1"
-
-		status, _, _, err := concurrenyMgr.TryAcquire(wfSem1, wfSem1.Name, wfSem1.Spec.Synchronization)
-		require.NoError(err)
-		assert.True(status)
-	})
-
-	t.Run("ReleaseWorks", func(t *testing.T) {
+		keyv1 := wfv1.GetHoldingNameV1(key)
+		version = v1alpha1.CheckHolderKeyVersion(keyv1)
+		assert.Equal(wfv1.HoldingNameV1, version)
 
 	})
 
-	t.Run("ReleaseAllWorks", func(t *testing.T) {
+	t.Run("CheckHolderKeyWithoutNodeName", func(t *testing.T) {
+		assert := assert.New(t)
+		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+
+		key := getHolderKey(wfMutex, "")
+		keyv2 := wfv1.GetHoldingNameV2(key)
+		version := v1alpha1.CheckHolderKeyVersion(keyv2)
+		assert.Equal(wfv1.HoldingNameV2, version)
+
+		keyv1 := wfv1.GetHoldingNameV1(key)
+		version = v1alpha1.CheckHolderKeyVersion(keyv1)
+		assert.Equal(wfv1.HoldingNameV1, version)
 	})
 }

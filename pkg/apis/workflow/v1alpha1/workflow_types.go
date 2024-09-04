@@ -3795,18 +3795,18 @@ func GetHolderKeyVersion() HoldingNameVersion {
 		return HoldingNameV1
 	}
 }
-func getHoldingNameV2OrV1(holderKey string) string {
+func GetHoldingNameV2OrV1(holderKey string) string {
 	switch GetHolderKeyVersion() {
 	case HoldingNameV2:
-		return getHoldingNameV2(holderKey)
+		return GetHoldingNameV2(holderKey)
 	default:
-		return getHoldingNameV1(holderKey)
+		return GetHoldingNameV1(holderKey)
 	}
 }
 
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	holdingName := getHoldingNameV2OrV1(holderKey)
+	holdingName := GetHoldingNameV2OrV1(holderKey)
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 		return true
@@ -3820,7 +3820,7 @@ func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolder
 
 func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	holdingName := getHoldingNameV2OrV1(holderKey)
+	holdingName := GetHoldingNameV2OrV1(holderKey)
 
 	if i >= 0 {
 		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
@@ -3892,14 +3892,14 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 	return false
 }
 
-func getHoldingNameV1(holderKey string) string {
+func GetHoldingNameV1(holderKey string) string {
 	items := strings.Split(holderKey, "/")
 	return items[len(items)-1]
 }
 
 // wf.Namespace/wf.Name
 // or wf.Namespace/wf.Name/nodeName
-func getHoldingNameV2(holderKey string) string {
+func GetHoldingNameV2(holderKey string) string {
 	return holderKey
 }
 
@@ -3913,7 +3913,7 @@ func CheckHolderKeyVersion(holderKey string) HoldingNameVersion {
 
 func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, mutexHolding := ms.GetHolding(lockKey)
-	holdingName := getHoldingNameV2OrV1(holderKey)
+	holdingName := GetHoldingNameV2OrV1(holderKey)
 	if i < 0 {
 		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
 		return true
@@ -3927,7 +3927,7 @@ func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []
 
 func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
 	i, holder := ms.GetHolding(lockKey)
-	holdingName := getHoldingNameV2OrV1(holderKey)
+	holdingName := GetHoldingNameV2OrV1(holderKey)
 	if i >= 0 && holder.Holder == holdingName {
 		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
 		return true
