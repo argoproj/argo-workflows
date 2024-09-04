@@ -4222,14 +4222,14 @@ definitions:
             mutex:
                 $ref: '#/definitions/Mutex'
             mutexes:
-                description: Mutexes holds the list of Mutex lock details
+                description: 'v3.6 and after: Mutexes holds the list of Mutex lock details'
                 items:
                     $ref: '#/definitions/Mutex'
                 type: array
             semaphore:
                 $ref: '#/definitions/SemaphoreRef'
             semaphores:
-                description: Semaphores holds the list of Semaphores configuration
+                description: 'v3.6 and after: Semaphores holds the list of Semaphores configuration'
                 items:
                     $ref: '#/definitions/SemaphoreRef'
                 type: array

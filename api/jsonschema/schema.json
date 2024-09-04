@@ -6955,7 +6955,7 @@
           "description": "Mutex holds the Mutex lock details - deprecated, use mutexes instead"
         },
         "mutexes": {
-          "description": "Mutexes holds the list of Mutex lock details",
+          "description": "v3.6 and after: Mutexes holds the list of Mutex lock details",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
           },
@@ -6966,7 +6966,7 @@
           "description": "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead"
         },
         "semaphores": {
-          "description": "Semaphores holds the list of Semaphores configuration",
+          "description": "v3.6 and after: Semaphores holds the list of Semaphores configuration",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
           },

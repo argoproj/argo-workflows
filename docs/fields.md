@@ -1646,9 +1646,9 @@ Synchronization holds synchronization lock configuration
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`mutex`|[`Mutex`](#mutex)|Mutex holds the Mutex lock details - deprecated, use mutexes instead|
-|`mutexes`|`Array<`[`Mutex`](#mutex)`>`|Mutexes holds the list of Mutex lock details|
+|`mutexes`|`Array<`[`Mutex`](#mutex)`>`|v3.6 and after: Mutexes holds the list of Mutex lock details|
 |`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore holds the Semaphore configuration - deprecated, use semaphores instead|
-|`semaphores`|`Array<`[`SemaphoreRef`](#semaphoreref)`>`|Semaphores holds the list of Semaphores configuration|
+|`semaphores`|`Array<`[`SemaphoreRef`](#semaphoreref)`>`|v3.6 and after: Semaphores holds the list of Semaphores configuration|
 
 ## Template
 

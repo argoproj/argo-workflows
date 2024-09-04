@@ -10974,7 +10974,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
         },
         "mutexes": {
-          "description": "Mutexes holds the list of Mutex lock details",
+          "description": "v3.6 and after: Mutexes holds the list of Mutex lock details",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
@@ -10985,7 +10985,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
         },
         "semaphores": {
-          "description": "Semaphores holds the list of Semaphores configuration",
+          "description": "v3.6 and after: Semaphores holds the list of Semaphores configuration",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"

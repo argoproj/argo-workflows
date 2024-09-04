@@ -6184,7 +6184,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 					},
 					"semaphores": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Semaphores holds the list of Semaphores configuration",
+							Description: "v3.6 and after: Semaphores holds the list of Semaphores configuration",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6197,7 +6197,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 					},
 					"mutexes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Mutexes holds the list of Mutex lock details",
+							Description: "v3.6 and after: Mutexes holds the list of Mutex lock details",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

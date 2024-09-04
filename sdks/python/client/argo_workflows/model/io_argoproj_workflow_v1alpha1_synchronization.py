@@ -149,9 +149,9 @@ class IoArgoprojWorkflowV1alpha1Synchronization(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             mutex (IoArgoprojWorkflowV1alpha1Mutex): [optional]  # noqa: E501
-            mutexes ([IoArgoprojWorkflowV1alpha1Mutex]): Mutexes holds the list of Mutex lock details. [optional]  # noqa: E501
+            mutexes ([IoArgoprojWorkflowV1alpha1Mutex]): v3.6 and after: Mutexes holds the list of Mutex lock details. [optional]  # noqa: E501
             semaphore (IoArgoprojWorkflowV1alpha1SemaphoreRef): [optional]  # noqa: E501
-            semaphores ([IoArgoprojWorkflowV1alpha1SemaphoreRef]): Semaphores holds the list of Semaphores configuration. [optional]  # noqa: E501
+            semaphores ([IoArgoprojWorkflowV1alpha1SemaphoreRef]): v3.6 and after: Semaphores holds the list of Semaphores configuration. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -234,9 +234,9 @@ class IoArgoprojWorkflowV1alpha1Synchronization(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             mutex (IoArgoprojWorkflowV1alpha1Mutex): [optional]  # noqa: E501
-            mutexes ([IoArgoprojWorkflowV1alpha1Mutex]): Mutexes holds the list of Mutex lock details. [optional]  # noqa: E501
+            mutexes ([IoArgoprojWorkflowV1alpha1Mutex]): v3.6 and after: Mutexes holds the list of Mutex lock details. [optional]  # noqa: E501
             semaphore (IoArgoprojWorkflowV1alpha1SemaphoreRef): [optional]  # noqa: E501
-            semaphores ([IoArgoprojWorkflowV1alpha1SemaphoreRef]): Semaphores holds the list of Semaphores configuration. [optional]  # noqa: E501
+            semaphores ([IoArgoprojWorkflowV1alpha1SemaphoreRef]): v3.6 and after: Semaphores holds the list of Semaphores configuration. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
