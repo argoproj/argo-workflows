@@ -3884,7 +3884,7 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 	if i < 0 {
 		ms.Waiting = append(ms.Waiting, MutexHolding{Mutex: lockKey, Holder: currentHolders[0]})
 		return true
-	} else if !(mutexWaiting.Holder == currentHolders[0]) {
+	} else if mutexWaiting.Holder != currentHolders[0] {
 		mutexWaiting.Holder = currentHolders[0]
 		ms.Waiting[i] = mutexWaiting
 		return true

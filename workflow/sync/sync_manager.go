@@ -272,18 +272,17 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 
-			logKey := ""
+			key := ""
 			if v1alpha1.CheckHolderKeyVersion(holding.Holder) == v1alpha1.HoldingNameV1 {
 				resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
-				logKey = resourceKey
-				syncLockHolder.release(resourceKey)
+				key = resourceKey
 			} else {
-				logKey = holding.Holder
-				syncLockHolder.release(holding.Holder)
+				key = holding.Holder
 			}
 
+			syncLockHolder.release(key)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
-			log.Infof("%s released a lock from %s", logKey, holding.Mutex)
+			log.Infof("%s released a lock from %s", key, holding.Mutex)
 		}
 
 		// Remove the pending Workflow level mutex keys
