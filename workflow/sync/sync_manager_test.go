@@ -1010,7 +1010,7 @@ func TestV2Mutex(t *testing.T) {
 		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
 		require.True(found)
 		holders := sem.getCurrentHolders()
-		assert.Len(holders, 0)
+		assert.Empty(holders)
 	})
 }
 
