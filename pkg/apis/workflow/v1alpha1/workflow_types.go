@@ -1646,9 +1646,9 @@ type Synchronization struct {
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 	// Mutex holds the Mutex lock details - deprecated, use mutexes instead
 	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
-	// Semaphores holds the list of Semaphores configuration
+	// v3.6 and after: Semaphores holds the list of Semaphores configuration
 	Semaphores []*SemaphoreRef `json:"semaphores,omitempty" protobuf:"bytes,3,opt,name=semaphores"`
-	// Mutexes holds the list of Mutex lock details
+	// v3.6 and after: Mutexes holds the list of Mutex lock details
 	Mutexes []*Mutex `json:"mutexes,omitempty" protobuf:"bytes,4,opt,name=mutexes"`
 }
 
