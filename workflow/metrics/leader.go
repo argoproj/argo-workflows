@@ -3,6 +3,8 @@ package metrics
 import (
 	"context"
 
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -10,16 +12,16 @@ type IsLeaderCallback func() bool
 
 type leaderGauge struct {
 	callback IsLeaderCallback
-	gauge    *instrument
+	gauge    *telemetry.Instrument
 }
 
 func addIsLeader(ctx context.Context, m *Metrics) error {
 	const nameLeader = `is_leader`
-	err := m.createInstrument(int64ObservableGauge,
+	err := m.CreateInstrument(telemetry.Int64ObservableGauge,
 		nameLeader,
 		"Emits 1 if leader, 0 otherwise. Always 1 if leader election is disabled.",
 		"{leader}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
@@ -29,9 +31,9 @@ func addIsLeader(ctx context.Context, m *Metrics) error {
 	}
 	lGauge := leaderGauge{
 		callback: m.callbacks.IsLeader,
-		gauge:    m.allInstruments[nameLeader],
+		gauge:    m.AllInstruments[nameLeader],
 	}
-	return m.allInstruments[nameLeader].registerCallback(m, lGauge.update)
+	return m.AllInstruments[nameLeader].RegisterCallback(m.Metrics, lGauge.update)
 }
 
 func (l *leaderGauge) update(_ context.Context, o metric.Observer) error {
@@ -39,6 +41,6 @@ func (l *leaderGauge) update(_ context.Context, o metric.Observer) error {
 	if l.callback() {
 		val = 1
 	}
-	l.gauge.observeInt(o, val, instAttribs{})
+	l.gauge.ObserveInt(o, val, telemetry.InstAttribs{})
 	return nil
 }

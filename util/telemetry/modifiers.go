@@ -1,4 +1,4 @@
-package metrics
+package telemetry
 
 import (
 	"go.opentelemetry.io/otel/attribute"
@@ -12,7 +12,7 @@ type Modifier struct {
 	HistogramBuckets   []float64
 }
 
-// Create an opentelemetry 'view' which disables whole metrics or aggregates across labels
+// Create an opentelemetry 'view' which disables whole metrics or aggregates across attributes
 func view(config *Config) metricsdk.Option {
 	views := make([]metricsdk.View, 0)
 	for metric, modifier := range config.Modifiers {
