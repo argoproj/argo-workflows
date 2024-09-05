@@ -14,7 +14,8 @@ import (
 type WorkflowTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              WorkflowSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Spec              WorkflowSpec           `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status            WorkflowTemplateStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 type WorkflowTemplates []WorkflowTemplate
@@ -59,4 +60,10 @@ func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 // GetWorkflowSpec returns the WorkflowSpec of workflow template.
 func (wftmpl *WorkflowTemplate) GetWorkflowSpec() *WorkflowSpec {
 	return &wftmpl.Spec
+}
+
+// WorkflowTemplateStatus contains overall status information about a WorkflowTemplate
+type WorkflowTemplateStatus struct {
+	// Time at which this workflowtemplate last run
+	LastRunAt metav1.Time `json:"lastRunAt,omitempty" protobuf:"bytes,1,opt,name=lastRunAt"`
 }
