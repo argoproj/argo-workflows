@@ -3260,6 +3260,9 @@ type SuspendTemplate struct {
 	// Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
 	// Could also be a Duration, e.g.: "2m", "6h"
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
+
+	// List of approvers emails that are required to review the workflow before lifting the suspend.
+	Approvers []string `json:"approvers,omitempty" protobuf:"bytes,2,opt,name=approvers"`
 }
 
 // GetArtifactByName returns an input artifact by its name

@@ -3464,6 +3464,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	if err != nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag)
 		woc.resolveInputFieldsForSuspendNode(node)
+		woc.addApproversInputFields(node, tmpl.Suspend.Approvers)
 	}
 	woc.log.Infof("node %s suspended", nodeName)
 
@@ -3499,6 +3500,12 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		}
 	}
 
+	// Check if there are approvers
+	if len(tmpl.Suspend.Approvers) > 0 {
+		// Check if there are approved reviews
+
+	}
+
 	if requeueTime != nil {
 		woc.requeueAfter(time.Until(*requeueTime))
 	}
@@ -3530,6 +3537,26 @@ func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatu
 					parameters[i].Default = wfv1.AnyStringPtr(enum[0])
 				}
 			}
+		}
+	}
+}
+
+// Add input fields for all approvers of the suspend step to check whether they approved the suspend.
+func (woc *wfOperationCtx) addApproversInputFields(node *wfv1.NodeStatus, approvers []string) {
+	if len(approvers) <= 0 {
+		return
+	}
+	for i, approver := range approvers {
+		if approver != "" {
+			// TODO change to user account instead of string
+			name := fmt.Sprintf("Approver-%d", i)
+			value := approver
+			tempParameter := wfv1.Parameter{Name: name, Value: wfv1.AnyStringPtr(value)}
+
+			if node.Inputs == nil {
+				node.Inputs = &wfv1.Inputs{Parameters: make([]wfv1.Parameter, 0)}
+			}
+			node.Inputs.Parameters = append(node.Inputs.Parameters, tempParameter)
 		}
 	}
 }
