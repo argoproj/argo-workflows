@@ -203,7 +203,7 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
 <!-- titles are without argo_workflows prefix -->
 #### `cronworkflows_concurrencypolicy_triggered`
 
-A counter of the number of times a CronWorkflow has triggered it's `concurrencyPolicy` to limit the number of workflows running.
+A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running.
 
 | attribute   | explanation                               |
 |-------------|-------------------------------------------|
