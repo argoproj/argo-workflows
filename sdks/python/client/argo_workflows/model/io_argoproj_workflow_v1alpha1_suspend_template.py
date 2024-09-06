@@ -81,6 +81,7 @@ class IoArgoprojWorkflowV1alpha1SuspendTemplate(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'approvers': ([str],),  # noqa: E501
             'duration': (str,),  # noqa: E501
         }
 
@@ -90,6 +91,7 @@ class IoArgoprojWorkflowV1alpha1SuspendTemplate(ModelNormal):
 
 
     attribute_map = {
+        'approvers': 'approvers',  # noqa: E501
         'duration': 'duration',  # noqa: E501
     }
 
@@ -134,6 +136,7 @@ class IoArgoprojWorkflowV1alpha1SuspendTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            approvers ([str]): List of approvers emails that are required to review the workflow before lifting the suspend.. [optional]  # noqa: E501
             duration (str): Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\". [optional]  # noqa: E501
         """
 
@@ -216,6 +219,7 @@ class IoArgoprojWorkflowV1alpha1SuspendTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            approvers ([str]): List of approvers emails that are required to review the workflow before lifting the suspend.. [optional]  # noqa: E501
             duration (str): Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\". [optional]  # noqa: E501
         """
 

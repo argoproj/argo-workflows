@@ -10807,6 +10807,13 @@
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
       "type": "object",
       "properties": {
+        "approvers": {
+          "description": "List of approvers emails that are required to review the workflow before lifting the suspend.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\"",
           "type": "string"
@@ -11829,6 +11836,13 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
+        "ApproversStatus": {
+          "description": "Approvers list for Suspend state",
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
         "artifactGCStatus": {
           "description": "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtGCStatus"

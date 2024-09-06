@@ -9696,6 +9696,10 @@ spec:
                     type: array
                   suspend:
                     properties:
+                      approvers:
+                        items:
+                          type: string
+                        type: array
                       duration:
                         type: string
                     type: object
@@ -18182,6 +18186,10 @@ spec:
                       type: array
                     suspend:
                       properties:
+                        approvers:
+                          items:
+                            type: string
+                          type: array
                         duration:
                           type: string
                       type: object
@@ -19872,6 +19880,10 @@ spec:
             type: object
           status:
             properties:
+              ApproversStatus:
+                additionalProperties:
+                  type: boolean
+                type: object
               artifactGCStatus:
                 properties:
                   notSpecified:
@@ -30479,6 +30491,10 @@ spec:
                       type: array
                     suspend:
                       properties:
+                        approvers:
+                          items:
+                            type: string
+                          type: array
                         duration:
                           type: string
                       type: object
@@ -40897,6 +40913,10 @@ spec:
                         type: array
                       suspend:
                         properties:
+                          approvers:
+                            items:
+                              type: string
+                            type: array
                           duration:
                             type: string
                         type: object
@@ -49383,6 +49403,10 @@ spec:
                           type: array
                         suspend:
                           properties:
+                            approvers:
+                              items:
+                                type: string
+                              type: array
                             duration:
                               type: string
                           type: object

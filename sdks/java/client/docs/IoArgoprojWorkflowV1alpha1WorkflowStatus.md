@@ -8,6 +8,7 @@ WorkflowStatus contains overall status information about a workflow
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**approversStatus** | **Map&lt;String, Boolean&gt;** | Approvers list for Suspend state |  [optional]
 **artifactGCStatus** | [**IoArgoprojWorkflowV1alpha1ArtGCStatus**](IoArgoprojWorkflowV1alpha1ArtGCStatus.md) |  |  [optional]
 **artifactRepositoryRef** | [**IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus**](IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus.md) |  |  [optional]
 **compressedNodes** | **String** | Compressed and base64 decoded Nodes map |  [optional]

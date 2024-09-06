@@ -9714,6 +9714,10 @@ spec:
                         type: array
                       suspend:
                         properties:
+                          approvers:
+                            items:
+                              type: string
+                            type: array
                           duration:
                             type: string
                         type: object
@@ -18200,6 +18204,10 @@ spec:
                           type: array
                         suspend:
                           properties:
+                            approvers:
+                              items:
+                                type: string
+                              type: array
                             duration:
                               type: string
                           type: object
