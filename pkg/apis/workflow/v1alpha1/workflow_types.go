@@ -1014,7 +1014,7 @@ type PodGC struct {
 	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
 	// DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
-	DeleteDelayDuration *metav1.Duration `json:"deleteDelayDuration,omitempty" protobuf:"bytes,3,opt,name=deleteDelayDuration"`
+	DeleteDelayDuration string `json:"deleteDelayDuration,omitempty" protobuf:"bytes,3,opt,name=deleteDelayDuration"`
 }
 
 // GetLabelSelector gets the label selector from podGC.
@@ -1033,6 +1033,13 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 		return podGC.Strategy
 	}
 	return PodGCOnPodNone
+}
+
+func (podGC *PodGC) GetDeleteDelayDuration() (time.Duration, error) {
+	if podGC == nil || podGC.DeleteDelayDuration == "" {
+		return -1, nil // negative return means the field was omitted
+	}
+	return ParseStringToDuration(podGC.DeleteDelayDuration)
 }
 
 // WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level

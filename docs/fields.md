@@ -1545,7 +1545,7 @@ PodGC describes how to delete completed pods as they complete
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`deleteDelayDuration`|[`Duration`](#duration)|DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.|
+|`deleteDelayDuration`|`string`|DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.|
 |`labelSelector`|[`LabelSelector`](#labelselector)|LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.|
 |`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods|
 
@@ -5104,23 +5104,6 @@ ObjectReference contains enough information to let you inspect or modify the ref
 |`namespace`|`string`|Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/|
 |`resourceVersion`|`string`|Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency|
 |`uid`|`string`|UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids|
-
-## Duration
-
-Duration is a wrapper around time.Duration which supports correct marshaling to YAML and JSON. In particular, it marshals into strings, which can be used as map keys in json.
-
-<details markdown>
-<summary>Examples with this field (click to open)</summary>
-
-- [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy-with-label-selector.yaml)
-
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`duration`|`string`|_No description available_|
 
 ## LabelSelector
 

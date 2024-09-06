@@ -2517,11 +2517,6 @@ func (in *PodGC) DeepCopyInto(out *PodGC) {
 		*out = new(metav1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.DeleteDelayDuration != nil {
-		in, out := &in.DeleteDelayDuration, &out.DeleteDelayDuration
-		*out = new(metav1.Duration)
-		**out = **in
-	}
 	return
 }
 
