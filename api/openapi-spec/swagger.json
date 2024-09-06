@@ -10171,7 +10171,7 @@
       "properties": {
         "deleteDelayDuration": {
           "description": "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+          "type": "string"
         },
         "labelSelector": {
           "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.",
@@ -14757,15 +14757,6 @@
         "fieldValidation": {
           "type": "string",
           "title": "fieldValidation instructs the server on how to handle\nobjects in the request (POST/PUT/PATCH) containing unknown\nor duplicate fields, provided that the `ServerSideFieldValidation`\nfeature gate is also enabled. Valid values are:\n- Ignore: This will ignore any unknown fields that are silently\ndropped from the object, and will ignore all but the last duplicate\nfield that the decoder encounters. This is the default behavior\nprior to v1.23 and is the default behavior when the\n`ServerSideFieldValidation` feature gate is disabled.\n- Warn: This will send a warning via the standard warning response\nheader for each unknown field that is dropped from the object, and\nfor each duplicate field that is encountered. The request will\nstill succeed if there are no other errors, and will only persist\nthe last of any duplicate fields. This is the default when the\n`ServerSideFieldValidation` feature gate is enabled.\n- Strict: This will fail the request with a BadRequest error if\nany unknown fields would be dropped from the object, or if any\nduplicate fields are present. The error returned from the server\nwill contain all unknown and duplicate fields encountered.\n+optional"
-        }
-      }
-    },
-    "io.k8s.apimachinery.pkg.apis.meta.v1.Duration": {
-      "description": "Duration is a wrapper around time.Duration which supports correct\nmarshaling to YAML and JSON. In particular, it marshals into strings, which\ncan be used as map keys in json.",
-      "type": "object",
-      "properties": {
-        "duration": {
-          "type": "string"
         }
       }
     },

@@ -892,11 +892,9 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			Buckets: []Amount{{"10"}, {"20"}, {"30"}},
 		},
 	}
-	stableDesc := metric.GetDesc()
+	stableDesc := metric.GetKey()
 	for i := 0; i < 10; i++ {
-		if !assert.Equal(t, stableDesc, metric.GetDesc()) {
-			break
-		}
+		require.Equal(t, stableDesc, metric.GetKey())
 	}
 }
 

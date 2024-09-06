@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -62,7 +63,7 @@ func TestRecursiveStatus(t *testing.T) {
 
 func TestNilStatus(t *testing.T) {
 	newErr := ToStatusError(nil, codes.InvalidArgument)
-	assert.NoError(t, newErr)
+	require.NoError(t, newErr)
 }
 
 func TestArgoError(t *testing.T) {

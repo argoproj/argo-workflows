@@ -41,6 +41,10 @@ export function WorkflowDrawer(props: WorkflowDrawerProps) {
                     <div className='workflow-drawer__message--content'>{wf.status.message}</div>
                 </div>
             )}
+            <div className='workflow-drawer__section'>
+                <div className='workflow-drawer__title'>NAME</div>
+                <div className='workflow-drawer__labels'>{wf.metadata.name}</div>
+            </div>
             {!wf.status || !wf.status.conditions ? null : (
                 <div className='workflow-drawer__section'>
                     <div className='workflow-drawer__title'>CONDITIONS</div>
