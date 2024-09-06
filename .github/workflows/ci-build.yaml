@@ -170,33 +170,46 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
+            useApi: false
           - test: test-corefunctional
             profile: minimal
+            useApi: false
           - test: test-functional
             profile: minimal
+            useApi: false
           - test: test-api
             profile: mysql
+            useApi: true
           - test: test-cli
             profile: mysql
+            useApi: true
           - test: test-cron
             profile: minimal
+            useApi: false
           - test: test-examples
             profile: minimal
+            useApi: false
           - test: test-plugins
             profile: plugins
+            useApi: false
           - test: test-java-sdk
             profile: minimal
+            useApi: true
           - test: test-python-sdk
             profile: minimal
+            useApi: true
           - test: test-executor
             install_k3s_version: v1.28.11+k3s1
             profile: minimal
+            useApi: false
           - test: test-corefunctional
             install_k3s_version: v1.28.11+k3s1
             profile: minimal
+            useApi: false
           - test: test-functional
             install_k3s_version: v1.28.11+k3s1
             profile: minimal
+            useApi: false
     steps:
       - name: Install socat (needed by Kubernetes v1.25)
         run: sudo apt-get -y install socat
@@ -255,11 +268,11 @@ jobs:
         run: make controller kit STATIC_FILES=false
       - name: Build CLI
         run: make cli STATIC_FILES=false
-        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+        if: ${{matrix.useApi}}
       - name: Start controller/API
-        run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
+        run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.useApi}} UI=false > /tmp/argo.log 2>&1 &
       - name: Wait for controller to be up
-        run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+        run: make wait API=${{matrix.useApi}}
         timeout-minutes: 5
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
