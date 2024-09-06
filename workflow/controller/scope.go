@@ -144,7 +144,11 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 			return copyArt, errors.New(errors.CodeBadRequest, "failed to unmarshal artifact subpath for templating")
 		}
 
-		return copyArt, copyArt.AppendToKey(resolvedSubPath)
+		err = copyArt.AppendToKey(resolvedSubPath)
+		if err != nil && copyArt.Optional { //Ignore error when artifact optional
+			return copyArt, nil
+		}
+		return copyArt, err
 	}
 
 	return &valArt, nil
