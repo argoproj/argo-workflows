@@ -11233,3 +11233,779 @@ func TestGetOutboundNodesFromDAGContainerset(t *testing.T) {
 	}
 	assert.Equal(t, true, found)
 }
+
+const retryTransition34To35 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-09-06T00:00:20Z"
+  generateName: retry-container-
+  generation: 11
+  labels:
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/phase: Running
+    workflows.argoproj.io/resubmitted-from-workflow: retry-container-444zd
+  name: retry-container-lr72f
+  namespace: argo
+  resourceVersion: "11725"
+  uid: d4472ab2-a20c-44e4-a348-abe1fff51a65
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: retry-container
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)
+      command:
+      - python
+      - -c
+      image: python:alpine3.6
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: retry-container
+    outputs: {}
+    retryStrategy:
+      limit: "10"
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "True"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    retry-container-lr72f:
+      children:
+      - retry-container-lr72f-1932569552
+      - retry-container-lr72f-1596870077
+      displayName: retry-container-lr72f
+      finishedAt: null
+      id: retry-container-lr72f
+      name: retry-container-lr72f
+      phase: Running
+      progress: 0/2
+      startedAt: "2024-09-06T00:00:20Z"
+      templateName: retry-container
+      templateScope: local/retry-container-lr72f
+      type: Retry
+    retry-container-lr72f-1596870077:
+      displayName: retry-container-lr72f(1)
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server-0
+      id: retry-container-lr72f-1596870077
+      name: retry-container-lr72f(1)
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: retry-container-lr72f/retry-container-lr72f-retry-container-1596870077/main.log
+        exitCode: "0"
+      phase: Running
+      progress: 0/1
+      startedAt: "2024-09-06T00:00:28Z"
+      templateName: retry-container
+      templateScope: local/retry-container-lr72f
+      type: Pod
+    retry-container-lr72f-1932569552:
+      displayName: retry-container-lr72f(0)
+      finishedAt: "2024-09-06T00:00:25Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: retry-container-lr72f-1932569552
+      message: Error (exit code 1)
+      name: retry-container-lr72f(0)
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: retry-container-lr72f/retry-container-lr72f-retry-container-1932569552/main.log
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2024-09-06T00:00:20Z"
+      templateName: retry-container
+      templateScope: local/retry-container-lr72f
+      type: Pod
+  phase: Running
+  progress: 0/2
+  resourcesDuration:
+    cpu: 0
+    memory: 3
+  startedAt: "2024-09-06T00:00:20Z"
+  taskResultsCompletionStatus:
+    retry-container-lr72f-1596870077: true
+    retry-container-lr72f-1932569552: true
+`
+
+func TestRetryTransitionWorks(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(retryTransition34To35)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	if !woc.definitePostNodeFlagsWf() {
+		woc.maybeUpgradeWithNodeFlags()
+	}
+
+	retryNodes := []string{"retry-container-lr72f-1932569552", "retry-container-lr72f-1596870077"}
+
+	for _, nodeName := range retryNodes {
+		node, found := woc.wf.Status.Nodes[nodeName]
+		require.True(found)
+		require.NotNil(node.NodeFlag)
+		assert.Equal(true, node.NodeFlag.Retried)
+		assert.Equal(false, node.NodeFlag.Hooked)
+	}
+}
+
+const onExitTransition34To35 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-09-06T03:15:42Z"
+  generateName: exit-handlers-
+  generation: 14
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: exit-handlers-vlgnn
+  namespace: argo
+  resourceVersion: "16106"
+  uid: 6aba2433-e6e0-4248-adae-d53a0259287a
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: intentional-fail
+  onExit: exit-handler
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - echo intentional failure; exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: intentional-fail
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: exit-handler
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: notify
+        template: send-email
+      - arguments: {}
+        name: celebrate
+        template: celebrate
+        when: '{{workflow.status}} == Succeeded'
+      - arguments: {}
+        name: cry
+        template: cry
+        when: '{{workflow.status}} != Succeeded'
+  - container:
+      args:
+      - 'echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}'
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: send-email
+    outputs: {}
+  - container:
+      args:
+      - echo hooray!
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: celebrate
+    outputs: {}
+  - container:
+      args:
+      - echo boohoo!
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: cry
+    outputs: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-09-06T03:16:00Z"
+  message: Error (exit code 1)
+  nodes:
+    exit-handlers-vlgnn:
+      displayName: exit-handlers-vlgnn
+      finishedAt: "2024-09-06T03:15:48Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-vlgnn
+      message: Error (exit code 1)
+      name: exit-handlers-vlgnn
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-vlgnn/exit-handlers-vlgnn/main.log
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2024-09-06T03:15:42Z"
+      templateName: intentional-fail
+      templateScope: local/exit-handlers-vlgnn
+      type: Pod
+    exit-handlers-vlgnn-18917582:
+      children:
+      - exit-handlers-vlgnn-432467920
+      displayName: exit-handlers-vlgnn.onExit
+      finishedAt: "2024-09-06T03:16:00Z"
+      id: exit-handlers-vlgnn-18917582
+      name: exit-handlers-vlgnn.onExit
+      outboundNodes:
+      - exit-handlers-vlgnn-405344999
+      - exit-handlers-vlgnn-1736589959
+      - exit-handlers-vlgnn-3931273942
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 12
+      startedAt: "2024-09-06T03:15:51Z"
+      templateName: exit-handler
+      templateScope: local/exit-handlers-vlgnn
+      type: Steps
+    exit-handlers-vlgnn-405344999:
+      boundaryID: exit-handlers-vlgnn-18917582
+      displayName: notify
+      finishedAt: "2024-09-06T03:15:57Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-vlgnn-405344999
+      name: exit-handlers-vlgnn.onExit[0].notify
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-vlgnn/exit-handlers-vlgnn-send-email-405344999/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2024-09-06T03:15:51Z"
+      templateName: send-email
+      templateScope: local/exit-handlers-vlgnn
+      type: Pod
+    exit-handlers-vlgnn-432467920:
+      boundaryID: exit-handlers-vlgnn-18917582
+      children:
+      - exit-handlers-vlgnn-405344999
+      - exit-handlers-vlgnn-1736589959
+      - exit-handlers-vlgnn-3931273942
+      displayName: '[0]'
+      finishedAt: "2024-09-06T03:16:00Z"
+      id: exit-handlers-vlgnn-432467920
+      name: exit-handlers-vlgnn.onExit[0]
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 12
+      startedAt: "2024-09-06T03:15:51Z"
+      templateScope: local/exit-handlers-vlgnn
+      type: StepGroup
+    exit-handlers-vlgnn-1736589959:
+      boundaryID: exit-handlers-vlgnn-18917582
+      displayName: celebrate
+      finishedAt: "2024-09-06T03:15:51Z"
+      id: exit-handlers-vlgnn-1736589959
+      message: when 'Failed == Succeeded' evaluated false
+      name: exit-handlers-vlgnn.onExit[0].celebrate
+      phase: Skipped
+      startedAt: "2024-09-06T03:15:51Z"
+      templateName: celebrate
+      templateScope: local/exit-handlers-vlgnn
+      type: Skipped
+    exit-handlers-vlgnn-3931273942:
+      boundaryID: exit-handlers-vlgnn-18917582
+      displayName: cry
+      finishedAt: "2024-09-06T03:15:57Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: exit-handlers-vlgnn-3931273942
+      name: exit-handlers-vlgnn.onExit[0].cry
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handlers-vlgnn/exit-handlers-vlgnn-cry-3931273942/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2024-09-06T03:15:51Z"
+      templateName: cry
+      templateScope: local/exit-handlers-vlgnn
+      type: Pod
+  phase: Failed
+  progress: 2/3
+  resourcesDuration:
+    cpu: 0
+    memory: 18
+  startedAt: "2024-09-06T03:15:42Z"
+  taskResultsCompletionStatus:
+    exit-handlers-vlgnn: true
+    exit-handlers-vlgnn-405344999: true
+    exit-handlers-vlgnn-3931273942: true
+
+`
+
+func TestOnExitTransitionWorks(t *testing.T) {
+	require := require.New(t)
+	assert := assert.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(onExitTransition34To35)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	if !woc.definitePostNodeFlagsWf() {
+		woc.maybeUpgradeWithNodeFlags()
+	}
+
+	node, err := woc.wf.Status.Nodes.Get("exit-handlers-vlgnn-18917582")
+	require.NoError(err)
+	require.NotNil(node.NodeFlag)
+	assert.Equal(true, node.NodeFlag.Hooked)
+	assert.Equal(false, node.NodeFlag.Retried)
+
+}
+
+const lifecycleHooksTransition34To35 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-09-06T02:48:03Z"
+  generateName: lifecycle-hook-tmpl-level-
+  generation: 16
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: lifecycle-hook-tmpl-level-fnsc2
+  namespace: argo
+  resourceVersion: "15176"
+  uid: 8cda768b-7347-4fff-9a01-bd135c193339
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: main
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+    steps:
+    - - arguments: {}
+        hooks:
+          running:
+            arguments: {}
+            expression: steps["step-1"].status == "Running"
+            template: http
+          success:
+            arguments: {}
+            expression: steps["step-1"].status == "Succeeded"
+            template: http
+        name: step-1
+        template: echo
+    - - arguments: {}
+        hooks:
+          running:
+            arguments: {}
+            expression: steps.step2.status == "Running"
+            template: http
+          success:
+            arguments: {}
+            expression: steps.step2.status == "Succeeded"
+            template: http
+        name: step2
+        template: echo
+  - container:
+      args:
+      - echo "it was heads"
+      command:
+      - sh
+      - -c
+      image: alpine:3.6
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+  - http:
+      url: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
+    inputs: {}
+    metadata: {}
+    name: http
+    outputs: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-09-06T02:48:26Z"
+  nodes:
+    lifecycle-hook-tmpl-level-fnsc2:
+      children:
+      - lifecycle-hook-tmpl-level-fnsc2-1531345
+      displayName: lifecycle-hook-tmpl-level-fnsc2
+      finishedAt: "2024-09-06T02:48:26Z"
+      id: lifecycle-hook-tmpl-level-fnsc2
+      name: lifecycle-hook-tmpl-level-fnsc2
+      outboundNodes:
+      - lifecycle-hook-tmpl-level-fnsc2-2208115362
+      phase: Succeeded
+      progress: 6/6
+      resourcesDuration:
+        cpu: 0
+        memory: 14
+      startedAt: "2024-09-06T02:48:03Z"
+      templateName: main
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: Steps
+    lifecycle-hook-tmpl-level-fnsc2-1531345:
+      boundaryID: lifecycle-hook-tmpl-level-fnsc2
+      children:
+      - lifecycle-hook-tmpl-level-fnsc2-3456423245
+      displayName: '[0]'
+      finishedAt: "2024-09-06T02:48:18Z"
+      id: lifecycle-hook-tmpl-level-fnsc2-1531345
+      name: lifecycle-hook-tmpl-level-fnsc2[0]
+      phase: Succeeded
+      progress: 6/6
+      resourcesDuration:
+        cpu: 0
+        memory: 14
+      startedAt: "2024-09-06T02:48:03Z"
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: StepGroup
+    lifecycle-hook-tmpl-level-fnsc2-360075306:
+      boundaryID: lifecycle-hook-tmpl-level-fnsc2
+      displayName: step-1.hooks.running
+      finishedAt: "2024-09-06T02:48:17Z"
+      id: lifecycle-hook-tmpl-level-fnsc2-360075306
+      name: lifecycle-hook-tmpl-level-fnsc2[0].step-1.hooks.running
+      outputs:
+        result: |
+          {
+            "swagger": "2.0",
+            "info": {
+              "title": "pkg/apis/workflow/v1alpha1/generated.proto",
+              "version": "version not set"
+            },
+            "consumes": [
+              "application/json"
+            ],
+            "produces": [
+              "application/json"
+            ],
+            "paths": {},
+            "definitions": {}
+          }
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2024-09-06T02:48:13Z"
+      templateName: http
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: HTTP
+    lifecycle-hook-tmpl-level-fnsc2-1008335580:
+      boundaryID: lifecycle-hook-tmpl-level-fnsc2
+      children:
+      - lifecycle-hook-tmpl-level-fnsc2-2208115362
+      displayName: '[1]'
+      finishedAt: "2024-09-06T02:48:26Z"
+      id: lifecycle-hook-tmpl-level-fnsc2-1008335580
+      name: lifecycle-hook-tmpl-level-fnsc2[1]
+      phase: Succeeded
+      progress: 3/3
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-09-06T02:48:18Z"
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: StepGroup
+    lifecycle-hook-tmpl-level-fnsc2-1256113581:
+      boundaryID: lifecycle-hook-tmpl-level-fnsc2
+      displayName: step2.hooks.success
+      finishedAt: "2024-09-06T02:48:25Z"
+      id: lifecycle-hook-tmpl-level-fnsc2-1256113581
+      name: lifecycle-hook-tmpl-level-fnsc2[1].step2.hooks.success
+      outputs:
+        result: |
+          {
+            "swagger": "2.0",
+            "info": {
+              "title": "pkg/apis/workflow/v1alpha1/generated.proto",
+              "version": "version not set"
+            },
+            "consumes": [
+              "application/json"
+            ],
+            "produces": [
+              "application/json"
+            ],
+            "paths": {},
+            "definitions": {}
+          }
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2024-09-06T02:48:24Z"
+      templateName: http
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: HTTP
+    lifecycle-hook-tmpl-level-fnsc2-2208115362:
+      boundaryID: lifecycle-hook-tmpl-level-fnsc2
+      children:
+      - lifecycle-hook-tmpl-level-fnsc2-2356721001
+      - lifecycle-hook-tmpl-level-fnsc2-1256113581
+      displayName: step2
+      finishedAt: "2024-09-06T02:48:21Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: lifecycle-hook-tmpl-level-fnsc2-2208115362
+      name: lifecycle-hook-tmpl-level-fnsc2[1].step2
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: lifecycle-hook-tmpl-level-fnsc2/lifecycle-hook-tmpl-level-fnsc2-echo-2208115362/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-09-06T02:48:18Z"
+      templateName: echo
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: Pod
+    lifecycle-hook-tmpl-level-fnsc2-2356721001:
+      boundaryID: lifecycle-hook-tmpl-level-fnsc2
+      displayName: step2.hooks.running
+      finishedAt: "2024-09-06T02:48:23Z"
+      id: lifecycle-hook-tmpl-level-fnsc2-2356721001
+      name: lifecycle-hook-tmpl-level-fnsc2[1].step2.hooks.running
+      outputs:
+        result: |
+          {
+            "swagger": "2.0",
+            "info": {
+              "title": "pkg/apis/workflow/v1alpha1/generated.proto",
+              "version": "version not set"
+            },
+            "consumes": [
+              "application/json"
+            ],
+            "produces": [
+              "application/json"
+            ],
+            "paths": {},
+            "definitions": {}
+          }
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2024-09-06T02:48:22Z"
+      templateName: http
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: HTTP
+    lifecycle-hook-tmpl-level-fnsc2-3192584278:
+      boundaryID: lifecycle-hook-tmpl-level-fnsc2
+      displayName: step-1.hooks.success
+      finishedAt: "2024-09-06T02:48:17Z"
+      id: lifecycle-hook-tmpl-level-fnsc2-3192584278
+      name: lifecycle-hook-tmpl-level-fnsc2[0].step-1.hooks.success
+      outputs:
+        result: |
+          {
+            "swagger": "2.0",
+            "info": {
+              "title": "pkg/apis/workflow/v1alpha1/generated.proto",
+              "version": "version not set"
+            },
+            "consumes": [
+              "application/json"
+            ],
+            "produces": [
+              "application/json"
+            ],
+            "paths": {},
+            "definitions": {}
+          }
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2024-09-06T02:48:16Z"
+      templateName: http
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: HTTP
+    lifecycle-hook-tmpl-level-fnsc2-3456423245:
+      boundaryID: lifecycle-hook-tmpl-level-fnsc2
+      children:
+      - lifecycle-hook-tmpl-level-fnsc2-360075306
+      - lifecycle-hook-tmpl-level-fnsc2-3192584278
+      - lifecycle-hook-tmpl-level-fnsc2-1008335580
+      displayName: step-1
+      finishedAt: "2024-09-06T02:48:13Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: lifecycle-hook-tmpl-level-fnsc2-3456423245
+      name: lifecycle-hook-tmpl-level-fnsc2[0].step-1
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: lifecycle-hook-tmpl-level-fnsc2/lifecycle-hook-tmpl-level-fnsc2-echo-3456423245/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 12
+      startedAt: "2024-09-06T02:48:03Z"
+      templateName: echo
+      templateScope: local/lifecycle-hook-tmpl-level-fnsc2
+      type: Pod
+  phase: Succeeded
+  progress: 6/6
+  resourcesDuration:
+    cpu: 0
+    memory: 14
+  startedAt: "2024-09-06T02:48:03Z"
+  taskResultsCompletionStatus:
+    lifecycle-hook-tmpl-level-fnsc2-2208115362: true
+    lifecycle-hook-tmpl-level-fnsc2-3456423245: true
+
+`
+
+func TestLifecycleHookTransition(t *testing.T) {
+	require := require.New(t)
+	assert := assert.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(lifecycleHooksTransition34To35)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	if !woc.definitePostNodeFlagsWf() {
+		woc.maybeUpgradeWithNodeFlags()
+	}
+
+	hooked := map[string]bool{
+		"lifecycle-hook-tmpl-level-fnsc2-360075306":  true,
+		"lifecycle-hook-tmpl-level-fnsc2-1256113581": true,
+		"lifecycle-hook-tmpl-level-fnsc2-2356721001": true,
+		"lifecycle-hook-tmpl-level-fnsc2-3192584278": true,
+	}
+
+	for nodeID, node := range woc.wf.Status.Nodes {
+		if !hooked[nodeID] {
+			if node.NodeFlag != nil {
+				assert.False(node.NodeFlag.Hooked)
+			}
+			continue
+		}
+		require.NotNil(node.NodeFlag)
+		assert.True(node.NodeFlag.Hooked)
+	}
+}
