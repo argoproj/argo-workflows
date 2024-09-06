@@ -3515,6 +3515,7 @@ otherwise).
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| approvers | []string| `[]string` |  | | List of approvers emails that are required to review the workflow before lifting the suspend.</br>TODO: define minimum length of at least 1 |  |
 | duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.</br>Could also be a Duration, e.g.: "2m", "6h" |  |
 
 

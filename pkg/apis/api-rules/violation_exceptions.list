@@ -28,6 +28,7 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SemaphoreStatus,Holding
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SemaphoreStatus,Waiting
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SubmitOpts,Parameters
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SuspendTemplate,Approvers
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Template,HostAliases
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Template,InitContainers
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Template,Sidecars
@@ -46,4 +47,5 @@ API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/w
 API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,ArtifactSearchResult,NodeID
 API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTPAuth,OAuth2
 API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SubmitOpts,Entrypoint
+API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowStatus,ApproversStatus
 API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowStatus,StoredWorkflowSpec

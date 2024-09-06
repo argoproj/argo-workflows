@@ -3922,6 +3922,13 @@ definitions:
     SuspendTemplate:
         description: SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
         properties:
+            approvers:
+                description: |-
+                    List of approvers emails that are required to review the workflow before lifting the suspend.
+                    TODO: define minimum length of at least 1
+                items:
+                    type: string
+                type: array
             duration:
                 description: |-
                     Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.

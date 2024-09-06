@@ -1547,6 +1547,10 @@ message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
   // Could also be a Duration, e.g.: "2m", "6h"
   optional string duration = 1;
+
+  // List of approvers emails that are required to review the workflow before lifting the suspend.
+  // TODO: define minimum length of at least 1
+  repeated string approvers = 2;
 }
 
 // Synchronization holds synchronization lock configuration
@@ -2147,6 +2151,9 @@ message WorkflowStatus {
 
   // TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
   map<string, bool> taskResultsCompletionStatus = 20;
+
+  // Approvers list for Suspend state
+  map<string, bool> ApproverStatus = 21;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

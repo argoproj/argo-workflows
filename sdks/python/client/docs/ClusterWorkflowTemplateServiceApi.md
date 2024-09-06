@@ -5236,6 +5236,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ]),
                     ],
                     suspend=IoArgoprojWorkflowV1alpha1SuspendTemplate(
+                        approvers=[
+                            "approvers_example",
+                        ],
                         duration="duration_example",
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
@@ -9803,6 +9806,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ]),
                         ],
                         suspend=IoArgoprojWorkflowV1alpha1SuspendTemplate(
+                            approvers=[
+                                "approvers_example",
+                            ],
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
@@ -16170,6 +16176,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ]),
                     ],
                     suspend=IoArgoprojWorkflowV1alpha1SuspendTemplate(
+                        approvers=[
+                            "approvers_example",
+                        ],
                         duration="duration_example",
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
@@ -20737,6 +20746,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ]),
                         ],
                         suspend=IoArgoprojWorkflowV1alpha1SuspendTemplate(
+                            approvers=[
+                                "approvers_example",
+                            ],
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
@@ -27008,6 +27020,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ]),
                     ],
                     suspend=IoArgoprojWorkflowV1alpha1SuspendTemplate(
+                        approvers=[
+                            "approvers_example",
+                        ],
                         duration="duration_example",
                     ),
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
@@ -31575,6 +31590,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ]),
                         ],
                         suspend=IoArgoprojWorkflowV1alpha1SuspendTemplate(
+                            approvers=[
+                                "approvers_example",
+                            ],
                             duration="duration_example",
                         ),
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(

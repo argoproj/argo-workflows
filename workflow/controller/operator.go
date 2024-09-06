@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime/debug"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -178,6 +179,11 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	if woc.wf.Status.StoredTemplates == nil {
 		woc.wf.Status.StoredTemplates = make(map[string]wfv1.Template)
 	}
+
+	if woc.wf.Status.ApproversStatus == nil {
+		woc.wf.Status.ApproversStatus = make(map[string]bool)
+	}
+
 	return &woc
 }
 
@@ -3464,7 +3470,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	if err != nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag)
 		woc.resolveInputFieldsForSuspendNode(node)
-		woc.addApproversInputFields(node, tmpl.Suspend.Approvers)
+		woc.addApproversStatus(tmpl.Suspend.Approvers)
 	}
 	woc.log.Infof("node %s suspended", nodeName)
 
@@ -3503,7 +3509,21 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	// Check if there are approvers
 	if len(tmpl.Suspend.Approvers) > 0 {
 		// Check if there are approved reviews
+		approveds := woc.wf.Status.ApproversStatus
+		approvals := 0
+		for approver, value := range approveds {
+			if slices.Contains(tmpl.Suspend.Approvers, approver) {
+				if value {
+					approvals += 1
+				}
+			}
+		}
 
+		if approvals == len(tmpl.Suspend.Approvers) {
+			woc.log.Infof("fully approved and resuming node %s", nodeName)
+			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+			return node, nil
+		}
 	}
 
 	if requeueTime != nil {
@@ -3542,21 +3562,35 @@ func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatu
 }
 
 // Add input fields for all approvers of the suspend step to check whether they approved the suspend.
-func (woc *wfOperationCtx) addApproversInputFields(node *wfv1.NodeStatus, approvers []string) {
+func (woc *wfOperationCtx) addApproversStatus(approvers []string) {
 	if len(approvers) <= 0 {
 		return
 	}
-	for i, approver := range approvers {
+	for _, approver := range approvers {
 		if approver != "" {
 			// TODO change to user account instead of string
-			name := fmt.Sprintf("Approver-%d", i)
-			value := approver
-			tempParameter := wfv1.Parameter{Name: name, Value: wfv1.AnyStringPtr(value)}
+			name := approver
+			woc.wf.Status.ApproversStatus[name] = false
+		}
+	}
+}
 
-			if node.Inputs == nil {
-				node.Inputs = &wfv1.Inputs{Parameters: make([]wfv1.Parameter, 0)}
+// Approve an approver by name
+func (woc *wfOperationCtx) approveApprovers(approvers []wfv1.AnyString, approver string) {
+	if !slices.Contains(approvers, wfv1.AnyString(approver)) {
+		return
+	}
+
+	parameters := woc.wf.Status.ApproversStatus
+	for name, value := range parameters {
+		if name == approver {
+			if value {
+				woc.log.Debugf("%s already approved, skipping.", approver)
+				return
+			} else {
+				woc.wf.Status.ApproversStatus[name] = true
+				woc.log.Infof("%s approved", approver)
 			}
-			node.Inputs.Parameters = append(node.Inputs.Parameters, tempParameter)
 		}
 	}
 }

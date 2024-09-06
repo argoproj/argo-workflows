@@ -1946,6 +1946,9 @@ type WorkflowStatus struct {
 
 	// TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
+
+	// Approvers list for Suspend state
+	ApproversStatus map[string]bool `json:"ApproversStatus,omitempty" protobuf:"bytes,21,opt,name=ApproverStatus"`
 }
 
 func (ws *WorkflowStatus) MarkTaskResultIncomplete(name string) {
@@ -3262,6 +3265,7 @@ type SuspendTemplate struct {
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 
 	// List of approvers emails that are required to review the workflow before lifting the suspend.
+	// TODO: define minimum length of at least 1
 	Approvers []string `json:"approvers,omitempty" protobuf:"bytes,2,opt,name=approvers"`
 }
 

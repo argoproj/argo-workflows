@@ -2828,8 +2828,8 @@ func TestSuspendApprove(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
-	// TODO: approve by required approvers
-	// time.Sleep(4 * time.Second)
+	approvers := []wfv1.AnyString{"test@mail.com"}
+	woc.approveApprovers(approvers, "test@mail.com")
 
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(wf, controller)
@@ -2838,6 +2838,115 @@ func TestSuspendApprove(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
+
+var suspendApproversM = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: approve
+        template: approve
+    - - name: release
+        template: whalesay
+
+  - name: approve
+    suspend:
+      approvers: 
+      - 'test@mail.com'
+      - 'test2@mail.com'
+
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestSuspendApproveMultiple(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should become in a suspended state after
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(suspendApproversM)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.True(t, util.IsWorkflowSuspended(wf))
+
+	// operate again and verify no pods were scheduled
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	require.NoError(t, err)
+	assert.Empty(t, pods.Items)
+
+	approvers := []wfv1.AnyString{"test@mail.com", "test2@mail.com"}
+	woc.approveApprovers(approvers, "test2@mail.com")
+
+	// operate again and verify no pods were scheduled
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err = listPods(woc)
+	require.NoError(t, err)
+	assert.Empty(t, pods.Items)
+
+	woc.approveApprovers(approvers, "test@mail.com")
+
+	// operate the workflow. it should reach the second step
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err = listPods(woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+}
+
+// var suspendApproversN = `
+// apiVersion: argoproj.io/v1alpha1
+// kind: Workflow
+// metadata:
+//   name: suspend-template
+// spec:
+//   entrypoint: suspend
+//   templates:
+//   - name: suspend
+//     steps:
+//     - - name: approve
+//         template: approve
+//     - - name: release
+//         template: whalesay
+
+//   - name: approve
+//     suspend:
+//       approvers:
+
+//   - name: whalesay
+//     container:
+//       image: docker/whalesay
+//       command: [cowsay]
+//       args: ["hello world"]
+// `
+
+// func TestApproveNone(t *testing.T) {
+// 	cancel, controller := newController()
+// 	defer cancel()
+// 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+// 	// operate the workflow. it should become in a suspended state after
+// 	ctx := context.Background()
+// 	wf := wfv1.MustUnmarshalWorkflow(suspendApproversN)
+// 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+//   require.Error(t, err)
+// }
 
 var suspendResumeAfterTemplate = `
 apiVersion: argoproj.io/v1alpha1

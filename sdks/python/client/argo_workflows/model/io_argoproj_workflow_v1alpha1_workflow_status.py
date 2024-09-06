@@ -103,6 +103,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
         """
         lazy_import()
         return {
+            'approvers_status': ({str: (bool,)},),  # noqa: E501
             'artifact_gc_status': (IoArgoprojWorkflowV1alpha1ArtGCStatus,),  # noqa: E501
             'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus,),  # noqa: E501
             'compressed_nodes': (str,),  # noqa: E501
@@ -130,6 +131,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
 
 
     attribute_map = {
+        'approvers_status': 'ApproversStatus',  # noqa: E501
         'artifact_gc_status': 'artifactGCStatus',  # noqa: E501
         'artifact_repository_ref': 'artifactRepositoryRef',  # noqa: E501
         'compressed_nodes': 'compressedNodes',  # noqa: E501
@@ -192,6 +194,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            approvers_status ({str: (bool,)}): Approvers list for Suspend state. [optional]  # noqa: E501
             artifact_gc_status (IoArgoprojWorkflowV1alpha1ArtGCStatus): [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus): [optional]  # noqa: E501
             compressed_nodes (str): Compressed and base64 decoded Nodes map. [optional]  # noqa: E501
@@ -292,6 +295,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            approvers_status ({str: (bool,)}): Approvers list for Suspend state. [optional]  # noqa: E501
             artifact_gc_status (IoArgoprojWorkflowV1alpha1ArtGCStatus): [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus): [optional]  # noqa: E501
             compressed_nodes (str): Compressed and base64 decoded Nodes map. [optional]  # noqa: E501
