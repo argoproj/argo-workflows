@@ -786,6 +786,13 @@ func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1
 	} else if len(wfSpec.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = wfSpec.NodeSelector
 	}
+	// Set nodeName (if specified)
+	if tmpl.NodeName != "" {
+		pod.Spec.NodeName = tmpl.NodeName
+	} else if wfSpec.NodeName != "" {
+		pod.Spec.NodeName = wfSpec.NodeName
+	}
+
 	// Set affinity (if specified)
 	if tmpl.Affinity != nil {
 		pod.Spec.Affinity = tmpl.Affinity
