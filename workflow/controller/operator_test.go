@@ -6812,19 +6812,47 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 }
 
 func Test_processItem(t *testing.T) {
-	task := wfv1.DAGTask{
-		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+	testCases := []struct {
+		taskName   string
+		task       wfv1.DAGTask
+		wantedName string
+	}{
+		{
+			taskName: "task-name",
+			task: wfv1.DAGTask{
+				WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+			},
+			wantedName: `task-name(0:json.list.0:0,json.list.1:1,json.list:[0,"1"],json.number:2,json.string:foo,json:{"list":[0,"1"],"number":2,"string":"foo"},list.0:0,list.1:1,list:[0,"1"],number:2,string:foo)`,
+		},
+		{
+			taskName: "task-name",
+			task: wfv1.DAGTask{
+				WithParam: `[["arr1", "arr2"]]`,
+			},
+			wantedName: "task-name(0:[arr1 arr2])",
+		},
+		{
+			taskName: "task-name",
+			task: wfv1.DAGTask{
+				WithParam: `["value"]`,
+			},
+			wantedName: "task-name(0:value)",
+		},
 	}
-	taskBytes, err := json.Marshal(task)
-	require.NoError(t, err)
-	var items []wfv1.Item
-	wfv1.MustUnmarshal([]byte(task.WithParam), &items)
 
-	var newTask wfv1.DAGTask
-	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "")
-	require.NoError(t, err)
-	assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
+	for _, tc := range testCases {
+		taskBytes, err := json.Marshal(tc.task)
+		assert.NoError(t, err)
+		var items []wfv1.Item
+		wfv1.MustUnmarshal([]byte(tc.task.WithParam), &items)
+
+		var newTask wfv1.DAGTask
+		tmpl, _ := template.NewTemplate(string(taskBytes))
+		newTaskName, err := processItem(tmpl, tc.taskName, 0, items[0], &newTask, "")
+		if assert.NoError(t, err) {
+			assert.Equal(t, tc.wantedName, newTaskName)
+		}
+	}
 }
 
 var stepTimeoutWf = `
