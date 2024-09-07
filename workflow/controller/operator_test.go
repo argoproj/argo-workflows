@@ -6838,6 +6838,13 @@ func Test_processItem(t *testing.T) {
 			},
 			wantedName: "task-name(0:value)",
 		},
+		{
+			taskName: "task-name",
+			task: wfv1.DAGTask{
+				WithParam: `[{"nested": {"object": "example"}}]`,
+			},
+			wantedName: `task-name(0:nested.object:example,nested:{"object":"example"})`,
+		},
 	}
 
 	for _, tc := range testCases {
