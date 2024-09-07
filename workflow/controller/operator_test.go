@@ -6813,52 +6813,96 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 
 func Test_processItem(t *testing.T) {
 	testCases := []struct {
+		name       string
 		taskName   string
-		task       wfv1.DAGTask
+		withParam  string
+		withItems  []wfv1.Item
 		wantedName string
 	}{
 		{
-			taskName: "task-name",
-			task: wfv1.DAGTask{
-				WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
-			},
-			wantedName: `task-name(0:json.list.0:0,json.list.1:1,json.list:[0,"1"],json.number:2,json.string:foo,json:{"list":[0,"1"],"number":2,"string":"foo"},list.0:0,list.1:1,list:[0,"1"],number:2,string:foo)`,
+			name:       "WithParam: Complex JSON object",
+			taskName:   "task-name",
+			withParam:  `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+			wantedName: `task-name(0:json.list.0:0,json.list.1:1,json.list:[0,"1"],json.number:2,json.string:foo,json:{"number":2,"string":"foo","list":[0,"1"]},list.0:0,list.1:1,list:[0,"1"],number:2,string:foo)`,
 		},
 		{
+			name:       "WithParam: Array of strings",
+			taskName:   "task-name",
+			withParam:  `[["arr1", "arr2"]]`,
+			wantedName: "task-name(0:[arr1 arr2])",
+		},
+		{
+			name:       "WithParam: Single string value",
+			taskName:   "task-name",
+			withParam:  `["value"]`,
+			wantedName: "task-name(0:value)",
+		},
+		{
+			name:       "WithParam: Nested object",
+			taskName:   "task-name",
+			withParam:  `[{"nested": {"object": "example"}}]`,
+			wantedName: `task-name(0:nested.object:example,nested:{"object":"example"})`,
+		},
+		{
+			name:     "WithItems: Complex JSON object",
 			taskName: "task-name",
-			task: wfv1.DAGTask{
-				WithParam: `[["arr1", "arr2"]]`,
+			withItems: []wfv1.Item{
+				{Value: json.RawMessage(`{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}`)},
+			},
+			wantedName: `task-name(0:json.list.0:0,json.list.1:1,json.list:[0,"1"],json.number:2,json.string:foo,json:{"number":2,"string":"foo","list":[0,"1"]},list.0:0,list.1:1,list:[0,"1"],number:2,string:foo)`,
+		},
+		{
+			name:     "WithItems: Array of strings",
+			taskName: "task-name",
+			withItems: []wfv1.Item{
+				{Value: json.RawMessage(`["arr1", "arr2"]`)},
 			},
 			wantedName: "task-name(0:[arr1 arr2])",
 		},
 		{
+			name:     "WithItems: Single string value",
 			taskName: "task-name",
-			task: wfv1.DAGTask{
-				WithParam: `["value"]`,
+			withItems: []wfv1.Item{
+				{Value: json.RawMessage(`"value"`)},
 			},
 			wantedName: "task-name(0:value)",
 		},
 		{
+			name:     "WithItems: Nested object",
 			taskName: "task-name",
-			task: wfv1.DAGTask{
-				WithParam: `[{"nested": {"object": "example"}}]`,
+			withItems: []wfv1.Item{
+				{Value: json.RawMessage(`{"nested": {"object": "example"}}`)},
 			},
 			wantedName: `task-name(0:nested.object:example,nested:{"object":"example"})`,
 		},
 	}
 
 	for _, tc := range testCases {
-		taskBytes, err := json.Marshal(tc.task)
-		assert.NoError(t, err)
-		var items []wfv1.Item
-		wfv1.MustUnmarshal([]byte(tc.task.WithParam), &items)
+		t.Run(tc.name, func(t *testing.T) {
+			var task wfv1.DAGTask
+			var items []wfv1.Item
 
-		var newTask wfv1.DAGTask
-		tmpl, _ := template.NewTemplate(string(taskBytes))
-		newTaskName, err := processItem(tmpl, tc.taskName, 0, items[0], &newTask, "")
-		if assert.NoError(t, err) {
+			if tc.withParam != "" {
+				task.WithParam = tc.withParam
+				err := json.Unmarshal([]byte(tc.withParam), &items)
+				require.NoError(t, err, "Failed to unmarshal withParam")
+				require.Len(t, items, 1, "Expected one item in withParam")
+			} else {
+				task.WithItems = tc.withItems
+				items = tc.withItems
+			}
+
+			taskBytes, err := json.Marshal(task)
+			require.NoError(t, err, "Failed to marshal task")
+
+			tmpl, err := template.NewTemplate(string(taskBytes))
+			require.NoError(t, err, "Failed to create template")
+
+			var newTask wfv1.DAGTask
+			newTaskName, err := processItem(tmpl, tc.taskName, 0, items[0], &newTask, "")
+			require.NoError(t, err, "processItem failed")
 			assert.Equal(t, tc.wantedName, newTaskName)
-		}
+		})
 	}
 }
 
