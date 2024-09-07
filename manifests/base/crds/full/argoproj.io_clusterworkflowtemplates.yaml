@@ -1729,6 +1729,8 @@ spec:
                 required:
                 - prometheus
                 type: object
+              nodeName:
+                type: string
               nodeSelector:
                 additionalProperties:
                   type: string
@@ -7210,6 +7212,8 @@ spec:
                     - prometheus
                     type: object
                   name:
+                    type: string
+                  nodeName:
                     type: string
                   nodeSelector:
                     additionalProperties:
@@ -15696,6 +15700,8 @@ spec:
                       - prometheus
                       type: object
                     name:
+                      type: string
+                    nodeName:
                       type: string
                     nodeSelector:
                       additionalProperties:

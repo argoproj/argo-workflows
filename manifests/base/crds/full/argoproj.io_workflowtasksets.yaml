@@ -5281,6 +5281,8 @@ spec:
                       type: object
                     name:
                       type: string
+                    nodeName:
+                      type: string
                     nodeSelector:
                       additionalProperties:
                         type: string

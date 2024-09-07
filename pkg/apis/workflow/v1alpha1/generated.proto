@@ -1601,6 +1601,11 @@ message Template {
   // run on the selected node(s). Overrides the selector set at the workflow level.
   map<string, string> nodeSelector = 7;
 
+  // NodeName is a selector which will result in all pods of the workflow
+  // to be scheduled on the selected node(s). This is able to be overridden by
+  // a nodeName specified in the template.
+  optional string nodeName = 44;
+
   // Affinity sets the pod's scheduling constraints
   // Overrides the affinity set at the workflow level (if any)
   optional k8s.io.api.core.v1.Affinity affinity = 8;
@@ -2083,6 +2088,11 @@ message WorkflowSpec {
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
   optional WorkflowLevelArtifactGC artifactGC = 43;
+
+  // NodeName is a selector which will result in all pods of the workflow
+  // to be scheduled on the selected node(s). This is able to be overridden by
+  // a nodeName specified in the template.
+  optional string nodeName = 44;
 }
 
 // WorkflowStatus contains overall status information about a workflow
