@@ -3411,7 +3411,7 @@ HDFSArtifact is the location of an HDFS artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
-|`dataTransferProtection`|`string`|DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: "authentication", "integrity", "privacy", or empty.|
+|`dataTransferProtection`|`string`|DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.|
 |`force`|`boolean`|Force copies a file forcibly even if it exists|
 |`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.|
 |`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.|
@@ -4195,7 +4195,7 @@ HDFSArtifactRepository defines the controller configuration for an HDFS artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
-|`dataTransferProtection`|`string`|DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: "authentication", "integrity", "privacy", or empty.|
+|`dataTransferProtection`|`string`|DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.|
 |`force`|`boolean`|Force copies a file forcibly even if it exists|
 |`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.|
 |`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.|

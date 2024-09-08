@@ -2928,7 +2928,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref common.ReferenceCallback
 					},
 					"dataTransferProtection": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.",
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3027,7 +3027,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifactRepository(ref common.Referen
 					},
 					"dataTransferProtection": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.",
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3124,7 +3124,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref common.ReferenceCallback) 
 					},
 					"dataTransferProtection": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.",
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

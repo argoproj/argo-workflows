@@ -9231,7 +9231,7 @@
           }
         },
         "dataTransferProtection": {
-          "description": "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.",
+          "description": "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.",
           "type": "string"
         },
         "force": {
@@ -9284,7 +9284,7 @@
           }
         },
         "dataTransferProtection": {
-          "description": "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \"authentication\", \"integrity\", \"privacy\", or empty.",
+          "description": "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.",
           "type": "string"
         },
         "force": {

@@ -6,7 +6,7 @@ HDFSArtifactRepository defines the controller configuration for an HDFS artifact
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **addresses** | **[str]** | Addresses is accessible addresses of HDFS name nodes | [optional] 
-**data_transfer_protection** | **str** | DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. It can be one of the following values: \&quot;authentication\&quot;, \&quot;integrity\&quot;, \&quot;privacy\&quot;, or empty. | [optional] 
+**data_transfer_protection** | **str** | DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS. | [optional] 
 **force** | **bool** | Force copies a file forcibly even if it exists | [optional] 
 **hdfs_user** | **str** | HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used. | [optional] 
 **krb_c_cache_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 

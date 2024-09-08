@@ -50,12 +50,6 @@ type KeytabOptions struct {
 	Realm    string
 }
 
-const (
-	DataTransferProtectionAuthentication = "authentication"
-	DataTransferProtectionIntegrity      = "integrity"
-	DataTransferProtectionPrivacy        = "privacy"
-)
-
 // ValidateArtifact validates HDFS artifact
 func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 	if len(art.Addresses) == 0 {
@@ -79,13 +73,6 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 	}
 	if hasKrbCCache && (art.KrbServicePrincipalName == "" || art.KrbConfigConfigMap == nil) {
 		return errors.Errorf(errors.CodeBadRequest, "%s.krbServicePrincipalName and %s.krbConfigConfigMap are required with %s.krbCCacheSecret", errPrefix, errPrefix, errPrefix)
-	}
-
-	switch art.DataTransferProtection {
-	case "", DataTransferProtectionAuthentication, DataTransferProtectionIntegrity, DataTransferProtectionPrivacy:
-		// Do nothing
-	default:
-		return errors.Errorf(errors.CodeBadRequest, "%s.dataTransferProtection must be one of 'authentication', 'integrity', 'privacy', or empty", errPrefix)
 	}
 
 	return nil
