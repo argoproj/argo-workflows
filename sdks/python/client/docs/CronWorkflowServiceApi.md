@@ -1010,6 +1010,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                     ),
+                    node_name="node_name_example",
                     node_selector={
                         "key": "key_example",
                     },
@@ -3581,6 +3582,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                         name="name_example",
+                        node_name="node_name_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -8148,6 +8150,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                             name="name_example",
+                            node_name="node_name_example",
                             node_selector={
                                 "key": "key_example",
                             },
@@ -12024,6 +12027,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                     ),
+                    node_name="node_name_example",
                     node_selector={
                         "key": "key_example",
                     },
@@ -14595,6 +14599,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                         name="name_example",
+                        node_name="node_name_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -19162,6 +19167,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                             name="name_example",
+                            node_name="node_name_example",
                             node_selector={
                                 "key": "key_example",
                             },
@@ -23123,6 +23129,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                     ),
+                    node_name="node_name_example",
                     node_selector={
                         "key": "key_example",
                     },
@@ -25694,6 +25701,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ],
                         ),
                         name="name_example",
+                        node_name="node_name_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -30261,6 +30269,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ],
                             ),
                             name="name_example",
+                            node_name="node_name_example",
                             node_selector={
                                 "key": "key_example",
                             },

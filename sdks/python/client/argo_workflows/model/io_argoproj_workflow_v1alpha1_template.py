@@ -152,6 +152,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
             'metrics': (IoArgoprojWorkflowV1alpha1Metrics,),  # noqa: E501
             'name': (str,),  # noqa: E501
+            'node_name': (str,),  # noqa: E501
             'node_selector': ({str: (str,)},),  # noqa: E501
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'parallelism': (int,),  # noqa: E501
@@ -199,6 +200,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'metadata': 'metadata',  # noqa: E501
         'metrics': 'metrics',  # noqa: E501
         'name': 'name',  # noqa: E501
+        'node_name': 'nodeName',  # noqa: E501
         'node_selector': 'nodeSelector',  # noqa: E501
         'outputs': 'outputs',  # noqa: E501
         'parallelism': 'parallelism',  # noqa: E501
@@ -281,6 +283,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
             name (str): Name is the name of the template. [optional]  # noqa: E501
+            node_name (str): NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeName specified in the template.. [optional]  # noqa: E501
             node_selector ({str: (str,)}): NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
@@ -401,6 +404,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
             name (str): Name is the name of the template. [optional]  # noqa: E501
+            node_name (str): NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeName specified in the template.. [optional]  # noqa: E501
             node_selector ({str: (str,)}): NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
