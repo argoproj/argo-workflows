@@ -173,6 +173,17 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 		return nil, err
 	}
 
+	if r.dbType == MySQL {
+		// workaround for mysql 42000 error (Unsupported subquery syntax):
+		//
+		//     Error 1235 (42000): This version of MySQL doesn't yet support 'LIMIT \u0026 IN/ALL/ANY/SOME subquery'
+		//
+		// more context:
+		// * https://dev.mysql.com/doc/refman/8.0/en/subquery-errors.html
+		// * https://dev.to/gkoniaris/limit-mysql-subquery-results-inside-a-where-in-clause-using-laravel-s-eloquent-orm-26en
+		subSelector = r.session.SQL().Select(db.Raw("*")).From(subSelector).As("x")
+	}
+
 	selector := r.session.SQL().Select(selectQuery).From(archiveTableName).Where(
 		r.clusterManagedNamespaceAndInstanceID().And(db.Cond{"uid IN": subSelector}),
 	)
