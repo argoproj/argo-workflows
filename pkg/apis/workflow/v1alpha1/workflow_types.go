@@ -301,6 +301,11 @@ type WorkflowSpec struct {
 	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow
 	Suspend *bool `json:"suspend,omitempty" protobuf:"bytes,9,opt,name=suspend"`
 
+	// NodeName is a selector which will result in all pods of the workflow
+	// to be scheduled on the selected node(s). This can be overridden by
+	// a nodeName specified in the template.
+	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,44,opt,name=nodeName"`
+
 	// NodeSelector is a selector which will result in all pods of the workflow
 	// to be scheduled on the selected node(s). This is able to be overridden by
 	// a nodeSelector specified in the template.
@@ -429,11 +434,6 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
-
-	// NodeName is a selector which will result in all pods of the workflow
-	// to be scheduled on the selected node(s). This is able to be overridden by
-	// a nodeName specified in the template.
-	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,44,opt,name=nodeName"`
 }
 
 type LabelValueFrom struct {
@@ -618,14 +618,14 @@ type Template struct {
 	// Outputs describe the parameters and artifacts that this template produces
 	Outputs Outputs `json:"outputs,omitempty" protobuf:"bytes,6,opt,name=outputs"`
 
+	// NodeName is a selector which will result in all pods of the workflow
+	// to be scheduled on the selected node(s). This can be overridden by
+	// a nodeName specified in the template.
+	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,44,opt,name=nodeName"`
+
 	// NodeSelector is a selector to schedule this step of the workflow to be
 	// run on the selected node(s). Overrides the selector set at the workflow level.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,7,opt,name=nodeSelector"`
-
-	// NodeName is a selector which will result in all pods of the workflow
-	// to be scheduled on the selected node(s). This is able to be overridden by
-	// a nodeName specified in the template.
-	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,44,opt,name=nodeName"`
 
 	// Affinity sets the pod's scheduling constraints
 	// Overrides the affinity set at the workflow level (if any)

@@ -7019,7 +7019,7 @@
           "type": "string"
         },
         "nodeName": {
-          "description": "NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeName specified in the template.",
+          "description": "NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This can be overridden by a nodeName specified in the template.",
           "type": "string"
         },
         "nodeSelector": {
@@ -7780,7 +7780,7 @@
           "description": "Metrics are a list of metrics emitted from this Workflow"
         },
         "nodeName": {
-          "description": "NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeName specified in the template.",
+          "description": "NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This can be overridden by a nodeName specified in the template.",
           "type": "string"
         },
         "nodeSelector": {

@@ -1597,14 +1597,14 @@ message Template {
   // Outputs describe the parameters and artifacts that this template produces
   optional Outputs outputs = 6;
 
+  // NodeName is a selector which will result in all pods of the workflow
+  // to be scheduled on the selected node(s). This can be overridden by
+  // a nodeName specified in the template.
+  optional string nodeName = 44;
+
   // NodeSelector is a selector to schedule this step of the workflow to be
   // run on the selected node(s). Overrides the selector set at the workflow level.
   map<string, string> nodeSelector = 7;
-
-  // NodeName is a selector which will result in all pods of the workflow
-  // to be scheduled on the selected node(s). This is able to be overridden by
-  // a nodeName specified in the template.
-  optional string nodeName = 44;
 
   // Affinity sets the pod's scheduling constraints
   // Overrides the affinity set at the workflow level (if any)
@@ -1960,6 +1960,11 @@ message WorkflowSpec {
   // Suspend will suspend the workflow and prevent execution of any future steps in the workflow
   optional bool suspend = 9;
 
+  // NodeName is a selector which will result in all pods of the workflow
+  // to be scheduled on the selected node(s). This can be overridden by
+  // a nodeName specified in the template.
+  optional string nodeName = 44;
+
   // NodeSelector is a selector which will result in all pods of the workflow
   // to be scheduled on the selected node(s). This is able to be overridden by
   // a nodeSelector specified in the template.
@@ -2088,11 +2093,6 @@ message WorkflowSpec {
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
   optional WorkflowLevelArtifactGC artifactGC = 43;
-
-  // NodeName is a selector which will result in all pods of the workflow
-  // to be scheduled on the selected node(s). This is able to be overridden by
-  // a nodeName specified in the template.
-  optional string nodeName = 44;
 }
 
 // WorkflowStatus contains overall status information about a workflow

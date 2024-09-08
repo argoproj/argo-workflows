@@ -27,7 +27,7 @@ Name | Type | Description | Notes
 **metadata** | [**IoArgoprojWorkflowV1alpha1Metadata**](IoArgoprojWorkflowV1alpha1Metadata.md) |  |  [optional]
 **metrics** | [**IoArgoprojWorkflowV1alpha1Metrics**](IoArgoprojWorkflowV1alpha1Metrics.md) |  |  [optional]
 **name** | **String** | Name is the name of the template |  [optional]
-**nodeName** | **String** | NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeName specified in the template. |  [optional]
+**nodeName** | **String** | NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This can be overridden by a nodeName specified in the template. |  [optional]
 **nodeSelector** | **Map&lt;String, String&gt;** | NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level. |  [optional]
 **outputs** | [**IoArgoprojWorkflowV1alpha1Outputs**](IoArgoprojWorkflowV1alpha1Outputs.md) |  |  [optional]
 **parallelism** | **Integer** | Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total. |  [optional]

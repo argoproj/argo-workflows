@@ -6147,6 +6147,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
 						},
 					},
+					"nodeName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This can be overridden by a nodeName specified in the template.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"nodeSelector": {
 						SchemaProps: spec.SchemaProps{
 							Description: "NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.",
@@ -6161,13 +6168,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 									},
 								},
 							},
-						},
-					},
-					"nodeName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeName specified in the template.",
-							Type:        []string{"string"},
-							Format:      "",
 						},
 					},
 					"affinity": {
@@ -7485,6 +7485,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"nodeName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This can be overridden by a nodeName specified in the template.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"nodeSelector": {
 						SchemaProps: spec.SchemaProps{
 							Description: "NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.",
@@ -7740,13 +7747,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC"),
-						},
-					},
-					"nodeName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeName specified in the template.",
-							Type:        []string{"string"},
-							Format:      "",
 						},
 					},
 				},

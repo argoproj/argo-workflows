@@ -3641,7 +3641,7 @@ otherwise).
 | metadata | [Metadata](#metadata)| `Metadata` |  | |  |  |
 | metrics | [Metrics](#metrics)| `Metrics` |  | |  |  |
 | name | string| `string` |  | | Name is the name of the template |  |
-| nodeName | string| `string` |  | | NodeName is a selector which will result in all pods of the workflow</br>to be scheduled on the selected node(s). This is able to be overridden by</br>a nodeName specified in the template. |  |
+| nodeName | string| `string` |  | | NodeName is a selector which will result in all pods of the workflow</br>to be scheduled on the selected node(s). This can be overridden by</br>a nodeName specified in the template. |  |
 | nodeSelector | map of string| `map[string]string` |  | | NodeSelector is a selector to schedule this step of the workflow to be</br>run on the selected node(s). Overrides the selector set at the workflow level. |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the</br>boundaries of this template invocation. If additional steps/dag templates are invoked, the</br>pods created by those templates will not be counted towards this total. |  |

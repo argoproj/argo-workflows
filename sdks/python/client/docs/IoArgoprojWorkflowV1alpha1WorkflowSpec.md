@@ -21,7 +21,7 @@ Name | Type | Description | Notes
 **host_network** | **bool** | Host networking requested for this workflow pod. Default to false. | [optional] 
 **image_pull_secrets** | [**[LocalObjectReference]**](LocalObjectReference.md) | ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod | [optional] 
 **metrics** | [**IoArgoprojWorkflowV1alpha1Metrics**](IoArgoprojWorkflowV1alpha1Metrics.md) |  | [optional] 
-**node_name** | **str** | NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeName specified in the template. | [optional] 
+**node_name** | **str** | NodeName is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This can be overridden by a nodeName specified in the template. | [optional] 
 **node_selector** | **{str: (str,)}** | NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template. | [optional] 
 **on_exit** | **str** | OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1. | [optional] 
 **parallelism** | **int** | Parallelism limits the max total parallel pods that can execute at the same time in a workflow | [optional] 
