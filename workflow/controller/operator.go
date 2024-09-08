@@ -181,7 +181,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	return &woc
 }
 
-// Determines if this workflow is definitely after the introduction of
+// definitePostNodeFlagsWf determines if this workflow is definitely after the introduction of
 // the NodeFlag field.
 // used to avoid the O(n*m) loop in maybeUpgradeWithNodeFlags
 func (woc *wfOperationCtx) definitePostNodeFlagsWf() bool {
@@ -193,8 +193,9 @@ func (woc *wfOperationCtx) definitePostNodeFlagsWf() bool {
 	return false
 }
 
+// maybeUpgradeWithNodeFlags upgrades old workflows without
+// NodeFlag fields into ones with.
 func (woc *wfOperationCtx) maybeUpgradeWithNodeFlags() {
-
 	parentsMap := make(map[string]*wfv1.NodeStatus)
 
 	for _, node := range woc.wf.Status.Nodes {
@@ -214,7 +215,7 @@ func (woc *wfOperationCtx) maybeUpgradeWithNodeFlags() {
 			newNode.NodeFlag = &wfv1.NodeFlag{Hooked: true}
 		}
 
-		if common.CheckRetryNode(parentsMap, node.ID) {
+		if common.CheckRetryNodeParent(parentsMap, node.ID) {
 			if newNode.NodeFlag == nil {
 				newNode.NodeFlag = &wfv1.NodeFlag{}
 			}
