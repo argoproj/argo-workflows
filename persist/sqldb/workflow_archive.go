@@ -184,6 +184,12 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 		subSelector = r.session.SQL().Select(db.Raw("*")).From(subSelector).As("x")
 	}
 
+	// why a subquery? the json unmarshal triggers for every row in the filter
+	// query. by filtering on uid first, we delay json parsing until a single
+	// row, speeding up the query(e.g. up to 257 times faster for some
+	// deployments).
+	//
+	// more context: https://github.com/argoproj/argo-workflows/pull/13566
 	selector := r.session.SQL().Select(selectQuery).From(archiveTableName).Where(
 		r.clusterManagedNamespaceAndInstanceID().And(db.Cond{"uid IN": subSelector}),
 	)
