@@ -1052,9 +1052,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 func TestWorkflowMemoizationWithMutex(t *testing.T) {
 	// This is needed because this test explicitly checks the behaviour
 	// of Holding
-	oldVersion := os.Getenv("HOLDER_KEY_VERSION")
-	os.Setenv("HOLDER_KEY_VERSION", "v1")
-	defer os.Setenv("HOLDER_KEY_VERSION", oldVersion)
+	t.Setenv("HOLDER_KEY_VERSION", "v1")
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -127,7 +126,7 @@ func TestMutexLock(t *testing.T) {
 		assert.Len(t, concurrenyMgr.syncLockMap, 1)
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {
-		os.Setenv("HOLDER_KEY_VERSION", "v1")
+		t.Setenv("HOLDER_KEY_VERSION", "v1")
 		var nextWorkflow string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			nextWorkflow = key
