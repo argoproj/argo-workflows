@@ -11,7 +11,7 @@ metadata:
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
 spec:
-  entrypoint: whalesay
+  entrypoint: print-message-from-configmap
 
   templates:
   - name: print-message-from-configmap

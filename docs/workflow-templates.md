@@ -150,7 +150,7 @@ kind: Workflow
 metadata:
   generateName: hello-world-wf-global-arg-
 spec:
-  entrypoint: whalesay
+  entrypoint: print-message
   arguments:
     parameters:
       - name: global-parameter
