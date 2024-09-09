@@ -46,6 +46,9 @@ const (
 	// AnnotationKeyPodNameVersion stores the pod naming convention version
 	AnnotationKeyPodNameVersion = workflow.WorkflowFullName + "/pod-name-format"
 
+	// AnnotationKeyProgress is N/M progress for the node
+	AnnotationKeyProgress = workflow.WorkflowFullName + "/progress"
+
 	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
