@@ -67,6 +67,7 @@ interface Props {
     onTabSelected?: (tabSelected: string) => void;
     selectedTabKey?: string;
     onResume?: () => void;
+    onApproval?: () => void;
 }
 
 const AttributeRow = (attr: {title: string; value: any}) => (
@@ -83,7 +84,7 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
     </div>
 );
 
-function DisplayWorkflowTime(props: {date: Date | string | number; timestampKey: TIMESTAMP_KEYS}) {
+export function DisplayWorkflowTime(props: {date: Date | string | number; timestampKey: TIMESTAMP_KEYS}) {
     const {date} = props;
 
     if (date === null || date === undefined) return <div>-</div>;
@@ -105,6 +106,7 @@ function WorkflowNodeSummary(props: Props) {
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
         {title: 'ID', value: <ClipboardText text={props.node.id} />},
         {title: 'TYPE', value: props.node.type},
+        {title: 'APPROVALS', value: 'X/X (todo get nr of approvers current/required)'},
         {
             title: 'PHASE',
             value: <Phase value={props.node.phase} />
@@ -183,6 +185,11 @@ function WorkflowNodeSummary(props: Props) {
                 {props.node.type === 'Suspend' && props.onResume && (
                     <Button icon='play' onClick={() => props.onResume()}>
                         RESUME
+                    </Button>
+                )}{' '}
+                {props.node.type === 'Suspend' && props.onApproval && (
+                    <Button icon='check' onClick={() => props.onApproval()}>
+                        APPROVE
                     </Button>
                 )}{' '}
                 {props.node.type !== 'Container' && props.onShowYaml && (

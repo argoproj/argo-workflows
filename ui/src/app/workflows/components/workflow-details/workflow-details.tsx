@@ -5,7 +5,7 @@ import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, Parameter, Workflow} from '../../../../models';
+import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, Parameter, Workflow, ApproverStatus} from '../../../../models';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -40,6 +40,7 @@ import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
 import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
 import {ArtifactPanel} from './artifact-panel';
 import {SuspendInputs} from './suspend-inputs';
+import {SuspendApprovals} from './suspend-approvals';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 import './workflow-details.scss';
@@ -105,6 +106,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const sidePanelRef = useRef<HTMLDivElement>(null);
     const [workflow, setWorkflow] = useState<Workflow>();
+    const [approverStatus, setApproverStati] = useState<ApproverStatus[]>([]);
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
     const selectedNode = workflow?.status?.nodes?.[nodeId];
@@ -179,6 +181,11 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     useEffect(() => {
         setParameters(getInputParametersForNode(nodeId));
+        const approvers: ApproverStatus[] = Object.entries(workflow?.status?.approversStatus || {}).map(([key, value]) => ({
+            approver: key,
+            approvalStatus: value
+        }));
+        setApproverStati(approvers);
     }, [nodeId, workflow]);
 
     const parsedSidePanel = parseSidePanelParam(sidePanel);
@@ -445,6 +452,21 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         return <SuspendInputs parameters={parameters} nodeId={nodeId} setParameter={setParameter} />;
     }
 
+    function setApproverStatus(key: string, value: boolean) {
+        setApproverStati(previous => {
+            return previous?.map(parameter => {
+                if (parameter.approver === key) {
+                    parameter.approvalStatus = value;
+                }
+                return parameter;
+            });
+        });
+    }
+
+    function renderSuspendApproveOptions() {
+        return <SuspendApprovals nodeId={nodeId} wfStartTime={workflow?.status?.startedAt} approverStatus={approverStatus} setApproverStatus={setApproverStatus} />;
+    }
+
     function getParametersAsJsonString() {
         const outputVariables: {[x: string]: string} = {};
         parameters.forEach(param => {
@@ -470,6 +492,15 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             if (!yes) return;
 
             updateOutputParametersForNodeIfRequired().then(resumeNode).catch(setError);
+        });
+    }
+
+    function renderApprovalPopup() {
+        return popup.confirm('Approval of Workflow Promotions', renderSuspendApproveOptions, false).then(yes => {
+            if (!yes) return;
+
+            resumeNode;
+            // updateOutputParametersForNodeIfRequired().then(resumeNode).catch(setError);
         });
     }
 
@@ -544,6 +575,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
                                         archived={archived}
                                         onResume={() => renderResumePopup()}
+                                        onApproval={() => renderApprovalPopup()}
                                     />
                                 )}
                                 {selectedArtifact && (

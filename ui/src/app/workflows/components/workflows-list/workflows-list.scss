@@ -21,6 +21,10 @@
         &--checkbox {
             margin-right: 12px;
         }
+
+        &--approval {
+            margin-left: 12px;
+        }
     }
 
     &__link-wrapper {
@@ -232,6 +236,25 @@
         top: 1em;
         right: 1em;
     }
+}
+
+.approval-list {
+
+  margin: 0 !important;
+  
+  &__current {
+      background-color: $argo-color-teal-3;
+      margin: 0 !important;
+
+      .columns {
+          padding: 0.15em;
+      }
+  }
+
+  .columns {
+      padding: 0.15em;
+  }
+
 }
 
 .row.pt-60 {

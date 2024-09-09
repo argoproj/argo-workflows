@@ -131,7 +131,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
 
 
     attribute_map = {
-        'approvers_status': 'ApproversStatus',  # noqa: E501
+        'approvers_status': 'approversStatus',  # noqa: E501
         'artifact_gc_status': 'artifactGCStatus',  # noqa: E501
         'artifact_repository_ref': 'artifactRepositoryRef',  # noqa: E501
         'compressed_nodes': 'compressedNodes',  # noqa: E501

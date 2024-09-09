@@ -1948,7 +1948,7 @@ type WorkflowStatus struct {
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
 
 	// Approvers list for Suspend state
-	ApproversStatus map[string]bool `json:"ApproversStatus,omitempty" protobuf:"bytes,21,opt,name=ApproverStatus"`
+	ApproversStatus map[string]bool `json:"approversStatus,omitempty" protobuf:"bytes,21,opt,name=approversStatus"`
 }
 
 func (ws *WorkflowStatus) MarkTaskResultIncomplete(name string) {

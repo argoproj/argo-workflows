@@ -2153,7 +2153,7 @@ message WorkflowStatus {
   map<string, bool> taskResultsCompletionStatus = 20;
 
   // Approvers list for Suspend state
-  map<string, bool> ApproverStatus = 21;
+  map<string, bool> approversStatus = 21;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

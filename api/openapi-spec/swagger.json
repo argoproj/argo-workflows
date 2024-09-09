@@ -11836,7 +11836,7 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
-        "ApproversStatus": {
+        "approversStatus": {
           "description": "Approvers list for Suspend state",
           "type": "object",
           "additionalProperties": {

@@ -7913,7 +7913,7 @@
     "io.argoproj.workflow.v1alpha1.WorkflowStatus": {
       "description": "WorkflowStatus contains overall status information about a workflow",
       "properties": {
-        "ApproversStatus": {
+        "approversStatus": {
           "additionalProperties": {
             "type": "boolean"
           },

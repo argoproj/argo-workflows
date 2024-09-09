@@ -69,6 +69,12 @@ export interface ArtifactRepository {
     http?: HTTPArtifactRepository;
     raw?: RawArtifactRepository;
 }
+
+export interface ApproverStatus {
+    approver: string;
+    approvalStatus: boolean;
+}
+
 export interface ArtifactRepositoryRefStatus {
     artifactRepository: ArtifactRepository;
 }
@@ -765,6 +771,11 @@ export interface WorkflowStatus {
      * StoredWorkflowTemplateSpec is a Workflow Spec of top level WorkflowTemplate.
      */
     storedWorkflowTemplateSpec?: WorkflowSpec;
+
+    /**
+     * ApproverStatus is a key-value map containing list of approvers and their approval status.
+     */
+    approversStatus?: ApproverStatus;
 
     artifactRepositoryRef?: ArtifactRepositoryRefStatus;
 }

@@ -7940,7 +7940,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							},
 						},
 					},
-					"ApproversStatus": {
+					"approversStatus": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Approvers list for Suspend state",
 							Type:        []string{"object"},

@@ -19880,7 +19880,7 @@ spec:
             type: object
           status:
             properties:
-              ApproversStatus:
+              approversStatus:
                 additionalProperties:
                   type: boolean
                 type: object
