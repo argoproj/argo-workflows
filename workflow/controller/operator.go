@@ -234,10 +234,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.addArtifactGCFinalizer()
 
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
-	err = woc.taskResultReconciliation()
-	if err != nil {
-		woc.markWorkflowError(ctx, fmt.Errorf("failed to reconcile: %v", err))
-	}
+	woc.taskResultReconciliation()
 
 	// Do artifact GC if task result reconciliation is complete.
 	if woc.wf.Status.Fulfilled() {
@@ -999,7 +996,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		maxDurationDeadline := time.Time{}
 		// Process max duration limit
 		if retryStrategy.Backoff.MaxDuration != "" && len(childNodeIds) > 0 {
-			maxDuration, err := parseStringToDuration(retryStrategy.Backoff.MaxDuration)
+			maxDuration, err := wfv1.ParseStringToDuration(retryStrategy.Backoff.MaxDuration)
 			if err != nil {
 				return nil, false, err
 			}
@@ -1019,7 +1016,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			return nil, false, fmt.Errorf("no base duration specified for retryStrategy")
 		}
 
-		baseDuration, err := parseStringToDuration(retryStrategy.Backoff.Duration)
+		baseDuration, err := wfv1.ParseStringToDuration(retryStrategy.Backoff.Duration)
 		if err != nil {
 			return nil, false, err
 		}
@@ -1227,7 +1224,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			}
 
 			if recentlyStarted {
-				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
+				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
 				// workflow will not update for 20m. Requeuing here prevents that happening.
 				woc.requeue()
@@ -1315,19 +1312,6 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 		pods[i] = pod
 	}
 	return pods, nil
-}
-
-func (woc *wfOperationCtx) getAllWorkflowPodsMap() (map[string]*apiv1.Pod, error) {
-	podList, err := woc.getAllWorkflowPods()
-	if err != nil {
-		return nil, err
-	}
-	podMap := make(map[string]*apiv1.Pod)
-	for _, pod := range podList {
-		nodeID := woc.nodeID(pod)
-		podMap[nodeID] = pod
-	}
-	return podMap, nil
 }
 
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
@@ -1496,13 +1480,33 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 	}
 
+	waitContainerCleanedUp := true
 	// We cannot fail the node if the wait container is still running because it may be busy saving outputs, and these
 	// would not get captured successfully.
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Running != nil && new.Phase.Completed() {
-			woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
-			new.Phase = old.Phase
+		if c.Name == common.WaitContainerName {
+			waitContainerCleanedUp = false
+			switch {
+			case c.State.Running != nil && new.Phase.Completed():
+				woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
+				new.Phase = old.Phase
+			case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
+				// Mark its taskResult as completed directly since wait container did not exit normally,
+				// and it will never have a chance to report taskResult correctly.
+				nodeID := woc.nodeID(pod)
+				woc.log.WithFields(log.Fields{"nodeID": nodeID, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
+					Warn("marking its taskResult as completed since wait container did not exit normally")
+				woc.wf.Status.MarkTaskResultComplete(nodeID)
+			}
 		}
+	}
+	if pod.Status.Phase == apiv1.PodFailed && pod.Status.Reason == "Evicted" && waitContainerCleanedUp {
+		// Mark its taskResult as completed directly since wait container has been cleaned up because of pod evicted,
+		// and it will never have a chance to report taskResult correctly.
+		nodeID := woc.nodeID(pod)
+		woc.log.WithFields(log.Fields{"nodeID": nodeID}).
+			Warn("marking its taskResult as completed since wait container has been cleaned up.")
+		woc.wf.Status.MarkTaskResultComplete(nodeID)
 	}
 
 	// if we are transitioning from Pending to a different state, clear out unchanged message
@@ -3265,13 +3269,64 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	// Adding per-output aggregated value placeholders
 	for outputName, valueList := range outputParamValueLists {
 		key = fmt.Sprintf("%s.outputs.parameters.%s", prefix, outputName)
-		valueListJSON, err := json.Marshal(valueList)
+		valueListJson, err := aggregatedJsonValueList(valueList)
 		if err != nil {
 			return err
 		}
-		scope.addParamToScope(key, string(valueListJSON))
+		scope.addParamToScope(key, valueListJson)
 	}
 	return nil
+}
+
+// tryJsonUnmarshal unmarshals each item in the list assuming it is
+// JSON and NOT a plain JSON value.
+// If returns success only if all items can be unmarshalled and are either
+// maps or lists
+func tryJsonUnmarshal(valueList []string) ([]interface{}, bool) {
+	success := true
+	var list []interface{}
+	for _, value := range valueList {
+		var unmarshalledValue interface{}
+		err := json.Unmarshal([]byte(value), &unmarshalledValue)
+		if err != nil {
+			success = false
+			break // Unmarshal failed, fall back to strings
+		}
+		switch unmarshalledValue.(type) {
+		case []interface{}:
+		case map[string]interface{}:
+			// Keep these types
+		default:
+			// Drop anything else
+			success = false
+		}
+		if !success {
+			break
+		}
+		list = append(list, unmarshalledValue)
+	}
+	return list, success
+}
+
+// aggregatedJsonValueList returns a string containing a JSON list, holding
+// all of the values from the valueList.
+// It tries to understand what's wanted from  inner JSON using tryJsonUnmarshall
+func aggregatedJsonValueList(valueList []string) (string, error) {
+	unmarshalledList, success := tryJsonUnmarshal(valueList)
+	var valueListJSON []byte
+	var err error
+	if success {
+		valueListJSON, err = json.Marshal(unmarshalledList)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		valueListJSON, err = json.Marshal(valueList)
+		if err != nil {
+			return "", err
+		}
+	}
+	return string(valueListJSON), nil
 }
 
 // addParamToGlobalScope exports any desired node outputs to the global scope, and adds it to the global outputs.
@@ -3421,7 +3476,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		if err != nil {
 			return nil, err
 		}
-		suspendDuration, err := parseStringToDuration(tmpl.Suspend.Duration)
+		suspendDuration, err := wfv1.ParseStringToDuration(tmpl.Suspend.Duration)
 		if err != nil {
 			return node, err
 		}
@@ -3492,19 +3547,6 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 		}
 	}
 	return node
-}
-
-func parseStringToDuration(durationString string) (time.Duration, error) {
-	var suspendDuration time.Duration
-	// If no units are attached, treat as seconds
-	if val, err := strconv.Atoi(durationString); err == nil {
-		suspendDuration = time.Duration(val) * time.Second
-	} else if duration, err := time.ParseDuration(durationString); err == nil {
-		suspendDuration = duration
-	} else {
-		return 0, fmt.Errorf("unable to parse %s as a duration: %w", durationString, err)
-	}
-	return suspendDuration, nil
 }
 
 func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {

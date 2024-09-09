@@ -185,6 +185,7 @@ memoizing
 metadata
 minikube
 mutex
+mutexes
 namespace
 namespaces
 natively
@@ -205,6 +206,7 @@ sandboxed
 shortcodes
 stateful
 stderr
+symlinks
 temporality
 triaged
 un-reconciled

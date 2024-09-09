@@ -3,6 +3,8 @@ package metrics
 import (
 	"context"
 
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+
 	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/metric"
 	"k8s.io/client-go/util/workqueue"
@@ -26,100 +28,100 @@ var _ workqueue.MetricsProvider = &Metrics{}
 type workersBusyRateLimiterWorkQueue struct {
 	workqueue.RateLimitingInterface
 	workerType string
-	busyGauge  *instrument
+	busyGauge  *telemetry.Instrument
 	// Evil storage of context for compatibility with legacy interface to workqueue
 	ctx context.Context
 }
 
 func addWorkQueueMetrics(_ context.Context, m *Metrics) error {
-	err := m.createInstrument(int64UpDownCounter,
+	err := m.CreateInstrument(telemetry.Int64UpDownCounter,
 		nameWorkersBusy,
 		"Number of workers currently busy",
 		"{worker}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
-	err = m.createInstrument(int64UpDownCounter,
+	err = m.CreateInstrument(telemetry.Int64UpDownCounter,
 		nameWorkersQueueDepth,
 		"Depth of the queue",
 		"{item}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
-	err = m.createInstrument(int64Counter,
+	err = m.CreateInstrument(telemetry.Int64Counter,
 		nameWorkersQueueAdds,
 		"Adds to the queue",
 		"{item}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
-	err = m.createInstrument(float64Histogram,
+	err = m.CreateInstrument(telemetry.Float64Histogram,
 		nameWorkersQueueLatency,
 		"Time objects spend waiting in the queue",
 		"s",
-		withDefaultBuckets([]float64{1.0, 5.0, 20.0, 60.0, 180.0}),
-		withAsBuiltIn(),
+		telemetry.WithDefaultBuckets([]float64{1.0, 5.0, 20.0, 60.0, 180.0}),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
-	err = m.createInstrument(float64Histogram,
+	err = m.CreateInstrument(telemetry.Float64Histogram,
 		nameWorkersQueueDuration,
 		"Time objects spend being processed from the queue",
 		"s",
-		withDefaultBuckets([]float64{0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 60.0, 180.0}),
-		withAsBuiltIn(),
+		telemetry.WithDefaultBuckets([]float64{0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 60.0, 180.0}),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
-	err = m.createInstrument(int64Counter,
+	err = m.CreateInstrument(telemetry.Int64Counter,
 		nameWorkersRetries,
 		"Retries in the queues",
 		"{item}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
-	err = m.createInstrument(float64ObservableGauge,
+	err = m.CreateInstrument(telemetry.Float64ObservableGauge,
 		nameWorkersUnfinishedWork,
 		"Unfinished work time",
 		"s",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
 	unfinishedCallback := queueUserdata{
-		gauge: m.allInstruments[nameWorkersUnfinishedWork],
+		gauge: m.AllInstruments[nameWorkersUnfinishedWork],
 	}
-	m.allInstruments[nameWorkersUnfinishedWork].userdata = &unfinishedCallback
-	err = m.allInstruments[nameWorkersUnfinishedWork].registerCallback(m, unfinishedCallback.update)
+	m.AllInstruments[nameWorkersUnfinishedWork].SetUserdata(&unfinishedCallback)
+	err = m.AllInstruments[nameWorkersUnfinishedWork].RegisterCallback(m.Metrics, unfinishedCallback.update)
 	if err != nil {
 		return err
 	}
 
-	err = m.createInstrument(float64ObservableGauge,
+	err = m.CreateInstrument(telemetry.Float64ObservableGauge,
 		nameWorkersLongestRunning,
 		"Longest running worker",
 		"s",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
 	longestRunningCallback := queueUserdata{
-		gauge: m.allInstruments[nameWorkersLongestRunning],
+		gauge: m.AllInstruments[nameWorkersLongestRunning],
 	}
-	m.allInstruments[nameWorkersLongestRunning].userdata = &longestRunningCallback
-	err = m.allInstruments[nameWorkersLongestRunning].registerCallback(m, longestRunningCallback.update)
+	m.AllInstruments[nameWorkersLongestRunning].SetUserdata(&longestRunningCallback)
+	err = m.AllInstruments[nameWorkersLongestRunning].RegisterCallback(m.Metrics, longestRunningCallback.update)
 	if err != nil {
 		return err
 	}
@@ -130,27 +132,27 @@ func (m *Metrics) RateLimiterWithBusyWorkers(ctx context.Context, workQueue work
 	queue := workersBusyRateLimiterWorkQueue{
 		RateLimitingInterface: workqueue.NewNamedRateLimitingQueue(workQueue, queueName),
 		workerType:            queueName,
-		busyGauge:             m.allInstruments[nameWorkersBusy],
+		busyGauge:             m.AllInstruments[nameWorkersBusy],
 		ctx:                   ctx,
 	}
 	queue.newWorker(ctx)
 	return queue
 }
 
-func (w *workersBusyRateLimiterWorkQueue) attributes() instAttribs {
-	return instAttribs{{name: labelWorkerType, value: w.workerType}}
+func (w *workersBusyRateLimiterWorkQueue) attributes() telemetry.InstAttribs {
+	return telemetry.InstAttribs{{Name: telemetry.AttribWorkerType, Value: w.workerType}}
 }
 
 func (w *workersBusyRateLimiterWorkQueue) newWorker(ctx context.Context) {
-	w.busyGauge.addInt(ctx, 0, w.attributes())
+	w.busyGauge.AddInt(ctx, 0, w.attributes())
 }
 
 func (w *workersBusyRateLimiterWorkQueue) workerBusy(ctx context.Context) {
-	w.busyGauge.addInt(ctx, 1, w.attributes())
+	w.busyGauge.AddInt(ctx, 1, w.attributes())
 }
 
 func (w *workersBusyRateLimiterWorkQueue) workerFree(ctx context.Context) {
-	w.busyGauge.addInt(ctx, -1, w.attributes())
+	w.busyGauge.AddInt(ctx, -1, w.attributes())
 }
 
 func (w workersBusyRateLimiterWorkQueue) Get() (interface{}, bool) {
@@ -168,29 +170,29 @@ func (w workersBusyRateLimiterWorkQueue) Done(item interface{}) {
 type queueMetric struct {
 	ctx   context.Context
 	name  string
-	inst  *instrument
+	inst  *telemetry.Instrument
 	value *float64
 }
 
 type queueUserdata struct {
-	gauge   *instrument
+	gauge   *telemetry.Instrument
 	metrics []queueMetric
 }
 
-func (q *queueMetric) attributes() instAttribs {
-	return instAttribs{{name: labelQueueName, value: q.name}}
+func (q *queueMetric) attributes() telemetry.InstAttribs {
+	return telemetry.InstAttribs{{Name: telemetry.AttribQueueName, Value: q.name}}
 }
 
 func (q queueMetric) Inc() {
-	q.inst.addInt(q.ctx, 1, q.attributes())
+	q.inst.AddInt(q.ctx, 1, q.attributes())
 }
 
 func (q queueMetric) Dec() {
-	q.inst.addInt(q.ctx, -1, q.attributes())
+	q.inst.AddInt(q.ctx, -1, q.attributes())
 }
 
 func (q queueMetric) Observe(val float64) {
-	q.inst.record(q.ctx, val, q.attributes())
+	q.inst.Record(q.ctx, val, q.attributes())
 }
 
 // Observable gauge stores in the shim
@@ -198,83 +200,83 @@ func (q queueMetric) Set(val float64) {
 	*(q.value) = val
 }
 
-func (i *instrument) queueUserdata() *queueUserdata {
-	switch val := i.userdata.(type) {
+func getQueueUserdata(i *telemetry.Instrument) *queueUserdata {
+	switch val := i.GetUserdata().(type) {
 	case *queueUserdata:
 		return val
 	default:
-		log.Errorf("internal error: unexpected userdata on queue metric %s", i.name)
+		log.Errorf("internal error: unexpected userdata on queue metric %s", i.GetName())
 		return &queueUserdata{}
 	}
 }
 
 func (q *queueUserdata) update(_ context.Context, o metric.Observer) error {
 	for _, metric := range q.metrics {
-		q.gauge.observeFloat(o, *metric.value, metric.attributes())
+		q.gauge.ObserveFloat(o, *metric.value, metric.attributes())
 	}
 	return nil
 }
 
 func (m *Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
 	return queueMetric{
-		ctx:  m.ctx,
+		ctx:  m.Ctx,
 		name: name,
-		inst: m.allInstruments[nameWorkersQueueDepth],
+		inst: m.AllInstruments[nameWorkersQueueDepth],
 	}
 }
 
 func (m *Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
 	return queueMetric{
-		ctx:  m.ctx,
+		ctx:  m.Ctx,
 		name: name,
-		inst: m.allInstruments[nameWorkersQueueAdds],
+		inst: m.AllInstruments[nameWorkersQueueAdds],
 	}
 }
 
 func (m *Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric {
 	return queueMetric{
-		ctx:  m.ctx,
+		ctx:  m.Ctx,
 		name: name,
-		inst: m.allInstruments[nameWorkersQueueLatency],
+		inst: m.AllInstruments[nameWorkersQueueLatency],
 	}
 }
 
 func (m *Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric {
 	return queueMetric{
-		ctx:  m.ctx,
+		ctx:  m.Ctx,
 		name: name,
-		inst: m.allInstruments[nameWorkersQueueDuration],
+		inst: m.AllInstruments[nameWorkersQueueDuration],
 	}
 }
 
 func (m *Metrics) NewRetriesMetric(name string) workqueue.CounterMetric {
 	return queueMetric{
-		ctx:  m.ctx,
+		ctx:  m.Ctx,
 		name: name,
-		inst: m.allInstruments[nameWorkersRetries],
+		inst: m.AllInstruments[nameWorkersRetries],
 	}
 }
 
 func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
 	metric := queueMetric{
-		ctx:   m.ctx,
+		ctx:   m.Ctx,
 		name:  name,
-		inst:  m.allInstruments[nameWorkersUnfinishedWork],
+		inst:  m.AllInstruments[nameWorkersUnfinishedWork],
 		value: pointer.Float64(0.0),
 	}
-	ud := metric.inst.queueUserdata()
+	ud := getQueueUserdata(metric.inst)
 	ud.metrics = append(ud.metrics, metric)
 	return metric
 }
 
 func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue.SettableGaugeMetric {
 	metric := queueMetric{
-		ctx:   m.ctx,
+		ctx:   m.Ctx,
 		name:  name,
-		inst:  m.allInstruments[nameWorkersLongestRunning],
+		inst:  m.AllInstruments[nameWorkersLongestRunning],
 		value: pointer.Float64(0.0),
 	}
-	ud := metric.inst.queueUserdata()
+	ud := getQueueUserdata(metric.inst)
 	ud.metrics = append(ud.metrics, metric)
 	return metric
 }

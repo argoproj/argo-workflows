@@ -24,9 +24,8 @@ func Test_objectToClusterWorkflowTemplate(t *testing.T) {
 			"spec":     "ops",
 		}})
 		require.EqualError(t, err, "malformed cluster workflow template \"my-name\": cannot restore struct from: string")
-		if assert.NotNil(t, v) {
-			assert.Equal(t, "my-name", v.Name)
-		}
+		require.NotNil(t, v)
+		assert.Equal(t, "my-name", v.Name)
 	})
 	t.Run("ClusterWorkflowTemplate", func(t *testing.T) {
 		v, err := objectToClusterWorkflowTemplate(&unstructured.Unstructured{})

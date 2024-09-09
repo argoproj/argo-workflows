@@ -32,6 +32,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -248,7 +249,7 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 }
 
 // test exporter extract metric values from the metrics subsystem
-var testExporter *metrics.TestExporter
+var testExporter *telemetry.TestMetricsExporter
 
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
@@ -716,20 +717,17 @@ spec:
 			assert.True(t, controller.processNextItem(ctx))
 
 			expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-				}
+				require.NotNil(t, wf)
+				assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			})
 			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
-				}
+				require.NotNil(t, wf)
+				assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+				assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 			})
 			expectWorkflow(ctx, controller, "my-wf-2", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
-				}
+				require.NotNil(t, wf)
+				assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
 			})
 		})
 	}
@@ -995,19 +993,17 @@ status:
 			// process my-wf-0; update status to Pending
 			assert.True(t, controller.processNextItem(ctx))
 			expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
-				}
+				require.NotNil(t, wf)
+				assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+				assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 			})
 
 			// process my-wf-1; update status to Pending
 			assert.True(t, controller.processNextItem(ctx))
 			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
-				if assert.NotNil(t, wf) {
-					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
-				}
+				require.NotNil(t, wf)
+				assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+				assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
 			})
 		})
 	}
@@ -1088,23 +1084,21 @@ status:
 				assert.True(t, controller.processNextItem(ctx))
 				if !ns0PendingWfTested {
 					expectNamespacedWorkflow(ctx, controller, "ns-0", "my-ns-0-wf-0", func(wf *wfv1.Workflow) {
-						if assert.NotNil(t, wf) {
-							if wf.Status.Phase != "" {
-								assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-								assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
-								ns0PendingWfTested = true
-							}
+						require.NotNil(t, wf)
+						if wf.Status.Phase != "" {
+							assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+							assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+							ns0PendingWfTested = true
 						}
 					})
 				}
 				if !ns1PendingWfTested {
 					expectNamespacedWorkflow(ctx, controller, "ns-1", "my-ns-1-wf-0", func(wf *wfv1.Workflow) {
-						if assert.NotNil(t, wf) {
-							if wf.Status.Phase != "" {
-								assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
-								assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
-								ns1PendingWfTested = true
-							}
+						require.NotNil(t, wf)
+						if wf.Status.Phase != "" {
+							assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+							assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+							ns1PendingWfTested = true
 						}
 					})
 				}

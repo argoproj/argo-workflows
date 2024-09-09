@@ -336,10 +336,11 @@ The rate of this shows how busy that area of the controller is.
 
 Queues:
 
-- `workflow_queue`: the queue of Workflow updates from the cluster
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
-- `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `workflow_queue`: the queue of Workflow updates from the cluster
+- `workflow_ttl_queue`: workflows which are queued for deletion due to age
+- `workflow_archive_queue`: workflows which are queued for archiving
 
 This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
 
