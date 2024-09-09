@@ -3,7 +3,6 @@ package sync
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -885,7 +884,7 @@ func TestMutexMigration(t *testing.T) {
 		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
 		wfMutex1 := wfMutex.DeepCopy()
 		wfMutex1.Name = "test1"
-		os.Setenv("HOLDER_KEY_VERSION", "v1")
+		t.Setenv("HOLDER_KEY_VERSION", "v1")
 		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex1, wfMutex1.Name, wfMutex1.Spec.Synchronization)
 		require.NoError(err)
 		assert.True(status)
@@ -923,7 +922,7 @@ func TestMutexMigration(t *testing.T) {
 		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
 		wfMutex2 := wfMutex.DeepCopy()
 		wfMutex2.Name = "test1"
-		os.Setenv("HOLDER_KEY_VERSION", "v1")
+		t.Setenv("HOLDER_KEY_VERSION", "v1")
 		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex2, wfMutex2.Name, wfMutex2.Spec.Synchronization)
 		require.NoError(err)
 		assert.True(status)
@@ -934,7 +933,7 @@ func TestMutexMigration(t *testing.T) {
 		holdingName := items[len(items)-1]
 		assert.Equal(wfMutex2.Status.Synchronization.Mutex.Holding[0].Holder, holdingName)
 
-		os.Setenv("HOLDER_KEY_VERSION", "v2")
+		t.Setenv("HOLDER_KEY_VERSION", "v2")
 
 		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
 		wfs := []wfv1.Workflow{*wfMutex2.DeepCopy()}
@@ -961,7 +960,7 @@ func TestMutexMigration(t *testing.T) {
 }
 
 func TestV2Mutex(t *testing.T) {
-	os.Setenv("HOLDER_KEY_VERSION", "v2")
+	t.Setenv("HOLDER_KEY_VERSION", "v2")
 	assert := assert.New(t)
 	require := require.New(t)
 	kube := fake.NewSimpleClientset()
