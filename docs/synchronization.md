@@ -1,7 +1,6 @@
 # Synchronization
 
 > v2.10 and after
-> v3.6 for multiple
 
 You can limit the parallel execution of workflows or templates:
 
@@ -152,6 +151,10 @@ Examples:
 1. [Workflow level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 1. [Step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level.yaml)
 1. [Step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
+1. [Legacy workflow level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-wf-level-legacy.yaml)
+1. [Legacy workflow level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
+1. [Legacy step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level-legacy.yaml)
+1. [Legacy step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
 ## Queuing
 
@@ -164,6 +167,8 @@ The queue is then ordered by `creationTimestamp`: older workflows are placed bef
 Workflows can only acquire a lock if they are at the front of the queue for that lock.
 
 ## Multiple locks
+
+> v3.6 and after
 
 You can specify multiple locks in a single workflow or template.
 
