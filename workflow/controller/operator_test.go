@@ -296,20 +296,20 @@ spec:
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	assert.Equal(t, wfv1.Progress("0/1"), woc.wf.Status.Progress)
-	assert.Equal(t, wfv1.Progress("0/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	assert.Equal(t, wfv1.Progress("0/100"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("0/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
 	pod := woc.wf.Status.Nodes.FindByDisplayName("pod")
-	assert.Equal(t, wfv1.Progress("0/1"), pod.Progress)
+	assert.Equal(t, wfv1.Progress("0/100"), pod.Progress)
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Progress)
-	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	assert.Equal(t, wfv1.Progress("100/100"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("100/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
 	pod = woc.wf.Status.Nodes.FindByDisplayName("pod")
-	assert.Equal(t, wfv1.Progress("1/1"), pod.Progress)
+	assert.Equal(t, wfv1.Progress("100/100"), pod.Progress)
 }
 
 var sidecarWithVol = `
