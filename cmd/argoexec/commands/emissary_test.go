@@ -50,11 +50,11 @@ func TestEmissary(t *testing.T) {
 	})
 	t.Run("Sub-process", func(t *testing.T) {
 		_ = os.Remove(varRunArgo + "/ctr/main/stdout")
-		err := run(`(sleep 60; echo 'should not wait for sub-process')& echo "hello\c"`)
+		err := run(`(sleep 60; echo 'should not wait for sub-process')& echo "hello"`)
 		require.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
 		require.NoError(t, err)
-		assert.Equal(t, "hello", string(data))
+		assert.Equal(t, "hello\n", string(data))
 	})
 	t.Run("Combined", func(t *testing.T) {
 		err := run("echo hello > /dev/stderr")
