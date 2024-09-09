@@ -112,6 +112,9 @@ func isTransientNetworkErr(err error) bool {
 	} else if strings.Contains(errorString, "connect: connection refused") {
 		// If err is connection refused, retry.
 		return true
+	} else if strings.Contains(errorString, "invalid connection") {
+		// If err is invalid connection, retry.
+		return true
 	}
 
 	return false
