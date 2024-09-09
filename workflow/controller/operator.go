@@ -205,10 +205,6 @@ func (woc *wfOperationCtx) maybeUpgradeWithNodeFlags() {
 		}
 	}
 
-	// Can be merged in with the previous loop.
-	// Merging wouldn't impact performance in a significant enough way.
-	// In fact this might be more performant thanks to better branch prediction
-	// in the previous loop.
 	for key, node := range woc.wf.Status.Nodes {
 		newNode := node
 		if common.CheckHookNode(node.Name) {
