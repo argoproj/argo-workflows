@@ -5,6 +5,8 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.6
 
+A list of [new features in 3.6](features-3.6.md).
+
 ### Fixed Server `--basehref` inconsistency
 
 For consistency, the Server now uses `--base-href` and `ARGO_BASE_HREF`.

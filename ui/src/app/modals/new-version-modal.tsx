@@ -17,6 +17,34 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
             <h4 className='new-version-modal-title'>
                 It looks like <b>{version}</b> has just been installed!
             </h4>
+            <h5>v3.6</h5>
+            <ul className='new-version-modal-bullets'>
+                <li>
+                    Metrics are available via the{' '}
+                    <a href='https://opentelemetry.io/' target='_blank' rel='noreferrer'>
+                        OpenTelemetry
+                    </a>{' '}
+                    protocol, and there are a number of new or changed metrics
+                </li>
+                <li>
+                    <a href='https://argo-workflows.readthedocs.io/en/release-3.5/cron-workflows?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                        Cron Workflows
+                    </a>{' '}
+                    have many more scheduling options including multiple schedules, a `when` expression and stopping strategies
+                </li>
+                <li>OSS artifacts are more versatile, supporting directories, deletion and streaming</li>
+                <li>Many UI updates including execution history of CronWorkflows</li>
+                <li>A number of improvements to performance and memory management</li>
+            </ul>
+            <p>
+                <a href='https://blog.argoproj.io/argo-workflows-3-6-aa037cd782be' target='_blank' rel='noreferrer'>
+                    Learn more
+                </a>{' '}
+                or{' '}
+                <a href='https://argo-workflows.readthedocs.io/en/release-3.6/features-3.6/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    see the list of changes
+                </a>
+            </p>
             <h5>v3.5</h5>
             <ul className='new-version-modal-bullets'>
                 <li>Removed Archived Workflows page; Workflows List page now shows both</li>

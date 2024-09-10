@@ -237,6 +237,7 @@ nav:
       - installation.md
       - releases.md
       - upgrading.md
+      - features-3.6.md
       - security.md
       - Configuration:
           - managed-namespace.md

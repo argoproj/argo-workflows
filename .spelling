@@ -105,6 +105,7 @@ Ploomber
 Postgres
 PriorityClass
 RCs
+Risc-V
 Roadmap
 RoleBinding
 SDKs
@@ -213,6 +214,7 @@ stateful
 stderr
 symlinks
 temporality
+tolerations
 triaged
 un-reconciled
 v1
