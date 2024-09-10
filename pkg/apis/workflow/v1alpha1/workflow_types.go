@@ -3787,6 +3787,8 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 	return true
 }
 
+// GetHolderKeyVersion returns the holder version to use after
+// checking with appropriate environment variable.
 func GetHolderKeyVersion() HoldingNameVersion {
 	switch os.Getenv("HOLDER_KEY_VERSION") {
 	case "v2":
@@ -3795,6 +3797,9 @@ func GetHolderKeyVersion() HoldingNameVersion {
 		return HoldingNameV1
 	}
 }
+
+// GetHoldingName returns the appropriate holding name dependent on
+// the `HOLDER_KEY_VERSION` environment variable.
 func GetHoldingName(holderKey string) string {
 	switch GetHolderKeyVersion() {
 	case HoldingNameV2:
