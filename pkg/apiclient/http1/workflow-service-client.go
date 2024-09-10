@@ -82,6 +82,11 @@ func (h WorkflowServiceClient) SetWorkflow(ctx context.Context, in *workflowpkg.
 	return out, h.Put(ctx, in, out, "/api/v1/workflows/{namespace}/{name}/set")
 }
 
+func (h WorkflowServiceClient) ApproveWorkflow(ctx context.Context, in *workflowpkg.WorkflowApproveRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
+	out := &wfv1.Workflow{}
+	return out, h.Put(ctx, in, out, "/api/v1/workflows/{namespace}/{name}/approve")
+}
+
 func (h WorkflowServiceClient) LintWorkflow(ctx context.Context, in *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
 	return out, h.Post(ctx, in, out, "/api/v1/workflows/{namespace}/lint")

@@ -5,7 +5,7 @@ import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, Parameter, Workflow, ApproverStatus} from '../../../../models';
+import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, Parameter, Workflow} from '../../../../models';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -106,7 +106,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const sidePanelRef = useRef<HTMLDivElement>(null);
     const [workflow, setWorkflow] = useState<Workflow>();
-    const [approverStatus, setApproverStati] = useState<ApproverStatus[]>([]);
+    const [approverStatus, setApproverStati] = useState<Map<string, boolean>>(new Map());
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
     const selectedNode = workflow?.status?.nodes?.[nodeId];
@@ -180,12 +180,13 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     useCollectEvent('openedWorkflowDetails');
 
     useEffect(() => {
+        if (approverStatus.size <= 0) {
+            setApproverStati(new Map(Object.entries(workflow?.status?.approversStatus || {})));
+        }
+    }, [workflow]);
+
+    useEffect(() => {
         setParameters(getInputParametersForNode(nodeId));
-        const approvers: ApproverStatus[] = Object.entries(workflow?.status?.approversStatus || {}).map(([key, value]) => ({
-            approver: key,
-            approvalStatus: value
-        }));
-        setApproverStati(approvers);
     }, [nodeId, workflow]);
 
     const parsedSidePanel = parseSidePanelParam(sidePanel);
@@ -422,6 +423,22 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         })();
     }, [namespace, name, uid]);
 
+    useEffect(() => {
+        if (!workflow) {
+            return;
+        }
+        setWorkflow(previous => {
+            const newWorkflow = {...previous};
+            newWorkflow.status.approversStatus = approverStatus;
+            return newWorkflow;
+        });
+        updateApproverStatuses().catch(setError);
+        if (Array.from(approverStatus).every(approver => approver[1])) {
+            resumeNode().catch(setError);
+            return;
+        }
+    }, [approverStatus]);
+
     function openLink(link: Link) {
         const object = {
             metadata: {
@@ -454,12 +471,12 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     function setApproverStatus(key: string, value: boolean) {
         setApproverStati(previous => {
-            return previous?.map(parameter => {
-                if (parameter.approver === key) {
-                    parameter.approvalStatus = value;
-                }
-                return parameter;
-            });
+            const newMap = new Map(previous);
+            newMap.set(key, value);
+            return newMap;
+        });
+        popup.close().then(yes => {
+            if (!yes) return;
         });
     }
 
@@ -483,6 +500,18 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         return Promise.resolve(null);
     }
 
+    function getApproverStatusesAsJsonString() {
+        const outputVariables: {[x: string]: boolean} = {};
+        approverStatus.forEach((value, key) => {
+            outputVariables[key] = value;
+        });
+        return JSON.stringify(outputVariables);
+    }
+
+    function updateApproverStatuses() {
+        return services.workflows.approve(workflow.metadata.name, workflow.metadata.namespace, getApproverStatusesAsJsonString());
+    }
+
     function resumeNode() {
         return services.workflows.resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId);
     }
@@ -498,9 +527,6 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     function renderApprovalPopup() {
         return popup.confirm('Approval of Workflow Promotions', renderSuspendApproveOptions, false).then(yes => {
             if (!yes) return;
-
-            resumeNode;
-            // updateOutputParametersForNodeIfRequired().then(resumeNode).catch(setError);
         });
     }
 
@@ -569,6 +595,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                         onTabSelected={setNodePanelView}
                                         selectedTabKey={nodePanelView}
                                         workflow={workflow}
+                                        approvals={approverStatus}
                                         links={links}
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}

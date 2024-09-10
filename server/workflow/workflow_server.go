@@ -654,6 +654,51 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
+func (s *workflowServer) ApproveWorkflow(ctx context.Context, req *workflowpkg.WorkflowApproveRequest) (*wfv1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	err = s.validateWorkflow(wf)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+	}
+
+	phaseToSet := wfv1.NodePhase(req.Phase)
+	switch phaseToSet {
+	case wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError, "":
+		// Do nothing, passes validation
+	default:
+		return nil, sutils.ToStatusError(fmt.Errorf("%s is an invalid phase to set to", req.Phase), codes.InvalidArgument)
+	}
+
+	approveParams := make(map[string]bool)
+	if req.ApproveParameters != "" {
+		err = json.Unmarshal([]byte(req.ApproveParameters), &approveParams)
+		if err != nil {
+			return nil, sutils.ToStatusError(fmt.Errorf("unable to parse output parameter set request: %s", err), codes.InvalidArgument)
+		}
+	}
+
+	operation := util.ApproveOperationValues{
+		Phase:             phaseToSet,
+		Message:           req.Message,
+		ApproveParameters: approveParams,
+	}
+
+	err = util.ApproveWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf.Name, operation)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	return wf, nil
+}
+
 func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.WorkflowLintRequest) (*wfv1.Workflow, error) {
 	if req.Workflow == nil {
 		return nil, fmt.Errorf("unable to get a workflow")

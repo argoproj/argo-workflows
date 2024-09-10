@@ -4,19 +4,19 @@ import {useState} from 'react';
 import {DisplayWorkflowTime} from '../workflow-node-info/workflow-node-info';
 import {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 import {Button} from '../../../shared/components/button';
-import {ApproverStatus, GetUserInfoResponse, kubernetes} from '../../../../models';
+import {GetUserInfoResponse, kubernetes} from '../../../../models';
 import {services} from '../../../shared/services';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 
 interface SuspendApprovalProps {
     nodeId: string;
     wfStartTime: kubernetes.Time;
-    approverStatus: ApproverStatus[];
+    approverStatus: Map<string, boolean>;
     setApproverStatus: (key: string, value: boolean) => void;
 }
 
 export function SuspendApprovals(props: SuspendApprovalProps) {
-    const [approverStatus, setApproverStati] = useState<ApproverStatus[]>(props.approverStatus);
+    const [approverStatus, setApproverStati] = useState<Map<string, boolean>>(props.approverStatus);
     const [error, setError] = useState<Error>(null);
     const [userInfo, setUserInfo] = useState<GetUserInfoResponse>();
 
@@ -33,24 +33,22 @@ export function SuspendApprovals(props: SuspendApprovalProps) {
     }, []);
 
     function setApproverStatus(key: string, value: boolean = true) {
-        props.setApproverStatus(key, value);
         setApproverStati(previous => {
-            return previous.map(param => {
-                if (param.approver === key) {
-                    param.approvalStatus = value;
-                }
-                return param;
-            });
+            const newMap = new Map(previous);
+            newMap.set(key, value);
+            return newMap;
         });
+        props.setApproverStatus(key, value);
     }
 
-    function renderApprovalRows(status: ApproverStatus[]) {
-        const body = status.map((approver, index) => {
-            console.log(approver.approver);
-            console.log(userInfo?.email);
-            return {
+    function renderApprovalRows(status: Map<string, boolean>) {
+        let index = -1;
+        const body: {id: number; approver: string; icon: JSX.Element; name: JSX.Element; status: JSX.Element; time: JSX.Element; action: JSX.Element}[] = [];
+        status.forEach((approverStatus, approver) => {
+            index += 1;
+            body.push({
                 id: index,
-                approver: approver.approver,
+                approver: approver,
                 icon: (
                     <div className='columns small-1'>
                         <i className='fa fa-solid fa-user-tie workflows-list__status--approval'></i>
@@ -58,19 +56,19 @@ export function SuspendApprovals(props: SuspendApprovalProps) {
                 ),
                 name: (
                     <div className='columns small-4'>
-                        <span>{approver.approver}</span>
+                        <span>{approver}</span>
                     </div>
                 ),
                 status: (
                     <div className='columns small-2'>
                         <span>
-                            {approver.approvalStatus ? (
+                            {approverStatus ? (
                                 <i className='fa fa-check-circle status-icon--success' aria-hidden='true'></i>
                             ) : (
                                 <i className='fa fa-circle-notch status-icon--running status-icon--spin' aria-hidden='true'></i>
                             )}
                         </span>
-                        <span>{approver.approvalStatus ? 'approved' : ' pending approval'}</span>
+                        <span>{approverStatus ? ' approved' : ' pending approval'}</span>
                     </div>
                 ),
                 time: (
@@ -80,18 +78,13 @@ export function SuspendApprovals(props: SuspendApprovalProps) {
                 ),
                 action: (
                     <div className='columns small-2'>
-                        <Button icon='check' disabled={approver.approver !== userInfo?.email && !approver.approvalStatus} onClick={() => setApproverStatus(approver.approver)}>
+                        <Button icon='check' disabled={approver !== userInfo?.email || approverStatus} onClick={() => setApproverStatus(approver)}>
                             Approve
                         </Button>
                     </div>
                 )
-            };
+            });
         });
-
-        // const rows = header.concat(body);
-
-        console.log('BODY');
-        console.log(body);
 
         return (
             <React.Fragment>
@@ -128,14 +121,11 @@ export function SuspendApprovals(props: SuspendApprovalProps) {
         );
     }
 
-    function renderFields(status: ApproverStatus[]) {
+    function renderFields(status: Map<string, boolean>) {
         return renderApprovalRows(status);
     }
 
     function renderInputContentIfApplicable() {
-        // if (parameters.length === 0) {
-        //     return <React.Fragment />;
-        // }
         return (
             <React.Fragment>
                 <h2>Approve</h2>

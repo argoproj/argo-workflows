@@ -4,6 +4,7 @@ All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**approve_workflow**](WorkflowServiceApi.md#approve_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/approve | 
 [**create_workflow**](WorkflowServiceApi.md#create_workflow) | **POST** /api/v1/workflows/{namespace} | 
 [**delete_workflow**](WorkflowServiceApi.md#delete_workflow) | **DELETE** /api/v1/workflows/{namespace}/{name} | 
 [**get_workflow**](WorkflowServiceApi.md#get_workflow) | **GET** /api/v1/workflows/{namespace}/{name} | 
@@ -22,6 +23,94 @@ Method | HTTP request | Description
 [**watch_workflows**](WorkflowServiceApi.md#watch_workflows) | **GET** /api/v1/workflow-events/{namespace} | 
 [**workflow_logs**](WorkflowServiceApi.md#workflow_logs) | **GET** /api/v1/workflows/{namespace}/{name}/log | 
 
+
+# **approve_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow approve_workflow(namespace, name, body)
+
+
+
+### Example
+
+* Api Key Authentication (BearerToken):
+
+```python
+import time
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_approve_request import IoArgoprojWorkflowV1alpha1WorkflowApproveRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost:2746
+# See configuration.py for a list of all supported configuration parameters.
+configuration = argo_workflows.Configuration(
+    host = "http://localhost:2746"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: BearerToken
+configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['BearerToken'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with argo_workflows.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = workflow_service_api.WorkflowServiceApi(api_client)
+    namespace = "namespace_example" # str | 
+    name = "name_example" # str | 
+    body = IoArgoprojWorkflowV1alpha1WorkflowApproveRequest(
+        approve_parameters="approve_parameters_example",
+        message="message_example",
+        name="name_example",
+        namespace="namespace_example",
+        phase="phase_example",
+    ) # IoArgoprojWorkflowV1alpha1WorkflowApproveRequest | 
+
+    # example passing only required values which don't have defaults set
+    try:
+        api_response = api_instance.approve_workflow(namespace, name, body)
+        pprint(api_response)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->approve_workflow: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **str**|  |
+ **name** | **str**|  |
+ **body** | [**IoArgoprojWorkflowV1alpha1WorkflowApproveRequest**](IoArgoprojWorkflowV1alpha1WorkflowApproveRequest.md)|  |
+
+### Return type
+
+[**IoArgoprojWorkflowV1alpha1Workflow**](IoArgoprojWorkflowV1alpha1Workflow.md)
+
+### Authorization
+
+[BearerToken](../README.md#BearerToken)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | A successful response. |  -  |
+**0** | An unexpected error response. |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **create_workflow**
 > IoArgoprojWorkflowV1alpha1Workflow create_workflow(namespace, body)

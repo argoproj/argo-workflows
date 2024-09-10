@@ -775,7 +775,7 @@ export interface WorkflowStatus {
     /**
      * ApproverStatus is a key-value map containing list of approvers and their approval status.
      */
-    approversStatus?: ApproverStatus;
+    approversStatus?: Map<string, boolean>;
 
     artifactRepositoryRef?: ArtifactRepositoryRefStatus;
 }

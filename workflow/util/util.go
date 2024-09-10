@@ -478,6 +478,12 @@ type SetOperationValues struct {
 	OutputParameters map[string]string
 }
 
+type ApproveOperationValues struct {
+	Phase             wfv1.NodePhase
+	Message           string
+	ApproveParameters map[string]bool
+}
+
 func AddParamToGlobalScope(wf *wfv1.Workflow, log *log.Entry, param wfv1.Parameter) bool {
 	wfUpdated := false
 	if param.GlobalName == "" {
@@ -1162,6 +1168,20 @@ func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydra
 		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, values)
 	}
 	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
+}
+
+func ApproveWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, workflowName string, values ApproveOperationValues) error {
+	wf, err := wfClient.Get(ctx, workflowName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	wf.Status.ApproversStatus = values.ApproveParameters
+
+	_, err = wfClient.Update(ctx, wf, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Reads from stdin

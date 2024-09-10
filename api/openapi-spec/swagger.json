@@ -3141,6 +3141,50 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/{name}/approve": {
+      "put": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "WorkflowService_ApproveWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowApproveRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}/log": {
       "get": {
         "tags": [
@@ -11364,6 +11408,26 @@
         },
         "status": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStatus"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowApproveRequest": {
+      "type": "object",
+      "properties": {
+        "approveParameters": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
         }
       }
     },

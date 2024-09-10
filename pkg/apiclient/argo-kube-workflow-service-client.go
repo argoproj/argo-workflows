@@ -84,6 +84,10 @@ func (c *argoKubeWorkflowServiceClient) SetWorkflow(ctx context.Context, req *wo
 	return c.delegate.SetWorkflow(ctx, req)
 }
 
+func (c *argoKubeWorkflowServiceClient) ApproveWorkflow(ctx context.Context, req *workflowpkg.WorkflowApproveRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	return c.delegate.ApproveWorkflow(ctx, req)
+}
+
 func (c *argoKubeWorkflowServiceClient) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	return c.delegate.TerminateWorkflow(ctx, req)
 }

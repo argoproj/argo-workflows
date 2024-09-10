@@ -59,6 +59,7 @@ function failHosts(node: models.NodeStatus, workflow: models.Workflow) {
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
+    approvals: Map<string, boolean>;
     links: models.Link[];
     archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
@@ -99,14 +100,15 @@ export function DisplayWorkflowTime(props: {date: Date | string | number; timest
 }
 
 function WorkflowNodeSummary(props: Props) {
-    const {workflow, node} = props;
+    const {workflow, node, approvals} = props;
     const podName = getPodName(workflow, node);
+    const approvedCount = Array.from(approvals.values()).filter(value => value === true).length;
 
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
         {title: 'ID', value: <ClipboardText text={props.node.id} />},
         {title: 'TYPE', value: props.node.type},
-        {title: 'APPROVALS', value: 'X/X (todo get nr of approvers current/required)'},
+        {title: 'APPROVALS', value: `${approvedCount}/${approvals.size}`},
         {
             title: 'PHASE',
             value: <Phase value={props.node.phase} />

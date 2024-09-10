@@ -71,6 +71,11 @@ func (c *errorTranslatingWorkflowServiceClient) SetWorkflow(ctx context.Context,
 	return workflow, grpcutil.TranslateError(err)
 }
 
+func (c *errorTranslatingWorkflowServiceClient) ApproveWorkflow(ctx context.Context, in *workflowpkg.WorkflowApproveRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	workflow, err := c.delegate.ApproveWorkflow(ctx, in)
+	return workflow, grpcutil.TranslateError(err)
+}
+
 func (c *errorTranslatingWorkflowServiceClient) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	workflow, err := c.delegate.StopWorkflow(ctx, req)
 	return workflow, grpcutil.TranslateError(err)

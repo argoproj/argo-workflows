@@ -76,6 +76,14 @@ message WorkflowSetRequest {
   string outputParameters = 6;
 }
 
+message WorkflowApproveRequest {
+  string name = 1;
+  string namespace = 2;
+  string message = 3;
+  string phase = 4;
+  string approveParameters = 5;
+}
+
 message WorkflowSuspendRequest {
   string name = 1;
   string namespace = 2;
@@ -208,6 +216,13 @@ service WorkflowService {
   rpc SetWorkflow(WorkflowSetRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
     option (google.api.http) = {
       put : "/api/v1/workflows/{namespace}/{name}/set"
+      body : "*"
+    };
+  }
+
+  rpc ApproveWorkflow(WorkflowApproveRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
+    option (google.api.http) = {
+      put : "/api/v1/workflows/{namespace}/{name}/approve"
       body : "*"
     };
   }

@@ -152,6 +152,13 @@ export const WorkflowsService = {
             .then(res => res.body as Workflow);
     },
 
+    approve(name: string, namespace: string, approveParameters: string) {
+        return requests
+            .put(`api/v1/workflows/${namespace}/${name}/approve`)
+            .send({approveParameters})
+            .then(res => res.body as Workflow);
+    },
+
     resume(name: string, namespace: string, nodeFieldSelector: string) {
         return requests
             .put(`api/v1/workflows/${namespace}/${name}/resume`)
