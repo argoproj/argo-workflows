@@ -26,7 +26,6 @@ import {SensorCreator} from './sensor-creator';
 import {SensorSidePanel} from './sensor-side-panel';
 import {statusIconClasses} from './utils';
 
-
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
 
 export function SensorList({match, location, history}: RouteComponentProps<any>) {
