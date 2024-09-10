@@ -15,8 +15,7 @@ import (
 
 func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string, scope *wfScope) (bool, *wfv1.NodeStatus, error) {
 	outputs := parentNode.Outputs
-	if parentNode.Type == wfv1.NodeTypeRetry {
-		lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
+	if lastChildNode := woc.possiblyGetRetryChildNode(parentNode); lastChildNode != nil {
 		outputs = lastChildNode.Outputs
 	}
 
@@ -58,7 +57,11 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(args wfv1.Arguments, prefix s
 	}
 	if outputs != nil {
 		for _, param := range outputs.Parameters {
-			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
+			value := ""
+			if param.Value != nil {
+				value = param.Value.String()
+			}
+			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), value)
 		}
 		for _, arts := range outputs.Artifacts {
 			scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, arts.Name), arts)

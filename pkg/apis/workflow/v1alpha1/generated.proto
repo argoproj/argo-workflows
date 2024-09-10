@@ -328,7 +328,10 @@ message Backoff {
   // Factor is a factor to multiply the base duration after each failed retry
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
 
-  // MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy
+  // MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.
+  // It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.
+  // However, when the workflow fails, the pod's deadline is then overridden by maxDuration.
+  // This ensures that the workflow does not exceed the specified maximum duration when retries are involved.
   optional string maxDuration = 3;
 }
 
@@ -405,12 +408,14 @@ message ContainerNode {
   repeated string dependencies = 2;
 }
 
+// ContainerSetRetryStrategy provides controls on how to retry a container set
 message ContainerSetRetryStrategy {
   // Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
   // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
   optional string duration = 1;
 
-  // Nbr of retries
+  // Retries is the maximum number of retry attempts for each container. It does not include the
+  // first, original attempt; the maximum number of total attempts will be `retries + 1`.
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString retries = 2;
 }
 
@@ -419,8 +424,8 @@ message ContainerSetTemplate {
 
   repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
 
-  // RetryStrategy describes how to retry a container nodes in the container set if it fails.
-  // Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
+  // RetryStrategy describes how to retry container nodes if the container set fails.
+  // Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.
   optional ContainerSetRetryStrategy retryStrategy = 5;
 }
 
@@ -496,6 +501,12 @@ message CronWorkflowSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be run
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
+
+  // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+  optional StopStrategy stopStrategy = 10;
+
+  // Schedules is a list of schedules to run the Workflow in Cron format
+  repeated string schedules = 11;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
@@ -508,6 +519,15 @@ message CronWorkflowStatus {
 
   // Conditions is a list of conditions the CronWorkflow may have
   repeated Condition conditions = 3;
+
+  // v3.6 and after: Succeeded counts how many times child workflows succeeded
+  optional int64 succeeded = 4;
+
+  // v3.6 and after: Failed counts how many times child workflows failed
+  optional int64 failed = 5;
+
+  // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
+  optional string phase = 6;
 }
 
 // DAGTask represents a node in the graph during DAG execution
@@ -596,7 +616,7 @@ message DataSource {
 }
 
 message Event {
-  // Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+  // Selector (https://github.com/expr-lang/expr) that we must must match the event. E.g. `payload.message == "test"`
   optional string selector = 1;
 }
 
@@ -1243,7 +1263,7 @@ message PodGC {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
 
   // DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Duration deleteDelayDuration = 3;
+  optional string deleteDelayDuration = 3;
 }
 
 // Prometheus is a prometheus metric to be emitted
@@ -1458,6 +1478,13 @@ message Sequence {
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
+}
+
+// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+message StopStrategy {
+  // v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the
+  // variables `failed` or `succeeded` to access the number of failed or successful child workflows.
+  optional string condition = 1;
 }
 
 message Submit {
@@ -1747,7 +1774,7 @@ message ValueFrom {
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
 
-  // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  // Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
   optional string event = 7;
 
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
@@ -1953,7 +1980,7 @@ message WorkflowSpec {
   // Host networking requested for this workflow pod. Default to false.
   optional bool hostNetwork = 14;
 
-  // Set DNS policy for the pod.
+  // Set DNS policy for workflow pods.
   // Defaults to "ClusterFirst".
   // Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
   // DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
@@ -2118,8 +2145,8 @@ message WorkflowStatus {
   // ArtifactGCStatus maintains the status of Artifact Garbage Collection
   optional ArtGCStatus artifactGCStatus = 19;
 
-  // Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
-  map<string, bool> taskResultsCompleted = 20;
+  // TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
+  map<string, bool> taskResultsCompletionStatus = 20;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

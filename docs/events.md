@@ -40,7 +40,7 @@ The event endpoint will always return in under 10 seconds because the event will
 ## Workflow Template triggered by the event
 
 Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
-The following one takes in input the "message" parameter specified into the API call body, passed through the `WorkflowEventBinding` parameters section, and finally resolved here as the message of the `whalesay` image.
+The following one takes in input the "message" parameter specified into the API call body, passed through the `WorkflowEventBinding` parameters section, and finally resolved here as the message of the `main` template.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -56,8 +56,8 @@ spec:
           - name: message
             value: "{{workflow.parameters.message}}"
       container:
-        image: docker/whalesay:latest
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]
   entrypoint: main
 ```
@@ -150,13 +150,11 @@ requirements](https://kubernetes.io/docs/concepts/overview/working-with-objects/
 
 ## Event Expression Syntax and the Event Expression Environment
 
-**Event expressions** are expressions that are evaluated over the **event expression environment**.
+**Event expressions** are [expressions](variables.md#expression) that are evaluated over the **event expression environment**.
 
 ### Expression Syntax
 
 Because the endpoint accepts any JSON data, it is the user's responsibility to write a suitable expression to correctly filter the events they are interested in. Therefore, DO NOT assume the existence of any fields, and guard against them using a nil check.
-
-[Learn more about expression syntax](https://github.com/antonmedv/expr).
 
 ### Expression Environment
 

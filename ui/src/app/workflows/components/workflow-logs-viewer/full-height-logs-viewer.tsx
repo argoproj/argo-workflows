@@ -1,8 +1,9 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 
-import {LogsViewer} from 'argo-ui';
-import {LogsViewerProps} from 'argo-ui/src/components/logs-viewer/logs-viewer';
+import type {LogsViewerProps} from 'argo-ui/src/components/logs-viewer/logs-viewer';
+
+import {Loading} from '../../../shared/components/loading';
 
 import './workflow-logs-viewer.scss';
 
@@ -18,7 +19,22 @@ export function FullHeightLogsViewer(props: LogsViewerProps) {
 
     return (
         <div ref={ref} style={{height}} className='log-box'>
-            {height && <LogsViewer source={source} />}
+            {height && <SuspenseLogsViewer source={source} />}
         </div>
+    );
+}
+
+// lazy load LogsViewer as it imports a large component: xterm (which can be split into a separate bundle)
+const LazyLogsViewer = React.lazy(async () => {
+    // prefetch b/c logs are commonly used
+    const module = await import(/* webpackPrefetch: true, webpackChunkName: "argo-ui-logs-viewer" */ 'argo-ui/src/components/logs-viewer/logs-viewer');
+    return {default: module.LogsViewer}; // React.lazy requires a default import, so we create an intermediate module
+});
+
+function SuspenseLogsViewer(props: LogsViewerProps) {
+    return (
+        <React.Suspense fallback={<Loading />}>
+            <LazyLogsViewer {...props} />
+        </React.Suspense>
     );
 }

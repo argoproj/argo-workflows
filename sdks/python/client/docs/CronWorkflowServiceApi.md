@@ -111,7 +111,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
+                schedules=[
+                    "schedules_example",
+                ],
                 starting_deadline_seconds=1,
+                stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
+                    condition="condition_example",
+                ),
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
@@ -1028,9 +1034,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                     pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
-                        delete_delay_duration=Duration(
-                            duration="duration_example",
-                        ),
+                        delete_delay_duration="delete_delay_duration_example",
                         label_selector=LabelSelector(
                             match_expressions=[
                                 LabelSelectorRequirement(
@@ -10794,7 +10798,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         type="type_example",
                     ),
                 ],
+                failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                phase="phase_example",
+                succeeded=1,
             ),
         ),
         namespace="namespace_example",
@@ -11118,7 +11125,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
+                schedules=[
+                    "schedules_example",
+                ],
                 starting_deadline_seconds=1,
+                stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
+                    condition="condition_example",
+                ),
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
@@ -12035,9 +12048,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                     pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
-                        delete_delay_duration=Duration(
-                            duration="duration_example",
-                        ),
+                        delete_delay_duration="delete_delay_duration_example",
                         label_selector=LabelSelector(
                             match_expressions=[
                                 LabelSelectorRequirement(
@@ -21801,7 +21812,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         type="type_example",
                     ),
                 ],
+                failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                phase="phase_example",
+                succeeded=1,
             ),
         ),
         namespace="namespace_example",
@@ -22210,7 +22224,13 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 concurrency_policy="concurrency_policy_example",
                 failed_jobs_history_limit=1,
                 schedule="schedule_example",
+                schedules=[
+                    "schedules_example",
+                ],
                 starting_deadline_seconds=1,
+                stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
+                    condition="condition_example",
+                ),
                 successful_jobs_history_limit=1,
                 suspend=True,
                 timezone="timezone_example",
@@ -23127,9 +23147,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                     pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
-                        delete_delay_duration=Duration(
-                            duration="duration_example",
-                        ),
+                        delete_delay_duration="delete_delay_duration_example",
                         label_selector=LabelSelector(
                             match_expressions=[
                                 LabelSelectorRequirement(
@@ -32893,7 +32911,10 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         type="type_example",
                     ),
                 ],
+                failed=1,
                 last_scheduled_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                phase="phase_example",
+                succeeded=1,
             ),
         ),
         name="name_example",

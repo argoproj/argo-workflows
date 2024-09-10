@@ -20,12 +20,7 @@ function isNodePendingOrRunning(node: NodeStatus) {
 
 function hasArtifactLogs(workflow: Workflow, nodeId: string, container: string) {
     const node = workflow.status.nodes[nodeId];
-
-    if (!node || !node.outputs || !node.outputs.artifacts) {
-        return false;
-    }
-
-    return node.outputs.artifacts.findIndex(a => a.name === `${container}-logs`) !== -1;
+    return node?.outputs?.artifacts?.some(a => a.name === `${container}-logs`);
 }
 
 export const WorkflowsService = {
@@ -280,14 +275,8 @@ export const WorkflowsService = {
     },
 
     artifactPath(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
-        if (!isInput) {
-            return `artifact-files/${workflow.metadata.namespace}/${archived ? 'archived-workflows' : 'workflows'}/${
-                archived ? workflow.metadata.uid : workflow.metadata.name
-            }/${nodeId}/outputs/${artifactName}`;
-        } else if (archived) {
-            return `input-artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`;
-        } else {
-            return `input-artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
-        }
+        return `artifact-files/${workflow.metadata.namespace}/${archived ? 'archived-workflows' : 'workflows'}/${
+            archived ? workflow.metadata.uid : workflow.metadata.name
+        }/${nodeId}/${isInput ? 'inputs' : 'outputs'}/${artifactName}`;
     }
 };

@@ -1,4 +1,4 @@
-import {UserInfo} from './components/user-info';
+import {UserInfo} from './user-info';
 
 export default {
     component: UserInfo

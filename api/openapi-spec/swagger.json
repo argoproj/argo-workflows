@@ -11,7 +11,7 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. For more information, please see https://argoproj.github.io/argo-workflows/",
+    "description": "Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. For more information, please see https://argo-workflows.readthedocs.io/en/latest/",
     "title": "Argo Workflows API",
     "version": "VERSION"
   },
@@ -3718,7 +3718,7 @@
           {
             "enum": [
               "workflow",
-              "archived-workflows "
+              "archived-workflows"
             ],
             "type": "string",
             "name": "idDiscriminator",
@@ -4425,6 +4425,135 @@
         }
       }
     },
+    "io.argoproj.events.v1alpha1.AzureQueueStorageEventSource": {
+      "type": "object",
+      "title": "AzureQueueStorageEventSource describes the event source for azure queue storage\nmore info at https://learn.microsoft.com/en-us/azure/storage/queues/",
+      "properties": {
+        "connectionString": {
+          "title": "ConnectionString is the connection string to access Azure Queue Storage. If this fields is not provided\nit will try to access via Azure AD with StorageAccountName.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "decodeMessage": {
+          "type": "boolean",
+          "title": "DecodeMessage specifies if all the messages should be base64 decoded.\nIf set to true the decoding is done before the evaluation of JSONBody\n+optional"
+        },
+        "dlq": {
+          "type": "boolean",
+          "title": "DLQ specifies if a dead-letter queue is configured for messages that can't be processed successfully.\nIf set to true, messages with invalid payload won't be acknowledged to allow to forward them farther to the dead-letter queue.\nThe default value is false.\n+optional"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
+        "jsonBody": {
+          "type": "boolean",
+          "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional"
+        },
+        "metadata": {
+          "type": "object",
+          "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "queueName": {
+          "type": "string",
+          "title": "QueueName is the name of the queue"
+        },
+        "storageAccountName": {
+          "type": "string",
+          "title": "StorageAccountName is the name of the storage account where the queue is. This field is necessary to\naccess via Azure AD (managed identity) and it is ignored if ConnectionString is set.\n+optional"
+        },
+        "waitTimeInSeconds": {
+          "type": "integer",
+          "title": "WaitTimeInSeconds is the duration (in seconds) for which the event source waits between empty results from the queue.\nThe default value is 3 seconds.\n+optional"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.AzureServiceBusEventSource": {
+      "type": "object",
+      "title": "AzureServiceBusEventSource describes the event source for azure service bus\nMore info at https://docs.microsoft.com/en-us/azure/service-bus-messaging/",
+      "properties": {
+        "connectionString": {
+          "title": "ConnectionString is the connection string for the Azure Service Bus. If this fields is not provided\nit will try to access via Azure AD with DefaultAzureCredential and FullyQualifiedNamespace.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
+        "fullyQualifiedNamespace": {
+          "type": "string",
+          "title": "FullyQualifiedNamespace is the Service Bus namespace name (ex: myservicebus.servicebus.windows.net). This field is necessary to\naccess via Azure AD (managed identity) and it is ignored if ConnectionString is set.\n+optional"
+        },
+        "jsonBody": {
+          "type": "boolean",
+          "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional"
+        },
+        "metadata": {
+          "type": "object",
+          "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "queueName": {
+          "type": "string",
+          "title": "QueueName is the name of the Azure Service Bus Queue"
+        },
+        "subscriptionName": {
+          "type": "string",
+          "title": "SubscriptionName is the name of the Azure Service Bus Topic Subscription"
+        },
+        "tls": {
+          "title": "TLS configuration for the service bus client\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig"
+        },
+        "topicName": {
+          "type": "string",
+          "title": "TopicName is the name of the Azure Service Bus Topic"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.AzureServiceBusTrigger": {
+      "type": "object",
+      "properties": {
+        "connectionString": {
+          "title": "ConnectionString is the connection string for the Azure Service Bus",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "parameters": {
+          "type": "array",
+          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          }
+        },
+        "payload": {
+          "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          }
+        },
+        "queueName": {
+          "type": "string",
+          "title": "QueueName is the name of the Azure Service Bus Queue"
+        },
+        "subscriptionName": {
+          "type": "string",
+          "title": "SubscriptionName is the name of the Azure Service Bus Topic Subscription"
+        },
+        "tls": {
+          "title": "TLS configuration for the service bus client\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig"
+        },
+        "topicName": {
+          "type": "string",
+          "title": "TopicName is the name of the Azure Service Bus Topic"
+        }
+      }
+    },
     "io.argoproj.events.v1alpha1.Backoff": {
       "type": "object",
       "title": "Backoff for an operation",
@@ -4605,6 +4734,10 @@
         "repositorySlug": {
           "type": "string",
           "title": "DeprecatedRepositorySlug is the slug of the repository for which integration needs to set up\nDeprecated: use Repositories instead. Will be unsupported in v1.8\n+optional"
+        },
+        "tls": {
+          "title": "TLS configuration for the bitbucketserver client.\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig"
         },
         "webhook": {
           "title": "Webhook holds configuration to run a http server",
@@ -4812,6 +4945,54 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.EmailTrigger": {
+      "description": "EmailTrigger refers to the specification of the email notification trigger.",
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string",
+          "title": "Body refers to the body/content of the email send.\n+optional"
+        },
+        "from": {
+          "type": "string",
+          "title": "From refers to the address from which the email is send from.\n+optional"
+        },
+        "host": {
+          "description": "Host refers to the smtp host url to which email is send.",
+          "type": "string"
+        },
+        "parameters": {
+          "type": "array",
+          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          }
+        },
+        "port": {
+          "type": "integer",
+          "title": "Port refers to the smtp server port to which email is send.\nDefaults to 0.\n+optional"
+        },
+        "smtpPassword": {
+          "title": "SMTPPassword refers to the Kubernetes secret that holds the smtp password used to connect to smtp server.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "subject": {
+          "type": "string",
+          "title": "Subject refers to the subject line for the email send.\n+optional"
+        },
+        "to": {
+          "type": "array",
+          "title": "To refers to the email addresses to which the emails are send.\n+optional",
+          "items": {
+            "type": "string"
+          }
+        },
+        "username": {
+          "type": "string",
+          "title": "Username refers to the username used to connect to the smtp server.\n+optional"
         }
       }
     },
@@ -5052,6 +5233,20 @@
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventsHubEventSource"
           }
         },
+        "azureQueueStorage": {
+          "type": "object",
+          "title": "AzureQueueStorage event source",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureQueueStorageEventSource"
+          }
+        },
+        "azureServiceBus": {
+          "type": "object",
+          "title": "Azure Service Bus event source",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureServiceBusEventSource"
+          }
+        },
         "bitbucket": {
           "type": "object",
           "title": "Bitbucket event sources",
@@ -5096,6 +5291,13 @@
           "title": "Generic event source",
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.GenericEventSource"
+          }
+        },
+        "gerrit": {
+          "type": "object",
+          "title": "Gerrit event source",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.GerritEventSource"
           }
         },
         "github": {
@@ -5196,6 +5398,13 @@
         "service": {
           "title": "Service is the specifications of the service to expose the event source\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Service"
+        },
+        "sftp": {
+          "type": "object",
+          "title": "SFTP event sources",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.SFTPEventSource"
+          }
         },
         "slack": {
           "type": "object",
@@ -5342,6 +5551,61 @@
         "url": {
           "description": "URL of the gRPC server that implements the event source.",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.GerritEventSource": {
+      "type": "object",
+      "title": "GerritEventSource refers to event-source related to gerrit events",
+      "properties": {
+        "auth": {
+          "title": "Auth hosts secret selectors for username and password\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth"
+        },
+        "deleteHookOnFinish": {
+          "type": "boolean",
+          "title": "DeleteHookOnFinish determines whether to delete the Gerrit hook for the project once the event source is stopped.\n+optional"
+        },
+        "events": {
+          "type": "array",
+          "title": "Events are gerrit event to listen to.\nRefer https://gerrit-review.googlesource.com/Documentation/cmd-stream-events.html#events",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
+        "gerritBaseURL": {
+          "type": "string",
+          "title": "GerritBaseURL is the base URL for API requests to a custom endpoint"
+        },
+        "hookName": {
+          "type": "string",
+          "title": "HookName is the name of the webhook"
+        },
+        "metadata": {
+          "type": "object",
+          "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "projects": {
+          "description": "List of project namespace paths like \"whynowy/test\".",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sslVerify": {
+          "type": "boolean",
+          "title": "SslVerify to enable ssl verification\n+optional"
+        },
+        "webhook": {
+          "title": "Webhook holds configuration to run a http server",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext"
         }
       }
     },
@@ -5558,6 +5822,13 @@
           "type": "string",
           "title": "GitlabBaseURL is the base URL for API requests to a custom endpoint"
         },
+        "groups": {
+          "type": "array",
+          "title": "List of group IDs or group name like \"test\".\nGroup level hook available in Premium and Ultimate Gitlab.\n+optional",
+          "items": {
+            "type": "string"
+          }
+        },
         "metadata": {
           "type": "object",
           "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
@@ -5571,7 +5842,7 @@
         },
         "projects": {
           "type": "array",
-          "title": "List of project IDs or project namespace paths like \"whynowy/test\"",
+          "title": "List of project IDs or project namespace paths like \"whynowy/test\". Projects and groups cannot be empty at the same time.\n+optional",
           "items": {
             "type": "string"
           }
@@ -5758,7 +6029,7 @@
       "title": "KafkaEventSource refers to event-source for Kafka related events",
       "properties": {
         "config": {
-          "description": "Yaml format Sarama config for Kafka connection.\nIt follows the struct of sarama.Config. See https://github.com/Shopify/sarama/blob/main/config.go\ne.g.\n\nconsumer:\n  fetch:\n    min: 1\nnet:\n  MaxOpenRequests: 5\n\n+optional",
+          "description": "Yaml format Sarama config for Kafka connection.\nIt follows the struct of sarama.Config. See https://github.com/IBM/sarama/blob/main/config.go\ne.g.\n\nconsumer:\n  fetch:\n    min: 1\nnet:\n  MaxOpenRequests: 5\n\n+optional",
           "type": "string"
         },
         "connectionBackoff": {
@@ -5790,7 +6061,7 @@
         },
         "partition": {
           "type": "string",
-          "title": "Partition name"
+          "title": "Partition name\n+optional"
         },
         "sasl": {
           "title": "SASL configuration for the kafka client\n+optional",
@@ -5834,11 +6105,11 @@
           }
         },
         "partition": {
-          "description": "Partition to write data to.",
-          "type": "integer"
+          "type": "integer",
+          "title": "+optional\nDEPRECATED"
         },
         "partitioningKey": {
-          "description": "The partitioning key for the messages put on the Kafka topic.\nDefaults to broker url.\n+optional.",
+          "description": "The partitioning key for the messages put on the Kafka topic.\n+optional.",
           "type": "string"
         },
         "payload": {
@@ -5855,6 +6126,10 @@
         "sasl": {
           "title": "SASL configuration for the kafka client\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.SASLConfig"
+        },
+        "schemaRegistry": {
+          "title": "Schema Registry configuration to producer message with avro format\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SchemaRegistryConfig"
         },
         "tls": {
           "title": "TLS configuration for the Kafka producer.\n+optional",
@@ -5888,6 +6163,10 @@
       "type": "object",
       "title": "MQTTEventSource refers to event-source for MQTT related events",
       "properties": {
+        "auth": {
+          "title": "Auth hosts secret selectors for username and password\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth"
+        },
         "clientId": {
           "type": "string",
           "title": "ClientID is the id of the client"
@@ -6196,8 +6475,19 @@
       "type": "object",
       "title": "PulsarEventSource describes the event source for Apache Pulsar",
       "properties": {
+        "authAthenzParams": {
+          "type": "object",
+          "title": "Authentication athenz parameters for the pulsar client.\nRefer https://github.com/apache/pulsar-client-go/blob/master/pulsar/auth/athenz.go\nEither token or athenz can be set to use auth.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "authAthenzSecret": {
+          "title": "Authentication athenz privateKey secret for the pulsar client.\nAuthAthenzSecret must be set if AuthAthenzParams is used.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
         "authTokenSecret": {
-          "title": "Authentication token for the pulsar client.\n+optional",
+          "title": "Authentication token for the pulsar client.\nEither token or athenz can be set to use auth.\n+optional",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "connectionBackoff": {
@@ -6256,8 +6546,19 @@
       "description": "PulsarTrigger refers to the specification of the Pulsar trigger.",
       "type": "object",
       "properties": {
+        "authAthenzParams": {
+          "type": "object",
+          "title": "Authentication athenz parameters for the pulsar client.\nRefer https://github.com/apache/pulsar-client-go/blob/master/pulsar/auth/athenz.go\nEither token or athenz can be set to use auth.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "authAthenzSecret": {
+          "title": "Authentication athenz privateKey secret for the pulsar client.\nAuthAthenzSecret must be set if AuthAthenzParams is used.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
         "authTokenSecret": {
-          "title": "Authentication token for the pulsar client.\n+optional",
+          "title": "Authentication token for the pulsar client.\nEither token or athenz can be set to use auth.\n+optional",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "connectionBackoff": {
@@ -6482,7 +6783,7 @@
         },
         "labels": {
           "type": "array",
-          "title": "Labels provide listing options to K8s API to watch resource/s.\nRefer https://kubernetes.io/docs/concepts/overview/working-with-objects/label-selectors/ for more io.argoproj.workflow.v1alpha1.\n+optional",
+          "title": "Labels provide listing options to K8s API to watch resource/s.\nRefer https://kubernetes.io/docs/concepts/overview/working-with-objects/label-selectors/ for more io.argoproj.workflow.v1alpha1.\nUnlike K8s field selector, multiple values are passed as comma separated values instead of list of values.\nEg: value: value1,value2.\nSame as K8s label selector, operator \"=\", \"==\", \"!=\", \"exists\", \"!\", \"notin\", \"in\", \"gt\" and \"lt\"\nare supported\n+optional",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.Selector"
           }
@@ -6502,6 +6803,9 @@
         },
         "bucket": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.S3Bucket"
+        },
+        "caCertificate": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "endpoint": {
           "type": "string"
@@ -6564,13 +6868,58 @@
           "type": "string",
           "title": "SASLMechanism is the name of the enabled SASL mechanism.\nPossible values: OAUTHBEARER, PLAIN (defaults to PLAIN).\n+optional"
         },
-        "password": {
+        "passwordSecret": {
           "title": "Password for SASL/PLAIN authentication",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
-        "user": {
+        "userSecret": {
           "title": "User is the authentication identity (authcid) to present for\nSASL/PLAIN or SASL/SCRAM authentication",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.SFTPEventSource": {
+      "description": "SFTPEventSource describes an event-source for sftp related events.",
+      "type": "object",
+      "properties": {
+        "address": {
+          "description": "Address sftp address.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "eventType": {
+          "type": "string",
+          "title": "Type of file operations to watch\nRefer https://github.com/fsnotify/fsnotify/blob/master/fsnotify.go for more information"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
+        "metadata": {
+          "type": "object",
+          "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "password": {
+          "description": "Password required for authentication if any.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "pollIntervalDuration": {
+          "type": "string",
+          "title": "PollIntervalDuration the interval at which to poll the SFTP server\ndefaults to 10 seconds\n+optional"
+        },
+        "sshKeySecret": {
+          "title": "SSHKeySecret refers to the secret that contains SSH key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "username": {
+          "description": "Username required for authentication if any.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "watchPathConfig": {
+          "title": "WatchPathConfig contains configuration about the file path to watch",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WatchPathConfig"
         }
       }
     },
@@ -6684,6 +7033,24 @@
         }
       }
     },
+    "io.argoproj.events.v1alpha1.SchemaRegistryConfig": {
+      "type": "object",
+      "title": "SchemaRegistryConfig refers to configuration for a client",
+      "properties": {
+        "auth": {
+          "title": "+optional\nSchemaRegistry - basic authentication",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth"
+        },
+        "schemaId": {
+          "type": "integer",
+          "title": "Schema ID"
+        },
+        "url": {
+          "description": "Schema Registry URL.",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.events.v1alpha1.SecureHeader": {
       "type": "object",
       "title": "SecureHeader refers to HTTP Headers with auth tokens as values",
@@ -6707,7 +7074,7 @@
         },
         "operation": {
           "type": "string",
-          "title": "Supported operations like ==, !=, \u003c=, \u003e= etc.\nDefaults to ==.\nRefer https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors for more io.argoproj.workflow.v1alpha1.\n+optional"
+          "title": "Supported operations like ==, != etc.\nDefaults to ==.\nRefer https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors for more io.argoproj.workflow.v1alpha1.\n+optional"
         },
         "value": {
           "type": "string",
@@ -6765,9 +7132,20 @@
           "type": "string",
           "title": "EventBusName references to a EventBus name. By default the value is \"default\""
         },
+        "loggingFields": {
+          "type": "object",
+          "title": "LoggingFields add additional key-value pairs when logging happens\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "replicas": {
           "type": "integer",
           "title": "Replicas is the sensor deployment replicas"
+        },
+        "revisionHistoryLimit": {
+          "type": "integer",
+          "title": "RevisionHistoryLimit specifies how many old deployment revisions to retain\n+optional"
         },
         "template": {
           "title": "Template is the pod specification for the sensor\n+optional",
@@ -6837,13 +7215,47 @@
         }
       }
     },
+    "io.argoproj.events.v1alpha1.SlackSender": {
+      "type": "object",
+      "properties": {
+        "icon": {
+          "type": "string",
+          "title": "Icon is the Slack application's icon, e.g. :robot_face: or https://example.com/image.png\n+optional"
+        },
+        "username": {
+          "type": "string",
+          "title": "Username is the Slack application's username\n+optional"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.SlackThread": {
+      "type": "object",
+      "properties": {
+        "broadcastMessageToChannel": {
+          "type": "boolean",
+          "title": "BroadcastMessageToChannel allows to also broadcast the message from the thread to the channel\n+optional"
+        },
+        "messageAggregationKey": {
+          "type": "string",
+          "title": "MessageAggregationKey allows to aggregate the messages to a thread by some key.\n+optional"
+        }
+      }
+    },
     "io.argoproj.events.v1alpha1.SlackTrigger": {
       "description": "SlackTrigger refers to the specification of the slack notification trigger.",
       "type": "object",
       "properties": {
+        "attachments": {
+          "type": "string",
+          "title": "Attachments is a JSON format string that represents an array of Slack attachments according to the attachments API: https://api.slack.com/reference/messaging/attachments .\n+optional"
+        },
+        "blocks": {
+          "type": "string",
+          "title": "Blocks is a JSON format string that represents an array of Slack blocks according to the blocks API: https://api.slack.com/reference/block-kit/blocks .\n+optional"
+        },
         "channel": {
           "type": "string",
-          "title": "Channel refers to which Slack channel to send slack message.\n+optional"
+          "title": "Channel refers to which Slack channel to send Slack message.\n+optional"
         },
         "message": {
           "type": "string",
@@ -6856,9 +7268,17 @@
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           }
         },
+        "sender": {
+          "title": "Sender refers to additional configuration of the Slack application that sends the message.\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SlackSender"
+        },
         "slackToken": {
           "description": "SlackToken refers to the Kubernetes secret that holds the slack token required to send messages.",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "thread": {
+          "title": "Thread refers to additional options for sending messages to a Slack thread.\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SlackThread"
         }
       }
     },
@@ -7110,6 +7530,10 @@
       "type": "object",
       "title": "Trigger is an action taken, output produced, an event created, a message sent",
       "properties": {
+        "atLeastOnce": {
+          "type": "boolean",
+          "title": "AtLeastOnce determines the trigger execution semantics.\nDefaults to false. Trigger execution will use at-most-once semantics.\nIf set to true, Trigger execution will switch to at-least-once semantics.\n+kubebuilder:default=false\n+optional"
+        },
         "parameters": {
           "type": "array",
           "title": "Parameters is the list of parameters applied to the trigger template definition",
@@ -7177,6 +7601,10 @@
           "description": "DependencyName refers to the name of the dependency. The event which is stored for this dependency is used as payload\nfor the parameterization. Make sure to refer to one of the dependencies you have defined under Dependencies list.",
           "type": "string"
         },
+        "useRawData": {
+          "type": "boolean",
+          "title": "UseRawData indicates if the value in an event at data key should be used without converting to string.\nWhen true, a number, boolean, json or string parameter may be extracted. When the field is unspecified, or explicitly\nfalse, the behavior is to turn the extracted field into a string. (e.g. when set to true, the parameter\n123 will resolve to the numerical type, but when false, or not provided, the string \"123\" will be resolved)\n+optional"
+        },
         "value": {
           "description": "Value is the default literal value to use for this parameter source\nThis is only used if the DataKey is invalid.\nIf the DataKey is invalid and this is not defined, this param source will produce an error.",
           "type": "string"
@@ -7213,6 +7641,10 @@
           "title": "AzureEventHubs refers to the trigger send an event to an Azure Event Hub.\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventHubsTrigger"
         },
+        "azureServiceBus": {
+          "title": "AzureServiceBus refers to the trigger designed to place messages on Azure Service Bus\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureServiceBusTrigger"
+        },
         "conditions": {
           "type": "string",
           "title": "Conditions is the conditions to execute the trigger.\nFor example: \"(dep01 || dep02) \u0026\u0026 dep04\"\n+optional"
@@ -7227,6 +7659,10 @@
         "custom": {
           "title": "CustomTrigger refers to the trigger designed to connect to a gRPC trigger server and execute a custom trigger.\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.CustomTrigger"
+        },
+        "email": {
+          "title": "Email refers to the trigger designed to send an email notification\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EmailTrigger"
         },
         "http": {
           "title": "HTTP refers to the trigger designed to dispatch a HTTP request with on-the-fly constructable payload.\n+optional",
@@ -7552,32 +7988,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.ArtifactGCSpec": {
-      "description": "ArtifactGCSpec specifies the Artifacts that need to be deleted",
-      "type": "object",
-      "properties": {
-        "artifactsByNode": {
-          "description": "ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactNodeSpec"
-          }
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactGCStatus": {
-      "description": "ArtifactGCStatus describes the result of the deletion",
-      "type": "object",
-      "properties": {
-        "artifactResultsByNode": {
-          "description": "ArtifactResultsByNode maps Node name to result",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
-          }
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "type": "object",
@@ -7621,23 +8031,6 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactNodeSpec": {
-      "description": "ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node",
-      "type": "object",
-      "properties": {
-        "archiveLocation": {
-          "description": "ArchiveLocation is the template-level Artifact location specification",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
-        },
-        "artifacts": {
-          "description": "Artifacts maps artifact name to Artifact description",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
-          }
         }
       }
     },
@@ -7810,40 +8203,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.ArtifactResult": {
-      "description": "ArtifactResult describes the result of attempting to delete a given Artifact",
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "error": {
-          "description": "Error is an optional error message which should be set if Success==false",
-          "type": "string"
-        },
-        "name": {
-          "description": "Name is the name of the Artifact",
-          "type": "string"
-        },
-        "success": {
-          "description": "Success describes whether the deletion succeeded",
-          "type": "boolean"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus": {
-      "description": "ArtifactResultNodeStatus describes the result of the deletion on a given node",
-      "type": "object",
-      "properties": {
-        "artifactResults": {
-          "description": "ArtifactResults maps Artifact name to result of the deletion",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResult"
-          }
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.ArtifactoryArtifact": {
       "description": "ArtifactoryArtifact is the location of an artifactory artifact",
       "type": "object",
@@ -7961,7 +8320,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "maxDuration": {
-          "description": "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy",
+          "description": "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.",
           "type": "string"
         }
       }
@@ -8209,7 +8568,7 @@
           "type": "string"
         },
         "ports": {
-          "description": "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+          "description": "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
@@ -8283,6 +8642,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
+      "description": "ContainerSetRetryStrategy provides controls on how to retry a container set",
       "type": "object",
       "required": [
         "retries"
@@ -8293,7 +8653,7 @@
           "type": "string"
         },
         "retries": {
-          "description": "Nbr of retries",
+          "description": "Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         }
       }
@@ -8311,7 +8671,7 @@
           }
         },
         "retryStrategy": {
-          "description": "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.",
+          "description": "RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy"
         },
         "volumeMounts": {
@@ -8459,9 +8819,20 @@
           "description": "Schedule is a schedule to run the Workflow in Cron format",
           "type": "string"
         },
+        "schedules": {
+          "description": "Schedules is a list of schedules to run the Workflow in Cron format",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "startingDeadlineSeconds": {
           "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
           "type": "integer"
+        },
+        "stopStrategy": {
+          "description": "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.StopStrategy"
         },
         "successfulJobsHistoryLimit": {
           "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
@@ -8491,7 +8862,10 @@
       "required": [
         "active",
         "lastScheduledTime",
-        "conditions"
+        "conditions",
+        "succeeded",
+        "failed",
+        "phase"
       ],
       "properties": {
         "active": {
@@ -8508,9 +8882,21 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Condition"
           }
         },
+        "failed": {
+          "description": "v3.6 and after: Failed counts how many times child workflows failed",
+          "type": "integer"
+        },
         "lastScheduledTime": {
           "description": "LastScheduleTime is the last time the CronWorkflow was scheduled",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "phase": {
+          "description": "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true",
+          "type": "string"
+        },
+        "succeeded": {
+          "description": "v3.6 and after: Succeeded counts how many times child workflows succeeded",
+          "type": "integer"
         }
       }
     },
@@ -8663,7 +9049,7 @@
       ],
       "properties": {
         "selector": {
-          "description": "Selector (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
+          "description": "Selector (https://github.com/expr-lang/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
           "type": "string"
         }
       }
@@ -9417,23 +9803,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.NodeResult": {
-      "type": "object",
-      "properties": {
-        "message": {
-          "type": "string"
-        },
-        "outputs": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
-        },
-        "phase": {
-          "type": "string"
-        },
-        "progress": {
-          "type": "string"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.NodeStatus": {
       "description": "NodeStatus contains status information about an individual node in the workflow",
       "type": "object",
@@ -9802,7 +10171,7 @@
       "properties": {
         "deleteDelayDuration": {
           "description": "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+          "type": "string"
         },
         "labelSelector": {
           "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.",
@@ -10191,7 +10560,7 @@
           "type": "string"
         },
         "ports": {
-          "description": "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+          "description": "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
@@ -10337,6 +10706,19 @@
         "start": {
           "description": "Number at which to start the sequence (default: 0)",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.StopStrategy": {
+      "description": "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+      "type": "object",
+      "required": [
+        "condition"
+      ],
+      "properties": {
+        "condition": {
+          "description": "v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.",
+          "type": "string"
         }
       }
     },
@@ -10787,7 +11169,7 @@
           "type": "string"
         },
         "ports": {
-          "description": "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+          "description": "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
@@ -10873,7 +11255,7 @@
           "type": "string"
         },
         "event": {
-          "description": "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
+          "description": "Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
           "type": "string"
         },
         "expression": {
@@ -11273,7 +11655,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig"
         },
         "dnsPolicy": {
-          "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
+          "description": "Set DNS policy for workflow pods. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
           "type": "string"
         },
         "entrypoint": {
@@ -11535,8 +11917,8 @@
           "description": "Synchronization stores the status of synchronization locks",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SynchronizationStatus"
         },
-        "taskResultsCompleted": {
-          "description": "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+        "taskResultsCompletionStatus": {
+          "description": "TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.",
           "type": "object",
           "additionalProperties": {
             "type": "boolean"
@@ -11646,28 +12028,6 @@
         },
         "namespace": {
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
-      "type": "object",
-      "properties": {
-        "tasks": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          }
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus": {
-      "type": "object",
-      "properties": {
-        "nodes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
-          }
         }
       }
     },
@@ -14400,15 +14760,6 @@
         }
       }
     },
-    "io.k8s.apimachinery.pkg.apis.meta.v1.Duration": {
-      "description": "Duration is a wrapper around time.Duration which supports correct\nmarshaling to YAML and JSON. In particular, it marshals into strings, which\ncan be used as map keys in json.",
-      "type": "object",
-      "properties": {
-        "duration": {
-          "type": "string"
-        }
-      }
-    },
     "io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1": {
       "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set, or a string representing a sub-field or item. The string will follow one of these four formats: 'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map 'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item 'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list 'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values If a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.k8s.io/structured-merge-diff",
       "type": "object"
@@ -14662,24 +15013,6 @@
         }
       },
       "x-kubernetes-map-type": "atomic"
-    },
-    "io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause": {
-      "description": "StatusCause provides more information about an api.Status failure, including cases when multiple errors are encountered.",
-      "type": "object",
-      "properties": {
-        "field": {
-          "description": "The field of the resource that has caused this error, as named by its JSON serialization. May include dot and postfix notation for nested attributes. Arrays are zero-indexed.  Fields may appear more than once in an array of causes due to fields having multiple errors. Optional.\n\nExamples:\n  \"name\" - the field \"name\" on the current resource\n  \"items[0].name\" - the field \"name\" on the first array entry in \"items\"",
-          "type": "string"
-        },
-        "message": {
-          "description": "A human-readable description of the cause of the error.  This field may be presented as-is to a reader.",
-          "type": "string"
-        },
-        "reason": {
-          "description": "A machine-readable description of the cause of the error. If this value is empty there is no information available.",
-          "type": "string"
-        }
-      }
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
       "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",

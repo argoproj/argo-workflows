@@ -23,13 +23,13 @@ var helloWorldWorkflow = wfv1.Workflow{
 		GenerateName: "hello-world-",
 	},
 	Spec: wfv1.WorkflowSpec{
-		Entrypoint: "whalesay",
+		Entrypoint: "hello-world",
 		Templates: []wfv1.Template{
 			{
-				Name: "whalesay",
+				Name: "hello-world",
 				Container: &corev1.Container{
-					Image:   "docker/whalesay:latest",
-					Command: []string{"cowsay", "hello world"},
+					Image:   "busybox",
+					Command: []string{"echo", "hello world"},
 				},
 			},
 		},
@@ -61,7 +61,7 @@ func main() {
 
 	// wait for the workflow to complete
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", createdWf.Name))
-	watchIf, err := wfClient.Watch(ctx, metav1.ListOptions{FieldSelector: fieldSelector.String(), TimeoutSeconds: pointer.Int64Ptr(180)})
+	watchIf, err := wfClient.Watch(ctx, metav1.ListOptions{FieldSelector: fieldSelector.String(), TimeoutSeconds: pointer.Int64(180)})
 	errors.CheckError(err)
 	defer watchIf.Stop()
 	for next := range watchIf.ResultChan() {

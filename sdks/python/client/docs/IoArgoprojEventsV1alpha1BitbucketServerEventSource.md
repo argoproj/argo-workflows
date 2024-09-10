@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **project_key** | **str** |  | [optional] 
 **repositories** | [**[IoArgoprojEventsV1alpha1BitbucketServerRepository]**](IoArgoprojEventsV1alpha1BitbucketServerRepository.md) |  | [optional] 
 **repository_slug** | **str** |  | [optional] 
+**tls** | [**IoArgoprojEventsV1alpha1TLSConfig**](IoArgoprojEventsV1alpha1TLSConfig.md) |  | [optional] 
 **webhook** | [**IoArgoprojEventsV1alpha1WebhookContext**](IoArgoprojEventsV1alpha1WebhookContext.md) |  | [optional] 
 **webhook_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]

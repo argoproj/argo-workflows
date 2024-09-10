@@ -29,18 +29,18 @@ jobs:
         platform: [ linux/amd64, linux/arm64 ]
         target: [ workflow-controller, argocli, argoexec ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
         with:
           version: v0.10.4
 
       - name: Cache Docker layers
-        uses: actions/cache@v3
+        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         id: cache
         with:
           path: /tmp/.buildx-cache
@@ -49,13 +49,13 @@ jobs:
             ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
       - name: Docker Login
-        uses: docker/login-action@v3
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
-      - name: Docker Login
-        uses: docker/login-action@v3
+      - name: Login to Quay
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
@@ -97,17 +97,17 @@ jobs:
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Docker Login
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          login-server: quay.io
+          registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
@@ -147,24 +147,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build-linux, build-windows ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Docker Login
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          login-server: quay.io
+          registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
         with:
-          cosign-release: 'v1.13.0'
+          cosign-release: 'v2.2.3'
 
       - name: Push Multiarch Image
         env:
@@ -172,6 +172,7 @@ jobs:
           COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         run: |
+          : ${DOCKER_CONFIG:=~/.docker}
           echo $(jq -c '. + { "experimental": "enabled" }' ${DOCKER_CONFIG}/config.json) > ${DOCKER_CONFIG}/config.json
 
           docker_org=$DOCKERIO_ORG
@@ -196,7 +197,7 @@ jobs:
             docker manifest push $image_name
             docker manifest push quay.io/$image_name
 
-            cosign sign --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
 
           done
 
@@ -211,15 +212,15 @@ jobs:
         target: [ workflow-controller, argocli, argoexec ]
     steps:
       - name: Docker Login
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          login-server: quay.io
+          registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
@@ -245,15 +246,15 @@ jobs:
     needs: [ push-images ]
     steps:
       - name: Docker Login
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
-        uses: Azure/docker-login@v1
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          login-server: quay.io
+          registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
       - name: Try pulling
@@ -284,22 +285,22 @@ jobs:
       COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
       COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
         with:
           node-version: "20" # change in all GH Workflows
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - name: Restore node packages cache
-        uses: actions/cache@v3
+        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
       - name: Install cosign
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
         with:
-          cosign-release: 'v1.13.0'
+          cosign-release: 'v2.2.3'
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
       - run: |
           if [ ${GITHUB_REF##*/} = main ]; then
@@ -331,7 +332,7 @@ jobs:
       - run: make checksums
       - name: Sign checksums and create public key for release assets
         run: |
-          cosign sign-blob --key env://COSIGN_PRIVATE_KEY ./dist/argo-workflows-cli-checksums.txt > ./dist/argo-workflows-cli-checksums.sig
+          cosign sign-blob -y --key env://COSIGN_PRIVATE_KEY ./dist/argo-workflows-cli-checksums.txt > ./dist/argo-workflows-cli-checksums.sig
           # Retrieves the public key to release as an asset
           cosign public-key --key env://COSIGN_PRIVATE_KEY > ./dist/argo-workflows-cosign.pub
 
@@ -340,7 +341,7 @@ jobs:
       # If a conflict occurs (because you are not on a tag), the release will not be updated. This is a short coming
       # of this action.
       # Instead, delete the release so it is re-created.
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           prerelease: ${{ startsWith(github.ref, 'refs/tags/v0') || contains(github.ref, 'rc') }}

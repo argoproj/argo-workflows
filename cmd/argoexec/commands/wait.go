@@ -35,6 +35,9 @@ func waitContainer(ctx context.Context) error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
+	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
+	wfExecutor.InitializeOutput(bgCtx)
+
 	// Wait for main container to complete
 	err := wfExecutor.Wait(ctx)
 	if err != nil {
@@ -54,16 +57,17 @@ func waitContainer(ctx context.Context) error {
 	}
 
 	// Saving output artifacts
-	err = wfExecutor.SaveArtifacts(bgCtx)
+	artifacts, err := wfExecutor.SaveArtifacts(bgCtx)
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
 
 	// Save log artifacts
 	logArtifacts := wfExecutor.SaveLogs(bgCtx)
+	artifacts = append(artifacts, logArtifacts...)
 
 	// Try to upsert TaskResult. If it fails, we will try to update the Pod's Annotations
-	err = wfExecutor.ReportOutputs(bgCtx, logArtifacts)
+	err = wfExecutor.ReportOutputs(bgCtx, artifacts)
 	if err != nil {
 		wfExecutor.AddError(err)
 	}

@@ -4,7 +4,7 @@
 
 Before v3.0, only one controller could run at once. (If it crashed, Kubernetes would start another pod.)
 
-> v3.0
+> v3.0 and after
 
 For many users, a short loss of workflow service may be acceptable - the new controller will just continue running
 workflows if it restarts.  However, with high service guarantees, new pods may take too long to start running workflows.
@@ -18,9 +18,9 @@ Budget to prevent this and Pod Priority to recover faster from an involuntary po
 
 ## Argo Server
 
-> v2.6
+> v2.6 and after
 
 Run a minimum of two replicas, typically three, should be run, otherwise it may be possible that API and webhook requests are dropped.
 
 !!! Tip
-    Consider using [multi AZ-deployment using pod anti-affinity](https://www.verygoodsecurity.com/blog/posts/kubernetes-multi-az-deployments-using-pod-anti-affinity).
+    Consider [spreading Pods across multiple availability zones](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).

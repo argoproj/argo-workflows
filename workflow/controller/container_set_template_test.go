@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -40,7 +41,7 @@ spec:
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
 	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -108,7 +109,7 @@ spec:
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
 	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -117,14 +118,13 @@ spec:
 		{Name: "input-artifacts", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
-	if assert.Len(t, pod.Spec.InitContainers, 1) {
-		c := pod.Spec.InitContainers[0]
-		assert.ElementsMatch(t, []corev1.VolumeMount{
-			{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
-			{Name: "workspace", MountPath: "/mainctrfs/workspace"},
-			{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
-		}, c.VolumeMounts)
-	}
+	require.Len(t, pod.Spec.InitContainers, 1)
+	c := pod.Spec.InitContainers[0]
+	assert.ElementsMatch(t, []corev1.VolumeMount{
+		{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
+		{Name: "workspace", MountPath: "/mainctrfs/workspace"},
+		{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
+	}, c.VolumeMounts)
 
 	assert.Len(t, pod.Spec.Containers, 2)
 	for _, c := range pod.Spec.Containers {
@@ -188,7 +188,7 @@ spec:
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
 	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},

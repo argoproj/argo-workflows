@@ -27,7 +27,7 @@ spec:
           key: path/in/bucket
           # Specify the bucket region. Note that if you want Argo to figure out this automatically,
           # you can set additional statement policy that allows `s3:GetBucketLocation` action.
-          # For details, check out: https://argoproj.github.io/argo-workflows/configure-artifact-repository/#configuring-aws-s3
+          # For details, check out: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/#configuring-aws-s3
           region: us-west-2
           # accessKeySecret and secretKeySecret are secret selectors.
           # It references the k8s secret named 'my-s3-credentials'.

@@ -292,6 +292,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         url:
                           type: string
                         usernameSecret:
@@ -305,6 +306,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                       required:
                       - url
                       type: object
@@ -321,6 +323,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         blob:
                           type: string
                         container:
@@ -357,6 +360,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                       required:
                       - key
                       type: object
@@ -386,6 +390,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         repo:
                           type: string
                         revision:
@@ -403,6 +408,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         usernameSecret:
                           properties:
                             key:
@@ -414,6 +420,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                       required:
                       - repo
                       type: object
@@ -440,6 +447,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         krbConfigConfigMap:
                           properties:
                             key:
@@ -451,6 +459,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         krbKeytabSecret:
                           properties:
                             key:
@@ -462,6 +471,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         krbRealm:
                           type: string
                         krbServicePrincipalName:
@@ -490,6 +500,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 usernameSecret:
                                   properties:
                                     key:
@@ -501,6 +512,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                               type: object
                             clientCert:
                               properties:
@@ -515,6 +527,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 clientKeySecret:
                                   properties:
                                     key:
@@ -526,6 +539,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                               type: object
                             oauth2:
                               properties:
@@ -540,6 +554,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 clientSecretSecret:
                                   properties:
                                     key:
@@ -551,6 +566,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 endpointParams:
                                   items:
                                     properties:
@@ -577,6 +593,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                               type: object
                           type: object
                         headers:
@@ -616,6 +633,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         bucket:
                           type: string
                         createBucketIfNotPresent:
@@ -644,6 +662,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         securityToken:
                           type: string
                         useSDKCreds:
@@ -675,6 +694,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         bucket:
                           type: string
                         caSecret:
@@ -688,6 +708,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         createBucketIfNotPresent:
                           properties:
                             objectLocking:
@@ -712,6 +733,7 @@ spec:
                               required:
                               - key
                               type: object
+                              x-kubernetes-map-type: atomic
                           type: object
                         endpoint:
                           type: string
@@ -734,6 +756,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         useSDKCreds:
                           type: boolean
                       type: object
@@ -775,6 +798,7 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-map-type: atomic
                         default:
                           type: string
                         event:
@@ -891,16 +915,39 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: argo
+  namespace: argo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: argo-server
+  namespace: argo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: github.com
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-role
+  namespace: argo
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -929,190 +976,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: argo-role
-rules:
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - create
-  - get
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/exec
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - watch
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumeclaims
-  - persistentvolumeclaims/finalizers
-  verbs:
-  - create
-  - update
-  - delete
-  - get
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  - workflows/finalizers
-  - workflowtasksets
-  - workflowtasksets/finalizers
-  - workflowartifactgctasks
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - patch
-  - delete
-  - create
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtemplates
-  - workflowtemplates/finalizers
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtaskresults
-  verbs:
-  - list
-  - watch
-  - deletecollection
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-- apiGroups:
-  - argoproj.io
-  resources:
-  - cronworkflows
-  - cronworkflows/finalizers
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - create
-  - get
-  - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: argo-server-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - watch
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - create
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/exec
-  - pods/log
-  verbs:
-  - get
-  - list
-  - watch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - watch
-  - create
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - argoproj.io
-  resources:
-  - eventsources
-  - sensors
-  - workflows
-  - workfloweventbindings
-  - workflowtemplates
-  - cronworkflows
-  - cronworkflows/finalizers
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - patch
-  - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
   annotations:
     workflows.argoproj.io/description: |
       This is the minimum recommended permissions needed if you want to use artifact GC.
@@ -1137,7 +1000,7 @@ kind: Role
 metadata:
   annotations:
     workflows.argoproj.io/description: |
-      Recomended minimum permissions for the `emissary` executor.
+      Recommended minimum permissions for the `emissary` executor.
   name: executor
 rules:
 - apiGroups:
@@ -1210,6 +1073,213 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  name: argo-aggregate-to-admin
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
+  - workflowtemplates
+  - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
+  - workflowtasksets
+  - workflowtasksets/finalizers
+  - workflowtaskresults
+  - workflowtaskresults/finalizers
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+  name: argo-aggregate-to-edit
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
+  - workflowtemplates
+  - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
+  - workflowtaskresults
+  - workflowtaskresults/finalizers
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+  name: argo-aggregate-to-view
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
+  - workflowtemplates
+  - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
+  - workflowtaskresults
+  - workflowtaskresults/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-cluster-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  - persistentvolumeclaims/finalizers
+  verbs:
+  - create
+  - update
+  - delete
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  - workflowtasksets
+  - workflowtasksets/finalizers
+  - workflowartifactgctasks
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+  - create
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtemplates
+  - workflowtemplates/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtaskresults
+  verbs:
+  - list
+  - watch
+  - deletecollection
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - argoproj.io
+  resources:
+  - cronworkflows
+  - cronworkflows/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - get
+  - delete
+- apiGroups:
+  - ""
+  resourceNames:
+  - argo-workflows-agent-ca-certificates
+  resources:
+  - secrets
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
   name: argo-clusterworkflowtemplate-role
 rules:
 - apiGroups:
@@ -1221,6 +1291,72 @@ rules:
   - get
   - list
   - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-server-cluster-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - watch
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - eventsources
+  - sensors
+  - workflows
+  - workfloweventbindings
+  - workflowtemplates
+  - cronworkflows
+  - clusterworkflowtemplates
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -1243,6 +1379,20 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  name: argo-binding
+  namespace: argo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argo-role
+subjects:
+- kind: ServiceAccount
+  name: argo
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
   name: agent-default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -1251,30 +1401,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: default
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: argo-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: argo-role
-subjects:
-- kind: ServiceAccount
-  name: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: argo-server-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: argo-server-role
-subjects:
-- kind: ServiceAccount
-  name: argo-server
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -1340,6 +1466,19 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  name: argo-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: argo
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
   name: argo-clusterworkflowtemplate-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -1348,6 +1487,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-server-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-server-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: argo-server
   namespace: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -1362,39 +1514,6 @@ subjects:
 - kind: ServiceAccount
   name: argo-server
   namespace: argo
----
-apiVersion: v1
-data:
-  default-v1: |
-    archiveLogs: true
-    s3:
-      bucket: my-bucket
-      endpoint: minio:9000
-      insecure: true
-      accessKeySecret:
-        name: my-minio-cred
-        key: accesskey
-      secretKeySecret:
-        name: my-minio-cred
-        key: secretkey
-  empty: ""
-  my-key: |
-    archiveLogs: true
-    s3:
-      bucket: my-bucket
-      endpoint: minio:9000
-      insecure: true
-      accessKeySecret:
-        name: my-minio-cred
-        key: accesskey
-      secretKeySecret:
-        name: my-minio-cred
-        key: secretkey
-kind: ConfigMap
-metadata:
-  annotations:
-    workflows.argoproj.io/default-artifact-repository: default-v1
-  name: artifact-repositories
 ---
 apiVersion: v1
 data:
@@ -1452,6 +1571,40 @@ data:
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
+  namespace: argo
+---
+apiVersion: v1
+data:
+  default-v1: |
+    archiveLogs: true
+    s3:
+      bucket: my-bucket
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+  empty: ""
+  my-key: |
+    archiveLogs: true
+    s3:
+      bucket: my-bucket
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+kind: ConfigMap
+metadata:
+  annotations:
+    workflows.argoproj.io/default-artifact-repository: default-v1
+  name: artifact-repositories
 ---
 apiVersion: v1
 kind: Secret
@@ -1605,6 +1758,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: argo-server
+  namespace: argo
 spec:
   ports:
   - name: web
@@ -1657,6 +1811,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: argo-server
+  namespace: argo
 spec:
   selector:
     matchLabels:
@@ -1669,7 +1824,6 @@ spec:
       containers:
       - args:
         - server
-        - --namespaced
         - --auth-mode
         - server
         - --auth-mode
@@ -1705,6 +1859,58 @@ spec:
       volumes:
       - emptyDir: {}
         name: tmp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+  namespace: argo
+spec:
+  selector:
+    matchLabels:
+      app: workflow-controller
+  template:
+    metadata:
+      labels:
+        app: workflow-controller
+    spec:
+      containers:
+      - args: []
+        command:
+        - workflow-controller
+        env:
+        - name: LEADER_ELECTION_IDENTITY
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: quay.io/argoproj/workflow-controller:latest
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 6060
+          initialDelaySeconds: 90
+          periodSeconds: 60
+          timeoutSeconds: 30
+        name: workflow-controller
+        ports:
+        - containerPort: 9090
+          name: metrics
+        - containerPort: 6060
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: workflow-controller
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: argo
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1795,55 +2001,3 @@ spec:
             port: 9000
           initialDelaySeconds: 5
           periodSeconds: 10
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: workflow-controller
-spec:
-  selector:
-    matchLabels:
-      app: workflow-controller
-  template:
-    metadata:
-      labels:
-        app: workflow-controller
-    spec:
-      containers:
-      - args:
-        - --namespaced
-        command:
-        - workflow-controller
-        env:
-        - name: LEADER_ELECTION_IDENTITY
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
-        image: quay.io/argoproj/workflow-controller:latest
-        livenessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /healthz
-            port: 6060
-          initialDelaySeconds: 90
-          periodSeconds: 60
-          timeoutSeconds: 30
-        name: workflow-controller
-        ports:
-        - containerPort: 9090
-          name: metrics
-        - containerPort: 6060
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-      nodeSelector:
-        kubernetes.io/os: linux
-      priorityClassName: workflow-controller
-      securityContext:
-        runAsNonRoot: true
-      serviceAccountName: argo

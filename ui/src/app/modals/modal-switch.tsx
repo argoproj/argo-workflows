@@ -1,9 +1,10 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
+
 import {ScopedLocalStorage} from '../shared/scoped-local-storage';
-import {FeedbackModal} from './feedback/feedback-modal';
-import {FirstTimeUserModal} from './first-time-user/first-time-user-modal';
-import {NewVersionModal} from './new-version/new-version-modal';
+import {FeedbackModal} from './feedback-modal';
+import {FirstTimeUserModal} from './first-time-user-modal';
+import {NewVersionModal} from './new-version-modal';
 import {majorMinor} from './version';
 
 export function ModalSwitch({version, modals}: {version: string; modals: {[key: string]: boolean}}) {

@@ -1,4 +1,4 @@
-import {WorkflowTemplateContainer} from './components/workflow-template-container';
+import {WorkflowTemplateContainer} from './workflow-template-container';
 
 export default {
     component: WorkflowTemplateContainer

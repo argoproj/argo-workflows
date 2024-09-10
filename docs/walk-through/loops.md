@@ -2,16 +2,44 @@
 
 When writing workflows, it is often very useful to be able to iterate over a set of inputs, as this is how argo-workflows can perform loops.
 
-There are two basic ways of running a template multiple times.
+There are three basic ways of running a template multiple times.
 
+- `withSequence` iterates over a sequence of numbers.
 - `withItems` takes a list of things to work on. Either
     - plain, single values, which are then usable in your template as '{{item}}'
     - a JSON object where each element in the object can be addressed by it's key as '{{item.key}}'
 - `withParam` takes a JSON array of items, and iterates over it - again the items can be objects like with `withItems`. This is very powerful, as you can generate the JSON in another step in your workflow, so creating a dynamic workflow.
 
+## `withSequence` example
+
+This runs a template multiple times using `withSequence`.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loop-sequence-
+spec:
+  entrypoint: loop-sequence-example
+
+  templates:
+  - name: loop-sequence-example
+    steps:
+    - - name: hello-world-x5
+        template: hello-world
+        withSequence:
+          count: "5"
+
+  - name: hello-world
+    container:
+      image: busybox
+      command: [echo]
+      args: ["hello world!"]
+```
+
 ## `withItems` basic example
 
-This example is the simplest. We are taking a basic list of items and iterating over it with `withItems`. It is limited to one varying field for each of the workflow templates instantiated.
+This iterates over a list of items with `withItems`, substituting a string for each instantiated template.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -23,23 +51,23 @@ spec:
   templates:
   - name: loop-example
     steps:
-    - - name: print-message
-        template: whalesay
+    - - name: print-message-loop
+        template: print-message
         arguments:
           parameters:
           - name: message
             value: "{{item}}"
-        withItems:              # invoke whalesay once for each item in parallel
+        withItems:              # invoke print-message once for each item in parallel
         - hello world           # item 1
         - goodbye world         # item 2
 
-  - name: whalesay
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ```
 

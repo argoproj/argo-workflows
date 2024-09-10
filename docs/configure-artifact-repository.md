@@ -30,7 +30,7 @@ You can install MinIO into your cluster via Helm.
 First, [install `helm`](https://helm.sh/docs/intro/install/). Then, install MinIO with the below commands:
 
 ```bash
-helm repo add minio https://helm.min.io/ # official minio Helm charts
+helm repo add minio https://charts.min.io/ # official minio Helm charts
 helm repo update
 helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 ```
@@ -166,7 +166,7 @@ artifacts:
       key: path/in/bucket
       # serviceAccountKeySecret is a secret selector.
       # It references the k8s secret named 'my-gcs-credentials'.
-      # This secret is expected to have have the key 'serviceAccountKey',
+      # This secret is expected to have the key 'serviceAccountKey',
       # containing the base64 encoded credentials
       # to the bucket.
       #
@@ -277,7 +277,7 @@ data:
       bucket: $mybucket
       # accessKeySecret and secretKeySecret are secret selectors.
       # It references the k8s secret named 'bucket-workflow-artifect-credentials'.
-      # This secret is expected to have have the keys 'accessKey'
+      # This secret is expected to have the keys 'accessKey'
       # and 'secretKey', containing the base64 encoded credentials
       # to the bucket.
       accessKeySecret:
@@ -340,30 +340,20 @@ data:
 
 ## Configuring Azure Blob Storage
 
-Create an Azure Storage account and a container within that account. There are a number of
-ways to accomplish this, including the [Azure Portal](https://portal.azure.com) or the
-[CLI](https://docs.microsoft.com/en-us/cli/azure/).
+Create an Azure Storage account and a container within your account.
+You can use the [Azure Portal](https://portal.azure.com), the [CLI](https://docs.microsoft.com/en-us/cli/azure/), or other tools.
 
-1. Retrieve the blob service endpoint for the storage account. For example:
+You can authenticate Argo to your Azure storage account in multiple ways:
 
-   ```bash
-   az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
-   ```
+- [Managed Identities](#using-azure-managed-identities)
+- [Access Keys](#using-azure-access-keys)
+- [Shared Access Signatures (SAS)](#using-azure-shared-access-signatures-sas)
 
-2. Retrieve the access key for the storage account. For example:
+### Using Azure Managed Identities
 
-   ```bash
-   az storage account keys list -n mystorageaccountname --query '[0].value' -otsv
-   ```
-
-3. Create a kubernetes secret to hold the storage account key. For example:
-
-   ```bash
-   kubectl create secret generic my-azure-storage-credentials \
-     --from-literal "account-access-key=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
-   ```
-
-4. Configure `azure` artifact as following in the yaml.
+[Azure Managed Identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity) is the preferred method for managing access to Azure resources securely.
+You can set `useSDKCreds: true` if a Managed Identity is assigned.
+In this case, the `accountKeySecret` is not used and authentication uses [`DefaultAzureCredential`](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication).
 
 ```yaml
 artifacts:
@@ -373,25 +363,100 @@ artifacts:
       endpoint: https://mystorageaccountname.blob.core.windows.net
       container: my-container-name
       blob: path/in/container
-      # accountKeySecret is a secret selector.
-      # It references the k8s secret named 'my-azure-storage-credentials'.
-      # This secret is expected to have have the key 'account-access-key',
-      # containing the base64 encoded credentials to the storage account.
-      #
       # If a managed identity has been assigned to the machines running the
-      # workflow (e.g., https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)
-      # then accountKeySecret is not needed, and useSDKCreds should be
-      # set to true instead:
-      # useSDKCreds: true
-      accountKeySecret:
-        name: my-azure-storage-credentials
-        key: account-access-key     
+      # workflow (for example, https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)
+      # then useSDKCreds should be set to true. The accountKeySecret is not required
+      # and will not be used in this case.
+      useSDKCreds: true  
 ```
 
-If `useSDKCreds` is set to `true`, then the `accountKeySecret` value is not
-used and authentication with Azure will be attempted using a
-[`DefaultAzureCredential`](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication)
-instead.
+### Using Azure Access Keys
+
+You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal).
+
+1. Retrieve the blob service endpoint for the storage account:
+
+    ```bash
+    az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
+    # https://mystorageaccountname.blob.core.windows.net
+    ```
+
+2. Retrieve the Access Key for the storage account:
+
+    ```bash
+    ACCESS_KEY="$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
+    ```
+
+3. Create a Kubernetes Secret to hold the storage account key:
+
+    ```bash
+    kubectl create secret generic my-azure-storage-credentials \
+      --from-literal "account-access-key=$ACCESS_KEY"
+    ```
+
+4. Configure an `azure` artifact:
+
+    ```yaml
+    artifacts:
+      - name: message
+        path: /tmp/message
+        azure:
+          endpoint: https://mystorageaccountname.blob.core.windows.net
+          container: my-container-name
+          blob: path/in/container
+          # accountKeySecret is a secret selector.
+          # It references the Kubernetes Secret named 'my-azure-storage-credentials'.
+          # This secret is expected to have the key 'account-access-key',
+          # containing the base64 encoded credentials to the storage account.
+          accountKeySecret:
+            name: my-azure-storage-credentials
+            key: account-access-key     
+    ```
+
+### Using Azure Shared Access Signatures (SAS)
+
+> v3.6 and after
+
+You can also use a [Shared Access Signature (SAS)](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json).
+
+1. Retrieve the blob service endpoint for the storage account:
+
+    ```bash
+    az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
+    # https://mystorageaccountname.blob.core.windows.net
+    ```
+
+2. Generate a Shared Access Signature for the storage account:
+
+    ```bash
+    SAS_TOKEN="$(az storage container generate-sas --account-name <storage-account> --name <container> --permissions acdlrw --expiry <date-time> --auth-mode key)"
+    ```
+
+3. Create a Kubernetes Secret to hold the storage account key:
+
+    ```bash
+    kubectl create secret generic my-azure-storage-credentials \
+      --from-literal "shared-access-key=$SAS_TOKEN"
+    ```
+
+4. Configure an `azure` artifact:
+
+    ```yaml
+    artifacts:
+      - name: message
+        path: /tmp/message
+        azure:
+          endpoint: https://mystorageaccountname.blob.core.windows.net
+          container: my-container-name
+          blob: path/in/container
+          # accountKeySecret is a secret selector.
+          # It references the Kubernetes Secret named 'my-azure-storage-credentials'.
+          # This secret is expected to have the key 'shared-access-key',
+          # containing the base64 encoded shared access signature to the storage account.
+          accountKeySecret:
+            name: my-azure-storage-credentials
+            key: shared-access-key
+    ```
 
 ## Configure the Default Artifact Repository
 

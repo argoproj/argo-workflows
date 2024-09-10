@@ -83,7 +83,7 @@ metadata:
     # Must evaluate to a boolean.
     # If you want an account to be the default to use, this rule can be "true".
     # Details of the expression language are available in
-    # https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md.
+    # https://expr-lang.org/docs/language-definition.
     workflows.argoproj.io/rbac-rule: "'admin' in groups"
     # The precedence is used to determine which service account to use whe
     # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
@@ -110,14 +110,14 @@ The precedence must be the lowest of all your service accounts.
 
 As of Kubernetes v1.24, secrets for a service account token are no longer automatically created.
 Therefore, service account secrets for SSO RBAC must be created manually.
-See [Manually create secrets](manually-create-secrets.md) for detailed instructions.
+See [Service Account Secrets](service-account-secrets.md) for detailed instructions.
 
 ## SSO RBAC Namespace Delegation
 
 > v3.3 and after
 
 You can optionally configure RBAC SSO per namespace.
-Typically, on organization has a Kubernetes cluster and a central team (the owner of the cluster) manages the cluster. Along with this, there are multiple namespaces which are owned by individual teams. This feature would help namespace owners to define RBAC for their own namespace.
+Typically, an organization has a Kubernetes cluster and a central team (the owner of the cluster) manages the cluster. Along with this, there are multiple namespaces which are owned by individual teams. This feature would help namespace owners to define RBAC for their own namespace.
 
 The feature is currently in beta.
 To enable the feature, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true` in your argo-server deployment.
@@ -197,7 +197,7 @@ workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
 
 ## Filtering groups
 
-> v3.5 and above
+> v3.5 and after
 
 You can configure `filterGroupsRegex` to filter the groups returned by the OIDC provider. Some use-cases for this include:
 

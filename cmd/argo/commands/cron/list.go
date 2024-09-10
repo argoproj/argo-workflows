@@ -84,7 +84,7 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 		} else {
 			cleanNextScheduledTime = "N/A"
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%t", cwf.ObjectMeta.Name, humanize.RelativeDurationShort(cwf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, cleanNextScheduledTime, cwf.Spec.Schedule, cwf.Spec.Timezone, cwf.Spec.Suspend)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%t", cwf.ObjectMeta.Name, humanize.RelativeDurationShort(cwf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, cleanNextScheduledTime, cwf.Spec.GetScheduleString(), cwf.Spec.Timezone, cwf.Spec.Suspend)
 		_, _ = fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()

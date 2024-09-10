@@ -12,19 +12,19 @@ kind: Workflow
 metadata:
   generateName: hello-world-parameters-
 spec:
-  entrypoint: whalesay
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message
         value: hello world
   templates:
-    - name: whalesay
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [ cowsay ]
+        image: busybox
+        command: [ echo ]
         args: [ "{{inputs.parameters.message}}" ]
 ```
 
@@ -49,14 +49,14 @@ args: [ "{{ inputs.parameters.message }}" ]
 
 ### Expression
 
-> Since v3.1
+> v3.1 and after
 
 The tag is substituted with the result of evaluating the tag as an expression.
 
 Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
 indexing into the parameter or step map, e.g. `inputs.parameters['my-param']` or `steps['my-step'].outputs.result`.
 
-[Learn about the expression syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).
+[Learn more about the expression syntax](https://expr-lang.org/docs/language-definition).
 
 #### Examples
 
@@ -170,7 +170,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 
 ### HTTP Templates
 
-> Since v3.3
+> v3.3 and after
 
 Only available for `successCondition`
 
@@ -275,6 +275,17 @@ For `Template`-level metrics:
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
 | `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
+
+### `stopStrategy`
+
+> v3.6 and after
+
+When using the `condition` field within the [`stopStrategy` of a `CronWorkflow`](cron-workflows.md#automatically-stopping-a-cronworkflow), special variables are available.
+
+| Variable | Description|
+|----------|------------|
+| `failed` | Counts how many times child workflows failed |
+| `succeeded` | Counts how many times child workflows succeeded |
 
 ### Knowing where you are
 

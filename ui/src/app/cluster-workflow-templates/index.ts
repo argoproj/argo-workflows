@@ -1,4 +1,4 @@
-import {ClusterWorkflowTemplateContainer} from './components/cluster-workflow-template-container';
+import {ClusterWorkflowTemplateContainer} from './cluster-workflow-template-container';
 
 export default {
     component: ClusterWorkflowTemplateContainer

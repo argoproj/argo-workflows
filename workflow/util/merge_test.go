@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -46,7 +47,7 @@ func TestMergeWorkflows(t *testing.T) {
 	targetWf := wfv1.MustUnmarshalWorkflow(patchWF)
 
 	err := MergeTo(patchWf, targetWf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "start", targetWf.Spec.Entrypoint)
 	assert.Equal(t, "argo1", targetWf.Spec.ServiceAccountName)
 	assert.Equal(t, "message", targetWf.Spec.Arguments.Parameters[0].Name)
@@ -224,6 +225,141 @@ spec:
 
 `
 
+var wfArguments = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-workflow
+spec:
+  workflowTemplateRef:
+    name: test-workflow-template
+  arguments:
+    parameters:
+      - name: PARAM1
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM1
+      - name: PARAM2
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM2
+      - name: PARAM4
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM4
+      - name: PARAM5
+        value: "Workflow value 5"`
+
+var wfArgumentsTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-workflow-template
+spec:
+  entrypoint: main
+  ttlStrategy:
+    secondsAfterCompletion: 600
+    secondsAfterSuccess: 600
+    secondsAfterFailure: 600
+  arguments:
+    parameters:
+      - name: PARAM1
+      - name: PARAM2
+      - name: PARAM3
+        value: WorkflowTemplate value 3
+      - name: PARAM4
+      - name: PARAM5
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: PARAM1
+            value: "{{workflow.parameters.PARAM1}}"
+          - name: PARAM2
+            value: "{{workflow.parameters.PARAM2}}"
+          - name: PARAM3
+            value: "{{workflow.parameters.PARAM3}}"
+          - name: PARAM4
+            value: "{{workflow.parameters.PARAM4}}"
+          - name: PARAM5
+            value: "{{workflow.parameters.PARAM5}}"
+      script:
+        image: busybox:latest
+        command:
+          - sh
+        source: |
+          echo -e "
+            PARAM1={{inputs.parameters.PARAM1}}
+            PARAM2={{inputs.parameters.PARAM2}}
+            PARAM3={{inputs.parameters.PARAM3}}
+            PARAM4={{inputs.parameters.PARAM4}}
+            PARAM5={{inputs.parameters.PARAM5}}
+          "
+`
+
+var wfArgumentsResult = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-workflow
+spec:
+  entrypoint: main
+  ttlStrategy:
+    secondsAfterCompletion: 600
+    secondsAfterSuccess: 600
+    secondsAfterFailure: 600
+  arguments:
+    parameters:
+      - name: PARAM1
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM1
+      - name: PARAM2
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM2
+      - name: PARAM3
+        value: WorkflowTemplate value 3
+      - name: PARAM4
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM4
+      - name: PARAM5
+        value: "Workflow value 5"
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: PARAM1
+            value: "{{workflow.parameters.PARAM1}}"
+          - name: PARAM2
+            value: "{{workflow.parameters.PARAM2}}"
+          - name: PARAM3
+            value: "{{workflow.parameters.PARAM3}}"
+          - name: PARAM4
+            value: "{{workflow.parameters.PARAM4}}"
+          - name: PARAM5
+            value: "{{workflow.parameters.PARAM5}}"
+      script:
+        image: busybox:latest
+        command:
+          - sh
+        source: |
+          echo -e "
+            PARAM1={{inputs.parameters.PARAM1}}
+            PARAM2={{inputs.parameters.PARAM2}}
+            PARAM3={{inputs.parameters.PARAM3}}
+            PARAM4={{inputs.parameters.PARAM4}}
+            PARAM5={{inputs.parameters.PARAM5}}
+          "
+`
+
 func TestJoinWfSpecs(t *testing.T) {
 	assert := assert.New(t)
 	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
@@ -233,10 +369,21 @@ func TestJoinWfSpecs(t *testing.T) {
 	result := wfv1.MustUnmarshalWorkflow(resultSpec)
 
 	targetWf, err := JoinWorkflowSpec(&wf1.Spec, wft.GetWorkflowSpec(), &wfDefault.Spec)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal(result.Spec, targetWf.Spec)
-	assert.Equal(3, len(targetWf.Spec.Templates))
+	assert.Len(targetWf.Spec.Templates, 3)
 	assert.Equal("whalesay", targetWf.Spec.Entrypoint)
+}
+
+func TestJoinWfSpecArguments(t *testing.T) {
+	assert := assert.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(wfArguments)
+	wft := wfv1.MustUnmarshalWorkflowTemplate(wfArgumentsTemplate)
+	result := wfv1.MustUnmarshalWorkflow(wfArgumentsResult)
+
+	targetWf, err := JoinWorkflowSpec(&wf.Spec, wft.GetWorkflowSpec(), nil)
+	require.NoError(t, err)
+	assert.Equal(result.Spec.Arguments, targetWf.Spec.Arguments)
 }
 
 func TestJoinWorkflowMetaData(t *testing.T) {
@@ -317,7 +464,7 @@ func TestMergeHooks(t *testing.T) {
 		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
 
 		err := MergeTo(patchHookWf, targetHookWf)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Nil(t, targetHookWf.Spec.Hooks)
 	})
 
@@ -326,8 +473,8 @@ func TestMergeHooks(t *testing.T) {
 		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
 
 		err := MergeTo(patchHookWf, targetHookWf)
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		require.NoError(t, err)
+		assert.Len(t, targetHookWf.Spec.Hooks, 2)
 		assert.Equal(t, "c", targetHookWf.Spec.Hooks[`foo`].Template)
 		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
 	})
@@ -338,8 +485,8 @@ func TestMergeHooks(t *testing.T) {
 		targetHookWf := wfv1.MustUnmarshalWorkflow(baseHookWF)
 
 		err := MergeTo(patchHookWf, targetHookWf)
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		require.NoError(t, err)
+		assert.Len(t, targetHookWf.Spec.Hooks, 2)
 		assert.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
 		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
 	})

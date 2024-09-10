@@ -159,49 +159,8 @@ data:
         #  name: my-s3-credentials
         #  key: secretKey
 
-
-
-  # Specifies the container runtime interface to use (default: emissary)
-  # must be one of: docker, kubelet, k8sapi, pns, emissary
-  # It has lower precedence than either `--container-runtime-executor` and `containerRuntimeExecutors`.
-  # (removed in v3.4)
-  containerRuntimeExecutor: emissary
-
-  # Specifies the executor to use.
-  #
-  # You can use this to:
-  # * Tailor your executor based on your preference for security or performance.
-  # * Test out an executor without committing yourself to use it for every workflow.
-  #
-  # To find out which executor was actually use, see the `wait` container logs.
-  #
-  # The list is in order of precedence; the first matching executor is used.
-  # This has precedence over `containerRuntimeExecutor`.
-  # (removed in v3.4)
-  containerRuntimeExecutors: |
-    - name: emissary
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: emissary
-    - name: pns
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: pns
-
-  # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
-  # (available v2.4-v3.3)
-  dockerSockPath: /var/someplace/else/docker.sock
-
-  # kubelet port when using kubelet executor (default: 10250) (kubelet executor will be deprecated use emissary instead)
-  # (removed in v3.4)
-  kubeletPort: "10250"
-
-  # disable the TLS verification of the kubelet executor (default: false)
-  # (removed in v3.4)
-  kubeletInsecure: "false"
-
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.
-  # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
+  # https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary
   images: |
     argoproj/argosay:v2:
       cmd: [/argosay]
@@ -262,12 +221,24 @@ data:
     path: /metrics
     # Port is the port where metrics are emitted. Default is "9090"
     port: 8080
-    # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
+    # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared. Histogram metrics are never cleared.
     metricsTTL: "10m"
     # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
     ignoreErrors: false
-    # Use a self-signed cert for TLS, default false
-    secure: false
+    # Use a self-signed cert for TLS
+    # >= 3.6: default true
+    secure: true
+    # Options for configuring individual metrics
+    options:
+      pod_missing:
+        disable: true
+      cronworkflows_triggered_total:
+        disabledAttributes:
+          - name
+      k8s_request_duration:
+        histogramBuckets: [ 1.0, 2.0, 10.0 ]
+    # >= 3.6. Which temporality to use for OpenTelemetry. Default is "Cumulative"
+    temporality: Delta
 
     # DEPRECATED: Legacy metrics are now removed, this field is ignored
     disableLegacy: false
@@ -372,7 +343,7 @@ data:
 
   # SSO Configuration for the Argo server.
   # You must also start argo server with `--auth-mode sso`.
-  # https://argoproj.github.io/argo-workflows/argo-server-auth-mode/
+  # https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/
   sso: |
     # This is the root URL of the OIDC provider (required).
     issuer: https://issuer.root.url/

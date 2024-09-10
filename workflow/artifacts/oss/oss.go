@@ -1,8 +1,10 @@
 package oss
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +17,6 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -39,8 +40,9 @@ var (
 	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
 
 	// OSS error code reference: https://error-center.alibabacloud.com/status/product/Oss
-	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
+	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge", "InternalError"}
 	bucketLogFilePrefix    = "bucket-log-"
+	maxObjectSize          = int64(5 * 1024 * 1024 * 1024)
 )
 
 type ossCredentials struct {
@@ -164,9 +166,45 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 	return err
 }
 
-func (ossDriver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
-	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(a, ossDriver)
+// OpenStream opens a stream reader for an artifact from OSS compliant storage
+func (ossDriver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	var stream io.ReadCloser
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			log.Infof("OSS OpenStream, key: %s", inputArtifact.OSS.Key)
+			osscli, err := ossDriver.newOSSClient()
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucketName := inputArtifact.OSS.Bucket
+			err = setBucketLogging(osscli, bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucket, err := osscli.Bucket(bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			s, origErr := bucket.GetObject(inputArtifact.OSS.Key)
+			if origErr == nil {
+				stream = s
+				return true, nil
+			}
+			if !IsOssErrCode(err, "NoSuchKey") {
+				return !isTransientOSSErr(origErr), fmt.Errorf("failed to get file: %w", origErr)
+			}
+			isDir, err := IsOssDirectory(bucket, inputArtifact.OSS.Key)
+			if err != nil {
+				return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, inputArtifact.OSS.Key, err)
+			}
+			if !isDir {
+				return false, origErr
+			}
+			// directory case:
+			// todo: make a .tgz file which can be streamed to user
+			return false, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
+		})
+	return stream, err
 }
 
 // Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
@@ -207,7 +245,9 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 			objectName := outputArtifact.OSS.Key
 			if outputArtifact.OSS.LifecycleRule != nil {
 				err = setBucketLifecycleRule(osscli, outputArtifact.OSS)
-				return !isTransientOSSErr(err), err
+				if err != nil {
+					return !isTransientOSSErr(err), err
+				}
 			}
 			if isDir {
 				if err = putDirectory(bucket, objectName, path); err != nil {
@@ -226,9 +266,32 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 	return err
 }
 
-// Delete is unsupported for the oss artifacts
-func (ossDriver *ArtifactDriver) Delete(s *wfv1.Artifact) error {
-	return common.ErrDeleteNotSupported
+// Delete deletes an artifact from an OSS compliant storage
+func (ossDriver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			log.Infof("OSS Delete artifact: key: %s", artifact.OSS.Key)
+			osscli, err := ossDriver.newOSSClient()
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucketName := artifact.OSS.Bucket
+			err = setBucketLogging(osscli, bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucket, err := osscli.Bucket(bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			objectName := artifact.OSS.Key
+			err = bucket.DeleteObject(objectName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			return true, nil
+		})
+	return err
 }
 
 func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
@@ -297,33 +360,33 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 		return fmt.Errorf("markInfrequentAccessAfterDays cannot be large than markDeletionAfterDays")
 	}
 
-	// Set expiration rule.
-	expirationRule := oss.BuildLifecycleRuleByDays("expiration-rule", ossArtifact.Key, true, markInfrequentAccessAfterDays)
-	// Automatically delete the expired delete tag so we don't have to manage it ourselves.
+	// Delete the current version objects after a period of time.
+	// If BucketVersioning is enbaled, the objects will turn to non-current version.
 	expiration := oss.LifecycleExpiration{
-		ExpiredObjectDeleteMarker: pointer.BoolPtr(true),
+		Days: markDeletionAfterDays,
 	}
 	// Convert to Infrequent Access (IA) storage type for objects that are expired after a period of time.
-	versionTransition := oss.LifecycleVersionTransition{
-		NoncurrentDays: markInfrequentAccessAfterDays,
-		StorageClass:   oss.StorageIA,
+	transition := oss.LifecycleTransition{
+		Days:         markInfrequentAccessAfterDays,
+		StorageClass: oss.StorageIA,
 	}
-	// Mark deletion after a period of time.
-	versionExpiration := oss.LifecycleVersionExpiration{
-		NoncurrentDays: markDeletionAfterDays,
+	// Delete the aborted uploaded parts after a period of time.
+	abortMultipartUpload := oss.LifecycleAbortMultipartUpload{
+		Days: markDeletionAfterDays,
 	}
-	versionTransitionRule := oss.LifecycleRule{
-		ID:                    "version-transition-rule",
-		Prefix:                ossArtifact.Key,
-		Status:                string(oss.VersionEnabled),
-		Expiration:            &expiration,
-		NonVersionExpiration:  &versionExpiration,
-		NonVersionTransitions: []oss.LifecycleVersionTransition{versionTransition},
+
+	keySha := fmt.Sprintf("%x", sha256.Sum256([]byte(ossArtifact.Key)))
+	rule := oss.LifecycleRule{
+		ID:                   keySha,
+		Prefix:               ossArtifact.Key,
+		Status:               string(oss.VersionEnabled),
+		Expiration:           &expiration,
+		Transitions:          []oss.LifecycleTransition{transition},
+		AbortMultipartUpload: &abortMultipartUpload,
 	}
 
 	// Set lifecycle rules to the bucket.
-	rules := []oss.LifecycleRule{expirationRule, versionTransitionRule}
-	err := client.SetBucketLifecycle(ossArtifact.Bucket, rules)
+	err := client.SetBucketLifecycle(ossArtifact.Bucket, []oss.LifecycleRule{rule})
 	return err
 }
 
@@ -344,9 +407,66 @@ func isTransientOSSErr(err error) bool {
 	return false
 }
 
+// OSS simple upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/simple-upload?spm=a2c63.p38356.0.0.2c072398fh5k3W#section-ym8-svm-rmu
+func simpleUpload(bucket *oss.Bucket, objectName, path string) error {
+	log.Info("OSS Simple Uploading")
+	return bucket.PutObjectFromFile(objectName, path)
+}
+
+// OSS multipart upload code reference: https://www.alibabacloud.com/help/en/oss/user-guide/multipart-upload?spm=a2c63.p38356.0.0.4ebe423fzsaPiN#section-trz-mpy-tes
+func multipartUpload(bucket *oss.Bucket, objectName, path string, objectSize int64) error {
+	log.Info("OSS Multipart Uploading")
+	// Calculate the number of chunks
+	chunkNum := int(math.Ceil(float64(objectSize)/float64(maxObjectSize))) + 1
+	chunks, err := oss.SplitFileByPartNum(path, chunkNum)
+	if err != nil {
+		return err
+	}
+	fd, err := os.Open(filepath.Clean(path))
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	// Initialize a multipart upload event.
+	imur, err := bucket.InitiateMultipartUpload(objectName)
+	if err != nil {
+		return err
+	}
+	// Upload the chunks.
+	var parts []oss.UploadPart
+	for _, chunk := range chunks {
+		_, err := fd.Seek(chunk.Offset, io.SeekStart)
+		if err != nil {
+			return err
+		}
+		// Call the UploadPart method to upload each chunck.
+		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
+		if err != nil {
+			log.Warnf("Upload part error: %v", err)
+			return err
+		}
+		log.Infof("Upload part number: %v, ETag: %v", part.PartNumber, part.ETag)
+		parts = append(parts, part)
+	}
+	_, err = bucket.CompleteMultipartUpload(imur, parts)
+	if err != nil {
+		log.Warnf("Complete multipart upload error: %v", err)
+		return err
+	}
+	return nil
+}
+
 func putFile(bucket *oss.Bucket, objectName, path string) error {
 	log.Debugf("putFile from %s to %s", path, objectName)
-	return bucket.PutObjectFromFile(objectName, path)
+	fStat, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	// Determine upload method based on file size.
+	if fStat.Size() <= maxObjectSize {
+		return simpleUpload(bucket, objectName, path)
+	}
+	return multipartUpload(bucket, objectName, path, fStat.Size())
 }
 
 func putDirectory(bucket *oss.Bucket, objectName, dir string) error {

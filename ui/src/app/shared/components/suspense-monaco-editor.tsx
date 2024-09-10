@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {MonacoEditorProps} from 'react-monaco-editor';
-import MonacoEditor from 'react-monaco-editor';
+import type {MonacoEditorProps} from 'react-monaco-editor';
+import type MonacoEditor from 'react-monaco-editor';
 
 import {Loading} from './loading';
 

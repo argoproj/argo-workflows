@@ -33,12 +33,19 @@ func NewResourceCommand() *cobra.Command {
 
 func execResource(ctx context.Context, action string) error {
 	wfExecutor := initExecutor()
-	defer wfExecutor.HandleError(ctx)
+
+	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
+	bgCtx := context.Background()
+
+	wfExecutor.InitializeOutput(bgCtx)
+	defer wfExecutor.HandleError(bgCtx)
+	defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
 	err := wfExecutor.StageFiles()
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
 	}
+
 	isDelete := action == "delete"
 	if isDelete && (wfExecutor.Template.Resource.SuccessCondition != "" || wfExecutor.Template.Resource.FailureCondition != "" || len(wfExecutor.Template.Outputs.Parameters) > 0) {
 		err = fmt.Errorf("successCondition, failureCondition and outputs are not supported for delete action")

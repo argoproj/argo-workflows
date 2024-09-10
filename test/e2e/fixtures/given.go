@@ -9,6 +9,7 @@ import (
 
 	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -23,6 +24,7 @@ type Given struct {
 	client            v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
@@ -181,15 +183,14 @@ func (g *Given) CronWorkflow(text string) *Given {
 
 var NoError = func(t *testing.T, output string, err error) {
 	t.Helper()
-	assert.NoError(t, err, output)
+	require.NoError(t, err, output)
 }
 
 var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) {
 	return func(t *testing.T, output string, err error) {
 		t.Helper()
-		if assert.NoError(t, err, output) {
-			assert.Regexp(t, rx, output)
-		}
+		require.NoError(t, err, output)
+		assert.Regexp(t, rx, output)
 	}
 }
 
@@ -223,6 +224,7 @@ func (g *Given) When() *When {
 		client:            g.client,
 		wfebClient:        g.wfebClient,
 		wfTemplateClient:  g.wfTemplateClient,
+		wftsClient:        g.wftsClient,
 		cwfTemplateClient: g.cwfTemplateClient,
 		cronClient:        g.cronClient,
 		hydrator:          g.hydrator,

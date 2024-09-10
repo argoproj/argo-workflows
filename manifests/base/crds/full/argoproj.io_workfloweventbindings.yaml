@@ -91,6 +91,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 url:
                                   type: string
                                 usernameSecret:
@@ -104,6 +105,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                               required:
                               - url
                               type: object
@@ -120,6 +122,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 blob:
                                   type: string
                                 container:
@@ -156,6 +159,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                               required:
                               - key
                               type: object
@@ -185,6 +189,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 repo:
                                   type: string
                                 revision:
@@ -202,6 +207,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 usernameSecret:
                                   properties:
                                     key:
@@ -213,6 +219,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                               required:
                               - repo
                               type: object
@@ -239,6 +246,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 krbConfigConfigMap:
                                   properties:
                                     key:
@@ -250,6 +258,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 krbKeytabSecret:
                                   properties:
                                     key:
@@ -261,6 +270,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 krbRealm:
                                   type: string
                                 krbServicePrincipalName:
@@ -289,6 +299,7 @@ spec:
                                           required:
                                           - key
                                           type: object
+                                          x-kubernetes-map-type: atomic
                                         usernameSecret:
                                           properties:
                                             key:
@@ -300,6 +311,7 @@ spec:
                                           required:
                                           - key
                                           type: object
+                                          x-kubernetes-map-type: atomic
                                       type: object
                                     clientCert:
                                       properties:
@@ -314,6 +326,7 @@ spec:
                                           required:
                                           - key
                                           type: object
+                                          x-kubernetes-map-type: atomic
                                         clientKeySecret:
                                           properties:
                                             key:
@@ -325,6 +338,7 @@ spec:
                                           required:
                                           - key
                                           type: object
+                                          x-kubernetes-map-type: atomic
                                       type: object
                                     oauth2:
                                       properties:
@@ -339,6 +353,7 @@ spec:
                                           required:
                                           - key
                                           type: object
+                                          x-kubernetes-map-type: atomic
                                         clientSecretSecret:
                                           properties:
                                             key:
@@ -350,6 +365,7 @@ spec:
                                           required:
                                           - key
                                           type: object
+                                          x-kubernetes-map-type: atomic
                                         endpointParams:
                                           items:
                                             properties:
@@ -376,6 +392,7 @@ spec:
                                           required:
                                           - key
                                           type: object
+                                          x-kubernetes-map-type: atomic
                                       type: object
                                   type: object
                                 headers:
@@ -415,6 +432,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 bucket:
                                   type: string
                                 createBucketIfNotPresent:
@@ -443,6 +461,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 securityToken:
                                   type: string
                                 useSDKCreds:
@@ -474,6 +493,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 bucket:
                                   type: string
                                 caSecret:
@@ -487,6 +507,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 createBucketIfNotPresent:
                                   properties:
                                     objectLocking:
@@ -511,6 +532,7 @@ spec:
                                       required:
                                       - key
                                       type: object
+                                      x-kubernetes-map-type: atomic
                                   type: object
                                 endpoint:
                                   type: string
@@ -533,6 +555,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 useSDKCreds:
                                   type: boolean
                               type: object
@@ -572,6 +595,7 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                 default:
                                   type: string
                                 event:

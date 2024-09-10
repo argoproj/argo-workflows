@@ -167,7 +167,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, cache, metav1.UpdateOptions{})
 	if err != nil {
 		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Kubernetes error creating new cache entry")
-		return fmt.Errorf("error creating cache entry: %w. Please check out this page for help: https://argoproj.github.io/argo-workflows/memoization/#faqs", err)
+		return fmt.Errorf("error creating cache entry: %w. Please check out this page for help: https://argo-workflows.readthedocs.io/en/latest/memoization/#faqs", err)
 	}
 	return nil
 }

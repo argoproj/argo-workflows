@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-patch-merge-pod-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This example shows a more advanced JSON merge patch
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: patch
+      mergeStrategy: merge
+      # patch an annotation to own Pod
+      flags:
+      - pod
+      - "{{pod.name}}"
+      manifest: |
+        metadata:
+          annotations:
+            foo: bar
+

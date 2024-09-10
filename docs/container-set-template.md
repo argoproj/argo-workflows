@@ -2,7 +2,7 @@
 
 > v3.1 and after
 
-A container set templates is similar to a normal container or script template, but allows you to specify multiple
+A container set template is similar to a normal container or script template, but allows you to specify multiple
 containers to run within a single pod.
 
 Because you have multiple containers within a pod, they will be scheduled on the same host. You can use cheap and fast
@@ -66,7 +66,7 @@ All container set templates that have artifacts must/should have a container nam
 
 If you want to use base-layer artifacts, `main` must be last to finish, so it must be the root node in the graph.
 
-That is may not be practical.
+That may not be practical.
 
 Instead, have a workspace volume and make sure all artifacts paths are on that volume.
 
@@ -116,3 +116,73 @@ Example B: Lopsided requests, e.g. `a -> b` where `a` is cheap and `b` is expens
 Can you see the problem here? `a` only has small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.
 
 Solution: do not use container set when you have lopsided requests.
+
+## Inner `retryStrategy` usage
+
+> v3.3 and after
+
+You can set an inner `retryStrategy` to apply to all containers of a container set, including the `duration` between each retry and the total number of `retries`.
+
+See an example below:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: containerset-with-retrystrategy
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflow creates a container set with a retryStrategy.
+spec:
+  entrypoint: containerset-retrystrategy-example
+  templates:
+    - name: containerset-retrystrategy-example
+      containerSet:
+        retryStrategy:
+          retries: "10" # if fails, retry at most ten times
+          duration: 30s # retry for at most 30s
+        containers:
+          # this container completes successfully, so it won't be retried.
+          - name: success
+            image: python:alpine3.6
+            command:
+              - python
+              - -c
+            args:
+              - |
+                print("hi")
+          # if fails, it will retry at most ten times.
+          - name: fail-retry
+            image: python:alpine3.6
+            command: ["python", -c]
+            # fail with a 66% probability
+            args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
+```
+
+<!-- markdownlint-disable MD046 -- allow indentation within the admonition -->
+
+!!! Note "Template-level `retryStrategy` vs Container Set `retryStrategy`"
+    `containerSet.retryStrategy` works differently from [template-level retries](retries.md):
+
+    1. Your `command` will be re-ran by the Executor inside the same container if it fails.
+
+        - As no new containers are created, the nodes in the UI remain the same, and the retried logs are appended to original container's logs. For example, your container logs may look like:
+          ```text
+          time="2024-03-29T06:40:25 UTC" level=info msg="capturing logs" argo=true
+          intentional failure
+          time="2024-03-29T06:40:25 UTC" level=debug msg="ignore signal child exited" argo=true
+          time="2024-03-29T06:40:26 UTC" level=info msg="capturing logs" argo=true
+          time="2024-03-29T06:40:26 UTC" level=debug msg="ignore signal urgent I/O condition" argo=true
+          intentional failure
+          time="2024-03-29T06:40:26 UTC" level=debug msg="ignore signal child exited" argo=true
+          time="2024-03-29T06:40:26 UTC" level=debug msg="forwarding signal terminated" argo=true
+          time="2024-03-29T06:40:27 UTC" level=info msg="sub-process exited" argo=true error="<nil>"
+          time="2024-03-29T06:40:27 UTC" level=info msg="not saving outputs - not main container" argo=true
+          Error: exit status 1
+          ```
+
+    1. If a container's `command` cannot be located, it will not be retried.
+
+        - As it will fail each time, the retry logic is short-circuited.
+
+<!-- markdownlint-enable MD046 -->

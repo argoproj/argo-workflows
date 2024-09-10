@@ -5,7 +5,7 @@
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
-The below workflow spec consists of two steps that run in sequence. The first step named `generate-artifact` will generate an artifact using the `whalesay` template that will be consumed by the second step named `print-message` that then consumes the generated artifact.
+The below workflow spec consists of two steps that run in sequence. The first step named `generate-artifact` will generate an artifact using the `hello-world-to-file` template that will be consumed by the second step named `print-message-from-file` that then consumes the generated artifact.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -18,9 +18,9 @@ spec:
   - name: artifact-example
     steps:
     - - name: generate-artifact
-        template: whalesay
+        template: hello-world-to-file
     - - name: consume-artifact
-        template: print-message
+        template: print-message-from-file
         arguments:
           artifacts:
           # bind message to the hello-art artifact
@@ -28,11 +28,11 @@ spec:
           - name: message
             from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
 
-  - name: whalesay
+  - name: hello-world-to-file
     container:
-      image: docker/whalesay:latest
+      image: busybox
       command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+      args: ["echo hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
       # generate hello-art artifact from /tmp/hello_world.txt
@@ -40,7 +40,7 @@ spec:
       - name: hello-art
         path: /tmp/hello_world.txt
 
-  - name: print-message
+  - name: print-message-from-file
     inputs:
       artifacts:
       # unpack the message input artifact
@@ -53,15 +53,15 @@ spec:
       args: ["cat /tmp/message"]
 ```
 
-The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file. The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
-The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
+The `hello-world-to-file` template uses the `echo` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file. The `print-message-from-file` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
+The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message-from-file` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
 Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec to increase the resource request for the init container and avoid any Out of memory issues.
 
 ```yaml
 <... snipped ...>
   - name: large-artifact
-    # below patch gets merged with the actual pod spec and increses the memory
+    # below patch gets merged with the actual pod spec and increases the memory
     # request of the init container.
     podSpecPatch: |
       initContainers:
@@ -92,15 +92,15 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
         path: /tmp/hello_world.txt
 
         # disable archiving entirely - upload the file / directory as is.
-        # this is useful when the container layout matches the desired target repository layout.   
+        # this is useful when the container layout matches the desired target repository layout.
       - name: hello-art-2
         path: /tmp/hello_world.txt
         archive:
           none: {}
 
         # customize the compression behavior (disabling it here).
-        # this is useful for files with varying compression benefits, 
-        # e.g. disabling compression for a cached build workspace and large binaries, 
+        # this is useful for files with varying compression benefits,
+        # e.g. disabling compression for a cached build workspace and large binaries,
         # or increasing compression for "perfect" textual data - like a json/xml export of a large database.
       - name: hello-art-3
         path: /tmp/hello_world.txt
@@ -113,7 +113,7 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
 
 ## Artifact Garbage Collection
 
-As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](https://argoproj.github.io/argo-workflows/configure-artifact-repository/) for the current supported store engine).
+As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](../configure-artifact-repository.md) for the current supported store engine).
 
 Artifacts can be deleted `OnWorkflowCompletion` or `OnWorkflowDeletion`. You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:
 
@@ -167,7 +167,7 @@ metadata:
 spec:
   entrypoint: main
   artifactGC:
-    strategy: OnWorkflowDeletion 
+    strategy: OnWorkflowDeletion
     ##############################################################################################
     #    Workflow Level Service Account and Metadata
     ##############################################################################################
@@ -268,7 +268,7 @@ A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [
 ```yaml
 spec:
   artifactGC:
-    strategy: OnWorkflowDeletion 
+    strategy: OnWorkflowDeletion
     forceFinalizerRemoval: true
 
 ```

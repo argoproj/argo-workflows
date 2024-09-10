@@ -1,5 +1,4 @@
 //go:build executor
-// +build executor
 
 package e2e
 
@@ -7,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -152,13 +152,26 @@ func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			outputs := status.Nodes[md.Name].Outputs
-			if assert.NotNil(t, outputs) {
-				parameters := outputs.Parameters
-				if assert.Len(t, parameters, 2) {
-					assert.Equal(t, "my-pod", parameters[0].Value.String(), "metadata.name is capture for json")
-					assert.Equal(t, "my-pod", parameters[1].Value.String(), "metadata.name is capture for jq")
-				}
+			require.NotNil(t, outputs)
+			parameters := outputs.Parameters
+			require.Len(t, parameters, 2)
+			assert.Equal(t, "my-pod", parameters[0].Value.String(), "metadata.name is capture for json")
+			assert.Equal(t, "my-pod", parameters[1].Value.String(), "metadata.name is capture for jq")
+			for _, value := range status.TaskResultsCompletionStatus {
+				assert.True(t, value)
 			}
+		})
+}
+
+func (s *ResourceTemplateSuite) TestResourceTemplateFailed() {
+	s.Given().
+		Workflow("@testdata/resource-templates/failed.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 		})
 }
 

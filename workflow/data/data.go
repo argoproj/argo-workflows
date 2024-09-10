@@ -3,7 +3,7 @@ package data
 import (
 	"fmt"
 
-	"github.com/antonmedv/expr"
+	"github.com/expr-lang/expr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -56,5 +56,10 @@ func processTransformation(data interface{}, transformation *wfv1.Transformation
 }
 
 func processExpression(expression string, data interface{}) (interface{}, error) {
-	return expr.Eval(expression, map[string]interface{}{"data": data})
+	env := map[string]interface{}{"data": data}
+	program, err := expr.Compile(expression, expr.Env(env))
+	if err != nil {
+		return nil, err
+	}
+	return expr.Run(program, env)
 }

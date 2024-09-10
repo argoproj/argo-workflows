@@ -36,6 +36,8 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
+
+	target.Spec = wfv1.WorkflowSpec{}
 	err = json.Unmarshal(mergedWfByte, target)
 	if err != nil {
 		return err

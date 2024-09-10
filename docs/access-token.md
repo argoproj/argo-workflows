@@ -36,7 +36,7 @@ kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 You now need to create a secret to hold your token:
 
 ```bash
-    kubectl apply -f - <<EOF
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint"
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
@@ -48,6 +49,7 @@ func NewLintCommand() *cobra.Command {
 	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "Perform strict workflow validation")
 	command.Flags().BoolVar(&offline, "offline", false, "perform offline linting. For resources referencing other resources, the references will be resolved from the provided args")
+	command.Flags().BoolVar(&common.NoColor, "no-color", false, "Disable colorized output")
 
 	return command
 }

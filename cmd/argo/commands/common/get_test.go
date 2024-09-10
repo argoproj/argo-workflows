@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -41,7 +42,7 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getA
 		printNode(w, node, workflowName, "", getArgs, util.GetPodNameVersion())
 	}
 	err := w.Flush()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, result.String())
 }
 
@@ -422,7 +423,7 @@ func Test_printWorkflowHelperNudges(t *testing.T) {
 
 	securityNudges := "This workflow does not have security context set. " +
 		"You can run your workflow pods more securely by setting it.\n" +
-		"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
+		"Learn more at https://argo-workflows.readthedocs.io/en/latest/workflow-pod-security-context/\n"
 
 	t.Run("SecuredWorkflow", func(t *testing.T) {
 		output := PrintWorkflowHelper(&securedWf, GetFlags{})

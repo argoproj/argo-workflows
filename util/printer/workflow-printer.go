@@ -113,7 +113,7 @@ func printCostOptimizationNudges(wfList []wfv1.Workflow, out io.Writer) {
 			_, _ = fmt.Fprintf(out, "%d completed ", completed)
 		}
 		_, _ = fmt.Fprintln(out, "workflows. Reducing the total number of workflows will reduce your costs.")
-		_, _ = fmt.Fprintln(out, "Learn more at https://argoproj.github.io/argo-workflows/cost-optimisation/")
+		_, _ = fmt.Fprintln(out, "Learn more at https://argo-workflows.readthedocs.io/en/latest/cost-optimisation/")
 	}
 }
 
@@ -137,8 +137,7 @@ func countPendingRunningCompletedNodes(wf *wfv1.Workflow) (int, int, int) {
 	running := 0
 	completed := 0
 	for _, node := range wf.Status.Nodes {
-		tmpl := wf.GetTemplateByName(node.TemplateName)
-		if tmpl == nil || !tmpl.IsPodType() {
+		if node.Type != wfv1.NodeTypePod {
 			continue
 		}
 		if node.Fulfilled() {

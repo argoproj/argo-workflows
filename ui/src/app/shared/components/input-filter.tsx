@@ -1,4 +1,4 @@
-import {Autocomplete} from 'argo-ui';
+import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
 import React, {useState} from 'react';
 
 interface InputProps {

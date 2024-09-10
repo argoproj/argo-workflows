@@ -1,8 +1,9 @@
 import * as React from 'react';
+
 import {kubernetes} from '../../../../models';
 import {KeyValueEditor} from './key-value-editor';
 
-export const LabelsAndAnnotationsEditor = ({value, onChange}: {value: kubernetes.ObjectMeta; onChange: (value: kubernetes.ObjectMeta) => void}) => {
+export function LabelsAndAnnotationsEditor({value, onChange}: {value: kubernetes.ObjectMeta; onChange: (value: kubernetes.ObjectMeta) => void}) {
     return (
         <>
             <div className='white-box'>
@@ -19,4 +20,4 @@ export const LabelsAndAnnotationsEditor = ({value, onChange}: {value: kubernetes
             </div>
         </>
     );
-};
+}

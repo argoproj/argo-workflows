@@ -1,6 +1,6 @@
 # Executor Plugins
 
-> Since v3.3
+> v3.3 and after
 
 ## Configuration
 

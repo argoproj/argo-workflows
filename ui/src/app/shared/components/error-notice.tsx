@@ -1,12 +1,13 @@
 import * as React from 'react';
 import {CSSProperties, useEffect, useState} from 'react';
+
 import {Notice} from './notice';
 import {PhaseIcon} from './phase-icon';
 
 // Display an error notice.
 // If the error was a HTTP error (i.e. from super-agent), rather than just an unhelpful "Internal Server Error",
 // it will display any message in the body.
-export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {response?: {body: {message?: string}}}; onReload?: () => void; reloadAfterSeconds?: number}) => {
+export function ErrorNotice(props: {style?: CSSProperties; error: Error & {response?: {body: {message?: string}}}; onReload?: () => void; reloadAfterSeconds?: number}) {
     if (!props.error) {
         return null;
     }
@@ -60,4 +61,4 @@ export const ErrorNotice = (props: {style?: CSSProperties; error: Error & {respo
             </span>
         </Notice>
     );
-};
+}

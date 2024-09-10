@@ -4,9 +4,8 @@
 
 Workflow is the definition of a workflow resource
 
-<details>
+<details markdown>
 <summary>Examples (click to open)</summary>
-<br>
 
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
@@ -128,6 +127,8 @@ Workflow is the definition of a workflow resource
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -188,15 +189,17 @@ Workflow is the definition of a workflow resource
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-jobs.yaml)
 
-- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-json-patch-workflow.yaml)
-
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-basic.yaml)
+- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
 
-- [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch.yaml)
+- [`k8s-patch-json-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-workflow.yaml)
+
+- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
+
+- [`k8s-patch-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-pod.yaml)
 
 - [`k8s-resource-log-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-resource-log-selector.yaml)
 
@@ -332,6 +335,8 @@ Workflow is the definition of a workflow resource
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -339,6 +344,8 @@ Workflow is the definition of a workflow resource
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -372,9 +379,8 @@ Workflow is the definition of a workflow resource
 
 CronWorkflow is the definition of a scheduled workflow resource
 
-<details>
+<details markdown>
 <summary>Examples (click to open)</summary>
-<br>
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
@@ -396,9 +402,8 @@ CronWorkflow is the definition of a scheduled workflow resource
 
 WorkflowTemplate is the definition of a workflow template resource
 
-<details>
+<details markdown>
 <summary>Examples (click to open)</summary>
-<br>
 
 - [`artifacts-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml)
 
@@ -427,9 +432,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 WorkflowSpec is the specification of a Workflow.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
@@ -565,6 +569,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -623,11 +629,13 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/intermediate-parameters.yaml)
 
-- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-json-patch-workflow.yaml)
-
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch.yaml)
+- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
+
+- [`k8s-patch-json-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-workflow.yaml)
+
+- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
 
@@ -755,6 +763,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -762,6 +772,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -797,7 +809,7 @@ WorkflowSpec is the specification of a Workflow.
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
 |`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
-|`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
+|`dnsPolicy`|`string`|Set DNS policy for workflow pods. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
@@ -857,15 +869,14 @@ WorkflowStatus contains overall status information about a workflow
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
-|`taskResultsCompleted`|`Map< boolean , string >`|Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.|
+|`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.|
 
 ## CronWorkflowSpec
 
 CronWorkflowSpec is the specification of a CronWorkflow
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
@@ -1001,6 +1012,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -1059,11 +1072,13 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/intermediate-parameters.yaml)
 
-- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-json-patch-workflow.yaml)
-
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch.yaml)
+- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
+
+- [`k8s-patch-json-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-workflow.yaml)
+
+- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
 
@@ -1191,6 +1206,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -1198,6 +1215,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -1228,7 +1247,9 @@ CronWorkflowSpec is the specification of a CronWorkflow
 |`concurrencyPolicy`|`string`|ConcurrencyPolicy is the K8s-style concurrency policy that will be used|
 |`failedJobsHistoryLimit`|`integer`|FailedJobsHistoryLimit is the number of failed jobs to be kept at a time|
 |`schedule`|`string`|Schedule is a schedule to run the Workflow in Cron format|
+|`schedules`|`Array< string >`|Schedules is a list of schedules to run the Workflow in Cron format|
 |`startingDeadlineSeconds`|`integer`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
+|`stopStrategy`|[`StopStrategy`](#stopstrategy)|v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition|
 |`successfulJobsHistoryLimit`|`integer`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`suspend`|`boolean`|Suspend is a flag that will stop new CronWorkflows from running if set to true|
 |`timezone`|`string`|Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.|
@@ -1244,15 +1265,17 @@ CronWorkflowStatus is the status of a CronWorkflow
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
+|`failed`|`integer`|v3.6 and after: Failed counts how many times child workflows failed|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
+|`phase`|`string`|v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true|
+|`succeeded`|`integer`|v3.6 and after: Succeeded counts how many times child workflows succeeded|
 
 ## Arguments
 
 Arguments to a template
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
 
@@ -1321,6 +1344,8 @@ Arguments to a template
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -1443,9 +1468,8 @@ Arguments to a template
 
 WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
 </details>
@@ -1463,9 +1487,8 @@ WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflo
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-repository-ref.yaml)
 </details>
@@ -1489,9 +1512,8 @@ ExecutorConfig holds configurations of an executor container.
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
@@ -1514,9 +1536,8 @@ _No description available_
 
 Metrics are a list of metrics emitted from a Workflow/Template
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
@@ -1532,9 +1553,8 @@ Metrics are a list of metrics emitted from a Workflow/Template
 
 PodGC describes how to delete completed pods as they complete
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -1544,7 +1564,7 @@ PodGC describes how to delete completed pods as they complete
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`deleteDelayDuration`|[`Duration`](#duration)|DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.|
+|`deleteDelayDuration`|`string`|DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.|
 |`labelSelector`|[`LabelSelector`](#labelselector)|LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.|
 |`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods|
 
@@ -1552,9 +1572,8 @@ PodGC describes how to delete completed pods as they complete
 
 Pod metdata
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-metadata-wf-field.yaml)
 </details>
@@ -1569,9 +1588,8 @@ Pod metdata
 
 RetryStrategy provides controls on how to retry a workflow step
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
@@ -1609,9 +1627,8 @@ RetryStrategy provides controls on how to retry a workflow step
 
 Synchronization holds synchronization lock configuration
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
@@ -1628,9 +1645,8 @@ Synchronization holds synchronization lock configuration
 
 Template is a reusable and composable unit of execution in a workflow
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 </details>
@@ -1682,9 +1698,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`gc-ttl.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/gc-ttl.yaml)
 </details>
@@ -1709,9 +1724,8 @@ VolumeClaimGC describes how to delete volumes from completed Workflows
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/label-value-from-workflow.yaml)
 </details>
@@ -1727,9 +1741,8 @@ _No description available_
 
 WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
@@ -1767,9 +1780,8 @@ ArtGCStatus maintains state related to ArtifactGC
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-repository-ref.yaml)
 </details>
@@ -1831,9 +1843,8 @@ NodeStatus contains status information about an individual node in the workflow
 
 Outputs hold parameters, artifacts, and results from a step
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
 
@@ -1930,9 +1941,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 SynchronizationStatus stores the status of semaphore and mutex.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
@@ -1945,13 +1955,21 @@ SynchronizationStatus stores the status of semaphore and mutex.
 |`mutex`|[`MutexStatus`](#mutexstatus)|Mutex stores this workflow's mutex holder details|
 |`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|Semaphore stores this workflow's Semaphore holder details|
 
+## StopStrategy
+
+v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`condition`|`string`|v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.|
+
 ## Artifact
 
 Artifact indicates an artifact to place at a specified path
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
 
@@ -2058,9 +2076,8 @@ Artifact indicates an artifact to place at a specified path
 
 Parameter indicate a passed string parameter to a service template with an optional default value
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
@@ -2127,6 +2144,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-step-level.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -2254,9 +2273,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 TemplateRef is a reference of template resource.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
@@ -2288,9 +2306,8 @@ TemplateRef is a reference of template resource.
 
 Prometheus is a prometheus metric to be emitted
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
@@ -2321,9 +2338,8 @@ RetryAffinity prevents running steps on the same host.
 
 Backoff is a backoff strategy to use within retryStrategy
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
 </details>
@@ -2333,15 +2349,14 @@ Backoff is a backoff strategy to use within retryStrategy
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
 |`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
-|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy|
+|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.|
 
 ## Mutex
 
 Mutex holds Mutex configuration
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
@@ -2368,9 +2383,8 @@ SemaphoreRef is a reference of Semaphore
 
 ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 </details>
@@ -2393,9 +2407,8 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifacts-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml)
 
@@ -2414,16 +2427,15 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`containers`|`Array<`[`ContainerNode`](#containernode)`>`|_No description available_|
-|`retryStrategy`|[`ContainerSetRetryStrategy`](#containersetretrystrategy)|RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.|
+|`retryStrategy`|[`ContainerSetRetryStrategy`](#containersetretrystrategy)|RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.|
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|_No description available_|
 
 ## DAGTemplate
 
 DAGTemplate is a template subtype for directed acyclic graph templates
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 
@@ -2503,9 +2515,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 Data is a data template
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-path-placeholders.yaml)
 
@@ -2524,9 +2535,8 @@ Data is a data template
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
 
@@ -2577,9 +2587,8 @@ _No description available_
 
 UserContainer is a container specified by a user.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/init-container.yaml)
 </details>
@@ -2597,7 +2606,7 @@ UserContainer is a container specified by a user.
 |`livenessProbe`|[`Probe`](#probe)|Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`mirrorVolumeMounts`|`boolean`|MirrorVolumeMounts will mount the same volumes specified in the main container to the container (including artifacts), at the same mountPaths. This enables dind daemon to partially see the same filesystem as the main container in order to use features such as docker volume binding|
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
-|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
+|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
@@ -2615,9 +2624,8 @@ UserContainer is a container specified by a user.
 
 Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
 
@@ -2684,6 +2692,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -2804,9 +2814,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 Memoization enables caching for the Outputs of the template
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
 </details>
@@ -2826,17 +2835,18 @@ Plugin is an Object with exactly one key
 
 ResourceTemplate is a template subtype to manipulate kubernetes resources
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
-- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-json-patch-workflow.yaml)
-
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch.yaml)
+- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
+
+- [`k8s-patch-json-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-workflow.yaml)
+
+- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
 
@@ -2859,9 +2869,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 
 ScriptTemplate is a template subtype to enable scripting through code steps
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/coinflip-recursive.yaml)
 
@@ -2888,6 +2897,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -2917,6 +2928,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
 
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
 
@@ -2932,7 +2945,7 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 |`lifecycle`|[`Lifecycle`](#lifecycle)|Actions that the management system should take in response to container lifecycle events. Cannot be updated.|
 |`livenessProbe`|[`Probe`](#probe)|Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
-|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
+|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
@@ -2951,9 +2964,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 WorkflowStep is a reference to a template to execute in a series of step
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
 
@@ -3109,6 +3121,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
@@ -3144,9 +3158,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-workflow.yaml)
 
@@ -3166,9 +3179,8 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/label-value-from-workflow.yaml)
 </details>
@@ -3227,9 +3239,8 @@ NodeSynchronizationStatus stores the status of a node
 
 MutexStatus contains which objects hold mutex locks, and which objects this workflow is waiting on to release locks.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
@@ -3256,9 +3267,8 @@ _No description available_
 
 ArchiveStrategy describes how to archive files/directory when saving artifacts
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
 
@@ -3284,9 +3294,8 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 
 ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-gc-workflow.yaml)
 </details>
@@ -3302,9 +3311,8 @@ ArtifactGC describes how to delete artifacts from completed Workflows - this is 
 
 ArtifactoryArtifact is the location of an artifactory artifact
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifactory-artifact.yaml)
 </details>
@@ -3320,9 +3328,8 @@ ArtifactoryArtifact is the location of an artifactory artifact
 
 AzureArtifact is the location of a an Azure Storage artifact
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-azure.yaml)
 
@@ -3342,9 +3349,8 @@ AzureArtifact is the location of a an Azure Storage artifact
 
 GCSArtifact is the location of a GCS artifact
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-gcs.yaml)
 
@@ -3362,9 +3368,8 @@ GCSArtifact is the location of a GCS artifact
 
 GitArtifact is the location of an git artifact
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 
@@ -3396,9 +3401,8 @@ GitArtifact is the location of an git artifact
 
 HDFSArtifact is the location of an HDFS artifact
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 </details>
@@ -3421,9 +3425,8 @@ HDFSArtifact is the location of an HDFS artifact
 
 HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
 
@@ -3469,9 +3472,8 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 
 OSSArtifact is the location of an Alibaba Cloud OSS artifact
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-oss.yaml)
 </details>
@@ -3493,9 +3495,8 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 
 RawArtifact allows raw string content to be placed as an artifact in a container
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-path-placeholders.yaml)
 
@@ -3531,9 +3532,8 @@ S3Artifact is the location of an S3 artifact
 
 ValueFrom describes a location in which to obtain the value to a parameter
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
@@ -3585,7 +3585,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |:----------:|:----------:|---------------|
 |`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for input parameter configuration|
 |`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
-|`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
+|`event`|`string`|Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`expression`|`string`|Expression, if defined, is evaluated to specify the value for the parameter|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
@@ -3597,9 +3597,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 Counter is a Counter prometheus metric
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
@@ -3615,9 +3614,8 @@ Counter is a Counter prometheus metric
 
 Gauge is a Gauge prometheus metric
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
@@ -3635,9 +3633,8 @@ Gauge is a Gauge prometheus metric
 
 Histogram is a Histogram prometheus metric
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 </details>
@@ -3652,9 +3649,8 @@ Histogram is a Histogram prometheus metric
 
 MetricLabel is a single label for a prometheus metric
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
@@ -3698,7 +3694,9 @@ MetricLabel is a single label for a prometheus metric
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch.yaml)
+- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
+
+- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -3707,6 +3705,8 @@ MetricLabel is a single label for a prometheus metric
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-metadata.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
+
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 </details>
 
 ### Fields
@@ -3723,9 +3723,8 @@ RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAnti
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifacts-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml)
 
@@ -3757,7 +3756,7 @@ _No description available_
 |`lifecycle`|[`Lifecycle`](#lifecycle)|Actions that the management system should take in response to container lifecycle events. Cannot be updated.|
 |`livenessProbe`|[`Probe`](#probe)|Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
-|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
+|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
@@ -3773,11 +3772,10 @@ _No description available_
 
 ## ContainerSetRetryStrategy
 
-_No description available_
+ContainerSetRetryStrategy provides controls on how to retry a container set
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
@@ -3806,15 +3804,14 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the time between each retry, examples values are "300ms", "1s" or "5m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".|
-|`retries`|[`IntOrString`](#intorstring)|Nbr of retries|
+|`retries`|[`IntOrString`](#intorstring)|Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`.|
 
 ## DAGTask
 
 DAGTask represents a node in the graph during DAG execution
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 
@@ -3905,9 +3902,8 @@ DAGTask represents a node in the graph during DAG execution
 
 DataSource sources external data into a data template
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/coinflip-recursive.yaml)
 
@@ -3937,6 +3933,8 @@ DataSource sources external data into a data template
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -3965,6 +3963,8 @@ DataSource sources external data into a data template
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
 
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
 
@@ -3977,9 +3977,8 @@ DataSource sources external data into a data template
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 </details>
@@ -4002,9 +4001,8 @@ HTTPBodySource contains the source of the HTTP body.
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -4020,9 +4018,8 @@ _No description available_
 
 Cache is the configuration for the type of cache to be used
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
 </details>
@@ -4045,9 +4042,8 @@ _No description available_
 
 ContinueOn defines if a workflow should continue even if a task or step fails/errors. It can be specified if the workflow should continue when the pod errors, fails or both.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/continue-on-fail.yaml)
 
@@ -4070,9 +4066,8 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 
 Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci-output-artifact.yaml)
 
@@ -4105,15 +4100,16 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 Sequence expands a workflow step into numeric range
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 </details>
@@ -4130,9 +4126,8 @@ Sequence expands a workflow step into numeric range
 
 ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifactory-artifact.yaml)
 </details>
@@ -4149,9 +4144,8 @@ ArtifactoryArtifactRepository defines the controller configuration for an artifa
 
 AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-azure.yaml)
 
@@ -4171,9 +4165,8 @@ AzureArtifactRepository defines the controller configuration for an Azure Blob S
 
 GCSArtifactRepository defines the controller configuration for a GCS artifact repository
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-gcs.yaml)
 
@@ -4191,9 +4184,8 @@ GCSArtifactRepository defines the controller configuration for a GCS artifact re
 
 HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 </details>
@@ -4216,9 +4208,8 @@ HDFSArtifactRepository defines the controller configuration for an HDFS artifact
 
 OSSArtifactRepository defines the controller configuration for an OSS artifact repository
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-oss.yaml)
 </details>
@@ -4281,9 +4272,8 @@ _No description available_
 
 NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
 
@@ -4302,9 +4292,8 @@ NoneStrategy indicates to skip tar process and upload the files or directory tre
 
 TarStrategy will tar and gzip the file or directory when saving
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-disable-archive.yaml)
 </details>
@@ -4322,9 +4311,8 @@ ZipStrategy will unzip zipped input artifacts
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -4340,9 +4328,8 @@ _No description available_
 
 Header indicate a key-value request header to be used when fetching artifacts over HTTP
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -4388,9 +4375,8 @@ S3EncryptionOptions used to determine encryption options during s3 operations
 
 SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/intermediate-parameters.yaml)
 
@@ -4401,9 +4387,8 @@ SuppliedValueFrom is a placeholder for a value to be filled in directly, either 
 
 Amount represent a numeric amount.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 </details>
@@ -4412,9 +4397,8 @@ Amount represent a numeric amount.
 
 ArtifactPaths expands a step from a collection of artifacts
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 </details>
@@ -4449,9 +4433,8 @@ ArtifactPaths expands a step from a collection of artifacts
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
@@ -4517,9 +4500,8 @@ BasicAuth describes the secret selectors required for basic authentication
 
 ClientCertAuth holds necessary information for client authentication via certificates
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -4547,9 +4529,8 @@ OAuth2Auth holds all information for client authentication via OAuth2 tokens
 
 EndpointParam is for requesting optional fields that should be sent in the oauth request
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -4567,9 +4548,8 @@ EndpointParam is for requesting optional fields that should be sent in the oauth
 
 ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
@@ -4705,6 +4685,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -4763,11 +4745,13 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/intermediate-parameters.yaml)
 
-- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-json-patch-workflow.yaml)
-
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch.yaml)
+- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
+
+- [`k8s-patch-json-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-workflow.yaml)
+
+- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
 
@@ -4895,6 +4879,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -4902,6 +4888,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -4961,9 +4949,8 @@ Affinity is a group of affinity scheduling rules.
 
 PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 </details>
@@ -4989,9 +4976,8 @@ HostAlias holds the mapping between IP and hostnames that will be injected as an
 
 LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/image-pull-secrets.yaml)
 </details>
@@ -5005,9 +4991,8 @@ LocalObjectReference contains enough information to let you locate the reference
 
 PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/default-pdb-support.yaml)
 </details>
@@ -5023,9 +5008,8 @@ PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 
 PodSecurityContext holds pod-level security attributes and common container settings. Some fields are also present in container.securityContext. Field values of container.securityContext take precedence over field values of PodSecurityContext.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
 </details>
@@ -5061,9 +5045,8 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
 
 PersistentVolumeClaim is a user's request for and claim to a persistent volume
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 
@@ -5093,9 +5076,8 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 
 Volume represents a named volume in a pod that may be accessed by any container in the pod.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifacts-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml)
 
@@ -5165,31 +5147,12 @@ ObjectReference contains enough information to let you inspect or modify the ref
 |`resourceVersion`|`string`|Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency|
 |`uid`|`string`|UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids|
 
-## Duration
-
-Duration is a wrapper around time.Duration which supports correct marshaling to YAML and JSON. In particular, it marshals into strings, which can be used as map keys in json.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy-with-label-selector.yaml)
-
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`duration`|`string`|_No description available_|
-
 ## LabelSelector
 
 A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-gc-strategy-with-label-selector.yaml)
 </details>
@@ -5204,9 +5167,8 @@ A label selector is a label query over a set of resources. The result of matchLa
 
 _No description available_
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
@@ -5233,9 +5195,8 @@ _No description available_
 
 A single application container that you want to run within a pod.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
@@ -5503,6 +5464,8 @@ A single application container that you want to run within a pod.
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -5550,9 +5513,8 @@ A single application container that you want to run within a pod.
 
 Selects a key from a ConfigMap.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
@@ -5572,9 +5534,8 @@ Selects a key from a ConfigMap.
 
 VolumeMount describes a mounting of a Volume within a container.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifacts-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml)
 
@@ -5617,13 +5578,14 @@ VolumeMount describes a mounting of a Volume within a container.
 
 EnvVar represents an environment variable present in a Container.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/colored-logs.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
@@ -5697,9 +5659,8 @@ ContainerPort represents a network port in a single container.
 
 ResourceRequirements describes the compute resource requirements.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 
@@ -5734,9 +5695,8 @@ ResourceRequirements describes the compute resource requirements.
 
 SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext. When both are set, the values in SecurityContext take precedence.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
 </details>
@@ -5770,9 +5730,8 @@ volumeDevice describes a mapping of a raw block device within a container.
 
 SecretKeySelector selects a key of a Secret.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifactory-artifact.yaml)
 
@@ -5849,9 +5808,8 @@ Pod anti affinity is a group of inter pod anti affinity scheduling rules.
 
 PodDNSConfigOption defines DNS resolver options of a pod.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 </details>
@@ -5910,9 +5868,8 @@ WindowsSecurityContextOptions contain Windows-specific options and credentials.
 
 PersistentVolumeClaimSpec describes the common attributes of storage devices and allows a Source for provider-specific attributes
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
@@ -6048,6 +6005,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
@@ -6106,11 +6065,13 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/intermediate-parameters.yaml)
 
-- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-json-patch-workflow.yaml)
-
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch.yaml)
+- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
+
+- [`k8s-patch-json-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-workflow.yaml)
+
+- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
 
@@ -6238,6 +6199,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
+- [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -6245,6 +6208,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
+
+- [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
@@ -6362,9 +6327,8 @@ Represents a cinder volume resource in Openstack. A Cinder volume must exist bef
 
 Adapts a ConfigMap into a volume. The contents of the target ConfigMap's Data field will be presented in a volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. ConfigMap volumes support ownership management and SELinux relabeling.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
 </details>
@@ -6404,9 +6368,8 @@ DownwardAPIVolumeSource represents a volume containing downward API info. Downwa
 
 Represents an empty directory for a pod. Empty directory volumes support ownership management and SELinux relabeling.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`artifacts-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml)
 
@@ -6546,9 +6509,8 @@ Represents an NFS mount that lasts the lifetime of a pod. NFS volumes do not sup
 
 PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace. This volume finds the bound PV and mounts that volume for the pod. A PersistentVolumeClaimVolumeSource is, essentially, a wrapper around another type of volume that is owned by someone else (the system).
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
 </details>
@@ -6642,9 +6604,8 @@ ScaleIOVolumeSource represents a persistent ScaleIO volume
 
 Adapts a Secret into a volume. The contents of the target Secret's Data field will be presented in a volume as files using the keys in the Data field as the file names. Secret volumes support ownership management and SELinux relabeling.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 
@@ -6699,9 +6660,8 @@ A label selector requirement is a selector that contains values, a key, and an o
 
 EnvVarSource represents a source for the value of an EnvVar.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
@@ -6791,9 +6751,8 @@ LifecycleHandler defines a specific action that should be taken in a lifecycle h
 
 ExecAction describes a "run in container" action.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 </details>
@@ -6817,9 +6776,8 @@ _No description available_
 
 HTTPGetAction describes an action based on HTTP Get requests.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`daemon-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-nginx.yaml)
 
@@ -6853,9 +6811,8 @@ TCPSocketAction describes an action based on opening a socket
 
 Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors. The serialization format is: <quantity>    ::= <signedNumber><suffix>  (Note that <suffix> may be empty, from the "" case in <decimalSI>.) <digit>      ::= 0 | 1 | ... | 9 <digits>     ::= <digit> | <digit><digits> <number>     ::= <digits> | <digits>.<digits> | <digits>. | .<digits> <sign>      ::= "+" | "-" <signedNumber>  ::= <number> | <sign><number> <suffix>     ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>    ::= Ki | Mi | Gi | Ti | Pi | Ei  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html) <decimalSI>    ::= m | "" | k | M | G | T | P | E  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.) <decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber> No matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities. When a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized. Before serializing, Quantity will be put in "canonical form". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:  a. No precision is lost  b. No fractional digits will be emitted  c. The exponent (or suffix) is as large as possible. The sign will be omitted unless the number is negative. Examples:  1.5 will be serialized as "1500m"  1.5Gi will be serialized as "1536Mi" Note that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise. Non-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.) This format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
@@ -7034,9 +6991,8 @@ A null or empty node selector term matches no objects. The requirements of them 
 
 Adapts a ConfigMap into a projected volume. The contents of the target ConfigMap's Data field will be presented in a projected volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. Note that this is identical to a configmap volume source without the default mode.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
 </details>
@@ -7061,9 +7017,8 @@ Represents downward API info for projecting into a projected volume. Note that t
 
 Adapts a secret into a projected volume. The contents of the target Secret's Data field will be presented in a projected volume as files using the keys in the Data field as the file names. Note that this is identical to a secret volume source without the default mode.
 
-<details>
+<details markdown>
 <summary>Examples with this field (click to open)</summary>
-<br>
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
 

@@ -3,8 +3,9 @@ ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.21-alpine3.18 as builder
+FROM golang:1.22-alpine3.19 as builder
 
+# libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \
     git \
     make \
@@ -12,6 +13,7 @@ RUN apk update && apk add --no-cache \
     wget \
     curl \
     gcc \
+    libc-dev \
     bash \
     mailcap
 
@@ -39,7 +41,7 @@ COPY api api
 
 RUN --mount=type=cache,target=/root/.yarn \
   YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
-  NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=2048" JOBS=max yarn --cwd ui build
+  NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 ####################################################################################################
 
@@ -71,6 +73,8 @@ ARG GIT_TREE_STATE
 
 RUN mkdir -p ui/dist
 COPY --from=argo-ui ui/dist/app ui/dist/app
+# update timestamp so that `make` doesn't try to rebuild this -- it was already built in the previous stage
+RUN touch ui/dist/app/index.html
 
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build STATIC_FILES=true make dist/argo GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}
 

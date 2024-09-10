@@ -1,0 +1,205 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-artifact-passing-
+spec:
+  entrypoint: test-root
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: test-root
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: create-global-artifacts
+        template: create-global-artifacts
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testInput}}'
+            name: testInput
+          - from: '{{workflow.outputs.artifacts.testUpdate}}'
+            name: testUpdate
+        name: nested-workflow-entrypoint
+        template: main
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testUpload}}'
+            name: testUpload
+        name: upload-testupload-step
+        template: upload-testupload
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testUpdate}}'
+            name: testUpdate
+        name: upload-testupdate-step
+        template: upload-testupdate
+
+  - inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+    steps:
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testInput}}'
+            name: input
+        name: cp
+        template: cp
+    - - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.testUpdate}}'
+            name: input-parameters
+        name: generate-testupdate-update
+        template: generate-testupdate-update
+    - - arguments:
+          artifacts:
+          - from: '{{steps.cp.outputs.artifacts.upload}}'
+            name: testUpload
+        name: output-testupload
+        template: output-testupload
+    - - arguments:
+          artifacts:
+          - from: '{{steps.generate-testupdate-update.outputs.artifacts.updated-testupdate}}'
+            name: testUpdate
+        name: output-testupdate
+        template: output-testupdate
+
+
+
+  - container:
+      image: alpine:3.7
+      command: [sh, -c]
+      args: ["sleep 1; echo -n 'test input' > /testInput.txt; echo -n 'test update' > /testUpdate.txt"]
+    name: create-global-artifacts
+    outputs:
+      artifacts:
+      - globalName: testInput
+        name: testInput
+        path: /testInput.txt
+        archive:
+          none: {}
+      - globalName: testUpdate
+        name: testUpdate
+        path: /testUpdate.txt
+        archive:
+          none: {}
+
+
+
+  - container:
+      command: [sh, -c]
+      args: ["sleep 1; cp /input.txt /upload.txt"]
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: input
+        path: /input.txt
+    metadata: {}
+    name: cp
+    outputs:
+      artifacts:
+      - name: upload
+        path: /upload.txt
+
+  - container:
+      command: [sh, -c]
+      args: ["sleep 1; echo -n 'Updated testUpdate' > /updated-testUpdate.txt"]
+      image: alpine:3.18.4
+    metadata: {}
+    name: generate-testupdate-update
+    outputs:
+      artifacts:
+      - name: updated-testupdate
+        path: /updated-testUpdate.txt
+        archive:
+          none: {}
+
+  - container:
+      command: [sh, -c]
+      args: ["sleep 1"]
+      image: alpine:3.18.4
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: testUpload
+        path: /testUpload.txt
+    metadata: {}
+    name: output-testupload
+    outputs:
+      artifacts:
+      - globalName: testUpload
+        name: testUpload
+        path: /testUpload.txt
+
+  - container:
+      image: alpine:3.18.4
+      command: [sh, -c]
+      args: ["sleep 1"]
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: testUpdate
+        path: /testUpdate.txt
+    metadata: {}
+    name: output-testupdate
+    outputs:
+      artifacts:
+      - globalName: testUpdate
+        name: testUpdate
+        path: /testUpdate.txt
+
+
+
+  - container:
+      command: [sh, -c]
+      args: ["sleep 1; cat /upload/testUpload; cat /upload/testUpload.txt > /upload/testUpload.txt"]
+      image: alpine:3.18.4
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: testUpload
+        path: /upload/testUpload.txt
+    metadata: {}
+    name: upload-testupload
+    outputs:
+      artifacts:
+      - globalName: uploadresult
+        name: uploadresult
+        path: /upload/testUpload.txt
+
+  - container:
+      command: [sh, -c]
+      args: ["sleep 1; cat /upload/testUpdate.txt"]
+      image: alpine:3.18.4
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: testUpdate
+        path: /upload/testUpdate.txt
+    metadata: {}
+    name: upload-testupdate
+    outputs:
+      artifacts:
+        - name: finalTestUpdate
+          path: /upload/testUpdate.txt
+          archive:
+            none: {}
+          s3:
+            key: finalTestUpdate
+            bucket: my-bucket-3
+            endpoint: minio:9000
+            insecure: true
+            accessKeySecret:
+              name: my-minio-cred
+              key: accesskey
+            secretKeySecret:
+              name: my-minio-cred
+              key: secretkey
+          artifactGC:
+            strategy: OnWorkflowDeletion

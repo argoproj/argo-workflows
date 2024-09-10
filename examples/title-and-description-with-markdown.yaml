@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: title-and-description-with-markdown-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+  annotations:
+    # both annotations are available since v3.4.4
+    # embedded markdown is available since v3.6
+    workflows.argoproj.io/title: "**Test Title**" # defaults to `metadata.name` if not specified
+    workflows.argoproj.io/description: |
+      `This is a simple hello world example.`
+      This is an embedded link to the docs: https://argo-workflows.readthedocs.io/en/latest/title-and-description/
+spec:
+  entrypoint: hello-world
+  templates:
+  - name: hello-world
+    container:
+      image: busybox
+      command: [echo]
+      args: ["hello world"]

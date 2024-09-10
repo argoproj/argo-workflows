@@ -19,7 +19,7 @@ export const nodeArtifacts = (node: NodeStatus, ar: ArtifactRepository) =>
             filename: a.key.replace(/\/$/, '').split('/').pop()
         }));
 
-export const artifactURN = <A extends Artifact>(a: A, ar: ArtifactRepository) => {
+export function artifactURN<A extends Artifact>(a: A, ar: ArtifactRepository) {
     if (a.gcs) {
         return 'artifact:gcs:' + (a.gcs.endpoint || ar?.gcs?.endpoint) + ':' + (a.gcs.bucket || ar?.gcs?.bucket) + ':' + a.gcs.key;
     } else if (a.git) {
@@ -36,9 +36,9 @@ export const artifactURN = <A extends Artifact>(a: A, ar: ArtifactRepository) =>
         return 'artifact:azure:' + (a.azure.endpoint || ar?.azure?.endpoint) + ':' + (a.azure.container || ar?.azure?.container) + ':' + a.azure.blob;
     }
     return 'artifact:unknown';
-};
+}
 
-export const artifactRepoHasLocation = (ar: ArtifactRepository) => {
+export function artifactRepoHasLocation(ar: ArtifactRepository) {
     if (ar.gcs) {
         return ar.gcs.bucket !== '' && ar.gcs.key !== '';
     } else if (ar.git) {
@@ -54,9 +54,9 @@ export const artifactRepoHasLocation = (ar: ArtifactRepository) => {
     } else if (ar.azure) {
         return ar.azure.container !== '' && ar.azure.blob !== '';
     }
-};
+}
 
-export const artifactKey = <A extends Artifact>(a: A) => {
+export function artifactKey<A extends Artifact>(a: A) {
     if (a.gcs) {
         return a.gcs.key;
     } else if (a.git) {
@@ -73,9 +73,9 @@ export const artifactKey = <A extends Artifact>(a: A) => {
         return a.azure.blob;
     }
     return 'unknown';
-};
+}
 
-export const findArtifact = (status: WorkflowStatus, urn: string) => {
+export function findArtifact(status: WorkflowStatus, urn: string) {
     const artifacts: (Artifact & {nodeId: string; artifactNameDiscriminator: string})[] = [];
 
     Object.values(status.nodes || {}).map(node => {
@@ -85,4 +85,4 @@ export const findArtifact = (status: WorkflowStatus, urn: string) => {
     });
 
     return artifacts.length >= 0 && artifacts[artifacts.length - 1];
-};
+}

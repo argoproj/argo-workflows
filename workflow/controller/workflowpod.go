@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -24,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 var (
@@ -43,11 +47,8 @@ var (
 			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
+	maxEnvVarLen = 131072
 )
-
-func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
-	return woc.execWf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
-}
 
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
 // retryStrategy.affinity.nodeAntiAffinity{} is specified
@@ -95,7 +96,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
 		// Do not create pods if we are shutting down
-		woc.markNodePhase(nodeName, wfv1.NodeSkipped, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
+		woc.markNodePhase(nodeName, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
 		return nil, nil
 	}
 
@@ -117,10 +118,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if err != nil {
 				return nil, err
 			}
-			if err := json.Unmarshal(a, &c); err != nil {
+
+			mergedContainerByte, err := strategicpatch.StrategicMergePatch(a, b, apiv1.Container{})
+			if err != nil {
 				return nil, err
 			}
-			if err = json.Unmarshal(b, &c); err != nil {
+			c = apiv1.Container{}
+			if err := json.Unmarshal(mergedContainerByte, &c); err != nil {
 				return nil, err
 			}
 		}
@@ -180,6 +184,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		},
 	}
 
+	if os.Getenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") == "true" {
+		pod.ObjectMeta.Finalizers = append(pod.ObjectMeta.Finalizers, common.FinalizerPodStatus)
+	}
+
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
 		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
@@ -189,13 +197,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.HostNetwork = *woc.execWf.Spec.HostNetwork
 	}
 
-	if woc.execWf.Spec.DNSPolicy != nil {
-		pod.Spec.DNSPolicy = *woc.execWf.Spec.DNSPolicy
-	}
-
-	if woc.execWf.Spec.DNSConfig != nil {
-		pod.Spec.DNSConfig = woc.execWf.Spec.DNSConfig
-	}
+	woc.addDNSConfig(pod)
 
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
@@ -253,8 +255,20 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	initCtr := woc.newInitContainer(tmpl)
 	pod.Spec.InitContainers = []apiv1.Container{initCtr}
 
-	addSchedulingConstraints(pod, wfSpec, tmpl)
+	woc.addSchedulingConstraints(pod, wfSpec, tmpl, nodeName)
 	woc.addMetadata(pod, tmpl)
+
+	// Set initial progress from pod metadata if exists.
+	if x, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyProgress]; ok {
+		if p, ok := wfv1.ParseProgress(x); ok {
+			node, err := woc.wf.Status.Nodes.Get(nodeID)
+			if err != nil {
+				woc.log.Panicf("was unable to obtain node for %s", nodeID)
+			}
+			node.Progress = p
+			woc.wf.Status.Nodes.Set(nodeID, *node)
+		}
+	}
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -338,7 +352,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					return nil, err
 				}
 				for _, obj := range []interface{}{tmpl.ArchiveLocation} {
-					err = verifyResolvedVariables(obj)
+					err = validate.VerifyResolvedVariables(obj)
 					if err != nil {
 						return nil, err
 					}
@@ -347,24 +361,27 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	// Apply the patch string from template
-	if woc.hasPodSpecPatch(tmpl) {
-		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
-		}
-
+	// Apply the patch string from workflow and template
+	var podSpecPatchs []string
+	if woc.execWf.Spec.HasPodSpecPatch() {
 		// Final substitution for workflow level PodSpecPatch
 		localParams := make(map[string]string)
 		if tmpl.IsPodType() {
 			localParams[common.LocalVarPodName] = pod.Name
 		}
-		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		newTmpl := tmpl.DeepCopy()
+		newTmpl.PodSpecPatch = woc.execWf.Spec.PodSpecPatch
+		processedTmpl, err := common.ProcessArgs(newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
-
-		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, tmpl.PodSpecPatch)
+		podSpecPatchs = append(podSpecPatchs, processedTmpl.PodSpecPatch)
+	}
+	if tmpl.HasPodSpecPatch() {
+		podSpecPatchs = append(podSpecPatchs, tmpl.PodSpecPatch)
+	}
+	if len(podSpecPatchs) > 0 {
+		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, podSpecPatchs...)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
 		}
@@ -379,7 +396,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 				})
 				if err != nil {
-					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: %w", c.Image, err)
+					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", c.Image, err)
 				}
 				c.Command = x.Entrypoint
 				if c.Args == nil { // check nil rather than length, as zero-length is valid args
@@ -403,6 +420,85 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*x)})
 		}
 		pod.Spec.Containers[i] = c
+	}
+
+	offloadEnvVarTemplate := false
+	for _, c := range pod.Spec.Containers {
+		if c.Name == common.MainContainerName {
+			for _, e := range c.Env {
+				if e.Name == common.EnvVarTemplate {
+					envVarTemplateValue = e.Value
+					if len(envVarTemplateValue) > maxEnvVarLen {
+						offloadEnvVarTemplate = true
+					}
+				}
+			}
+		}
+	}
+
+	if offloadEnvVarTemplate {
+		cmName := pod.Name
+		cm := &apiv1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cmName,
+				Namespace: woc.wf.ObjectMeta.Namespace,
+				Labels: map[string]string{
+					common.LabelKeyWorkflow: woc.wf.ObjectMeta.Name,
+				},
+				Annotations: map[string]string{
+					common.AnnotationKeyNodeName: nodeName,
+					common.AnnotationKeyNodeID:   nodeID,
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+				},
+			},
+			Data: map[string]string{
+				common.EnvVarTemplate: envVarTemplateValue,
+			},
+		}
+		created, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).Create(ctx, cm, metav1.CreateOptions{})
+		if err != nil {
+			return nil, err
+		}
+		woc.log.Infof("Created configmap: %s", created.Name)
+
+		volumeConfig := apiv1.Volume{
+			Name: "argo-env-config",
+			VolumeSource: apiv1.VolumeSource{
+				ConfigMap: &apiv1.ConfigMapVolumeSource{
+					LocalObjectReference: apiv1.LocalObjectReference{
+						Name: cmName,
+					},
+				},
+			},
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, volumeConfig)
+
+		volumeMountConfig := apiv1.VolumeMount{
+			Name:      volumeConfig.Name,
+			MountPath: common.EnvConfigMountPath,
+		}
+		for i, c := range pod.Spec.InitContainers {
+			for j, e := range c.Env {
+				if e.Name == common.EnvVarTemplate {
+					e.Value = common.EnvVarTemplateOffloaded
+					c.Env[j] = e
+				}
+			}
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
+			pod.Spec.InitContainers[i] = c
+		}
+		for i, c := range pod.Spec.Containers {
+			for j, e := range c.Env {
+				if e.Name == common.EnvVarTemplate {
+					e.Value = common.EnvVarTemplateOffloaded
+					c.Env[j] = e
+				}
+			}
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
+			pod.Spec.Containers[i] = c
+		}
 	}
 
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
@@ -440,7 +536,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
-			return created, nil
+			// get a reference to the currently existing Pod since the created pod returned before was nil.
+			if existing, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
+				return existing, nil
+			}
 		}
 		if errorsutil.IsTransientErr(err) {
 			return nil, err
@@ -478,7 +577,7 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
 	deadline := time.Time{}
-	if woc.workflowDeadline != nil {
+	if woc.workflowDeadline != nil && !opts.onExitPod {
 		deadline = *woc.workflowDeadline
 	}
 	if !opts.executionDeadline.IsZero() && (deadline.IsZero() || opts.executionDeadline.Before(deadline)) {
@@ -546,14 +645,6 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 				},
 			},
 		},
-		// This flag was introduced in Go 15 and will be removed in Go 16.
-		// x509: cannot validate certificate for ... because it doesn't contain any IP SANs
-		// https://github.com/argoproj/argo-workflows/issues/5563 - Upgrade to Go 16
-		// https://github.com/golang/go/issues/39568
-		{
-			Name:  "GODEBUG",
-			Value: "x509ignoreCN=0",
-		},
 		{
 			Name:  common.EnvVarWorkflowName,
 			Value: woc.wf.Name,
@@ -604,19 +695,15 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Env:             woc.createEnvVars(),
 		Resources:       woc.controller.Config.GetExecutor().Resources,
 		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
+		Args:            woc.controller.Config.GetExecutor().Args,
 	}
 	// lock down resource pods by default
 	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {
-		exec.SecurityContext = &apiv1.SecurityContext{
-			Capabilities: &apiv1.Capabilities{
-				Drop: []apiv1.Capability{"ALL"},
-			},
-			RunAsNonRoot:             pointer.BoolPtr(true),
-			RunAsUser:                pointer.Int64Ptr(8737),
-			AllowPrivilegeEscalation: pointer.BoolPtr(false),
-		}
+		exec.SecurityContext = common.MinimalCtrSC()
+		// TODO: always set RO FS once #10787 is fixed
+		exec.SecurityContext.ReadOnlyRootFilesystem = nil
 		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
-			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.BoolPtr(true)
+			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
 		}
 	}
 	if woc.controller.Config.KubeConfig != nil {
@@ -673,23 +760,45 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	}
 }
 
+// addDNSConfig applies DNSConfig to the pod
+func (woc *wfOperationCtx) addDNSConfig(pod *apiv1.Pod) {
+	if woc.execWf.Spec.DNSPolicy != nil {
+		pod.Spec.DNSPolicy = *woc.execWf.Spec.DNSPolicy
+	}
+
+	if woc.execWf.Spec.DNSConfig != nil {
+		pod.Spec.DNSConfig = woc.execWf.Spec.DNSConfig
+	}
+}
+
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
-func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, nodeName string) {
+	// Get boundaryNode Template (if specified)
+	boundaryTemplate, err := woc.GetBoundaryTemplate(nodeName)
+	if err != nil {
+		woc.log.Warnf("couldn't get boundaryTemplate through nodeName %s", nodeName)
+	}
 	// Set nodeSelector (if specified)
 	if len(tmpl.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = tmpl.NodeSelector
+	} else if boundaryTemplate != nil && len(boundaryTemplate.NodeSelector) > 0 {
+		pod.Spec.NodeSelector = boundaryTemplate.NodeSelector
 	} else if len(wfSpec.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = wfSpec.NodeSelector
 	}
 	// Set affinity (if specified)
 	if tmpl.Affinity != nil {
 		pod.Spec.Affinity = tmpl.Affinity
+	} else if boundaryTemplate != nil && boundaryTemplate.Affinity != nil {
+		pod.Spec.Affinity = boundaryTemplate.Affinity
 	} else if wfSpec.Affinity != nil {
 		pod.Spec.Affinity = wfSpec.Affinity
 	}
 	// Set tolerations (if specified)
 	if len(tmpl.Tolerations) > 0 {
 		pod.Spec.Tolerations = tmpl.Tolerations
+	} else if boundaryTemplate != nil && len(boundaryTemplate.Tolerations) > 0 {
+		pod.Spec.Tolerations = boundaryTemplate.Tolerations
 	} else if len(wfSpec.Tolerations) > 0 {
 		pod.Spec.Tolerations = wfSpec.Tolerations
 	}
@@ -723,6 +832,37 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	} else if wfSpec.SecurityContext != nil {
 		pod.Spec.SecurityContext = wfSpec.SecurityContext
 	}
+}
+
+// GetBoundaryTemplate get a template through the nodeName
+func (woc *wfOperationCtx) GetBoundaryTemplate(nodeName string) (*wfv1.Template, error) {
+	node, err := woc.wf.GetNodeByName(nodeName)
+	if err != nil {
+		woc.log.Warnf("couldn't retrieve node for nodeName %s, will get nil templateDeadline", nodeName)
+		return nil, err
+	}
+	boundaryTmpl, _, err := woc.GetTemplateByBoundaryID(node.BoundaryID)
+	if err != nil {
+		return nil, err
+	}
+	return boundaryTmpl, nil
+}
+
+// GetTemplateByBoundaryID get a template through the node's BoundaryID.
+func (woc *wfOperationCtx) GetTemplateByBoundaryID(boundaryID string) (*wfv1.Template, bool, error) {
+	boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID)
+	if err != nil {
+		return nil, false, err
+	}
+	tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
+	if err != nil {
+		return nil, false, err
+	}
+	_, boundaryTmpl, templateStored, err := tmplCtx.ResolveTemplate(boundaryNode)
+	if err != nil {
+		return nil, templateStored, err
+	}
+	return boundaryTmpl, templateStored, nil
 }
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
@@ -1093,17 +1233,6 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
-}
-
-// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
-func verifyResolvedVariables(obj interface{}) error {
-	str, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-	return template.Validate(string(str), func(tag string) error {
-		return errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-	})
 }
 
 // createSecretVolumesAndMounts will retrieve and create Volumes and Volumemount object for Pod

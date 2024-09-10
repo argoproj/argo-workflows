@@ -11,7 +11,7 @@ ARG GIT_TREE_STATE=unknown
 
 # had issues with official golange image for windows so I'm using plain servercore
 FROM mcr.microsoft.com/windows/servercore:${IMAGE_OS_VERSION} as builder
-ENV GOLANG_VERSION=1.21
+ENV GOLANG_VERSION=1.22
 SHELL ["powershell", "-Command"]
 
 # install chocolatey package manager
@@ -50,7 +50,7 @@ ARG GIT_TREE_STATE
 WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
 COPY . .
 # run in git bash for all the shell commands in Makefile to work
-RUN bash -c 'make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}'
+RUN bash -c 'make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE} HACK_PKG_FILES_AS_PKGS=true'
 
 ####################################################################################################
 # argoexec

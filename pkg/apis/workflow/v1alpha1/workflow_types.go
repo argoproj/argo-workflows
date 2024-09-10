@@ -326,7 +326,7 @@ type WorkflowSpec struct {
 	// Host networking requested for this workflow pod. Default to false.
 	HostNetwork *bool `json:"hostNetwork,omitempty" protobuf:"bytes,14,opt,name=hostNetwork"`
 
-	// Set DNS policy for the pod.
+	// Set DNS policy for workflow pods.
 	// Defaults to "ClusterFirst".
 	// Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
 	// DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
@@ -886,7 +886,7 @@ type ValueFrom struct {
 	// JQFilter expression against the resource object in resource templates
 	JQFilter string `json:"jqFilter,omitempty" protobuf:"bytes,3,opt,name=jqFilter"`
 
-	// Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+	// Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
 	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
 
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
@@ -1018,7 +1018,7 @@ type PodGC struct {
 	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
 	// DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
-	DeleteDelayDuration *metav1.Duration `json:"deleteDelayDuration,omitempty" protobuf:"bytes,3,opt,name=deleteDelayDuration"`
+	DeleteDelayDuration string `json:"deleteDelayDuration,omitempty" protobuf:"bytes,3,opt,name=deleteDelayDuration"`
 }
 
 // GetLabelSelector gets the label selector from podGC.
@@ -1037,6 +1037,13 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 		return podGC.Strategy
 	}
 	return PodGCOnPodNone
+}
+
+func (podGC *PodGC) GetDeleteDelayDuration() (time.Duration, error) {
+	if podGC == nil || podGC.DeleteDelayDuration == "" {
+		return -1, nil // negative return means the field was omitted
+	}
+	return ParseStringToDuration(podGC.DeleteDelayDuration)
 }
 
 // WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level
@@ -1173,7 +1180,7 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 	} else if a.S3 != nil {
 		return a.S3, nil
 	}
-	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
+	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 }
 
 // SetType sets the type of the artifact to type the argument.
@@ -1944,29 +1951,39 @@ type WorkflowStatus struct {
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 
-	// Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.
-	TaskResultsCompleted map[string]bool `json:"taskResultsCompleted,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompleted"`
+	// TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
+	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
 }
 
-func (ws *WorkflowStatus) InitializeTaskResultIncomplete(resultName string) {
-	if ws.TaskResultsCompleted == nil {
-		ws.TaskResultsCompleted = make(map[string]bool)
-	}
-	if _, ok := ws.TaskResultsCompleted[resultName]; !ok {
-		ws.MarkTaskResultIncomplete(resultName)
-	}
-}
-func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
-	ws.TaskResultsCompleted[name] = true
-}
 func (ws *WorkflowStatus) MarkTaskResultIncomplete(name string) {
-	ws.TaskResultsCompleted[name] = false
+	if ws.TaskResultsCompletionStatus == nil {
+		ws.TaskResultsCompletionStatus = make(map[string]bool)
+	}
+	ws.TaskResultsCompletionStatus[name] = false
 }
-func (ws *WorkflowStatus) GetTaskResultCompleted(name string) bool {
-	return ws.TaskResultsCompleted[name]
+
+func (ws *WorkflowStatus) MarkTaskResultComplete(name string) {
+	if ws.TaskResultsCompletionStatus == nil {
+		ws.TaskResultsCompletionStatus = make(map[string]bool)
+	}
+	ws.TaskResultsCompletionStatus[name] = true
 }
-func (ws *WorkflowStatus) GetTaskResultsCompleted() map[string]bool {
-	return ws.TaskResultsCompleted
+
+func (ws *WorkflowStatus) TaskResultsInProgress() bool {
+	for _, value := range ws.TaskResultsCompletionStatus {
+		if !value {
+			return true
+		}
+	}
+	return false
+}
+
+func (ws *WorkflowStatus) IsTaskResultIncomplete(name string) bool {
+	value, found := ws.TaskResultsCompletionStatus[name]
+	if found {
+		return !value
+	}
+	return false // workflows from older versions do not have this status, so assume completed if this is missing
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -2004,7 +2021,10 @@ type Backoff struct {
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
 	Factor *intstr.IntOrString `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
-	// MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy
+	// MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.
+	// It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.
+	// However, when the workflow fails, the pod's deadline is then overridden by maxDuration.
+	// This ensures that the workflow does not exceed the specified maximum duration when retries are involved.
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
@@ -2368,9 +2388,30 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
+// IsPartOfExitHandler returns whether node is part of exit handler.
+func (n *NodeStatus) IsPartOfExitHandler(nodes Nodes) bool {
+	currentNode := n
+	for !currentNode.IsExitNode() {
+		if currentNode.BoundaryID == "" {
+			return false
+		}
+		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
+		if err != nil {
+			log.Panicf("was unable to obtain node for %s", currentNode.BoundaryID)
+		}
+		currentNode = boundaryNode
+	}
+	return true
+}
+
 // IsExitNode returns whether or not node run as exit handler.
-func (ws NodeStatus) IsExitNode() bool {
-	return strings.HasSuffix(ws.DisplayName, ".onExit")
+func (n NodeStatus) IsExitNode() bool {
+	return strings.HasSuffix(n.DisplayName, ".onExit")
+}
+
+// IsPodDeleted returns whether node is error with pod deleted.
+func (n NodeStatus) IsPodDeleted() bool {
+	return n.Phase == NodeError && n.Message == "pod deleted"
 }
 
 func (n NodeStatus) Succeeded() bool {
@@ -2437,6 +2478,11 @@ func (n *NodeStatus) GetOutputs() *Outputs {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
+// IsTaskSetNode returns whether this node uses the taskset
+func (n *NodeStatus) IsTaskSetNode() bool {
+	return n.Type == NodeTypeHTTP || n.Type == NodeTypePlugin
 }
 
 func (n NodeStatus) GetDuration() time.Duration {
@@ -3017,6 +3063,8 @@ func (tmpl *Template) GetNodeType() NodeType {
 		return NodeTypeSteps
 	case TemplateTypeSuspend:
 		return NodeTypeSuspend
+	case TemplateTypeHTTP:
+		return NodeTypeHTTP
 	case TemplateTypePlugin:
 		return NodeTypePlugin
 	}
@@ -3402,6 +3450,34 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 	return false, nil
 }
 
+// SetStoredInlineTemplate stores a inline template in stored templates of the workflow.
+func (wf *Workflow) SetStoredInlineTemplate(scope ResourceScope, resourceName string, tmpl *Template) error {
+	// Store inline templates in steps.
+	for _, steps := range tmpl.Steps {
+		for _, step := range steps.Steps {
+			if step.GetTemplate() != nil {
+				_, err := wf.SetStoredTemplate(scope, resourceName, &step, step.GetTemplate())
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	// Store inline templates in DAG tasks.
+	if tmpl.DAG != nil {
+		for _, task := range tmpl.DAG.Tasks {
+			if task.GetTemplate() != nil {
+				_, err := wf.SetStoredTemplate(scope, resourceName, &task, task.GetTemplate())
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
 // if it should be stored
 func resolveTemplateReference(callerScope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
@@ -3537,7 +3613,7 @@ func (p *Prometheus) SetValueString(val string) {
 	}
 }
 
-func (p *Prometheus) GetDesc() string {
+func (p *Prometheus) GetKey() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
 	labels := p.GetMetricLabels()

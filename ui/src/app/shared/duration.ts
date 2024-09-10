@@ -70,7 +70,7 @@ export function wfDuration(status: models.WorkflowStatus) {
     return ((status.finishedAt ? new Date(status.finishedAt) : new Date()).getTime() - new Date(status.startedAt).getTime()) / 1000;
 }
 
-export const ago = (date: Date) => {
+export function ago(date: Date) {
     const secondsAgo = (new Date().getTime() - date.getTime()) / 1000;
     const duration = formatDuration(secondsAgo);
     if (secondsAgo < 0) {
@@ -78,4 +78,4 @@ export const ago = (date: Date) => {
     } else {
         return duration + ' ago';
     }
-};
+}

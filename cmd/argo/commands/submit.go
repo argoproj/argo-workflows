@@ -51,6 +51,10 @@ func NewSubmitCommand() *cobra.Command {
 # Submit a single workflow from an existing resource
 
   argo submit --from cronwf/my-cron-wf
+
+# Submit multiple workflows from stdin:
+
+  cat my-wf.yaml | argo submit -
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if cmd.Flag("priority").Changed {

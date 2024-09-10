@@ -75,8 +75,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
 		if execute || hookedNode != nil {
 			outputs := parentNode.Outputs
-			if parentNode.Type == wfv1.NodeTypeRetry {
-				lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
+			if lastChildNode := woc.possiblyGetRetryChildNode(parentNode); lastChildNode != nil {
 				outputs = lastChildNode.Outputs
 			}
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info("Running hooks")

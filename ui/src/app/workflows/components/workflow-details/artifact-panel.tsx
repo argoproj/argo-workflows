@@ -9,7 +9,7 @@ import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-pan
 import {GiveFeedbackLink} from '../../../shared/components/give-feedback-link';
 import {LinkButton} from '../../../shared/components/link-button';
 import {SuspenseMonacoEditor} from '../../../shared/components/suspense-monaco-editor';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
+import {useCollectEvent} from '../../../shared/use-collect-event';
 import {services} from '../../../shared/services';
 import requests from '../../../shared/services/requests';
 
@@ -21,7 +21,7 @@ export function ArtifactPanel({
 }: {
     workflow: Workflow;
     artifact: Artifact & {nodeId: string; artifactNameDiscriminator: string};
-    archived?: boolean;
+    archived: boolean;
     artifactRepository: ArtifactRepository;
 }) {
     const input = artifact.artifactNameDiscriminator === 'input';

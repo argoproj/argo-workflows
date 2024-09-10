@@ -96,7 +96,7 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 	// if node is a pod created from ContainerSet template
 	// then need to fail child nodes so they will not hang in Pending after pod deletion
 	for _, child := range children {
-		if !child.IsExitNode() && !child.Fulfilled() {
+		if !child.Fulfilled() {
 			woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg)
 		}
 	}
@@ -114,7 +114,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if !childNode.IsDaemoned() {
 			continue
 		}
-		podName := util.GeneratePodName(woc.wf.Name, childNode.Name, childNode.TemplateName, childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
+		podName := util.GeneratePodName(woc.wf.Name, childNode.Name, util.GetTemplateFromNode(childNode), childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, terminateContainers)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil

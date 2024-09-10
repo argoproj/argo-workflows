@@ -1,5 +1,5 @@
 # this example shows how to use key-only artifacts - introduced in v3.0
-# https://argoproj.github.io/argo-workflows/key-only-artifacts/
+# https://argo-workflows.readthedocs.io/en/latest/key-only-artifacts/
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

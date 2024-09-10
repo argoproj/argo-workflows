@@ -94,7 +94,7 @@ func NewResubmitCommand() *cobra.Command {
 	return command
 }
 
-// resubmitWorkflows resubmits workflows by given resubmitOpts or workflow names
+// resubmitArchivedWorkflows resubmits workflows by given resubmitOpts or workflow names
 func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflowarchivepkg.ArchivedWorkflowServiceClient, serviceClient workflowpkg.WorkflowServiceClient, resubmitOpts resubmitOps, cliSubmitOpts common.CliSubmitOpts, args []string) error {
 	var (
 		wfs wfv1.Workflows

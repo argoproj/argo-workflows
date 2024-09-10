@@ -73,7 +73,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
-		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers)
+		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
 	} else if opts.ArgoServerOpts.URL != "" {
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")

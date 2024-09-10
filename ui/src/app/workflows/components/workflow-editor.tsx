@@ -1,10 +1,10 @@
 import * as React from 'react';
+import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 
-import {Tabs} from 'argo-ui';
 import {Workflow} from '../../../models';
 import {MetadataEditor} from '../../shared/components/editors/metadata-editor';
 import {WorkflowParametersEditor} from '../../shared/components/editors/workflow-parameters-editor';
-import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
+import {ObjectEditor} from '../../shared/components/object-editor';
 
 export function WorkflowEditor({
     selectedTabKey,

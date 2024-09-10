@@ -18,36 +18,27 @@ permissions:
 jobs:
   docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # for publishing the docs to GH Pages
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: 3.9
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: '1.21'
-      - uses: actions/setup-node@v4
+          go-version: '1.22'
+      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
         with:
           node-version: "19"
       # Use the same make target both locally and on CI to make it easier to debug failures.
       - name: Build & Lint docs
         run: make docs
-      # If markdownlint fixes issues, files will be changed. If so, fail the build.
-      - name: Check if markdownlint --fix made changes
+      # If linters auto-fix issues, files will be changed. If so, fail the build.
+      - name: Check if linters made changes
         run: git diff --exit-code
       # Upload the site so reviewers see it.
       - name: Upload Docs Site
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: docs
           path: site
           if-no-files-found: error
-      - name: Publish to GH Pages (when on main)
-        if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./site

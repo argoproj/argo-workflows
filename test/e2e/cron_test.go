@@ -1,5 +1,4 @@
 //go:build cron
-// +build cron
 
 package e2e
 
@@ -12,6 +11,7 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -208,7 +208,7 @@ spec:
 			Wait(2 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, 1, len(cronWf.Status.Active))
+				assert.Len(t, cronWf.Status.Active, 1)
 				assert.True(t, cronWf.Status.LastScheduledTime.Time.Before(time.Now().Add(-1*time.Minute)))
 			})
 	})
@@ -220,7 +220,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-allow
   labels:
-    
+
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -244,7 +244,7 @@ spec:
 			Wait(2 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, 2, len(cronWf.Status.Active))
+				assert.Len(t, cronWf.Status.Active, 2)
 			})
 	})
 	s.Run("TestBasicReplace", func() {
@@ -277,10 +277,9 @@ spec:
 			Wait(2*time.Minute + 20*time.Second).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, 1, len(cronWf.Status.Active))
-				if assert.NotNil(t, cronWf.Status.LastScheduledTime) {
-					assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
-				}
+				assert.Len(t, cronWf.Status.Active, 1)
+				require.NotNil(t, cronWf.Status.LastScheduledTime)
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestSuccessfulJobHistoryLimit", func() {
@@ -314,7 +313,7 @@ spec:
 			Wait(2*time.Minute+25*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.Equal(t, 1, len(wfList.Items))
+				assert.Len(t, wfList.Items, 1)
 				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
@@ -350,8 +349,117 @@ spec:
 			Wait(2*time.Minute+25*time.Second).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.Equal(t, 1, len(wfList.Items))
+				assert.Len(t, wfList.Items, 1)
 				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
+			})
+	})
+	s.Run("TestStoppingConditionWithSucceeded", func() {
+		s.T().Parallel()
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-stop-condition-succeeded
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  stopStrategy:
+    condition: "succeeded >= 1"
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+            image: argoproj/argosay:v2
+            command: [/argosay]`).
+			When().
+			CreateCronWorkflow().
+			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
+			Then().
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, int64(0), cronWf.Status.Failed)
+				assert.Equal(t, int64(1), cronWf.Status.Succeeded)
+				assert.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
+				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
+			})
+	})
+	s.Run("TestStoppingConditionWithFailed", func() {
+		s.T().Parallel()
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-stop-condition-failed
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  stopStrategy:
+    condition: "failed >= 1"
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2
+          args: ["exit", "1"]`).
+			When().
+			CreateCronWorkflow().
+			Wait(2 * time.Minute). // wait to be scheduled 2 times, but only runs once
+			Then().
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, int64(0), cronWf.Status.Succeeded)
+				assert.Equal(t, int64(1), cronWf.Status.Failed)
+				assert.Equal(t, wfv1.StoppedPhase, cronWf.Status.Phase)
+				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
+			})
+	})
+	s.Run("TestMultipleWithTimezone", func() {
+		s.T().Parallel()
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-multiple-with-timezone
+spec:
+  schedules:
+    - "* * * * *"
+    - "0 1 * * *"
+  timezone: "America/Los_Angeles"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2`).
+			When().
+			CreateCronWorkflow().
+			Wait(1 * time.Minute).
+			Then().
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
+				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 }

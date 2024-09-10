@@ -204,6 +204,11 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		// the file is a tarball or not. If it is, it is first extracted then renamed to
 		// the desired location. If not, it is simply renamed to the location.
 		tempArtPath := artPath + ".tmp"
+		// Ensure parent directory exist, create if missing
+		tempArtDir := filepath.Dir(tempArtPath)
+		if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
+			return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
+		}
 		err = artDriver.Load(driverArt, tempArtPath)
 		if err != nil {
 			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
@@ -262,11 +267,13 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 func (we *WorkflowExecutor) StageFiles() error {
 	var filePath string
 	var body []byte
+	mode := os.FileMode(0o644)
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
 		log.Infof("Loading script source to %s", common.ExecutorScriptSourcePath)
 		filePath = common.ExecutorScriptSourcePath
 		body = []byte(we.Template.Script.Source)
+		mode = os.FileMode(0o755)
 	case wfv1.TemplateTypeResource:
 		if we.Template.Resource.ManifestFrom != nil && we.Template.Resource.ManifestFrom.Artifact != nil {
 			log.Infof("manifest %s already staged", we.Template.Resource.ManifestFrom.Artifact.Name)
@@ -278,7 +285,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := os.WriteFile(filePath, body, 0o644)
+	err := os.WriteFile(filePath, body, mode)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
@@ -286,26 +293,27 @@ func (we *WorkflowExecutor) StageFiles() error {
 }
 
 // SaveArtifacts uploads artifacts to the archive location
-func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
+func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, error) {
+	artifacts := wfv1.Artifacts{}
 	if len(we.Template.Outputs.Artifacts) == 0 {
 		log.Infof("No output artifacts")
-		return nil
+		return artifacts, nil
 	}
 
 	log.Infof("Saving output artifacts")
 	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
 	if err != nil {
-		return argoerrs.InternalWrapError(err)
+		return artifacts, argoerrs.InternalWrapError(err)
 	}
 
-	for i, art := range we.Template.Outputs.Artifacts {
+	for _, art := range we.Template.Outputs.Artifacts {
 		err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
-			return err
+			return artifacts, err
 		}
-		we.Template.Outputs.Artifacts[i] = art
+		artifacts = append(artifacts, art)
 	}
-	return nil
+	return artifacts, nil
 }
 
 func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) error {
@@ -793,8 +801,8 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
-		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
+			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
 		}
@@ -805,10 +813,31 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 	}
 }
 
+func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
+	err := retryutil.OnError(wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, errorsutil.IsTransientErr, func() error {
+		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
+		if apierr.IsForbidden(err) {
+			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
+			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
+		}
+		return err
+	})
+	if err != nil {
+		we.AddError(err)
+	}
+}
+
 // ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
-func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
+func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
-	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
+	outputs.Artifacts = artifacts
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
@@ -822,7 +851,7 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			if result.Outputs.HasOutputs() {
 				value, err := json.Marshal(result.Outputs)
 				if err != nil {
@@ -941,6 +970,9 @@ func untar(tarPath string, destPath string) error {
 					return err
 				}
 				if err := f.Close(); err != nil {
+					return err
+				}
+				if err := os.Chtimes(target, header.AccessTime, header.ModTime); err != nil {
 					return err
 				}
 			}

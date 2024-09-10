@@ -127,6 +127,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef":                  schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreStatus":               schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence":                      schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy":                  schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Submit":                        schema_pkg_apis_workflow_v1alpha1_Submit(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SubmitOpts":                    schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom":             schema_pkg_apis_workflow_v1alpha1_SuppliedValueFrom(ref),
@@ -1411,7 +1412,7 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 					},
 					"maxDuration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy",
+							Description: "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy. It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds. However, when the workflow fails, the pod's deadline is then overridden by maxDuration. This ensures that the workflow does not exceed the specified maximum duration when retries are involved.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1737,7 +1738,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+							Description: "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -1929,7 +1930,8 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.Refe
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ContainerSetRetryStrategy provides controls on how to retry a container set",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"duration": {
 						SchemaProps: spec.SchemaProps{
@@ -1940,7 +1942,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.Refe
 					},
 					"retries": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Nbr of retries",
+							Description: "Retries is the maximum number of retry attempts for each container. It does not include the first, original attempt; the maximum number of total attempts will be `retries + 1`.",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
@@ -1987,7 +1989,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.Reference
 					},
 					"retryStrategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.",
+							Description: "RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy"),
 						},
 					},
@@ -2234,12 +2236,33 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
+					"stopStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy"),
+						},
+					},
+					"schedules": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Schedules is a list of schedules to run the Workflow in Cron format",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"workflowSpec", "schedule"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -2284,8 +2307,32 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 							},
 						},
 					},
+					"succeeded": {
+						SchemaProps: spec.SchemaProps{
+							Description: "v3.6 and after: Succeeded counts how many times child workflows succeeded",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"failed": {
+						SchemaProps: spec.SchemaProps{
+							Description: "v3.6 and after: Failed counts how many times child workflows failed",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"active", "lastScheduledTime", "conditions"},
+				Required: []string{"active", "lastScheduledTime", "conditions", "succeeded", "failed", "phase"},
 			},
 		},
 		Dependencies: []string{
@@ -2543,7 +2590,7 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"selector": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == \"test\"`",
+							Description: "Selector (https://github.com/expr-lang/expr) that we must must match the event. E.g. `payload.message == \"test\"`",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -4784,14 +4831,15 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 					"deleteDelayDuration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
 	}
 }
 
@@ -5438,7 +5486,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+							Description: "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -5766,6 +5814,28 @@ func schema_pkg_apis_workflow_v1alpha1_Sequence(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"condition": {
+						SchemaProps: spec.SchemaProps{
+							Description: "v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"condition"},
+			},
+		},
 	}
 }
 
@@ -6527,7 +6597,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+							Description: "List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6738,7 +6808,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					},
 					"event": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
+							Description: "Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7479,7 +7549,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"dnsPolicy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
+							Description: "Set DNS policy for workflow pods. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7840,9 +7910,9 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus"),
 						},
 					},
-					"taskResultsCompleted": {
+					"taskResultsCompletionStatus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Have task results been completed? (mapped by Pod name) used to prevent premature garbage collection of artifacts.",
+							Description: "TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,

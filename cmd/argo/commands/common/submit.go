@@ -9,7 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-// cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
+// CliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
 type CliSubmitOpts struct {
 	Output        string // --output
 	Wait          bool   // --wait

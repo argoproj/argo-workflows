@@ -1,3 +1,3 @@
 # Argo Install Manifests
 
-Please read [installation](https://argoproj.github.io/argo-workflows/installation/)
+Please read [installation](https://argo-workflows.readthedocs.io/en/latest/installation/)
