@@ -420,6 +420,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -732,6 +733,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -1356,6 +1358,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             addresses=[
                                 "addresses_example",
                             ],
+                            data_transfer_protection="data_transfer_protection_example",
                             force=True,
                             hdfs_user="hdfs_user_example",
                             krb_c_cache_secret=SecretKeySelector(
@@ -2161,6 +2164,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 addresses=[
                                                     "addresses_example",
                                                 ],
+                                                data_transfer_protection="data_transfer_protection_example",
                                                 force=True,
                                                 hdfs_user="hdfs_user_example",
                                                 krb_c_cache_secret=SecretKeySelector(
@@ -2443,6 +2447,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         addresses=[
                                                             "addresses_example",
                                                         ],
+                                                        data_transfer_protection="data_transfer_protection_example",
                                                         force=True,
                                                         hdfs_user="hdfs_user_example",
                                                         krb_c_cache_secret=SecretKeySelector(
@@ -2747,6 +2752,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -3306,6 +3312,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -3630,6 +3637,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -3915,6 +3923,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -4757,6 +4766,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 addresses=[
                                                     "addresses_example",
                                                 ],
+                                                data_transfer_protection="data_transfer_protection_example",
                                                 force=True,
                                                 hdfs_user="hdfs_user_example",
                                                 krb_c_cache_secret=SecretKeySelector(
@@ -5035,6 +5045,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         addresses=[
                                                             "addresses_example",
                                                         ],
+                                                        data_transfer_protection="data_transfer_protection_example",
                                                         force=True,
                                                         hdfs_user="hdfs_user_example",
                                                         krb_c_cache_secret=SecretKeySelector(
@@ -5923,6 +5934,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -6728,6 +6740,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -7010,6 +7023,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -7314,6 +7328,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -7873,6 +7888,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -8197,6 +8213,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -8482,6 +8499,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -9324,6 +9342,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -9602,6 +9621,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -10784,6 +10804,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             addresses=[
                                 "addresses_example",
                             ],
+                            data_transfer_protection="data_transfer_protection_example",
                             force=True,
                             hdfs_user="hdfs_user_example",
                             krb_c_cache_secret=SecretKeySelector(
@@ -10986,6 +11007,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -11272,6 +11294,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -11567,6 +11590,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -12403,6 +12427,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -13208,6 +13233,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -13490,6 +13516,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -13794,6 +13821,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -14353,6 +14381,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -14677,6 +14706,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -14962,6 +14992,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -15804,6 +15835,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -16082,6 +16114,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -16996,6 +17029,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -17308,6 +17342,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -17932,6 +17967,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -18737,6 +18773,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -19019,6 +19056,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -19323,6 +19361,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -19882,6 +19921,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -20206,6 +20246,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -20491,6 +20532,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -21333,6 +21375,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -21611,6 +21654,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -22499,6 +22543,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -23304,6 +23349,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         addresses=[
                                                             "addresses_example",
                                                         ],
+                                                        data_transfer_protection="data_transfer_protection_example",
                                                         force=True,
                                                         hdfs_user="hdfs_user_example",
                                                         krb_c_cache_secret=SecretKeySelector(
@@ -23586,6 +23632,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 addresses=[
                                                                     "addresses_example",
                                                                 ],
+                                                                data_transfer_protection="data_transfer_protection_example",
                                                                 force=True,
                                                                 hdfs_user="hdfs_user_example",
                                                                 krb_c_cache_secret=SecretKeySelector(
@@ -23890,6 +23937,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -24449,6 +24497,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -24773,6 +24822,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -25058,6 +25108,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -25900,6 +25951,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         addresses=[
                                                             "addresses_example",
                                                         ],
+                                                        data_transfer_protection="data_transfer_protection_example",
                                                         force=True,
                                                         hdfs_user="hdfs_user_example",
                                                         krb_c_cache_secret=SecretKeySelector(
@@ -26178,6 +26230,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 addresses=[
                                                                     "addresses_example",
                                                                 ],
+                                                                data_transfer_protection="data_transfer_protection_example",
                                                                 force=True,
                                                                 hdfs_user="hdfs_user_example",
                                                                 krb_c_cache_secret=SecretKeySelector(
@@ -27970,6 +28023,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -28282,6 +28336,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -28906,6 +28961,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             addresses=[
                                 "addresses_example",
                             ],
+                            data_transfer_protection="data_transfer_protection_example",
                             force=True,
                             hdfs_user="hdfs_user_example",
                             krb_c_cache_secret=SecretKeySelector(
@@ -29711,6 +29767,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 addresses=[
                                                     "addresses_example",
                                                 ],
+                                                data_transfer_protection="data_transfer_protection_example",
                                                 force=True,
                                                 hdfs_user="hdfs_user_example",
                                                 krb_c_cache_secret=SecretKeySelector(
@@ -29993,6 +30050,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         addresses=[
                                                             "addresses_example",
                                                         ],
+                                                        data_transfer_protection="data_transfer_protection_example",
                                                         force=True,
                                                         hdfs_user="hdfs_user_example",
                                                         krb_c_cache_secret=SecretKeySelector(
@@ -30297,6 +30355,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -30856,6 +30915,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -31180,6 +31240,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -31465,6 +31526,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -32307,6 +32369,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 addresses=[
                                                     "addresses_example",
                                                 ],
+                                                data_transfer_protection="data_transfer_protection_example",
                                                 force=True,
                                                 hdfs_user="hdfs_user_example",
                                                 krb_c_cache_secret=SecretKeySelector(
@@ -32585,6 +32648,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         addresses=[
                                                             "addresses_example",
                                                         ],
+                                                        data_transfer_protection="data_transfer_protection_example",
                                                         force=True,
                                                         hdfs_user="hdfs_user_example",
                                                         krb_c_cache_secret=SecretKeySelector(
@@ -33473,6 +33537,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -34278,6 +34343,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -34560,6 +34626,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -34864,6 +34931,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -35423,6 +35491,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -35747,6 +35816,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -36032,6 +36102,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -36874,6 +36945,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -37152,6 +37224,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -38334,6 +38407,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             addresses=[
                                 "addresses_example",
                             ],
+                            data_transfer_protection="data_transfer_protection_example",
                             force=True,
                             hdfs_user="hdfs_user_example",
                             krb_c_cache_secret=SecretKeySelector(
@@ -38536,6 +38610,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -38822,6 +38897,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -39117,6 +39193,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -39953,6 +40030,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -40758,6 +40836,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -41040,6 +41119,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -41344,6 +41424,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -41903,6 +41984,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -42227,6 +42309,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -42512,6 +42595,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -43354,6 +43438,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -43632,6 +43717,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -44546,6 +44632,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -44858,6 +44945,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -45482,6 +45570,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 addresses=[
                                     "addresses_example",
                                 ],
+                                data_transfer_protection="data_transfer_protection_example",
                                 force=True,
                                 hdfs_user="hdfs_user_example",
                                 krb_c_cache_secret=SecretKeySelector(
@@ -46287,6 +46376,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -46569,6 +46659,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -46873,6 +46964,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -47432,6 +47524,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -47756,6 +47849,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -48041,6 +48135,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         addresses=[
                                             "addresses_example",
                                         ],
+                                        data_transfer_protection="data_transfer_protection_example",
                                         force=True,
                                         hdfs_user="hdfs_user_example",
                                         krb_c_cache_secret=SecretKeySelector(
@@ -48883,6 +48978,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     addresses=[
                                                         "addresses_example",
                                                     ],
+                                                    data_transfer_protection="data_transfer_protection_example",
                                                     force=True,
                                                     hdfs_user="hdfs_user_example",
                                                     krb_c_cache_secret=SecretKeySelector(
@@ -49161,6 +49257,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             addresses=[
                                                                 "addresses_example",
                                                             ],
+                                                            data_transfer_protection="data_transfer_protection_example",
                                                             force=True,
                                                             hdfs_user="hdfs_user_example",
                                                             krb_c_cache_secret=SecretKeySelector(
@@ -50049,6 +50146,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     addresses=[
                                         "addresses_example",
                                     ],
+                                    data_transfer_protection="data_transfer_protection_example",
                                     force=True,
                                     hdfs_user="hdfs_user_example",
                                     krb_c_cache_secret=SecretKeySelector(
@@ -50854,6 +50952,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         addresses=[
                                                             "addresses_example",
                                                         ],
+                                                        data_transfer_protection="data_transfer_protection_example",
                                                         force=True,
                                                         hdfs_user="hdfs_user_example",
                                                         krb_c_cache_secret=SecretKeySelector(
@@ -51136,6 +51235,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 addresses=[
                                                                     "addresses_example",
                                                                 ],
+                                                                data_transfer_protection="data_transfer_protection_example",
                                                                 force=True,
                                                                 hdfs_user="hdfs_user_example",
                                                                 krb_c_cache_secret=SecretKeySelector(
@@ -51440,6 +51540,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -51999,6 +52100,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -52323,6 +52425,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -52608,6 +52711,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             addresses=[
                                                 "addresses_example",
                                             ],
+                                            data_transfer_protection="data_transfer_protection_example",
                                             force=True,
                                             hdfs_user="hdfs_user_example",
                                             krb_c_cache_secret=SecretKeySelector(
@@ -53450,6 +53554,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         addresses=[
                                                             "addresses_example",
                                                         ],
+                                                        data_transfer_protection="data_transfer_protection_example",
                                                         force=True,
                                                         hdfs_user="hdfs_user_example",
                                                         krb_c_cache_secret=SecretKeySelector(
@@ -53728,6 +53833,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 addresses=[
                                                                     "addresses_example",
                                                                 ],
+                                                                data_transfer_protection="data_transfer_protection_example",
                                                                 force=True,
                                                                 hdfs_user="hdfs_user_example",
                                                                 krb_c_cache_secret=SecretKeySelector(

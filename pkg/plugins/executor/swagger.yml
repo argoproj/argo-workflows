@@ -1574,6 +1574,11 @@ definitions:
                 items:
                     type: string
                 type: array
+            dataTransferProtection:
+                description: |-
+                    DataTransferProtection is the protection level for HDFS data transfer.
+                    It corresponds to the dfs.data.transfer.protection configuration in HDFS.
+                type: string
             force:
                 description: Force copies a file forcibly even if it exists
                 type: boolean
