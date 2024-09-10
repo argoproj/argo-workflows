@@ -181,6 +181,46 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	return &woc
 }
 
+// definitePostNodeFlagsWf determines if this workflow is definitely after the introduction of
+// the NodeFlag field.
+// used to avoid the O(n*m) loop in maybeUpgradeWithNodeFlags
+func (woc *wfOperationCtx) definitePostNodeFlagsWf() bool {
+	for _, node := range woc.wf.Status.Nodes {
+		if node.NodeFlag != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// maybeUpgradeWithNodeFlags upgrades old workflows without
+// NodeFlag fields into ones with.
+func (woc *wfOperationCtx) maybeUpgradeWithNodeFlags() {
+	parentsMap := make(map[string]*wfv1.NodeStatus)
+
+	for _, node := range woc.wf.Status.Nodes {
+		node := node
+		for _, childNodeID := range node.Children {
+			parentsMap[childNodeID] = &node
+		}
+	}
+
+	for key, node := range woc.wf.Status.Nodes {
+		newNode := node
+		if common.CheckHookNode(node.Name) {
+			newNode.NodeFlag = &wfv1.NodeFlag{Hooked: true}
+		}
+
+		if common.CheckRetryNodeParent(parentsMap, node.ID) {
+			if newNode.NodeFlag == nil {
+				newNode.NodeFlag = &wfv1.NodeFlag{}
+			}
+			newNode.NodeFlag.Retried = true
+		}
+		woc.wf.Status.Nodes[key] = newNode
+	}
+}
+
 // operate is the main operator logic of a workflow. It evaluates the current state of the workflow,
 // and its pods and decides how to proceed down the execution path.
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
@@ -203,6 +243,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.controller.metrics.OperationPanic()
 		}
 	}()
+
+	if !woc.definitePostNodeFlagsWf() {
+		woc.maybeUpgradeWithNodeFlags()
+	}
 
 	woc.log.WithFields(log.Fields{"Phase": woc.wf.Status.Phase, "ResourceVersion": woc.wf.ObjectMeta.ResourceVersion}).Info("Processing workflow")
 
@@ -1872,7 +1916,7 @@ type executeTemplateOpts struct {
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
 func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
+	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s, stack depth: %d", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID, woc.currentStackDepth)
 
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()

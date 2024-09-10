@@ -323,6 +323,35 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
 
+// CheckHookNode is used to determine if
+// a node was a hook node via its name.
+func CheckHookNode(nodeName string) bool {
+	names := strings.Split(nodeName, ".")
+	if len(names) == 2 {
+		return names[1] == "onExit"
+	}
+
+	if len(names) <= 2 {
+		return false
+	}
+
+	if names[len(names)-1] == "onExit" || names[len(names)-2] == "hooks" {
+		return true
+	}
+	return false
+}
+
+// CheckRetryNodeParent determines if a node is a retriable node,
+// that is if the node is the child of a retry node.
+func CheckRetryNodeParent(parentsMap map[string]*wfv1.NodeStatus, nodeID string) bool {
+	parent, found := parentsMap[nodeID]
+	if !found {
+		return false
+	}
+
+	return parent.Type == wfv1.NodeTypeRetry
+}
+
 // Check whether child hooked nodes Fulfilled
 func CheckAllHooksFullfilled(node *wfv1.NodeStatus, nodes wfv1.Nodes) bool {
 	childs := node.Children
