@@ -1438,6 +1438,7 @@ into the Pod's container.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | addresses | []string| `[]string` |  | | Addresses is accessible addresses of HDFS name nodes |  |
+| dataTransferProtection | string| `string` |  | | DataTransferProtection is the protection level for HDFS data transfer.</br>It corresponds to the dfs.data.transfer.protection configuration in HDFS. |  |
 | force | boolean| `bool` |  | | Force copies a file forcibly even if it exists |  |
 | hdfsUser | string| `string` |  | | HDFSUser is the user to access HDFS file system.</br>It is ignored if either ccache or keytab is used. |  |
 | krbCCacheSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |

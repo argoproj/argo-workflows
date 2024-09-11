@@ -220,6 +220,8 @@ spec:
                           items:
                             type: string
                           type: array
+                        dataTransferProtection:
+                          type: string
                         force:
                           type: boolean
                         hdfsUser:
