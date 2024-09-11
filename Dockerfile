@@ -5,6 +5,7 @@ ARG GIT_TREE_STATE=unknown
 
 FROM golang:1.22-alpine3.19 as builder
 
+# libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \
     git \
     make \
@@ -12,6 +13,7 @@ RUN apk update && apk add --no-cache \
     wget \
     curl \
     gcc \
+    libc-dev \
     bash \
     mailcap
 

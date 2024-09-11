@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -104,7 +105,7 @@ func TestLoadToStream(t *testing.T) {
 
 			stream, err := LoadToStream(&wfv1.Artifact{}, tc.artifactDriver)
 			if tc.errMsg == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, stream)
 				stream.Close()
 
@@ -115,7 +116,7 @@ func TestLoadToStream(t *testing.T) {
 				}
 				assert.Equal(t, len(filesBefore), len(filesAfter))
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Equal(t, tc.errMsg, err.Error())
 			}
 		})

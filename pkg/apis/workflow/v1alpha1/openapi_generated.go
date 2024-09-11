@@ -2979,6 +2979,13 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"dataTransferProtection": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"path": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Path is a file path in HDFS",
@@ -3071,6 +3078,13 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifactRepository(ref common.Referen
 							Format:      "",
 						},
 					},
+					"dataTransferProtection": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"pathFormat": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PathFormat is defines the format of path to store a file. Can reference workflow variables",
@@ -3157,6 +3171,13 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref common.ReferenceCallback) 
 					"hdfsUser": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"dataTransferProtection": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DataTransferProtection is the protection level for HDFS data transfer. It corresponds to the dfs.data.transfer.protection configuration in HDFS.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4884,14 +4905,15 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 					"deleteDelayDuration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
 	}
 }
 

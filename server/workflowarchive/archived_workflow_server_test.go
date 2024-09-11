@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -135,62 +136,52 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "Permission denied, you are not allowed to list workflows in namespace \"\". Maybe you want to specify a namespace with query parameter `.namespace=`?"))
 		allowed = true
 		resp, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Equal(t, "1", resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, "1", resp.Continue)
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Empty(t, resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Empty(t, resp.Continue)
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z", Limit: 1}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Empty(t, resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Empty(t, resp.Continue)
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "metadata.name=my-name,spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z", Limit: 1}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Empty(t, resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Empty(t, resp.Continue)
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z", Limit: 1}, NamePrefix: "my-"})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Empty(t, resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Empty(t, resp.Continue)
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "metadata.name=my-name,spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z", Limit: 1}, NamePrefix: "my-"})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Empty(t, resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Empty(t, resp.Continue)
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "metadata.name=my-name,spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z,ext.showRemainingItemCount=true", Limit: 1}, NamePrefix: "my-"})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Equal(t, int64(4), *resp.ListMeta.RemainingItemCount)
-			assert.Empty(t, resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, int64(4), *resp.ListMeta.RemainingItemCount)
+		assert.Empty(t, resp.Continue)
 		/////// Currently, for the purpose of backward compatibility, namespace is supported both as its own query parameter and as part of the field selector
 		/////// need to test both
 		// pass namespace as its own query parameter
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Equal(t, "1", resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, "1", resp.Continue)
 		// pass namespace as field selector and not query parameter
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=user-ns"}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Equal(t, "1", resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, "1", resp.Continue)
 
 		// pass namespace as field selector and query parameter both, where both match
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=user-ns"}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Equal(t, "1", resp.Continue)
-		}
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, "1", resp.Continue)
 
 		// pass namespace as field selector and query parameter both, where they don't match
 		_, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=other-ns"}})
@@ -205,7 +196,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		_, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{})
 		assert.Equal(t, err, status.Error(codes.NotFound, "not found"))
 		wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: "my-uid"})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, wf)
 
 		repo.On("GetWorkflow", "", "my-ns", "my-name").Return(&wfv1.Workflow{
@@ -218,7 +209,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			},
 		}, nil)
 		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: "", Name: "my-name", Namespace: "my-ns"})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, wf)
 	})
 	t.Run("DeleteArchivedWorkflow", func(t *testing.T) {
@@ -227,16 +218,16 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
 		_, err = w.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: "my-uid"})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("ListArchivedWorkflowLabelKeys", func(t *testing.T) {
 		resp, err := w.ListArchivedWorkflowLabelKeys(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelKeysRequest{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, resp.Items, 2)
 	})
 	t.Run("ListArchivedWorkflowLabelValues", func(t *testing.T) {
 		resp, err := w.ListArchivedWorkflowLabelValues(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest{ListOptions: &metav1.ListOptions{LabelSelector: "my-key"}})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, resp.Items, 2)
 
 		assert.False(t, matchLabelKeyPattern("my-key"))
@@ -244,7 +235,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.True(t, matchLabelKeyPattern("my-key"))
 		assert.False(t, matchLabelKeyPattern("wrong key"))
 		resp, err = w.ListArchivedWorkflowLabelValues(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest{ListOptions: &metav1.ListOptions{LabelSelector: "my-key"}})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, resp.Items)
 	})
 	t.Run("RetryArchivedWorkflow", func(t *testing.T) {
@@ -253,7 +244,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	})
 	t.Run("ResubmitArchivedWorkflow", func(t *testing.T) {
 		wf, err := w.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{Uid: "resubmit-uid", Memoized: false})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, wf)
 	})
 }

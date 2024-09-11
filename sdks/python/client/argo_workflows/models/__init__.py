@@ -30,7 +30,6 @@ from argo_workflows.model.create_options import CreateOptions
 from argo_workflows.model.downward_api_projection import DownwardAPIProjection
 from argo_workflows.model.downward_api_volume_file import DownwardAPIVolumeFile
 from argo_workflows.model.downward_api_volume_source import DownwardAPIVolumeSource
-from argo_workflows.model.duration import Duration
 from argo_workflows.model.empty_dir_volume_source import EmptyDirVolumeSource
 from argo_workflows.model.env_from_source import EnvFromSource
 from argo_workflows.model.env_var import EnvVar

@@ -4,17 +4,19 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const baseUrlMetrics = "http://localhost:9090/metrics"
+const baseUrlMetrics = "https://localhost:9090/metrics"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
@@ -44,15 +46,14 @@ func (s *MetricsSuite) TestMetricsEndpoint() {
 			Expect().
 			Status(200).
 			Body().
-			Contains(`HELP argo_workflows_count`).
+			Contains(`HELP argo_workflows_gauge`).
 			Contains(`HELP argo_workflows_k8s_request_total`).
 			Contains(`argo_workflows_k8s_request_total{kind="leases",status_code="404",verb="Get"}`).
 			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="List"}`).
 			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="Watch"}`).
-			Contains(`HELP argo_workflows_pods_count`).
+			Contains(`HELP argo_workflows_pods_gauge`).
 			Contains(`HELP argo_workflows_workers_busy`).
 			Contains(`HELP argo_workflows_workflow_condition`).
-			Contains(`HELP argo_workflows_workflows_processed_count`).
 			Contains(`log_messages{level="info"}`).
 			Contains(`log_messages{level="warning"}`).
 			Contains(`log_messages{level="error"}`)
@@ -107,6 +108,102 @@ func (s *MetricsSuite) TestFailedMetric() {
 				Status(200).
 				Body().
 				Contains(`argo_workflows_task_failure 1`)
+		})
+}
+
+func (s *MetricsSuite) TestCronTriggeredCounter() {
+	s.Given().
+		CronWorkflow(`@testdata/cronworkflow-metrics.yaml`).
+		When().
+		CreateCronWorkflow().
+		Wait(1 * time.Minute). // This pattern is used in cron_test.go too
+		Then().
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`cronworkflows_triggered_total{name="test-cron-metric",namespace="argo"} 1`)
+		})
+}
+
+func (s *MetricsSuite) TestPodPendingMetric() {
+	s.Given().
+		Workflow(`@testdata/workflow-pending-metrics.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForPod(fixtures.PodCondition(func(p *corev1.Pod) bool {
+			if p.Status.Phase == corev1.PodPending {
+				for _, cond := range p.Status.Conditions {
+					if cond.Reason == corev1.PodReasonUnschedulable {
+						return true
+					}
+				}
+			}
+			return false
+		})).
+		Wait(2 * time.Second). // Hack: We may well observe the pod change faster than the controller
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowRunning, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`pod_pending_count{namespace="argo",reason="Unschedulable"} 1`)
+		}).
+		When().
+		DeleteWorkflow().
+		WaitForWorkflowDeletion()
+}
+
+func (s *MetricsSuite) TestTemplateMetrics() {
+	s.Given().
+		Workflow(`@testdata/templateref-metrics.yaml`).
+		WorkflowTemplate(`@testdata/basic-workflowtemplate.yaml`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`total_count{namespace="argo",phase="Running"}`). // Count for this depends on other tests
+				Contains(`total_count{namespace="argo",phase="Succeeded"}`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="New"} 1`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="Running"} 1`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="false",name="basic",namespace="argo",phase="Succeeded"} 1`).
+				Contains(`workflowtemplate_runtime_count{cluster_scope="false",name="basic",namespace="argo"} 1`).
+				Contains(`workflowtemplate_runtime_bucket{cluster_scope="false",name="basic",namespace="argo",le="0"} 0`).
+				Contains(`workflowtemplate_runtime_bucket{cluster_scope="false",name="basic",namespace="argo",le="+Inf"} 1`)
+		})
+}
+
+func (s *MetricsSuite) TestClusterTemplateMetrics() {
+	s.Given().
+		Workflow(`@testdata/clustertemplateref-metrics.yaml`).
+		ClusterWorkflowTemplate(`@testdata/basic-clusterworkflowtemplate.yaml`).
+		When().
+		CreateClusterWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="New"} 1`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="Running"} 1`).
+				Contains(`workflowtemplate_triggered_total{cluster_scope="true",name="basic",namespace="argo",phase="Succeeded"} 1`).
+				Contains(`workflowtemplate_runtime_count{cluster_scope="true",name="basic",namespace="argo"} 1`).
+				Contains(`workflowtemplate_runtime_bucket{cluster_scope="true",name="basic",namespace="argo",le="0"} 0`).
+				Contains(`workflowtemplate_runtime_bucket{cluster_scope="true",name="basic",namespace="argo",le="+Inf"} 1`)
 		})
 }
 

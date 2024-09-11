@@ -734,6 +734,10 @@ message HDFSConfig {
   // HDFSUser is the user to access HDFS file system.
   // It is ignored if either ccache or keytab is used.
   optional string hdfsUser = 3;
+
+  // DataTransferProtection is the protection level for HDFS data transfer.
+  // It corresponds to the dfs.data.transfer.protection configuration in HDFS.
+  optional string dataTransferProtection = 4;
 }
 
 // HDFSKrbConfig is auth configurations for Kerberos
@@ -1263,7 +1267,7 @@ message PodGC {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
 
   // DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Duration deleteDelayDuration = 3;
+  optional string deleteDelayDuration = 3;
 }
 
 // Prometheus is a prometheus metric to be emitted
