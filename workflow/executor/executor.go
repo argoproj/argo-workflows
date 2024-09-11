@@ -267,12 +267,14 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 func (we *WorkflowExecutor) StageFiles() error {
 	var filePath string
 	var body []byte
+	mode := os.FileMode(0o644)
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
 		scriptSourcePath := we.Template.GetScriptSourcePath()
 		log.Infof("Loading script source to %s", scriptSourcePath)
 		filePath = scriptSourcePath
 		body = []byte(we.Template.Script.Source)
+		mode = os.FileMode(0o755)
 	case wfv1.TemplateTypeResource:
 		if we.Template.Resource.ManifestFrom != nil && we.Template.Resource.ManifestFrom.Artifact != nil {
 			log.Infof("manifest %s already staged", we.Template.Resource.ManifestFrom.Artifact.Name)
@@ -284,7 +286,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := os.WriteFile(filePath, body, 0o644)
+	err := os.WriteFile(filePath, body, mode)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}

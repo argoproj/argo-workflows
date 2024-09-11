@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
@@ -24,15 +26,15 @@ func addOperationDurationHistogram(_ context.Context, m *Metrics) error {
 	}
 	bucketWidth := maxOperationTimeSeconds / float64(operationDurationMetricBucketCount)
 	// The buckets here are only the 'defaults' and can be overridden with configmap defaults
-	return m.createInstrument(float64Histogram,
+	return m.CreateInstrument(telemetry.Float64Histogram,
 		nameOperationDuration,
 		"Histogram of durations of operations",
 		"s",
-		withDefaultBuckets(prometheus.LinearBuckets(bucketWidth, bucketWidth, operationDurationMetricBucketCount)),
-		withAsBuiltIn(),
+		telemetry.WithDefaultBuckets(prometheus.LinearBuckets(bucketWidth, bucketWidth, operationDurationMetricBucketCount)),
+		telemetry.WithAsBuiltIn(),
 	)
 }
 
 func (m *Metrics) OperationCompleted(ctx context.Context, durationSeconds float64) {
-	m.record(ctx, nameOperationDuration, durationSeconds, instAttribs{})
+	m.Record(ctx, nameOperationDuration, durationSeconds, telemetry.InstAttribs{})
 }

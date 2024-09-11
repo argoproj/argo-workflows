@@ -32,6 +32,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -248,7 +249,7 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 }
 
 // test exporter extract metric values from the metrics subsystem
-var testExporter *metrics.TestExporter
+var testExporter *telemetry.TestMetricsExporter
 
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
