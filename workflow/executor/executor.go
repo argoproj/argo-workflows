@@ -270,9 +270,8 @@ func (we *WorkflowExecutor) StageFiles() error {
 	mode := os.FileMode(0o644)
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
-		scriptSourcePath := we.Template.GetScriptSourcePath()
-		log.Infof("Loading script source to %s", scriptSourcePath)
-		filePath = scriptSourcePath
+		filePath = we.Template.GetScriptSourcePath()
+		log.Infof("Loading script source to %s", filePath)
 		body = []byte(we.Template.Script.Source)
 		mode = os.FileMode(0o755)
 	case wfv1.TemplateTypeResource:
@@ -280,8 +279,8 @@ func (we *WorkflowExecutor) StageFiles() error {
 			log.Infof("manifest %s already staged", we.Template.Resource.ManifestFrom.Artifact.Name)
 			return nil
 		}
-		log.Infof("Loading manifest to %s", common.ExecutorResourceManifestPath)
 		filePath = common.ExecutorResourceManifestPath
+		log.Infof("Loading manifest to %s", filePath)
 		body = []byte(we.Template.Resource.Manifest)
 	default:
 		return nil
