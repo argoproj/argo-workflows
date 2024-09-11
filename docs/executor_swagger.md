@@ -3683,7 +3683,9 @@ otherwise).
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | mutex | [Mutex](#mutex)| `Mutex` |  | |  |  |
+| mutexes | [][Mutex](#mutex)| `[]*Mutex` |  | | Mutexes holds the list of Mutex lock details |  |
 | semaphore | [SemaphoreRef](#semaphore-ref)| `SemaphoreRef` |  | |  |  |
+| semaphores | [][SemaphoreRef](#semaphore-ref)| `[]*SemaphoreRef` |  | | Semaphores holds the list of Semaphores configuration |  |
 
 
 

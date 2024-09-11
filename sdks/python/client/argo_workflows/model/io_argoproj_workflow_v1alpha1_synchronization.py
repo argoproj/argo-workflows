@@ -90,7 +90,9 @@ class IoArgoprojWorkflowV1alpha1Synchronization(ModelNormal):
         lazy_import()
         return {
             'mutex': (IoArgoprojWorkflowV1alpha1Mutex,),  # noqa: E501
+            'mutexes': ([IoArgoprojWorkflowV1alpha1Mutex],),  # noqa: E501
             'semaphore': (IoArgoprojWorkflowV1alpha1SemaphoreRef,),  # noqa: E501
+            'semaphores': ([IoArgoprojWorkflowV1alpha1SemaphoreRef],),  # noqa: E501
         }
 
     @cached_property
@@ -100,7 +102,9 @@ class IoArgoprojWorkflowV1alpha1Synchronization(ModelNormal):
 
     attribute_map = {
         'mutex': 'mutex',  # noqa: E501
+        'mutexes': 'mutexes',  # noqa: E501
         'semaphore': 'semaphore',  # noqa: E501
+        'semaphores': 'semaphores',  # noqa: E501
     }
 
     read_only_vars = {
@@ -145,7 +149,9 @@ class IoArgoprojWorkflowV1alpha1Synchronization(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             mutex (IoArgoprojWorkflowV1alpha1Mutex): [optional]  # noqa: E501
+            mutexes ([IoArgoprojWorkflowV1alpha1Mutex]): Mutexes holds the list of Mutex lock details. [optional]  # noqa: E501
             semaphore (IoArgoprojWorkflowV1alpha1SemaphoreRef): [optional]  # noqa: E501
+            semaphores ([IoArgoprojWorkflowV1alpha1SemaphoreRef]): Semaphores holds the list of Semaphores configuration. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,7 +234,9 @@ class IoArgoprojWorkflowV1alpha1Synchronization(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             mutex (IoArgoprojWorkflowV1alpha1Mutex): [optional]  # noqa: E501
+            mutexes ([IoArgoprojWorkflowV1alpha1Mutex]): Mutexes holds the list of Mutex lock details. [optional]  # noqa: E501
             semaphore (IoArgoprojWorkflowV1alpha1SemaphoreRef): [optional]  # noqa: E501
+            semaphores ([IoArgoprojWorkflowV1alpha1SemaphoreRef]): Semaphores holds the list of Semaphores configuration. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
