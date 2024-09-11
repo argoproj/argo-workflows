@@ -2724,6 +2724,9 @@ spec:
                                 type: array
                               depends:
                                 type: string
+                              description:
+                                maxLength: 256
+                                type: string
                               hooks:
                                 additionalProperties:
                                   properties:

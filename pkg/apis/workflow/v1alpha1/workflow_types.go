@@ -3180,7 +3180,7 @@ type DAGTask struct {
 	// Name is the name of the target
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
-	// Description of the step
+	// Description of the DAGTask
 	// +kubebuilder:validation:MaxLength=256
 	Description string `json:"description,omitempty" protobuf:"bytes,15,opt,name=description"`
 

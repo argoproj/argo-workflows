@@ -2355,6 +2355,13 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"description": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Description of the DAGTask",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"template": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name of template to execute",
@@ -7944,6 +7951,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					"name": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Name of the step",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"description": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Description of the step",
 							Type:        []string{"string"},
 							Format:      "",
 						},

@@ -535,6 +535,10 @@ message DAGTask {
   // Name is the name of the target
   optional string name = 1;
 
+  // Description of the DAGTask
+  // +kubebuilder:validation:MaxLength=256
+  optional string description = 15;
+
   // Name of template to execute
   optional string template = 2;
 
@@ -2153,6 +2157,10 @@ message WorkflowStatus {
 message WorkflowStep {
   // Name of the step
   optional string name = 1;
+
+  // Description of the step
+  // +kubebuilder:validation:MaxLength=256
+  optional string description = 14;
 
   // Template is the name of the template to execute as the step
   optional string template = 2;

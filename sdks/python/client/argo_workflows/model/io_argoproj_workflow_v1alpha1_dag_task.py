@@ -102,6 +102,7 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
             'continue_on': (IoArgoprojWorkflowV1alpha1ContinueOn,),  # noqa: E501
             'dependencies': ([str],),  # noqa: E501
             'depends': (str,),  # noqa: E501
+            'description': (str,),  # noqa: E501
             'hooks': ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)},),  # noqa: E501
             'inline': (IoArgoprojWorkflowV1alpha1Template,),  # noqa: E501
             'on_exit': (str,),  # noqa: E501
@@ -124,6 +125,7 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
         'continue_on': 'continueOn',  # noqa: E501
         'dependencies': 'dependencies',  # noqa: E501
         'depends': 'depends',  # noqa: E501
+        'description': 'description',  # noqa: E501
         'hooks': 'hooks',  # noqa: E501
         'inline': 'inline',  # noqa: E501
         'on_exit': 'onExit',  # noqa: E501
@@ -183,6 +185,7 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
             continue_on (IoArgoprojWorkflowV1alpha1ContinueOn): [optional]  # noqa: E501
             dependencies ([str]): Dependencies are name of other targets which this depends on. [optional]  # noqa: E501
             depends (str): Depends are name of other targets which this depends on. [optional]  # noqa: E501
+            description (str): Description of the DAGTask. [optional]  # noqa: E501
             hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task. [optional]  # noqa: E501
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.. [optional]  # noqa: E501
@@ -281,6 +284,7 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
             continue_on (IoArgoprojWorkflowV1alpha1ContinueOn): [optional]  # noqa: E501
             dependencies ([str]): Dependencies are name of other targets which this depends on. [optional]  # noqa: E501
             depends (str): Depends are name of other targets which this depends on. [optional]  # noqa: E501
+            description (str): Description of the DAGTask. [optional]  # noqa: E501
             hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task. [optional]  # noqa: E501
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.. [optional]  # noqa: E501

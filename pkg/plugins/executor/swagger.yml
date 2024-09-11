@@ -1047,6 +1047,11 @@ definitions:
             depends:
                 description: Depends are name of other targets which this depends on
                 type: string
+            description:
+                description: |-
+                    Description of the DAGTask
+                    +kubebuilder:validation:MaxLength=256
+                type: string
             hooks:
                 $ref: '#/definitions/LifecycleHooks'
             inline:

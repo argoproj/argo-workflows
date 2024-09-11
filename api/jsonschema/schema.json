@@ -4993,6 +4993,10 @@
           "description": "Depends are name of other targets which this depends on",
           "type": "string"
         },
+        "description": {
+          "description": "Description of the DAGTask",
+          "type": "string"
+        },
         "hooks": {
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
@@ -8014,6 +8018,10 @@
         "continueOn": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn",
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified"
+        },
+        "description": {
+          "description": "Description of the step",
+          "type": "string"
         },
         "hooks": {
           "additionalProperties": {

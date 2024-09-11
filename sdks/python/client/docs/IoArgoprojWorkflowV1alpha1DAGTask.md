@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **continue_on** | [**IoArgoprojWorkflowV1alpha1ContinueOn**](IoArgoprojWorkflowV1alpha1ContinueOn.md) |  | [optional] 
 **dependencies** | **[str]** | Dependencies are name of other targets which this depends on | [optional] 
 **depends** | **str** | Depends are name of other targets which this depends on | [optional] 
+**description** | **str** | Description of the DAGTask | [optional] 
 **hooks** | [**{str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}**](IoArgoprojWorkflowV1alpha1LifecycleHook.md) | Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task | [optional] 
 **inline** | [**IoArgoprojWorkflowV1alpha1Template**](IoArgoprojWorkflowV1alpha1Template.md) |  | [optional] 
 **on_exit** | **str** | OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead. | [optional] 

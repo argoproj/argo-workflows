@@ -885,6 +885,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | continueOn | [ContinueOn](#continue-on)| `ContinueOn` |  | |  |  |
 | dependencies | []string| `[]string` |  | | Dependencies are name of other targets which this depends on |  |
 | depends | string| `string` |  | | Depends are name of other targets which this depends on |  |
+| description | string| `string` |  | | Description of the DAGTask</br>+kubebuilder:validation:MaxLength=256 |  |
 | hooks | [LifecycleHooks](#lifecycle-hooks)| `LifecycleHooks` |  | |  |  |
 | inline | [Template](#template)| `Template` |  | |  |  |
 | name | string| `string` |  | | Name is the name of the target |  |
