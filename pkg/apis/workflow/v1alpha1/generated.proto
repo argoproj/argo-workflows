@@ -1438,7 +1438,7 @@ message ScriptTemplate {
   // Source contains the source code of the script to execute
   optional string source = 2;
 
-  // Extension specifies extension for the temporary script file
+  // Extension specifies the file extension to use
   optional string extension = 3;
 }
 

@@ -10540,7 +10540,7 @@
           }
         },
         "extension": {
-          "description": "Extension specifies extension for the temporary script file",
+          "description": "Extension specifies the file extension to use",
           "type": "string"
         },
         "image": {

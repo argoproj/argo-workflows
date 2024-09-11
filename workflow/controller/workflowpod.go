@@ -1184,7 +1184,7 @@ func addScriptStagingVolume(pod *apiv1.Pod) {
 		if initCtr.Name == common.InitContainerName {
 			volMount := apiv1.VolumeMount{
 				Name:      volName,
-				MountPath: common.ExecutorStagingEmptyDir,
+				MountPath: wfv1.ExecutorStagingEmptyDir,
 			}
 			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
 			pod.Spec.InitContainers[i] = initCtr
@@ -1196,7 +1196,7 @@ func addScriptStagingVolume(pod *apiv1.Pod) {
 		if ctr.Name == common.MainContainerName {
 			volMount := apiv1.VolumeMount{
 				Name:      volName,
-				MountPath: common.ExecutorStagingEmptyDir,
+				MountPath: wfv1.ExecutorStagingEmptyDir,
 			}
 			ctr.VolumeMounts = append(ctr.VolumeMounts, volMount)
 			pod.Spec.Containers[i] = ctr

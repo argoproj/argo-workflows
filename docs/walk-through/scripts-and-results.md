@@ -1,6 +1,6 @@
 # Scripts And Results
 
-Often, we just want a template that executes a script specified as a here-script (also known as a `here document`) in the workflow spec. This example shows how to do that:
+Often, you just want a template that executes a script specified as a here-script (also known as a `here document`) in the workflow spec. This example shows how to do that:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -48,8 +48,8 @@ spec:
   - name: gen-random-int-java
     script:
       image: eclipse-temurin:22.0.2_9-jdk
-      command: [java]
-      extension: java
+      command: [java] # the Java interpreter requires files to end in `.java`
+      extension: java # the file will now end in `.java`
       source: |
         import java.util.*;
 
@@ -62,8 +62,8 @@ spec:
   - name: gen-random-scala
     script:
       image: virtuslab/scala-cli:1.5.0
-      command: [scala-cli]
-      extension: sc
+      command: [scala-cli] # the scala-cli requires file to end in either `.scala` or `.sc`
+      extension: sc # the file will now end in `.sc`
       source: |
         import scala.util.Random
         println(Random.between(0, 100))
@@ -78,6 +78,6 @@ spec:
       args: ["echo result was: {{inputs.parameters.message}}"]
 ```
 
-The `script` keyword allows the specification of the script body using the `source` tag. This creates a temporary file containing the script body and then passes the name of the temporary file as the final parameter to `command`, which should be an interpreter that executes the script body. If `command` requires specific file extension, it can be set using `extension` tag.
-
-The use of the `script` feature also assigns the standard output of running the script to a special output parameter named `result`. This allows you to use the result of running the script itself in the rest of the workflow spec. In this example, the result is simply echoed by the print-message template.
+You can specify a script body with the  `source` field.
+This creates a temporary file which is passed as the final parameter to `command`, which should be an interpreter.
+You can set a file extension with `extension` field.
