@@ -1485,6 +1485,10 @@ type WorkflowStep struct {
 	// Name of the step
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
+	// Description of the step
+	// +kubebuilder:validation:MaxLength=256
+	Description string `json:"description,omitempty" protobuf:"bytes,14,opt,name=description"`
+
 	// Template is the name of the template to execute as the step
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
@@ -1527,6 +1531,10 @@ type WorkflowStep struct {
 
 func (step *WorkflowStep) GetName() string {
 	return step.Name
+}
+
+func (step *WorkflowStep) GetDescription() string {
+	return step.Description
 }
 
 func (step *WorkflowStep) IsDAGTask() bool {
@@ -3172,6 +3180,10 @@ type DAGTask struct {
 	// Name is the name of the target
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
+	// Description of the step
+	// +kubebuilder:validation:MaxLength=256
+	Description string `json:"description,omitempty" protobuf:"bytes,15,opt,name=description"`
+
 	// Name of template to execute
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
@@ -3220,6 +3232,10 @@ type DAGTask struct {
 
 func (t *DAGTask) GetName() string {
 	return t.Name
+}
+
+func (t *DAGTask) GetDescription() string {
+	return t.Description
 }
 
 func (t *DAGTask) IsDAGTask() bool {
