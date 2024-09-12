@@ -2317,6 +2317,10 @@ func (n *NodeStatus) GetName() string {
 	return n.Name
 }
 
+func (n *NodeStatus) GetDescription() string {
+	return n.DisplayName
+}
+
 func (n *NodeStatus) IsDAGTask() bool {
 	return false
 }

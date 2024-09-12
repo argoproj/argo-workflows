@@ -697,6 +697,9 @@ export interface TemplateRef {
      * Name is the resource name of the template.
      */
     name: string;
+
+    description?: string;
+
     /**
      * Template is the name of referred template in the resource.
      */
@@ -923,6 +926,8 @@ export interface Sequence {
 export interface DAGTask {
     name: string;
 
+    description?: string;
+
     /**
      * Name of template to execute
      */
@@ -960,6 +965,10 @@ export interface WorkflowStep {
      * Name of the step
      */
     name?: string;
+    /**
+     * Description of the step
+     */
+    description?: string;
     /**
      * Template is a reference to the template to execute as the step
      */
