@@ -17,7 +17,6 @@ require (
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/coreos/go-oidc/v3 v3.9.0
-	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/evanphx/json-patch v5.8.0+incompatible
 	github.com/expr-lang/expr v1.16.9
 	github.com/gavv/httpexpect/v2 v2.16.0

@@ -3,12 +3,12 @@ package template
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/util/expand"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/doublerebel/bellows"
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/file"
 	"github.com/expr-lang/expr/parser/lexer"
@@ -154,7 +154,7 @@ func hasWorkflowFailures(expression string) bool {
 
 // hasVarInEnv checks if a parameter is in env or not
 func hasVarInEnv(env map[string]interface{}, parameter string) bool {
-	flattenEnv := bellows.Flatten(env)
+	flattenEnv := expand.Flatten(env)
 	_, ok := flattenEnv[parameter]
 	return ok
 }
