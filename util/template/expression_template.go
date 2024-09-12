@@ -3,11 +3,12 @@ package template
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/util/expand"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/argoproj/argo-workflows/v3/util/expand"
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/file"
