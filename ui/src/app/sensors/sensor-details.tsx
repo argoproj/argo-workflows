@@ -8,6 +8,7 @@ import {Sensor} from '../../models';
 import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
+import {isEqual} from '../shared/components/object-parser';
 import {Node} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
 import {useCollectEvent} from '../shared/use-collect-event';
@@ -30,7 +31,7 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
     const [sensor, setSensor] = useState<Sensor>();
-    const [edited, setEdited] = useState(false);
+    const [initialSensor, setInitialSensor] = useState<Sensor>();
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
@@ -59,12 +60,16 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
         services.sensor
             .get(name, namespace)
             .then(setSensor)
-            .then(() => setEdited(false))
             .then(() => setError(null))
             .catch(setError);
     }, [namespace, name]);
 
-    useEffect(() => setEdited(true), [sensor]);
+    const resetSensor = (sensor: Sensor) => {
+        setSensor(sensor);
+        setInitialSensor(sensor);
+    };
+
+    const edited = !isEqual(sensor, initialSensor);
 
     useCollectEvent('openedSensorDetails');
 
@@ -94,9 +99,8 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
                             action: () =>
                                 services.sensor
                                     .update(sensor, namespace)
-                                    .then(setSensor)
+                                    .then(resetSensor)
                                     .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
-                                    .then(() => setEdited(false))
                                     .then(() => setError(null))
                                     .catch(setError)
                         },

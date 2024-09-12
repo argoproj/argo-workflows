@@ -10,6 +10,7 @@ import {WorkflowTemplate, Workflow} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
+import {isEqual} from '../shared/components/object-parser';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -36,9 +37,14 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
 
     const [template, setTemplate] = useState<WorkflowTemplate>();
     const [error, setError] = useState<Error>();
-    const [edited, setEdited] = useState(false);
+    const [initialTemplate, setInitialTemplate] = useState<WorkflowTemplate>();
 
-    useEffect(() => setEdited(true), [template]);
+    const resetTemplate = (template: WorkflowTemplate) => {
+        setTemplate(template);
+        setInitialTemplate(template);
+    };
+
+    const edited = !isEqual(template, initialTemplate);
 
     useEffect(
         useQueryParams(history, p => {
@@ -64,8 +70,7 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     useEffect(() => {
         services.workflowTemplate
             .get(name, namespace)
-            .then(setTemplate)
-            .then(() => setEdited(false)) // set back to false
+            .then(resetTemplate)
             .then(() => setError(null))
             .catch(setError);
     }, [name, namespace]);
@@ -106,9 +111,8 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                             action: () =>
                                 services.workflowTemplate
                                     .update(template, name, namespace)
-                                    .then(setTemplate)
+                                    .then(resetTemplate)
                                     .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
-                                    .then(() => setEdited(false))
                                     .then(() => setError(null))
                                     .catch(setError)
                         },

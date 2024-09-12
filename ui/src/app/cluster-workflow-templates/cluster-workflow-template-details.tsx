@@ -10,6 +10,7 @@ import {ClusterWorkflowTemplate, Workflow} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
+import {isEqual} from '../shared/components/object-parser';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -37,7 +38,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
 
     const [error, setError] = useState<Error>();
     const [template, setTemplate] = useState<ClusterWorkflowTemplate>();
-    const [edited, setEdited] = useState(false);
+    const [initialTemplate, setInitialTemplate] = useState<ClusterWorkflowTemplate>();
 
     useEffect(
         useQueryParams(history, p => {
@@ -47,7 +48,11 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
         [history]
     );
 
-    useEffect(() => setEdited(true), [template]);
+    const resetTemplate = (template: ClusterWorkflowTemplate) => {
+        setTemplate(template);
+        setInitialTemplate(template);
+    };
+    const edited = !isEqual(template, initialTemplate);
     useEffect(() => {
         history.push(historyUrl('cluster-workflow-templates/{name}', {name, sidePanel, tab}));
     }, [name, sidePanel, tab]);
@@ -56,8 +61,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
         (async () => {
             try {
                 const newTemplate = await services.clusterWorkflowTemplate.get(name);
-                setTemplate(newTemplate);
-                setEdited(false); // set back to false
+                resetTemplate(newTemplate);
                 setError(null);
             } catch (err) {
                 setError(err);
@@ -106,7 +110,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                             action: () => {
                                 services.clusterWorkflowTemplate
                                     .update(template, name)
-                                    .then(setTemplate)
+                                    .then(resetTemplate)
                                     .then(() =>
                                         notifications.show({
                                             content: 'Updated',
@@ -114,7 +118,6 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                                         })
                                     )
                                     .then(() => setError(null))
-                                    .then(() => setEdited(false))
                                     .catch(setError);
                             }
                         },

@@ -11,6 +11,7 @@ import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
+import {isEqual} from '../shared/components/object-parser';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
@@ -52,9 +53,9 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
         [namespace, name, tab, selectedNode]
     );
 
-    const [edited, setEdited] = useState(false);
     const [error, setError] = useState<Error>();
     const [eventSource, setEventSource] = useState<EventSource>();
+    const [initialEventSource, setInitialEventSource] = useState<EventSource>();
 
     const selected = (() => {
         if (!selectedNode) {
@@ -69,8 +70,7 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
         (async () => {
             try {
                 const newEventSource = await services.eventSource.get(name, namespace);
-                setEventSource(newEventSource);
-                setEdited(false); // set back to false
+                resetEventSource(newEventSource);
                 setError(null);
             } catch (err) {
                 setError(err);
@@ -78,7 +78,12 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
         })();
     }, [name, namespace]);
 
-    useEffect(() => setEdited(true), [eventSource]);
+    const resetEventSource = (eventSource: EventSource) => {
+        setEventSource(eventSource);
+        setInitialEventSource(eventSource);
+    };
+
+    const edited = !isEqual(eventSource, initialEventSource);
 
     useCollectEvent('openedEventSourceDetails');
 
@@ -100,14 +105,13 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
                             action: () =>
                                 services.eventSource
                                     .update(eventSource, name, namespace)
-                                    .then(setEventSource)
+                                    .then(resetEventSource)
                                     .then(() =>
                                         notifications.show({
                                             content: 'Updated',
                                             type: NotificationType.Success
                                         })
                                     )
-                                    .then(() => setEdited(false))
                                     .then(() => setError(null))
                                     .catch(setError)
                         },
