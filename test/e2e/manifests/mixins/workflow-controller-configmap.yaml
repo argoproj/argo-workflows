@@ -13,10 +13,10 @@ data:
     resources:
       requests:
         cpu: 0.1
-        memory: 64Mi
+        memory: 128Mi
       limits:
         cpu: 0.5
-        memory: 128Mi
+        memory: 256Mi
   retentionPolicy: |
     completed: 10
     failed: 2
