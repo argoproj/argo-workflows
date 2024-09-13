@@ -1,4 +1,5 @@
 import {Select} from 'argo-ui/src/components/select/select';
+import {TextInput} from '../../shared/components/text-input';
 import React, {useContext, useMemo, useState} from 'react';
 
 import {Parameter, Template} from '../../../models';
@@ -10,8 +11,10 @@ import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 
+type WorkflowTemplateType = 'ClusterWorkflowTemplate' | 'WorkflowTemplate';
+
 interface Props {
-    kind: string;
+    kind: WorkflowTemplateType;
     namespace: string;
     name: string;
     entrypoint: string;
@@ -31,6 +34,7 @@ export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
     const [entrypoint, setEntrypoint] = useState(workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
+    const [namespace, setNamespace] = useState(props.namespace);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
     const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
@@ -50,7 +54,7 @@ export function SubmitWorkflowPanel(props: Props) {
     async function submit() {
         setIsSubmitting(true);
         try {
-            const submitted = await services.workflows.submit(props.kind, props.name, props.namespace, {
+            const submitted = await services.workflows.submit(props.kind, props.name, namespace, {
                 entryPoint: entrypoint === workflowEntrypoint ? null : entrypoint,
                 parameters: [
                     ...workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p)),
@@ -69,7 +73,7 @@ export function SubmitWorkflowPanel(props: Props) {
         <>
             <h4>Submit Workflow</h4>
             <h5>
-                {props.namespace}/{props.name}
+                {namespace}/{props.name}
             </h5>
             {error && <ErrorNotice error={error} />}
             <div className='white-box'>
@@ -85,6 +89,12 @@ export function SubmitWorkflowPanel(props: Props) {
                         }}
                     />
                 </div>
+                {props.kind === 'ClusterWorkflowTemplate' && (
+                    <div key='namespace' style={{marginBottom: 25}}>
+                        <label>Namespace</label>
+                        <TextInput value={namespace} onChange={setNamespace} />
+                    </div>
+                )}
                 <div key='parameters' style={{marginBottom: 25}}>
                     <label>Parameters</label>
                     {workflowParameters.length > 0 && <ParametersInput parameters={workflowParameters} onChange={setWorkflowParameters} />}
