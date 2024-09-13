@@ -48,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
+	argoUtil "github.com/argoproj/argo-workflows/v3/util"
 	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
@@ -640,7 +641,7 @@ func (wfc *WorkflowController) enablePodForDeletion(ctx context.Context, pods ty
 			updatedPod.Labels[common.LabelKeyCompleted] = "true"
 		}
 
-		updatedPod.Finalizers = removeFinalizer(updatedPod.Finalizers, common.FinalizerPodStatus)
+		updatedPod.Finalizers = argoUtil.RemoveFinalizer(updatedPod.Finalizers, common.FinalizerPodStatus)
 
 		_, err = pods.Update(ctx, updatedPod, metav1.UpdateOptions{})
 		return err
@@ -649,16 +650,6 @@ func (wfc *WorkflowController) enablePodForDeletion(ctx context.Context, pods ty
 		return err
 	}
 	return nil
-}
-
-func removeFinalizer(finalizers []string, targetFinalizer string) []string {
-	var updatedFinalizers []string
-	for _, finalizer := range finalizers {
-		if finalizer != targetFinalizer {
-			updatedFinalizers = append(updatedFinalizers, finalizer)
-		}
-	}
-	return updatedFinalizers
 }
 
 func (wfc *WorkflowController) signalContainers(ctx context.Context, namespace string, podName string, sig syscall.Signal) (time.Duration, error) {

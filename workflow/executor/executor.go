@@ -805,7 +805,11 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
+			if err != nil {
+				return err
+			}
 		}
+		err = we.RemoveFinalizer(ctx, common.FinalizerTaskResultStatus)
 		return err
 	})
 	if err != nil {
@@ -826,7 +830,11 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
 			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
+			if err != nil {
+				return err
+			}
 		}
+		err = we.AddFinalizer(ctx, common.FinalizerTaskResultStatus)
 		return err
 	})
 	if err != nil {
@@ -898,6 +906,27 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
 	return err
 
+}
+
+// AddFinalizer adds a Finalizer to the workflow pod
+func (we *WorkflowExecutor) AddFinalizer(ctx context.Context, finalizer string) error {
+	data, err := json.Marshal(map[string]interface{}{"metadata": metav1.ObjectMeta{
+		Finalizers: []string{
+			finalizer,
+		},
+	}})
+	if err != nil {
+		return err
+	}
+	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
+	return err
+}
+
+// RemoveFinalizer remove a Finalizer from the workflow pod
+func (we *WorkflowExecutor) RemoveFinalizer(ctx context.Context, finalizer string) error {
+	data := fmt.Sprintf(`[ { "op": "remove", "path": "/metadata/finalizers", "value": ["%s"] } ]`, finalizer)
+	_, err := we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.JSONPatchType, []byte(data), metav1.PatchOptions{})
+	return err
 }
 
 // isTarball returns whether or not the file is a tarball
