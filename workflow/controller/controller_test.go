@@ -483,7 +483,7 @@ func withOutputs(outputs wfv1.Outputs) with {
 }
 
 func withExitCode(v int32) with {
-	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
+	return func(pod *apiv1.Pod, _ *wfOperationCtx) {
 		for _, c := range pod.Spec.Containers {
 			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
 				Name: c.Name,
