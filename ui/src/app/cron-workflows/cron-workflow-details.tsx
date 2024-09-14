@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import * as models from '../../models';
@@ -40,7 +40,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [initialCronWorkflow, setInitialCronWorkflow] = useState<CronWorkflow>();
     const [error, setError] = useState<Error>();
 
-    const edited = !isEqual(cronWorkflow, initialCronWorkflow);
+    const edited = useMemo(() => !isEqual(cronWorkflow, initialCronWorkflow), [cronWorkflow, initialCronWorkflow]);
 
     function resetCronWorkflow(cronWorkflow: CronWorkflow) {
         setCronWorkflow(cronWorkflow);

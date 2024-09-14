@@ -1,7 +1,7 @@
 import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
 import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {Sensor} from '../../models';
@@ -35,7 +35,7 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
-    const edited = !isEqual(sensor, initialSensor);
+    const edited = useMemo(() => !isEqual(sensor, initialSensor), [sensor, initialSensor]);
 
     function resetSensor(sensor: Sensor) {
         setSensor(sensor);
@@ -66,7 +66,7 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     useEffect(() => {
         services.sensor
             .get(name, namespace)
-            .then(setSensor)
+            .then(resetSensor)
             .then(() => setError(null))
             .catch(setError);
     }, [namespace, name]);

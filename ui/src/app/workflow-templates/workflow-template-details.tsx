@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import * as models from '../../models';
@@ -39,7 +39,7 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const [error, setError] = useState<Error>();
     const [initialTemplate, setInitialTemplate] = useState<WorkflowTemplate>();
 
-    const edited = !isEqual(template, initialTemplate);
+    const edited = useMemo(() => !isEqual(template, initialTemplate), [template, initialTemplate]);
 
     function resetTemplate(template: WorkflowTemplate) {
         setTemplate(template);

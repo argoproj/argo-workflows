@@ -3,7 +3,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useMemo, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {EventSource} from '../../models';
@@ -57,7 +57,7 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
     const [eventSource, setEventSource] = useState<EventSource>();
     const [initialEventSource, setInitialEventSource] = useState<EventSource>();
 
-    const edited = !isEqual(eventSource, initialEventSource);
+    const edited = useMemo(() => !isEqual(eventSource, initialEventSource), [eventSource, initialEventSource]);
 
     function resetEventSource(eventSource: EventSource) {
         setEventSource(eventSource);
