@@ -15,8 +15,8 @@ linters:
     - asasalint
     - bidichk
     - bodyclose
+    - copyloopvar
     - errcheck
-    - exportloopref
     - goimports
     # only minor issues
     # - errorlint
