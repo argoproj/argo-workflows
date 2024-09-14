@@ -2561,8 +2561,16 @@ type CreateS3BucketOptions struct {
 type S3Artifact struct {
 	S3Bucket `json:",inline" protobuf:"bytes,1,opt,name=s3Bucket"`
 
+	// Metadata is the s3 object's metadata in the S3 artifact repository
+	// default={}
+	Metadata map[string]string	`json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata"`
+
+	// Tags is the s3 object's tags in the S3 artifact repository
+	// default={}
+	Tags map[string]string	`json:"tags,omitempty" protobuf:"bytes,3,opt,name=tags"`
+
 	// Key is the key in the bucket where the artifact resides
-	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	Key string `json:"key,omitempty" protobuf:"bytes,4,opt,name=key"`
 }
 
 func (s *S3Artifact) GetKey() (string, error) {

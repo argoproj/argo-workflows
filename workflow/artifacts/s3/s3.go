@@ -229,12 +229,21 @@ func saveS3Artifact(s3cli argos3.S3Client, path string, outputArtifact *wfv1.Art
 		}
 	}
 
+	s3metadata := make(map[string]string)
+	if outputArtifact.S3.Metadata != nil {
+		s3metadata = outputArtifact.S3.Metadata
+	}
+	s3tags := make(map[string]string)
+	if outputArtifact.S3.Metadata != nil {
+		s3tags = outputArtifact.S3.Tags
+	}
+
 	if isDir {
-		if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
+		if err = s3cli.PutDirectoryWithMetadata(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path, s3metadata, s3tags); err != nil {
 			return !isTransientS3Err(err), fmt.Errorf("failed to put directory: %v", err)
 		}
 	} else {
-		if err = s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
+		if err = s3cli.PutFileWithMetadata(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path, s3metadata, s3tags); err != nil {
 			return !isTransientS3Err(err), fmt.Errorf("failed to put file: %v", err)
 		}
 	}
