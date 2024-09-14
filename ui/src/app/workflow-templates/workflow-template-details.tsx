@@ -39,12 +39,12 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const [error, setError] = useState<Error>();
     const [initialTemplate, setInitialTemplate] = useState<WorkflowTemplate>();
 
-    const resetTemplate = (template: WorkflowTemplate) => {
+    const edited = !isEqual(template, initialTemplate);
+
+    function resetTemplate(template: WorkflowTemplate) {
         setTemplate(template);
         setInitialTemplate(template);
-    };
-
-    const edited = !isEqual(template, initialTemplate);
+    }
 
     useEffect(
         useQueryParams(history, p => {

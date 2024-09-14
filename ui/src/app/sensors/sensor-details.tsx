@@ -35,6 +35,13 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
+    const edited = !isEqual(sensor, initialSensor);
+
+    function resetSensor(sensor: Sensor) {
+        setSensor(sensor);
+        setInitialSensor(sensor);
+    }
+
     useEffect(
         useQueryParams(history, p => {
             setTab(p.get('tab'));
@@ -63,13 +70,6 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
             .then(() => setError(null))
             .catch(setError);
     }, [namespace, name]);
-
-    const resetSensor = (sensor: Sensor) => {
-        setSensor(sensor);
-        setInitialSensor(sensor);
-    };
-
-    const edited = !isEqual(sensor, initialSensor);
 
     useCollectEvent('openedSensorDetails');
 

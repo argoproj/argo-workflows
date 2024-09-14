@@ -40,6 +40,13 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     const [template, setTemplate] = useState<ClusterWorkflowTemplate>();
     const [initialTemplate, setInitialTemplate] = useState<ClusterWorkflowTemplate>();
 
+    const edited = !isEqual(template, initialTemplate);
+
+    function resetTemplate(template: ClusterWorkflowTemplate) {
+        setTemplate(template);
+        setInitialTemplate(template);
+    }
+
     useEffect(
         useQueryParams(history, p => {
             setSidePanel(p.get('sidePanel') === 'true');
@@ -48,11 +55,6 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
         [history]
     );
 
-    const resetTemplate = (template: ClusterWorkflowTemplate) => {
-        setTemplate(template);
-        setInitialTemplate(template);
-    };
-    const edited = !isEqual(template, initialTemplate);
     useEffect(() => {
         history.push(historyUrl('cluster-workflow-templates/{name}', {name, sidePanel, tab}));
     }, [name, sidePanel, tab]);

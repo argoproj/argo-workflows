@@ -57,6 +57,13 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
     const [eventSource, setEventSource] = useState<EventSource>();
     const [initialEventSource, setInitialEventSource] = useState<EventSource>();
 
+    const edited = !isEqual(eventSource, initialEventSource);
+
+    function resetEventSource(eventSource: EventSource) {
+        setEventSource(eventSource);
+        setInitialEventSource(eventSource);
+    }
+
     const selected = (() => {
         if (!selectedNode) {
             return;
@@ -77,13 +84,6 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
             }
         })();
     }, [name, namespace]);
-
-    const resetEventSource = (eventSource: EventSource) => {
-        setEventSource(eventSource);
-        setInitialEventSource(eventSource);
-    };
-
-    const edited = !isEqual(eventSource, initialEventSource);
 
     useCollectEvent('openedEventSourceDetails');
 

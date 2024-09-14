@@ -40,6 +40,13 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [initialCronWorkflow, setInitialCronWorkflow] = useState<CronWorkflow>();
     const [error, setError] = useState<Error>();
 
+    const edited = !isEqual(cronWorkflow, initialCronWorkflow);
+
+    function resetCronWorkflow(cronWorkflow: CronWorkflow) {
+        setCronWorkflow(cronWorkflow);
+        setInitialCronWorkflow(cronWorkflow);
+    }
+
     useEffect(
         useQueryParams(history, p => {
             setSidePanel(p.get('sidePanel'));
@@ -68,13 +75,6 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
             .then(() => setError(null))
             .catch(setError);
     }, [namespace, name]);
-
-    const resetCronWorkflow = (cronWorkflow: CronWorkflow) => {
-        setCronWorkflow(cronWorkflow);
-        setInitialCronWorkflow(cronWorkflow);
-    };
-
-    const edited = !isEqual(cronWorkflow, initialCronWorkflow);
 
     useEffect(() => {
         (async () => {
