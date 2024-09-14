@@ -65,7 +65,7 @@ spec:
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
-			t.Fatalf("%s", c.Name)
+			t.Fatal(c.Name)
 		}
 	}
 }
@@ -143,7 +143,7 @@ spec:
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
-			t.Fatalf("%s", c.Name)
+			t.Fatal(c.Name)
 		}
 	}
 }
@@ -213,7 +213,7 @@ spec:
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
-			t.Fatalf("%s", c.Name)
+			t.Fatal(c.Name)
 		}
 	}
 }

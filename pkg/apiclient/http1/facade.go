@@ -164,7 +164,7 @@ func errFromResponse(r *http.Response) error {
 		Message string     `json:"message"`
 	}{}
 	if err := json.NewDecoder(r.Body).Decode(x); err == nil {
-		return status.Errorf(x.Code, "%s", x.Message)
+		return status.Error(x.Code, x.Message)
 	}
 	return status.Error(codes.Internal, fmt.Sprintf(": %v", r))
 }
