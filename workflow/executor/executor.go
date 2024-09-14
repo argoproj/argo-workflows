@@ -49,6 +49,10 @@ import (
 const (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
 	tempOutArtDir = "/tmp/argo/outputs/artifacts"
+	// The suffix of container log file
+	containerLogFileSuffix = ".log"
+	// The suffix of container log artifact name
+	containerLogArtifactSuffix = "-logs"
 )
 
 // WorkflowExecutor is program which runs as the init/wait container
@@ -638,14 +642,21 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 
 // saveContainerLogs saves a single container's log into a file
 func (we *WorkflowExecutor) saveContainerLogs(ctx context.Context, tempLogsDir, containerName string) (*wfv1.Artifact, error) {
-	fileName := containerName + ".log"
+	fileName := containerName + containerLogFileSuffix
+	artName := containerName + containerLogArtifactSuffix
+	// if it is main container, use the container name as the file/artifact name
+	if containerName == common.MainContainerName && we.Template.GetType() == wfv1.TemplateTypeContainer &&
+		len(we.Template.Container.Name) > 0 {
+		fileName = we.Template.Container.Name + containerLogFileSuffix
+		artName = we.Template.Container.Name + containerLogArtifactSuffix
+	}
 	filePath := path.Join(tempLogsDir, fileName)
 	err := we.saveLogToFile(ctx, containerName, filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	art := &wfv1.Artifact{Name: containerName + "-logs"}
+	art := &wfv1.Artifact{Name: artName}
 	err = we.saveArtifactFromFile(ctx, art, fileName, filePath)
 	if err != nil {
 		return nil, err
