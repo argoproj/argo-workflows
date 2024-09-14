@@ -13,7 +13,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/aliyun/credentials-go v1.3.2
 	github.com/argoproj/argo-events v1.9.1
-	github.com/argoproj/pkg v0.13.7-0.20240208112602-3bb8fe9a0527
+	github.com/argoproj/pkg v0.13.7-0.20240704113442-a69fd34a8117
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/coreos/go-oidc/v3 v3.9.0
@@ -46,7 +46,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/soheilhy/cmux v0.1.5
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
@@ -87,8 +87,8 @@ require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/TylerBrock/colorjson v0.0.0-20200706003622-8a50f05110d2 // indirect
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
@@ -165,25 +165,25 @@ require (
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/awalterschulze/gographviz v0.0.0-20200901124122-0eecad45bd71 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.24.1 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.26.6 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.16 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.3 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.30.1 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.27.23 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.24 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.9 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.13.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.10 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.18.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.26.7 // indirect
-	github.com/aws/smithy-go v1.19.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.22.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1 // indirect
+	github.com/aws/smithy-go v1.20.3 // indirect
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20220706184558-ce46abcd012b // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/chrismellard/docker-credential-acr-env v0.0.0-20220327082430-c57b701bfc08 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/creack/pty v1.1.21
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/daviddengcn/go-colortext v1.0.0 // indirect

@@ -1405,6 +1405,9 @@ message S3Bucket {
   // SecretKeySecret is the secret selector to the bucket's secret key
   optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 6;
 
+  // SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant
+  optional k8s.io.api.core.v1.SecretKeySelector sessionTokenSecret = 12;
+
   // RoleARN is the Amazon Resource Name (ARN) of the role to assume.
   optional string roleARN = 7;
 

@@ -1308,6 +1308,9 @@ func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, ar
 		if artifactLocation.S3 != nil {
 			createSecretVal(volMap, artifactLocation.S3.AccessKeySecret, keyMap)
 			createSecretVal(volMap, artifactLocation.S3.SecretKeySecret, keyMap)
+			if artifactLocation.S3.SessionTokenSecret != nil {
+				createSecretVal(volMap, artifactLocation.S3.SessionTokenSecret, keyMap)
+			}
 			sseCUsed := artifactLocation.S3.EncryptionOptions != nil && artifactLocation.S3.EncryptionOptions.EnableEncryption && artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret != nil
 			if sseCUsed {
 				createSecretVal(volMap, artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret, keyMap)

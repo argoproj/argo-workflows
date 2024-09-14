@@ -3355,6 +3355,8 @@ definitions:
                 type: string
             secretKeySecret:
                 $ref: '#/definitions/SecretKeySelector'
+            sessionTokenSecret:
+                $ref: '#/definitions/SecretKeySelector'
             useSDKCreds:
                 description: UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
                 type: boolean
