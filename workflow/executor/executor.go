@@ -802,9 +802,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
 		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
-			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
-			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "true")
+			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		}
 		return err
 	})
@@ -823,9 +821,7 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
-			err = we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
+			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		}
 		return err
 	})
@@ -851,22 +847,8 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 	}, errorsutil.IsTransientErr, func() error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task result, falling back to legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-			if result.Outputs.HasOutputs() {
-				value, err := json.Marshal(result.Outputs)
-				if err != nil {
-					return err
-				}
-
-				return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(value))
-			}
-			if result.Progress.IsValid() { // this may result in occasionally two patches
-				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
-			}
-			// Only added as a backup in case LabelKeyReportOutputsCompleted could not be set
-			return we.AddAnnotation(ctx, common.AnnotationKeyReportOutputsCompleted, "false")
+			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		}
-
 		return err
 	})
 }
