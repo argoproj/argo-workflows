@@ -245,15 +245,3 @@ go tool pprof http://localhost:6060/debug/pprof/profile   # 30-second CPU profil
 go tool pprof http://localhost:6060/debug/pprof/heap      # heap profile
 go tool pprof http://localhost:6060/debug/pprof/block     # goroutine blocking profile
 ```
-
-## Using Multiple Terminals
-
-I run the controller in one terminal, and the UI in another. I like the UI: it is much faster to debug workflows than
-the terminal. This allows you to make changes to the controller and re-start it, without restarting the UI (which I
-think takes too long to start-up).
-
-As a convenience, `CTRL=false` implies `UI=true`, so just run:
-
-```bash
-make start CTRL=false
-```
