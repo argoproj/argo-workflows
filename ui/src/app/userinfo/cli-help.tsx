@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {createRef, useState} from 'react';
 
+import {getCookie, AUTH_COOKIE} from '../shared/cookie';
 import {Notice} from '../shared/components/notice';
 
 export function CliHelp() {
@@ -9,12 +10,7 @@ export function CliHelp() {
         .getElementsByTagName('base')[0]
         .href.toString()
         .replace(document.location.protocol + '//' + document.location.host + '/', '');
-    const argoToken = (
-        decodeURIComponent(document.cookie)
-            .split(';')
-            .map(x => x.trim())
-            .find(x => x.startsWith('authorization=')) || ''
-    ).replace(/^authorization="?(.*?)"?$/, '$1');
+    const argoToken = getCookie(AUTH_COOKIE);
 
     const text = `export ARGO_SERVER='${document.location.hostname}:${document.location.port || (argoSecure ? 443 : 80)}'
 export ARGO_HTTP1=true

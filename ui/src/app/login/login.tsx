@@ -3,18 +3,21 @@ import * as React from 'react';
 
 import {uiUrl, uiUrlWithParams} from '../shared/base';
 import {useCollectEvent} from '../shared/use-collect-event';
+import {resetCookie, setCookie, AUTH_COOKIE} from '../shared/cookie';
 
 import './login.scss';
 
 function logout() {
-    document.cookie = 'authorization=;Max-Age=0';
+    resetCookie(AUTH_COOKIE);
     document.location.reload();
 }
-function user(token: string) {
+
+function setUser(token: string) {
     const path = uiUrl('');
-    document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
+    setCookie(AUTH_COOKIE, token, path);
     document.location.href = path;
 }
+
 function getRedirect(): string {
     const urlParams = new URLSearchParams(new URL(document.location.href).search);
     if (urlParams.has('redirect')) {
@@ -62,7 +65,7 @@ export function Login() {
                             <textarea id='token' cols={32} rows={8} />
                         </div>
                         <div>
-                            <button className='argo-button argo-button--base-o' onClick={() => user((document.getElementById('token') as HTMLInputElement).value)}>
+                            <button className='argo-button argo-button--base-o' onClick={() => setUser((document.getElementById('token') as HTMLInputElement).value)}>
                                 <i className='fa fa-sign-in-alt' /> Login
                             </button>
                         </div>
