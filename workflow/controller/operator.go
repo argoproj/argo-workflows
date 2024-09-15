@@ -1426,35 +1426,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		new.PodIP = pod.Status.PodIP
 	}
 
-	// If `AnnotationKeyReportOutputsCompleted` is set, it means RBAC prevented WorkflowTaskResult from being written.
-	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		resultName := woc.nodeID(pod)
-		if x == "true" {
-			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else {
-			woc.wf.Status.MarkTaskResultIncomplete(resultName)
-		}
-
-		// Get node outputs from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
-		if x, ok = pod.Annotations[common.AnnotationKeyOutputs]; ok {
-			if new.Outputs == nil {
-				new.Outputs = &wfv1.Outputs{}
-			}
-			if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
-				new.Phase = wfv1.NodeError
-				new.Message = err.Error()
-			}
-		}
-
-		// Get node progress from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
-		if x, ok = pod.Annotations[common.AnnotationKeyProgress]; ok {
-			if p, ok := wfv1.ParseProgress(x); ok {
-				new.Progress = p
-			}
-		}
-	}
-
 	new.HostNodeName = pod.Spec.NodeName
 
 	if !new.Progress.IsValid() {

@@ -27,6 +27,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
@@ -447,20 +448,42 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 }
 
-type with func(pod *apiv1.Pod)
+type with func(pod *apiv1.Pod, woc *wfOperationCtx)
 
-func withOutputs(v interface{}) with {
-	switch x := v.(type) {
-	case string:
-		return withAnnotation(common.AnnotationKeyOutputs, x)
-	default:
-		return withOutputs(wfv1.MustMarshallJSON(x))
+func withOutputs(outputs wfv1.Outputs) with {
+	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
+		nodeId := woc.nodeID(pod)
+		taskResult := &wfv1.WorkflowTaskResult{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: workflow.APIVersion,
+				Kind:       workflow.WorkflowTaskResultKind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: nodeId,
+				Labels: map[string]string{
+					common.LabelKeyWorkflow:               woc.wf.Name,
+					common.LabelKeyReportOutputsCompleted: "true",
+				},
+			},
+			NodeResult: wfv1.NodeResult{
+				Phase:   wfv1.NodeSucceeded,
+				Outputs: &outputs,
+			},
+		}
+		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+			Create(
+				context.Background(),
+				taskResult,
+				metav1.CreateOptions{},
+			)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
-func withProgress(v string) with { return withAnnotation(common.AnnotationKeyProgress, v) }
 
 func withExitCode(v int32) with {
-	return func(pod *apiv1.Pod) {
+	return func(pod *apiv1.Pod, _ *wfOperationCtx) {
 		for _, c := range pod.Spec.Containers {
 			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
 				Name: c.Name,
@@ -472,10 +495,6 @@ func withExitCode(v int32) with {
 			})
 		}
 	}
-}
-
-func withAnnotation(key, val string) with {
-	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
 }
 
 // createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
@@ -532,7 +551,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 				pod.Status.Message = "Pod failed"
 			}
 			for _, w := range with {
-				w(&pod)
+				w(&pod, woc)
 			}
 			updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
 			if err != nil {

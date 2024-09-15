@@ -5214,6 +5214,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
+					"sessionTokenSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 					"roleARN": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
@@ -5304,6 +5310,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"sessionTokenSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
@@ -5404,6 +5416,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"secretKeySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"sessionTokenSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
