@@ -1,5 +1,4 @@
 import {Select} from 'argo-ui/src/components/select/select';
-import {TextInput} from '../../shared/components/text-input';
 import React, {useContext, useMemo, useState} from 'react';
 
 import {Parameter, Template} from '../../../models';
@@ -8,6 +7,7 @@ import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {ParametersInput} from '../../shared/components/parameters-input';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
+import {TextInput} from '../../shared/components/text-input';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 
