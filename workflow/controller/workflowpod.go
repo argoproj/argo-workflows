@@ -240,7 +240,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	// Configuring default container to be used with commands like "kubectl exec/logs".
-	// Select "main" container if it's available. In other case use the last container (can happent when pod created from ContainerSet).
+	// Select "main" container if it's available. In other case use the last container (can happen when pod created from ContainerSet).
 	defaultContainer := pod.Spec.Containers[len(pod.Spec.Containers)-1].Name
 	for _, c := range pod.Spec.Containers {
 		if c.Name == common.MainContainerName {
@@ -1308,6 +1308,9 @@ func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, ar
 		if artifactLocation.S3 != nil {
 			createSecretVal(volMap, artifactLocation.S3.AccessKeySecret, keyMap)
 			createSecretVal(volMap, artifactLocation.S3.SecretKeySecret, keyMap)
+			if artifactLocation.S3.SessionTokenSecret != nil {
+				createSecretVal(volMap, artifactLocation.S3.SessionTokenSecret, keyMap)
+			}
 			sseCUsed := artifactLocation.S3.EncryptionOptions != nil && artifactLocation.S3.EncryptionOptions.EnableEncryption && artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret != nil
 			if sseCUsed {
 				createSecretVal(volMap, artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret, keyMap)

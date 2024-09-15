@@ -75,16 +75,20 @@ artifacts:
 
 ## Configuring AWS S3
 
-Create your bucket and access keys for the bucket. AWS access keys have the same
-permissions as the user they are associated with. In particular, you cannot
-create access keys with reduced scope. If you want to limit the permissions for
-an access key, you will need to create a user with just the permissions you want
-to associate with the access key. Otherwise, you can just create an access key
-using your existing user account.
+First, create a bucket:
 
 ```bash
-$ export mybucket=bucket249
-$ cat > policy.json <<EOF
+mybucket=my-bucket-name
+aws s3 mb s3://mybucket [--region xxx]
+```
+
+### AWS S3 IAM Access
+
+Next, create a policy file.
+You will attach this in one of the sections below based on your chosen authentication method.
+
+```bash
+cat > policy.json <<EOF
 {
    "Version":"2012-10-17",
    "Statement":[
@@ -107,42 +111,180 @@ $ cat > policy.json <<EOF
    ]
 }
 EOF
-$ aws s3 mb s3://$mybucket [--region xxx]
-$ aws iam create-user --user-name $mybucket-user
-$ aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
-$ aws iam create-access-key --user-name $mybucket-user > access-key.json
 ```
 
-If you do not have Artifact Garbage Collection configured, you should remove `s3:DeleteObject` from the list of Actions above.
+If you do not have [Artifact Garbage Collection](walk-through/artifacts.md#artifact-garbage-collection) configured, you should remove `s3:DeleteObject` from the list of Actions above.
 
-NOTE: if you want argo to figure out which region your buckets belong in, you
-must additionally set the following statement policy. Otherwise, you must
-specify a bucket region in your workflow configuration.
+<!-- markdownlint-disable MD046 -- allow indentation within the admonition -->
 
-```json
-      {
-         "Effect":"Allow",
-         "Action":[
-            "s3:GetBucketLocation"
-         ],
-         "Resource":"arn:aws:s3:::*"
-      }
-    ...
+!!! Note "Region discovery"
+
+    Argo can discover the region of your buckets with the additional policy below.
+    Without this, you must specify the region in your artifact configuration.
+
+    ```json
+          {
+            "Effect":"Allow",
+            "Action":[
+                "s3:GetBucketLocation"
+            ],
+            "Resource":"arn:aws:s3:::*"
+          }
+        ...
+    ```
+
+<!-- markdownlint-enable MD046 -->
+
+#### AWS S3 IRSA
+
+IAM Roles for Service Accounts (IRSA) is the recommended Kubernetes native mechanism to authenticate to S3.
+If you are using EKS, follow [the IRSA setup guide](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+If not, follow the [Pod Identity Webhook self-hosted setup guide](https://github.com/aws/amazon-eks-pod-identity-webhook/blob/master/SELF_HOSTED_SETUP.md).
+
+With the bucket and policy as described above, create an IAM role and add the policy:
+
+```bash
+aws iam create-role --role-name $mybucket-role
+aws iam put-role-policy --role-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
 ```
 
-### AWS S3 IRSA
-
-If you wish to use S3 IRSA instead of passing in an `accessKey` and `secretKey`, you need to annotate the service account of both the running workflow (in order to save logs/artifacts) and the argo-server pod (in order to retrieve the logs/artifacts).
+Attach this IAM role to a service account with an annotation:
 
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::012345678901:role/mybucket
+    eks.amazonaws.com/role-arn: arn:aws:iam::012345678901:role/mybucket-role
   name: myserviceaccount
   namespace: mynamespace
 ```
+
+Use the service account in a workflow:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  serviceAccountName: myserviceaccount
+```
+
+#### AWS S3 with IAM Access Keys
+
+!!! Note "Least privilege user"
+    To reduce the privileges of an access key, create a user with only the necessary permissions and no more.
+
+With the bucket and policy described above, create an IAM user and add the policy:
+
+```bash
+aws iam create-user --user-name $mybucket-user
+aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
+aws iam create-access-key --user-name $mybucket-user > access-key.json
+```
+
+Configure an artifact with the access keys:
+
+```yaml
+artifacts:
+  - name: my-output-artifact
+    path: /my-output-artifact
+    s3:
+      endpoint: s3.amazonaws.com
+      bucket: my-s3-bucket
+      key: path/in/bucket/my-output-artifact.tgz
+      # The following fields are secret selectors.
+      # They reference the k8s secret named 'my-s3-credentials'.
+      # This secret is expected to have the keys 'accessKey' and 'secretKey',
+      # containing the base64 encoded credentials to the bucket.
+      accessKeySecret:
+        name: my-s3-credentials
+        key: accessKey
+      secretKeySecret:
+        name: my-s3-credentials
+        key: secretKey
+```
+
+#### AWS S3 with IAM Assume Role
+
+> v3.6 and after
+
+You can use an [IAM role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) for temporary access.
+
+With the bucket and policy described above, create an IAM role and add the policy:
+
+```bash
+aws iam create-role --role-name $mybucket-role
+aws iam put-role-policy --role-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
+```
+
+Retrieve the role credentials:
+
+```bash
+aws sts assume-role --role-arn arn:aws:iam::012345678901:role/$mybucket-role
+```
+
+Configure an artifact with the credentials:
+
+```yaml
+artifacts:
+  - name: my-output-artifact
+    path: /my-output-artifact
+    s3:
+      endpoint: s3.amazonaws.com
+      bucket: my-s3-bucket
+      key: path/in/bucket/my-output-artifact.tgz
+      # The following fields are secret selectors.
+      # They reference the k8s secret named 'my-s3-credentials'.
+      # This secret is expected to have the keys 'accessKey', 'secretKey', and 'sessionToken',
+      # containing the base64 encoded credentials to the bucket.
+      accessKeySecret:
+        name: my-s3-credentials
+        key: accessKey
+      secretKeySecret:
+        name: my-s3-credentials
+        key: secretKey
+      sessionTokenSecret:
+        name: my-s3-credentials
+        key: sessionToken
+```
+
+!!! Note "Temporary"
+    IAM role credentials are temporary, so you must refresh them periodically via an external mechanism.
+
+### AWS S3 with S3 Access Grants
+
+> v3.6 and after
+
+You can use [S3 Access Grants](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants.html) for temporary, reduced scope access.
+Follow the [AWS guide](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-get-started.html) to set this up in your AWS account and retrieve access grant credentials.
+
+Configure an artifact with the access grant credentials:
+
+```yaml
+artifacts:
+  - name: my-output-artifact
+    path: /my-output-artifact
+    s3:
+      endpoint: s3.amazonaws.com
+      bucket: my-s3-bucket
+      key: path/in/bucket/my-output-artifact.tgz
+      # The following fields are secret selectors.
+      # They reference the k8s secret named 'my-s3-credentials'.
+      # This secret is expected to have the keys 'accessKey', 'secretKey', and 'sessionToken',
+      # containing the base64 encoded credentials to the bucket.
+      accessKeySecret:
+        name: my-s3-credentials
+        key: accessKey
+      secretKeySecret:
+        name: my-s3-credentials
+        key: secretKey
+      sessionTokenSecret:
+        name: my-s3-credentials
+        key: sessionToken
+```
+
+!!! Note "Temporary"
+    S3 Access Grants are temporary, so you must refresh them periodically via an external mechanism.
 
 ## Configuring GCS (Google Cloud Storage)
 
