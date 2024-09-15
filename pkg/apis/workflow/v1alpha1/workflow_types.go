@@ -823,8 +823,7 @@ const (
 )
 
 func (tmpl *Template) GetScriptSourcePath() string {
-	extension := tmpl.Script.Extension
-	if len(extension) != 0 {
+	if tmpl.Script != nil && len(tmpl.Script.Extension) != 0 {
 		return executorScriptSourcePath + "." + tmpl.Script.Extension
 	} else {
 		return executorScriptSourcePath

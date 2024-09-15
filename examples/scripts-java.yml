@@ -26,8 +26,8 @@ spec:
   - name: gen-random-int
     script:
       image: eclipse-temurin:22.0.2_9-jdk
-      command: [java]
-      extension: java
+      command: [java] # the Java interpreter requires files to end in `.java`
+      extension: java # the file will now end in `.java`
       source: |
         import java.util.*;
 

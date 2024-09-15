@@ -26,8 +26,8 @@ spec:
   - name: gen-random-int
     script:
       image: virtuslab/scala-cli:1.5.0
-      command: [scala-cli]
-      extension: sc
+      command: [scala-cli] # the scala-cli requires file to end in either `.scala` or `.sc`
+      extension: sc # the file will now end in `.sc`
       source: |
         import scala.util.Random
         println(Random.between(0, 100))

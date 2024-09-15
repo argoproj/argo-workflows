@@ -1,6 +1,6 @@
 # Scripts And Results
 
-Often, you just want a template that executes a script specified as a here-script (also known as a `here document`) in the workflow spec. This example shows how to do that:
+You can use a `script` template to execute an inline script (also known as a ["here document"](https://en.wikipedia.org/wiki/Here_document)):
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -62,7 +62,7 @@ spec:
   - name: gen-random-scala
     script:
       image: virtuslab/scala-cli:1.5.0
-      command: [scala-cli] # the scala-cli requires file to end in either `.scala` or `.sc`
+      command: [scala-cli] # the scala-cli requires files to end in either `.scala` or `.sc`
       extension: sc # the file will now end in `.sc`
       source: |
         import scala.util.Random

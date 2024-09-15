@@ -3088,8 +3088,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	if len(tmpl.Script.Source) == 0 {
 		woc.log.Warn("'script.source' is empty, suggest change template into 'container'")
 	} else {
-		scriptSourcePath := tmpl.GetScriptSourcePath()
-		mainCtr.Args = append(mainCtr.Args, scriptSourcePath)
+		mainCtr.Args = append(mainCtr.Args, tmpl.GetScriptSourcePath())
 	}
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
