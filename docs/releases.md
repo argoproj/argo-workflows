@@ -58,4 +58,4 @@ Note that Kubernetes [is backward compatible with clients](https://github.com/ku
 The caveats with newer k8s versions are possible changes to experimental APIs and unused new features.
 Argo uses stable Kubernetes APIs such as Pods and ConfigMaps; see the Controller and Server RBAC of your [installation](installation.md) for a full list.
 
-The `main` branch is currently [tested on Kubernetes 1.28](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/ci-build.yaml#L218) and [1.31](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/ci-build.yaml#L250).
+The `main` branch is currently [tested on Kubernetes 1.28](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/ci-build.yaml#L228) and [1.31](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/ci-build.yaml#L263).
