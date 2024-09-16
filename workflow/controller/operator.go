@@ -3522,63 +3522,95 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 
 func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {
 	replaceMap := make(map[string]string)
-	var newName string
+	err := fillReplaceMap(replaceMap, item, "item")
+	if err != nil {
+		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d]: %v", index, err)
+	}
 
+	var newName string
 	switch item.GetType() {
-	case wfv1.String, wfv1.Number, wfv1.Bool:
-		replaceMap["item"] = fmt.Sprintf("%v", item)
-		newName = generateNodeName(name, index, item)
 	case wfv1.Map:
-		// Handle the case when withItems is a list of maps.
-		// vals holds stringified versions of the map items which are incorporated as part of the step name.
+		// nameParts holds stringified versions of the map items which are incorporated as part of the step name.
 		// For example if the item is: {"name": "jesse","group":"developer"}
 		// the vals would be: ["name:jesse", "group:developer"]
 		// This would eventually be part of the step name (group:developer,name:jesse)
-		vals := make([]string, 0)
-		mapVal := item.GetMapVal()
-		for itemKey, itemVal := range mapVal {
-			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
-
+		nameParts := make([]string, 0)
+		for k, v := range replaceMap {
+			k = strings.TrimPrefix(k, "item.")
+			nameParts = append(nameParts, fmt.Sprintf("%s:%s", k, v))
 		}
-		jsonByteVal, err := json.Marshal(mapVal)
+
+		jsonByteVal, err := json.Marshal(item.GetMapVal())
 		if err != nil {
 			return "", errors.InternalWrapError(err)
 		}
 		replaceMap["item"] = string(jsonByteVal)
 
 		// sort the values so that the name is deterministic
-		sort.Strings(vals)
-		newName = generateNodeName(name, index, strings.Join(vals, ","))
+		sort.Strings(nameParts)
+		newName = generateNodeName(name, index, strings.Join(nameParts, ","))
 	case wfv1.List:
-		listVal := item.GetListVal()
-		byteVal, err := json.Marshal(listVal)
+		byteVal, err := json.Marshal(item.GetListVal())
 		if err != nil {
 			return "", errors.InternalWrapError(err)
 		}
+
 		replaceMap["item"] = string(byteVal)
-		newName = generateNodeName(name, index, listVal)
+		newName = generateNodeName(name, index, item.GetListVal())
 	default:
-		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
+		newName = generateNodeName(name, index, item)
 	}
+
 	var newStepStr string
 	// If when is not parameterised and evaluated to false, we are not executing nor resolving artifact,
 	// we allow parameter substitution to be Unresolved
 	// The parameterised when will get handle by the task-expansion
 	proceed, err := shouldExecute(whenCondition)
-	if err == nil && !proceed {
-		newStepStr, err = tmpl.Replace(replaceMap, true)
-	} else {
-		newStepStr, err = tmpl.Replace(replaceMap, false)
-	}
+	newStepStr, err = tmpl.Replace(replaceMap, err == nil && !proceed)
 	if err != nil {
 		return "", err
 	}
+
 	err = json.Unmarshal([]byte(newStepStr), &obj)
 	if err != nil {
 		return "", errors.InternalWrapError(err)
 	}
 	return newName, nil
+}
+
+func fillReplaceMap(rMap map[string]string, item wfv1.Item, parentKey string) error {
+	switch item.GetType() {
+	case wfv1.String, wfv1.Number, wfv1.Bool:
+		rMap[parentKey] = fmt.Sprintf("%v", item)
+
+	case wfv1.Map:
+		// Handle the case when withItems is a list of maps.
+		mapVal := item.GetMapVal()
+		for itemKey, itemVal := range mapVal {
+			key := fmt.Sprintf("%s.%s", parentKey, itemKey)
+			rMap[key] = fmt.Sprintf("%v", itemVal)
+
+			if err := fillReplaceMap(rMap, itemVal, key); err != nil {
+				return err
+			}
+		}
+
+	case wfv1.List:
+		listVal := item.GetListVal()
+		for i, listItem := range listVal {
+			key := fmt.Sprintf("%s.%d", parentKey, i)
+			rMap[key] = fmt.Sprintf("%v", listItem)
+
+			if err := fillReplaceMap(rMap, listItem, key); err != nil {
+				return err
+			}
+		}
+
+	default:
+		return fmt.Errorf("expected string, number, list, or map. received: %v", item)
+	}
+
+	return nil
 }
 
 func generateNodeName(name string, index int, desc interface{}) string {
