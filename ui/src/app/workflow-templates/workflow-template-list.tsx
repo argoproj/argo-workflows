@@ -22,7 +22,7 @@ import {Pagination, parseLimit} from '../shared/pagination';
 import {ScopedLocalStorage} from '../shared/scoped-local-storage';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {WorkflowTemplateCreator} from './workflow-template-creator';
 import {WorkflowTemplateFilters} from './workflow-template-filters';
 
@@ -40,7 +40,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     const savedOptions = storage.getItem('paginationLimit', 0);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [namePattern, setNamePattern] = useState('');
     const [labels, setLabels] = useState([]);
@@ -59,7 +59,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     useEffect(
         () =>
             history.push(
-                historyUrl('workflow-templates' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel
                 })

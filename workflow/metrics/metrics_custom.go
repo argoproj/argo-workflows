@@ -162,7 +162,7 @@ func (m *Metrics) ensureBaseMetric(metricSpec *wfv1.Prometheus, ownerKey string)
 
 func (m *Metrics) UpsertCustomMetric(ctx context.Context, metricSpec *wfv1.Prometheus, ownerKey string, valueFunc RealTimeValueFunc) error {
 	if !IsValidMetricName(metricSpec.Name) {
-		return fmt.Errorf(invalidMetricNameError)
+		return fmt.Errorf("%s", invalidMetricNameError)
 	}
 	baseMetric, err := m.ensureBaseMetric(metricSpec, ownerKey)
 	if err != nil {

@@ -134,7 +134,6 @@ func TestExistsInTar(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		tc := tc
 		t.Run("source path "+tc.sourcePath, func(t *testing.T) {
 			t.Parallel()
 			tarReader := newTarReader(t, tc.files)
