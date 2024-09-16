@@ -622,7 +622,6 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 		{Limit: 0, Burst: 1}: false,
 		{Limit: 1, Burst: 1}: false,
 	} {
-		limit := limit
 		t.Run(fmt.Sprintf("%v", limit), func(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			cancel, controller := newController(wf, func(c *WorkflowController) {

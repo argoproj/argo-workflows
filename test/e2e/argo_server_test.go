@@ -338,14 +338,14 @@ func (s *ArgoServerSuite) TestOauth() {
 
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
-	s.T().Run("Bearer", func(t *testing.T) {
+	s.Run("Bearer", func() {
 		s.bearerToken = "test-token"
 		defer func() { s.bearerToken = token }()
 		s.e().GET("/api/v1/workflows/argo").
 			Expect().
 			Status(401)
 	})
-	s.T().Run("Basic", func(t *testing.T) {
+	s.Run("Basic", func() {
 		s.username = "garbage"
 		defer func() { s.username = "" }()
 		s.e().GET("/api/v1/workflows/argo").

@@ -2259,7 +2259,6 @@ func TestSidecarResourceLimits(t *testing.T) {
 	require.NoError(t, err)
 	var waitCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
-		ctr := ctr
 		if ctr.Name == "wait" {
 			waitCtr = &ctr
 			break
