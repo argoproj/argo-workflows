@@ -42,7 +42,8 @@ Otherwise, we typically release every two weeks:
 
 | Argo Workflows \ Kubernetes | 1.28 | 1.29 | 1.30 | 1.31 |
 |-----------------------------|------|------|------|------|
-| **3.5**                     | `✓`  | `✓`  | `✓`  | `✓`  |
+| **main**                    | `✓`  | `✓`  | `✓`  | `✓`  |
+| **3.5**                     | `✓`  | `✓`  | `✓`  | `?`  |
 | **3.4**                     | `?`  | `?`  | `?`  | `?`  |
 
 * `✓` Fully supported versions.
