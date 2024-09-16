@@ -43,7 +43,6 @@ func (s *CronSuite) TearDownSuite() {
 
 func (s *CronSuite) TestBasic() {
 	s.Run("TestBasic", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -76,7 +75,6 @@ spec:
 			})
 	})
 	s.Run("TestBasicTimezone", func() {
-		s.T().Parallel()
 		// This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
 		// then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
 		// timezone was the same as the local timezone, a little-used timezone is used.
@@ -115,7 +113,6 @@ spec:
 			})
 	})
 	s.Run("TestSuspend", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -147,7 +144,6 @@ spec:
 			})
 	})
 	s.Run("TestResume", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -179,7 +175,6 @@ spec:
 			})
 	})
 	s.Run("TestBasicForbid", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -213,7 +208,6 @@ spec:
 			})
 	})
 	s.Run("TestBasicAllow", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -248,7 +242,6 @@ spec:
 			})
 	})
 	s.Run("TestBasicReplace", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -283,7 +276,6 @@ spec:
 			})
 	})
 	s.Run("TestSuccessfulJobHistoryLimit", func() {
-		s.T().Parallel()
 		var listOptions v1.ListOptions
 		wfInformerListOptionsFunc(&listOptions, "test-cron-wf-succeed-1")
 		s.Given().
@@ -318,7 +310,6 @@ spec:
 			})
 	})
 	s.Run("TestFailedJobHistoryLimit", func() {
-		s.T().Parallel()
 		var listOptions v1.ListOptions
 		wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-1")
 		s.Given().
@@ -354,7 +345,6 @@ spec:
 			})
 	})
 	s.Run("TestStoppingConditionWithSucceeded", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -392,7 +382,6 @@ spec:
 			})
 	})
 	s.Run("TestStoppingConditionWithFailed", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -427,7 +416,6 @@ spec:
 			})
 	})
 	s.Run("TestMultipleWithTimezone", func() {
-		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow

@@ -21,7 +21,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {CronWorkflowCreator} from './cron-workflow-creator';
 import {CronWorkflowFilters} from './cron-workflow-filters';
 import {PrettySchedule} from './pretty-schedule';
@@ -36,7 +36,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
-    const [namespace, setNamespace] = useState<string>(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [labels, setLabels] = useState<string[]>([]);
     const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
@@ -55,7 +55,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     useEffect(
         () =>
             history.push(
-                historyUrl('cron-workflows' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel
                 })
