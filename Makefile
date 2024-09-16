@@ -50,11 +50,15 @@ endif
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
-UI                    ?= false # start the UI
+UI                    ?= false # start the UI with HTTP
+UI_SECURE             ?= false # start the UI with HTTPS
 API                   ?= $(UI) # start the Argo Server
 TASKS                 := controller
 ifeq ($(API),true)
 TASKS                 := controller server
+endif
+ifeq ($(UI_SECURE),true)
+TASKS                 := controller server ui
 endif
 ifeq ($(UI),true)
 TASKS                 := controller server ui
@@ -563,7 +567,7 @@ endif
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) PROFILE=$(PROFILE) kit $(TASKS)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) ARGO_UI_SECURE=$(UI_SECURE) PROFILE=$(PROFILE) kit $(TASKS)
 endif
 
 .PHONY: wait

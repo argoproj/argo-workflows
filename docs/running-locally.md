@@ -154,6 +154,24 @@ To test SSO integration, use `PROFILE=sso`:
 make start UI=true PROFILE=sso
 ```
 
+## TLS
+
+By default, `make start` will start Argo in [plain text mode](./tls.md#plain-text).
+To simulate a TLS proxy in front of Argo, use `UI_SECURE=true` (which implies `UI=true`):
+
+```bash
+make start UI_SECURE=true
+```
+
+To start Argo in [encrypted mode](./tls.md#encrypted), use `SECURE=true`, which can be optionally combined with `UI_SECURE=true`:
+
+```bash
+make start SECURE=true UI_SECURE=true
+```
+
+Combining `UI_SECURE=true` and `PROFILE=sso` currently requires manually changing the `redirectUrl` here:
+https://github.com/argoproj/argo-workflows/blob/29ea3518a30b2b605290d0ba38f95bfb75a2901f/manifests/quick-start/sso/overlays/workflow-controller-configmap.yaml#L15
+
 ### Running E2E tests locally
 
 Start up Argo Workflows using the following:
@@ -205,6 +223,34 @@ Tests often fail: that's good. To diagnose failure:
   logged at `level=error`?
 
 If tests run slowly or time out, factory reset your Kubernetes cluster.
+
+### Debugging using Visual Studio Code
+
+When using the Dev Container with VSCode, add the following launch configuration to `.vscode/launch.json`:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to argo server",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": "argo"
+     },
+     {
+      "name": "Attach to workflow controller",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": "workflow-controller"
+     }
+  ]
+}
+```
+
+This will allow you to attach to the `argo` and/or `workflow-controller` processes and start a debug session, which you can use to inspect variables and set breakpoints.
 
 ## Committing
 
