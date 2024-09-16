@@ -7,10 +7,11 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
 const isProd = process.env.NODE_ENV === 'production';
-const proxyConf = {
-    target: isProd ? '' : 'http://localhost:2746',
-    secure: false
-};
+let proxyTarget = '';
+if (!isProd) {
+    const isSecure = process.env.ARGO_SECURE === 'true';
+    proxyTarget = `${isSecure ? 'https' : 'http'}://localhost:2746`;
+}
 
 console.log(`Bundling for ${isProd ? 'production' : 'development'}...`);
 
@@ -99,6 +100,7 @@ const config = {
     ],
 
     devServer: {
+        server: process.env.ARGO_UI_SECURE === 'true' ? 'https' : 'http',
         // this needs to be disabled to allow EventSource to work
         compress: false,
         historyApiFallback: {
@@ -107,15 +109,14 @@ const config = {
         headers: {
             'X-Frame-Options': 'SAMEORIGIN'
         },
-        proxy: {
-            '/api/v1': proxyConf,
-            '/artifact-files': proxyConf,
-            '/artifacts': proxyConf,
-            '/input-artifacts': proxyConf,
-            '/artifacts-by-uid': proxyConf,
-            '/input-artifacts-by-uid': proxyConf,
-            '/oauth2': proxyConf
-        }
+        proxy: [
+            {
+                context: ['/api/v1', '/artifact-files', '/artifacts', '/input-artifacts', '/artifacts-by-uid', '/input-artifacts-by-uid', '/oauth2'],
+                target: proxyTarget,
+                secure: false,
+                xfwd: true // add x-forwarded-* headers to simulate real-world reverse proxy servers
+            }
+        ]
     }
 };
 
