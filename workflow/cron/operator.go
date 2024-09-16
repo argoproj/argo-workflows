@@ -228,7 +228,6 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 
 	labelsStr, err := json.Marshal(&cron.Labels)
 	if err != nil {
-		// We shouldn't hit this
 		return false, err
 	}
 
