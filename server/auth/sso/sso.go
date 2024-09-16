@@ -342,11 +342,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	})
 	redirect := s.baseHRef
 
-	proto := "http"
-	if s.secure {
-		proto = "https"
-	}
-	prefix := fmt.Sprintf("%s://%s%s", proto, r.Host, s.baseHRef)
+	prefix := s.getRedirectUrlPrefix(r)
 
 	if strings.HasPrefix(cookie.Value, prefix) {
 		redirect = cookie.Value
@@ -376,14 +372,26 @@ func (s *sso) getRedirectUrl(r *http.Request) string {
 	if s.config.RedirectURL != "" {
 		return s.config.RedirectURL
 	}
+	return fmt.Sprintf("%soauth2/callback", s.getRedirectUrlPrefix(r))
+}
 
+func (s *sso) getRedirectUrlPrefix(r *http.Request) string {
 	proto := "http"
 
-	if r.URL.Scheme != "" {
+	// Get protocol from the X-Forwarded-Proto header if set to support running Argo behind a TLS termination proxy
+	if r.Header.Get("X-Forwarded-Proto") != "" {
+		proto = r.Header.Get("X-Forwarded-Proto")
+	} else if r.URL != nil && r.URL.Scheme != "" {
 		proto = r.URL.Scheme
 	} else if s.secure {
 		proto = "https"
 	}
 
-	return fmt.Sprintf("%s://%s%soauth2/callback", proto, r.Host, s.baseHRef)
+	// As above, get host from X-Forwarded-Host if set to support proxies
+	host := r.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		host = r.Host
+	}
+
+	return fmt.Sprintf("%s://%s%s", proto, host, s.baseHRef)
 }

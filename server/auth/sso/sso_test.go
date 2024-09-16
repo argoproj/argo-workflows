@@ -2,6 +2,7 @@ package sso
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -153,4 +154,83 @@ func TestGetSessionExpiry(t *testing.T) {
 		SessionExpiry: metav1.Duration{Duration: 5 * time.Hour},
 	}
 	assert.Equal(t, 5*time.Hour, config.GetSessionExpiry())
+}
+
+func TestGetRedirectUrlPrefix(t *testing.T) {
+	tests := []struct {
+		name           string
+		secure         bool
+		baseHRef       string
+		request        *http.Request
+		expectedPrefix string
+	}{
+		{
+			name:     "secure with X-Forwarded-Proto and X-Forwarded-Host",
+			secure:   true,
+			baseHRef: "/",
+			request: &http.Request{
+				Header: http.Header{
+					"X-Forwarded-Proto": []string{"https"},
+					"X-Forwarded-Host":  []string{"example.com"},
+				},
+				Host: "example.com",
+			},
+			expectedPrefix: "https://example.com/",
+		},
+		{
+			name:     "insecure with X-Forwarded-Proto and X-Forwarded-Host",
+			secure:   false,
+			baseHRef: "/",
+			request: &http.Request{
+				Header: http.Header{
+					"X-Forwarded-Proto": []string{"http"},
+					"X-Forwarded-Host":  []string{"example.com"},
+				},
+				Host: "example.com",
+			},
+			expectedPrefix: "http://example.com/",
+		},
+		{
+			name:     "secure without X-Forwarded-*",
+			secure:   true,
+			baseHRef: "/",
+			request: &http.Request{
+				Host: "example.com",
+			},
+			expectedPrefix: "https://example.com/",
+		},
+		{
+			name:     "insecure without X-Forwarded-*",
+			secure:   false,
+			baseHRef: "/",
+			request: &http.Request{
+				Host: "example.com",
+			},
+			expectedPrefix: "http://example.com/",
+		},
+		{
+			name:     "with baseHRef",
+			secure:   true,
+			baseHRef: "/base/",
+			request: &http.Request{
+				Header: http.Header{
+					"X-Forwarded-Proto": []string{"https"},
+					"X-Forwarded-Host":  []string{"example.com"},
+				},
+				Host: "example.com",
+			},
+			expectedPrefix: "https://example.com/base/",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &sso{
+				secure:   tt.secure,
+				baseHRef: tt.baseHRef,
+			}
+			prefix := s.getRedirectUrlPrefix(tt.request)
+			assert.Equal(t, tt.expectedPrefix, prefix)
+		})
+	}
 }
