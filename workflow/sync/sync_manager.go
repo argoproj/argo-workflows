@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -223,17 +222,9 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			}
 
 			for _, holderKey := range holding.Holders {
-				logKey := ""
-				if v1alpha1.CheckHolderKeyVersion(holderKey) == v1alpha1.HoldingNameV1 {
-					resourceKey := getResourceKey(wf.Namespace, wf.Name, holderKey)
-					logKey = resourceKey
-					syncLockHolder.release(resourceKey)
-				} else {
-					logKey = holderKey
-					syncLockHolder.release(holderKey)
-				}
+				syncLockHolder.release(holderKey)
 				wf.Status.Synchronization.Semaphore.LockReleased(holderKey, holding.Semaphore)
-				log.Infof("%s released a lock from %s", logKey, holding.Semaphore)
+				log.Infof("%s released a lock from %s", holderKey, holding.Semaphore)
 			}
 		}
 
@@ -256,17 +247,9 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 
-			key := ""
-			if v1alpha1.CheckHolderKeyVersion(holding.Holder) == v1alpha1.HoldingNameV1 {
-				resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
-				key = resourceKey
-			} else {
-				key = holding.Holder
-			}
-
-			syncLockHolder.release(key)
+			syncLockHolder.release(holding.Holder)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
-			log.Infof("%s released a lock from %s", key, holding.Mutex)
+			log.Infof("%s released a lock from %s", holding.Holder, holding.Mutex)
 		}
 
 		// Remove the pending Workflow level mutex keys

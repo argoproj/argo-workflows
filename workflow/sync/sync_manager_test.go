@@ -1010,6 +1010,12 @@ func TestV2Mutex(t *testing.T) {
 	})
 }
 
+// GetHoldingNameV1 legacy code to get holding name.
+func GetHoldingNameV1(holderKey string) string {
+	items := strings.Split(holderKey, "/")
+	return items[len(items)-1]
+}
+
 func TestCheckHolderVersion(t *testing.T) {
 
 	t.Run("CheckHolderKeyWithNodeName", func(t *testing.T) {
@@ -1021,7 +1027,7 @@ func TestCheckHolderVersion(t *testing.T) {
 		version := v1alpha1.CheckHolderKeyVersion(keyv2)
 		assert.Equal(wfv1.HoldingNameV2, version)
 
-		keyv1 := wfv1.GetHoldingNameV1(key)
+		keyv1 := GetHoldingNameV1(key)
 		version = v1alpha1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
 
@@ -1036,7 +1042,7 @@ func TestCheckHolderVersion(t *testing.T) {
 		version := v1alpha1.CheckHolderKeyVersion(keyv2)
 		assert.Equal(wfv1.HoldingNameV2, version)
 
-		keyv1 := wfv1.GetHoldingNameV1(key)
+		keyv1 := GetHoldingNameV1(key)
 		version = v1alpha1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
 	})

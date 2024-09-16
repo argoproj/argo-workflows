@@ -3875,13 +3875,8 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 	return false
 }
 
-func GetHoldingNameV1(holderKey string) string {
-	items := strings.Split(holderKey, "/")
-	return items[len(items)-1]
-}
-
-// wf.Namespace/wf.Name
-// or wf.Namespace/wf.Name/nodeName
+// GetHoldingName returns holding names without
+// any splitting of strings.
 func GetHoldingName(holderKey string) string {
 	return holderKey
 }
