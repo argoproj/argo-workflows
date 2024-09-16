@@ -957,59 +957,6 @@ func TestMutexMigration(t *testing.T) {
 	})
 }
 
-func TestV2Mutex(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-	kube := fake.NewSimpleClientset()
-
-	syncLimitFunc := GetSyncLimitFunc(kube)
-
-	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-		// nextKey = key
-	}, WorkflowExistenceFunc)
-
-	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
-
-	t.Run("AcquireWorks", func(t *testing.T) {
-		wfMutex1 := wfMutex.DeepCopy()
-		wfMutex1.Name = "test1"
-		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
-
-		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex1, wfMutex1.Name, wfMutex.Spec.Synchronization)
-		require.NoError(err)
-		assert.True(status)
-		assert.Len(concurrenyMgr.syncLockMap, 1)
-
-		lockName, err := GetLockName(wfMutex1.Spec.Synchronization, wfMutex1.Namespace)
-		require.NoError(err)
-		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
-		require.True(found)
-
-		holders := sem.getCurrentHolders()
-		assert.Len(holders, 1)
-
-	})
-
-	t.Run("ReleaseWorks", func(t *testing.T) {
-		wfMutex2 := wfMutex.DeepCopy()
-		wfMutex2.Name = "test2"
-		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
-		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex2, wfMutex2.Name, wfMutex.Spec.Synchronization)
-		require.NoError(err)
-		assert.True(status)
-		assert.Len(concurrenyMgr.syncLockMap, 1)
-		// resuse data from previous test
-		concurrenyMgr.Release(wfMutex2, wfMutex2.Name, wfMutex.Spec.Synchronization)
-
-		lockName, err := GetLockName(wfMutex2.Spec.Synchronization, wfMutex2.Namespace)
-		require.NoError(err)
-		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
-		require.True(found)
-		holders := sem.getCurrentHolders()
-		assert.Empty(holders)
-	})
-}
-
 // GetHoldingNameV1 legacy code to get holding name.
 func GetHoldingNameV1(holderKey string) string {
 	items := strings.Split(holderKey, "/")

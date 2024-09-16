@@ -302,17 +302,6 @@ func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	return key
 }
 
-// DEPRECATED: To be removed in 3.7
-// This function (incorrectly) tries to reconstruct the holderKey.
-// the new holderKey provides enough information that reconstruction is not needed.
-func getResourceKey(namespace, wfName, resourceName string) string {
-	resourceKey := fmt.Sprintf("%s/%s", namespace, wfName)
-	if resourceName != wfName {
-		resourceKey = fmt.Sprintf("%s/%s", resourceKey, resourceName)
-	}
-	return resourceKey
-}
-
 func (cm *Manager) getCurrentLockHolders(lockName string) []string {
 	if concurrency, ok := cm.syncLockMap[lockName]; ok {
 		return concurrency.getCurrentHolders()

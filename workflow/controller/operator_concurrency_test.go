@@ -1050,8 +1050,6 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 }
 
 func TestWorkflowMemoizationWithMutex(t *testing.T) {
-	// This is needed because this test explicitly checks the behaviour
-	// of Holding
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
