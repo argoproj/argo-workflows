@@ -3787,28 +3787,6 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 	return true
 }
 
-// GetHolderKeyVersion returns the holder version to use after
-// checking with appropriate environment variable.
-func GetHolderKeyVersion() HoldingNameVersion {
-	switch os.Getenv("HOLDER_KEY_VERSION") {
-	case "v2":
-		return HoldingNameV2
-	default:
-		return HoldingNameV1
-	}
-}
-
-// GetHoldingName returns the appropriate holding name dependent on
-// the `HOLDER_KEY_VERSION` environment variable.
-func GetHoldingName(holderKey string) string {
-	switch GetHolderKeyVersion() {
-	case HoldingNameV2:
-		return GetHoldingNameV2(holderKey)
-	default:
-		return GetHoldingNameV1(holderKey)
-	}
-}
-
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
 	holdingName := GetHoldingName(holderKey)
@@ -3904,7 +3882,7 @@ func GetHoldingNameV1(holderKey string) string {
 
 // wf.Namespace/wf.Name
 // or wf.Namespace/wf.Name/nodeName
-func GetHoldingNameV2(holderKey string) string {
+func GetHoldingName(holderKey string) string {
 	return holderKey
 }
 

@@ -1052,7 +1052,6 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 func TestWorkflowMemoizationWithMutex(t *testing.T) {
 	// This is needed because this test explicitly checks the behaviour
 	// of Holding
-	t.Setenv("HOLDER_KEY_VERSION", "v1")
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1095,6 +1094,7 @@ spec:
           configMap:
             name: cache-example-steps-simple
     `)
+	wf.Name = "example-steps-simple-gas12"
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -1104,7 +1104,7 @@ spec:
 
 	holdingJobs := make(map[string]string)
 	for _, node := range woc.wf.Status.Nodes {
-		holdingJobs[node.ID] = node.DisplayName
+		holdingJobs[fmt.Sprintf("%s/%s/%s", wf.Namespace, wf.Name, node.ID)] = node.DisplayName
 	}
 
 	// Check initial status: job-1 acquired the lock

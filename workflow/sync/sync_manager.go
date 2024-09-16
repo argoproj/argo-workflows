@@ -67,6 +67,13 @@ func (cm *Manager) CheckWorkflowExistence() {
 	}
 }
 
+func getUpgradedKey(wf *wfv1.Workflow, key string) string {
+	if wfv1.CheckHolderKeyVersion(key) == wfv1.HoldingNameV1 {
+		return getHolderKey(wf, key)
+	}
+	return key
+}
+
 func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 	for _, wf := range wfs {
 		if wf.Status.Synchronization == nil {
@@ -87,16 +94,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 				}
 
 				for _, holders := range holding.Holders {
-					var key string
-					if v1alpha1.GetHolderKeyVersion() == v1alpha1.HoldingNameV2 {
-						if v1alpha1.CheckHolderKeyVersion(holders) == v1alpha1.HoldingNameV1 {
-							key = getHolderKey(&wf, holders)
-						} else {
-							key = holders
-						}
-					} else {
-						key = getResourceKey(wf.Namespace, wf.Name, holders)
-					}
+					key := getUpgradedKey(&wf, holders)
 					if semaphore != nil && semaphore.acquire(key) {
 						log.Infof("Lock acquired by %s from %s", key, holding.Semaphore)
 					}
@@ -112,16 +110,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 				if mutex == nil {
 					mutex := cm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
-						var key string
-						if v1alpha1.GetHolderKeyVersion() == v1alpha1.HoldingNameV2 {
-							if v1alpha1.CheckHolderKeyVersion(holding.Holder) == v1alpha1.HoldingNameV1 {
-								key = getHolderKey(&wf, holding.Holder)
-							} else {
-								key = holding.Holder
-							}
-						} else {
-							key = getResourceKey(wf.Namespace, wf.Name, holding.Holder)
-						}
+						key := getUpgradedKey(&wf, holding.Holder)
 						mutex.acquire(key)
 					}
 					cm.syncLockMap[holding.Mutex] = mutex
@@ -254,12 +243,7 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			if syncLockHolder == nil {
 				continue
 			}
-			var key string
-			if v1alpha1.GetHolderKeyVersion() == v1alpha1.HoldingNameV1 {
-				key = getResourceKey(wf.Namespace, wf.Name, wf.Name)
-			} else {
-				key = getHolderKey(wf, wf.Name)
-			}
+			key := getHolderKey(wf, "")
 			syncLockHolder.removeFromQueue(key)
 		}
 		wf.Status.Synchronization.Semaphore = nil
@@ -291,12 +275,7 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			if syncLockHolder == nil {
 				continue
 			}
-			var key string
-			if v1alpha1.GetHolderKeyVersion() == v1alpha1.HoldingNameV1 {
-				key = getResourceKey(wf.Namespace, wf.Name, wf.Name)
-			} else {
-				key = getHolderKey(wf, wf.Name)
-			}
+			key := getHolderKey(wf, "")
 			syncLockHolder.removeFromQueue(key)
 		}
 		wf.Status.Synchronization.Mutex = nil
