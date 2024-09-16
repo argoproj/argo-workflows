@@ -16,7 +16,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 )
@@ -971,11 +970,11 @@ func TestCheckHolderVersion(t *testing.T) {
 		key := getHolderKey(wfMutex, wfMutex.Name)
 
 		keyv2 := wfv1.GetHoldingName(key)
-		version := v1alpha1.CheckHolderKeyVersion(keyv2)
+		version := wfv1.CheckHolderKeyVersion(keyv2)
 		assert.Equal(wfv1.HoldingNameV2, version)
 
 		keyv1 := GetHoldingNameV1(key)
-		version = v1alpha1.CheckHolderKeyVersion(keyv1)
+		version = wfv1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
 
 	})
@@ -986,11 +985,11 @@ func TestCheckHolderVersion(t *testing.T) {
 
 		key := getHolderKey(wfMutex, "")
 		keyv2 := wfv1.GetHoldingName(key)
-		version := v1alpha1.CheckHolderKeyVersion(keyv2)
+		version := wfv1.CheckHolderKeyVersion(keyv2)
 		assert.Equal(wfv1.HoldingNameV2, version)
 
 		keyv1 := GetHoldingNameV1(key)
-		version = v1alpha1.CheckHolderKeyVersion(keyv1)
+		version = wfv1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
 	})
 }
