@@ -1161,7 +1161,7 @@ func TestMutexMigration(t *testing.T) {
 		foundNodeID := ""
 		for nodeID := range wfMutex3.Status.Nodes {
 			holder := getHolderKey(wfMutex3, nodeID)
-			if holder == getUpgradedKey(wfMutex3, wfMutex3.Status.Synchronization.Mutex.Holding[0].Holder) {
+			if holder == getUpgradedKey(wfMutex3, wfMutex3.Status.Synchronization.Mutex.Holding[0].Holder, TemplateLevel) {
 				foundNodeID = nodeID
 				numFound++
 			}

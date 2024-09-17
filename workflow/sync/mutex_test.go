@@ -107,7 +107,7 @@ status:
     mutex:
       holding:
       - holder: synchronization-wf-level-xxs94
-        mutex: default/mutex/test
+        mutex: default/Mutex/test
 `
 
 func TestMutexLock(t *testing.T) {
