@@ -873,7 +873,7 @@ status:
 
 }
 
-const wfV2MutexMigration = `apiVersion: argoproj.io/v1alpha1
+const wfV2MutexMigrationWorkflowLevel = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: null
@@ -909,6 +909,199 @@ status:
 
 `
 
+const wfV2MutexMigrationTemplateLevel = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-09-17T00:11:53Z"
+  generateName: synchronization-tmpl-level-
+  generation: 5
+  labels:
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/phase: Running
+  name: synchronization-tmpl-level-xvzpt
+  namespace: argo
+  resourceVersion: "10182"
+  uid: f2d4ac34-1495-48ba-8aab-25239880fef3
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: synchronization-tmpl-level-example
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: synchronization-tmpl-level-example
+    outputs: {}
+    steps:
+    - - arguments:
+          parameters:
+          - name: seconds
+            value: '{{item}}'
+        name: synchronization-acquire-lock
+        template: acquire-lock
+        withParam: '["1","2","3","4","5"]'
+  - container:
+      args:
+      - sleep 60; echo acquired lock
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: acquire-lock
+    outputs: {}
+    synchronization:
+      mutex:
+        name: workflow
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "True"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    synchronization-tmpl-level-xvzpt:
+      children:
+      - synchronization-tmpl-level-xvzpt-2018718843
+      displayName: synchronization-tmpl-level-xvzpt
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt
+      name: synchronization-tmpl-level-xvzpt
+      phase: Running
+      progress: 0/5
+      startedAt: "2024-09-17T00:11:53Z"
+      templateName: synchronization-tmpl-level-example
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Steps
+    synchronization-tmpl-level-xvzpt-755731602:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(1:2)
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-755731602
+      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(1:2)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/workflow
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+    synchronization-tmpl-level-xvzpt-928517240:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(0:1)
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server-0
+      id: synchronization-tmpl-level-xvzpt-928517240
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(0:1)
+      phase: Running
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+    synchronization-tmpl-level-xvzpt-1018728496:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(4:5)
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-1018728496
+      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(4:5)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/workflow
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+    synchronization-tmpl-level-xvzpt-2018718843:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      children:
+      - synchronization-tmpl-level-xvzpt-928517240
+      - synchronization-tmpl-level-xvzpt-755731602
+      - synchronization-tmpl-level-xvzpt-4037094368
+      - synchronization-tmpl-level-xvzpt-3632956078
+      - synchronization-tmpl-level-xvzpt-1018728496
+      displayName: '[0]'
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-2018718843
+      name: synchronization-tmpl-level-xvzpt[0]
+      nodeFlag: {}
+      phase: Running
+      progress: 0/5
+      startedAt: "2024-09-17T00:11:53Z"
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: StepGroup
+    synchronization-tmpl-level-xvzpt-3632956078:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(3:4)
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-3632956078
+      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(3:4)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/workflow
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+    synchronization-tmpl-level-xvzpt-4037094368:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(2:3)
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-4037094368
+      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(2:3)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/workflow
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+  phase: Running
+  progress: 0/5
+  startedAt: "2024-09-17T00:11:53Z"
+  synchronization:
+    mutex:
+      holding:
+      - holder: synchronization-tmpl-level-xvzpt-928517240
+        mutex: argo/Mutex/workflow
+      waiting:
+      - holder: argo/synchronization-tmpl-level-xvzpt/synchronization-tmpl-level-xvzpt-928517240
+        mutex: argo/Mutex/workflow
+  taskResultsCompletionStatus:
+    synchronization-tmpl-level-xvzpt-928517240: false
+`
+
 func TestMutexMigration(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
@@ -922,12 +1115,12 @@ func TestMutexMigration(t *testing.T) {
 
 	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 
-	t.Run("RunMigration", func(t *testing.T) {
+	t.Run("RunMigrationWorkflowLevel", func(t *testing.T) {
 		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
-		wfMutex2 := wfv1.MustUnmarshalWorkflow(wfV2MutexMigration)
+		wfMutex2 := wfv1.MustUnmarshalWorkflow(wfV2MutexMigrationWorkflowLevel)
 
 		require.Len(wfMutex2.Status.Synchronization.Mutex.Holding, 1)
-		holderKey := getHolderKey(wfMutex2, wfMutex2.Name)
+		holderKey := getHolderKey(wfMutex2, "")
 		items := strings.Split(holderKey, "/")
 		holdingName := items[len(items)-1]
 		assert.Equal(wfMutex2.Status.Synchronization.Mutex.Holding[0].Holder, holdingName)
@@ -949,7 +1142,50 @@ func TestMutexMigration(t *testing.T) {
 		assert.Equal(holderKey, holders[0])
 
 		// We should already have this lock since we acquired it above
-		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex2, wfMutex2.Name, wfMutex.Spec.Synchronization)
+		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex2, "", wfMutex.Spec.Synchronization)
+		require.NoError(err)
+		// BUG NOT PRESENT: https://github.com/argoproj/argo-workflows/issues/8684
+		assert.True(status)
+	})
+
+	concurrenyMgr = NewLockManager(syncLimitFunc, func(key string) {
+		// nextKey = key
+	}, WorkflowExistenceFunc)
+
+	t.Run("RunMigrationTemplateLevel", func(t *testing.T) {
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfMutex3 := wfv1.MustUnmarshalWorkflow(wfV2MutexMigrationTemplateLevel)
+		require.Len(wfMutex3.Status.Synchronization.Mutex.Holding, 1)
+
+		numFound := 0
+		foundNodeID := ""
+		for nodeID := range wfMutex3.Status.Nodes {
+			holder := getHolderKey(wfMutex3, nodeID)
+			if holder == getUpgradedKey(wfMutex3, wfMutex3.Status.Synchronization.Mutex.Holding[0].Holder) {
+				foundNodeID = nodeID
+				numFound++
+			}
+		}
+		assert.Equal(1, numFound)
+
+		wfs := []wfv1.Workflow{*wfMutex3.DeepCopy()}
+		concurrenyMgr.Initialize(wfs)
+
+		lockName, err := GetLockName(wfMutex3.Spec.Templates[1].Synchronization, wfMutex3.Namespace)
+		require.NoError(err)
+
+		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
+		require.True(found)
+
+		holders := sem.getCurrentHolders()
+		require.Len(holders, 1)
+
+		holderKey := getHolderKey(wfMutex3, foundNodeID)
+
+		// PROVE: bug absent
+		assert.Equal(holderKey, holders[0])
+
+		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex3, foundNodeID, wfMutex.Spec.Synchronization)
 		require.NoError(err)
 		// BUG NOT PRESENT: https://github.com/argoproj/argo-workflows/issues/8684
 		assert.True(status)

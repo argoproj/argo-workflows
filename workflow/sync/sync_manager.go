@@ -68,6 +68,10 @@ func (cm *Manager) CheckWorkflowExistence() {
 
 func getUpgradedKey(wf *wfv1.Workflow, key string) string {
 	if wfv1.CheckHolderKeyVersion(key) == wfv1.HoldingNameV1 {
+
+		if wf.Name == key {
+			return getHolderKey(wf, "")
+		}
 		return getHolderKey(wf, key)
 	}
 	return key
