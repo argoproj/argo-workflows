@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -362,7 +362,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
 	cancel, controller := newController(func(controller *WorkflowController) {
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
-			Spec: wfv1.WorkflowSpec{HostNetwork: pointer.Bool(true)},
+			Spec: wfv1.WorkflowSpec{HostNetwork: ptr.To(true)},
 		}
 	})
 	return cancel, controller
@@ -380,13 +380,13 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 				},
 			},
 			Spec: wfv1.WorkflowSpec{
-				HostNetwork:        pointer.Bool(true),
+				HostNetwork:        ptr.To(true),
 				Entrypoint:         "good_entrypoint",
 				ServiceAccountName: "my_service_account",
 				TTLStrategy: &wfv1.TTLStrategy{
-					SecondsAfterCompletion: pointer.Int32(10),
-					SecondsAfterSuccess:    pointer.Int32(10),
-					SecondsAfterFailure:    pointer.Int32(10),
+					SecondsAfterCompletion: ptr.To(int32(10)),
+					SecondsAfterSuccess:    ptr.To(int32(10)),
+					SecondsAfterFailure:    ptr.To(int32(10)),
 				},
 			},
 		}
@@ -404,12 +404,12 @@ func newControllerWithDefaultsVolumeClaimTemplate() (context.CancelFunc, *Workfl
 					},
 					Spec: apiv1.PersistentVolumeClaimSpec{
 						AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
-						Resources: apiv1.ResourceRequirements{
+						Resources: apiv1.VolumeResourceRequirements{
 							Requests: apiv1.ResourceList{
 								apiv1.ResourceStorage: resource.MustParse("1Mi"),
 							},
 						},
-						StorageClassName: pointer.String("local-path"),
+						StorageClassName: ptr.To("local-path"),
 					},
 				}},
 			},

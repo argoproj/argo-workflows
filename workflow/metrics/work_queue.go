@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/metric"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 const (
@@ -262,7 +262,7 @@ func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.Settable
 		ctx:   m.Ctx,
 		name:  name,
 		inst:  m.AllInstruments[nameWorkersUnfinishedWork],
-		value: pointer.Float64(0.0),
+		value: ptr.To(float64(0.0)),
 	}
 	ud := getQueueUserdata(metric.inst)
 	ud.metrics = append(ud.metrics, metric)
@@ -274,7 +274,7 @@ func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue
 		ctx:   m.Ctx,
 		name:  name,
 		inst:  m.AllInstruments[nameWorkersLongestRunning],
-		value: pointer.Float64(0.0),
+		value: ptr.To(float64(0.0)),
 	}
 	ud := getQueueUserdata(metric.inst)
 	ud.metrics = append(ud.metrics, metric)

@@ -211,8 +211,9 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		log.Infof("Failing for conditions: %s", failSelector)
 		failReqs, _ = failSelector.Requirements()
 	}
-	err := wait.PollImmediateInfinite(envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
-		func() (bool, error) {
+	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+		true,
+		func(ctx context.Context) (bool, error) {
 			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
 			if err == nil {
 				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
@@ -227,7 +228,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 			return false, err
 		})
 	if err != nil {
-		if err == wait.ErrWaitTimeout {
+		if wait.Interrupted(err) {
 			log.Warnf("Waiting for resource %s resulted in timeout due to repeated errors", resourceName)
 		} else {
 			log.Warnf("Waiting for resource %s resulted in error %v", resourceName, err)
