@@ -84,7 +84,7 @@ const (
 	ErrorLevel    SyncLevelType = 3
 )
 
-// legacy keys can be of the form
+// HoldingNameV1 keys can be of the form
 // x where x is a workflow name
 // unfortunately this doesn't differentiate between workflow level keys
 // and template level keys. So upgrading is a bit tricky here.
@@ -117,12 +117,12 @@ func getWorkflowSyncLevelByName(wf *wfv1.Workflow, lockName string) (SyncLevelTy
 		}
 	}
 
-	var firstErr error
+	var lastErr error
 	for _, template := range wf.Spec.Templates {
 		if template.Synchronization != nil {
 			syncLockName, err := GetLockName(template.Synchronization, wf.Namespace)
 			if err != nil {
-				firstErr = err
+				lastErr = err
 				continue
 			}
 			checkName := syncLockName.EncodeName()
@@ -131,10 +131,10 @@ func getWorkflowSyncLevelByName(wf *wfv1.Workflow, lockName string) (SyncLevelTy
 			}
 		}
 	}
-	if firstErr == nil {
-		firstErr = fmt.Errorf("was unable to determine level for %s", lockName)
+	if lastErr == nil {
+		lastErr = fmt.Errorf("was unable to determine level for %s", lockName)
 	}
-	return ErrorLevel, firstErr
+	return ErrorLevel, lastErr
 }
 
 func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
@@ -159,7 +159,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 				for _, holders := range holding.Holders {
 					level, err := getWorkflowSyncLevelByName(&wf, holding.Semaphore)
 					if err != nil {
-						log.Warnf("cannot obtain level for %s", holding.Semaphore)
+						log.Warnf("cannot obtain lock level for '%s' : %v", holding.Semaphore, err)
 						continue
 					}
 					key := getUpgradedKey(&wf, holders, level)
@@ -180,7 +180,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 					if holding.Holder != "" {
 						level, err := getWorkflowSyncLevelByName(&wf, holding.Mutex)
 						if err != nil {
-							log.Warnf("cannot obtain lock level for %s", holding.Mutex)
+							log.Warnf("cannot obtain lock level for '%s' : %v", holding.Mutex, err)
 							continue
 						}
 						key := getUpgradedKey(&wf, holding.Holder, level)

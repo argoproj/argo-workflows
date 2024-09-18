@@ -1110,7 +1110,6 @@ func TestMutexMigration(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
 	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-		// nextKey = key
 	}, WorkflowExistenceFunc)
 
 	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
@@ -1149,7 +1148,6 @@ func TestMutexMigration(t *testing.T) {
 	})
 
 	concurrenyMgr = NewLockManager(syncLimitFunc, func(key string) {
-		// nextKey = key
 	}, WorkflowExistenceFunc)
 
 	t.Run("RunMigrationTemplateLevel", func(t *testing.T) {
@@ -1192,8 +1190,8 @@ func TestMutexMigration(t *testing.T) {
 	})
 }
 
-// GetHoldingNameV1 legacy code to get holding name.
-func GetHoldingNameV1(holderKey string) string {
+// getHoldingNameV1 legacy code to get holding name.
+func getHoldingNameV1(holderKey string) string {
 	items := strings.Split(holderKey, "/")
 	return items[len(items)-1]
 }
@@ -1205,11 +1203,11 @@ func TestCheckHolderVersion(t *testing.T) {
 		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 		key := getHolderKey(wfMutex, wfMutex.Name)
 
-		keyv2 := wfv1.GetHoldingName(key)
+		keyv2 := key
 		version := wfv1.CheckHolderKeyVersion(keyv2)
 		assert.Equal(wfv1.HoldingNameV2, version)
 
-		keyv1 := GetHoldingNameV1(key)
+		keyv1 := getHoldingNameV1(key)
 		version = wfv1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
 
@@ -1220,11 +1218,11 @@ func TestCheckHolderVersion(t *testing.T) {
 		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 
 		key := getHolderKey(wfMutex, "")
-		keyv2 := wfv1.GetHoldingName(key)
+		keyv2 := key
 		version := wfv1.CheckHolderKeyVersion(keyv2)
 		assert.Equal(wfv1.HoldingNameV2, version)
 
-		keyv1 := GetHoldingNameV1(key)
+		keyv1 := getHoldingNameV1(key)
 		version = wfv1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
 	})
