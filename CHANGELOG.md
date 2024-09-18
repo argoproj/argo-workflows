@@ -535,6 +535,7 @@ Full Changelog: [v3.5.10...v3.6.0-rc1](https://github.com/argoproj/argo-workflow
 * 刘达
 * 名白
 
+
 </details>
 
 ## v3.5.10 (2024-08-01)
