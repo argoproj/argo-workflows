@@ -384,7 +384,8 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore.Holding)
-		assert.Equal(t, wf.Name, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+		key := getHolderKey(wf, "")
+		assert.Equal(t, key, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		// Try to acquire again
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
@@ -436,7 +437,8 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf2.Status.Synchronization)
 		assert.NotNil(t, wf2.Status.Synchronization.Semaphore)
-		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+		key = getHolderKey(wf2, "")
+		assert.Equal(t, key, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		concurrenyMgr.ReleaseAll(wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
@@ -475,7 +477,8 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, wf.Name, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+		key := getHolderKey(wf, "")
+		assert.Equal(t, key, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		wf1.Name = "two"
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
@@ -505,7 +508,8 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf1.Status.Synchronization)
 		assert.NotNil(t, wf1.Status.Synchronization.Semaphore)
-		assert.Equal(t, wf1.Name, wf1.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+		key = getHolderKey(wf1, "")
+		assert.Equal(t, key, wf1.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
 		assert.NoError(t, err)
@@ -514,7 +518,8 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf2.Status.Synchronization)
 		assert.NotNil(t, wf2.Status.Synchronization.Semaphore)
-		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+		key = getHolderKey(wf2, "")
+		assert.Equal(t, key, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 	})
 }
 
@@ -543,7 +548,8 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, "semaphore-tmpl-level-xjvln-3448864205", wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+		key := getHolderKey(wf, "semaphore-tmpl-level-xjvln-3448864205")
+		assert.Equal(t, key, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		// Try to acquire again
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -570,7 +576,8 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, "semaphore-tmpl-level-xjvln-1607747183", wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+		key = getHolderKey(wf, "semaphore-tmpl-level-xjvln-1607747183")
+		assert.Equal(t, key, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 	})
 }
 
@@ -870,4 +877,359 @@ status:
 		assert.NotNil(wf.Status.Synchronization.Semaphore)
 	})
 
+}
+
+const wfV2MutexMigrationWorkflowLevel = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: null
+  name: test1
+  namespace: default
+spec:
+  arguments: {}
+  entrypoint: whalesay
+  synchronization:
+    mutex:
+      name: my-mutex
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  finishedAt: null
+  startedAt: null
+  synchronization:
+    mutex:
+      holding:
+      - holder: test1
+        mutex: default/Mutex/my-mutex
+
+`
+
+const wfV2MutexMigrationTemplateLevel = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-09-17T00:11:53Z"
+  generateName: synchronization-tmpl-level-
+  generation: 5
+  labels:
+    workflows.argoproj.io/completed: "false"
+    workflows.argoproj.io/phase: Running
+  name: synchronization-tmpl-level-xvzpt
+  namespace: argo
+  resourceVersion: "10182"
+  uid: f2d4ac34-1495-48ba-8aab-25239880fef3
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: synchronization-tmpl-level-example
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: synchronization-tmpl-level-example
+    outputs: {}
+    steps:
+    - - arguments:
+          parameters:
+          - name: seconds
+            value: '{{item}}'
+        name: synchronization-acquire-lock
+        template: acquire-lock
+        withParam: '["1","2","3","4","5"]'
+  - container:
+      args:
+      - sleep 60; echo acquired lock
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: acquire-lock
+    outputs: {}
+    synchronization:
+      mutex:
+        name: workflow
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "True"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    synchronization-tmpl-level-xvzpt:
+      children:
+      - synchronization-tmpl-level-xvzpt-2018718843
+      displayName: synchronization-tmpl-level-xvzpt
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt
+      name: synchronization-tmpl-level-xvzpt
+      phase: Running
+      progress: 0/5
+      startedAt: "2024-09-17T00:11:53Z"
+      templateName: synchronization-tmpl-level-example
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Steps
+    synchronization-tmpl-level-xvzpt-755731602:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(1:2)
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-755731602
+      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(1:2)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/workflow
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+    synchronization-tmpl-level-xvzpt-928517240:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(0:1)
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server-0
+      id: synchronization-tmpl-level-xvzpt-928517240
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(0:1)
+      phase: Running
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+    synchronization-tmpl-level-xvzpt-1018728496:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(4:5)
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-1018728496
+      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(4:5)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/workflow
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+    synchronization-tmpl-level-xvzpt-2018718843:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      children:
+      - synchronization-tmpl-level-xvzpt-928517240
+      - synchronization-tmpl-level-xvzpt-755731602
+      - synchronization-tmpl-level-xvzpt-4037094368
+      - synchronization-tmpl-level-xvzpt-3632956078
+      - synchronization-tmpl-level-xvzpt-1018728496
+      displayName: '[0]'
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-2018718843
+      name: synchronization-tmpl-level-xvzpt[0]
+      nodeFlag: {}
+      phase: Running
+      progress: 0/5
+      startedAt: "2024-09-17T00:11:53Z"
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: StepGroup
+    synchronization-tmpl-level-xvzpt-3632956078:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(3:4)
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-3632956078
+      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(3:4)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/workflow
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+    synchronization-tmpl-level-xvzpt-4037094368:
+      boundaryID: synchronization-tmpl-level-xvzpt
+      displayName: synchronization-acquire-lock(2:3)
+      finishedAt: null
+      id: synchronization-tmpl-level-xvzpt-4037094368
+      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
+      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(2:3)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2024-09-17T00:11:53Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/workflow
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-xvzpt
+      type: Pod
+  phase: Running
+  progress: 0/5
+  startedAt: "2024-09-17T00:11:53Z"
+  synchronization:
+    mutex:
+      holding:
+      - holder: synchronization-tmpl-level-xvzpt-928517240
+        mutex: argo/Mutex/workflow
+      waiting:
+      - holder: argo/synchronization-tmpl-level-xvzpt/synchronization-tmpl-level-xvzpt-928517240
+        mutex: argo/Mutex/workflow
+  taskResultsCompletionStatus:
+    synchronization-tmpl-level-xvzpt-928517240: false
+`
+
+func TestMutexMigration(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	kube := fake.NewSimpleClientset()
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+
+	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+	}, WorkflowExistenceFunc)
+
+	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+
+	t.Run("RunMigrationWorkflowLevel", func(t *testing.T) {
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfMutex2 := wfv1.MustUnmarshalWorkflow(wfV2MutexMigrationWorkflowLevel)
+
+		require.Len(wfMutex2.Status.Synchronization.Mutex.Holding, 1)
+		holderKey := getHolderKey(wfMutex2, "")
+		items := strings.Split(holderKey, "/")
+		holdingName := items[len(items)-1]
+		assert.Equal(wfMutex2.Status.Synchronization.Mutex.Holding[0].Holder, holdingName)
+
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfs := []wfv1.Workflow{*wfMutex2.DeepCopy()}
+		concurrenyMgr.Initialize(wfs)
+
+		lockName, err := GetLockName(wfMutex2.Spec.Synchronization, wfMutex2.Namespace)
+		require.NoError(err)
+
+		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
+		require.True(found)
+
+		holders := sem.getCurrentHolders()
+		require.Len(holders, 1)
+
+		// PROVE: bug absent
+		assert.Equal(holderKey, holders[0])
+
+		// We should already have this lock since we acquired it above
+		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex2, "", wfMutex.Spec.Synchronization)
+		require.NoError(err)
+		// BUG NOT PRESENT: https://github.com/argoproj/argo-workflows/issues/8684
+		assert.True(status)
+	})
+
+	concurrenyMgr = NewLockManager(syncLimitFunc, func(key string) {
+	}, WorkflowExistenceFunc)
+
+	t.Run("RunMigrationTemplateLevel", func(t *testing.T) {
+		concurrenyMgr.syncLockMap = make(map[string]Semaphore)
+		wfMutex3 := wfv1.MustUnmarshalWorkflow(wfV2MutexMigrationTemplateLevel)
+		require.Len(wfMutex3.Status.Synchronization.Mutex.Holding, 1)
+
+		numFound := 0
+		foundNodeID := ""
+		for nodeID := range wfMutex3.Status.Nodes {
+			holder := getHolderKey(wfMutex3, nodeID)
+			if holder == getUpgradedKey(wfMutex3, wfMutex3.Status.Synchronization.Mutex.Holding[0].Holder, TemplateLevel) {
+				foundNodeID = nodeID
+				numFound++
+			}
+		}
+		assert.Equal(1, numFound)
+
+		wfs := []wfv1.Workflow{*wfMutex3.DeepCopy()}
+		concurrenyMgr.Initialize(wfs)
+
+		lockName, err := GetLockName(wfMutex3.Spec.Templates[1].Synchronization, wfMutex3.Namespace)
+		require.NoError(err)
+
+		sem, found := concurrenyMgr.syncLockMap[lockName.EncodeName()]
+		require.True(found)
+
+		holders := sem.getCurrentHolders()
+		require.Len(holders, 1)
+
+		holderKey := getHolderKey(wfMutex3, foundNodeID)
+
+		// PROVE: bug absent
+		assert.Equal(holderKey, holders[0])
+
+		status, _, _, err := concurrenyMgr.TryAcquire(wfMutex3, foundNodeID, wfMutex.Spec.Synchronization)
+		require.NoError(err)
+		// BUG NOT PRESENT: https://github.com/argoproj/argo-workflows/issues/8684
+		assert.True(status)
+	})
+}
+
+// getHoldingNameV1 legacy code to get holding name.
+func getHoldingNameV1(holderKey string) string {
+	items := strings.Split(holderKey, "/")
+	return items[len(items)-1]
+}
+
+func TestCheckHolderVersion(t *testing.T) {
+
+	t.Run("CheckHolderKeyWithNodeName", func(t *testing.T) {
+		assert := assert.New(t)
+		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		key := getHolderKey(wfMutex, wfMutex.Name)
+
+		keyv2 := key
+		version := wfv1.CheckHolderKeyVersion(keyv2)
+		assert.Equal(wfv1.HoldingNameV2, version)
+
+		keyv1 := getHoldingNameV1(key)
+		version = wfv1.CheckHolderKeyVersion(keyv1)
+		assert.Equal(wfv1.HoldingNameV1, version)
+
+	})
+
+	t.Run("CheckHolderKeyWithoutNodeName", func(t *testing.T) {
+		assert := assert.New(t)
+		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+
+		key := getHolderKey(wfMutex, "")
+		keyv2 := key
+		version := wfv1.CheckHolderKeyVersion(keyv2)
+		assert.Equal(wfv1.HoldingNameV2, version)
+
+		keyv1 := getHoldingNameV1(key)
+		version = wfv1.CheckHolderKeyVersion(keyv1)
+		assert.Equal(wfv1.HoldingNameV1, version)
+	})
 }

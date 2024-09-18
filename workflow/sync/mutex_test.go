@@ -106,7 +106,7 @@ status:
     mutex:
       holding:
       - holder: synchronization-wf-level-xxs94
-        mutex: default/mutex/test
+        mutex: default/Mutex/test
 `
 
 func TestMutexLock(t *testing.T) {
@@ -141,7 +141,7 @@ func TestMutexLock(t *testing.T) {
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
-		assert.Equal(t, wf.Name, wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		assert.Equal(t, getHolderKey(wf, ""), wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		// Try to acquire again
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
@@ -193,7 +193,7 @@ func TestMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf2.Status.Synchronization)
 		assert.NotNil(t, wf2.Status.Synchronization.Mutex)
-		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
+		assert.Equal(t, getHolderKey(wf2, ""), wf2.Status.Synchronization.Mutex.Holding[0].Holder)
 		concurrenyMgr.ReleaseAll(wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
@@ -215,7 +215,8 @@ func TestMutexLock(t *testing.T) {
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
-		assert.Equal(t, wf.Name, wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		expected := getHolderKey(wf, "")
+		assert.Equal(t, expected, wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		// Try to acquire again
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
@@ -270,7 +271,8 @@ func TestMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf2.Status.Synchronization)
 		assert.NotNil(t, wf2.Status.Synchronization.Mutex)
-		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
+		expected = getHolderKey(wf2, "")
+		assert.Equal(t, expected, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
 		concurrenyMgr.ReleaseAll(wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
@@ -394,7 +396,8 @@ func TestMutexTmplLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex)
-		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		expected := getHolderKey(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474")
+		assert.Equal(t, expected, wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		// Try to acquire again
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", tmpl.Synchronization)
@@ -409,7 +412,8 @@ func TestMutexTmplLevel(t *testing.T) {
 		assert.False(t, wfUpdate)
 		assert.False(t, status)
 
-		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		expected = getHolderKey(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474")
+		assert.Equal(t, expected, wf.Status.Synchronization.Mutex.Holding[0].Holder)
 		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex)
@@ -422,7 +426,8 @@ func TestMutexTmplLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex)
-		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-2216915482", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		expected = getHolderKey(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482")
+		assert.Equal(t, expected, wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		assert.NotEqual(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
 		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)

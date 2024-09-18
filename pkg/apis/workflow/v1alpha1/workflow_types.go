@@ -133,6 +133,13 @@ const (
 	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
 )
 
+type HoldingNameVersion int
+
+const (
+	HoldingNameV1 HoldingNameVersion = 1
+	HoldingNameV2 HoldingNameVersion = 2
+)
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -3771,11 +3778,7 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 		return true
@@ -3789,11 +3792,8 @@ func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolder
 
 func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
+
 	if i >= 0 {
 		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
 		ss.Holding[i] = semaphoreHolding
@@ -3864,13 +3864,17 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 	return false
 }
 
+func CheckHolderKeyVersion(holderKey string) HoldingNameVersion {
+	items := strings.Split(holderKey, "/")
+	if len(items) == 2 || len(items) == 3 {
+		return HoldingNameV2
+	}
+	return HoldingNameV1
+}
+
 func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, mutexHolding := ms.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i < 0 {
 		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
 		return true
@@ -3884,11 +3888,7 @@ func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []
 
 func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
 	i, holder := ms.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i >= 0 && holder.Holder == holdingName {
 		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
 		return true
