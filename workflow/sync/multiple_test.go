@@ -10,7 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -329,7 +329,7 @@ func TestPriority(t *testing.T) {
 `)
 		wfhigh := wflow.DeepCopy()
 		wfhigh.Name = "priorityhigh"
-		wfhigh.Spec.Priority = pointer.Int32(5)
+		wfhigh.Spec.Priority = ptr.To(int32(5))
 		wf1 := templatedWorkflow("one",
 			`    mutexes:
        - name: two
