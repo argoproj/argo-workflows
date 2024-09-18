@@ -66,6 +66,77 @@ func (cm *Manager) CheckWorkflowExistence() {
 	}
 }
 
+func getUpgradedKey(wf *wfv1.Workflow, key string, level SyncLevelType) string {
+	if wfv1.CheckHolderKeyVersion(key) == wfv1.HoldingNameV1 {
+		if level == WorkflowLevel {
+			return getHolderKey(wf, "")
+		}
+		return getHolderKey(wf, key)
+	}
+	return key
+}
+
+type SyncLevelType int
+
+const (
+	WorkflowLevel SyncLevelType = 1
+	TemplateLevel SyncLevelType = 2
+	ErrorLevel    SyncLevelType = 3
+)
+
+// HoldingNameV1 keys can be of the form
+// x where x is a workflow name
+// unfortunately this doesn't differentiate between workflow level keys
+// and template level keys. So upgrading is a bit tricky here.
+
+// given a legacy holding name x, namespace y and workflow name z.
+// in the case of a workflow level
+// if x != z
+// upgradedKey := y/z
+// elseif x == z
+// upgradedKey := y/z
+// in the case of a template level
+// if x != z
+// upgradedKey := y/z/x
+// elif x == z
+// upgradedKey := y/z/x
+
+// there is a possibility that
+// a synchronization exists both at the template level
+// and at the workflow level -> impossible to upgrade correctly
+// due to ambiguity. Currently we just assume workflow level.
+func getWorkflowSyncLevelByName(wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
+	if wf.Spec.Synchronization != nil {
+		syncLockName, err := GetLockName(wf.Spec.Synchronization, wf.Namespace)
+		if err != nil {
+			return ErrorLevel, err
+		}
+		checkName := syncLockName.EncodeName()
+		if lockName == checkName {
+			return WorkflowLevel, nil
+		}
+	}
+
+	var lastErr error
+	for _, template := range wf.Spec.Templates {
+		if template.Synchronization != nil {
+			syncLockName, err := GetLockName(template.Synchronization, wf.Namespace)
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			checkName := syncLockName.EncodeName()
+			if lockName == checkName {
+				return TemplateLevel, nil
+			}
+		}
+	}
+	if lastErr == nil {
+		lastErr = fmt.Errorf("was unable to determine level for %s", lockName)
+	}
+	return ErrorLevel, lastErr
+}
+
 func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 	for _, wf := range wfs {
 		if wf.Status.Synchronization == nil {
@@ -86,11 +157,17 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 				}
 
 				for _, holders := range holding.Holders {
-					resourceKey := getResourceKey(wf.Namespace, wf.Name, holders)
-					if semaphore != nil && semaphore.acquire(resourceKey) {
-						log.Infof("Lock acquired by %s from %s", resourceKey, holding.Semaphore)
+					level, err := getWorkflowSyncLevelByName(&wf, holding.Semaphore)
+					if err != nil {
+						log.Warnf("cannot obtain lock level for '%s' : %v", holding.Semaphore, err)
+						continue
+					}
+					key := getUpgradedKey(&wf, holders, level)
+					if semaphore != nil && semaphore.acquire(key) {
+						log.Infof("Lock acquired by %s from %s", key, holding.Semaphore)
 					}
 				}
+
 			}
 		}
 
@@ -101,8 +178,13 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 				if mutex == nil {
 					mutex := cm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
-						resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
-						mutex.acquire(resourceKey)
+						level, err := getWorkflowSyncLevelByName(&wf, holding.Mutex)
+						if err != nil {
+							log.Warnf("cannot obtain lock level for '%s' : %v", holding.Mutex, err)
+							continue
+						}
+						key := getUpgradedKey(&wf, holding.Holder, level)
+						mutex.acquire(key)
 					}
 					cm.syncLockMap[holding.Mutex] = mutex
 				}
@@ -214,10 +296,9 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			}
 
 			for _, holderKey := range holding.Holders {
-				resourceKey := getResourceKey(wf.Namespace, wf.Name, holderKey)
-				syncLockHolder.release(resourceKey)
+				syncLockHolder.release(holderKey)
 				wf.Status.Synchronization.Semaphore.LockReleased(holderKey, holding.Semaphore)
-				log.Infof("%s released a lock from %s", resourceKey, holding.Semaphore)
+				log.Infof("%s released a lock from %s", holderKey, holding.Semaphore)
 			}
 		}
 
@@ -227,8 +308,8 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			if syncLockHolder == nil {
 				continue
 			}
-			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
-			syncLockHolder.removeFromQueue(resourceKey)
+			key := getHolderKey(wf, "")
+			syncLockHolder.removeFromQueue(key)
 		}
 		wf.Status.Synchronization.Semaphore = nil
 	}
@@ -240,10 +321,9 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 
-			resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
-			syncLockHolder.release(resourceKey)
+			syncLockHolder.release(holding.Holder)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
-			log.Infof("%s released a lock from %s", resourceKey, holding.Mutex)
+			log.Infof("%s released a lock from %s", holding.Holder, holding.Mutex)
 		}
 
 		// Remove the pending Workflow level mutex keys
@@ -252,8 +332,8 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			if syncLockHolder == nil {
 				continue
 			}
-			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
-			syncLockHolder.removeFromQueue(resourceKey)
+			key := getHolderKey(wf, "")
+			syncLockHolder.removeFromQueue(key)
 		}
 		wf.Status.Synchronization.Mutex = nil
 	}
@@ -294,14 +374,6 @@ func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 		key = fmt.Sprintf("%s/%s", key, nodeName)
 	}
 	return key
-}
-
-func getResourceKey(namespace, wfName, resourceName string) string {
-	resourceKey := fmt.Sprintf("%s/%s", namespace, wfName)
-	if resourceName != wfName {
-		resourceKey = fmt.Sprintf("%s/%s", resourceKey, resourceName)
-	}
-	return resourceKey
 }
 
 func (cm *Manager) getCurrentLockHolders(lockName string) []string {
