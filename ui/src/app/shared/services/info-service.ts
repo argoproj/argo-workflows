@@ -17,8 +17,8 @@ export const InfoService = {
         return requests.get(`api/v1/version`).then(res => res.body as Version);
     },
 
-    getUserInfo() {
-        return requests.get(`api/v1/userinfo`).then(res => res.body as GetUserInfoResponse);
+    getUserInfo(namespace?: string) {
+        return requests.get(`api/v1/userinfo${namespace ? `?namespace=${namespace}` : ''}`).then(res => res.body as GetUserInfoResponse);
     },
 
     collectEvent(name: string) {

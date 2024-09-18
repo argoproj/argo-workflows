@@ -148,6 +148,7 @@ class InfoServiceApi(object):
             },
             params_map={
                 'all': [
+                    'namespace',
                 ],
                 'required': [],
                 'nullable': [
@@ -163,10 +164,14 @@ class InfoServiceApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
+                    'namespace':
+                        (str,),
                 },
                 'attribute_map': {
+                    'namespace': 'namespace',
                 },
                 'location_map': {
+                    'namespace': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -387,6 +392,7 @@ class InfoServiceApi(object):
 
 
         Keyword Args:
+            namespace (str): The namespace in which to look for a service account. Only used when SSO RBAC namespace delegation is enabled. Defaults to the installation namespace.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

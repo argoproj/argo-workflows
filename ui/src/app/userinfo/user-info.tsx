@@ -5,25 +5,28 @@ import {useEffect, useState} from 'react';
 import {GetUserInfoResponse} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
+import {NamespaceFilter} from '../shared/components/namespace-filter';
 import {Notice} from '../shared/components/notice';
 import {services} from '../shared/services';
+import * as nsUtils from '../shared/namespaces';
 import {CliHelp} from './cli-help';
 
 export function UserInfo() {
     const [error, setError] = useState<Error>(null);
     const [userInfo, setUserInfo] = useState<GetUserInfoResponse>();
+    const [namespace, setNamespace] = useState(nsUtils.getNamespaceWithDefault(nsUtils.getManagedNamespace()));
 
     useEffect(() => {
         (async function getUserInfoWrapper() {
             try {
-                const newUserInfo = await services.info.getUserInfo();
+                const newUserInfo = await services.info.getUserInfo(namespace);
                 setUserInfo(newUserInfo);
                 setError(null);
             } catch (newError) {
                 setError(newError);
             }
         })();
-    }, []);
+    }, [namespace]);
 
     return (
         <Page title='User Info' toolbar={{breadcrumbs: [{title: 'User Info'}]}}>
@@ -32,6 +35,12 @@ export function UserInfo() {
                 <h3>
                     <i className='fa fa-user-alt' /> User Info
                 </h3>
+                <dl>
+                    <dt>Namespace:</dt>
+                    <dd>
+                        <NamespaceFilter value={namespace} onChange={setNamespace} />
+                    </dd>
+                </dl>
                 {userInfo && (
                     <>
                         {userInfo.issuer && (
