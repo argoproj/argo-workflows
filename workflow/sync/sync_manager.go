@@ -197,7 +197,6 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 // TryAcquire tries to acquire the lock from semaphore.
 // It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available and any error encountered
 func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
-	log.Infof("[DEBUG] called TryAcquire  with holderKey %s", getHolderKey(wf, nodeName))
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
