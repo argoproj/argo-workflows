@@ -2835,7 +2835,6 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
 	})
-
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
@@ -3191,28 +3190,34 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	paramList := make([]map[string]string, 0)
 	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)
+	ipList := make([]string, 0)
 	for _, node := range childNodes {
-		if node.Outputs == nil || node.Phase != wfv1.NodeSucceeded || node.Type == wfv1.NodeTypeRetry {
+		if node.Type == wfv1.NodeTypeRetry {
 			continue
 		}
-		if len(node.Outputs.Parameters) > 0 {
-			param := make(map[string]string)
-			for _, p := range node.Outputs.Parameters {
-				param[p.Name] = p.Value.String()
-				outputParamValueList := outputParamValueLists[p.Name]
-				outputParamValueList = append(outputParamValueList, p.Value.String())
-				outputParamValueLists[p.Name] = outputParamValueList
+		if node.Outputs != nil && node.Phase == wfv1.NodeSucceeded {
+			if len(node.Outputs.Parameters) > 0 {
+				param := make(map[string]string)
+				for _, p := range node.Outputs.Parameters {
+					param[p.Name] = p.Value.String()
+					outputParamValueList := outputParamValueLists[p.Name]
+					outputParamValueList = append(outputParamValueList, p.Value.String())
+					outputParamValueLists[p.Name] = outputParamValueList
+				}
+				paramList = append(paramList, param)
 			}
-			paramList = append(paramList, param)
+			if node.Outputs.Result != nil {
+				// Support the case where item may be a map
+				var item wfv1.Item
+				err := json.Unmarshal([]byte(*node.Outputs.Result), &item)
+				if err != nil {
+					return err
+				}
+				resultsList = append(resultsList, item)
+			}
 		}
-		if node.Outputs.Result != nil {
-			// Support the case where item may be a map
-			var item wfv1.Item
-			err := json.Unmarshal([]byte(*node.Outputs.Result), &item)
-			if err != nil {
-				return err
-			}
-			resultsList = append(resultsList, item)
+		if node.Daemoned != nil && *node.Daemoned {
+			ipList = append(ipList, node.PodIP)
 		}
 	}
 	{
@@ -3237,6 +3242,14 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 			return err
 		}
 		scope.addParamToScope(key, valueListJson)
+	}
+	{
+		ipListJSON, err := json.Marshal(ipList)
+		if err != nil {
+			return err
+		}
+		key := fmt.Sprintf("%s.ip", prefix)
+		scope.addParamToScope(key, string(ipListJSON))
 	}
 	return nil
 }

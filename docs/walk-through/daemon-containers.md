@@ -76,3 +76,5 @@ spec:
 ```
 
 Step templates use the `steps` prefix to refer to another step: for example `{{steps.influx.ip}}`. In DAG templates, the `tasks` prefix is used instead: for example `{{tasks.influx.ip}}`.
+
+If the step or task uses `withSequence`, `withItems`, or `withParam`, then this will instead be set to a JSON list of IP addresses.
