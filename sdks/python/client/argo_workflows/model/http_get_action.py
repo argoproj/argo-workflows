@@ -59,10 +59,6 @@ class HTTPGetAction(ModelNormal):
     """
 
     allowed_values = {
-        ('scheme',): {
-            'HTTP': "HTTP",
-            'HTTPS': "HTTPS",
-        },
     }
 
     validations = {
@@ -158,7 +154,7 @@ class HTTPGetAction(ModelNormal):
             host (str): Host name to connect to, defaults to the pod IP. You probably want to set \"Host\" in httpHeaders instead.. [optional]  # noqa: E501
             http_headers ([HTTPHeader]): Custom headers to set in the request. HTTP allows repeated headers.. [optional]  # noqa: E501
             path (str): Path to access on the HTTP server.. [optional]  # noqa: E501
-            scheme (str): Scheme to use for connecting to the host. Defaults to HTTP.  Possible enum values:  - `\"HTTP\"` means that the scheme used will be http://  - `\"HTTPS\"` means that the scheme used will be https://. [optional]  # noqa: E501
+            scheme (str): Scheme to use for connecting to the host. Defaults to HTTP.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -247,7 +243,7 @@ class HTTPGetAction(ModelNormal):
             host (str): Host name to connect to, defaults to the pod IP. You probably want to set \"Host\" in httpHeaders instead.. [optional]  # noqa: E501
             http_headers ([HTTPHeader]): Custom headers to set in the request. HTTP allows repeated headers.. [optional]  # noqa: E501
             path (str): Path to access on the HTTP server.. [optional]  # noqa: E501
-            scheme (str): Scheme to use for connecting to the host. Defaults to HTTP.  Possible enum values:  - `\"HTTP\"` means that the scheme used will be http://  - `\"HTTPS\"` means that the scheme used will be https://. [optional]  # noqa: E501
+            scheme (str): Scheme to use for connecting to the host. Defaults to HTTP.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

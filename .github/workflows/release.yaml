@@ -291,7 +291,7 @@ jobs:
           node-version: "20" # change in all GH Workflows
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.22"
+          go-version: "1.23"
       - name: Restore node packages cache
         uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         with:

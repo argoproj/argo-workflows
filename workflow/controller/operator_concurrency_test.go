@@ -1092,17 +1092,17 @@ spec:
           configMap:
             name: cache-example-steps-simple
     `)
+	wf.Name = "example-steps-simple-gas12"
 	cancel, controller := newController(wf)
 	defer cancel()
 
 	ctx := context.Background()
-
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
 	holdingJobs := make(map[string]string)
 	for _, node := range woc.wf.Status.Nodes {
-		holdingJobs[node.ID] = node.DisplayName
+		holdingJobs[fmt.Sprintf("%s/%s/%s", wf.Namespace, wf.Name, node.ID)] = node.DisplayName
 	}
 
 	// Check initial status: job-1 acquired the lock

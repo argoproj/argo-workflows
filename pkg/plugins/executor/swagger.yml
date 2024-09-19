@@ -60,6 +60,24 @@ definitions:
             It will marshall back to string - marshalling is not symmetric.
         title: It's JSON type is just string.
         type: string
+    AppArmorProfile:
+        description: +union
+        properties:
+            localhostProfile:
+                description: |-
+                    localhostProfile indicates a profile loaded on the node that should be used.
+                    The profile must be preconfigured on the node to work.
+                    Must match the loaded name of the profile.
+                    Must be set if and only if type is "Localhost".
+                    +optional
+                type: string
+            type:
+                $ref: '#/definitions/AppArmorProfileType'
+        title: AppArmorProfile defines a pod or container's AppArmor settings.
+        type: object
+    AppArmorProfileType:
+        description: +enum
+        type: string
     ArchiveStrategy:
         description: ArchiveStrategy describes how to archive files/directory when saving artifacts
         properties:
@@ -405,6 +423,7 @@ definitions:
                 description: |-
                     Added capabilities
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/Capability'
                 type: array
@@ -412,6 +431,7 @@ definitions:
                 description: |-
                     Removed capabilities
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/Capability'
                 type: array
@@ -429,6 +449,7 @@ definitions:
                 description: |-
                     monitors is Required: Monitors is a collection of Ceph monitors
                     More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -497,6 +518,40 @@ definitions:
             clientKeySecret:
                 $ref: '#/definitions/SecretKeySelector'
         type: object
+    ClusterTrustBundleProjection:
+        description: |-
+            ClusterTrustBundleProjection describes how to select a set of
+            ClusterTrustBundle objects and project their contents into the pod
+            filesystem.
+        properties:
+            labelSelector:
+                $ref: '#/definitions/LabelSelector'
+            name:
+                description: |-
+                    Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+                    with signerName and labelSelector.
+                    +optional
+                type: string
+            optional:
+                description: |-
+                    If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+                    aren't available.  If using name, then the named ClusterTrustBundle is
+                    allowed not to exist.  If using signerName, then the combination of
+                    signerName and labelSelector is allowed to match zero
+                    ClusterTrustBundles.
+                    +optional
+                type: boolean
+            path:
+                description: Relative path from the volume root to write the bundle.
+                type: string
+            signerName:
+                description: |-
+                    Select all ClusterTrustBundles that match this signer name.
+                    Mutually-exclusive with name.  The contents of all selected
+                    ClusterTrustBundles will be unified and deduplicated.
+                    +optional
+                type: string
+        type: object
     ConfigMapEnvSource:
         description: |-
             The contents of the target ConfigMap's Data field will represent the
@@ -505,9 +560,15 @@ definitions:
             name:
                 description: |-
                     Name of the referent.
-                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    This field is effectively required, but due to backwards compatibility is
+                    allowed to be empty. Instances of this type with an empty value here are
+                    almost certainly wrong.
                     TODO: Add other useful fields. apiVersion, kind, uid?
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
+                    +default=""
+                    +kubebuilder:default=""
+                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
             optional:
                 description: |-
@@ -527,9 +588,15 @@ definitions:
             name:
                 description: |-
                     Name of the referent.
-                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    This field is effectively required, but due to backwards compatibility is
+                    allowed to be empty. Instances of this type with an empty value here are
+                    almost certainly wrong.
                     TODO: Add other useful fields. apiVersion, kind, uid?
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
+                    +default=""
+                    +kubebuilder:default=""
+                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
             optional:
                 description: |-
@@ -556,15 +623,22 @@ definitions:
                     the volume setup will error unless it is marked optional. Paths must be
                     relative and may not contain the '..' path or start with '..'.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/KeyToPath'
                 type: array
             name:
                 description: |-
                     Name of the referent.
-                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    This field is effectively required, but due to backwards compatibility is
+                    allowed to be empty. Instances of this type with an empty value here are
+                    almost certainly wrong.
                     TODO: Add other useful fields. apiVersion, kind, uid?
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
+                    +default=""
+                    +kubebuilder:default=""
+                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
             optional:
                 description: |-
@@ -602,15 +676,22 @@ definitions:
                     the volume setup will error unless it is marked optional. Paths must be
                     relative and may not contain the '..' path or start with '..'.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/KeyToPath'
                 type: array
             name:
                 description: |-
                     Name of the referent.
-                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    This field is effectively required, but due to backwards compatibility is
+                    allowed to be empty. Instances of this type with an empty value here are
+                    almost certainly wrong.
                     TODO: Add other useful fields. apiVersion, kind, uid?
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
+                    +default=""
+                    +kubebuilder:default=""
+                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
             optional:
                 description: |-
@@ -632,6 +713,7 @@ definitions:
                     of whether the variable exists or not. Cannot be updated.
                     More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -646,6 +728,7 @@ definitions:
                     of whether the variable exists or not. Cannot be updated.
                     More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -656,6 +739,8 @@ definitions:
                     +optional
                     +patchMergeKey=name
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=name
                 items:
                     $ref: '#/definitions/EnvVar'
                 type: array
@@ -668,6 +753,7 @@ definitions:
                     Values defined by an Env with a duplicate key will take precedence.
                     Cannot be updated.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/EnvFromSource'
                 type: array
@@ -711,8 +797,19 @@ definitions:
                 type: array
             readinessProbe:
                 $ref: '#/definitions/Probe'
+            resizePolicy:
+                description: |-
+                    Resources resize policy for the container.
+                    +featureGate=InPlacePodVerticalScaling
+                    +optional
+                    +listType=atomic
+                items:
+                    $ref: '#/definitions/ContainerResizePolicy'
+                type: array
             resources:
                 $ref: '#/definitions/ResourceRequirements'
+            restartPolicy:
+                $ref: '#/definitions/ContainerRestartPolicy'
             securityContext:
                 $ref: '#/definitions/SecurityContext'
             startupProbe:
@@ -759,6 +856,8 @@ definitions:
                     volumeDevices is the list of block devices to be used by the container.
                     +patchMergeKey=devicePath
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=devicePath
                     +optional
                 items:
                     $ref: '#/definitions/VolumeDevice'
@@ -770,6 +869,8 @@ definitions:
                     +optional
                     +patchMergeKey=mountPath
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=mountPath
                 items:
                     $ref: '#/definitions/VolumeMount'
                 type: array
@@ -796,6 +897,7 @@ definitions:
                     of whether the variable exists or not. Cannot be updated.
                     More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -810,6 +912,7 @@ definitions:
                     of whether the variable exists or not. Cannot be updated.
                     More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -824,6 +927,8 @@ definitions:
                     +optional
                     +patchMergeKey=name
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=name
                 items:
                     $ref: '#/definitions/EnvVar'
                 type: array
@@ -836,6 +941,7 @@ definitions:
                     Values defined by an Env with a duplicate key will take precedence.
                     Cannot be updated.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/EnvFromSource'
                 type: array
@@ -879,8 +985,19 @@ definitions:
                 type: array
             readinessProbe:
                 $ref: '#/definitions/Probe'
+            resizePolicy:
+                description: |-
+                    Resources resize policy for the container.
+                    +featureGate=InPlacePodVerticalScaling
+                    +optional
+                    +listType=atomic
+                items:
+                    $ref: '#/definitions/ContainerResizePolicy'
+                type: array
             resources:
                 $ref: '#/definitions/ResourceRequirements'
+            restartPolicy:
+                $ref: '#/definitions/ContainerRestartPolicy'
             securityContext:
                 $ref: '#/definitions/SecurityContext'
             startupProbe:
@@ -927,6 +1044,8 @@ definitions:
                     volumeDevices is the list of block devices to be used by the container.
                     +patchMergeKey=devicePath
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=devicePath
                     +optional
                 items:
                     $ref: '#/definitions/VolumeDevice'
@@ -938,6 +1057,8 @@ definitions:
                     +optional
                     +patchMergeKey=mountPath
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=mountPath
                 items:
                     $ref: '#/definitions/VolumeMount'
                 type: array
@@ -983,6 +1104,18 @@ definitions:
                 $ref: '#/definitions/Protocol'
         title: ContainerPort represents a network port in a single container.
         type: object
+    ContainerResizePolicy:
+        properties:
+            resourceName:
+                $ref: '#/definitions/ResourceName'
+            restartPolicy:
+                $ref: '#/definitions/ResourceResizeRestartPolicy'
+        title: ContainerResizePolicy represents resource resize policy for the container.
+        type: object
+    ContainerRestartPolicy:
+        description: This may only be set for init containers and only allowed value is "Always".
+        title: ContainerRestartPolicy is the restart policy for a single container.
+        type: string
     ContainerSetRetryStrategy:
         description: ContainerSetRetryStrategy provides controls on how to retry a container set
         properties:
@@ -1129,6 +1262,7 @@ definitions:
                 description: |-
                     Items is a list of DownwardAPIVolume file
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/DownwardAPIVolumeFile'
                 type: array
@@ -1176,6 +1310,7 @@ definitions:
                 description: |-
                     Items is a list of downward API volume file
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/DownwardAPIVolumeFile'
                 type: array
@@ -1259,6 +1394,7 @@ definitions:
                     a shell, you need to explicitly call out to that shell.
                     Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -1317,6 +1453,7 @@ definitions:
                 description: |-
                     targetWWNs is Optional: FC target worldwide names (WWNs)
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -1325,6 +1462,7 @@ definitions:
                     wwids Optional: FC volume world wide identifiers (wwids)
                     Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -1682,6 +1820,7 @@ definitions:
                 description: |-
                     Custom headers to set in the request. HTTP allows repeated headers.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/HTTPHeader'
                 type: array
@@ -1742,12 +1881,16 @@ definitions:
             pod's hosts file.
         properties:
             hostnames:
-                description: Hostnames for the above IP address.
+                description: |-
+                    Hostnames for the above IP address.
+                    +listType=atomic
                 items:
                     type: string
                 type: array
             ip:
-                description: IP address of the host file entry.
+                description: |-
+                    IP address of the host file entry.
+                    +required
                 type: string
         type: object
     HostPathType:
@@ -1815,6 +1958,7 @@ definitions:
                     portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port
                     is other than default (typically TCP ports 860 and 3260).
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -1911,6 +2055,7 @@ definitions:
                 description: |-
                     matchExpressions is a list of label selector requirements. The requirements are ANDed.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/LabelSelectorRequirement'
                 type: array
@@ -1933,10 +2078,7 @@ definitions:
             relates the key and values.
         properties:
             key:
-                description: |-
-                    key is the label key that the selector applies to.
-                    +patchMergeKey=key
-                    +patchStrategy=merge
+                description: key is the label key that the selector applies to.
                 type: string
             operator:
                 $ref: '#/definitions/LabelSelectorOperator'
@@ -1947,6 +2089,7 @@ definitions:
                     the values array must be empty. This array is replaced during a strategic
                     merge patch.
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -1971,6 +2114,8 @@ definitions:
                 $ref: '#/definitions/ExecAction'
             httpGet:
                 $ref: '#/definitions/HTTPGetAction'
+            sleep:
+                $ref: '#/definitions/SleepAction'
             tcpSocket:
                 $ref: '#/definitions/TCPSocketAction'
         type: object
@@ -2002,9 +2147,15 @@ definitions:
             name:
                 description: |-
                     Name of the referent.
-                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    This field is effectively required, but due to backwards compatibility is
+                    allowed to be empty. Instances of this type with an empty value here are
+                    almost certainly wrong.
                     TODO: Add other useful fields. apiVersion, kind, uid?
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
+                    +default=""
+                    +kubebuilder:default=""
+                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
         type: object
     ManagedFieldsEntry:
@@ -2152,6 +2303,7 @@ definitions:
                     "weight" to the sum if the node matches the corresponding matchExpressions; the
                     node(s) with the highest sum are the most preferred.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/PreferredSchedulingTerm'
                 type: array
@@ -2181,7 +2333,9 @@ definitions:
             +structType=atomic
         properties:
             nodeSelectorTerms:
-                description: Required. A list of node selector terms. The terms are ORed.
+                description: |-
+                    Required. A list of node selector terms. The terms are ORed.
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/NodeSelectorTerm'
                 type: array
@@ -2210,6 +2364,7 @@ definitions:
                     array must have a single element, which will be interpreted as an integer.
                     This array is replaced during a strategic merge patch.
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -2225,6 +2380,7 @@ definitions:
                 description: |-
                     A list of node selector requirements by node's labels.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/NodeSelectorRequirement'
                 type: array
@@ -2232,6 +2388,7 @@ definitions:
                 description: |-
                     A list of node selector requirements by node's fields.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/NodeSelectorRequirement'
                 type: array
@@ -2387,7 +2544,7 @@ definitions:
             name:
                 description: |-
                     Name of the referent.
-                    More info: http://kubernetes.io/docs/user-guide/identifiers#names
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
                 type: string
             uid:
                 $ref: '#/definitions/UID'
@@ -2433,6 +2590,7 @@ definitions:
                     accessModes contains the desired access modes the volume should have.
                     More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/PersistentVolumeAccessMode'
                 type: array
@@ -2441,13 +2599,30 @@ definitions:
             dataSourceRef:
                 $ref: '#/definitions/TypedObjectReference'
             resources:
-                $ref: '#/definitions/ResourceRequirements'
+                $ref: '#/definitions/VolumeResourceRequirements'
             selector:
                 $ref: '#/definitions/LabelSelector'
             storageClassName:
                 description: |-
                     storageClassName is the name of the StorageClass required by the claim.
                     More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
+                    +optional
+                type: string
+            volumeAttributesClassName:
+                description: |-
+                    volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+                    If specified, the CSI driver will create or update the volume with the attributes defined
+                    in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+                    it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+                    will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+                    If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+                    will be set by the persistentvolume controller if it exists.
+                    If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+                    set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+                    exists.
+                    More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+                    (Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.
+                    +featureGate=VolumeAttributesClass
                     +optional
                 type: string
             volumeMode:
@@ -2470,7 +2645,7 @@ definitions:
                     Annotations is an unstructured key value map stored with a resource that may be
                     set by external tools to store and retrieve arbitrary metadata. They are not
                     queryable and should be preserved when modifying objects.
-                    More info: http://kubernetes.io/docs/user-guide/annotations
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
                     +optional
                 type: object
             creationTimestamp:
@@ -2533,6 +2708,7 @@ definitions:
                     are not vulnerable to ordering changes in the list.
                     +optional
                     +patchStrategy=merge
+                    +listType=set
                 items:
                     type: string
                 type: array
@@ -2566,7 +2742,7 @@ definitions:
                     Map of string keys and values that can be used to organize and categorize
                     (scope and select) objects. May match selectors of replication controllers
                     and services.
-                    More info: http://kubernetes.io/docs/user-guide/labels
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
                     +optional
                 type: object
             managedFields:
@@ -2580,6 +2756,7 @@ definitions:
                     workflow used when modifying the object.
 
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/ManagedFieldsEntry'
                 type: array
@@ -2590,7 +2767,7 @@ definitions:
                     automatically. Name is primarily intended for creation idempotence and configuration
                     definition.
                     Cannot be updated.
-                    More info: http://kubernetes.io/docs/user-guide/identifiers#names
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
                     +optional
                 type: string
             namespace:
@@ -2602,7 +2779,7 @@ definitions:
 
                     Must be a DNS_LABEL.
                     Cannot be updated.
-                    More info: http://kubernetes.io/docs/user-guide/namespaces
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces
                     +optional
                 type: string
             ownerReferences:
@@ -2614,6 +2791,8 @@ definitions:
                     +optional
                     +patchMergeKey=uid
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=uid
                 items:
                     $ref: '#/definitions/OwnerReference'
                 type: array
@@ -2694,6 +2873,7 @@ definitions:
                     "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
                     node(s) with the highest sum are the most preferred.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/WeightedPodAffinityTerm'
                 type: array
@@ -2707,6 +2887,7 @@ definitions:
                     When there are multiple elements, the lists of nodes corresponding to each
                     podAffinityTerm are intersected, i.e. all terms must be satisfied.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/PodAffinityTerm'
                 type: array
@@ -2723,6 +2904,38 @@ definitions:
         properties:
             labelSelector:
                 $ref: '#/definitions/LabelSelector'
+            matchLabelKeys:
+                description: |-
+                    MatchLabelKeys is a set of pod label keys to select which pods will
+                    be taken into consideration. The keys are used to lookup values from the
+                    incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
+                    to select the group of existing pods which pods will be taken into consideration
+                    for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+                    pod labels will be ignored. The default value is empty.
+                    The same key is forbidden to exist in both matchLabelKeys and labelSelector.
+                    Also, matchLabelKeys cannot be set when labelSelector isn't set.
+                    This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                    +listType=atomic
+                    +optional
+                items:
+                    type: string
+                type: array
+            mismatchLabelKeys:
+                description: |-
+                    MismatchLabelKeys is a set of pod label keys to select which pods will
+                    be taken into consideration. The keys are used to lookup values from the
+                    incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
+                    to select the group of existing pods which pods will be taken into consideration
+                    for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+                    pod labels will be ignored. The default value is empty.
+                    The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
+                    Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
+                    This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                    +listType=atomic
+                    +optional
+                items:
+                    type: string
+                type: array
             namespaceSelector:
                 $ref: '#/definitions/LabelSelector'
             namespaces:
@@ -2732,6 +2945,7 @@ definitions:
                     and the ones selected by namespaceSelector.
                     null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -2758,6 +2972,7 @@ definitions:
                     "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
                     node(s) with the highest sum are the most preferred.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/WeightedPodAffinityTerm'
                 type: array
@@ -2771,6 +2986,7 @@ definitions:
                     When there are multiple elements, the lists of nodes corresponding to each
                     podAffinityTerm are intersected, i.e. all terms must be satisfied.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/PodAffinityTerm'
                 type: array
@@ -2787,6 +3003,8 @@ definitions:
             Some fields are also present in container.securityContext.  Field values of
             container.securityContext take precedence over field values of PodSecurityContext.
         properties:
+            appArmorProfile:
+                $ref: '#/definitions/AppArmorProfile'
             fsGroup:
                 description: |-
                     A special supplemental group that applies to all containers in a pod.
@@ -2850,6 +3068,7 @@ definitions:
                     even if they are not included in this list.
                     Note that this field cannot be set when spec.os.name is windows.
                     +optional
+                    +listType=atomic
                 items:
                     format: int64
                     type: integer
@@ -2860,6 +3079,7 @@ definitions:
                     sysctls (by the container runtime) might fail to launch.
                     Note that this field cannot be set when spec.os.name is windows.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/Sysctl'
                 type: array
@@ -2987,6 +3207,7 @@ definitions:
                 description: |-
                     sources is the list of volume projections
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/VolumeProjection'
                 type: array
@@ -3162,6 +3383,7 @@ definitions:
                 description: |-
                     monitors is a collection of Ceph monitors.
                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -3197,6 +3419,9 @@ definitions:
                 description: Data is the string contents of the artifact
                 type: string
         type: object
+    RecursiveReadOnlyMode:
+        title: RecursiveReadOnlyMode describes recursive-readonly mode.
+        type: string
     ResourceClaim:
         properties:
             name:
@@ -3228,6 +3453,9 @@ definitions:
             $ref: '#/definitions/Quantity'
         title: ResourceList is a set of (resource name, quantity) pairs.
         type: object
+    ResourceName:
+        title: ResourceName is the name identifying various resources in a ResourceList.
+        type: string
     ResourceRequirements:
         properties:
             claims:
@@ -3253,6 +3481,9 @@ definitions:
                 $ref: '#/definitions/ResourceList'
         title: ResourceRequirements describes the compute resource requirements.
         type: object
+    ResourceResizeRestartPolicy:
+        title: ResourceResizeRestartPolicy specifies how to handle container resource resize.
+        type: string
     ResourceTemplate:
         description: ResourceTemplate is a template subtype to manipulate kubernetes resources
         properties:
@@ -3466,6 +3697,7 @@ definitions:
                     of whether the variable exists or not. Cannot be updated.
                     More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -3480,6 +3712,7 @@ definitions:
                     of whether the variable exists or not. Cannot be updated.
                     More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -3490,6 +3723,8 @@ definitions:
                     +optional
                     +patchMergeKey=name
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=name
                 items:
                     $ref: '#/definitions/EnvVar'
                 type: array
@@ -3502,6 +3737,7 @@ definitions:
                     Values defined by an Env with a duplicate key will take precedence.
                     Cannot be updated.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/EnvFromSource'
                 type: array
@@ -3545,8 +3781,19 @@ definitions:
                 type: array
             readinessProbe:
                 $ref: '#/definitions/Probe'
+            resizePolicy:
+                description: |-
+                    Resources resize policy for the container.
+                    +featureGate=InPlacePodVerticalScaling
+                    +optional
+                    +listType=atomic
+                items:
+                    $ref: '#/definitions/ContainerResizePolicy'
+                type: array
             resources:
                 $ref: '#/definitions/ResourceRequirements'
+            restartPolicy:
+                $ref: '#/definitions/ContainerRestartPolicy'
             securityContext:
                 $ref: '#/definitions/SecurityContext'
             source:
@@ -3596,6 +3843,8 @@ definitions:
                     volumeDevices is the list of block devices to be used by the container.
                     +patchMergeKey=devicePath
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=devicePath
                     +optional
                 items:
                     $ref: '#/definitions/VolumeDevice'
@@ -3607,6 +3856,8 @@ definitions:
                     +optional
                     +patchMergeKey=mountPath
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=mountPath
                 items:
                     $ref: '#/definitions/VolumeMount'
                 type: array
@@ -3629,7 +3880,7 @@ definitions:
                     localhostProfile indicates a profile defined in a file on the node should be used.
                     The profile must be preconfigured on the node to work.
                     Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                    Must only be set if type is "Localhost".
+                    Must be set if type is "Localhost". Must NOT be set for any other type.
                     +optional
                 type: string
             type:
@@ -3648,9 +3899,15 @@ definitions:
             name:
                 description: |-
                     Name of the referent.
-                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    This field is effectively required, but due to backwards compatibility is
+                    allowed to be empty. Instances of this type with an empty value here are
+                    almost certainly wrong.
                     TODO: Add other useful fields. apiVersion, kind, uid?
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
+                    +default=""
+                    +kubebuilder:default=""
+                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
             optional:
                 description: |-
@@ -3670,9 +3927,15 @@ definitions:
             name:
                 description: |-
                     Name of the referent.
-                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    This field is effectively required, but due to backwards compatibility is
+                    allowed to be empty. Instances of this type with an empty value here are
+                    almost certainly wrong.
                     TODO: Add other useful fields. apiVersion, kind, uid?
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
+                    +default=""
+                    +kubebuilder:default=""
+                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
             optional:
                 description: |-
@@ -3698,15 +3961,22 @@ definitions:
                     the volume setup will error unless it is marked optional. Paths must be
                     relative and may not contain the '..' path or start with '..'.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/KeyToPath'
                 type: array
             name:
                 description: |-
                     Name of the referent.
-                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    This field is effectively required, but due to backwards compatibility is
+                    allowed to be empty. Instances of this type with an empty value here are
+                    almost certainly wrong.
                     TODO: Add other useful fields. apiVersion, kind, uid?
+                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     +optional
+                    +default=""
+                    +kubebuilder:default=""
+                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                 type: string
             optional:
                 description: |-
@@ -3743,6 +4013,7 @@ definitions:
                     the volume setup will error unless it is marked optional. Paths must be
                     relative and may not contain the '..' path or start with '..'.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/KeyToPath'
                 type: array
@@ -3775,6 +4046,8 @@ definitions:
                     Note that this field cannot be set when spec.os.name is windows.
                     +optional
                 type: boolean
+            appArmorProfile:
+                $ref: '#/definitions/AppArmorProfile'
             capabilities:
                 $ref: '#/definitions/Capabilities'
             privileged:
@@ -3886,6 +4159,14 @@ definitions:
                     token into.
                 type: string
         type: object
+    SleepAction:
+        properties:
+            seconds:
+                description: Seconds is the number of seconds to sleep.
+                format: int64
+                type: integer
+        title: SleepAction describes a "sleep" action.
+        type: object
     StorageMedium:
         title: StorageMedium defines ways that storage can be allocated to a volume.
         type: string
@@ -3940,8 +4221,18 @@ definitions:
         properties:
             mutex:
                 $ref: '#/definitions/Mutex'
+            mutexes:
+                description: 'v3.6 and after: Mutexes holds the list of Mutex lock details'
+                items:
+                    $ref: '#/definitions/Mutex'
+                type: array
             semaphore:
                 $ref: '#/definitions/SemaphoreRef'
+            semaphores:
+                description: 'v3.6 and after: Semaphores holds the list of Semaphores configuration'
+                items:
+                    $ref: '#/definitions/SemaphoreRef'
+                type: array
         type: object
     Sysctl:
         description: Sysctl defines a kernel parameter to be set
@@ -4260,6 +4551,7 @@ definitions:
                     of whether the variable exists or not. Cannot be updated.
                     More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -4274,6 +4566,7 @@ definitions:
                     of whether the variable exists or not. Cannot be updated.
                     More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
                     +optional
+                    +listType=atomic
                 items:
                     type: string
                 type: array
@@ -4284,6 +4577,8 @@ definitions:
                     +optional
                     +patchMergeKey=name
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=name
                 items:
                     $ref: '#/definitions/EnvVar'
                 type: array
@@ -4296,6 +4591,7 @@ definitions:
                     Values defined by an Env with a duplicate key will take precedence.
                     Cannot be updated.
                     +optional
+                    +listType=atomic
                 items:
                     $ref: '#/definitions/EnvFromSource'
                 type: array
@@ -4346,8 +4642,19 @@ definitions:
                 type: array
             readinessProbe:
                 $ref: '#/definitions/Probe'
+            resizePolicy:
+                description: |-
+                    Resources resize policy for the container.
+                    +featureGate=InPlacePodVerticalScaling
+                    +optional
+                    +listType=atomic
+                items:
+                    $ref: '#/definitions/ContainerResizePolicy'
+                type: array
             resources:
                 $ref: '#/definitions/ResourceRequirements'
+            restartPolicy:
+                $ref: '#/definitions/ContainerRestartPolicy'
             securityContext:
                 $ref: '#/definitions/SecurityContext'
             startupProbe:
@@ -4394,6 +4701,8 @@ definitions:
                     volumeDevices is the list of block devices to be used by the container.
                     +patchMergeKey=devicePath
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=devicePath
                     +optional
                 items:
                     $ref: '#/definitions/VolumeDevice'
@@ -4405,6 +4714,8 @@ definitions:
                     +optional
                     +patchMergeKey=mountPath
                     +patchStrategy=merge
+                    +listType=map
+                    +listMapKey=mountPath
                 items:
                     $ref: '#/definitions/VolumeMount'
                 type: array
@@ -4544,6 +4855,8 @@ definitions:
                     Defaults to false.
                     +optional
                 type: boolean
+            recursiveReadOnly:
+                $ref: '#/definitions/RecursiveReadOnlyMode'
             subPath:
                 description: |-
                     Path within the volume from which the container's volume should be mounted.
@@ -4563,6 +4876,8 @@ definitions:
     VolumeProjection:
         description: Projection that may be projected along with other supported volume types
         properties:
+            clusterTrustBundle:
+                $ref: '#/definitions/ClusterTrustBundleProjection'
             configMap:
                 $ref: '#/definitions/ConfigMapProjection'
             downwardAPI:
@@ -4571,6 +4886,14 @@ definitions:
                 $ref: '#/definitions/SecretProjection'
             serviceAccountToken:
                 $ref: '#/definitions/ServiceAccountTokenProjection'
+        type: object
+    VolumeResourceRequirements:
+        properties:
+            limits:
+                $ref: '#/definitions/ResourceList'
+            requests:
+                $ref: '#/definitions/ResourceList'
+        title: VolumeResourceRequirements describes the storage resource requirements for a volume.
         type: object
     VsphereVirtualDiskVolumeSource:
         properties:
@@ -4625,12 +4948,9 @@ definitions:
             hostProcess:
                 description: |-
                     HostProcess determines if a container should be run as a 'Host Process' container.
-                    This field is alpha-level and will only be honored by components that enable the
-                    WindowsHostProcessContainers feature flag. Setting this field without the feature
-                    flag will result in errors when validating the Pod. All of a Pod's containers must
-                    have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
-                    containers and non-HostProcess containers).  In addition, if HostProcess is true
-                    then HostNetwork must also be set to true.
+                    All of a Pod's containers must have the same effective HostProcess value
+                    (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
+                    In addition, if HostProcess is true then HostNetwork must also be set to true.
                     +optional
                 type: boolean
             runAsUserName:

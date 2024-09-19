@@ -27,7 +27,7 @@ import (
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -4081,7 +4081,7 @@ spec:
 			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 			woc = newWorkflowOperationCtx(woc.wf, controller)
 			woc.operate(ctx)
-			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
+			assert.ElementsMatch(t, want, getEventsWithoutAnnotations(controller, len(want)))
 		})
 	}
 }
@@ -4177,18 +4177,27 @@ spec:
 			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 			woc = newWorkflowOperationCtx(woc.wf, controller)
 			woc.operate(ctx)
-			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
+			assert.ElementsMatch(t, want, getEventsWithoutAnnotations(controller, len(want)))
 		})
 	}
 }
 
-func getEvents(controller *WorkflowController, num int) []string {
+func getEventsWithoutAnnotations(controller *WorkflowController, num int) []string {
 	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
 	for i := 0; i < num; i++ {
-		events[i] = <-c
+		event := <-c
+		events[i] = truncateAnnotationsFromEvent(event)
 	}
 	return events
+}
+
+func truncateAnnotationsFromEvent(event string) string {
+	mapIndex := strings.Index(event, " map[")
+	if mapIndex != -1 {
+		return event[:mapIndex]
+	}
+	return event
 }
 
 func TestGetPodByNode(t *testing.T) {
@@ -6240,7 +6249,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 		Parameters: []wfv1.Parameter{
 			{Name: "hello", Value: wfv1.AnyStringPtr("foobar")},
 		},
-		ExitCode: pointer.String("0"),
+		ExitCode: ptr.To("0"),
 	}
 
 	ctx := context.Background()
@@ -8503,7 +8512,7 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	_, _, _, err := controller.syncManager.TryAcquire(wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
+	_, _, _, _, err := controller.syncManager.TryAcquire(wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
@@ -8512,7 +8521,7 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Phase)
 }
 
-var wfGlopalArtifactNil = `apiVersion: argoproj.io/v1alpha1
+var wfGlobalArtifactNil = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: global-outputs-ttsfq
@@ -8582,7 +8591,7 @@ spec:
 `
 
 func TestWFGlobalArtifactNil(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfGlopalArtifactNil)
+	wf := wfv1.MustUnmarshalWorkflow(wfGlobalArtifactNil)
 	cancel, controller := newController(wf)
 	defer cancel()
 
