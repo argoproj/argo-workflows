@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -44,7 +45,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-prtl9
   uid: 790f5c47-211f-4a3b-8949-514ae916633b
 spec:
-  
+
   entrypoint: whalesay
   synchronization:
     semaphore:
@@ -52,7 +53,7 @@ spec:
         key: workflow
         name: my-config
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -118,16 +119,16 @@ metadata:
   name: semaphore-tmpl-level-xjvln
   namespace: default
 spec:
-  
+
   entrypoint: semaphore-tmpl-level-example
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: semaphore-tmpl-level-example
     outputs: {}
     steps:
-    - - 
+    - -
         name: generate
         template: gen-number-list
     - - arguments:
@@ -137,7 +138,7 @@ spec:
         name: sleep
         template: sleep-n-sec
         withParam: '{{steps.generate.outputs.result}}'
-  - 
+  -
     inputs: {}
     metadata: {}
     name: gen-number-list
@@ -152,7 +153,7 @@ spec:
         import json
         import sys
         json.dump([i for i in range(1, 3)], sys.stdout)
-  - 
+  -
     container:
       args:
       - echo sleeping for {{inputs.parameters.seconds}} seconds; sleep 10; echo done
