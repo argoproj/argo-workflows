@@ -6172,14 +6172,40 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"semaphore": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Semaphore holds the Semaphore configuration",
+							Description: "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
 						},
 					},
 					"mutex": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Mutex holds the Mutex lock details",
+							Description: "Mutex holds the Mutex lock details - deprecated, use mutexes instead",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex"),
+						},
+					},
+					"semaphores": {
+						SchemaProps: spec.SchemaProps{
+							Description: "v3.6 and after: Semaphores holds the list of Semaphores configuration",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
+									},
+								},
+							},
+						},
+					},
+					"mutexes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "v3.6 and after: Mutexes holds the list of Mutex lock details",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex"),
+									},
+								},
+							},
 						},
 					},
 				},

@@ -1561,11 +1561,17 @@ message SuspendTemplate {
 
 // Synchronization holds synchronization lock configuration
 message Synchronization {
-  // Semaphore holds the Semaphore configuration
+  // Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
   optional SemaphoreRef semaphore = 1;
 
-  // Mutex holds the Mutex lock details
+  // Mutex holds the Mutex lock details - deprecated, use mutexes instead
   optional Mutex mutex = 2;
+
+  // v3.6 and after: Semaphores holds the list of Semaphores configuration
+  repeated SemaphoreRef semaphores = 3;
+
+  // v3.6 and after: Mutexes holds the list of Mutex lock details
+  repeated Mutex mutexes = 4;
 }
 
 // SynchronizationStatus stores the status of semaphore and mutex.

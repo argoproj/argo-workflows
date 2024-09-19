@@ -536,8 +536,8 @@ spec:
                 template: sleep
     - name: sleep
       synchronization:
-        mutex:
-          name: job
+        mutexes:
+          - name: job
       script:
         image: alpine:latest
         command: [/bin/sh]

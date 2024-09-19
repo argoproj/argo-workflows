@@ -16,10 +16,10 @@ metadata:
 spec:
   entrypoint: hello-world
   synchronization:
-    semaphores:
-      - configMapKeyRef:
-          name: my-config
-          key: workflow
+    semaphore:
+      configMapKeyRef:
+        name: my-config
+        key: workflow
   templates:
     - name: hello-world
       container:

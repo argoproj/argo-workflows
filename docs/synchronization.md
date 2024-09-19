@@ -44,10 +44,10 @@ metadata:
 spec:
   entrypoint: hello-world
   synchronization:
-    semaphore:
-      configMapKeyRef:
-        name: my-config
-        key: workflow
+    semaphores:
+      - configMapKeyRef:
+          name: my-config
+          key: workflow
   templates:
   - name: hello-world
     container:
@@ -66,8 +66,8 @@ metadata:
 spec:
   entrypoint: hello-world
   synchronization:
-    mutex:
-      name: workflow
+    mutexes:
+      - name: workflow
   templates:
   - name: hello-world
     container:
@@ -105,10 +105,10 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          name: my-config
-          key: template
+      semaphores:
+        - configMapKeyRef:
+            name: my-config
+            key: template
     container:
       image: alpine:latest
       command: [sh, -c]
@@ -137,8 +137,8 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      mutex:
-        name: template
+      mutexes:
+        - name: template
     container:
       image: alpine:latest
       command: [sh, -c]
@@ -151,6 +151,10 @@ Examples:
 1. [Workflow level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 1. [Step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level.yaml)
 1. [Step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
+1. [Legacy workflow level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-wf-level-legacy.yaml)
+1. [Legacy workflow level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
+1. [Legacy step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level-legacy.yaml)
+1. [Legacy step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
 ## Queuing
 
@@ -161,6 +165,28 @@ The queue is first ordered by priority: a higher priority number is placed befor
 The queue is then ordered by `creationTimestamp`: older workflows are placed before newer workflows.
 
 Workflows can only acquire a lock if they are at the front of the queue for that lock.
+
+## Multiple locks
+
+> v3.6 and after
+
+You can specify multiple locks in a single workflow or template.
+
+```yaml
+synchronization:
+  mutexes:
+    - name: alpha
+    - name: beta
+  semaphores:
+    - configMapKeyRef:
+        key: foo
+        name: my-config
+    - configMapKeyRef:
+        key: bar
+        name: my-config
+```
+
+The workflow will block until all of these locks are available.
 
 ## Workflow-level parallelism
 
@@ -174,6 +200,33 @@ Examples:
 1. [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested-dag.yaml) restricts the number of dag tasks that can be run at any one time
 1. [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested-workflow.yaml) shows how parallelism is inherited by children
 1. [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-template-limit.yaml) shows how parallelism of looped templates is also restricted
+
+!!! Warning
+    If a Workflow is at the front of the queue and it needs to acquire multiple locks, all other Workflows that also need those same locks will wait. This applies even if the other Workflows only wish to acquire a subset of those locks.
+
+## Legacy
+
+In workflows prior to 3.6 you can only specify one lock in any one workflow or template using either a mutex:
+
+```yaml
+    synchronization:
+      mutex:
+     ...
+```
+
+or a semaphore:
+
+```yaml
+    synchronizaion:
+   semamphore:
+     ...
+```
+
+Specifying both would not work in <3.6, only the semaphore would be used.
+
+The single `mutex` and `semaphore` syntax still works in version 3.6 but is considered deprecated.
+Both the `mutex` and the `semaphore` will be taken in version 3.6 with this syntax.
+This syntax can be mixed with `mutexes` and `semaphores`, all locks will be required.
 
 ## Other Parallelism support
 

@@ -10970,12 +10970,26 @@
       "type": "object",
       "properties": {
         "mutex": {
-          "description": "Mutex holds the Mutex lock details",
+          "description": "Mutex holds the Mutex lock details - deprecated, use mutexes instead",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
         },
+        "mutexes": {
+          "description": "v3.6 and after: Mutexes holds the list of Mutex lock details",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
+          }
+        },
         "semaphore": {
-          "description": "Semaphore holds the Semaphore configuration",
+          "description": "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
+        },
+        "semaphores": {
+          "description": "v3.6 and after: Semaphores holds the list of Semaphores configuration",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
+          }
         }
       }
     },

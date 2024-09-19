@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: synchronization-tmpl-level-
+  generateName: synchronization-legacy-
 spec:
   entrypoint: main
   templates:
@@ -14,21 +14,18 @@ spec:
 
     - name: load-command
       synchronization:
-        mutexes:
-          - name: task-1
+        mutex:
+          name: task-1
       container:
         image: argoproj/argosay:v2
         args: ["sleep", "2s"]
 
     - name: django-command
       synchronization:
-        mutexes:
-          - name: task-1
-          - name: task-2
-        semaphores:
-          - configMapKeyRef:
-              name: my-config
-              key: workflow
+        semaphore:
+          configMapKeyRef:
+            name: my-config
+            key: workflow
       container:
         image: argoproj/argosay:v2
         args: ["sleep", "2s"]

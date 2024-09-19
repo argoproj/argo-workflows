@@ -7,8 +7,8 @@ metadata:
 spec:
   entrypoint: hello-world
   synchronization:
-    mutexes:
-      - name:  test
+    mutex:
+      name:  test
   templates:
     - name: hello-world
       container:
