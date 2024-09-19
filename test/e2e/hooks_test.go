@@ -849,7 +849,7 @@ spec:
           template: http
     - name: http
       http:
-        url: http://dummy.restapiexample.com/api/v1/employees
+        url: http://httpbin:9100/get
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
