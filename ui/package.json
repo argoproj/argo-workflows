@@ -37,7 +37,7 @@
         "react-router-dom": "^4.2.2",
         "remark-gfm": "^3.0.0",
         "superagent": "^8.1.2",
-        "swagger-ui-react": "^5.17.3"
+        "swagger-ui-react": "^5.17.12"
     },
     "devDependencies": {
         "@babel/core": "^7.22.11",
