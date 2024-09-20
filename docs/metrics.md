@@ -1,8 +1,8 @@
-# Prometheus Metrics
+# Metrics
 
 > v2.7 and after
 
-!!! Metrics changes in 3.6
+!!! Warning "Metrics changes in 3.6"
     Please read [this short guide](upgrading.md#metrics-changes) on what you must consider when upgrading to 3.6.
 
 ## Introduction
@@ -197,10 +197,12 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
 - Errors: `count` and `error_count`
 - Saturation: `workers_busy` and `workflow_condition`
 
-!!! High cardinality
+!!! Warning "High cardinality"
     Some metric attributes may have high cardinality and are marked with ⚠️ to warn you. You may need to disable this metric or disable the attribute.
+
 <!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
 <!-- titles are without argo_workflows prefix -->
+
 #### `cronworkflows_concurrencypolicy_triggered`
 
 A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running.
