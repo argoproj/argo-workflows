@@ -29,7 +29,7 @@ spec:
   templates:
     - name: main
       container:
-        image: docker/whalesay:latest
+        image: busybox
         command:
           - sleep
           - 30s

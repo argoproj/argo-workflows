@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
@@ -32,9 +33,8 @@ func Test_metaData(t *testing.T) {
 			"ignored": []string{"false"},
 		})
 		data := metaData(ctx)
-		if assert.Len(t, data, 1) {
-			assert.Equal(t, []string{"true"}, data["x-valid"])
-		}
+		require.Len(t, data, 1)
+		assert.Equal(t, []string{"true"}, data["x-valid"])
 	})
 }
 
@@ -163,9 +163,9 @@ func TestNewOperation(t *testing.T) {
 			},
 		},
 	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}, "formatted": "My%Test%"}`)})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = operation.Dispatch(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	expectedParamValues := []string{
 		`My%Test%`,
@@ -176,17 +176,18 @@ func TestNewOperation(t *testing.T) {
 	var paramValues []string
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
-	if assert.NoError(t, err) && assert.Len(t, list.Items, 4) {
-		for _, wf := range list.Items {
-			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
-			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
-			assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
-			assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
-			paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
-		}
-		sort.Strings(paramValues)
-		assert.Equal(t, expectedParamValues, paramValues)
+	require.NoError(t, err)
+	require.Len(t, list.Items, 4)
+	for _, wf := range list.Items {
+		assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
+		assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
+		assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
+		assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
+		paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
 	}
+	sort.Strings(paramValues)
+	assert.Equal(t, expectedParamValues, paramValues)
+
 	assert.Contains(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to get workflow template: workflowtemplates.argoproj.io \"not-found\" not found", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to validate workflow template instanceid: 'my-wft-3' is not managed by the current Argo Server", <-recorder.Events)
@@ -352,13 +353,13 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	}, "my-ns", "my-discriminator",
 		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true, "pr": 112}, "list": ["one", "two"]}`)})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = operation.Dispatch(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, list.Items, 4)
 
 	expectedNames := []string{
@@ -405,10 +406,9 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 
 func Test_expressionEnvironment(t *testing.T) {
 	env, err := expressionEnvironment(context.TODO(), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
-	if assert.NoError(t, err) {
-		assert.Equal(t, "my-ns", env["namespace"])
-		assert.Equal(t, "my-d", env["discriminator"])
-		assert.Contains(t, env, "metadata")
-		assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "my-ns", env["namespace"])
+	assert.Equal(t, "my-d", env["discriminator"])
+	assert.Contains(t, env, "metadata")
+	assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
 }

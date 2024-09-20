@@ -31,6 +31,7 @@ type ArtifactDriver struct {
 	TrustedCA             string
 	AccessKey             string
 	SecretKey             string
+	SessionToken          string
 	RoleARN               string
 	UseSDKCreds           bool
 	Context               context.Context
@@ -45,14 +46,15 @@ var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 // newS3Client instantiates a new S3 client object.
 func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Client, error) {
 	opts := argos3.S3ClientOpts{
-		Endpoint:    s3Driver.Endpoint,
-		Region:      s3Driver.Region,
-		Secure:      s3Driver.Secure,
-		AccessKey:   s3Driver.AccessKey,
-		SecretKey:   s3Driver.SecretKey,
-		RoleARN:     s3Driver.RoleARN,
-		Trace:       os.Getenv(common.EnvVarArgoTrace) == "1",
-		UseSDKCreds: s3Driver.UseSDKCreds,
+		Endpoint:     s3Driver.Endpoint,
+		Region:       s3Driver.Region,
+		Secure:       s3Driver.Secure,
+		AccessKey:    s3Driver.AccessKey,
+		SecretKey:    s3Driver.SecretKey,
+		SessionToken: s3Driver.SessionToken,
+		RoleARN:      s3Driver.RoleARN,
+		Trace:        os.Getenv(common.EnvVarArgoTrace) == "1",
+		UseSDKCreds:  s3Driver.UseSDKCreds,
 		EncryptOpts: argos3.EncryptOpts{
 			KmsKeyId:              s3Driver.KmsKeyId,
 			KmsEncryptionContext:  s3Driver.KmsEncryptionContext,

@@ -6,6 +6,7 @@ import {Timestamp} from '../shared/components/timestamp';
 import {ConditionsPanel} from '../shared/conditions-panel';
 import {WorkflowLink} from '../workflows/components/workflow-link';
 import {PrettySchedule} from './pretty-schedule';
+import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec; status: CronWorkflowStatus}) {
     if (status === null) {
@@ -35,7 +36,7 @@ export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec
                             </>
                         )
                     },
-                    {title: 'Last Scheduled Time', value: <Timestamp date={status.lastScheduledTime} />},
+                    {title: 'Last Scheduled Time', value: <Timestamp date={status.lastScheduledTime} timestampKey={TIMESTAMP_KEYS.CRON_WORKFLOW_STATUS_LAST_SCHEDULED} />},
                     {title: 'Conditions', value: <ConditionsPanel conditions={status.conditions} />}
                 ].map(attr => (
                     <div className='row white-box__details-row' key={attr.title}>

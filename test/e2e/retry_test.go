@@ -63,7 +63,7 @@ spec:
 			return status.Name == "test-retry-limit(0)"
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeFailed, status.Phase)
-			assert.Equal(t, true, status.NodeFlag.Retried)
+			assert.True(t, status.NodeFlag.Retried)
 		})
 }
 
@@ -140,7 +140,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, wfv1.WorkflowFailed)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return status.Name == "workflow-template-containerset"
@@ -153,43 +153,43 @@ spec:
 		ctx := context.Background()
 		podLogOptions := &apiv1.PodLogOptions{Container: "c1"}
 		stream, err := s.KubeClient.CoreV1().Pods(ns).GetLogs(name, podLogOptions).Stream(ctx)
-		assert.Nil(s.T(), err)
+		s.Require().NoError(err)
 		defer stream.Close()
 		logBytes, err := io.ReadAll(stream)
-		assert.Nil(s.T(), err)
+		s.Require().NoError(err)
 		output := string(logBytes)
 		count := strings.Count(output, "capturing logs")
-		assert.Equal(s.T(), 1, count)
-		assert.Contains(s.T(), output, "hi")
+		s.Equal(1, count)
+		s.Contains(output, "hi")
 	})
 	// Command err. No retry logic is entered.
 	s.Run("ContainerLogs", func() {
 		ctx := context.Background()
 		podLogOptions := &apiv1.PodLogOptions{Container: "c2"}
 		stream, err := s.KubeClient.CoreV1().Pods(ns).GetLogs(name, podLogOptions).Stream(ctx)
-		assert.Nil(s.T(), err)
+		s.Require().NoError(err)
 		defer stream.Close()
 		logBytes, err := io.ReadAll(stream)
-		assert.Nil(s.T(), err)
+		s.Require().NoError(err)
 		output := string(logBytes)
 		count := strings.Count(output, "capturing logs")
-		assert.Equal(s.T(), 0, count)
-		assert.Contains(s.T(), output, "executable file not found in $PATH")
+		s.Equal(0, count)
+		s.Contains(output, "executable file not found in $PATH")
 	})
 	// Retry when err.
 	s.Run("ContainerLogs", func() {
 		ctx := context.Background()
 		podLogOptions := &apiv1.PodLogOptions{Container: "c3"}
 		stream, err := s.KubeClient.CoreV1().Pods(ns).GetLogs(name, podLogOptions).Stream(ctx)
-		assert.Nil(s.T(), err)
+		s.Require().NoError(err)
 		defer stream.Close()
 		logBytes, err := io.ReadAll(stream)
-		assert.Nil(s.T(), err)
+		s.Require().NoError(err)
 		output := string(logBytes)
 		count := strings.Count(output, "capturing logs")
-		assert.Equal(s.T(), 2, count)
+		s.Equal(2, count)
 		countFailureInfo := strings.Count(output, "intentional failure")
-		assert.Equal(s.T(), 2, countFailureInfo)
+		s.Equal(2, countFailureInfo)
 	})
 }
 
@@ -226,7 +226,7 @@ spec:
 			if status.Phase == wfv1.WorkflowRunning {
 				nodeStatus := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(0)")
 				nodeStatusRetry := status.Nodes.FindByDisplayName("test-nodeantiaffinity-strategy(1)")
-				assert.Contains(t, nodeStatusRetry.Message, "1 node(s) didn't match Pod's node affinity/selector")
+				assert.Contains(t, nodeStatusRetry.Message, "didn't match Pod's node affinity/selector")
 				assert.NotEqual(t, nodeStatus.HostNodeName, nodeStatusRetry.HostNodeName)
 			}
 		})

@@ -7,11 +7,11 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {UploadButton} from '../shared/components/upload-button';
 import {exampleEventSource} from '../shared/examples';
 import {services} from '../shared/services';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {EventSourceEditor} from './event-source-editor';
 
 export function EventSourceCreator({onCreate, namespace}: {namespace: string; onCreate: (eventSource: EventSource) => void}) {
-    const [eventSource, setEventSource] = useState<EventSource>(exampleEventSource(Utils.getNamespaceWithDefault(namespace)));
+    const [eventSource, setEventSource] = useState<EventSource>(exampleEventSource(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -21,7 +21,7 @@ export function EventSourceCreator({onCreate, namespace}: {namespace: string; on
                     icon='plus'
                     onClick={async () => {
                         try {
-                            const newEventSource = await services.eventSource.create(eventSource, Utils.getNamespaceWithDefault(eventSource.metadata.namespace));
+                            const newEventSource = await services.eventSource.create(eventSource, nsUtils.getNamespaceWithDefault(eventSource.metadata.namespace));
                             onCreate(newEventSource);
                         } catch (err) {
                             setError(err);

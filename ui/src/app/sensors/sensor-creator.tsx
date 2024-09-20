@@ -7,11 +7,11 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {UploadButton} from '../shared/components/upload-button';
 import {exampleSensor} from '../shared/examples';
 import {services} from '../shared/services';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {SensorEditor} from './sensor-editor';
 
 export function SensorCreator({namespace, onCreate}: {namespace: string; onCreate: (sensor: Sensor) => void}) {
-    const [sensor, setSensor] = useState<Sensor>(exampleSensor(Utils.getNamespaceWithDefault(namespace)));
+    const [sensor, setSensor] = useState<Sensor>(exampleSensor(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -21,7 +21,7 @@ export function SensorCreator({namespace, onCreate}: {namespace: string; onCreat
                     icon='plus'
                     onClick={async () => {
                         try {
-                            const newSensor = await services.sensor.create(sensor, Utils.getNamespaceWithDefault(sensor.metadata.namespace));
+                            const newSensor = await services.sensor.create(sensor, nsUtils.getNamespaceWithDefault(sensor.metadata.namespace));
                             onCreate(newSensor);
                         } catch (err) {
                             setError(err);

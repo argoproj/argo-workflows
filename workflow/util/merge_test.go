@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -21,7 +22,7 @@ spec:
       value: original
   entrypoint: start
   onExit: end
-  serviceAccountName: argo
+  serviceAccountName: default
   workflowTemplateRef:
     name: workflow-template-submittable
 `
@@ -46,7 +47,7 @@ func TestMergeWorkflows(t *testing.T) {
 	targetWf := wfv1.MustUnmarshalWorkflow(patchWF)
 
 	err := MergeTo(patchWf, targetWf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "start", targetWf.Spec.Entrypoint)
 	assert.Equal(t, "argo1", targetWf.Spec.ServiceAccountName)
 	assert.Equal(t, "message", targetWf.Spec.Arguments.Parameters[0].Name)
@@ -96,7 +97,7 @@ spec:
         name: message
         value: "hello world"
   onExit: whalesay-exit
-  serviceAccountName: argo
+  serviceAccountName: default
   templates: 
     - 
       container: 
@@ -184,7 +185,7 @@ spec:
         value: "hello world"
   entrypoint: whalesay
   onExit: whalesay-exit
-  serviceAccountName: argo
+  serviceAccountName: default
   templates: 
     - 
       container: 
@@ -368,9 +369,9 @@ func TestJoinWfSpecs(t *testing.T) {
 	result := wfv1.MustUnmarshalWorkflow(resultSpec)
 
 	targetWf, err := JoinWorkflowSpec(&wf1.Spec, wft.GetWorkflowSpec(), &wfDefault.Spec)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal(result.Spec, targetWf.Spec)
-	assert.Equal(3, len(targetWf.Spec.Templates))
+	assert.Len(targetWf.Spec.Templates, 3)
 	assert.Equal("whalesay", targetWf.Spec.Entrypoint)
 }
 
@@ -381,7 +382,7 @@ func TestJoinWfSpecArguments(t *testing.T) {
 	result := wfv1.MustUnmarshalWorkflow(wfArgumentsResult)
 
 	targetWf, err := JoinWorkflowSpec(&wf.Spec, wft.GetWorkflowSpec(), nil)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal(result.Spec.Arguments, targetWf.Spec.Arguments)
 }
 
@@ -463,7 +464,7 @@ func TestMergeHooks(t *testing.T) {
 		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
 
 		err := MergeTo(patchHookWf, targetHookWf)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Nil(t, targetHookWf.Spec.Hooks)
 	})
 
@@ -472,8 +473,8 @@ func TestMergeHooks(t *testing.T) {
 		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
 
 		err := MergeTo(patchHookWf, targetHookWf)
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		require.NoError(t, err)
+		assert.Len(t, targetHookWf.Spec.Hooks, 2)
 		assert.Equal(t, "c", targetHookWf.Spec.Hooks[`foo`].Template)
 		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
 	})
@@ -484,8 +485,8 @@ func TestMergeHooks(t *testing.T) {
 		targetHookWf := wfv1.MustUnmarshalWorkflow(baseHookWF)
 
 		err := MergeTo(patchHookWf, targetHookWf)
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		require.NoError(t, err)
+		assert.Len(t, targetHookWf.Spec.Hooks, 2)
 		assert.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
 		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
 	})

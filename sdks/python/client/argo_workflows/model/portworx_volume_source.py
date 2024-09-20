@@ -108,7 +108,7 @@ class PortworxVolumeSource(ModelNormal):
         """PortworxVolumeSource - a model defined in OpenAPI
 
         Args:
-            volume_id (str): VolumeID uniquely identifies a Portworx volume
+            volume_id (str): volumeID uniquely identifies a Portworx volume
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -141,8 +141,8 @@ class PortworxVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_type (str): FSType represents the filesystem type to mount Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
-            read_only (bool): Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
+            fs_type (str): fSType represents the filesystem type to mount Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
+            read_only (bool): readOnly defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -195,7 +195,7 @@ class PortworxVolumeSource(ModelNormal):
         """PortworxVolumeSource - a model defined in OpenAPI
 
         Args:
-            volume_id (str): VolumeID uniquely identifies a Portworx volume
+            volume_id (str): volumeID uniquely identifies a Portworx volume
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -228,8 +228,8 @@ class PortworxVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_type (str): FSType represents the filesystem type to mount Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
-            read_only (bool): Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
+            fs_type (str): fSType represents the filesystem type to mount Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
+            read_only (bool): readOnly defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

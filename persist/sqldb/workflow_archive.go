@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -69,6 +70,7 @@ type WorkflowArchive interface {
 	ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error)
 	CountWorkflows(options sutils.ListOptions) (int64, error)
 	GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error)
+	GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 	DeleteExpiredWorkflows(ttl time.Duration) error
 	IsEnabled() bool
@@ -161,15 +163,36 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 		return nil, err
 	}
 
-	selector := r.session.SQL().
-		Select(selectQuery).
+	subSelector := r.session.SQL().
+		Select(db.Raw("uid")).
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+	subSelector, err = BuildArchivedWorkflowSelector(subSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
 	if err != nil {
 		return nil, err
 	}
+
+	if r.dbType == MySQL {
+		// workaround for mysql 42000 error (Unsupported subquery syntax):
+		//
+		//     Error 1235 (42000): This version of MySQL doesn't yet support 'LIMIT \u0026 IN/ALL/ANY/SOME subquery'
+		//
+		// more context:
+		// * https://dev.mysql.com/doc/refman/8.0/en/subquery-errors.html
+		// * https://dev.to/gkoniaris/limit-mysql-subquery-results-inside-a-where-in-clause-using-laravel-s-eloquent-orm-26en
+		subSelector = r.session.SQL().Select(db.Raw("*")).From(subSelector).As("x")
+	}
+
+	// why a subquery? the json unmarshal triggers for every row in the filter
+	// query. by filtering on uid first, we delay json parsing until a single
+	// row, speeding up the query(e.g. up to 257 times faster for some
+	// deployments).
+	//
+	// more context: https://github.com/argoproj/argo-workflows/pull/13566
+	selector := r.session.SQL().Select(selectQuery).From(archiveTableName).Where(
+		r.clusterManagedNamespaceAndInstanceID().And(db.Cond{"uid IN": subSelector}),
+	)
 
 	err = selector.All(&archivedWfs)
 	if err != nil {
@@ -289,6 +312,13 @@ func namePrefixClause(namePrefix string) db.Cond {
 	return db.Cond{}
 }
 
+func phaseEqual(phase string) db.Cond {
+	if phase != "" {
+		return db.Cond{"phase": phase}
+	}
+	return db.Cond{}
+}
+
 func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error) {
 	var err error
 	archivedWf := &archivedWorkflowRecord{}
@@ -341,6 +371,46 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 	// For backward compatibility, we should label workflow retrieved from DB as Persisted.
 	wf.ObjectMeta.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	return wf, nil
+}
+
+func (r *workflowArchive) GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
+	selector := r.session.SQL().
+		Select("name", "namespace", "uid", "startedat", "finishedat").
+		From(archiveTableName).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
+		And(phaseEqual(string(wfv1.NodeSucceeded)))
+
+	selector, err := BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, sutils.ListOptions{
+		Namespace:         namespace,
+		LabelRequirements: requirements,
+		Limit:             1,
+		Offset:            0,
+	}, false)
+	if err != nil {
+		return nil, err
+	}
+
+	var awf archivedWorkflowMetadata
+	err = selector.One(&awf)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      awf.Name,
+			Namespace: awf.Namespace,
+			UID:       types.UID(awf.UID),
+			Labels: map[string]string{
+				common.LabelKeyWorkflowArchivingStatus: "Persisted",
+			},
+		},
+		Status: wfv1.WorkflowStatus{
+			StartedAt:  v1.Time{Time: awf.StartedAt},
+			FinishedAt: v1.Time{Time: awf.FinishedAt},
+		},
+	}, nil
+
 }
 
 func (r *workflowArchive) DeleteWorkflow(uid string) error {

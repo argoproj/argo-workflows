@@ -8,13 +8,13 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {EventSource, kubernetes} from '../../models';
 import {ID} from '../event-flow/id';
-import {Utils as EventsUtils} from '../sensors/utils';
+import {statusIconClasses} from '../sensors/utils';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Node} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
-import {Timestamp} from '../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -22,10 +22,11 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceCreator} from './event-source-creator';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/event_source/'>Learn more</a>;
 
@@ -35,7 +36,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
@@ -52,7 +53,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
     useEffect(
         () =>
             history.push(
-                historyUrl('event-sources' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('event-sources' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel,
                     selectedNode,
@@ -87,6 +88,8 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
     const zeroState = (eventSources || []).length === 0;
 
     useCollectEvent('openedEventSourceList');
+
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.EVENT_SOURCE_LIST_CREATION);
 
     return (
         <Page
@@ -126,7 +129,9 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
                             <div className='columns small-1' />
                             <div className='columns small-4'>NAME</div>
                             <div className='columns small-3'>NAMESPACE</div>
-                            <div className='columns small-2'>CREATED</div>
+                            <div className='columns small-2'>
+                                CREATED <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                            </div>
                             <div className='columns small-2'>LOGS</div>
                         </div>
                         {eventSources.map(es => (
@@ -135,12 +140,12 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
                                 key={`${es.metadata.namespace}/${es.metadata.name}`}
                                 to={uiUrl(`event-sources/${es.metadata.namespace}/${es.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <i className={classNames('fa', EventsUtils.statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))} />
+                                    <i className={classNames('fa', statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))} />
                                 </div>
                                 <div className='columns small-4'>{es.metadata.name}</div>
                                 <div className='columns small-3'>{es.metadata.namespace}</div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={es.metadata.creationTimestamp} />
+                                    <Timestamp date={es.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
                                 </div>
                                 <div className='columns small-2'>
                                     <div

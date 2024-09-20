@@ -19,7 +19,7 @@ import (
 
 func TestInitDB(t *testing.T) {
 	conn, err := initDB()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer conn.Close()
 	t.Run("TestTablesCreated", func(t *testing.T) {
 		err = sqlitex.Execute(conn, `select name from sqlite_master where type='table'`, &sqlitex.ExecOptions{

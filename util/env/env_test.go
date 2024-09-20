@@ -28,13 +28,13 @@ func TestLookupEnvIntOr(t *testing.T) {
 }
 
 func TestLookupEnvFloatOr(t *testing.T) {
-	assert.Equal(t, 1., LookupEnvFloatOr("", 1.), "default value")
+	assert.InEpsilon(t, 1., LookupEnvFloatOr("", 1.), 0.001, "default value")
 	t.Setenv("FOO", "not-float")
 	assert.Panics(t, func() { LookupEnvFloatOr("FOO", 1.) }, "bad value")
 	t.Setenv("FOO", "2.0")
-	assert.Equal(t, 2., LookupEnvFloatOr("FOO", 1.), "env var value")
+	assert.InEpsilon(t, 2., LookupEnvFloatOr("FOO", 1.), 0.001, "env var value")
 	t.Setenv("FOO", "")
-	assert.Equal(t, 1., LookupEnvFloatOr("FOO", 1.), "empty var value; default value")
+	assert.InEpsilon(t, 1., LookupEnvFloatOr("FOO", 1.), 0.001, "empty var value; default value")
 }
 
 func TestLookupEnvStringOr(t *testing.T) {
