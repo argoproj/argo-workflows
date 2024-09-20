@@ -28,19 +28,19 @@ describe('pod names', () => {
     });
 
     test('getPodName', () => {
-        const node = {
+        const node = ({
             name: 'nodename',
             id: '1',
             templateName: shortTemplateName
-        } as unknown as NodeStatus;
-        const wf = {
+        } as unknown) as NodeStatus;
+        const wf = ({
             metadata: {
                 name: shortWfName,
                 annotations: {
                     [ANNOTATION_KEY_POD_NAME_VERSION]: POD_NAME_V1
                 }
             }
-        } as unknown as Workflow;
+        } as unknown) as Workflow;
 
         const v1podName = node.id;
         const v2podName = `${shortWfName}-${shortTemplateName}-${createFNVHash(node.name)}`;
@@ -63,7 +63,7 @@ describe('pod names', () => {
     test('getTemplateNameFromNode', () => {
         // case: no template ref or template name
         // expect fallback to empty string
-        const node = {} as unknown as NodeStatus;
+        const node = ({} as unknown) as NodeStatus;
         expect(getTemplateNameFromNode(node)).toEqual('');
 
         // case: template ref defined but no template name defined

@@ -84,7 +84,7 @@ export const Utils = {
 
     fixLocalStorageString(x: string): string {
         // empty string is valid, so we cannot use `truthy`
-        if (x == null || x == 'null' || x == 'undefined') {
+        if (x == null || x === 'null' || x === 'undefined') {
             return undefined; // explicitly return undefined
         }
         return x;

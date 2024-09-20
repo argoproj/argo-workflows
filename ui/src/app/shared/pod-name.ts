@@ -21,7 +21,7 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
     const workflowName = workflow.metadata.name;
     // convert containerSet node name to its corresponding pod node name by removing the ".<containerName>" postfix
     // this part is from workflow/controller/container_set_template.go#executeContainerSet; the inverse never happens in the back-end, so is unique to the front-end
-    const podNodeName = node.type == 'Container' ? node.name.replace(/\.[^/.]+$/, '') : node.name;
+    const podNodeName = node.type === 'Container' ? node.name.replace(/\.[^/.]+$/, '') : node.name;
     if (workflowName === podNodeName) {
         return workflowName;
     }
@@ -43,7 +43,7 @@ export function ensurePodNamePrefixLength(prefix: string): string {
     }
 
     return prefix;
-};
+}
 
 export const createFNVHash = (input: string): number => {
     let hashint = 2166136261;

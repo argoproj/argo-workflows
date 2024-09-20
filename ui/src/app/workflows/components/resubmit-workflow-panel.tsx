@@ -1,10 +1,10 @@
 import {Checkbox} from 'argo-ui';
 import React, {useContext, useState} from 'react';
 import {Parameter, ResubmitOpts, Workflow} from '../../../models';
-import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {ParametersInput} from '../../shared/components/parameters-input/parameters-input';
+import {Context} from '../../shared/context';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
 
