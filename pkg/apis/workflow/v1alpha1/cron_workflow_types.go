@@ -44,7 +44,7 @@ const annotationKeyLatestSchedule = workflow.CronWorkflowFullName + "/last-used-
 type CronWorkflowSpec struct {
 	// WorkflowSpec is the spec of the workflow to be run
 	WorkflowSpec WorkflowSpec `json:"workflowSpec" protobuf:"bytes,1,opt,name=workflowSpec,casttype=WorkflowSpec"`
-	// Schedule is a schedule to run the Workflow in Cron format
+	// Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules
 	Schedule string `json:"schedule,omitempty" protobuf:"bytes,2,opt,name=schedule"`
 	// ConcurrencyPolicy is the K8s-style concurrency policy that will be used
 	ConcurrencyPolicy ConcurrencyPolicy `json:"concurrencyPolicy,omitempty" protobuf:"bytes,3,opt,name=concurrencyPolicy,casttype=ConcurrencyPolicy"`
