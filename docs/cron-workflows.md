@@ -43,7 +43,7 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 
 | Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
-| `schedule`                   | None | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`. Either `schedule` or `schedules` must be provided. |
+| `schedule`                   | None | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`. Deprecated, use `schedules`. |
 | `schedules`                   | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Either `schedule` or `schedules` must be provided. |
 | `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
 | `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly |
