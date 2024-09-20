@@ -223,8 +223,9 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
 }
 
 function getSpecNextScheduledTime(spec: CronWorkflowSpec): Date {
-    if (spec.schedule != '') {
-        return getNextScheduledTime(spec.schedule, spec.timezone);
+    if (spec.schedule && spec.schedule.trim() !== '') {
+        const nextTime = getNextScheduledTime(spec.schedule, spec.timezone);
+        return nextTime;
     }
 
     let out: Date;
