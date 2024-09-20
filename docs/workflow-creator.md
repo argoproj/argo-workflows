@@ -11,10 +11,10 @@ metadata:
   name: my-wf
   labels:
     workflows.argoproj.io/creator: admin
-    # labels must be DNS formatted, so the "@" is replaces by '.at.'  
+    # labels must be DNS formatted, so the "@" is replaces by '.at.'
     workflows.argoproj.io/creator-email: admin.at.your.org
     workflows.argoproj.io/creator-preferred-username: admin-preferred-username
 ```
 
-!!! NOTE
+!!! Note
     Labels only contain `[-_.0-9a-zA-Z]`, so any other characters will be turned into `-`.
