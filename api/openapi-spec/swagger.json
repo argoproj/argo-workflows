@@ -8920,7 +8920,7 @@
           "type": "integer"
         },
         "schedule": {
-          "description": "Schedule is a schedule to run the Workflow in Cron format",
+          "description": "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
           "type": "string"
         },
         "schedules": {

@@ -2235,7 +2235,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"schedule": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Schedule is a schedule to run the Workflow in Cron format",
+							Description: "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
 							Type:        []string{"string"},
 							Format:      "",
 						},
