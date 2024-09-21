@@ -10,7 +10,6 @@ kind: Workflow
 metadata:
   name: my-wf
   annotations:
-    workflows.argoproj.io/title: '**Build and test**'
     workflows.argoproj.io/title: 'Build and test' # defaults to `metadata.name` if not specified
     workflows.argoproj.io/description: 'SuperDuperProject PR #6529: Implement frobbing (aff39ee)'
 ```
