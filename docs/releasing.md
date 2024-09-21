@@ -28,8 +28,9 @@ Ignore:
 ### Merge Conflicts
 
 Then look for `failed to cherry-pick` in the log to find commits with merge conflicts and decide if a manual patch is necessary.
-If you're not sure how to fix a merge conflict, the safest and least risky option is to just not cherry-pick the commit.
-The commit can always be revisited in the future if there is user demand or if necessary to prevent further conflicts.
+
+If you're not sure how to fix a merge conflict, the safest and least risky option is to _not_ cherry-pick the commit.
+The commit can be revisited in the future if there is user demand or if necessary to prevent further conflicts.
 
 If you do make a manual patch, add a note in the commit message of what you changed.
 As prior examples, see: [`f19d6d6046`](https://github.com/argoproj/argo-workflows/commit/f19d6d60462fb23c95324ba924c0972d92465a67), [`fbc56d423d`](https://github.com/argoproj/argo-workflows/commit/fbc56d423d106610f899cd487c3bb4ae10a5e3d8), [`37c87dafee`](https://github.com/argoproj/argo-workflows/commit/37c87dafeed5f50ce96664d80009e7d9b4d23e0a)
