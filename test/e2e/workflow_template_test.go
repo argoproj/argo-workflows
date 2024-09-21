@@ -12,7 +12,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
@@ -74,7 +73,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWorkflowMetadataSubsti
 		SubmitWorkflowsFromWorkflowTemplates().
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+		ExpectWorkflowNode(v1alpha1.SucceededPodNode, func(t *testing.T, n *v1alpha1.NodeStatus, p *apiv1.Pod) {
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
 					assert.Len(t, c.Args, 3)
