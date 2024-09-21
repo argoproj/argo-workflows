@@ -124,7 +124,7 @@ func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx con
 	wfClient := auth.GetWfClient(ctx)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err = validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
+	err = validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template, cwts.wfDefaults, validate.ValidateOpts{})
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.InvalidArgument)
 	}
