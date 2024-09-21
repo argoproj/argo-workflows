@@ -267,7 +267,7 @@ func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLW
 func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer)
+	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer, wfc.Config.WorkflowDefaults)
 	cronController.Run(ctx)
 }
 

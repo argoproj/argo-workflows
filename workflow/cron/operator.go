@@ -136,7 +136,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.ObjectMeta.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
-	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf)
+	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf, nil)
 	if err != nil {
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
