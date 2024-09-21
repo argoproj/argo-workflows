@@ -123,6 +123,7 @@ nav:
           - artifact-visualization.md
           - widgets.md
           - intermediate-inputs.md
+          - title-and-description.md
       - Debugging Tools:
           - workflow-events.md
           - debug-pause.md
