@@ -15,13 +15,13 @@ export interface CronWorkflowSpec {
     workflowSpec: WorkflowSpec;
     workflowMetadata?: kubernetes.ObjectMeta;
     schedule: string;
+    schedules?: string[];
     concurrencyPolicy?: ConcurrencyPolicy;
     suspend?: boolean;
     startingDeadlineSeconds?: number;
     successfulJobsHistoryLimit?: number;
     failedJobsHistoryLimit?: number;
     timezone?: string;
-    schedules?: string[];
 }
 
 export interface CronWorkflowStatus {
