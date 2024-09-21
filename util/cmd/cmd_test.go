@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
+	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -142,7 +142,7 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 			expectedLog:   "CLI version (v3.1.0) does not match server version (v3.1.1). This can lead to unexpected behavior.",
 		},
 	}
-	hook := &test.Hook{}
+	hook := &logtest.Hook{}
 	log.AddHook(hook)
 	defer log.StandardLogger().ReplaceHooks(nil)
 	for _, tt := range tests {
