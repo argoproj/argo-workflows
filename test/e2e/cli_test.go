@@ -1381,7 +1381,7 @@ func (s *CLISuite) TestCronCommands() {
 		s.Given().
 			RunCli([]string{"cron", "update", "cron/basic-update-template.yaml"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				assert.Contains(t, output, "Schedules:                      5 5 5 * *")
+				assert.Contains(t, output, "Schedules:                     5 5 5 * *")
 			})
 	})
 	s.Run("Get", func() {
@@ -1420,7 +1420,7 @@ func (s *CLISuite) TestCronCommands() {
 			assert.Contains(t, output, "NAME")
 			assert.Contains(t, output, "AGE")
 			assert.Contains(t, output, "LAST RUN")
-			assert.Contains(t, output, "SCHEDULE")
+			assert.Contains(t, output, "SCHEDULES")
 			assert.Contains(t, output, "SUSPENDED")
 		})
 	})
@@ -1440,7 +1440,7 @@ func (s *CLISuite) TestCronCommands() {
 				assert.Contains(t, output, "NAME")
 				assert.Contains(t, output, "AGE")
 				assert.Contains(t, output, "LAST RUN")
-				assert.Contains(t, output, "SCHEDULE")
+				assert.Contains(t, output, "SCHEDULES")
 				assert.Contains(t, output, "SUSPENDED")
 				assert.Contains(t, output, "test-cwf-with-labels")
 				assert.NotContains(t, output, "cron-wf-without-labels")
@@ -1477,7 +1477,7 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Create Multiple Schedules", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/multiple-schedules.yaml"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			assert.Contains(t, output, "Schedules:                      * * * * *,*/2 * * * *")
+			assert.Contains(t, output, "Schedules:                     * * * * *,*/2 * * * *")
 		})
 	})
 }
