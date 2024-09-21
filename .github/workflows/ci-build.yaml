@@ -199,46 +199,46 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-corefunctional
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-functional
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-api
             profile: mysql
-            useApi: true
+            use-api: true
           - test: test-cli
             profile: mysql
-            useApi: true
+            use-api: true
           - test: test-cron
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-examples
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-plugins
             profile: plugins
-            useApi: false
+            use-api: false
           - test: test-java-sdk
             profile: minimal
-            useApi: true
+            use-api: true
           - test: test-python-sdk
             profile: minimal
-            useApi: true
+            use-api: true
           - test: test-executor
             install_k3s_version: v1.28.13+k3s1
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-corefunctional
             install_k3s_version: v1.28.13+k3s1
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-functional
             install_k3s_version: v1.28.13+k3s1
             profile: minimal
-            useApi: false
+            use-api: false
     steps:
       - name: Install socat (needed by Kubernetes)
         run: sudo apt-get -y install socat
@@ -297,17 +297,17 @@ jobs:
         run: make controller kit STATIC_FILES=false
       - name: Build CLI
         run: make cli STATIC_FILES=false
-        if: ${{matrix.useApi}}
+        if: ${{matrix.use-api}}
       - name: Start controller/API
         run: |
           make start PROFILE=${{matrix.profile}} \
             AUTH_MODE=client STATIC_FILES=false \
             LOG_LEVEL=info \
-            API=${{matrix.useApi}} \
+            API=${{matrix.use-api}} \
             UI=false \
             POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
       - name: Wait for controller to be up
-        run: make wait API=${{matrix.useApi}}
+        run: make wait API=${{matrix.use-api}}
         timeout-minutes: 5
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
