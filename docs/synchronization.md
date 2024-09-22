@@ -208,30 +208,6 @@ Examples:
 !!! Warning
     If a Workflow is at the front of the queue and it needs to acquire multiple locks, all other Workflows that also need those same locks will wait. This applies even if the other Workflows only wish to acquire a subset of those locks.
 
-## Legacy
-
-In workflows prior to 3.6 you can only specify one lock in any one workflow or template using either a mutex:
-
-```yaml
-    synchronization:
-      mutex:
-     ...
-```
-
-or a semaphore:
-
-```yaml
-    synchronizaion:
-   semamphore:
-     ...
-```
-
-Specifying both would not work in <3.6, only the semaphore would be used.
-
-The single `mutex` and `semaphore` syntax still works in version 3.6 but is considered deprecated.
-Both the `mutex` and the `semaphore` will be taken in version 3.6 with this syntax.
-This syntax can be mixed with `mutexes` and `semaphores`, all locks will be required.
-
 ## Other Parallelism support
 
 You can also [restrict parallelism at the Controller-level](parallelism.md).
