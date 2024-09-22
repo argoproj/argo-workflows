@@ -24,10 +24,6 @@ data:
   template: "2"  # Two instances of template can run at a given time in particular namespace
 ```
 
-!!! Warning
-    Each synchronization block may only refer to either a semaphore or a mutex.
-    If you specify both only the semaphore will be locked.
-
 ## Workflow-level Synchronization
 
 You can limit parallel execution of workflows by using the same synchronization reference.
