@@ -1,6 +1,5 @@
 # This example demonstrates the use of a Synchronization Mutex lock on template execution. Mutex lock limits
 # only one of the template execution across the workflows in the namespace which has same Mutex lock.
-
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

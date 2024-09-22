@@ -32,50 +32,14 @@ In this example the synchronization key `workflow` is configured as limit `"1"`,
 
 Using a semaphore configured by a `ConfigMap`:
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: synchronization-wf-level-
-spec:
-  entrypoint: hello-world
-  synchronization:
-    semaphores: # v3.6 and after
-      - configMapKeyRef:
-          name: my-config
-          key: workflow
-    # semaphore: # deprecated: v3.5 and before
-    #   configMapKeyRef:
-    #     name: my-config
-    #     key: workflow
-  templates:
-  - name: hello-world
-    container:
-      image: busybox
-      command: [echo]
-      args: ["hello world"]
+```yaml title="examples/synchronization-wf-level.yaml"
+--8<-- "examples/synchronization-wf-level.yaml:12"
 ```
 
 Using a mutex is equivalent to a limit `"1"` semaphore:
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: synchronization-wf-level-
-spec:
-  entrypoint: hello-world
-  synchronization:
-    mutexes: # v3.6 and after
-      - name: workflow
-    # mutex: # deprecated: v3.5 and before
-    #   name: template
-  templates:
-  - name: hello-world
-    container:
-      image: busybox
-      command: [echo]
-      args: ["hello world"]
+```yaml title="examples/synchronization-mutex-wf-level.yaml"
+--8<-- "examples/synchronization-mutex-wf-level.yaml:3"
 ```
 
 ## Template-level Synchronization
@@ -87,78 +51,15 @@ This applies even when multiple steps or tasks within a workflow or different wo
 
 Using a semaphore configured by a `ConfigMap`:
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: synchronization-tmpl-level-
-spec:
-  entrypoint: synchronization-tmpl-level-example
-  templates:
-  - name: synchronization-tmpl-level-example
-    steps:
-    - - name: synchronization-acquire-lock
-        template: acquire-lock
-        arguments:
-          parameters:
-          - name: seconds
-            value: "{{item}}"
-        withParam: '["1","2","3","4","5"]'
-
-  - name: acquire-lock
-    synchronization:
-      semaphores: # v3.6 and after
-        - configMapKeyRef:
-            name: my-config
-            key: template
-      # semaphore: # deprecated: v3.5 and before
-      #   configMapKeyRef:
-      #     name: my-config
-      #     key: workflow
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["sleep 10; echo acquired lock"]
+```yaml title="examples/synchronization-tmpl-level.yaml"
+--8<-- "examples/synchronization-tmpl-level.yaml:11"
 ```
 
 Using a mutex will limit to a single concurrent execution of the template:
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: synchronization-tmpl-level-
-spec:
-  entrypoint: synchronization-tmpl-level-example
-  templates:
-  - name: synchronization-tmpl-level-example
-    steps:
-    - - name: synchronization-acquire-lock
-        template: acquire-lock
-        arguments:
-          parameters:
-          - name: seconds
-            value: "{{item}}"
-        withParam: '["1","2","3","4","5"]'
-
-  - name: acquire-lock
-    synchronization:
-      mutexes: # v3.6 and after
-        - name: template
-      # mutex: # deprecated: v3.5 and before
-      #   name: template
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["sleep 10; echo acquired lock"]
+```yaml title="examples/synchronization-mutex-tmpl-level.yaml"
+--8<-- "examples/synchronization-mutex-tmpl-level.yaml:3"
 ```
-
-Examples:
-
-1. [Workflow level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-wf-level.yaml)
-1. [Workflow level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
-1. [Step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level.yaml)
-1. [Step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
 ## Queuing
 
