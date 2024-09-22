@@ -29,6 +29,8 @@ spec:
     synchronization:
       mutex: # deprecated: v3.5 and before
         name: welcome
+      # mutexes: # v3.6 and after
+      #   - name: welcome
     container:
       image: alpine:latest
       command: [sh, -c]
@@ -38,6 +40,8 @@ spec:
     synchronization:
       mutex: # deprecated: v3.5 and before
         name: test
+      # mutexes: # v3.6 and after
+      #   - name: test
     container:
       image: alpine:latest
       command: [sh, -c]

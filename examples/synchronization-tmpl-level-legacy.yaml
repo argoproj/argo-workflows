@@ -31,6 +31,10 @@ spec:
         configMapKeyRef:
           name: my-config
           key: template
+      # semaphores: # v3.6 and after
+      #   - configMapKeyRef:
+      #       name: my-config
+      #       key: template
     container:
       image: alpine:latest
       command: [sh, -c]

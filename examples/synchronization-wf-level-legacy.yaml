@@ -20,6 +20,10 @@ spec:
       configMapKeyRef:
         name: my-config
         key: workflow
+    # semaphores: # v3.6 and after
+    #   - configMapKeyRef:
+    #       name: my-config
+    #       key: workflow
   templates:
     - name: hello-world
       container:
