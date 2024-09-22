@@ -61,22 +61,30 @@ var (
 // SetVersionHeaderUnaryServerInterceptor returns a new unary server interceptor that sets the argo-version header
 func SetVersionHeaderUnaryServerInterceptor(version wfv1.Version) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		err := grpc.SetHeader(ctx, metadata.Pairs(ArgoVersionHeader, version.Version))
-		if err != nil {
-			log.Warnf("Failed to set header '%s': %s", ArgoVersionHeader, err)
+		m, err := handler(ctx, req)
+		if err == nil {
+			// Don't set header if there was an error because attackers could use it to find vulnerable Argo servers
+			err := grpc.SetHeader(ctx, metadata.Pairs(ArgoVersionHeader, version.Version))
+			if err != nil {
+				log.Warnf("Failed to set header '%s': %s", ArgoVersionHeader, err)
+			}
 		}
-		return handler(ctx, req)
+		return m, err
 	}
 }
 
 // SetVersionHeaderStreamServerInterceptor returns a new stream server interceptor that sets the argo-version header
 func SetVersionHeaderStreamServerInterceptor(version wfv1.Version) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		err := ss.SetHeader(metadata.Pairs(ArgoVersionHeader, version.Version))
-		if err != nil {
-			log.Warnf("Failed to set header '%s': %s", ArgoVersionHeader, err)
+		err := handler(srv, ss)
+		if err == nil {
+			// Don't set header if there was an error because attackers could use it to find vulnerable Argo servers
+			err := ss.SetHeader(metadata.Pairs(ArgoVersionHeader, version.Version))
+			if err != nil {
+				log.Warnf("Failed to set header '%s': %s", ArgoVersionHeader, err)
+			}
 		}
-		return handler(srv, ss)
+		return err
 	}
 }
 

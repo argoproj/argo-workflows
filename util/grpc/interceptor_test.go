@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -39,6 +40,19 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	assert.Equal(t, metadata.Pairs(ArgoVersionHeader, version.Version), msts.header)
 }
 
+func TestSetVersionHeaderUnaryServerInterceptorErrorHanding(t *testing.T) {
+	version := &wfv1.Version{Version: "v3.1.0"}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) { return nil, errors.New("error") }
+	msts := &mockServerTransportStream{}
+	ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
+	interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
+
+	_, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
+
+	require.Error(t, err)
+	assert.Empty(t, msts.header)
+}
+
 type mockServerStream struct {
 	header metadata.MD
 }
@@ -65,4 +79,16 @@ func TestSetVersionHeaderStreamServerInterceptor(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, metadata.Pairs(ArgoVersionHeader, version.Version), msts.header)
+}
+
+func TestSetVersionHeaderStreamServerInterceptorErrorHandling(t *testing.T) {
+	version := &wfv1.Version{Version: "v3.1.0"}
+	handler := func(srv any, stream grpc.ServerStream) error { return errors.New("error") }
+	msts := &mockServerStream{header: metadata.New(nil)}
+	interceptor := SetVersionHeaderStreamServerInterceptor(*version)
+
+	err := interceptor(nil, msts, nil, handler)
+
+	require.Error(t, err)
+	assert.Empty(t, msts.header)
 }
