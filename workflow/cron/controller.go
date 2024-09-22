@@ -47,6 +47,7 @@ type Controller struct {
 	cronWfInformer       informers.GenericInformer
 	wftmplInformer       wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer      wfextvv1alpha1.ClusterWorkflowTemplateInformer
+	wfDefaults           *v1alpha1.Workflow
 	cronWfQueue          workqueue.RateLimitingInterface
 	dynamicInterface     dynamic.Interface
 	metrics              *metrics.Metrics
@@ -82,6 +83,7 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
 		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		wfDefaults:           wfDefaults,
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
 		wftmplInformer:       wftmplInformer,
@@ -173,7 +175,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
 
 	err = cronWorkflowOperationCtx.validateCronWorkflow(ctx)
 	if err != nil {
@@ -291,7 +293,7 @@ func (cc *Controller) syncCronWorkflow(ctx context.Context, cronWf *v1alpha1.Cro
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
-	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
+	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
 	err := cwoc.enforceHistoryLimit(ctx, workflows)
 	if err != nil {
 		return err
