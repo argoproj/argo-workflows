@@ -28,7 +28,7 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      mutexes:
+      mutexes: # v3.6 and after
         - name: welcome
     container:
       image: alpine:latest
@@ -37,7 +37,7 @@ spec:
 
   - name: acquire-lock-1
     synchronization:
-      mutexes:
+      mutexes: # v3.6 and after
         - name: test
     container:
       image: alpine:latest

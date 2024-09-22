@@ -7,7 +7,7 @@ metadata:
 spec:
   entrypoint: hello-world
   synchronization:
-    mutex:
+    mutex: # deprecated: v3.5 and before
       name:  test
   templates:
     - name: hello-world

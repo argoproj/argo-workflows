@@ -40,7 +40,7 @@ metadata:
 spec:
   entrypoint: hello-world
   synchronization:
-    semaphores:
+    semaphores: # v3.6 and after
       - configMapKeyRef:
           name: my-config
           key: workflow
@@ -62,7 +62,7 @@ metadata:
 spec:
   entrypoint: hello-world
   synchronization:
-    mutexes:
+    mutexes: # v3.6 and after
       - name: workflow
   templates:
   - name: hello-world
@@ -101,7 +101,7 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      semaphores:
+      semaphores: # v3.6 and after
         - configMapKeyRef:
             name: my-config
             key: template
@@ -133,7 +133,7 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      mutexes:
+      mutexes: # v3.6 and after
         - name: template
     container:
       image: alpine:latest
@@ -147,10 +147,6 @@ Examples:
 1. [Workflow level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 1. [Step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level.yaml)
 1. [Step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-1. [Legacy workflow level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-wf-level-legacy.yaml)
-1. [Legacy workflow level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
-1. [Legacy step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level-legacy.yaml)
-1. [Legacy step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
 ## Queuing
 

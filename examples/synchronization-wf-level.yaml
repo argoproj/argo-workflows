@@ -16,7 +16,7 @@ metadata:
 spec:
   entrypoint: hello-world
   synchronization:
-    semaphores:
+    semaphores: # v3.6 and after
       - configMapKeyRef:
           name: my-config
           key: workflow

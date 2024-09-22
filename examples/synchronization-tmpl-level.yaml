@@ -27,7 +27,7 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      semaphores:
+      semaphores: # v3.6 and after
         - configMapKeyRef:
             name: my-config
             key: template
