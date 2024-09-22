@@ -44,6 +44,10 @@ spec:
       - configMapKeyRef:
           name: my-config
           key: workflow
+    # semaphore: # deprecated: v3.5 and before
+    #   configMapKeyRef:
+    #     name: my-config
+    #     key: workflow
   templates:
   - name: hello-world
     container:
@@ -64,6 +68,8 @@ spec:
   synchronization:
     mutexes: # v3.6 and after
       - name: workflow
+    # mutex: # deprecated: v3.5 and before
+    #   name: template
   templates:
   - name: hello-world
     container:
@@ -105,6 +111,10 @@ spec:
         - configMapKeyRef:
             name: my-config
             key: template
+      # semaphore: # deprecated: v3.5 and before
+      #   configMapKeyRef:
+      #     name: my-config
+      #     key: workflow
     container:
       image: alpine:latest
       command: [sh, -c]
@@ -135,6 +145,8 @@ spec:
     synchronization:
       mutexes: # v3.6 and after
         - name: template
+      # mutex: # deprecated: v3.5 and before
+      #   name: template
     container:
       image: alpine:latest
       command: [sh, -c]
