@@ -89,7 +89,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	// If the cron workflow has a schedule that was just updated, update its annotation
 	if woc.cronWf.IsUsingNewSchedule() {
-		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	}
 
 	err := woc.validateCronWorkflow(ctx)
