@@ -477,7 +477,7 @@ message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
 
-  // Schedule is a schedule to run the Workflow in Cron format
+  // Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules
   optional string schedule = 2;
 
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
@@ -505,7 +505,7 @@ message CronWorkflowSpec {
   // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
   optional StopStrategy stopStrategy = 10;
 
-  // Schedules is a list of schedules to run the Workflow in Cron format
+  // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
   repeated string schedules = 11;
 
   // v3.6 and after: When is an expression that determines if a run should be scheduled.

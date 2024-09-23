@@ -21755,7 +21755,6 @@ spec:
                     type: object
                 type: object
             required:
-            - schedule
             - workflowSpec
             type: object
           status:

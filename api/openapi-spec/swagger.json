@@ -8908,8 +8908,7 @@
       "description": "CronWorkflowSpec is the specification of a CronWorkflow",
       "type": "object",
       "required": [
-        "workflowSpec",
-        "schedule"
+        "workflowSpec"
       ],
       "properties": {
         "concurrencyPolicy": {
@@ -8921,11 +8920,11 @@
           "type": "integer"
         },
         "schedule": {
-          "description": "Schedule is a schedule to run the Workflow in Cron format",
+          "description": "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
           "type": "string"
         },
         "schedules": {
-          "description": "Schedules is a list of schedules to run the Workflow in Cron format",
+          "description": "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
           "type": "array",
           "items": {
             "type": "string"
