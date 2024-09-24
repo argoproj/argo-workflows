@@ -127,12 +127,20 @@ func TestGetTemplateFromRef(t *testing.T) {
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
 	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
+	actionLen := len(wfClientset.Actions())
 	// Get the template of existing template reference.
 	tmplRef := wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}
 	tmpl, err := ctx.GetTemplateFromRef(&tmplRef)
 	require.NoError(t, err)
 	assert.Equal(t, "whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
+	assert.Len(t, wfClientset.Actions(), actionLen+1)
+
+	tmpl, err = ctx.GetTemplateFromRef(&tmplRef)
+	require.NoError(t, err)
+	assert.Equal(t, "whalesay", tmpl.Name)
+	assert.NotNil(t, tmpl.Container)
+	assert.Len(t, wfClientset.Actions(), actionLen+1, "template should be cached")
 
 	// Get the template of unexisting template reference.
 	tmplRef = wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}
