@@ -305,7 +305,7 @@ $(GOPATH)/bin/go-to-protobuf: Makefile
 ifneq ($(USE_NIX), true)
 	# TODO: currently fails on v0.30.3 with
 	# Unable to clean package k8s.io.api.core.v1: remove /home/runner/go/pkg/mod/k8s.io/api@v0.30.3/core/v1/generated.proto: permission denied
-	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.21.5
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.30.5
 endif
 $(GOPATH)/src/github.com/gogo/protobuf: Makefile
 # update this in Nix when upgrading it here
