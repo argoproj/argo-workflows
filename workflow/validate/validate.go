@@ -510,7 +510,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	if newTmpl.Metrics != nil {
 		for _, metric := range newTmpl.Metrics.Prometheus {
 			if !metrics.IsValidMetricName(metric.Name) {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric name '%s' is invalid. Metric names must contain alphanumeric characters, '_', or ':'", tmpl.Name, metric.Name)
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric name '%s' is invalid. Metric names must contain alphanumeric characters or '_'", tmpl.Name, metric.Name)
 			}
 			if err := metrics.ValidateMetricLabels(metric.GetMetricLabels()); err != nil {
 				return err

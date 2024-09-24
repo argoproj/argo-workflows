@@ -20,7 +20,7 @@ import {ListWatch, sortByYouth} from '../../../shared/list-watch';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
+import * as nsUtils from '../../../shared/namespaces';
 import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowCreator} from '../workflow-creator';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
@@ -29,6 +29,8 @@ import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflow
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
 import './workflows-list.scss';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
+import {TimestampSwitch} from '../../../shared/components/timestamp';
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
@@ -53,7 +55,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
         const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
         return {
@@ -133,7 +135,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
         }
-        history.push(historyUrl('workflows' + (Utils.managedNamespace ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
+        history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
 
     useEffect(() => {
@@ -159,6 +161,9 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
+
+    const [storedDisplayISOFormatStart, setStoredDisplayISOFormatStart] = useTimestamp(TIMESTAMP_KEYS.WORKFLOWS_ROW_STARTED);
+    const [storedDisplayISOFormatFinished, setStoredDisplayISOFormatFinished] = useTimestamp(TIMESTAMP_KEYS.WORKFLOWS_ROW_FINISHED);
 
     return (
         <Page
@@ -256,8 +261,17 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                     <div className='row small-11'>
                                         <div className='columns small-2'>NAME</div>
                                         <div className='columns small-1'>NAMESPACE</div>
-                                        <div className='columns small-1'>STARTED</div>
-                                        <div className='columns small-1'>FINISHED</div>
+                                        <div className='columns small-1'>
+                                            STARTED{' '}
+                                            <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormatStart} setStoredDisplayISOFormat={setStoredDisplayISOFormatStart} />
+                                        </div>
+                                        <div className='columns small-1'>
+                                            FINISHED{' '}
+                                            <TimestampSwitch
+                                                storedDisplayISOFormat={storedDisplayISOFormatFinished}
+                                                setStoredDisplayISOFormat={setStoredDisplayISOFormatFinished}
+                                            />
+                                        </div>
                                         <div className='columns small-1'>DURATION</div>
                                         <div className='columns small-1'>PROGRESS</div>
                                         <div className='columns small-2'>MESSAGE</div>
@@ -305,6 +319,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                                 }
                                                 setSelectedWorkflows(newSelections);
                                             }}
+                                            displayISOFormatStart={storedDisplayISOFormatStart}
+                                            displayISOFormatFinished={storedDisplayISOFormatFinished}
                                         />
                                     );
                                 })}
@@ -317,7 +333,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             <SlidingPanel isShown={!!getSidePanel()} onClose={() => navigation.goto('.', {sidePanel: null})}>
                 {getSidePanel() === 'submit-new-workflow' && (
                     <WorkflowCreator
-                        namespace={Utils.getNamespaceWithDefault(namespace)}
+                        namespace={nsUtils.getNamespaceWithDefault(namespace)}
                         onCreate={wf => navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
                     />
                 )}

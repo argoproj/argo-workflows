@@ -15,8 +15,8 @@ linters:
     - asasalint
     - bidichk
     - bodyclose
+    - copyloopvar
     - errcheck
-    - exportloopref
     - goimports
     # only minor issues
     # - errorlint
@@ -33,6 +33,7 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
+    - testifylint
     - typecheck
     - unparam
     - unused

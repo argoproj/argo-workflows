@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
 )
@@ -37,12 +38,12 @@ func TestGetGzipReader(t *testing.T) {
 		rawContent := "this is the content"
 		content := file.CompressEncodeString(rawContent)
 		buf, err := base64.StdEncoding.DecodeString(content)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		bufReader := bytes.NewReader(buf)
 		reader, err := file.GetGzipReader(bufReader)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		res, err := io.ReadAll(reader)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, rawContent, string(res))
 	}
 }
@@ -63,12 +64,13 @@ func TestExistsInTar(t *testing.T) {
 			}
 			hdr := tar.Header{Name: f.name, Mode: int64(mode), Size: int64(len(f.body))}
 			err := writer.WriteHeader(&hdr)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = writer.Write([]byte(f.body))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 		err := writer.Close()
-		assert.NoError(t, err)
+		require.NoError(t, err)
+
 		return tar.NewReader(&buf)
 	}
 
@@ -132,7 +134,6 @@ func TestExistsInTar(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		tc := tc
 		t.Run("source path "+tc.sourcePath, func(t *testing.T) {
 			t.Parallel()
 			tarReader := newTarReader(t, tc.files)

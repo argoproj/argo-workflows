@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -460,7 +460,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					VolumeMounts: volumeMounts,
 				},
 			},
-			AutomountServiceAccountToken: pointer.Bool(true),
+			AutomountServiceAccountToken: ptr.To(true),
 			RestartPolicy:                corev1.RestartPolicyNever,
 		},
 	}
@@ -508,7 +508,6 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}
 
-	anyPodSuccess := false
 	for _, obj := range pods {
 		pod := obj.(*corev1.Pod)
 		if pod.Labels[common.LabelKeyComponent] != artifactGCComponent { // make sure it's an Artifact GC Pod
@@ -534,10 +533,8 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 			if err != nil {
 				return err
 			}
+
 			woc.wf.Status.ArtifactGCStatus.SetArtifactGCPodRecouped(pod.Name, true)
-			if phase == corev1.PodSucceeded {
-				anyPodSuccess = true
-			}
 			woc.updated = true
 		}
 	}
@@ -548,7 +545,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
 	} else {
 		// check if all artifacts have been deleted and if so remove Finalizer
-		removeFinalizer = anyPodSuccess && woc.allArtifactsDeleted()
+		removeFinalizer = woc.allArtifactsDeleted()
 	}
 	if removeFinalizer {
 		woc.log.Infof("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", forceFinalizerRemoval)

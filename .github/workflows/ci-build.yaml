@@ -114,7 +114,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       - name: Upload coverage report
@@ -136,7 +136,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
       - run: go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
@@ -196,40 +196,53 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
+            useApi: false
           - test: test-corefunctional
             profile: minimal
+            useApi: false
           - test: test-functional
             profile: minimal
+            useApi: false
           - test: test-api
             profile: mysql
+            useApi: true
           - test: test-cli
             profile: mysql
+            useApi: true
           - test: test-cron
             profile: minimal
+            useApi: false
           - test: test-examples
             profile: minimal
+            useApi: false
           - test: test-plugins
             profile: plugins
+            useApi: false
           - test: test-java-sdk
             profile: minimal
+            useApi: true
           - test: test-python-sdk
             profile: minimal
+            useApi: true
           - test: test-executor
-            install_k3s_version: v1.26.15+k3s1
+            install_k3s_version: v1.28.13+k3s1
             profile: minimal
+            useApi: false
           - test: test-corefunctional
-            install_k3s_version: v1.26.15+k3s1
+            install_k3s_version: v1.28.13+k3s1
             profile: minimal
+            useApi: false
           - test: test-functional
-            install_k3s_version: v1.26.15+k3s1
+            install_k3s_version: v1.28.13+k3s1
             profile: minimal
+            useApi: false
     steps:
       - name: Install socat (needed by Kubernetes)
         run: sudo apt-get -y install socat
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
@@ -247,7 +260,7 @@ jobs:
       - name: Install and start K3S
         run: |
           if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
-            export INSTALL_K3S_VERSION=v1.29.3+k3s1
+            export INSTALL_K3S_VERSION=v1.31.0+k3s1
           else
             export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
           fi
@@ -281,17 +294,17 @@ jobs:
         run: make controller kit STATIC_FILES=false
       - name: Build CLI
         run: make cli STATIC_FILES=false
-        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+        if: ${{matrix.useApi}}
       - name: Start controller/API
         run: |
           make start PROFILE=${{matrix.profile}} \
             AUTH_MODE=client STATIC_FILES=false \
             LOG_LEVEL=info \
-            API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} \
+            API=${{matrix.useApi}} \
             UI=false \
             POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
       - name: Wait for controller to be up
-        run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+        run: make wait API=${{matrix.useApi}}
         timeout-minutes: 5
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
@@ -328,9 +341,9 @@ jobs:
           set -eux
           kubectl get pods -l workflows.argoproj.io/workflow
           kubectl describe pods -l workflows.argoproj.io/workflow
-      - name: Failure debug - Wait container logs
+      - name: Failure debug - Workflow Pod logs
         if: ${{ failure() }}
-        run: kubectl logs -c wait -l workflows.argoproj.io/workflow --prefix
+        run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
 
   # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
   # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
@@ -362,7 +375,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - name: Install protoc
         run: |
@@ -399,7 +412,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "1.21"
+          go-version: "1.23"
           cache: true
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build

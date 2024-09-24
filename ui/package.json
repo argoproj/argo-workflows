@@ -37,7 +37,7 @@
         "react-router-dom": "^4.2.2",
         "remark-gfm": "^3.0.0",
         "superagent": "^8.1.2",
-        "swagger-ui-react": "^5.17.3"
+        "swagger-ui-react": "^5.17.12"
     },
     "devDependencies": {
         "@babel/core": "^7.22.11",
@@ -80,7 +80,7 @@
         "ts-jest": "^26.4.4",
         "ts-node": "^9.1.1",
         "typescript": "^4.6.4",
-        "webpack": "^5.89.0",
+        "webpack": "^5.94.0",
         "webpack-cli": "^5.1.4",
         "webpack-dev-server": "^4.15.0",
         "yarn-deduplicate": "^6.0.2"

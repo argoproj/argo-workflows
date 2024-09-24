@@ -6,8 +6,11 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
@@ -17,6 +20,7 @@ import (
 type listFlags struct {
 	allNamespaces bool   // --all-namespaces
 	output        string // --output
+	labels        string // --selector
 }
 
 func NewListCommand() *cobra.Command {
@@ -34,8 +38,14 @@ func NewListCommand() *cobra.Command {
 			if listArgs.allNamespaces {
 				namespace = apiv1.NamespaceAll
 			}
+			labelSelector, err := labels.Parse(listArgs.labels)
+			errors.CheckError(err)
+
 			wftmplList, err := serviceClient.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{
 				Namespace: namespace,
+				ListOptions: &metav1.ListOptions{
+					LabelSelector: labelSelector.String(),
+				},
 			})
 			if err != nil {
 				log.Fatal(err)
@@ -54,6 +64,7 @@ func NewListCommand() *cobra.Command {
 	}
 	command.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	command.Flags().StringVarP(&listArgs.labels, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	return command
 }
 

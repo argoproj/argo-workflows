@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -41,7 +42,7 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getA
 		printNode(w, node, workflowName, "", getArgs, util.GetPodNameVersion())
 	}
 	err := w.Flush()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, result.String())
 }
 
