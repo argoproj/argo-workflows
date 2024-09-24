@@ -2,11 +2,9 @@ package template
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"text/tabwriter"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,18 +26,23 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflow templates",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = apiv1.NamespaceAll
 			}
 			labelSelector, err := labels.Parse(listArgs.labels)
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 
 			wftmplList, err := serviceClient.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{
 				Namespace: namespace,
@@ -48,7 +51,7 @@ func NewListCommand() *cobra.Command {
 				},
 			})
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			switch listArgs.output {
 			case "", "wide":
@@ -58,8 +61,9 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(wftmp.ObjectMeta.Name)
 				}
 			default:
-				log.Fatalf("Unknown output mode: %s", listArgs.output)
+				return fmt.Errorf("Unknown output mode: %s", listArgs.output)
 			}
+			return nil
 		},
 	}
 	command.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")

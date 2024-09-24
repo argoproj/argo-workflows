@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -21,19 +19,24 @@ func NewGetCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "get UID",
 		Short: "get a workflow in the archive",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			uid := args[0]
 
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			printWorkflow(wf, output)
+			return nil
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
