@@ -6,7 +6,8 @@ list workflows in the archive
 argo archive list [flags]
 ```
 
-## Examples
+### Examples
+
 ```
 # Display all archive lists in the default format (wide)
 argo archive list
