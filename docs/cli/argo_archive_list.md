@@ -20,6 +20,7 @@ argo archive list [flags]
 
 # List archives fetched in chunks of 100:
   argo archive list --chunk-size 100
+
 ```
 
 ### Options
