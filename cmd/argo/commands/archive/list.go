@@ -25,8 +25,7 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflows in the archive",
-		Example: `
-# List all archives:
+		Example: `# List all archives:
   argo archive list
 
 # List all archives in JSON format:
