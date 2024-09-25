@@ -7,6 +7,7 @@ argo archive list [flags]
 ```
 
 ### Examples
+
 ```
 # List all archives:
   argo archive list
