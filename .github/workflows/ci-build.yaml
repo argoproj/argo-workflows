@@ -313,6 +313,9 @@ jobs:
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
 
       # failure debugging below
+      - name: Failure debug - k3s logs
+        if: ${{ failure() }}
+        run: journalctl -u k3s
       - name: Failure debug - describe MinIO/MySQL deployment
         if: ${{ failure() }}
         run: |
