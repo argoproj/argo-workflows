@@ -34,3 +34,50 @@ func Test_hasWorkflowParameters(t *testing.T) {
 		assert.False(t, hasWorkflowFailures("workflow .failures"))
 	})
 }
+
+func Test_hasVarInEnv(t *testing.T) {
+	t.Run("parameterExistsInEnv", func(t *testing.T) {
+		env := map[string]interface{}{
+			"workflow": map[string]interface{}{
+				"status": "Succeeded",
+			},
+		}
+		assert.True(t, hasVarInEnv(env, "workflow.status"))
+	})
+
+	t.Run("parameterDoesNotExistInEnv", func(t *testing.T) {
+		env := map[string]interface{}{
+			"workflow": map[string]interface{}{
+				"status": "Succeeded",
+			},
+		}
+		assert.False(t, hasVarInEnv(env, "workflow.failures"))
+	})
+
+	t.Run("emptyEnv", func(t *testing.T) {
+		env := map[string]interface{}{}
+		assert.False(t, hasVarInEnv(env, "workflow.status"))
+	})
+
+	t.Run("nestedParameterExistsInEnv", func(t *testing.T) {
+		env := map[string]interface{}{
+			"workflow": map[string]interface{}{
+				"details": map[string]interface{}{
+					"status": "Succeeded",
+				},
+			},
+		}
+		assert.True(t, hasVarInEnv(env, "workflow.details.status"))
+	})
+
+	t.Run("nestedParameterDoesNotExistInEnv", func(t *testing.T) {
+		env := map[string]interface{}{
+			"workflow": map[string]interface{}{
+				"details": map[string]interface{}{
+					"status": "Succeeded",
+				},
+			},
+		}
+		assert.False(t, hasVarInEnv(env, "workflow.details.failures"))
+	})
+}
