@@ -576,7 +576,7 @@ ifeq ($(API),true)
 endif
 ifeq ($(PROFILE),mysql)
 	# Wait for MySQL
-	until lsof -i :3306 > /dev/null ; do sleep 10s ; done
+	until (: < /dev/tcp/localhost/3306) ; do sleep 10s ; done
 endif
 
 .PHONY: postgres-cli
