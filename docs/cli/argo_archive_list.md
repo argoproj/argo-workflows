@@ -6,6 +6,24 @@ list workflows in the archive
 argo archive list [flags]
 ```
 
+## Examples
+```
+# Display all archive lists in the default format (wide)
+argo archive list
+
+# Output in JSON format
+argo archive list -o json
+
+# Filter list based on a specific label selector
+argo archive list -l key1=value1,key2=value2
+
+# Fetch the list in chunks instead of all at once
+argo archive list --chunk-size 100
+
+# Display help information for the command
+argo archive list -h
+```
+
 ### Options
 
 ```

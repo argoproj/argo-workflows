@@ -25,6 +25,22 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflows in the archive",
+    Example: `
+# Display all archive lists in the default format (wide)
+argo archive list
+
+# Output in JSON format
+argo archive list -o json
+
+# Filter list based on a specific label selector
+argo archive list -l key1=value1,key2=value2
+
+# Fetch the list in chunks instead of all at once
+argo archive list --chunk-size 100
+
+# Display help information for the command
+argo archive list -h
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
