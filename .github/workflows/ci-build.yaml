@@ -280,10 +280,6 @@ jobs:
           kind: KubeletConfiguration
           imageMinimumGCAge: 1h
           imageGCHighThresholdPercent: 100
-          evictionHard:
-            imagefs.available: 0%
-            nodefs.available: 0%
-            nodefs.inodesFree: 0%
           EOT
 
           curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC='--docker --kubelet-arg=config=/tmp/kubelet.config' K3S_KUBECONFIG_MODE=644 sh -
