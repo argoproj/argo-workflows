@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-param-and-global-param-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: workspace
+        value: /argo_workspace/{{workflow.uid}}
+  templates:
+    - name: main
+      steps:
+        - - name: use-with-param
+            template: whalesay
+            arguments:
+              parameters:
+                - name: message
+                  value: "hello {{workflow.parameters.workspace}} {{item}}"
+            withParam: "[0, 1, 2]"
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
