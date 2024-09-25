@@ -228,7 +228,7 @@ spec:
           - name: msg
             value: 'hello world'
       container:
-	    image: busybox
+        image: busybox
         command: [echo]
         args: ['{{inputs.parameters.msg}}']
 ---
@@ -244,8 +244,8 @@ spec:
           - name: msg
             value: 'hello world'
       container:
-		image: busybox
-		command: [echo]
+        image: busybox
+        command: [echo]
         args: ['{{inputs.parameters.msg}}']
 ---
 apiVersion: argoproj.io/v1alpha1
