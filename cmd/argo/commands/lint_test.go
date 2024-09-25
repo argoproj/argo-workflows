@@ -228,8 +228,8 @@ spec:
           - name: msg
             value: 'hello world'
       container:
-        image: docker/whalesay
-        command: [cowsay]
+	    image: busybox
+        command: [echo]
         args: ['{{inputs.parameters.msg}}']
 ---
 apiVersion: argoproj.io/v1alpha1
@@ -244,8 +244,8 @@ spec:
           - name: msg
             value: 'hello world'
       container:
-        image: docker/whalesay
-        command: [cowsay]
+		image: busybox
+		command: [echo]
         args: ['{{inputs.parameters.msg}}']
 ---
 apiVersion: argoproj.io/v1alpha1
