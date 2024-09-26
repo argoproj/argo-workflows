@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: synchronization-valid-mutex-
+spec:
+  entrypoint: echo-template
+  synchronization:
+    mutex: hello-world
+  templates:
+    - name: echo-template
+      container:
+        image: busybox
+        command: [echo]
+        args: ['hello world']
