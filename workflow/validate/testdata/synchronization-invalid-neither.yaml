@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: synchronization-invalid-neither-
+spec:
+  entrypoint: echo-template
+  synchronization:
+    # invalid: should have either mutex or semaphore
+    hello: world
+  templates:
+    - name: echo-template
+      container:
+        image: busybox
+        command: [echo]
+        args: ['hello world']

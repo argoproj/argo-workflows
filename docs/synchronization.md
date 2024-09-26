@@ -26,7 +26,6 @@ data:
 
 !!! Warning
     Each synchronization block may only refer to either a semaphore or a mutex.
-    If you specify both only the semaphore will be locked.
 
 ## Workflow-level Synchronization
 
