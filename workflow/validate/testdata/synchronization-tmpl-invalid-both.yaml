@@ -8,7 +8,8 @@ spec:
     - name: echo-template
       synchronization:
         # invalid: should only have 1 at a time per block
-        mutex: hello-world
+        mutex:
+          name: hello-world
         semaphore:
           configMapKeyRef:
             name: hello-world

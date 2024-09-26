@@ -5,7 +5,8 @@ metadata:
 spec:
   entrypoint: echo-template
   synchronization:
-    mutex: hello-world
+    mutex:
+      name: hello-world
   templates:
     - name: echo-template
       container:
