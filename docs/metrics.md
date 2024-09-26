@@ -116,11 +116,15 @@ metricsConfig: |
   secure: true
 ```
 
-The metric names emitted by this mechanism are prefixed with `argo_workflows_`.
-`Attributes` are exposed as Prometheus `labels` of the same name.
+The metric names emitted by this mechanism are prefixed with `argo_workflows_`. `Attributes` are exposed as Prometheus `labels` of the same name.
 
 Prometheus metrics will return empty metrics on a workflow controller which is not the leader.
-All metrics emitted over Prometheus will have `argo_workflows_` prefixed to their name.
+
+By port-forwarding to the leader controller Pod you can view the metrics in your browser at `https://localhost:9090/metrics`. Assuming you only have one controller replica, you can port-forward with:
+
+```bash
+kubectl -n argo port-forward deploy/workflow-controller 9090:9090
+```
 
 ### Common
 
