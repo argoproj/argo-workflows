@@ -6,6 +6,19 @@ get a workflow in the archive
 argo archive get UID [flags]
 ```
 
+### Examples
+
+```
+# Get information about an archive:
+  
+  argo archive get my-wf
+
+# Get information about an archive in JSON format:
+
+  argo archive get my-wf -o json
+
+```
+
 ### Options
 
 ```
