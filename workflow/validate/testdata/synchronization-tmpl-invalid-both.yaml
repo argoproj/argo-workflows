@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: synchronization-tmpl-invalid-both-
+spec:
+  entrypoint: echo-template
+  templates:
+    - name: echo-template
+      synchronization:
+        # invalid: should only have 1 at a time per block
+        mutex: hello-world
+        semaphore:
+          configMapKeyRef:
+            name: hello-world
+            key: hello-world
+      container:
+        image: busybox
+        command: [echo]
+        args: ['hello world']

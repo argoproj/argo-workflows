@@ -3364,6 +3364,18 @@ func TestSynchronization(t *testing.T) {
 			workflow:        "@testdata/synchronization-invalid-neither.yaml",
 			expectedSuccess: false,
 		},
+		{
+			workflow:        "@testdata/synchronization-tmpl-valid-mutex.yaml",
+			expectedSuccess: true,
+		},
+		{
+			workflow:        "@testdata/synchronization-tmpl-invalid-both.yaml",
+			expectedSuccess: false,
+		},
+		{
+			workflow:        "@testdata/synchronization-tmpl-invalid-neither.yaml",
+			expectedSuccess: false,
+		},
 	}
 
 	for _, tt := range tests {
