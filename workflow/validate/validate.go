@@ -139,7 +139,7 @@ func validateHooks(hooks wfv1.LifecycleHooks, hookBaseName string) error {
 // validateSync takes a synchronization struct and validates that only one of mutex or semaphore is used.
 // using both in one block results in an error, otherwise nil
 func validateSync(sync *wfv1.Synchronization, errPrefix string) error {
-	// no synchronization is invalid
+	// no synchronization is valid
 	if sync == nil {
 		return nil
 	}
