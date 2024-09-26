@@ -60,7 +60,8 @@ metricsConfig: |
 
 ### Prometheus scraping
 
-A metrics service is not installed as part of [the default installation](quick-start.md) so you will need to add one if you wish to use a Prometheus Service Monitor. If you have more than one controller pod, using one as a [hot-standby](high-availability.md), you should use [a headless service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) to ensure that each pod is being scraped so that no metrics are missed.
+A metrics service is not installed as part of [the default installation](quick-start.md) so you will need to add one if you wish to use a Prometheus Service Monitor.
+If you have more than one controller pod, using one as a [hot-standby](high-availability.md), you should use [a headless service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) to ensure that each pod is being scraped so that no metrics are missed.
 
 ```yaml
 cat <<EOF | kubectl apply -f -
@@ -116,11 +117,13 @@ metricsConfig: |
   secure: true
 ```
 
-The metric names emitted by this mechanism are prefixed with `argo_workflows_`. `Attributes` are exposed as Prometheus `labels` of the same name.
+The metric names emitted by this mechanism are prefixed with `argo_workflows_`.
+`Attributes` are exposed as Prometheus `labels` of the same name.
 
 Prometheus metrics will return empty metrics on a workflow controller which is not the leader.
 
-By port-forwarding to the leader controller Pod you can view the metrics in your browser at `https://localhost:9090/metrics`. Assuming you only have one controller replica, you can port-forward with:
+By port-forwarding to the leader controller Pod you can view the metrics in your browser at `https://localhost:9090/metrics`.
+Assuming you only have one controller replica, you can port-forward with:
 
 ```bash
 kubectl -n argo port-forward deploy/workflow-controller 9090:9090
