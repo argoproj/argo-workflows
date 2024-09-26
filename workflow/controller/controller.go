@@ -312,10 +312,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
-	err := wfc.addWorkflowInformerHandlers(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
 	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
 
@@ -323,10 +319,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
-	// init managers: throttler and SynchronizationManager
-	if err := wfc.initManagers(ctx); err != nil {
-		log.Fatal(err)
-	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
 		go wfc.runConfigMapWatcher(ctx.Done())
@@ -353,6 +345,15 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.taskResultInformer.HasSynced,
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
+	}
+
+	// init managers: throttler and SynchronizationManager
+	if err := wfc.initManagers(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := wfc.addWorkflowInformerHandlers(ctx); err != nil {
+		log.Fatal(err)
 	}
 
 	for i := 0; i < podCleanupWorkers; i++ {
@@ -418,24 +419,37 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 }
 
 // list all running workflows to initialize throttler and syncManager
-func (wfc *WorkflowController) initManagers(ctx context.Context) error {
-	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
-	req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.WorkflowRunning)})
-	if req != nil {
-		labelSelector = labelSelector.Add(*req)
+func (wfc *WorkflowController) initManagers() error {
+	instanceID := wfc.Config.InstanceID
+	log.WithFields(log.Fields{"number of workflows": len(wfc.wfInformer.GetStore().ListKeys())}).Info("list workflows from informer")
+	var items []wfv1.Workflow
+	for _, obj := range wfc.wfInformer.GetStore().List() {
+		un := obj.(*unstructured.Unstructured)
+		wf, err := util.FromUnstructured(un)
+		if err != nil {
+			return err
+		}
+
+		if wf.Labels[common.LabelKeyPhase] != string(wfv1.WorkflowRunning) {
+			continue
+		}
+		if instanceID != "" {
+			if wf.Labels[common.LabelKeyControllerInstanceID] != instanceID {
+				continue
+			}
+		} else {
+			if _, ok := wf.Labels[common.LabelKeyControllerInstanceID]; ok {
+				continue
+			}
+		}
+		items = append(items, *wf)
 	}
-	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
-	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(ctx, listOpts)
-	if err != nil {
+
+	wfc.syncManager.Initialize(items)
+
+	if err := wfc.throttler.Init(items); err != nil {
 		return err
 	}
-
-	wfc.syncManager.Initialize(wfList.Items)
-
-	if err := wfc.throttler.Init(wfList.Items); err != nil {
-		return err
-	}
-
 	return nil
 }
 

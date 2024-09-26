@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
@@ -326,11 +327,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
-		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
 		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
-		_ = wfc.initManagers(ctx)
 
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
@@ -354,6 +353,17 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				time.Sleep(5 * time.Millisecond)
 			}
 		}
+		_ = wfc.initManagers()
+		_ = wfc.addWorkflowInformerHandlers(ctx)
+
+		// Waiting for the informer handler to complete processing the OnAdd events.
+		// We ignore the error as objects maybe contain workflows and workflowtemplates
+		_ = wait.PollImmediate(10*time.Millisecond, time.Second, func() (bool, error) {
+			if wfc.wfQueue.Len() != len(objects) {
+				return false, nil
+			}
+			return true, nil
+		})
 
 	}
 	return cancel, wfc
