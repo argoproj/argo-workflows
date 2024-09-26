@@ -10,11 +10,9 @@ argo archive get UID [flags]
 
 ```
 # Get information about an archive:
-  
   argo archive get my-wf
 
 # Get information about an archive in JSON format:
-
   argo archive get my-wf -o json
 
 ```
