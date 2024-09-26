@@ -38,15 +38,19 @@ func addK8sRequests(_ context.Context, m *Metrics) error {
 	return err
 }
 
+type metricsRoundTripperContext struct {
+	ctx     context.Context
+	metrics *Metrics
+}
+
 type metricsRoundTripper struct {
-	ctx          context.Context
+	*metricsRoundTripperContext
 	roundTripper http.RoundTripper
-	metrics      *Metrics
 }
 
 // This is a messy global as we need to register as a roundtripper before
 // we can instantiate metrics
-var k8sMetrics metricsRoundTripper
+var k8sMetrics metricsRoundTripperContext
 
 func (m metricsRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	startTime := time.Now()
@@ -71,9 +75,7 @@ func AddMetricsTransportWrapper(ctx context.Context, config *rest.Config) *rest.
 		if wrap != nil {
 			rt = wrap(rt)
 		}
-		k8sMetrics.ctx = ctx
-		k8sMetrics.roundTripper = rt
-		return &k8sMetrics
+		return &metricsRoundTripper{roundTripper: rt, metricsRoundTripperContext: &k8sMetrics}
 	}
 	return config
 }

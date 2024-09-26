@@ -59,6 +59,9 @@ jobs:
               - Dockerfile
               - manifests/**
               - sdks/**
+              # example test suite
+              - examples/**
+              - hack/test-examples.sh
             codegen:
               - *common
               # generated files
@@ -196,47 +199,54 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-corefunctional
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-functional
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-api
             profile: mysql
-            useApi: true
+            use-api: true
           - test: test-cli
             profile: mysql
-            useApi: true
+            use-api: true
           - test: test-cron
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-examples
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-plugins
             profile: plugins
-            useApi: false
+            use-api: false
           - test: test-java-sdk
             profile: minimal
-            useApi: true
+            use-api: true
           - test: test-python-sdk
             profile: minimal
-            useApi: true
+            use-api: true
           - test: test-executor
             install_k3s_version: v1.28.13+k3s1
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-corefunctional
             install_k3s_version: v1.28.13+k3s1
             profile: minimal
-            useApi: false
+            use-api: false
           - test: test-functional
             install_k3s_version: v1.28.13+k3s1
             profile: minimal
-            useApi: false
+            use-api: false
     steps:
+      - name: Free up disk space
+        run: |
+          printf "==> Available space before cleanup\n"
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          printf "==> Available space after cleanup\n"
+          df -h
       - name: Install socat (needed by Kubernetes)
         run: sudo apt-get -y install socat
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -264,7 +274,15 @@ jobs:
           else
             export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
           fi
-          curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+
+          cat >/tmp/kubelet.config <<EOT
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          kind: KubeletConfiguration
+          imageMinimumGCAge: 1h
+          imageGCHighThresholdPercent: 100
+          EOT
+
+          curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC='--docker --kubelet-arg=config=/tmp/kubelet.config' K3S_KUBECONFIG_MODE=644 sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
           cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
           echo "- name: fake_token_user" >> $KUBECONFIG
@@ -294,22 +312,25 @@ jobs:
         run: make controller kit STATIC_FILES=false
       - name: Build CLI
         run: make cli STATIC_FILES=false
-        if: ${{matrix.useApi}}
+        if: ${{matrix.use-api}}
       - name: Start controller/API
         run: |
           make start PROFILE=${{matrix.profile}} \
             AUTH_MODE=client STATIC_FILES=false \
             LOG_LEVEL=info \
-            API=${{matrix.useApi}} \
+            API=${{matrix.use-api}} \
             UI=false \
             POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
       - name: Wait for controller to be up
-        run: make wait API=${{matrix.useApi}}
+        run: make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}}
         timeout-minutes: 5
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
 
       # failure debugging below
+      - name: Failure debug - k3s logs
+        if: ${{ failure() }}
+        run: journalctl -u k3s
       - name: Failure debug - describe MinIO/MySQL deployment
         if: ${{ failure() }}
         run: |
