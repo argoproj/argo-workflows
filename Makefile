@@ -574,6 +574,10 @@ ifeq ($(API),true)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 endif
+ifeq ($(PROFILE),mysql)
+	# Wait for MySQL
+	until (: < /dev/tcp/localhost/3306) ; do sleep 10s ; done
+endif
 
 .PHONY: postgres-cli
 postgres-cli:
