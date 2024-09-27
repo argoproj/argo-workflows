@@ -139,8 +139,8 @@ sprig.trim(inputs.parameters['my-string-param'])
 | Variable | Description|
 |----------|------------|
 | `steps.name` | Name of the step |
-| `steps.<STEPNAME>.id` | unique id of container step |
-| `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
+| `steps.<STEPNAME>.id` | unique id of container step. |
+| `steps.<STEPNAME>.ip` | IP address of a previous daemon container step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the IP's of each invocation |
 | `steps.<STEPNAME>.status` | Phase status of any previous step |
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
