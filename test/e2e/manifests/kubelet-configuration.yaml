@@ -1,0 +1,11 @@
+# The E2E CI workflow passes this file to k3s using "--kubelet-arg=config=".
+# Docs: https://docs.k3s.io/cli/agent?_highlight=kubelet&_highlight=arg#customized-flags
+
+# API reference: https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+# Prevent images from being GC'd during a test run (which will lead to ErrImageNeverPull errors) by
+# raising the minimum age to 1 hour and the disk usage threshold to 100%.
+# We probably don't need to specify both, but it doesn't hurt.
+imageMinimumGCAge: 1h
+imageGCHighThresholdPercent: 100
