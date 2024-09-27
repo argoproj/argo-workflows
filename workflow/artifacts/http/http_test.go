@@ -20,13 +20,11 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 	a := &wfv1.HTTPArtifact{
 		URL: "https://github.com/argoproj/argo-workflows",
 	}
-	tempDir, err := os.MkdirTemp("", "http-artifact-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir := t.TempDir()
 
 	t.Run("Found", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "found")
-		err = driver.Load(&wfv1.Artifact{
+		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{HTTP: a},
 		}, tempFile)
 		require.NoError(t, err)
@@ -38,7 +36,7 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 		h1 := wfv1.Header{Name: "Accept", Value: "application/json"}
 		h2 := wfv1.Header{Name: "Authorization", Value: "Bearer foo-bar"}
 		a.Headers = []wfv1.Header{h1, h2}
-		err = driver.Load(&wfv1.Artifact{
+		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{HTTP: a},
 		}, tempFile)
 		require.NoError(t, err)
@@ -48,7 +46,7 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 	})
 	t.Run("NotFound", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "not-found")
-		err = driver.Load(&wfv1.Artifact{
+		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				HTTP: &wfv1.HTTPArtifact{URL: "https://github.com/argoproj/argo-workflows/not-found"},
 			},
@@ -62,13 +60,11 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 
 func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	driver := &ArtifactDriver{Client: http.DefaultClient}
-	tempDir, err := os.MkdirTemp("", "artifactory-artifact-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir := t.TempDir()
 
 	t.Run("NotFound", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "not-found")
-		err = driver.Load(&wfv1.Artifact{
+		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows/not-found"},
 			},
@@ -80,7 +76,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	})
 	t.Run("Found", func(t *testing.T) {
 		tempFile := filepath.Join(tempDir, "found")
-		err = driver.Load(&wfv1.Artifact{
+		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows"},
 			},
