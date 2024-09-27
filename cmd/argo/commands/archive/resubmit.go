@@ -102,7 +102,7 @@ func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflo
 	)
 
 	if resubmitOpts.hasSelector() {
-		wfs, err = listArchivedWorkflows(ctx, archiveServiceClient, resubmitOpts.fieldSelector, resubmitOpts.labelSelector, 0)
+		wfs, err = listArchivedWorkflows(ctx, archiveServiceClient, resubmitOpts.namespace, resubmitOpts.fieldSelector, resubmitOpts.labelSelector, 0)
 		if err != nil {
 			return err
 		}
