@@ -273,6 +273,7 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 		for _, plug := range woc.controller.executorPlugins[namespace] {
 			s := plug.Spec.Sidecar
 			c := s.Container.DeepCopy()
+			c.Name = plug.Name // Keep the sidecar container name consistent with the plugin name
 			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
 				Name:      volumeMountVarArgo.Name,
 				MountPath: volumeMountVarArgo.MountPath,

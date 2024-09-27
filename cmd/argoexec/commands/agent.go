@@ -110,7 +110,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 
 	addresses := getPluginAddresses()
 	names := getPluginNames()
-	var plugins []executorplugins.TemplateExecutor
+	plugins := make(map[string]executorplugins.TemplateExecutor, len(names))
 	for i, address := range addresses {
 		name := names[i]
 		filename := tokenFilename(name)
@@ -121,7 +121,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 		if err != nil {
 			log.Fatal(err)
 		}
-		plugins = append(plugins, rpc.New(address, string(data)))
+		plugins[name] = rpc.New(address, string(data))
 	}
 
 	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID, plugins)
