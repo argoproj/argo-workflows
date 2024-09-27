@@ -6,6 +6,18 @@ create a workflow template
 argo template create FILE1 FILE2... [flags]
 ```
 
+### Examples
+
+```
+# Create a workflow template from a file
+
+  argo template create FILE1
+
+# Create a workflow template and print the result in YAML format
+
+  argo template create FILE1 -o yaml
+```
+
 ### Options
 
 ```

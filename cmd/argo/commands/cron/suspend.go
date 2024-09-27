@@ -15,6 +15,10 @@ func NewSuspendCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "suspend CRON_WORKFLOW...",
 		Short: "suspend zero or more cron workflows",
+		Example: `# Suspend a cron workflow
+
+  argo cron suspend my-cron-workflow
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()

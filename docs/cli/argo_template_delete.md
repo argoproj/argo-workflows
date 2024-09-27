@@ -6,6 +6,18 @@ delete a workflow template
 argo template delete WORKFLOW_TEMPLATE [flags]
 ```
 
+### Examples
+
+```
+# Delete a workflow template
+
+  argo template delete my-wftmpl
+
+# Delete all workflow templates
+
+  argo template delete --all
+```
+
 ### Options
 
 ```

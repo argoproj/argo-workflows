@@ -6,6 +6,14 @@ validate files or directories of cluster workflow template manifests
 argo cluster-template lint FILE... [flags]
 ```
 
+### Examples
+
+```
+# Validate cluster workflow template manifest
+
+  argo cluster-template lint FILE1 FILE2
+```
+
 ### Options
 
 ```

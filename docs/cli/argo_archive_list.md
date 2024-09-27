@@ -6,6 +6,22 @@ list workflows in the archive
 argo archive list [flags]
 ```
 
+### Examples
+
+```
+# List all archived workflows
+
+  argo archive list
+    
+# List archived workflows with label selector
+ 
+  argo archive list -l workflows.argoproj.io/test=true
+
+# List archived workflows in JSON format
+      
+  argo archive list -o json
+```
+
 ### Options
 
 ```

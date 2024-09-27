@@ -15,6 +15,14 @@ func NewDeleteCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "delete [CRON_WORKFLOW... | --all]",
 		Short: "delete a cron workflow",
+		Example: `# Delete a cron workflow
+
+  argo cron delete my-cron-workflow
+
+# Delete all cron workflows
+
+  argo cron delete --all
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()

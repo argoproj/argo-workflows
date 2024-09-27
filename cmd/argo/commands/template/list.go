@@ -28,6 +28,13 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflow templates",
+		Example: `# List workflow templates
+
+  argo template list
+
+# List workflow templates in all namespaces
+
+  argo template list --all-namespaces`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()

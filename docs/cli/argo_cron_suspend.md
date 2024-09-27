@@ -6,6 +6,15 @@ suspend zero or more cron workflows
 argo cron suspend CRON_WORKFLOW... [flags]
 ```
 
+### Examples
+
+```
+# Suspend a cron workflow
+
+  argo cron suspend my-cron-workflow
+
+```
+
 ### Options
 
 ```

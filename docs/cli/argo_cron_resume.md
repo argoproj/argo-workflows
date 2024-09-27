@@ -6,6 +6,15 @@ resume zero or more cron workflows
 argo cron resume [CRON_WORKFLOW...] [flags]
 ```
 
+### Examples
+
+```
+# Resume a cron workflow
+
+  argo cron resume my-cron-workflow
+
+```
+
 ### Options
 
 ```

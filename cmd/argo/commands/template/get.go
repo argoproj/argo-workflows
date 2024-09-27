@@ -15,6 +15,13 @@ func NewGetCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
+		Example: `# Display details about a workflow template
+  argo template get my-wftmpl
+
+# Display details about multiple workflow templates printed as YAML
+
+  argo template get my-wftmpl1 my-wftmpl2 -o yaml
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()

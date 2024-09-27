@@ -6,6 +6,15 @@ validate files or directories of cron workflow manifests
 argo cron lint FILE... [flags]
 ```
 
+### Examples
+
+```
+# Validate cron workflow manifest
+
+  argo cron lint FILE1 FILE2
+
+```
+
 ### Options
 
 ```

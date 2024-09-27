@@ -6,6 +6,19 @@ delete a cron workflow
 argo cron delete [CRON_WORKFLOW... | --all] [flags]
 ```
 
+### Examples
+
+```
+# Delete a cron workflow
+
+  argo cron delete my-cron-workflow
+
+# Delete all cron workflows
+
+  argo cron delete --all
+
+```
+
 ### Options
 
 ```

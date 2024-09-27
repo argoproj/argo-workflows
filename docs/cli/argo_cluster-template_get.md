@@ -6,6 +6,14 @@ display details about a cluster workflow template
 argo cluster-template get CLUSTER WORKFLOW_TEMPLATE... [flags]
 ```
 
+### Examples
+
+```
+# Get details about a cluster workflow template
+
+  argo cluster-template get my-cluster-workflow-template -o wide
+```
+
 ### Options
 
 ```

@@ -19,6 +19,10 @@ func NewLintCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of cron workflow manifests",
+		Example: `# Validate cron workflow manifest
+
+  argo cron lint FILE1 FILE2
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)

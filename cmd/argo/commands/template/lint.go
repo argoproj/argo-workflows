@@ -19,6 +19,14 @@ func NewLintCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a file or directory of workflow template manifests",
+		Example: `# Validate a workflow template
+
+  argo template lint my-wftmpl.yaml
+
+# Validate all workflow templates in a directory
+
+  argo template lint my-wftmpls/
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
