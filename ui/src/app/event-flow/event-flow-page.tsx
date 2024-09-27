@@ -28,7 +28,7 @@ import {ListWatch} from '../shared/list-watch';
 import {RetryObservable} from '../shared/retry-observable';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {buildGraph} from './build-graph';
@@ -43,7 +43,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
     const [showWorkflows, setShowWorkflows] = useState(queryParams.get('showWorkflows') !== 'false');
     const [expanded, setExpanded] = useState(queryParams.get('expanded') === 'true');
@@ -64,7 +64,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
     useEffect(
         () =>
             history.push(
-                historyUrl('event-flow' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('event-flow' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     showFlow,
                     showWorkflows,

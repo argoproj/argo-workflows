@@ -17,7 +17,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
 import {ClusterWorkflowTemplateEditor} from './cluster-workflow-template-editor';
@@ -79,7 +79,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
 
                 setWorkflows(workflowList.items);
                 setColumns(info.columns);
-                setNamespace(Utils.getNamespaceWithDefault(info.managedNamespace));
+                setNamespace(nsUtils.getNamespaceWithDefault(info.managedNamespace));
                 setError(null);
             } catch (err) {
                 setError(err);

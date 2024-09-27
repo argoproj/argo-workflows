@@ -43,7 +43,8 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 
 | Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
-| `schedule`                   | None, must be provided | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *` |
+| `schedule`                   | None | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`. Deprecated, use `schedules`. |
+| `schedules`                   | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Either `schedule` or `schedules` must be provided. |
 | `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
 | `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly |
 | `concurrencyPolicy`          | `Allow`                | What to do if multiple `Workflows` are scheduled at the same time. `Allow`: allow all, `Replace`: remove all old before scheduling new, `Forbid`: do not allow any new while there are old  |
@@ -150,26 +151,26 @@ $ argo cron create cron.yaml
 Name:                          test-cron-wf
 Namespace:                     argo
 Created:                       Mon Nov 18 10:17:06 -0800 (now)
-Schedule:                      * * * * *
+Schedules:                     * * * * *
 Suspended:                     false
 StartingDeadlineSeconds:       0
 ConcurrencyPolicy:             Forbid
 
 $ argo cron list
-NAME           AGE   LAST RUN   SCHEDULE    SUSPENDED
+NAME           AGE   LAST RUN   SCHEDULES    SUSPENDED
 test-cron-wf   49s   N/A        * * * * *   false
 
 # some time passes
 
 $ argo cron list
-NAME           AGE   LAST RUN   SCHEDULE    SUSPENDED
+NAME           AGE   LAST RUN   SCHEDULES    SUSPENDED
 test-cron-wf   56s   2s         * * * * *   false
 
 $ argo cron get test-cron-wf
 Name:                          test-cron-wf
 Namespace:                     argo
 Created:                       Wed Oct 28 07:19:02 -0600 (23 hours ago)
-Schedule:                      * * * * *
+Schedules:                      * * * * *
 Suspended:                     false
 StartingDeadlineSeconds:       0
 ConcurrencyPolicy:             Replace

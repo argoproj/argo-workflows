@@ -16,7 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -548,7 +548,7 @@ func TestSaveLogs(t *testing.T) {
 	t.Run("Simple Pod node", func(t *testing.T) {
 		templateWithArchiveLogs := wfv1.Template{
 			ArchiveLocation: &wfv1.ArtifactLocation{
-				ArchiveLogs: pointer.Bool(true),
+				ArchiveLogs: ptr.To(true),
 			},
 		}
 		we := WorkflowExecutor{

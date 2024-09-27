@@ -48,7 +48,7 @@ func (s *MetricsSuite) TestMetricsEndpoint() {
 			Body().
 			Contains(`HELP argo_workflows_gauge`).
 			Contains(`HELP argo_workflows_k8s_request_total`).
-			Contains(`argo_workflows_k8s_request_total{kind="leases",status_code="200",verb="Get"}`).
+			Contains(`argo_workflows_k8s_request_total{kind="leases",status_code="404",verb="Get"}`).
 			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="List"}`).
 			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="Watch"}`).
 			Contains(`HELP argo_workflows_pods_gauge`).
@@ -111,19 +111,37 @@ func (s *MetricsSuite) TestFailedMetric() {
 		})
 }
 
-func (s *MetricsSuite) TestCronTriggeredCounter() {
+func (s *MetricsSuite) TestCronCountersForbid() {
 	s.Given().
-		CronWorkflow(`@testdata/cronworkflow-metrics.yaml`).
+		CronWorkflow(`@testdata/cronworkflow-metrics-forbid.yaml`).
 		When().
 		CreateCronWorkflow().
-		Wait(1 * time.Minute). // This pattern is used in cron_test.go too
+		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").
 				Expect().
 				Status(200).
 				Body().
-				Contains(`cronworkflows_triggered_total{name="test-cron-metric",namespace="argo"} 1`)
+				Contains(`cronworkflows_triggered_total{name="test-cron-metric-forbid",namespace="argo"} 1`). // 2nd run was Forbid
+				Contains(`cronworkflows_concurrencypolicy_triggered{concurrency_policy="Forbid",name="test-cron-metric-forbid",namespace="argo"} 1`)
+		})
+}
+
+func (s *MetricsSuite) TestCronCountersReplace() {
+	s.Given().
+		CronWorkflow(`@testdata/cronworkflow-metrics-replace.yaml`).
+		When().
+		CreateCronWorkflow().
+		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
+		Then().
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`cronworkflows_triggered_total{name="test-cron-metric-replace",namespace="argo"} 2`).
+				Contains(`cronworkflows_concurrencypolicy_triggered{concurrency_policy="Replace",name="test-cron-metric-replace",namespace="argo"} 1`)
 		})
 }
 
