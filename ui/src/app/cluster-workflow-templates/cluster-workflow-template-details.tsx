@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import * as models from '../../models';
@@ -10,12 +10,12 @@ import {ClusterWorkflowTemplate, Workflow} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
-import {isEqual} from '../shared/components/object-parser';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
+import {useEditableResource} from '../shared/use-editable-resource';
 import {useQueryParams} from '../shared/use-query-params';
 import * as nsUtils from '../shared/namespaces';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
@@ -37,15 +37,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     const [columns, setColumns] = useState<models.Column[]>([]);
 
     const [error, setError] = useState<Error>();
-    const [template, setTemplate] = useState<ClusterWorkflowTemplate>();
-    const [initialTemplate, setInitialTemplate] = useState<ClusterWorkflowTemplate>();
-
-    const edited = useMemo(() => !isEqual(template, initialTemplate), [template, initialTemplate]);
-
-    function resetTemplate(template: ClusterWorkflowTemplate) {
-        setTemplate(template);
-        setInitialTemplate(template);
-    }
+    const [template, edited, setTemplate, resetTemplate] = useEditableResource<ClusterWorkflowTemplate>();
 
     useEffect(
         useQueryParams(history, p => {

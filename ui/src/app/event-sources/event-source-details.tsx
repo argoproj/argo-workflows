@@ -3,7 +3,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {EventSource} from '../../models';
@@ -11,12 +11,12 @@ import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
-import {isEqual} from '../shared/components/object-parser';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
+import {useEditableResource} from '../shared/use-editable-resource';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceEditor} from './event-source-editor';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
@@ -54,15 +54,7 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
     );
 
     const [error, setError] = useState<Error>();
-    const [eventSource, setEventSource] = useState<EventSource>();
-    const [initialEventSource, setInitialEventSource] = useState<EventSource>();
-
-    const edited = useMemo(() => !isEqual(eventSource, initialEventSource), [eventSource, initialEventSource]);
-
-    function resetEventSource(eventSource: EventSource) {
-        setEventSource(eventSource);
-        setInitialEventSource(eventSource);
-    }
+    const [eventSource, edited, setEventSource, resetEventSource] = useEditableResource<EventSource>();
 
     const selected = (() => {
         if (!selectedNode) {

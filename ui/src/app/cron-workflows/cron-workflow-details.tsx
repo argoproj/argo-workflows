@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import * as models from '../../models';
@@ -10,7 +10,6 @@ import {CronWorkflow, Link, Workflow} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {openLinkWithKey} from '../shared/components/links';
-import {isEqual} from '../shared/components/object-parser';
 import {Loading} from '../shared/components/loading';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
@@ -18,6 +17,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
+import {useEditableResource} from '../shared/use-editable-resource';
 import {WidgetGallery} from '../widgets/widget-gallery';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {CronWorkflowEditor} from './cron-workflow-editor';
@@ -36,16 +36,8 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
 
-    const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>();
-    const [initialCronWorkflow, setInitialCronWorkflow] = useState<CronWorkflow>();
+    const [cronWorkflow, edited, setCronWorkflow, resetCronWorkflow] = useEditableResource<CronWorkflow>();
     const [error, setError] = useState<Error>();
-
-    const edited = useMemo(() => !isEqual(cronWorkflow, initialCronWorkflow), [cronWorkflow, initialCronWorkflow]);
-
-    function resetCronWorkflow(cronWorkflow: CronWorkflow) {
-        setCronWorkflow(cronWorkflow);
-        setInitialCronWorkflow(cronWorkflow);
-    }
 
     useEffect(
         useQueryParams(history, p => {

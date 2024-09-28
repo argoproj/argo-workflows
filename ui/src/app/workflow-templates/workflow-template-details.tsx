@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import * as models from '../../models';
@@ -10,7 +10,7 @@ import {WorkflowTemplate, Workflow} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
-import {isEqual} from '../shared/components/object-parser';
+import {useEditableResource} from '../shared/use-editable-resource';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -35,16 +35,8 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
 
-    const [template, setTemplate] = useState<WorkflowTemplate>();
+    const [template, edited, setTemplate, resetTemplate] = useEditableResource<WorkflowTemplate>();
     const [error, setError] = useState<Error>();
-    const [initialTemplate, setInitialTemplate] = useState<WorkflowTemplate>();
-
-    const edited = useMemo(() => !isEqual(template, initialTemplate), [template, initialTemplate]);
-
-    function resetTemplate(template: WorkflowTemplate) {
-        setTemplate(template);
-        setInitialTemplate(template);
-    }
 
     useEffect(
         useQueryParams(history, p => {

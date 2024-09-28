@@ -1,14 +1,13 @@
 import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
 import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {Sensor} from '../../models';
 import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
-import {isEqual} from '../shared/components/object-parser';
 import {Node} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
 import {useCollectEvent} from '../shared/use-collect-event';
@@ -16,6 +15,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
+import {useEditableResource} from '../shared/use-editable-resource';
 import {SensorEditor} from './sensor-editor';
 import {SensorSidePanel} from './sensor-side-panel';
 
@@ -30,17 +30,9 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [name] = useState(match.params.name);
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
-    const [sensor, setSensor] = useState<Sensor>();
-    const [initialSensor, setInitialSensor] = useState<Sensor>();
+    const [sensor, edited, setSensor, resetSensor] = useEditableResource<Sensor>();
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
-
-    const edited = useMemo(() => !isEqual(sensor, initialSensor), [sensor, initialSensor]);
-
-    function resetSensor(sensor: Sensor) {
-        setSensor(sensor);
-        setInitialSensor(sensor);
-    }
 
     useEffect(
         useQueryParams(history, p => {
