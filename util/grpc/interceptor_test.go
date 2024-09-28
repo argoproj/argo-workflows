@@ -14,11 +14,15 @@ import (
 )
 
 type mockServerTransportStream struct {
-	header metadata.MD
+	header  metadata.MD
+	isError bool
 }
 
 func (mockServerTransportStream) Method() string { return "" }
 func (msts *mockServerTransportStream) SetHeader(md metadata.MD) error {
+	if msts.isError {
+		return errors.New("simulate error setting header")
+	}
 	msts.header = md
 	return nil
 }
@@ -29,35 +33,58 @@ var _ grpc.ServerTransportStream = &mockServerTransportStream{}
 
 func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	version := &wfv1.Version{Version: "v3.1.0"}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) { return nil, nil }
-	msts := &mockServerTransportStream{}
-	ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
-	interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
+	mockReturn := "successful return"
 
-	_, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
+	t.Run("success", func(t *testing.T) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return mockReturn, nil }
+		msts := &mockServerTransportStream{}
+		ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
+		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
 
-	require.NoError(t, err)
-	assert.Equal(t, metadata.Pairs(ArgoVersionHeader, version.Version), msts.header)
-}
+		m, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
 
-func TestSetVersionHeaderUnaryServerInterceptorErrorHanding(t *testing.T) {
-	version := &wfv1.Version{Version: "v3.1.0"}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) { return nil, errors.New("error") }
-	msts := &mockServerTransportStream{}
-	ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
-	interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
+		require.NoError(t, err)
+		assert.Equal(t, mockReturn, m)
+		assert.Equal(t, metadata.Pairs(ArgoVersionHeader, version.Version), msts.header)
+	})
 
-	_, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
+	t.Run("upstream error handling", func(t *testing.T) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return nil, errors.New("error") }
+		msts := &mockServerTransportStream{}
+		ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
+		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
 
-	require.Error(t, err)
-	assert.Empty(t, msts.header)
+		_, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
+
+		require.Error(t, err)
+		assert.Empty(t, msts.header)
+	})
+
+	t.Run("SetHeader error handling", func(t *testing.T) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return mockReturn, nil
+		}
+		msts := &mockServerTransportStream{isError: true}
+		ctx := grpc.NewContextWithServerTransportStream(context.Background(), msts)
+		interceptor := SetVersionHeaderUnaryServerInterceptor(*version)
+
+		m, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
+
+		require.NoError(t, err)
+		require.Equal(t, mockReturn, m)
+		assert.Empty(t, msts.header)
+	})
 }
 
 type mockServerStream struct {
-	header metadata.MD
+	header  metadata.MD
+	isError bool
 }
 
 func (msts mockServerStream) SetHeader(md metadata.MD) error {
+	if msts.isError {
+		return errors.New("simulate error setting header")
+	}
 	msts.header.Set(ArgoVersionHeader, md.Get(ArgoVersionHeader)...)
 	return nil
 }
@@ -71,24 +98,39 @@ var _ grpc.ServerStream = &mockServerStream{}
 
 func TestSetVersionHeaderStreamServerInterceptor(t *testing.T) {
 	version := &wfv1.Version{Version: "v3.1.0"}
-	handler := func(srv any, stream grpc.ServerStream) error { return nil }
-	msts := &mockServerStream{header: metadata.New(nil)}
-	interceptor := SetVersionHeaderStreamServerInterceptor(*version)
 
-	err := interceptor(nil, msts, nil, handler)
+	t.Run("success", func(t *testing.T) {
+		handler := func(srv any, stream grpc.ServerStream) error { return nil }
+		msts := &mockServerStream{header: metadata.New(nil)}
+		interceptor := SetVersionHeaderStreamServerInterceptor(*version)
 
-	require.NoError(t, err)
-	assert.Equal(t, metadata.Pairs(ArgoVersionHeader, version.Version), msts.header)
-}
+		err := interceptor(nil, msts, nil, handler)
 
-func TestSetVersionHeaderStreamServerInterceptorErrorHandling(t *testing.T) {
-	version := &wfv1.Version{Version: "v3.1.0"}
-	handler := func(srv any, stream grpc.ServerStream) error { return errors.New("error") }
-	msts := &mockServerStream{header: metadata.New(nil)}
-	interceptor := SetVersionHeaderStreamServerInterceptor(*version)
+		require.NoError(t, err)
+		assert.Equal(t, metadata.Pairs(ArgoVersionHeader, version.Version), msts.header)
+	})
 
-	err := interceptor(nil, msts, nil, handler)
+	t.Run("upstream error handling", func(t *testing.T) {
+		handler := func(srv any, stream grpc.ServerStream) error {
+			return errors.New("test error")
+		}
+		msts := &mockServerStream{header: metadata.New(nil)}
+		interceptor := SetVersionHeaderStreamServerInterceptor(*version)
 
-	require.Error(t, err)
-	assert.Empty(t, msts.header)
+		err := interceptor(nil, msts, nil, handler)
+
+		require.Error(t, err, "test error")
+		assert.Empty(t, msts.header)
+	})
+
+	t.Run("SetHeader error handling", func(t *testing.T) {
+		handler := func(srv any, stream grpc.ServerStream) error { return nil }
+		msts := &mockServerStream{isError: true}
+		interceptor := SetVersionHeaderStreamServerInterceptor(*version)
+
+		err := interceptor(nil, msts, nil, handler)
+
+		require.NoError(t, err)
+		assert.Empty(t, msts.header)
+	})
 }
