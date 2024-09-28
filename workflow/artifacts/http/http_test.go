@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,32 +20,37 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 	a := &wfv1.HTTPArtifact{
 		URL: "https://github.com/argoproj/argo-workflows",
 	}
+	tempDir := t.TempDir()
+
 	t.Run("Found", func(t *testing.T) {
+		tempFile := filepath.Join(tempDir, "found")
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{HTTP: a},
-		}, "/tmp/found")
+		}, tempFile)
 		require.NoError(t, err)
-		_, err = os.Stat("/tmp/found")
+		_, err = os.Stat(tempFile)
 		require.NoError(t, err)
 	})
 	t.Run("FoundWithRequestHeaders", func(t *testing.T) {
+		tempFile := filepath.Join(tempDir, "found-with-request-headers")
 		h1 := wfv1.Header{Name: "Accept", Value: "application/json"}
 		h2 := wfv1.Header{Name: "Authorization", Value: "Bearer foo-bar"}
 		a.Headers = []wfv1.Header{h1, h2}
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{HTTP: a},
-		}, "/tmp/found-with-request-headers")
+		}, tempFile)
 		require.NoError(t, err)
-		_, err = os.Stat("/tmp/found-with-request-headers")
+		_, err = os.Stat(tempFile)
 		require.NoError(t, err)
-		assert.FileExists(t, "/tmp/found-with-request-headers")
+		assert.FileExists(t, tempFile)
 	})
 	t.Run("NotFound", func(t *testing.T) {
+		tempFile := filepath.Join(tempDir, "not-found")
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				HTTP: &wfv1.HTTPArtifact{URL: "https://github.com/argoproj/argo-workflows/not-found"},
 			},
-		}, "/tmp/not-found")
+		}, tempFile)
 		require.Error(t, err)
 		argoError, ok := err.(errors.ArgoError)
 		require.True(t, ok)
@@ -55,25 +60,29 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 
 func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	driver := &ArtifactDriver{Client: http.DefaultClient}
+	tempDir := t.TempDir()
+
 	t.Run("NotFound", func(t *testing.T) {
+		tempFile := filepath.Join(tempDir, "not-found")
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows/not-found"},
 			},
-		}, "/tmp/not-found")
+		}, tempFile)
 		require.Error(t, err)
 		argoError, ok := err.(errors.ArgoError)
 		require.True(t, ok)
 		assert.Equal(t, errors.CodeNotFound, argoError.Code())
 	})
 	t.Run("Found", func(t *testing.T) {
+		tempFile := filepath.Join(tempDir, "found")
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows"},
 			},
-		}, "/tmp/found")
+		}, tempFile)
 		require.NoError(t, err)
-		_, err = os.Stat("/tmp/found")
+		_, err = os.Stat(tempFile)
 		require.NoError(t, err)
 	})
 }
@@ -85,7 +94,7 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir) // clean up
 
-	tempFile := path.Join(tempDir, "tmpfile")
+	tempFile := filepath.Join(tempDir, "tmpfile")
 	content := "temporary file's content"
 	if err := os.WriteFile(tempFile, []byte(content), 0o600); err != nil {
 		panic(err)
