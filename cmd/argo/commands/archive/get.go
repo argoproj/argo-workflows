@@ -21,10 +21,10 @@ func NewGetCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "get UID",
 		Short: "get a workflow in the archive",
-		Example: `# Get information about an archive:
+		Example: `# Get information about an archived workflow by its UID:
   argo archive get my-wf
 
-# Get information about an archive in JSON format:
+# Get information about an archived workflow in JSON format:
   argo archive get my-wf -o json
   `,
 		Run: func(cmd *cobra.Command, args []string) {
