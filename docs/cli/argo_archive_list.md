@@ -9,17 +9,17 @@ argo archive list [flags]
 ### Examples
 
 ```
-# List all archives:
+# List all archived workflows:
   argo archive list
 
-# List all archives in JSON format:
-  argo archive list -o json
-
-# List archives filtered that have both labels:
-  argo archive list -l key1=value1,key2=value2
-
-# List archives fetched in chunks of 100:
+# List all archived workflows fetched in chunks of 100:
   argo archive list --chunk-size 100
+
+# List all archived workflows in YAML format:
+  argo archive list -o yaml
+
+# List archived workflows that have both labels:
+  argo archive list -l key1=value1,key2=value2
 
 ```
 
