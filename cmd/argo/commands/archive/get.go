@@ -24,8 +24,8 @@ func NewGetCommand() *cobra.Command {
 		Example: `# Get information about an archived workflow by its UID:
   argo archive get my-wf
 
-# Get information about an archived workflow in JSON format:
-  argo archive get my-wf -o json
+# Get information about an archived workflow in YAML format:
+  argo archive get my-wf -o yaml
   `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
