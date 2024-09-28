@@ -627,6 +627,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	})
 
 	// Test get wf w/ archive fallback with good token
+	s.bearerToken = goodToken
 	s.Run("GetWFsFallbackArchivedGoodToken", func() {
 		s.e().GET("/api/v1/workflows/"+uid).
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
