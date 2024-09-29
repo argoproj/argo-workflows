@@ -301,7 +301,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		expectedArtifacts            []artifactState
 		expectedGCPodsOnWFCompletion int
 	}{
-		/*{
+		{
 			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        true,
@@ -377,7 +377,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 0,
 			expectedArtifacts:            []artifactState{},
-		},*/
+		},
 		// Workflow fails to write an artifact that's been defined as an Output
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-non-optional-artifact-not-written.yaml",
