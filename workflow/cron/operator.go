@@ -107,7 +107,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	proceed, err := woc.enforceRuntimePolicy(ctx)
 	if err != nil {
-		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Concurrency policy error: %s", err))
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("run policy error: %s", err))
 		return
 	} else if !proceed {
 		return
@@ -255,7 +255,7 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 		return false, err
 	}
 
-	newCronStr, err := t.Replace(m, false)
+	newCronStr, err := t.Replace(m, true)
 	if err != nil {
 		return false, err
 	}
