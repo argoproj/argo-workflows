@@ -9,7 +9,6 @@ data:
       podSpecPatch: |
         terminationGracePeriodSeconds: 3
   executor: |
-    image: quay.io/argoproj/argoexec:julie2
     imagePullPolicy: IfNotPresent
     resources:
       requests:
