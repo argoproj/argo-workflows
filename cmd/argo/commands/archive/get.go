@@ -20,6 +20,12 @@ func NewGetCommand() *cobra.Command {
 		Use:   "get UID",
 		Short: "get a workflow in the archive",
 		Args:  cobra.ExactArgs(1),
+		Example: `# Get information about an archived workflow by its UID:
+  argo archive get abc123-def456-ghi789-jkl012
+
+# Get information about an archived workflow in YAML format:
+  argo archive get abc123-def456-ghi789-jkl012 -o yaml
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uid := args[0]
 

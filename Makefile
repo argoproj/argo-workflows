@@ -574,6 +574,10 @@ ifeq ($(API),true)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 endif
+ifeq ($(PROFILE),mysql)
+	# Wait for MySQL
+	until (: < /dev/tcp/localhost/3306) ; do sleep 10s ; done
+endif
 
 .PHONY: postgres-cli
 postgres-cli:
@@ -624,7 +628,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 
 # generates many other files (listers, informers, client etc).
-pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(GOPATH)/bin/go-to-protobuf $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
