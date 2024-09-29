@@ -317,7 +317,6 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 			artifacts = append(artifacts, art)
 		}
 	}
-	fmt.Printf("deletethis: SaveArtifacts returns error %+v\n", firstArtifactError)
 	return artifacts, firstArtifactError
 }
 
@@ -345,7 +344,6 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 		log.Warnf("The file %q is empty. It may not be uploaded successfully depending on the artifact driver", localArtPath)
 	}
 	err = we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
-	fmt.Printf("deletethis: saveArtifactFromFile() returned err=%+v\n", err)
 	return err == nil, err
 }
 
