@@ -9,7 +9,7 @@ argo archive delete UID... [flags]
 ### Examples
 
 ```
-# Delete about an archived workflow by its UID:
+#  Delete a workflow in the archive by its UID:
   argo archive delete abc123-def456-ghi789-jkl012
 
 ```
