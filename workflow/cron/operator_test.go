@@ -713,3 +713,18 @@ func TestEvaluateWhen(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, result)
 }
+
+func TestEvaluateWhenUnresolved(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+	param := v1alpha1.Parameter{Name: "scheduled-time", Value: v1alpha1.AnyStringPtr("{{workflow.scheduledTime}}")}
+	params := []v1alpha1.Parameter{param}
+	argument := v1alpha1.Arguments{Parameters: params}
+	cronWf.Spec.WorkflowSpec.Arguments = argument
+
+	cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(time.Minute * -30)}
+	cronWf.Spec.When = "{{= (now() - cronworkflow.lastScheduledTime).Minutes() >= 30 }}"
+	result, err := evalWhen(&cronWf)
+	require.NoError(t, err)
+	assert.True(t, result)
+}
