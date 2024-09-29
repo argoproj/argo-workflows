@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artgc-non-optional-artifact-not-written-
+  generateName: artgc-optional-artifact-not-written-
 spec:
   entrypoint: entrypoint
   artifactGC:
