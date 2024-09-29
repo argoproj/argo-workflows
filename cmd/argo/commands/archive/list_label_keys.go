@@ -14,7 +14,7 @@ func NewListLabelKeyCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list-label-keys",
 		Short: "list workflows label keys in the archive",
-		Example: `# list workflows label keys in the archive"
+		Example: `# List workflows label keys in the archive:
   argo archive list-label-keys
 `,
 		Run: func(cmd *cobra.Command, args []string) {
