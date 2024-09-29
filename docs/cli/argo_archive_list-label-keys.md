@@ -9,7 +9,7 @@ argo archive list-label-keys [flags]
 ### Examples
 
 ```
-# List all unique label values from archived workflows
+# List all unique label values from archived workflows:
   argo archive list-label-keys
 ```
 
