@@ -16,7 +16,7 @@ func NewListLabelKeyCommand() *cobra.Command {
 		Short: "list workflows label keys in the archive",
 		Example: `# List all unique label values from archived workflows:
   argo archive list-label-keys
-`
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
