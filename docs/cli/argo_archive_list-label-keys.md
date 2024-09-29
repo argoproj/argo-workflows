@@ -11,7 +11,7 @@ argo archive list-label-keys [flags]
 ```
 # List workflows label keys in the archive:
   argo archive list-label-keys
-  
+
 ```
 
 ### Options
