@@ -320,6 +320,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	return artifacts, firstArtifactError
 }
 
+// save artifact
 // return whether artifact was in fact saved, and if there was an error
 func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) (bool, error) {
 	// Determine the file path of where to find the artifact
