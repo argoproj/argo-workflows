@@ -16,7 +16,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {useEditableResource} from '../shared/use-editable-resource';
+import {useEditableObject} from '../shared/use-editable-object';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceEditor} from './event-source-editor';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
@@ -54,7 +54,7 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
     );
 
     const [error, setError] = useState<Error>();
-    const [eventSource, edited, setEventSource, resetEventSource] = useEditableResource<EventSource>();
+    const [eventSource, edited, setEventSource, resetEventSource] = useEditableObject<EventSource>();
 
     const selected = (() => {
         if (!selectedNode) {

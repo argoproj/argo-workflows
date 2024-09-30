@@ -17,7 +17,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {useEditableResource} from '../shared/use-editable-resource';
+import {useEditableObject} from '../shared/use-editable-object';
 import {WidgetGallery} from '../widgets/widget-gallery';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {CronWorkflowEditor} from './cron-workflow-editor';
@@ -36,7 +36,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
 
-    const [cronWorkflow, edited, setCronWorkflow, resetCronWorkflow] = useEditableResource<CronWorkflow>();
+    const [cronWorkflow, edited, setCronWorkflow, resetCronWorkflow] = useEditableObject<CronWorkflow>();
     const [error, setError] = useState<Error>();
 
     useEffect(

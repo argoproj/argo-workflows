@@ -15,7 +15,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {useEditableResource} from '../shared/use-editable-resource';
+import {useEditableObject} from '../shared/use-editable-object';
 import {SensorEditor} from './sensor-editor';
 import {SensorSidePanel} from './sensor-side-panel';
 
@@ -30,7 +30,7 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [name] = useState(match.params.name);
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
-    const [sensor, edited, setSensor, resetSensor] = useEditableResource<Sensor>();
+    const [sensor, edited, setSensor, resetSensor] = useEditableObject<Sensor>();
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 

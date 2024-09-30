@@ -10,7 +10,7 @@ import {WorkflowTemplate, Workflow} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
-import {useEditableResource} from '../shared/use-editable-resource';
+import {useEditableObject} from '../shared/use-editable-object';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
@@ -35,7 +35,7 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
 
-    const [template, edited, setTemplate, resetTemplate] = useEditableResource<WorkflowTemplate>();
+    const [template, edited, setTemplate, resetTemplate] = useEditableObject<WorkflowTemplate>();
     const [error, setError] = useState<Error>();
 
     useEffect(

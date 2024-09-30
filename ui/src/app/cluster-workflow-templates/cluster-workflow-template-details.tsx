@@ -15,7 +15,7 @@ import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
-import {useEditableResource} from '../shared/use-editable-resource';
+import {useEditableObject} from '../shared/use-editable-object';
 import {useQueryParams} from '../shared/use-query-params';
 import * as nsUtils from '../shared/namespaces';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
@@ -37,7 +37,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     const [columns, setColumns] = useState<models.Column[]>([]);
 
     const [error, setError] = useState<Error>();
-    const [template, edited, setTemplate, resetTemplate] = useEditableResource<ClusterWorkflowTemplate>();
+    const [template, edited, setTemplate, resetTemplate] = useEditableObject<ClusterWorkflowTemplate>();
 
     useEffect(
         useQueryParams(history, p => {
