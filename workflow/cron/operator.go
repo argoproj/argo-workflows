@@ -212,10 +212,6 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 	if cron.Spec.When == "" {
 		return true, nil
 	}
-	cronBytes, err := json.Marshal(cron)
-	if err != nil {
-		return false, err
-	}
 
 	m := make(map[string]interface{})
 	addSetField := func(name string, value interface{}) {
@@ -234,7 +230,6 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 
 	annotationsStr, err := json.Marshal(&cron.Annotations)
 	if err != nil {
-		// We shouldn't hit this
 		return false, err
 	}
 
@@ -250,21 +245,18 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 
 	addSetField("lastScheduledTime", tm)
 
-	t, err := template.NewTemplate(string(cronBytes))
+	t, err := template.NewTemplate(string(cron.Spec.When))
 	if err != nil {
 		return false, err
 	}
 
-	newCronStr, err := t.Replace(m, true)
+	newWhenStr, err := t.Replace(m, false)
 	if err != nil {
 		return false, err
 	}
+	newCron := cron.DeepCopy()
+	newCron.Spec.When = newWhenStr
 
-	var newCron v1alpha1.CronWorkflow
-	err = json.Unmarshal([]byte(newCronStr), &newCron)
-	if err != nil {
-		return false, err
-	}
 	return shouldExecute(newCron.Spec.When)
 }
 
