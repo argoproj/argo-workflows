@@ -714,7 +714,7 @@ func TestEvaluateWhen(t *testing.T) {
 	assert.True(t, result)
 }
 
-func TestEvaluateWhenUnresolved(t *testing.T) {
+func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
 	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
 	param := v1alpha1.Parameter{Name: "scheduled-time", Value: v1alpha1.AnyStringPtr("{{workflow.scheduledTime}}")}
