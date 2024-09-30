@@ -1,36 +1,36 @@
-import { Page } from 'argo-ui/src/components/page/page';
-import { SlidingPanel } from 'argo-ui/src/components/sliding-panel/sliding-panel';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import {useContext, useEffect, useMemo, useState} from 'react';
+import {RouteComponentProps} from 'react-router-dom';
 
 import * as models from '../../../../models';
-import { isArchivedWorkflow, Workflow, WorkflowPhase, WorkflowPhases } from '../../../../models';
-import { uiUrl } from '../../../shared/base';
-import { CostOptimisationNudge } from '../../../shared/components/cost-optimisation-nudge';
-import { ErrorNotice } from '../../../shared/components/error-notice';
-import { ExampleManifests } from '../../../shared/components/example-manifests';
-import { Loading } from '../../../shared/components/loading';
-import { PaginationPanel } from '../../../shared/components/pagination-panel';
-import { ZeroState } from '../../../shared/components/zero-state';
-import { Context } from '../../../shared/context';
-import { historyUrl } from '../../../shared/history';
-import { ListWatch, sortByYouth } from '../../../shared/list-watch';
+import {isArchivedWorkflow, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
+import {uiUrl} from '../../../shared/base';
+import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
+import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ExampleManifests} from '../../../shared/components/example-manifests';
+import {Loading} from '../../../shared/components/loading';
+import {PaginationPanel} from '../../../shared/components/pagination-panel';
+import {ZeroState} from '../../../shared/components/zero-state';
+import {Context} from '../../../shared/context';
+import {historyUrl} from '../../../shared/history';
+import {ListWatch, sortByYouth} from '../../../shared/list-watch';
 import * as nsUtils from '../../../shared/namespaces';
-import { Pagination, parseLimit } from '../../../shared/pagination';
-import { ScopedLocalStorage } from '../../../shared/scoped-local-storage';
-import { services } from '../../../shared/services';
-import { useCollectEvent } from '../../../shared/use-collect-event';
+import {Pagination, parseLimit} from '../../../shared/pagination';
+import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
+import {services} from '../../../shared/services';
+import {useCollectEvent} from '../../../shared/use-collect-event';
 import * as Actions from '../../../shared/workflow-operations-map';
-import { WorkflowCreator } from '../workflow-creator';
-import type { NameFilterKeys } from '../workflow-filters/workflow-filters';
-import { NAME_FILTER_KEYS, WorkflowFilters } from '../workflow-filters/workflow-filters';
-import { WorkflowsRow } from '../workflows-row/workflows-row';
-import { WorkflowsSummaryContainer } from '../workflows-summary-container/workflows-summary-container';
-import { WorkflowsToolbar } from '../workflows-toolbar/workflows-toolbar';
+import {WorkflowCreator} from '../workflow-creator';
+import type {NameFilterKeys} from '../workflow-filters/workflow-filters';
+import {NAME_FILTER_KEYS, WorkflowFilters} from '../workflow-filters/workflow-filters';
+import {WorkflowsRow} from '../workflows-row/workflows-row';
+import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflows-summary-container';
+import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
-import { TimestampSwitch } from '../../../shared/components/timestamp';
-import useTimestamp, { TIMESTAMP_KEYS } from '../../../shared/use-timestamp';
+import {TimestampSwitch} from '../../../shared/components/timestamp';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 import './workflows-list.scss';
 
 interface WorkflowListRenderOptions {
@@ -55,9 +55,9 @@ const allBatchActionsEnabled: Actions.OperationDisabled = {
 
 const storage = new ScopedLocalStorage('ListOptions');
 
-export function WorkflowsList({ match, location, history }: RouteComponentProps<any>) {
+export function WorkflowsList({match, location, history}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
-    const { navigation } = useContext(Context);
+    const {navigation} = useContext(Context);
 
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
@@ -96,7 +96,7 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
     });
 
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
-        const nowDisabled: any = { ...allBatchActionsEnabled };
+        const nowDisabled: any = {...allBatchActionsEnabled};
         for (const action of Object.keys(nowDisabled)) {
             for (const wf of Array.from(selectedWorkflows.values())) {
                 nowDisabled[action] = nowDisabled[action] || actions[action].disabled(wf);
@@ -128,8 +128,7 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
     // save history and localStorage
     useEffect(() => {
         // add empty selectedPhases + selectedLabels for forward-compat w/ old version: previous code relies on them existing, so if you move up a version and back down, it breaks
-        const options = { selectedPhases: [], selectedLabels: [] } as unknown as WorkflowListRenderOptions;
-        options[nameFilter.type] = nameFilter.value;
+        const options = {selectedPhases: [], selectedLabels: []} as unknown as WorkflowListRenderOptions;
         options.phases = phases;
         options.labels = labels;
         if (pagination.limit) {
@@ -149,16 +148,16 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
         if (nameValue) {
             params.append(nameFilter, nameValue);
         }
-        history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), { namespace, extraSearchParams: params }));
+        history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter]); // referential equality, so use values, not refs
 
     useEffect(() => {
         const listWatch = new ListWatch(
             () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter),
-            (resourceVersion: string) => services.workflows.watchFields({ namespace, phases, labels, resourceVersion }),
+            (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
             metadata => {
                 setError(null);
-                setPagination({ ...pagination, nextOffset: metadata.continue });
+                setPagination({...pagination, nextOffset: metadata.continue});
                 clearSelectedWorkflows();
             },
             () => setError(null),
@@ -184,15 +183,15 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
             title='Workflows'
             toolbar={{
                 breadcrumbs: [
-                    { title: 'Workflows', path: uiUrl('workflows') },
-                    { title: namespace, path: uiUrl('workflows/' + namespace) }
+                    {title: 'Workflows', path: uiUrl('workflows')},
+                    {title: namespace, path: uiUrl('workflows/' + namespace)}
                 ],
                 actionMenu: {
                     items: [
                         {
                             title: 'Submit New Workflow',
                             iconClassName: 'fa fa-plus',
-                            action: () => navigation.goto('.', { sidePanel: 'submit-new-workflow' })
+                            action: () => navigation.goto('.', {sidePanel: 'submit-new-workflow'})
                         },
                         ...links.map(link => ({
                             title: link.name,
@@ -348,7 +347,7 @@ export function WorkflowsList({ match, location, history }: RouteComponentProps<
                     )}
                 </div>
             </div>
-            <SlidingPanel isShown={!!getSidePanel()} onClose={() => navigation.goto('.', { sidePanel: null })}>
+            <SlidingPanel isShown={!!getSidePanel()} onClose={() => navigation.goto('.', {sidePanel: null})}>
                 {getSidePanel() === 'submit-new-workflow' && (
                     <WorkflowCreator
                         namespace={nsUtils.getNamespaceWithDefault(namespace)}
@@ -380,7 +379,7 @@ function nullSafeTimeFilter(createdAfter: Date, finishedBefore: Date, w: Workflo
 }
 
 function countsByCompleted(workflows?: Workflow[]) {
-    const counts = { complete: 0, incomplete: 0 };
+    const counts = {complete: 0, incomplete: 0};
     (workflows || []).forEach(wf => {
         // don't count archived workflows as this is for GC purposes
         if (isArchivedWorkflow(wf)) {
