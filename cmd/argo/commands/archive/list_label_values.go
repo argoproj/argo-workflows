@@ -18,6 +18,10 @@ func NewListLabelValueCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list-label-values",
 		Short: "get workflow label values in the archive",
+		Example: `
+# Get workflow label values in the archive:
+  argo archive list-label-values -l key1
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			listOpts := &metav1.ListOptions{
 				LabelSelector: selector,
