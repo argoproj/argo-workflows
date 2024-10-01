@@ -306,18 +306,23 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 		return artifacts, argoerrs.InternalWrapError(err)
 	}
 
-	var firstArtifactError error
+	aggregateError := ""
 	for _, art := range we.Template.Outputs.Artifacts {
 		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
 
-		if err != nil && firstArtifactError == nil {
-			firstArtifactError = err
+		if err != nil {
+			aggregateError += err.Error() + "; "
 		}
 		if saved {
 			artifacts = append(artifacts, art)
 		}
 	}
-	return artifacts, firstArtifactError
+	if aggregateError == "" {
+		return artifacts, nil
+	} else {
+		return artifacts, errors.New(aggregateError)
+	}
+
 }
 
 // save artifact
