@@ -306,39 +306,51 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 		return artifacts, argoerrs.InternalWrapError(err)
 	}
 
+	aggregateError := ""
 	for _, art := range we.Template.Outputs.Artifacts {
-		err := we.saveArtifact(ctx, common.MainContainerName, &art)
+		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
+
 		if err != nil {
-			return artifacts, err
+			aggregateError += err.Error() + "; "
 		}
-		artifacts = append(artifacts, art)
+		if saved {
+			artifacts = append(artifacts, art)
+		}
 	}
-	return artifacts, nil
+	if aggregateError == "" {
+		return artifacts, nil
+	} else {
+		return artifacts, errors.New(aggregateError)
+	}
+
 }
 
-func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) error {
+// save artifact
+// return whether artifact was in fact saved, and if there was an error
+func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) (bool, error) {
 	// Determine the file path of where to find the artifact
 	err := art.CleanPath()
 	if err != nil {
-		return err
+		return false, err
 	}
 	fileName, localArtPath, err := we.stageArchiveFile(containerName, art)
 	if err != nil {
 		if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
 			log.Warnf("Ignoring optional artifact '%s' which does not exist in path '%s': %v", art.Name, art.Path, err)
-			return nil
+			return false, nil
 		}
-		return err
+		return false, err
 	}
 	fi, err := os.Stat(localArtPath)
 	if err != nil {
-		return err
+		return false, err
 	}
 	size := fi.Size()
 	if size == 0 {
 		log.Warnf("The file %q is empty. It may not be uploaded successfully depending on the artifact driver", localArtPath)
 	}
-	return we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
+	err = we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
+	return err == nil, err
 }
 
 // fileBase is probably path.Base(filePath), but can be something else
