@@ -19,6 +19,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/executorplugin"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 )
 
 const (
@@ -125,6 +126,9 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	var logLevel string
 	var glogLevel int
 	var verbose bool
+	command.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+		cmdutil.PrintVersionMismatchWarning(argo.GetVersion(), grpcutil.LastSeenServerVersion)
+	}
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if verbose {
 			logLevel = "debug"

@@ -17,6 +17,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
+import {useEditableObject} from '../shared/use-editable-object';
 import {WidgetGallery} from '../widgets/widget-gallery';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {CronWorkflowEditor} from './cron-workflow-editor';
@@ -35,8 +36,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
 
-    const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>();
-    const [edited, setEdited] = useState(false);
+    const [cronWorkflow, edited, setCronWorkflow, resetCronWorkflow] = useEditableObject<CronWorkflow>();
     const [error, setError] = useState<Error>();
 
     useEffect(
@@ -63,13 +63,10 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     useEffect(() => {
         services.cronWorkflows
             .get(name, namespace)
-            .then(setCronWorkflow)
-            .then(() => setEdited(false))
+            .then(resetCronWorkflow)
             .then(() => setError(null))
             .catch(setError);
     }, [namespace, name]);
-
-    useEffect(() => setEdited(true), [cronWorkflow]);
 
     useEffect(() => {
         (async () => {
@@ -91,8 +88,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                   action: () =>
                       services.cronWorkflows
                           .suspend(name, namespace)
-                          .then(setCronWorkflow)
-                          .then(() => setEdited(false))
+                          .then(resetCronWorkflow)
                           .then(() => setError(null))
                           .catch(setError),
                   disabled: !cronWorkflow || edited
@@ -103,8 +99,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                   action: () =>
                       services.cronWorkflows
                           .resume(name, namespace)
-                          .then(setCronWorkflow)
-                          .then(() => setEdited(false))
+                          .then(resetCronWorkflow)
                           .then(() => setError(null))
                           .catch(setError),
                   disabled: !cronWorkflow || !cronWorkflow.spec.suspend || edited
@@ -142,10 +137,9 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                                 cronWorkflow.metadata.namespace
                             )
                         )
-                        .then(setCronWorkflow)
+                        .then(resetCronWorkflow)
                         .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
                         .then(() => setError(null))
-                        .then(() => setEdited(false))
                         .catch(setError);
                 }
             },
