@@ -81,7 +81,7 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
                 and the value is attribute type.
         """
         return {
-            'condition': (str,),  # noqa: E501
+            'expression': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -90,7 +90,7 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
 
 
     attribute_map = {
-        'condition': 'condition',  # noqa: E501
+        'expression': 'expression',  # noqa: E501
     }
 
     read_only_vars = {
@@ -100,11 +100,11 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, condition, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, expression, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1StopStrategy - a model defined in OpenAPI
 
         Args:
-            condition (str): v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.
+            expression (str): Expression is an expression that stops scheduling workflows when true. Use the variables `io.argoproj.workflow.v1alpha1.failed` or `cronio.argoproj.REPLACEME.v1alpha1.succeeded` to access the number of failed or successful child workflows. v3.6 and after
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -164,7 +164,7 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.condition = condition
+        self.expression = expression
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -185,11 +185,11 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, condition, *args, **kwargs):  # noqa: E501
+    def __init__(self, expression, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1StopStrategy - a model defined in OpenAPI
 
         Args:
-            condition (str): v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.
+            expression (str): Expression is an expression that stops scheduling workflows when true. Use the variables `io.argoproj.workflow.v1alpha1.failed` or `cronio.argoproj.REPLACEME.v1alpha1.succeeded` to access the number of failed or successful child workflows. v3.6 and after
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -247,7 +247,7 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.condition = condition
+        self.expression = expression
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
