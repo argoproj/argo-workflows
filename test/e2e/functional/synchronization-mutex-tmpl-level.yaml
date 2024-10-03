@@ -25,16 +25,16 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      mutex:
-        name: welcome
+      mutexes:
+        - name: welcome
     container:
       image: argoproj/argosay:v2
       args: ["sleep", "2s"]
 
   - name: acquire-lock-1
     synchronization:
-      mutex:
-        name: test
+      mutexes:
+        - name: test
     container:
       image: argoproj/argosay:v2
       args: ["sleep", "2s"]

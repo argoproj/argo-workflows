@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
@@ -123,9 +124,9 @@ status:
   startedAt: "2020-06-19T17:37:05Z"
 `))
 	wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = throttler.Init(wfList.Items)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, throttler.Admit("default/a"))
 	assert.True(t, throttler.Admit("default/b"))
 

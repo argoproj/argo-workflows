@@ -45,6 +45,13 @@ func PrintVersion(cliName string, version wfv1.Version, short bool) {
 	fmt.Printf("  Platform: %s\n", version.Platform)
 }
 
+// PrintVersionMismatchWarning detects if there's a mismatch between the client and server versions and prints a warning if so
+func PrintVersionMismatchWarning(clientVersion wfv1.Version, serverVersion string) {
+	if serverVersion != "" && clientVersion.GitTag != "" && serverVersion != clientVersion.Version {
+		log.Warnf("CLI version (%s) does not match server version (%s). This can lead to unexpected behavior.", clientVersion.Version, serverVersion)
+	}
+}
+
 // MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
 func MustIsDir(filePath string) bool {
 	fileInfo, err := os.Stat(filePath)

@@ -19,14 +19,14 @@ spec:
             value: "{{item}}"
         withItems: [1, 2, 3, 4]
       - name: print-nums
-        template: whalesay
+        template: print-message
         depends: "odd-or-even"
         arguments:
           parameters:
           - name: message
             value: "{{tasks.odd-or-even.outputs.parameters.num}}"
       - name: print-evenness
-        template: whalesay
+        template: print-message
         depends: "odd-or-even"
         arguments:
           parameters:
@@ -46,7 +46,7 @@ spec:
       # Finally, print all numbers processed in the previous step
       - name: print
         depends: "divide-by-2"
-        template: whalesay
+        template: print-message
         arguments:
           parameters:
           - name: message
@@ -90,12 +90,12 @@ spec:
       args:
         - echo $(({{inputs.parameters.num}}/2))
 
-  # whalesay prints a number using whalesay
-  - name: whalesay
+  # print-message prints a number
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]

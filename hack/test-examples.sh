@@ -7,18 +7,21 @@ kubectl apply -f examples/configmaps/simple-parameters-configmap.yaml
 echo "Checking for banned images..."
 grep -lR 'workflows.argoproj.io/test' examples/*  | while read f ; do
   echo " - $f"
-  test 0 == $(grep -o 'image: .*' $f | grep -cv 'argoproj/argosay:v2\|python:alpine3.6')
+  test 0 == $(grep -o 'image: .*' $f | grep -cv 'argoproj/argosay:v2\|python:alpine3.6\|busybox')
 done
 
 trap 'kubectl get wf' EXIT
 
 grep -lR 'workflows.argoproj.io/test' examples/* | while read f ; do
-  kubectl delete workflow -l workflows.argoproj.io/test
   echo "Running $f..."
-  kubectl create -f $f
-  name=$(kubectl get workflow -o name)
+  name=$(kubectl create -f $f -o name)
+
+  echo "Waiting for completion of $f..."
   kubectl wait --for=condition=Completed $name
   phase="$(kubectl get $name -o 'jsonpath={.status.phase}')"
   echo " -> $phase"
   test Succeeded == $phase
+
+  echo "Deleting $f..."
+  kubectl delete $name
 done

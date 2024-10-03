@@ -196,7 +196,7 @@
 
             mockery = pkgs.buildGoModule rec { 
               pname = "mockery";
-              version = "2.42.0"; # upgrade this in the Makefile if upgraded here
+              version = "2.42.2"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";

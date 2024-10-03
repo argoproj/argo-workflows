@@ -2,8 +2,9 @@ package sync
 
 import "time"
 
-type Semaphore interface {
+type semaphore interface {
 	acquire(holderKey string) bool
+	checkAcquire(holderKey string) (bool, bool, string)
 	tryAcquire(holderKey string) (bool, string)
 	release(key string) bool
 	addToQueue(holderKey string, priority int32, creationTime time.Time)

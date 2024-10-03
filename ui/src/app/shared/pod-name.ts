@@ -11,7 +11,7 @@ const maxPrefixLength = maxK8sResourceNameLength - k8sNamingHashLength;
 // getPodName returns a deterministic pod name
 // In case templateName is not defined or that version is explicitly set to  POD_NAME_V1, it will return the nodeID (v1)
 // In other cases it will return a combination of workflow name, template name, and a hash (v2)
-// note: this is intended to be equivalent to the server-side Go code in workflow/util/pod_name.go
+// note: this is intended to be equivalent to the server-side Go code in workflow/util/pod_name.go#GeneratePodName
 export function getPodName(workflow: Workflow, node: NodeStatus): string {
     const version = workflow.metadata?.annotations?.[ANNOTATION_KEY_POD_NAME_VERSION];
     if (version === POD_NAME_V1) {
@@ -19,7 +19,10 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
     }
 
     const workflowName = workflow.metadata.name;
-    if (workflowName === node.name) {
+    // convert containerSet node name to its corresponding pod node name by removing the ".<containerName>" postfix
+    // this part is from workflow/controller/container_set_template.go#executeContainerSet; the inverse never happens in the back-end, so is unique to the front-end
+    const podNodeName = node.type == 'Container' ? node.name.replace(/\.[^/.]+$/, '') : node.name;
+    if (workflowName === podNodeName) {
         return workflowName;
     }
 
@@ -30,7 +33,7 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
     }
     prefix = ensurePodNamePrefixLength(prefix);
 
-    const hash = createFNVHash(node.name);
+    const hash = createFNVHash(podNodeName);
     return `${prefix}-${hash}`;
 }
 

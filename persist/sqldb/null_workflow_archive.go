@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 )
@@ -30,6 +32,10 @@ func (r *nullWorkflowArchive) CountWorkflows(options sutils.ListOptions) (int64,
 
 func (r *nullWorkflowArchive) GetWorkflow(string, string, string) (*wfv1.Workflow, error) {
 	return nil, fmt.Errorf("getting archived workflows not supported")
+}
+
+func (r *nullWorkflowArchive) GetWorkflowForEstimator(namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
+	return nil, fmt.Errorf("getting archived workflow for estimator not supported")
 }
 
 func (r *nullWorkflowArchive) DeleteWorkflow(string) error {

@@ -104,7 +104,7 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
         """IoArgoprojWorkflowV1alpha1StopStrategy - a model defined in OpenAPI
 
         Args:
-            condition (str): Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.
+            condition (str): v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -189,7 +189,7 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
         """IoArgoprojWorkflowV1alpha1StopStrategy - a model defined in OpenAPI
 
         Args:
-            condition (str): Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords `failed` or `succeeded` to access the number of failed or successful child workflows.
+            condition (str): v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

@@ -126,6 +126,7 @@ data:
        config:
          dex.config: |
            staticClients:
+           # This is the OIDC client ID in plaintext
            - id: argo-workflows-sso
              name: Argo Workflow
              redirectURIs:

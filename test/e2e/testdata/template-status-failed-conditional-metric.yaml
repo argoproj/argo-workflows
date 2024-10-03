@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-status-failed-conditional-metric-
+spec:
+  entrypoint: dag
+  templates:
+  - name: dag
+    metrics:
+        prometheus:
+        - counter:
+            value: "1"
+          help: Task failed
+          name: task_failure
+          when: '{{status}} == Failed'
+    dag:
+      tasks:
+      - name: test
+        template: echo
+        arguments:
+          parameters: 
+            - name: message
+              value: "test"
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: ["{{inputs.parameters.message}}"]

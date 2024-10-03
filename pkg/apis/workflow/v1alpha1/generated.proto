@@ -477,7 +477,7 @@ message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
 
-  // Schedule is a schedule to run the Workflow in Cron format
+  // Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules
   optional string schedule = 2;
 
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
@@ -502,11 +502,14 @@ message CronWorkflowSpec {
   // WorkflowMetadata contains some metadata of the workflow to be run
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 
-  // StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+  // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
   optional StopStrategy stopStrategy = 10;
 
-  // Schedules is a list of schedules to run the Workflow in Cron format
+  // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
   repeated string schedules = 11;
+
+  // v3.6 and after: When is an expression that determines if a run should be scheduled.
+  optional string when = 12;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
@@ -520,13 +523,13 @@ message CronWorkflowStatus {
   // Conditions is a list of conditions the CronWorkflow may have
   repeated Condition conditions = 3;
 
-  // Succeeded is a counter of how many times the child workflows had success
+  // v3.6 and after: Succeeded counts how many times child workflows succeeded
   optional int64 succeeded = 4;
 
-  // Failed is a counter of how many times a child workflow terminated in failed or errored state
+  // v3.6 and after: Failed counts how many times child workflows failed
   optional int64 failed = 5;
 
-  // Phase defines the cron workflow phase. It is changed to Stopped when the stopping condition is achieved which stops new CronWorkflows from running
+  // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
   optional string phase = 6;
 }
 
@@ -734,6 +737,10 @@ message HDFSConfig {
   // HDFSUser is the user to access HDFS file system.
   // It is ignored if either ccache or keytab is used.
   optional string hdfsUser = 3;
+
+  // DataTransferProtection is the protection level for HDFS data transfer.
+  // It corresponds to the dfs.data.transfer.protection configuration in HDFS.
+  optional string dataTransferProtection = 4;
 }
 
 // HDFSKrbConfig is auth configurations for Kerberos
@@ -1263,7 +1270,7 @@ message PodGC {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
 
   // DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Duration deleteDelayDuration = 3;
+  optional string deleteDelayDuration = 3;
 }
 
 // Prometheus is a prometheus metric to be emitted
@@ -1401,6 +1408,9 @@ message S3Bucket {
   // SecretKeySecret is the secret selector to the bucket's secret key
   optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 6;
 
+  // SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant
+  optional k8s.io.api.core.v1.SecretKeySelector sessionTokenSecret = 12;
+
   // RoleARN is the Amazon Resource Name (ARN) of the role to assume.
   optional string roleARN = 7;
 
@@ -1480,10 +1490,10 @@ message Sequence {
   optional string format = 4;
 }
 
-// StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 message StopStrategy {
-  // Condition defines a condition that stops scheduling workflows when evaluates to true. Use the
-  // keywords `failed` or `succeeded` to access the number of failed or successful child workflows.
+  // v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the
+  // variables `failed` or `succeeded` to access the number of failed or successful child workflows.
   optional string condition = 1;
 }
 
@@ -1551,11 +1561,17 @@ message SuspendTemplate {
 
 // Synchronization holds synchronization lock configuration
 message Synchronization {
-  // Semaphore holds the Semaphore configuration
+  // Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
   optional SemaphoreRef semaphore = 1;
 
-  // Mutex holds the Mutex lock details
+  // Mutex holds the Mutex lock details - deprecated, use mutexes instead
   optional Mutex mutex = 2;
+
+  // v3.6 and after: Semaphores holds the list of Semaphores configuration
+  repeated SemaphoreRef semaphores = 3;
+
+  // v3.6 and after: Mutexes holds the list of Mutex lock details
+  repeated Mutex mutexes = 4;
 }
 
 // SynchronizationStatus stores the status of semaphore and mutex.

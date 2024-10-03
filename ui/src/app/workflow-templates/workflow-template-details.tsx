@@ -5,16 +5,20 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {WorkflowTemplate} from '../../models';
+import * as models from '../../models';
+import {WorkflowTemplate, Workflow} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
+import {useEditableObject} from '../shared/use-editable-object';
 import {useCollectEvent} from '../shared/use-collect-event';
+import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
 import {WidgetGallery} from '../widgets/widget-gallery';
+import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
@@ -28,6 +32,11 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const name = match.params.name;
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
+    const [workflows, setWorkflows] = useState<Workflow[]>([]);
+    const [columns, setColumns] = useState<models.Column[]>([]);
+
+    const [template, edited, setTemplate, resetTemplate] = useEditableObject<WorkflowTemplate>();
+    const [error, setError] = useState<Error>();
 
     useEffect(
         useQueryParams(history, p => {
@@ -50,20 +59,23 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
         [namespace, name, sidePanel, tab]
     );
 
-    const [error, setError] = useState<Error>();
-    const [template, setTemplate] = useState<WorkflowTemplate>();
-    const [edited, setEdited] = useState(false);
-
-    useEffect(() => setEdited(true), [template]);
-
     useEffect(() => {
         services.workflowTemplate
             .get(name, namespace)
-            .then(setTemplate)
-            .then(() => setEdited(false)) // set back to false
+            .then(resetTemplate)
             .then(() => setError(null))
             .catch(setError);
     }, [name, namespace]);
+
+    useEffect(() => {
+        (async () => {
+            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.workflowTemplate}=${name}`], {limit: 50});
+            const workflowsInfo = await services.info.getInfo();
+
+            setWorkflows(workflowList.items);
+            setColumns(workflowsInfo.columns);
+        })();
+    }, []);
 
     useCollectEvent('openedWorkflowTemplateDetails');
 
@@ -91,9 +103,8 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                             action: () =>
                                 services.workflowTemplate
                                     .update(template, name, namespace)
-                                    .then(setTemplate)
+                                    .then(resetTemplate)
                                     .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
-                                    .then(() => setEdited(false))
                                     .then(() => setError(null))
                                     .catch(setError)
                         },
@@ -139,6 +150,16 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}
                 </SlidingPanel>
             )}
+            <>
+                <ErrorNotice error={error} />
+                {!workflows ? (
+                    <ZeroState title='No completed workflow templates'>
+                        <p> You can create new workflow templates here or using the CLI. </p>
+                    </ZeroState>
+                ) : (
+                    <WorkflowDetailsList workflows={workflows} columns={columns} />
+                )}
+            </>
         </Page>
     );
 }

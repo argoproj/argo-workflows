@@ -15,9 +15,81 @@ Previously it was `--basehref` (no dash in between) and `ARGO_BASEHREF` (no unde
 `ALLOWED_LINK_PROTOCOL` and `BASE_HREF` have been removed as redundant.
 Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
 
+### Legacy insecure pod patch fallback removed. ([#13100](https://github.com/argoproj/argo-workflows/pull/13100))
+
+For the Emissary executor to work properly, you must set up RBAC. See [workflow RBAC](workflow-rbac.md)
+
+### Metrics changes
+
+You can now retrieve metrics using the OpenTelemetry Protocol using the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/), and this is the recommended mechanism.
+
+These notes explain the differences in using the Prometheus `/metrics` endpoint to scrape metrics for a minimal effort upgrade. It is not recommended you follow this guide blindly, the new metrics have been introduced because they add value, and so they should be worth collecting and using.
+
+#### New metrics
+
+The following are new metrics:
+
+* `cronworkflows_concurrencypolicy_triggered`
+* `cronworkflows_triggered_total`
+* `is_leader`
+* `k8s_request_duration`
+* `pod_pending_count`
+* `pods_total_count`
+* `queue_duration`
+* `queue_longest_running`
+* `queue_retries`
+* `queue_unfinished_work`
+* `total_count`
+* `version`
+* `workflowtemplate_runtime`
+* `workflowtemplate_triggered_total`
+
+and can be disabled with
+
+```yaml
+metricsConfig: |
+  modifiers:
+    build_info:
+      disable: true
+...
+```
+
+#### Renamed metrics
+
+If you are using these metrics in your recording rules, dashboards, or alerts, you will need to update their names after the upgrade:
+
+| Old name                           | New name                           |
+|------------------------------------|------------------------------------|
+| `argo_workflows_count`             | `argo_workflows_gauge`             |
+| `argo_workflows_pods_count`        | `argo_workflows_pods_gauge`        |
+| `argo_workflows_queue_depth_count` | `argo_workflows_queue_depth_gauge` |
+| `log_messages`                     | `argo_workflows_log_messages`      |
+
+#### Custom metrics
+
+Custom metric names and labels must be valid Prometheus and OpenTelemetry names now. This prevents the use of `:`, which was usable in earlier versions of workflows
+
+Custom metrics, as defined by a workflow, could be defined as one type (say counter) in one workflow, and then as a histogram of the same name in a different workflow. This would work in 3.5 if the first usage of the metric had reached TTL and been deleted. This will no-longer work in 3.6, and custom metrics may not be redefined. It doesn't really make sense to change a metric in this way, and the OpenTelemetry SDK prevents you from doing so.
+
+`metricsTTL` for histogram metrics is not functional as opentelemetry doesn't allow deletion of metrics. This is faked via asynchronous meters for the other metric types.
+
+#### TLS
+
+The Prometheus `/metrics` endpoint now has TLS enabled by default.
+To disable this set `metricsConfig.secure` to `false`.
+
 ## Upgrading to v3.5
 
-There are no known breaking changes in this release. Please file an issue if you encounter any unexpected problems after upgrading.
+There are no known breaking changes in this release.
+Please file an issue if you encounter any unexpected problems after upgrading.
+
+### Unified Workflows List API and UI
+
+The Workflows List in the UI now shows Archived Workflows in the same page.
+As such, the previously separate Archived Workflows page in the UI has been removed.
+
+The List API `/api/v1/workflows` also returns both types of Workflows now.
+This is not breaking as the Archived API still exists and was not removed, so this is an addition.
 
 ## Upgrading to v3.4
 
@@ -46,16 +118,17 @@ If you are incorrectly configured, the workflow controller will error on start-u
 
 #### Actions
 
-You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):
+You don't need to configure images that use v2 manifests anymore, such as `argoproj/argosay:v2`.
+You can remove them:
 
 ```bash
 % docker manifest inspect argoproj/argosay:v2
-...
+# ...
 "schemaVersion": 2,
-...
+# ...
 ```
 
-For v1 manifests (e.g. docker/whalesay:latest):
+For v1 manifests, such as `docker/whalesay:latest`:
 
 ```bash
 % docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' docker/whalesay:latest
@@ -68,7 +141,7 @@ images:
     cmd: [/bin/bash]
 ```
 
-## feat: Fail on invalid config. (#8295)
+### feat: Fail on invalid config. (#8295)
 
 The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
 mis-configuration.
@@ -77,11 +150,11 @@ mis-configuration.
 Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
 ```
 
-## feat: add indexes for improve archived workflow performance. (#8860)
+### feat: add indexes for improve archived workflow performance. (#8860)
 
 This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.
 
-## feat: enhance artifact visualization (#8655)
+### feat: enhance artifact visualization (#8655)
 
 For AWS users using S3: visualizing artifacts in the UI and downloading them now requires an additional "Action" to be configured in your S3 bucket policy: "ListBucket".
 

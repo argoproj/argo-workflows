@@ -79,12 +79,12 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 
 	t.Run("List Service Accounts in different namespaces", func(t *testing.T) {
 		sa, _ := cache.ServiceAccountLister.ServiceAccounts("ns1").List(labels.Everything())
-		assert.Equal(t, 2, len(sa))
+		assert.Len(t, sa, 2)
 		assert.True(t, checkServiceAccountExists(sa, "sa1"))
 		assert.True(t, checkServiceAccountExists(sa, "sa2"))
 
 		sa, _ = cache.ServiceAccountLister.ServiceAccounts("ns2").List(labels.Everything())
-		assert.Equal(t, 1, len(sa))
+		assert.Len(t, sa, 1)
 		assert.True(t, checkServiceAccountExists(sa, "sa3"))
 
 		secret, _ := cache.GetSecret(ctx, "ns1", "s1")

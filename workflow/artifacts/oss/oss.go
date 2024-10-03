@@ -40,7 +40,7 @@ var (
 	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
 
 	// OSS error code reference: https://error-center.alibabacloud.com/status/product/Oss
-	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
+	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge", "InternalError"}
 	bucketLogFilePrefix    = "bucket-log-"
 	maxObjectSize          = int64(5 * 1024 * 1024 * 1024)
 )
@@ -86,6 +86,13 @@ func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	var options []oss.ClientOption
+
+	// for oss driver, the proxy cannot be configured through environment variables
+	// ref: https://help.aliyun.com/zh/cli/use-an-http-proxy-server#section-5yf-ejl-jwf
+	if proxy, ok := os.LookupEnv("https_proxy"); ok {
+		options = append(options, oss.Proxy(proxy))
+	}
+
 	if token := ossDriver.SecurityToken; token != "" {
 		options = append(options, oss.SecurityToken(token))
 	}

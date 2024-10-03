@@ -28,8 +28,8 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      mutex:
-        name: welcome
+      mutexes:
+        - name: welcome
     container:
       image: alpine:latest
       command: [sh, -c]
@@ -37,8 +37,8 @@ spec:
 
   - name: acquire-lock-1
     synchronization:
-      mutex:
-        name: test
+      mutexes:
+        - name: test
     container:
       image: alpine:latest
       command: [sh, -c]
