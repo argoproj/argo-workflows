@@ -357,7 +357,7 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   stopStrategy:
-    condition: "succeeded >= 1"
+    expression: "cronworkflow.succeeded >= 1"
   workflowSpec:
     metadata:
       labels:
@@ -391,7 +391,7 @@ spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
   stopStrategy:
-    condition: "failed >= 1"
+    expression: "cronworkflow.failed >= 1"
   workflowSpec:
     metadata:
       labels:

@@ -39,7 +39,7 @@ In the above example it would be similar to `test-cron-wf-tj6fe`.
 
 You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotations`.
 
-### `CronWorkflow` Options
+### `CronWorkflow` Spec
 
 | Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
@@ -51,7 +51,8 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 | `startingDeadlineSeconds`    | `0`                    | Seconds after [the last scheduled time](#crash-recovery) during which a missed `Workflow` will still be run. |
 | `successfulJobsHistoryLimit` | `3`                    | Number of successful `Workflows` to persist |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` to persist |
-| `stopStrategy`               | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition |
+| `stopStrategy`               | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on an expression |
+| `stopStrategy.expression`    | None                   | v3.6 and after: an expression which if present must evaluate to false for the workflow to be created |
 
 ### Cron Schedule Syntax
 
@@ -120,14 +121,14 @@ For example, if you want to stop scheduling new workflows after one success:
 
 ```yaml
 stopStrategy:
-  condition: "succeeded >= 1"
+  expression: "cronworkflow.succeeded >= 1"
 ```
 
 You can also stop scheduling new workflows after three failures with:
 
 ```yaml
 stopStrategy:
-  condition: "failed >= 3"
+  expression: "cronworkflow.failed >= 3"
 ```
 
 <!-- markdownlint-disable MD046 -- this is indented due to the admonition, not a code block -->

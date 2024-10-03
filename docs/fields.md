@@ -1994,12 +1994,12 @@ SynchronizationStatus stores the status of semaphore and mutex.
 
 ## StopStrategy
 
-v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`condition`|`string`|v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.|
+|`expression`|`string`|Expression is an expression that stops scheduling workflows when true. Use the variables `io.argoproj.workflow.v1alpha1.failed` or `cronio.argoproj.REPLACEME.v1alpha1.succeeded` to access the number of failed or successful child workflows. v3.6 and after|
 
 ## Artifact
 
