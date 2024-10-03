@@ -1568,11 +1568,12 @@ func TestStepsRetriesVariable(t *testing.T) {
 func TestAssessNodeStatus(t *testing.T) {
 	const templateName = "whalesay"
 	tests := []struct {
-		name   string
-		pod    *apiv1.Pod
-		daemon bool
-		node   *wfv1.NodeStatus
-		want   wfv1.NodePhase
+		name        string
+		pod         *apiv1.Pod
+		daemon      bool
+		node        *wfv1.NodeStatus
+		wantPhase   wfv1.NodePhase
+		wantMessage string
 	}{{
 		name: "pod pending",
 		pod: &apiv1.Pod{
@@ -1580,8 +1581,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodPending,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodePending,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodePending,
+		wantMessage: "",
 	}, {
 		name: "pod succeeded",
 		pod: &apiv1.Pod{
@@ -1589,8 +1591,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodSucceeded,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeSucceeded,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "pod failed - daemoned",
 		pod: &apiv1.Pod{
@@ -1598,9 +1601,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodFailed,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName},
-		want:   wfv1.NodeSucceeded,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
@@ -1608,9 +1612,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeFailed},
-		want:   wfv1.NodeFailed,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeFailed},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "",
 	}, {
 		name: "daemon, pod running, node succeeded",
 		pod: &apiv1.Pod{
@@ -1618,9 +1623,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
-		want:   wfv1.NodeSucceeded,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "pod failed - not daemoned",
 		pod: &apiv1.Pod{
@@ -1629,8 +1635,20 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
+	}, {
+		name: "pod failed - transition from node pending",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "failed for some reason",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodePending, Message: "failed for some reason"},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
 	}, {
 		name: "pod failed - init container failed",
 		pod: &apiv1.Pod{
@@ -1655,8 +1673,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - init container failed but neither wait nor main containers are finished",
 		pod: &apiv1.Pod{
@@ -1681,8 +1700,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - init container with non-standard init container name failed but neither wait nor main containers are finished",
 		pod: &apiv1.Pod{
@@ -1711,8 +1731,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - wait container waiting but pod was set failed",
 		pod: &apiv1.Pod{
@@ -1737,8 +1758,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since wait contain waiting",
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
@@ -1746,13 +1768,15 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeRunning,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeRunning,
+		wantMessage: "",
 	}, {
-		name: "default",
-		pod:  &apiv1.Pod{},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeError,
+		name:        "default",
+		pod:         &apiv1.Pod{},
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeError,
+		wantMessage: "Unexpected pod phase for : ",
 	}}
 
 	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -1769,7 +1793,8 @@ func TestAssessNodeStatus(t *testing.T) {
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			got := woc.assessNodeStatus(tt.pod, tt.node)
-			assert.Equal(t, tt.want, got.Phase)
+			assert.Equal(t, tt.wantPhase, got.Phase)
+			assert.Equal(t, tt.wantMessage, got.Message)
 		})
 	}
 }
