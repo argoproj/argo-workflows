@@ -40,6 +40,15 @@ spec:
         annotation-key-1: annotation-value-1
         annotation-key-2: annotation-value-2
     serviceAccountName: default
+    env:
+    - name: key-1
+      value: value-1
+    volumes:
+    - name: volume-1
+      emptyDir: {}
+    volumeMounts:
+    - name: volume-1
+      mountPath: /volume1
     podSpecPatch: |
       containers:
       - name: main
@@ -96,6 +105,9 @@ spec:
           podMetadata:
             annotations:
               annotation-key-1: annotation-value-3
+          env:
+          - name: key-2
+            value: value-2
           strategy: OnWorkflowCompletion
         name: first-on-completion-2
         path: /tmp/message
@@ -263,6 +275,15 @@ status:
             podMetadata:
               annotations:
                 annotation-key-1: annotation-value-3
+            env:
+            - name: key-2
+              value: value-2
+            volumes:
+            - name: volume-2
+              emptyDir: {}
+            volumeMounts:
+            - name: volume-2
+              mountPath: /volume2
             strategy: OnWorkflowCompletion
           name: first-on-completion-2
           path: /tmp/message
@@ -365,7 +386,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	}
 
 	// We should have one Pod per:
-	//  [ServiceAccount,PodMetadata]
+	//  [ServiceAccount,PodMetadata,Env,Volumes,VolumeMounts]
 	// and it should only consist of artifacts labeled with OnWorkflowCompletion
 
 	assert.NotNil(t, pods)
@@ -374,9 +395,9 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	var pod2 *corev1.Pod
 	for i, pod := range (*pods).Items {
 		switch pod.Name {
-		case "two-artgc-8tcvt-artgc-wfcomp-592587874":
+		case "two-artgc-8tcvt-artgc-wfcomp-1258355158":
 			pod1 = &(*pods).Items[i]
-		case "two-artgc-8tcvt-artgc-wfcomp-3953780960":
+		case "two-artgc-8tcvt-artgc-wfcomp-3507755939":
 			pod2 = &(*pods).Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("pod name '%s' doesn't match expected", pod.Name))
@@ -400,6 +421,18 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	}
 	assert.Contains(t, volumesMap1, "my-minio-cred-1")
 	assert.Contains(t, volumesMap1, "my-minio-cred-2")
+	assert.Contains(t, volumesMap1, "volume-1")
+	volumeMountsMap1 := make(map[string]struct{})
+	for _, v := range pod1.Spec.Containers[0].VolumeMounts {
+		volumeMountsMap1[v.Name] = struct{}{}
+	}
+	assert.Contains(t, volumeMountsMap1, "volume-1")
+	assert.NotContains(t, volumeMountsMap1, "volume-2")
+	envMap1 := make(map[string]string)
+	for _, envVar := range pod1.Spec.Containers[0].Env {
+		envMap1[envVar.Name] = envVar.Value
+	}
+	assert.Equal(t, "value-1", envMap1["key-1"])
 
 	assert.Equal(t, "default", pod2.Spec.ServiceAccountName)
 	assert.Contains(t, pod2.Annotations, "annotation-key-1")
@@ -410,7 +443,20 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	}
 	assert.Contains(t, volumesMap2, "my-minio-cred-1")
 	assert.NotContains(t, volumesMap2, "my-minio-cred-2")
+	volumeMountsMap2 := make(map[string]struct{})
+	for _, v := range pod2.Spec.Containers[0].VolumeMounts {
+		volumeMountsMap2[v.Name] = struct{}{}
+	}
+	assert.Contains(t, volumeMountsMap2, "volume-1")
+	assert.Contains(t, volumesMap2, "volume-1")
+	assert.Contains(t, volumesMap2, "volume-2")
 	assert.Equal(t, "1G", pod1.Spec.Containers[0].Resources.Limits.Memory().String())
+	envMap2 := make(map[string]string)
+	for _, envVar := range pod2.Spec.Containers[0].Env {
+		envMap2[envVar.Name] = envVar.Value
+	}
+	assert.Equal(t, "value-1", envMap2["key-1"])
+	assert.Equal(t, "value-2", envMap2["key-2"])
 
 	///////////////////////////////////////////////////////////////////////////////////////////
 	// Verify WorkflowArtifactGCTasks
@@ -429,9 +475,9 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	var wfat2 *wfv1.WorkflowArtifactGCTask
 	for i, wfat := range (*wfats).Items {
 		switch wfat.Name {
-		case "two-artgc-8tcvt-artgc-wfcomp-592587874-0":
+		case "two-artgc-8tcvt-artgc-wfcomp-1258355158-0":
 			wfat1 = &(*wfats).Items[i]
-		case "two-artgc-8tcvt-artgc-wfcomp-3953780960-0":
+		case "two-artgc-8tcvt-artgc-wfcomp-3507755939-0":
 			wfat2 = &(*wfats).Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("WorkflowArtifactGCTask name '%s' doesn't match expected", wfat.Name))

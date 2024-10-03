@@ -30,8 +30,14 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.env_var import EnvVar
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_metadata import IoArgoprojWorkflowV1alpha1Metadata
+    from argo_workflows.model.volume import Volume
+    from argo_workflows.model.volume_mount import VolumeMount
+    globals()['EnvVar'] = EnvVar
     globals()['IoArgoprojWorkflowV1alpha1Metadata'] = IoArgoprojWorkflowV1alpha1Metadata
+    globals()['Volume'] = Volume
+    globals()['VolumeMount'] = VolumeMount
 
 
 class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
@@ -87,11 +93,14 @@ class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
         """
         lazy_import()
         return {
+            'env': ([EnvVar],),  # noqa: E501
             'force_finalizer_removal': (bool,),  # noqa: E501
             'pod_metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
             'pod_spec_patch': (str,),  # noqa: E501
             'service_account_name': (str,),  # noqa: E501
             'strategy': (str,),  # noqa: E501
+            'volume_mounts': ([VolumeMount],),  # noqa: E501
+            'volumes': ([Volume],),  # noqa: E501
         }
 
     @cached_property
@@ -100,11 +109,14 @@ class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
 
 
     attribute_map = {
+        'env': 'env',  # noqa: E501
         'force_finalizer_removal': 'forceFinalizerRemoval',  # noqa: E501
         'pod_metadata': 'podMetadata',  # noqa: E501
         'pod_spec_patch': 'podSpecPatch',  # noqa: E501
         'service_account_name': 'serviceAccountName',  # noqa: E501
         'strategy': 'strategy',  # noqa: E501
+        'volume_mounts': 'volumeMounts',  # noqa: E501
+        'volumes': 'volumes',  # noqa: E501
     }
 
     read_only_vars = {
@@ -148,11 +160,14 @@ class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            env ([EnvVar]): Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
             force_finalizer_removal (bool): ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails. [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.. [optional]  # noqa: E501
             service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
             strategy (str): Strategy is the strategy to use.. [optional]  # noqa: E501
+            volume_mounts ([VolumeMount]): VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
+            volumes ([Volume]): Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -234,11 +249,14 @@ class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            env ([EnvVar]): Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
             force_finalizer_removal (bool): ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails. [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.. [optional]  # noqa: E501
             service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
             strategy (str): Strategy is the strategy to use.. [optional]  # noqa: E501
+            volume_mounts ([VolumeMount]): VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
+            volumes ([Volume]): Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

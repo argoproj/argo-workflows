@@ -1504,11 +1504,14 @@ WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflo
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`env`|`Array<`[`EnvVar`](#envvar)`>`|Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion|
 |`forceFinalizerRemoval`|`boolean`|ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.|
 |`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
 |`strategy`|`string`|Strategy is the strategy to use.|
+|`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion|
+|`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion|
 
 ## ArtifactRepositoryRef
 
@@ -3350,9 +3353,12 @@ ArtifactGC describes how to delete artifacts from completed Workflows - this is 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`env`|`Array<`[`EnvVar`](#envvar)`>`|Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
 |`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
 |`strategy`|`string`|Strategy is the strategy to use.|
+|`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion|
+|`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion|
 
 ## ArtifactoryArtifact
 
@@ -5209,6 +5215,80 @@ ObjectReference contains enough information to let you inspect or modify the ref
 |`resourceVersion`|`string`|Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency|
 |`uid`|`string`|UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids|
 
+## EnvVar
+
+EnvVar represents an environment variable present in a Container.
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
+
+- [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/colored-logs.yaml)
+
+- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
+
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
+
+- [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|Name of the environment variable. Must be a C_IDENTIFIER.|
+|`value`|`string`|Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to "".|
+|`valueFrom`|[`EnvVarSource`](#envvarsource)|Source for the environment variable's value. Cannot be used if value is not empty.|
+
+## VolumeMount
+
+VolumeMount describes a mounting of a Volume within a container.
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`artifacts-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
+
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci-output-artifact.yaml)
+
+- [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci-workflowtemplate.yaml)
+
+- [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci.yaml)
+
+- [`workspace-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/container-set-template/workspace-workflow.yaml)
+
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fun-with-gifs.yaml)
+
+- [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/init-container.yaml)
+
+- [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
+
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`mountPath`|`string`|Path within the container at which the volume should be mounted. Must not contain ':'.|
+|`mountPropagation`|`string`|mountPropagation determines how mounts are propagated from the host to container and the other way around. When not set, MountPropagationNone is used. This field is beta in 1.10. When RecursiveReadOnly is set to IfPossible or to Enabled, MountPropagation must be None or unspecified (which defaults to None).|
+|`name`|`string`|This must match the Name of a Volume.|
+|`readOnly`|`boolean`|Mounted read-only if true, read-write otherwise (false or unspecified). Defaults to false.|
+|`recursiveReadOnly`|`string`|RecursiveReadOnly specifies whether read-only mounts should be handled recursively. If ReadOnly is false, this field has no meaning and must be unspecified. If ReadOnly is true, and this field is set to Disabled, the mount is not made recursively read-only. If this field is set to IfPossible, the mount is made recursively read-only, if it is supported by the container runtime. If this field is set to Enabled, the mount is made recursively read-only if it is supported by the container runtime, otherwise the pod will not be started and an error will be generated to indicate the reason. If this field is set to IfPossible or Enabled, MountPropagation must be set to None (or be unspecified, which defaults to None). If this field is not specified, it is treated as an equivalent of Disabled.|
+|`subPath`|`string`|Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root).|
+|`subPathExpr`|`string`|Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to "" (volume's root). SubPathExpr and SubPath are mutually exclusive.|
+
 ## LabelSelector
 
 A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.
@@ -5601,80 +5681,6 @@ Selects a key from a ConfigMap.
 |`key`|`string`|The key to select.|
 |`name`|`string`|Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
 |`optional`|`boolean`|Specify whether the ConfigMap or its key must be defined|
-
-## VolumeMount
-
-VolumeMount describes a mounting of a Volume within a container.
-
-<details markdown>
-<summary>Examples with this field (click to open)</summary>
-
-- [`artifacts-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifacts-workflowtemplate.yaml)
-
-- [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
-
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci-output-artifact.yaml)
-
-- [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci-workflowtemplate.yaml)
-
-- [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci.yaml)
-
-- [`workspace-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/container-set-template/workspace-workflow.yaml)
-
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fun-with-gifs.yaml)
-
-- [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/init-container.yaml)
-
-- [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
-
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
-
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
-
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
-
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`mountPath`|`string`|Path within the container at which the volume should be mounted. Must not contain ':'.|
-|`mountPropagation`|`string`|mountPropagation determines how mounts are propagated from the host to container and the other way around. When not set, MountPropagationNone is used. This field is beta in 1.10. When RecursiveReadOnly is set to IfPossible or to Enabled, MountPropagation must be None or unspecified (which defaults to None).|
-|`name`|`string`|This must match the Name of a Volume.|
-|`readOnly`|`boolean`|Mounted read-only if true, read-write otherwise (false or unspecified). Defaults to false.|
-|`recursiveReadOnly`|`string`|RecursiveReadOnly specifies whether read-only mounts should be handled recursively. If ReadOnly is false, this field has no meaning and must be unspecified. If ReadOnly is true, and this field is set to Disabled, the mount is not made recursively read-only. If this field is set to IfPossible, the mount is made recursively read-only, if it is supported by the container runtime. If this field is set to Enabled, the mount is made recursively read-only if it is supported by the container runtime, otherwise the pod will not be started and an error will be generated to indicate the reason. If this field is set to IfPossible or Enabled, MountPropagation must be set to None (or be unspecified, which defaults to None). If this field is not specified, it is treated as an equivalent of Disabled.|
-|`subPath`|`string`|Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root).|
-|`subPathExpr`|`string`|Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to "" (volume's root). SubPathExpr and SubPath are mutually exclusive.|
-
-## EnvVar
-
-EnvVar represents an environment variable present in a Container.
-
-<details markdown>
-<summary>Examples with this field (click to open)</summary>
-
-- [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/buildkit-template.yaml)
-
-- [`colored-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/colored-logs.yaml)
-
-- [`expression-destructure-json-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json-complex.yaml)
-
-- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-destructure-json.yaml)
-
-- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
-
-- [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
-
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`name`|`string`|Name of the environment variable. Must be a C_IDENTIFIER.|
-|`value`|`string`|Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to "".|
-|`valueFrom`|[`EnvVarSource`](#envvarsource)|Source for the environment variable's value. Cannot be used if value is not empty.|
 
 ## EnvFromSource
 
@@ -6751,17 +6757,6 @@ Represents a vSphere volume resource.
 |`storagePolicyName`|`string`|storagePolicyName is the storage Policy Based Management (SPBM) profile name.|
 |`volumePath`|`string`|volumePath is the path that identifies vSphere volume vmdk|
 
-## LabelSelectorRequirement
-
-A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`key`|`string`|key is the label key that the selector applies to.|
-|`operator`|`string`|operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.|
-|`values`|`Array< string >`|values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.|
-
 ## EnvVarSource
 
 EnvVarSource represents a source for the value of an EnvVar.
@@ -6821,6 +6816,17 @@ EnvVarSource represents a source for the value of an EnvVar.
 |`fieldRef`|[`ObjectFieldSelector`](#objectfieldselector)|Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.|
 |`resourceFieldRef`|[`ResourceFieldSelector`](#resourcefieldselector)|Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.|
 |`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|Selects a key of a secret in the pod's namespace|
+
+## LabelSelectorRequirement
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|key is the label key that the selector applies to.|
+|`operator`|`string`|operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.|
+|`values`|`Array< string >`|values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.|
 
 ## ConfigMapEnvSource
 
