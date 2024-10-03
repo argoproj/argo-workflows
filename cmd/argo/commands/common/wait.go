@@ -25,8 +25,7 @@ func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	for _, name := range workflowNames {
 		wg.Add(1)
 		go func(name string) {
-			ok, err := waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet)
-			if !ok || err != nil {
+			if ok, _ := waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet); !ok {
 				wfSuccessStatus = false
 			}
 			wg.Done()
@@ -52,9 +51,6 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 	if err != nil {
 		if status.Code(err) == codes.NotFound && ignoreNotFound {
 			return true, nil
-		}
-		if err != nil {
-			return false, err
 		}
 		return false, nil
 	}

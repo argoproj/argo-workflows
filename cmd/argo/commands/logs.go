@@ -55,17 +55,11 @@ func NewLogsCommand() *cobra.Command {
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// parse all the args
-			workflow := ""
+			workflow := args[0]
 			podName := ""
 
-			switch len(args) {
-			case 1:
-				workflow = args[0]
-			case 2:
-				workflow = args[0]
+			if len(args) == 2 {
 				podName = args[1]
-			default:
-				return errors.New("expected one or two arguments")
 			}
 
 			if since > 0 && sinceTime != "" {
