@@ -11,15 +11,21 @@ import (
 
 // CliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
 type CliSubmitOpts struct {
-	Output        string // --output
-	Wait          bool   // --wait
-	Watch         bool   // --watch
-	Log           bool   // --log
-	Strict        bool   // --strict
-	Priority      *int32 // --priority
+	Output        EnumFlagValue // --output
+	Wait          bool          // --wait
+	Watch         bool          // --watch
+	Log           bool          // --log
+	Strict        bool          // --strict
+	Priority      *int32        // --priority
 	GetArgs       GetFlags
 	ScheduledTime string   // --scheduled-time
 	Parameters    []string // --parameter
+}
+
+func NewCliSubmitOpts() CliSubmitOpts {
+	return CliSubmitOpts{
+		Output: NewPrintWorkflowOutputValue(""),
+	}
 }
 
 func WaitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts CliSubmitOpts) {
@@ -33,7 +39,7 @@ func WaitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		}
 	}
 	if cliSubmitOpts.Wait {
-		WaitWorkflows(ctx, serviceClient, namespace, workflowNames, false, !(cliSubmitOpts.Output == "" || cliSubmitOpts.Output == "wide"))
+		WaitWorkflows(ctx, serviceClient, namespace, workflowNames, false, !(cliSubmitOpts.Output.String() == "" || cliSubmitOpts.Output.String() == "wide"))
 	} else if cliSubmitOpts.Watch {
 		for _, workflow := range workflowNames {
 			WatchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.GetArgs)

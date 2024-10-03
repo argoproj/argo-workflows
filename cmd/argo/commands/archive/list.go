@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/printer"
@@ -19,7 +20,7 @@ import (
 func NewListCommand() *cobra.Command {
 	var (
 		selector  string
-		output    string
+		output    = common.NewPrintWorkflowOutputValue("wide")
 		chunkSize int64
 	)
 	command := &cobra.Command{
@@ -44,11 +45,11 @@ func NewListCommand() *cobra.Command {
 			namespace := client.Namespace()
 			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, selector, chunkSize)
 			errors.CheckError(err)
-			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true, UID: true})
+			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output.String(), Namespace: true, UID: true})
 			errors.CheckError(err)
 		},
 	}
-	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
+	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
 	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().Int64VarP(&chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	return command

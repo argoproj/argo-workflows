@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/printer"
@@ -28,7 +29,7 @@ type listFlags struct {
 	running        bool
 	resubmitted    bool
 	prefix         string
-	output         string
+	output         cmdcommon.EnumFlagValue
 	createdSince   string
 	finishedBefore string
 	chunkSize      int64
@@ -44,7 +45,7 @@ var (
 )
 
 func (f listFlags) displayFields() string {
-	switch f.output {
+	switch f.output.String() {
 	case "name":
 		return nameFields
 	case "json", "yaml":
@@ -58,7 +59,7 @@ func (f listFlags) displayFields() string {
 
 func NewListCommand() *cobra.Command {
 	var (
-		listArgs      listFlags
+		listArgs      = listFlags{output: cmdcommon.NewPrintWorkflowOutputValue("")}
 		allNamespaces bool
 	)
 	command := &cobra.Command{
@@ -103,7 +104,7 @@ func NewListCommand() *cobra.Command {
 			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
 				NoHeaders: listArgs.noHeaders,
 				Namespace: allNamespaces,
-				Output:    listArgs.output,
+				Output:    listArgs.output.String(),
 			})
 			errors.CheckError(err)
 		},
@@ -115,7 +116,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show completed workflows. Mutually exclusive with --running.")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show running workflows. Mutually exclusive with --completed.")
 	command.Flags().BoolVar(&listArgs.resubmitted, "resubmitted", false, "Show resubmitted workflows")
-	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: name|wide|yaml|json")
+	command.Flags().VarP(&listArgs.output, "output", "o", "Output format. "+listArgs.output.Usage())
 	command.Flags().StringVar(&listArgs.createdSince, "since", "", "Show only workflows created after than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")

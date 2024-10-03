@@ -13,18 +13,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type listFlags struct {
-	allNamespaces bool   // --all-namespaces
-	output        string // --output
-	labelSelector string // --selector
+	allNamespaces bool                 // --all-namespaces
+	output        common.EnumFlagValue // --output
+	labelSelector string               // --selector
 }
 
 func NewListCommand() *cobra.Command {
-	var listArgs listFlags
+	var listArgs = listFlags{
+		output: common.EnumFlagValue{AllowedValues: []string{"wide", "name"}},
+	}
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cron workflows",
@@ -43,7 +46,7 @@ func NewListCommand() *cobra.Command {
 				ListOptions: &listOpts,
 			})
 			errors.CheckError(err)
-			switch listArgs.output {
+			switch listArgs.output.String() {
 			case "", "wide":
 				printTable(cronWfList.Items, &listArgs)
 			case "name":
@@ -51,12 +54,12 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(cronWf.ObjectMeta.Name)
 				}
 			default:
-				log.Fatalf("Unknown output mode: %s", listArgs.output)
+				log.Fatalf("Unknown output mode: %s", listArgs.output.String())
 			}
 		},
 	}
 	command.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
-	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	command.Flags().VarP(&listArgs.output, "output", "o", "Output format. "+listArgs.output.Usage())
 	command.Flags().StringVarP(&listArgs.labelSelector, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.")
 	return command
 }

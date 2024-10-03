@@ -20,8 +20,11 @@ func NewLintCommand() *cobra.Command {
 	var (
 		strict    bool
 		lintKinds []string
-		output    string
-		offline   bool
+		output    = common.EnumFlagValue{
+			AllowedValues: []string{"pretty", "simple"},
+			Value:         "pretty",
+		}
+		offline bool
 	)
 
 	command := &cobra.Command{
@@ -41,12 +44,12 @@ func NewLintCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			runLint(cmd.Context(), args, offline, lintKinds, output, strict)
+			runLint(cmd.Context(), args, offline, lintKinds, output.String(), strict)
 		},
 	}
 
 	command.Flags().StringSliceVar(&lintKinds, "kinds", []string{"all"}, fmt.Sprintf("Which kinds will be linted. Can be: %s", strings.Join(allKinds, "|")))
-	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
+	command.Flags().VarP(&output, "output", "o", "Linting results output format. "+output.Usage())
 	command.Flags().BoolVar(&strict, "strict", true, "Perform strict workflow validation")
 	command.Flags().BoolVar(&offline, "offline", false, "perform offline linting. For resources referencing other resources, the references will be resolved from the provided args")
 	command.Flags().BoolVar(&common.NoColor, "no-color", false, "Disable colorized output")

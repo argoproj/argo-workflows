@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint"
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
@@ -13,7 +14,10 @@ import (
 func NewLintCommand() *cobra.Command {
 	var (
 		strict bool
-		output string
+		output = common.EnumFlagValue{
+			AllowedValues: []string{"pretty", "simple"},
+			Value:         "pretty",
+		}
 	)
 
 	command := &cobra.Command{
@@ -33,11 +37,11 @@ func NewLintCommand() *cobra.Command {
 				Printer:          os.Stdout,
 			}
 
-			lint.RunLint(ctx, apiClient, []string{wf.ClusterWorkflowTemplatePlural}, output, false, opts)
+			lint.RunLint(ctx, apiClient, []string{wf.ClusterWorkflowTemplatePlural}, output.String(), false, opts)
 		},
 	}
 
-	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
+	command.Flags().VarP(&output, "output", "o", "Linting results output format. "+output.Usage())
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
 	return command
 }

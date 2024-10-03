@@ -9,16 +9,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type listFlags struct {
-	output string // --output
-}
-
 func NewListCommand() *cobra.Command {
-	var listArgs listFlags
+	var output = common.EnumFlagValue{
+		AllowedValues: []string{"wide", "name"},
+	}
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cluster workflow templates",
@@ -42,7 +41,7 @@ func NewListCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			switch listArgs.output {
+			switch output.String() {
 			case "", "wide":
 				printTable(cwftmplList.Items)
 			case "name":
@@ -50,11 +49,11 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(cwftmp.ObjectMeta.Name)
 				}
 			default:
-				log.Fatalf("Unknown output mode: %s", listArgs.output)
+				log.Fatalf("Unknown output mode: %s", output.String())
 			}
 		},
 	}
-	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
 	return command
 }
 
