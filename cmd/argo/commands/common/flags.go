@@ -9,6 +9,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// EnumFlagValue represents a CLI flag that can take one of a fixed set of values, and validates
+// that the provided value is one of the allowed values.
+// There's several libraries for this (e.g. https://github.com/thediveo/enumflag), but they're overkill.
 type EnumFlagValue struct {
 	AllowedValues []string
 	Value         string
