@@ -35,7 +35,7 @@ func Test_hasWorkflowParameters(t *testing.T) {
 	})
 }
 
-func Test_hasVarInEnv(t *testing.T) {
+func TestHasVarInEnv(t *testing.T) {
 	t.Run("parameterExistsInEnv", func(t *testing.T) {
 		env := map[string]interface{}{
 			"workflow": map[string]interface{}{
