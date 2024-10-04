@@ -206,6 +206,31 @@ Tests often fail: that's good. To diagnose failure:
 
 If tests run slowly or time out, factory reset your Kubernetes cluster.
 
+### Database Tooling
+
+The `go run ./hack/db` CLI provides a few useful commands for working with the DB locally:
+
+```bash
+$ go run ./hack/db
+CLI for developers to use when working on the DB locally
+
+Usage:
+  db [command]
+
+Available Commands:
+  completion              Generate the autocompletion script for the specified shell
+  fake-archived-workflows Insert randomly-generated workflows into argo_archived_workflows, for testing purposes
+  help                    Help about any command
+  migrate                 Force DB migration for given cluster/table
+
+Flags:
+  -d, --driver string   Database type (mysql or postgresql) (default "postgresql")
+  -c, --dsn string      DSN connection string (default "postgres://postgres@localhost:5432/postgres")
+  -h, --help            help for db
+
+Use "db [command] --help" for more information about a command.
+```
+
 ## Committing
 
 Before you commit code and raise a PR, always run:
