@@ -1,8 +1,6 @@
 package template
 
 import (
-	"log"
-
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
@@ -15,11 +13,14 @@ func NewGetCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			namespace := client.Namespace()
 			for _, name := range args {
@@ -28,10 +29,11 @@ func NewGetCommand() *cobra.Command {
 					Namespace: namespace,
 				})
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 				printWorkflowTemplate(wftmpl, output)
 			}
+			return nil
 		},
 	}
 

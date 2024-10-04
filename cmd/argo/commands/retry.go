@@ -2,10 +2,9 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -76,17 +75,21 @@ func NewRetryCommand() *cobra.Command {
 # Restart node with id 5 on successful workflow, using node-field-selector
   argo retry my-wf --restart-successful --node-field-selector id=5
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && !retryOpts.hasSelector() {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return errors.New("requires either node field selector or workflow")
 			}
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			retryOpts.namespace = client.Namespace()
 
-			err := retryWorkflows(ctx, serviceClient, retryOpts, cliSubmitOpts, args)
-			errors.CheckError(err)
+			return retryWorkflows(ctx, serviceClient, retryOpts, cliSubmitOpts, args)
 		},
 	}
 	command.Flags().StringArrayVarP(&cliSubmitOpts.Parameters, "parameter", "p", []string{}, "input parameter to override on the original workflow spec")
@@ -147,11 +150,13 @@ func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		if err != nil {
 			return err
 		}
-		printWorkflow(lastRetried, common.GetFlags{Output: cliSubmitOpts.Output})
+		if err = printWorkflow(lastRetried, common.GetFlags{Output: cliSubmitOpts.Output}); err != nil {
+			return err
+		}
 	}
 	if len(retriedNames) == 1 {
 		// watch or wait when there is only one workflow retried
-		common.WaitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
+		return common.WaitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
 	}
 	return nil
 }

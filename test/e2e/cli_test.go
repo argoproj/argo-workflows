@@ -1462,7 +1462,7 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"cron", "get", "not-found"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
-			assert.Contains(t, output, `\"not-found\" not found`)
+			assert.Contains(t, output, `"not-found" not found`)
 		}).RunCli([]string{"cron", "get", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
 			assert.Contains(t, output, "Name:")
