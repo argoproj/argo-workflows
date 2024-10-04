@@ -38,13 +38,9 @@ func NewLintCommand() *cobra.Command {
 # Lint only manifests of Workflows and CronWorkflows from stdin:
 
   cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-
-			runLint(cmd.Context(), args, offline, lintKinds, output.String(), strict)
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runLint(cmd.Context(), args, offline, lintKinds, output.String(), strict)
 		},
 	}
 
@@ -57,10 +53,13 @@ func NewLintCommand() *cobra.Command {
 	return command
 }
 
-func runLint(ctx context.Context, args []string, offline bool, lintKinds []string, output string, strict bool) {
+func runLint(ctx context.Context, args []string, offline bool, lintKinds []string, output string, strict bool) error {
 	client.Offline = offline
 	client.OfflineFiles = args
-	ctx, apiClient := client.NewAPIClient(ctx)
+	ctx, apiClient, err := client.NewAPIClient(ctx)
+	if err != nil {
+		return err
+	}
 
 	if len(lintKinds) == 0 || strings.Contains(strings.Join(lintKinds, ","), "all") {
 		lintKinds = allKinds
@@ -71,5 +70,5 @@ func runLint(ctx context.Context, args []string, offline bool, lintKinds []strin
 		DefaultNamespace: client.Namespace(),
 		Printer:          os.Stdout,
 	}
-	lint.RunLint(ctx, apiClient, lintKinds, output, offline, ops)
+	return lint.RunLint(ctx, apiClient, lintKinds, output, offline, ops)
 }

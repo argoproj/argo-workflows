@@ -2,8 +2,7 @@ package template
 
 import (
 	"context"
-	"log"
-	"os"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -31,13 +30,9 @@ func NewUpdateCommand() *cobra.Command {
 # Update a Workflow Template with relaxed validation:
   argo template update FILE1 --strict false
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-
-			updateWorkflowTemplates(cmd.Context(), args, &cliUpdateOpts)
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return updateWorkflowTemplates(cmd.Context(), args, &cliUpdateOpts)
 		},
 	}
 	command.Flags().VarP(&cliUpdateOpts.output, "output", "o", "Output format. "+cliUpdateOpts.output.Usage())
@@ -45,14 +40,17 @@ func NewUpdateCommand() *cobra.Command {
 	return command
 }
 
-func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliUpdateOpts) {
+func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliUpdateOpts) error {
 	if cliOpts == nil {
 		cliOpts = &cliUpdateOpts{}
 	}
-	ctx, apiClient := client.NewAPIClient(ctx)
+	ctx, apiClient, err := client.NewAPIClient(ctx)
+	if err != nil {
+		return err
+	}
 	serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	workflowTemplates := generateWorkflowTemplates(filePaths, cliOpts.strict)
@@ -66,7 +64,7 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Namespace: wftmpl.Namespace,
 		})
 		if err != nil {
-			log.Fatalf("Failed to get existing workflow template %q to update: %v", wftmpl.Name, err)
+			return fmt.Errorf("Failed to get existing workflow template %q to update: %v", wftmpl.Name, err)
 		}
 		wftmpl.ResourceVersion = current.ResourceVersion
 		updated, err := serviceClient.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
@@ -74,8 +72,9 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Template:  &wftmpl,
 		})
 		if err != nil {
-			log.Fatalf("Failed to update workflow template: %v", err)
+			return fmt.Errorf("Failed to update workflow template: %v", err)
 		}
 		printWorkflowTemplate(updated, cliOpts.output.String())
 	}
+	return nil
 }

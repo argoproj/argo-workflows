@@ -3,7 +3,6 @@ package archive
 import (
 	"context"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -67,18 +66,22 @@ func NewResubmitCommand() *cobra.Command {
 
   argo archive resubmit --log uid
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.Priority = &resubmitOpts.priority
 			}
 
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient() // needed for wait watch or log flags
 			archiveServiceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			resubmitOpts.namespace = client.Namespace()
-			err = resubmitArchivedWorkflows(ctx, archiveServiceClient, serviceClient, resubmitOpts, cliSubmitOpts, args)
-			errors.CheckError(err)
+			return resubmitArchivedWorkflows(ctx, archiveServiceClient, serviceClient, resubmitOpts, cliSubmitOpts, args)
 		},
 	}
 
@@ -142,7 +145,7 @@ func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflo
 
 	if len(resubmittedUids) == 1 {
 		// watch or wait when there is only one workflow retried
-		common.WaitWatchOrLog(ctx, serviceClient, lastResubmitted.Namespace, []string{lastResubmitted.Name}, cliSubmitOpts)
+		return common.WaitWatchOrLog(ctx, serviceClient, lastResubmitted.Namespace, []string{lastResubmitted.Name}, cliSubmitOpts)
 	}
 	return nil
 }

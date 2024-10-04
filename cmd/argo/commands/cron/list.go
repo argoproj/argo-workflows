@@ -2,12 +2,10 @@ package cron
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"text/tabwriter"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,10 +29,15 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cron workflows",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = ""
@@ -45,7 +48,9 @@ func NewListCommand() *cobra.Command {
 				Namespace:   namespace,
 				ListOptions: &listOpts,
 			})
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			switch listArgs.output.String() {
 			case "", "wide":
 				printTable(cronWfList.Items, &listArgs)
@@ -54,8 +59,9 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(cronWf.ObjectMeta.Name)
 				}
 			default:
-				log.Fatalf("Unknown output mode: %s", listArgs.output.String())
+				return fmt.Errorf("Unknown output mode: %s", listArgs.output.String())
 			}
+			return nil
 		},
 	}
 	command.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")

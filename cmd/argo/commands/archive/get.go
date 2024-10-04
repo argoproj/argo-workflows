@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -25,25 +23,30 @@ func NewGetCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "get UID",
 		Short: "get a workflow in the archive",
+		Args:  cobra.ExactArgs(1),
 		Example: `# Get information about an archived workflow by its UID:
   argo archive get abc123-def456-ghi789-jkl012
 
 # Get information about an archived workflow in YAML format:
   argo archive get abc123-def456-ghi789-jkl012 -o yaml
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
 			uid := args[0]
 
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			printWorkflow(wf, output.String())
+			return nil
 		},
 	}
 	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())

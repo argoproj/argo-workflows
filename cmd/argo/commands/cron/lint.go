@@ -20,19 +20,19 @@ func NewLintCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of cron workflow manifests",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
 			}
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			opts := lint.LintOptions{
 				Files:            args,
 				Strict:           strict,
 				DefaultNamespace: client.Namespace(),
 				Printer:          os.Stdout,
 			}
-			lint.RunLint(ctx, apiClient, []string{wf.CronWorkflowPlural}, output.String(), false, opts)
+			return lint.RunLint(ctx, apiClient, []string{wf.CronWorkflowPlural}, output.String(), false, opts)
 		},
 	}
 

@@ -3,7 +3,6 @@ package cron
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 
@@ -37,10 +36,15 @@ func NewUpdateCommand() *cobra.Command {
 # Update a Cron Workflow Template with relaxed validation:
   argo cron update FILE1 --strict false
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			checkArgs(cmd, args, parametersFile, &submitOpts)
-
-			updateCronWorkflows(cmd.Context(), args, &cliUpdateOpts, &submitOpts)
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if parametersFile != "" {
+				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				if err != nil {
+					return err
+				}
+			}
+			return updateCronWorkflows(cmd.Context(), args, &cliUpdateOpts, &submitOpts)
 		},
 	}
 
@@ -50,11 +54,14 @@ func NewUpdateCommand() *cobra.Command {
 	return command
 }
 
-func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUpdateOpts, submitOpts *wfv1.SubmitOpts) {
-	ctx, apiClient := client.NewAPIClient(ctx)
+func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUpdateOpts, submitOpts *wfv1.SubmitOpts) error {
+	ctx, apiClient, err := client.NewAPIClient(ctx)
+	if err != nil {
+		return err
+	}
 	serviceClient, err := apiClient.NewCronWorkflowServiceClient()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	cronWorkflows := generateCronWorkflows(filePaths, cliOpts.strict)
@@ -63,7 +70,7 @@ func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUp
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}
 		err := util.ApplySubmitOpts(&newWf, submitOpts)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if cronWf.Namespace == "" {
 			cronWf.Namespace = client.Namespace()
@@ -73,7 +80,7 @@ func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUp
 			Namespace: cronWf.Namespace,
 		})
 		if err != nil {
-			log.Fatalf("Failed to get existing cron workflow %q to update: %v", cronWf.Name, err)
+			return fmt.Errorf("Failed to get existing cron workflow %q to update: %v", cronWf.Name, err)
 		}
 		cronWf.ResourceVersion = current.ResourceVersion
 		updated, err := serviceClient.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{
@@ -81,8 +88,9 @@ func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUp
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {
-			log.Fatalf("Failed to update workflow template: %v", err)
+			return fmt.Errorf("Failed to update workflow template: %v", err)
 		}
 		fmt.Print(getCronWorkflowGet(updated))
 	}
+	return nil
 }

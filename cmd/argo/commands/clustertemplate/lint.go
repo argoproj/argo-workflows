@@ -23,13 +23,12 @@ func NewLintCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of cluster workflow template manifests",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
 			}
-
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			opts := lint.LintOptions{
 				Files:            args,
 				DefaultNamespace: client.Namespace(),
@@ -37,7 +36,7 @@ func NewLintCommand() *cobra.Command {
 				Printer:          os.Stdout,
 			}
 
-			lint.RunLint(ctx, apiClient, []string{wf.ClusterWorkflowTemplatePlural}, output.String(), false, opts)
+			return lint.RunLint(ctx, apiClient, []string{wf.ClusterWorkflowTemplatePlural}, output.String(), false, opts)
 		},
 	}
 
