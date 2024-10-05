@@ -5,7 +5,6 @@ import (
 	"os"
 	"sort"
 
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,15 +36,21 @@ func NewListCommand() *cobra.Command {
 # List archived workflows that have both labels:
   argo archive list -l key1=value1,key2=value2
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			namespace := client.Namespace()
 			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, selector, chunkSize)
-			errors.CheckError(err)
-			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true, UID: true})
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
+			return printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true, UID: true})
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
