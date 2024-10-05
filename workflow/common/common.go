@@ -1,6 +1,8 @@
 package common
 
 import (
+	"path/filepath"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -29,6 +31,10 @@ const (
 	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
 	// AnnotationKeyNodeStartTime is the node's start timestamp.
 	AnnotationKeyNodeStartTime = workflow.WorkflowFullName + "/node-start-time"
+	// AnnotationKeyCancellation is the key for cancellation
+	AnnotationKeyCancellation = workflow.WorkflowFullName + "/cancellation"
+	// AnnotationCancellationValue is the value for cancellation
+	AnnotationCancellationValue = "cancel"
 
 	// AnnotationKeyRBACRule is a rule to match the claims
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
@@ -242,7 +248,9 @@ const (
 	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
 	EnvConfigMountPath            = "/argo/config"
+	DownwardMountPath             = "/argo/downward"
 	EnvVarTemplateOffloaded       = "offloaded"
+	DownwardMountCancelFilename   = "cancellation"
 
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
 	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
@@ -255,6 +263,8 @@ const (
 
 	ConfigMapName = "workflow-controller-configmap"
 )
+
+var DownwardMountCancelFile = filepath.Join(DownwardMountPath, DownwardMountCancelFilename)
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
 var AnnotationKeyKillCmd = func(containerName string) string { return workflow.WorkflowFullName + "/kill-cmd-" + containerName }

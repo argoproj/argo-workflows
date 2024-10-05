@@ -65,6 +65,8 @@ const (
 	NodeError NodePhase = "Error"
 	// Node was omitted because its `depends` condition was not met (only relevant in DAGs)
 	NodeOmitted NodePhase = "Omitted"
+	// Node is cancelled
+	NodeCancelled NodePhase = "Cancelled"
 )
 
 // NodeType is the type of a node
@@ -436,6 +438,9 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+
+	// Cancelled will cancel workflow and execution
+	Cancelled *bool `json:"cancelled,omitempty" protobuf:"varint,44,opt,name=cancelled"`
 }
 
 type LabelValueFrom struct {
@@ -2313,12 +2318,12 @@ func (n *NodeStatus) IsWorkflowStep() bool {
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled() bool {
-	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
+	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted || phase == NodeCancelled
 }
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
 func (phase NodePhase) Completed() bool {
-	return phase.FailedOrError() || phase == NodeSucceeded
+	return phase.FailedOrError() || phase == NodeSucceeded || phase == NodeCancelled
 }
 
 func (phase NodePhase) FailedOrError() bool {
@@ -3399,6 +3404,10 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 func (wf *Workflow) GetNodeByName(nodeName string) (*NodeStatus, error) {
 	nodeID := wf.NodeID(nodeName)
 	return wf.Status.Nodes.Get(nodeID)
+}
+
+func (wf *Workflow) IsCancelled() bool {
+	return wf.Spec.Cancelled != nil && *wf.Spec.Cancelled
 }
 
 // GetResourceScope returns the template scope of workflow.

@@ -10,11 +10,12 @@ const (
 	WorkflowSucceeded WorkflowPhase = "Succeeded"
 	WorkflowFailed    WorkflowPhase = "Failed" // it maybe that the workflow was terminated
 	WorkflowError     WorkflowPhase = "Error"
+	WorkflowCancelled WorkflowPhase = "Cancelled"
 )
 
 func (p WorkflowPhase) Completed() bool {
 	switch p {
-	case WorkflowSucceeded, WorkflowFailed, WorkflowError:
+	case WorkflowSucceeded, WorkflowFailed, WorkflowError, WorkflowCancelled:
 		return true
 	default:
 		return false

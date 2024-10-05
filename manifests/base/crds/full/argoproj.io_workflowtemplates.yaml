@@ -1128,6 +1128,8 @@ spec:
                 type: object
               automountServiceAccountToken:
                 type: boolean
+              cancelled:
+                type: boolean
               dnsConfig:
                 properties:
                   nameservers:
