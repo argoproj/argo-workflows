@@ -6,6 +6,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -44,7 +45,7 @@ func TestSummaries_Duration(t *testing.T) {
 
 func TestSummaries_Duration_StartedAtIsEpoch(t *testing.T) {
 	startedTime, err := time.Parse(time.RFC3339, "1970-01-01T00:00:00Z")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	finishTime := time.Now()
 
 	resourceList := corev1.ResourceList{
