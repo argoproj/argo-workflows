@@ -1,10 +1,9 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,9 +22,13 @@ func NewDeleteCommand() *cobra.Command {
 		allNamespaces bool
 		dryRun        bool
 		force         bool
+		hasFilterFlag = func() bool {
+			return all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" ||
+				flags.labels != "" || flags.fields != "" || flags.finishedBefore != "" || len(flags.status) > 0
+		}
 	)
 	command := &cobra.Command{
-		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ]",
+		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] [--status STATUS] ]",
 		Short: "delete workflows",
 		Example: `# Delete a workflow:
 
@@ -35,13 +38,17 @@ func NewDeleteCommand() *cobra.Command {
 
   argo delete @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "") {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 && !hasFilterFlag() {
+				return errors.New("requires either a workflow or other argument")
 			}
-
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			var workflows wfv1.Workflows
 			if !allNamespaces {
@@ -52,30 +59,38 @@ func NewDeleteCommand() *cobra.Command {
 					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: flags.namespace},
 				})
 			}
-			if all || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "" {
+			if hasFilterFlag() {
 				listed, err := listWorkflows(ctx, serviceClient, flags)
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				workflows = append(workflows, listed...)
 			}
 
 			if len(workflows) == 0 {
 				fmt.Printf("No resources found\n")
-				return
+				return nil
 			}
 
 			for _, wf := range workflows {
-				if !dryRun {
-					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace, Force: force})
-					if err != nil && status.Code(err) == codes.NotFound {
+				if dryRun {
+					fmt.Printf("Workflow '%s' deleted (dry-run)\n", wf.Name)
+					continue
+				}
+
+				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace, Force: force})
+				if err != nil {
+					if status.Code(err) == codes.NotFound {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
+					} else {
+						return err
 					}
-					errors.CheckError(err)
-					fmt.Printf("Workflow '%s' deleted\n", wf.Name)
-				} else {
-					fmt.Printf("Workflow '%s' deleted (dry-run)\n", wf.Name)
 				}
+				fmt.Printf("Workflow '%s' deleted\n", wf.Name)
 			}
+
+			return nil
 		},
 	}
 
@@ -84,9 +99,11 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().BoolVar(&flags.completed, "completed", false, "Delete completed workflows")
 	command.Flags().BoolVar(&flags.resubmitted, "resubmitted", false, "Delete resubmitted workflows")
 	command.Flags().StringVar(&flags.prefix, "prefix", "", "Delete workflows by prefix")
-	command.Flags().StringVar(&flags.finishedAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().StringVar(&flags.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
+	command.Flags().StringVar(&flags.finishedBefore, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringSliceVar(&flags.status, "status", []string{}, "Delete by status (comma separated)")
+	command.Flags().Int64VarP(&flags.chunkSize, "query-chunk-size", "", 0, "Run the list query in chunks (deletes will still be executed individually)")
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
 	command.Flags().BoolVar(&force, "force", false, "Force delete workflows by removing finalizers")
 	return command

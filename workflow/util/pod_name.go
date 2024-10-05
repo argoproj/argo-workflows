@@ -12,6 +12,7 @@ import (
 const (
 	maxK8sResourceNameLength = 253
 	k8sNamingHashLength      = 10
+	maxPrefixLength          = maxK8sResourceNameLength - k8sNamingHashLength
 )
 
 // PodNameVersion stores which type of pod names should be used.
@@ -55,7 +56,10 @@ func GeneratePodName(workflowName, nodeName, templateName, nodeID string, versio
 		return workflowName
 	}
 
-	prefix := fmt.Sprintf("%s-%s", workflowName, templateName)
+	prefix := workflowName
+	if templateName != "" {
+		prefix = fmt.Sprintf("%s-%s", prefix, templateName)
+	}
 	prefix = ensurePodNamePrefixLength(prefix)
 
 	h := fnv.New32a()
@@ -66,8 +70,6 @@ func GeneratePodName(workflowName, nodeName, templateName, nodeID string, versio
 }
 
 func ensurePodNamePrefixLength(prefix string) string {
-	maxPrefixLength := maxK8sResourceNameLength - k8sNamingHashLength
-
 	if len(prefix) > maxPrefixLength-1 {
 		return prefix[0 : maxPrefixLength-1]
 	}

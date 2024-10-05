@@ -1,28 +1,77 @@
 version: 2
 updates:
+  # prod dependencies
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "saturday"
     ignore:
-    - dependency-name: k8s.io/*
-    - dependency-name: github.com/grpc-ecosystem/*
-    - dependency-name: google.golang.org/grpc
-    open-pull-requests-limit: 10
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
+      - dependency-name: k8s.io/*
+      - dependency-name: github.com/grpc-ecosystem/*
+      - dependency-name: google.golang.org/grpc
+    # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
+    open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - go
+    commit-message:
+      prefix: chore(deps)
 
   - package-ecosystem: "npm"
     directory: "/ui"
     schedule:
       interval: "weekly"
       day: "saturday"
+    # split devDeps and prod deps as typically only prod deps need security backports
+    groups:
+      devDeps:
+        applies-to: security-updates
+        dependency-type: "development"
+      deps:
+        applies-to: security-updates
+        dependency-type: "production"
     ignore:
       - dependency-name: raw-loader
       - dependency-name: style-loader
-    open-pull-requests-limit: 10
+      - dependency-name: react-router-dom
+      - dependency-name: "@types/react-router-dom"
+    # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
+    open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - javascript
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+
+  # build / CI dependencies
+  - package-ecosystem: "pip"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
+    open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - python
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    ignore:
+      # temporarily ignore until https://github.com/actions/download-artifact/issues/249 is resolved
+      - dependency-name: "actions/download-artifact"
+      - dependency-name: "actions/upload-artifact"
+    # ignore all non-security updates: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#open-pull-requests-limit
+    open-pull-requests-limit: 0
+    labels:
+      - type/dependencies
+      - github_actions
+    commit-message:
+      prefix: chore(deps-dev)

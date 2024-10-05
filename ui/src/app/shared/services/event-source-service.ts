@@ -2,39 +2,39 @@ import {map} from 'rxjs/operators';
 import {EventSource, EventSourceList, EventSourceWatchEvent, LogEntry} from '../../../models/event-source';
 import requests from './requests';
 
-export class EventSourceService {
-    public create(eventSource: EventSource, namespace: string) {
+export const EventSourceService = {
+    create(eventSource: EventSource, namespace: string) {
         return requests
             .post(`api/v1/event-sources/${namespace}`)
             .send({eventSource})
             .then(res => res.body as EventSource);
-    }
+    },
 
-    public list(namespace: string) {
+    list(namespace: string) {
         return requests.get(`api/v1/event-sources/${namespace}`).then(res => res.body as EventSourceList);
-    }
+    },
 
-    public get(name: string, namespace: string) {
+    get(name: string, namespace: string) {
         return requests.get(`api/v1/event-sources/${namespace}/${name}`).then(res => res.body as EventSource);
-    }
+    },
 
-    public update(eventSource: EventSource, name: string, namespace: string) {
+    update(eventSource: EventSource, name: string, namespace: string) {
         return requests
             .put(`api/v1/event-sources/${namespace}/${name}`)
             .send({eventSource})
             .then(res => res.body as EventSource);
-    }
+    },
 
-    public delete(name: string, namespace: string) {
+    delete(name: string, namespace: string) {
         return requests.delete(`api/v1/event-sources/${namespace}/${name}`);
-    }
+    },
 
-    public watch(namespace: string) {
+    watch(namespace: string) {
         return requests.loadEventSource(`api/v1/stream/event-sources/${namespace}`).pipe(map(line => line && (JSON.parse(line).result as EventSourceWatchEvent)));
-    }
+    },
 
-    public eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', grep = '', tailLines = -1) {
-        const params = ['podLogOptions.follow=true'];
+    eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', grep = '', tailLines = -1, container = 'main') {
+        const params = ['podLogOptions.follow=true', `podLogOptions.container=${container}`];
         if (name) {
             params.push('name=' + name);
         }
@@ -52,4 +52,4 @@ export class EventSourceService {
         }
         return requests.loadEventSource(`api/v1/stream/event-sources/${namespace}/logs?${params.join('&')}`).pipe(map(line => line && (JSON.parse(line).result as LogEntry)));
     }
-}
+};

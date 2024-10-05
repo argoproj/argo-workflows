@@ -16,7 +16,7 @@ const workflow = (name: string, namespace: string, uid: string): Workflow => {
 };
 
 describe('workflow service', () => {
-    const service = new WorkflowsService();
+    const service = WorkflowsService;
     test('getArtifactLogsUrl', () => {
         expect(service.getArtifactLogsPath(workflow('hello-world', 'argo', 'test-uid'), 'test-node', 'test-container', false)).toBe(
             'artifact-files/argo/workflows/hello-world/test-node/outputs/test-container-logs'
@@ -34,10 +34,10 @@ describe('workflow service', () => {
             '/artifact-files/argo/archived-workflows/test-uid/test-node/outputs/test-artifact'
         );
         expect(service.getArtifactDownloadUrl(workflow('hello-world', 'argo', 'test-uid'), 'test-node', 'test-artifact', false, true)).toBe(
-            '/input-artifacts/argo/hello-world/test-node/test-artifact'
+            '/artifact-files/argo/workflows/hello-world/test-node/inputs/test-artifact'
         );
         expect(service.getArtifactDownloadUrl(workflow('hello-world', 'argo', 'test-uid'), 'test-node', 'test-artifact', true, true)).toBe(
-            '/input-artifacts-by-uid/test-uid/test-node/test-artifact'
+            '/artifact-files/argo/archived-workflows/test-uid/test-node/inputs/test-artifact'
         );
     });
 });

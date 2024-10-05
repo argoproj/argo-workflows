@@ -14,9 +14,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-// maxResolveDepth is the limit of template reference resolution.
-const maxResolveDepth int = 10
-
 // workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
 type workflowTemplateInterfaceWrapper struct {
 	clientset typed.WorkflowTemplateInterface
@@ -32,7 +29,7 @@ func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.Workflo
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 
-// WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
+// WorkflowTemplateNamespacedGetter helps get WorkflowTemplates.
 type WorkflowTemplateNamespacedGetter interface {
 	// Get retrieves the WorkflowTemplate from the indexer for a given name.
 	Get(name string) (*wfv1.WorkflowTemplate, error)
@@ -43,7 +40,7 @@ type clusterWorkflowTemplateInterfaceWrapper struct {
 	clientset typed.ClusterWorkflowTemplateInterface
 }
 
-// WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
+// ClusterWorkflowTemplateGetter helps get WorkflowTemplates.
 type ClusterWorkflowTemplateGetter interface {
 	// Get retrieves the WorkflowTemplate from the indexer for a given name.
 	Get(name string) (*wfv1.ClusterWorkflowTemplate, error)
@@ -91,8 +88,8 @@ func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter Clu
 	}
 }
 
-// NewContext returns new Context.
-func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow) *Context {
+// NewContextFromClientSet returns new Context.
+func NewContextFromClientSet(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow) *Context {
 	return &Context{
 		wftmplGetter:  WrapWorkflowTemplateInterface(wftmplClientset),
 		cwftmplGetter: WrapClusterWorkflowTemplateInterface(clusterWftmplClient),
@@ -104,7 +101,7 @@ func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, cl
 
 // GetTemplateByName returns a template by name in the context.
 func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
-	ctx.log.Debug("Getting the template by name")
+	ctx.log.Debugf("Getting the template by name: %s", name)
 
 	tmpl := ctx.tmplBase.GetTemplateByName(name)
 	if tmpl == nil {
@@ -172,24 +169,18 @@ func (ctx *Context) GetTemplateScope() string {
 // ResolveTemplate digs into referenes and returns a merged template.
 // This method is the public start point of template resolution.
 func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
-	return ctx.resolveTemplateImpl(tmplHolder, 0)
+	return ctx.resolveTemplateImpl(tmplHolder)
 }
 
 // resolveTemplateImpl digs into references and returns a merged template.
 // This method processes inputs and arguments so the inputs of the final
 // resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.
-func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder, depth int) (*Context, *wfv1.Template, bool, error) {
+func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
 	ctx.log = ctx.log.WithFields(log.Fields{
-		"depth": depth,
-		"base":  common.GetTemplateGetterString(ctx.tmplBase),
-		"tmpl":  common.GetTemplateHolderString(tmplHolder),
+		"base": common.GetTemplateGetterString(ctx.tmplBase),
+		"tmpl": common.GetTemplateHolderString(tmplHolder),
 	})
-	// Avoid infinite references
-	if depth > maxResolveDepth {
-		return nil, nil, false, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
-	}
-
 	ctx.log.Debug("Resolving the template")
 
 	templateStored := false
@@ -219,6 +210,10 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder,
 			if stored {
 				ctx.log.Debug("Stored the template")
 				templateStored = true
+			}
+			err = ctx.workflow.SetStoredInlineTemplate(scope, resourceName, newTmpl)
+			if err != nil {
+				ctx.log.Errorf("Failed to store the inline template: %v", err)
 			}
 		}
 		tmpl = newTmpl
@@ -265,7 +260,7 @@ func (ctx *Context) WithWorkflowTemplate(name string) (*Context, error) {
 	return ctx.WithTemplateBase(wftmpl), nil
 }
 
-// WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.
+// WithClusterWorkflowTemplate creates new context with a wfv1.TemplateHolder.
 func (ctx *Context) WithClusterWorkflowTemplate(name string) (*Context, error) {
 	cwftmpl, err := ctx.cwftmplGetter.Get(name)
 	if err != nil {

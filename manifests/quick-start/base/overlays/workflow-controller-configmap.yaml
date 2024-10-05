@@ -1,4 +1,7 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
 data:
   executor: |
     resources:
@@ -40,6 +43,10 @@ data:
     - name: Sensor Logs Link
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
-kind: ConfigMap
-metadata:
-  name: workflow-controller-configmap
+    - name: Completed Workflows
+      scope: workflow-list
+      url: http://workflows?label=workflows.argoproj.io/completed=true
+  columns: |
+    - name: Workflow Completed
+      type: label
+      key: workflows.argoproj.io/completed

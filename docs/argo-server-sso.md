@@ -53,7 +53,7 @@ To allow service accounts to manage resources in other namespaces create a role 
 
 RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.
 
-Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You almost certainly want to be able to configure RBAC using groups, so add `scopes:` to the SSO settings:
+Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You likely want to configure RBAC using groups, so add `scopes:` to the SSO settings:
 
 ```yaml
 sso:
@@ -65,7 +65,7 @@ sso:
 ```
 
 !!! Note
-    Not all OIDC provider support the groups scope. Please speak to your provider about their options.
+    Not all OIDC providers support the `groups` scope. Please speak to your provider about their options.
 
 To configure a service account to be used, annotate it:
 
@@ -83,7 +83,7 @@ metadata:
     # Must evaluate to a boolean.
     # If you want an account to be the default to use, this rule can be "true".
     # Details of the expression language are available in
-    # https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md.
+    # https://expr-lang.org/docs/language-definition.
     workflows.argoproj.io/rbac-rule: "'admin' in groups"
     # The precedence is used to determine which service account to use whe
     # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
@@ -96,7 +96,7 @@ metadata:
 
 If no rule matches, we deny the user access.
 
-TIp: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
+Tip: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
 
 ```yaml
 metadata:
@@ -108,19 +108,23 @@ metadata:
 
 The precedence must be the lowest of all your service accounts.
 
+As of Kubernetes v1.24, secrets for a service account token are no longer automatically created.
+Therefore, service account secrets for SSO RBAC must be created manually.
+See [Service Account Secrets](service-account-secrets.md) for detailed instructions.
+
 ## SSO RBAC Namespace Delegation
 
 > v3.3 and after
 
 You can optionally configure RBAC SSO per namespace.
-Typically, on organization has a Kubernetes cluster and a central team (the owner of the cluster) manages the cluster. Along with this, there are multiple namespaces which are owned by individual teams. This feature would help namespace owners to define RBAC for their own namespace.
+Typically, an organization has a Kubernetes cluster and a central team (the owner of the cluster) manages the cluster. Along with this, there are multiple namespaces which are owned by individual teams. This feature would help namespace owners to define RBAC for their own namespace.
 
 The feature is currently in beta.
 To enable the feature, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true` in your argo-server deployment.
 
 ### Recommended usage
 
-Configure a default account in the installation namespace which would allow all users of your organization. We will use this service account to allow a user to login to the cluster. You could optionally add workflow read-only role and role-binding if you wish to.
+Configure a default account in the installation namespace that allows access to all users of your organization. This service account allows a user to login to the cluster. You could optionally add a workflow read-only role and role-binding.
 
 ```yaml
 apiVersion: v1
@@ -132,8 +136,11 @@ metadata:
     workflows.argoproj.io/rbac-rule-precedence: "0"
 ```
 
-Now, for the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
-Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this service account and bind it with a role-binding.
+!!! Note
+    All users MUST map to a cluster service account (such as the one above) before a namespace service account can apply.
+
+Now, for the namespace that you own, configure a service account that allows members of your team to perform operations in your namespace.
+Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create an appropriate role for this service account and bind it with a role-binding.
 
 ```yaml
 apiVersion: v1
@@ -146,7 +153,7 @@ metadata:
     workflows.argoproj.io/rbac-rule-precedence: "1"
 ```
 
-Using this, whenever a user is logged in via SSO and makes a request in 'my-namespace', and the `rbac-rule`matches, we will use this service account to allow the user to perform that operation in the namespace. If no service account matches in the namespace, the first service account(`user-default-login`) and its associated role will be used to perform the operation in the namespace.
+With this configuration, when a user is logged in via SSO, makes a request in `my-namespace`, and the `rbac-rule` matches, this service account allows the user to perform that operation. If no service account matches in the namespace, the first service account (`user-default-login`) and its associated role will be used to perform the operation.
 
 ## SSO Login Time
 
@@ -186,4 +193,22 @@ sso:
 ```bash
 # assuming customClaimGroupName: argo_groups
 workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
+```
+
+## Filtering groups
+
+> v3.5 and after
+
+You can configure `filterGroupsRegex` to filter the groups returned by the OIDC provider. Some use-cases for this include:
+
+- You have multiple applications using the same OIDC provider, and you only want to use groups that are relevant to Argo Workflows.
+- You have many groups and exceed the [4KB cookie size limit](https://chromestatus.com/feature/4946713618939904) (cookies are used to store authentication tokens). If this occurs, login will fail.
+
+```yaml
+sso:
+    # Specify a list of regular expressions to filter the groups returned by the OIDC provider.
+    # A logical "OR" is used between each regex in the list
+    filterGroupsRegex:
+    - ".*argo-wf.*"
+    - ".*argo-workflow.*"
 ```

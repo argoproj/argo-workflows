@@ -1,5 +1,8 @@
-import {Select} from 'argo-ui';
+import {Select} from 'argo-ui/src/components/select/select';
+import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import * as React from 'react';
+import {useState} from 'react';
+
 import {Parameter} from '../../../../models';
 
 interface SuspendInputProps {
@@ -8,10 +11,10 @@ interface SuspendInputProps {
     setParameter: (key: string, value: string) => void;
 }
 
-export const SuspendInputs = (props: SuspendInputProps) => {
-    const [parameters, setParameters] = React.useState(props.parameters);
+export function SuspendInputs(props: SuspendInputProps) {
+    const [parameters, setParameters] = useState(props.parameters);
 
-    const setParameter = (key: string, value: string) => {
+    function setParameter(key: string, value: string) {
         props.setParameter(key, value);
         setParameters(previous => {
             return previous.map(param => {
@@ -21,13 +24,18 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                 return param;
             });
         });
-    };
+    }
 
-    const renderSelectField = (parameter: Parameter) => {
+    function renderSelectField(parameter: Parameter) {
         return (
             <React.Fragment key={parameter.name}>
                 <br />
                 <label>{parameter.name}</label>
+                {parameter.description && (
+                    <Tooltip content={parameter.description}>
+                        <i className='fa fa-question-circle' style={{marginLeft: 4}} />
+                    </Tooltip>
+                )}
                 <Select
                     value={parameter.value || parameter.default}
                     options={parameter.enum.map(value => ({
@@ -38,9 +46,9 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                 />
             </React.Fragment>
         );
-    };
+    }
 
-    const renderInputField = (parameter: Parameter) => {
+    function renderInputField(parameter: Parameter) {
         return (
             <React.Fragment key={parameter.name}>
                 <br />
@@ -48,16 +56,16 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                 <input className='argo-field' defaultValue={parameter.value || parameter.default} onChange={event => setParameter(parameter.name, event.target.value)} />
             </React.Fragment>
         );
-    };
+    }
 
-    const renderFields = (parameter: Parameter) => {
+    function renderFields(parameter: Parameter) {
         if (parameter.enum) {
             return renderSelectField(parameter);
         }
         return renderInputField(parameter);
-    };
+    }
 
-    const renderInputContentIfApplicable = () => {
+    function renderInputContentIfApplicable() {
         if (parameters.length === 0) {
             return <React.Fragment />;
         }
@@ -68,7 +76,7 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                 <br />
             </React.Fragment>
         );
-    };
+    }
 
     return (
         <div>
@@ -77,4 +85,4 @@ export const SuspendInputs = (props: SuspendInputProps) => {
             Are you sure you want to resume node {props.nodeId} ?
         </div>
     );
-};
+}

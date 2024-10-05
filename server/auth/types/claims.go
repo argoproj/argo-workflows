@@ -12,7 +12,8 @@ type Claims struct {
 	jwt.Claims
 	Groups                  []string               `json:"groups,omitempty"`
 	Email                   string                 `json:"email,omitempty"`
-	EmailVerified           bool                   `json:"email_verified,omitempty"`
+	EmailVerified           bool                   `json:"-"`
+	Name                    string                 `json:"name,omitempty"`
 	ServiceAccountName      string                 `json:"service_account_name,omitempty"`
 	ServiceAccountNamespace string                 `json:"service_account_namespace,omitempty"`
 	PreferredUsername       string                 `json:"preferred_username,omitempty"`
@@ -51,6 +52,10 @@ func (c *Claims) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if localClaim.RawClaim["email_verified"] == true || localClaim.RawClaim["email_verified"] == "true" {
+		localClaim.EmailVerified = true
+	}
+
 	*c = Claims(localClaim)
 	return nil
 }
@@ -60,19 +65,19 @@ func (c *Claims) UnmarshalJSON(data []byte) error {
 func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	groups, ok := c.RawClaim[customKeyName]
 	if !ok {
-		return nil, fmt.Errorf("No claim found for key: %v", customKeyName)
+		return nil, fmt.Errorf("no claim found for key: %v", customKeyName)
 	}
 
 	sliceInterface, ok := groups.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("Expected an array, got %v", groups)
+		return nil, fmt.Errorf("expected an array, got %v", groups)
 	}
 
 	newSlice := []string{}
 	for _, a := range sliceInterface {
 		val, ok := a.(string)
 		if !ok {
-			return nil, fmt.Errorf("Group name %v was not a string", a)
+			return nil, fmt.Errorf("group name %v was not a string", a)
 		}
 		newSlice = append(newSlice, val)
 	}
@@ -80,7 +85,7 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	return newSlice, nil
 }
 
-func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string) ([]string, error) {
+func (c *Claims) GetUserInfoGroups(httpClient HttpClient, accessToken, issuer, userInfoPath string) ([]string, error) {
 	url := fmt.Sprintf("%s%s", issuer, userInfoPath)
 	request, err := http.NewRequest("GET", url, nil)
 

@@ -6,6 +6,23 @@ list workflows in the archive
 argo archive list [flags]
 ```
 
+### Examples
+
+```
+# List all archived workflows:
+  argo archive list
+
+# List all archived workflows fetched in chunks of 100:
+  argo archive list --chunk-size 100
+
+# List all archived workflows in YAML format:
+  argo archive list -o yaml
+
+# List archived workflows that have both labels:
+  argo archive list -l key1=value1,key2=value2
+
+```
+
 ### Options
 
 ```
@@ -18,7 +35,7 @@ argo archive list [flags]
 ### Options inherited from parent commands
 
 ```
-      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
@@ -29,6 +46,7 @@ argo archive list [flags]
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
+      --disable-compression            If true, opt-out of response compression for all requests to the server
       --gloglevel int                  Set the glog logging level
   -H, --header strings                 Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure

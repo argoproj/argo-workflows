@@ -2,13 +2,14 @@ package fixtures
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -23,6 +24,7 @@ type Given struct {
 	client            v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
@@ -43,7 +45,7 @@ func (g *Given) Workflow(text string) *Given {
 	g.t.Helper()
 	g.wf = &wfv1.Workflow{}
 	g.readResource(text, g.wf)
-	g.checkImages(g.wf.Spec.Templates)
+	g.checkImages(g.wf)
 	return g
 }
 
@@ -53,7 +55,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 	if strings.HasPrefix(text, "@") {
 		file = strings.TrimPrefix(text, "@")
 	} else {
-		f, err := ioutil.TempFile("", "argo_e2e")
+		f, err := os.CreateTemp("", "argo_e2e")
 		if err != nil {
 			g.t.Fatal(err)
 		}
@@ -69,7 +71,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 	}
 
 	{
-		file, err := ioutil.ReadFile(filepath.Clean(file))
+		file, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
 			g.t.Fatal(err)
 		}
@@ -81,8 +83,29 @@ func (g *Given) readResource(text string, v metav1.Object) {
 	}
 }
 
-func (g *Given) checkImages(templates []wfv1.Template) {
+func (g *Given) checkImages(wf interface{}) {
 	g.t.Helper()
+	var defaultImage string
+	var templates []wfv1.Template
+	switch baseTemplate := wf.(type) {
+	case *wfv1.Workflow:
+		if baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "" {
+			defaultImage = baseTemplate.Spec.TemplateDefaults.Container.Image
+			templates = baseTemplate.Spec.Templates
+		}
+	case *wfv1.WorkflowTemplate:
+		if baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "" {
+			defaultImage = baseTemplate.Spec.TemplateDefaults.Container.Image
+			templates = baseTemplate.Spec.Templates
+		}
+	case *wfv1.CronWorkflow:
+		if baseTemplate.Spec.WorkflowSpec.TemplateDefaults != nil && baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container != nil && baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container.Image != "" {
+			defaultImage = baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container.Image
+			templates = baseTemplate.Spec.WorkflowSpec.Templates
+		}
+	default:
+		g.t.Fatalf("Unsupported checkImage workflow type: %s", wf)
+	}
 
 	// discouraged
 	discouraged := func(image string) bool {
@@ -96,7 +119,12 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 	for _, t := range templates {
 		container := t.Container
 		if container != nil {
-			image := container.Image
+			var image string
+			if container.Image != "" {
+				image = container.Image
+			} else {
+				image = defaultImage
+			}
 			if !allowed(image) {
 				g.t.Fatalf("image not allowed in tests: %s", image)
 			}
@@ -140,7 +168,7 @@ func (g *Given) WorkflowTemplate(text string) *Given {
 	g.t.Helper()
 	wfTemplate := &wfv1.WorkflowTemplate{}
 	g.readResource(text, wfTemplate)
-	g.checkImages(wfTemplate.Spec.Templates)
+	g.checkImages(wfTemplate)
 	g.wfTemplates = append(g.wfTemplates, wfTemplate)
 	return g
 }
@@ -149,21 +177,20 @@ func (g *Given) CronWorkflow(text string) *Given {
 	g.t.Helper()
 	g.cronWf = &wfv1.CronWorkflow{}
 	g.readResource(text, g.cronWf)
-	g.checkImages(g.cronWf.Spec.WorkflowSpec.Templates)
+	g.checkImages(g.cronWf)
 	return g
 }
 
 var NoError = func(t *testing.T, output string, err error) {
 	t.Helper()
-	assert.NoError(t, err, output)
+	require.NoError(t, err, output)
 }
 
 var OutputRegexp = func(rx string) func(t *testing.T, output string, err error) {
 	return func(t *testing.T, output string, err error) {
 		t.Helper()
-		if assert.NoError(t, err, output) {
-			assert.Regexp(t, rx, output)
-		}
+		require.NoError(t, err, output)
+		assert.Regexp(t, rx, output)
 	}
 }
 
@@ -197,6 +224,7 @@ func (g *Given) When() *When {
 		client:            g.client,
 		wfebClient:        g.wfebClient,
 		wfTemplateClient:  g.wfTemplateClient,
+		wftsClient:        g.wftsClient,
 		cwfTemplateClient: g.cwfTemplateClient,
 		cronClient:        g.cronClient,
 		hydrator:          g.hydrator,

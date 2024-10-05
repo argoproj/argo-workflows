@@ -34,8 +34,6 @@ const (
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
-	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
-	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
@@ -69,7 +67,8 @@ const (
 	// LabelKeyWorkflowArchivingStatus indicates if a workflow needs archiving or not:
 	// * `` - does not need archiving ... yet
 	// * `Pending` - pending archiving
-	// * `Archived` - has been archived
+	// * `Archived` - has been archived and has live manifest
+	// * `Persisted` - has been archived and retrieved from db
 	// See also `LabelKeyCompleted`.
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
@@ -93,6 +92,11 @@ const (
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
 	// LabelKeyArtifactGCPodHash is a label applied to WorkflowTaskSets used by the Artifact Garbage Collection Pod
 	LabelKeyArtifactGCPodHash = workflow.WorkflowFullName + "/artifact-gc-pod"
+	// LabelKeyReportOutputsCompleted is a label applied to WorkflowTaskResults indicating whether all the outputs have been reported.
+	LabelKeyReportOutputsCompleted = workflow.WorkflowFullName + "/report-outputs-completed"
+
+	// LabelKeyCronWorkflowCompleted is a label applied to the cron workflow when the configured stopping condition is achieved
+	LabelKeyCronWorkflowCompleted = workflow.CronWorkflowFullName + "/completed"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -161,12 +165,17 @@ const (
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
 
+	// Finalizer blocks the deletion of pods until the controller captures their status.
+	FinalizerPodStatus = workflow.WorkflowFullName + "/status"
+
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
 	GlobalVarWorkflowName = "workflow.name"
 	// GlobalVarWorkflowNamespace is a global workflow variable referencing the workflow's metadata.namespace field
 	GlobalVarWorkflowNamespace = "workflow.namespace"
+	// GlobalVarWorkflowMainEntrypoint is a global workflow variable referencing the workflow's top level entrypoint name
+	GlobalVarWorkflowMainEntrypoint = "workflow.mainEntrypoint"
 	// GlobalVarWorkflowServiceAccountName is a global workflow variable referencing the workflow's spec.serviceAccountName field
 	GlobalVarWorkflowServiceAccountName = "workflow.serviceAccountName"
 	// GlobalVarWorkflowUID is a global workflow variable referencing the workflow's metadata.uid field
@@ -224,12 +233,16 @@ const (
 	LocalVarRetriesLastStatus = "lastRetry.status"
 	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration, in seconds
 	LocalVarRetriesLastDuration = "lastRetry.duration"
+	// LocalVarRetriesLastMessage is a variable that references information about the last retry's failure message
+	LocalVarRetriesLastMessage = "lastRetry.message"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
 	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
 	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
+	EnvConfigMountPath            = "/argo/config"
+	EnvVarTemplateOffloaded       = "offloaded"
 
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
 	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"

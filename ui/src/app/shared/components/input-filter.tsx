@@ -1,5 +1,5 @@
-import {Autocomplete} from 'argo-ui';
-import * as React from 'react';
+import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
+import React, {useState} from 'react';
 
 interface InputProps {
     value: string;
@@ -8,68 +8,60 @@ interface InputProps {
     onChange: (input: string) => void;
 }
 
-interface InputState {
-    value: string;
-    localCache: string[];
-    error?: Error;
-}
+export function InputFilter(props: InputProps) {
+    const [value, setValue] = useState(props.value);
+    const [localCache, setLocalCache] = useState((localStorage.getItem(props.name + '_inputs') || '').split(',').filter(item => item !== ''));
 
-export class InputFilter extends React.Component<InputProps, InputState> {
-    constructor(props: Readonly<InputProps>) {
-        super(props);
-        this.state = {
-            value: props.value,
-            localCache: (localStorage.getItem(this.props.name + '_inputs') || '').split(',').filter(value => value !== '')
-        };
+    function setValueAndCache(newValue: string) {
+        setLocalCache(currentCache => {
+            const updatedCache = [...currentCache];
+            if (!updatedCache.includes(newValue)) {
+                updatedCache.unshift(newValue);
+            }
+            while (updatedCache.length > 5) {
+                updatedCache.pop();
+            }
+            localStorage.setItem(props.name + '_inputs', updatedCache.join(','));
+            return updatedCache;
+        });
+        setValue(newValue);
     }
 
-    public render() {
+    function renderInput(inputProps: React.HTMLProps<HTMLInputElement>) {
         return (
-            <>
-                <Autocomplete
-                    items={this.state.localCache}
-                    value={this.state.value}
-                    onChange={(e, value) => this.setState({value})}
-                    onSelect={value => {
-                        this.setState({value});
-                        this.props.onChange(value);
-                    }}
-                    renderInput={inputProps => (
-                        <input
-                            {...inputProps}
-                            onKeyUp={event => {
-                                if (event.keyCode === 13) {
-                                    this.setValueAndCache(event.currentTarget.value);
-                                    this.props.onChange(this.state.value);
-                                }
-                            }}
-                            className='argo-field'
-                            placeholder={this.props.placeholder}
-                        />
-                    )}
-                />
-                <a
-                    onClick={() => {
-                        this.setState({value: ''});
-                        this.props.onChange('');
-                    }}>
-                    <i className='fa fa-times-circle' />
-                </a>
-            </>
+            <input
+                {...inputProps}
+                onKeyUp={event => {
+                    if (event.keyCode === 13) {
+                        setValueAndCache(event.currentTarget.value);
+                        props.onChange(value);
+                    }
+                }}
+                className='argo-field'
+                placeholder={props.placeholder}
+            />
         );
     }
 
-    private setValueAndCache(value: string) {
-        this.setState(state => {
-            const localCache = state.localCache;
-            if (!state.localCache.includes(value)) {
-                localCache.unshift(value);
-            }
-            while (localCache.length > 5) {
-                localCache.pop();
-            }
-            localStorage.setItem(this.props.name + '_inputs', localCache.join(','));
-            return {value, localCache};
-        });
-    }
+    return (
+        <>
+            <Autocomplete
+                items={localCache}
+                value={value}
+                onChange={(e, newValue) => setValue(newValue)}
+                onSelect={newValue => {
+                    setValue(newValue);
+                    props.onChange(newValue);
+                }}
+                renderInput={renderInput}
+            />
+            <a
+                onClick={() => {
+                    setValue('');
+                    props.onChange('');
+                }}>
+                <i className='fa fa-times-circle' />
+            </a>
+        </>
+    );
 }

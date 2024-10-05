@@ -1,13 +1,16 @@
+//go:build !windows
+
 package common
 
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -54,6 +57,22 @@ func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, err
 	return nil, fmt.Errorf("not implemented")
 }
 
+func filteredFiles(t *testing.T) ([]os.DirEntry, error) {
+	t.Helper()
+
+	filtered := make([]os.DirEntry, 0)
+	entries, err := os.ReadDir("/tmp/")
+	if err != nil {
+		return filtered, err
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), loadToStreamPrefix) {
+			filtered = append(filtered, entry)
+		}
+	}
+	return filtered, err
+}
+
 func TestLoadToStream(t *testing.T) {
 	tests := map[string]struct {
 		artifactDriver ArtifactDriver
@@ -79,25 +98,25 @@ func TestLoadToStream(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 
 			// need to verify that a new file doesn't get written so check the /tmp directory ahead of time
-			filesBefore, err := ioutil.ReadDir("/tmp/")
+			filesBefore, err := filteredFiles(t)
 			if err != nil {
 				panic(err)
 			}
 
 			stream, err := LoadToStream(&wfv1.Artifact{}, tc.artifactDriver)
 			if tc.errMsg == "" {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, stream)
 				stream.Close()
 
 				// make sure the new file got deleted when we called stream.Close() above
-				filesAfter, err := ioutil.ReadDir("/tmp/")
+				filesAfter, err := filteredFiles(t)
 				if err != nil {
 					panic(err)
 				}
 				assert.Equal(t, len(filesBefore), len(filesAfter))
 			} else {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 				assert.Equal(t, tc.errMsg, err.Error())
 			}
 		})

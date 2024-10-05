@@ -28,7 +28,7 @@ spec:
           blob: path/in/container
           # accountKeySecret is a secret selector. It references the k8s secret named
           # 'my-azure-credentials'. This secret is expected to have the key
-          # 'accountKey', containing the Azure Storage account name and access key.
+          # 'accountKey', containing the Azure Storage account access key or a SAS token.
           accountKeySecret:
             name: my-azure-credentials
             key: accountKey

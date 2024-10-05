@@ -6,7 +6,7 @@ syntax = "proto2";
 package github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1;
 
 import "k8s.io/api/core/v1/generated.proto";
-import "k8s.io/api/policy/v1beta1/generated.proto";
+import "k8s.io/api/policy/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
@@ -100,7 +100,7 @@ message Artifact {
   optional bool deleted = 13;
 }
 
-// ArtifactGC describes how to delete artifacts from completed Workflows
+// ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
 message ArtifactGC {
   // Strategy is the strategy to use.
   // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
@@ -275,6 +275,9 @@ message ArtifactoryArtifactRepository {
 
   // RepoURL is the url for artifactory repo.
   optional string repoURL = 2;
+
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
+  optional string keyFormat = 3;
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
@@ -325,7 +328,10 @@ message Backoff {
   // Factor is a factor to multiply the base duration after each failed retry
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
 
-  // MaxDuration is the maximum amount of time allowed for the backoff strategy
+  // MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.
+  // It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.
+  // However, when the workflow fails, the pod's deadline is then overridden by maxDuration.
+  // This ensures that the workflow does not exceed the specified maximum duration when retries are involved.
   optional string maxDuration = 3;
 }
 
@@ -371,6 +377,20 @@ message ClusterWorkflowTemplateList {
   repeated ClusterWorkflowTemplate items = 2;
 }
 
+// Column is a custom column that will be exposed in the Workflow List View.
+// +patchStrategy=merge
+// +patchMergeKey=name
+message Column {
+  // The name of this column, e.g., "Workflow Completed".
+  optional string name = 1;
+
+  // The type of this column, "label" or "annotation".
+  optional string type = 2;
+
+  // The key of the label or annotation, e.g., "workflows.argoproj.io/completed".
+  optional string key = 3;
+}
+
 message Condition {
   // Type is the type of condition
   optional string type = 1;
@@ -388,12 +408,14 @@ message ContainerNode {
   repeated string dependencies = 2;
 }
 
+// ContainerSetRetryStrategy provides controls on how to retry a container set
 message ContainerSetRetryStrategy {
   // Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
   // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
   optional string duration = 1;
 
-  // Nbr of retries
+  // Retries is the maximum number of retry attempts for each container. It does not include the
+  // first, original attempt; the maximum number of total attempts will be `retries + 1`.
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString retries = 2;
 }
 
@@ -402,8 +424,8 @@ message ContainerSetTemplate {
 
   repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
 
-  // RetryStrategy describes how to retry a container nodes in the container set if it fails.
-  // Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
+  // RetryStrategy describes how to retry container nodes if the container set fails.
+  // Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.
   optional ContainerSetRetryStrategy retryStrategy = 5;
 }
 
@@ -455,7 +477,7 @@ message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
 
-  // Schedule is a schedule to run the Workflow in Cron format
+  // Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules
   optional string schedule = 2;
 
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
@@ -479,6 +501,15 @@ message CronWorkflowSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be run
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
+
+  // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+  optional StopStrategy stopStrategy = 10;
+
+  // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
+  repeated string schedules = 11;
+
+  // v3.6 and after: When is an expression that determines if a run should be scheduled.
+  optional string when = 12;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
@@ -491,6 +522,15 @@ message CronWorkflowStatus {
 
   // Conditions is a list of conditions the CronWorkflow may have
   repeated Condition conditions = 3;
+
+  // v3.6 and after: Succeeded counts how many times child workflows succeeded
+  optional int64 succeeded = 4;
+
+  // v3.6 and after: Failed counts how many times child workflows failed
+  optional int64 failed = 5;
+
+  // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
+  optional string phase = 6;
 }
 
 // DAGTask represents a node in the graph during DAG execution
@@ -579,7 +619,7 @@ message DataSource {
 }
 
 message Event {
-  // Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+  // Selector (https://github.com/expr-lang/expr) that we must must match the event. E.g. `payload.message == "test"`
   optional string selector = 1;
 }
 
@@ -601,7 +641,7 @@ message GCSArtifact {
 message GCSArtifactRepository {
   optional GCSBucket gCSBucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 }
 
@@ -616,11 +656,16 @@ message GCSBucket {
 
 // Gauge is a Gauge prometheus metric
 message Gauge {
-  // Value is the value of the metric
+  // Value is the value to be used in the operation with the metric's current value. If no operation is set,
+  // value is the value of the metric
   optional string value = 1;
 
   // Realtime emits this metric in real time if applicable
   optional bool realtime = 2;
+
+  // Operation defines the operation to apply with value and the metrics' current value
+  // +optional
+  optional string operation = 3;
 }
 
 // GitArtifact is the location of an git artifact
@@ -692,6 +737,10 @@ message HDFSConfig {
   // HDFSUser is the user to access HDFS file system.
   // It is ignored if either ccache or keytab is used.
   optional string hdfsUser = 3;
+
+  // DataTransferProtection is the protection level for HDFS data transfer.
+  // It corresponds to the dfs.data.transfer.protection configuration in HDFS.
+  optional string dataTransferProtection = 4;
 }
 
 // HDFSKrbConfig is auth configurations for Kerberos
@@ -860,7 +909,7 @@ message Link {
   // The name of the link, E.g. "Workflow Logs" or "Pod Logs"
   optional string name = 1;
 
-  // "workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs" or "chat"
+  // "workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs", "workflow-list" or "chat"
   optional string scope = 2;
 
   // The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
@@ -921,6 +970,9 @@ message Metrics {
 message Mutex {
   // name of the mutex
   optional string name = 1;
+
+  // Namespace is the namespace of the mutex, default: [namespace of workflow]
+  optional string namespace = 2;
 }
 
 // MutexHolding describes the mutex and the object which is holding it.
@@ -948,6 +1000,14 @@ message MutexStatus {
   // Waiting is a list of mutexes and their respective objects this workflow is waiting for.
   // +listType=atomic
   repeated MutexHolding waiting = 2;
+}
+
+message NodeFlag {
+  // Hooked tracks whether or not this node was triggered by hook or onExit
+  optional bool hooked = 1;
+
+  // Retried tracks whether or not this node was retried by retryStrategy
+  optional bool retried = 2;
 }
 
 message NodeResult {
@@ -988,6 +1048,8 @@ message NodeStatus {
 
   // Phase a simple, high-level summary of where the node is in its lifecycle.
   // Can be used as a state machine.
+  // Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded",
+  // "Skipped", "Failed", "Error", or "Omitted" as a final state.
   optional string phase = 7;
 
   // BoundaryID indicates the node ID of the associated template root node in which this node belongs to
@@ -1016,6 +1078,9 @@ message NodeStatus {
 
   // Daemoned tracks whether or not this node was daemoned and need to be terminated
   optional bool daemoned = 13;
+
+  // NodeFlag tracks some history of node. e.g.) hooked, retried, etc.
+  optional NodeFlag nodeFlag = 27;
 
   // Inputs captures input parameter values and artifact locations supplied to this template invocation
   optional Inputs inputs = 14;
@@ -1096,7 +1161,7 @@ message OSSArtifact {
 message OSSArtifactRepository {
   optional OSSBucket oSSBucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 }
 
@@ -1122,6 +1187,9 @@ message OSSBucket {
 
   // LifecycleRule specifies how to manage bucket's lifecycle
   optional OSSLifecycleRule lifecycleRule = 7;
+
+  // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+  optional bool useSDKCreds = 8;
 }
 
 // OSSLifecycleRule specifies how to manage bucket's lifecycle
@@ -1135,6 +1203,7 @@ message OSSLifecycleRule {
 
 // +kubebuilder:validation:Type=object
 message Object {
+  optional bytes value = 1;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -1194,11 +1263,14 @@ message Plugin {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
-  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods
   optional string strategy = 1;
 
   // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
+
+  // DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
+  optional string deleteDelayDuration = 3;
 }
 
 // Prometheus is a prometheus metric to be emitted
@@ -1308,7 +1380,7 @@ message S3Artifact {
 message S3ArtifactRepository {
   optional S3Bucket s3Bucket = 1;
 
-  // KeyFormat is defines the format of how to store keys. Can reference workflow variables
+  // KeyFormat defines the format of how to store keys and can reference workflow variables.
   optional string keyFormat = 2;
 
   // KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
@@ -1336,6 +1408,9 @@ message S3Bucket {
   // SecretKeySecret is the secret selector to the bucket's secret key
   optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 6;
 
+  // SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant
+  optional k8s.io.api.core.v1.SecretKeySelector sessionTokenSecret = 12;
+
   // RoleARN is the Amazon Resource Name (ARN) of the role to assume.
   optional string roleARN = 7;
 
@@ -1346,6 +1421,9 @@ message S3Bucket {
   optional CreateS3BucketOptions createBucketIfNotPresent = 9;
 
   optional S3EncryptionOptions encryptionOptions = 10;
+
+  // CASecret specifies the secret that contains the CA, used to verify the TLS connection
+  optional k8s.io.api.core.v1.SecretKeySelector caSecret = 11;
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
@@ -1384,6 +1462,9 @@ message SemaphoreHolding {
 message SemaphoreRef {
   // ConfigMapKeyRef is configmap selector for Semaphore configuration
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
+
+  // Namespace is the namespace of the configmap, default: [namespace of workflow]
+  optional string namespace = 2;
 }
 
 message SemaphoreStatus {
@@ -1407,6 +1488,13 @@ message Sequence {
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
+}
+
+// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+message StopStrategy {
+  // v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the
+  // variables `failed` or `succeeded` to access the number of failed or successful child workflows.
+  optional string condition = 1;
 }
 
 message Submit {
@@ -1467,17 +1555,23 @@ message SuppliedValueFrom {
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
-  // Could also be a Duration, e.g.: "2m", "6h", "1d"
+  // Could also be a Duration, e.g.: "2m", "6h"
   optional string duration = 1;
 }
 
 // Synchronization holds synchronization lock configuration
 message Synchronization {
-  // Semaphore holds the Semaphore configuration
+  // Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
   optional SemaphoreRef semaphore = 1;
 
-  // Mutex holds the Mutex lock details
+  // Mutex holds the Mutex lock details - deprecated, use mutexes instead
   optional Mutex mutex = 2;
+
+  // v3.6 and after: Semaphores holds the list of Semaphores configuration
+  repeated SemaphoreRef semaphores = 3;
+
+  // v3.6 and after: Mutexes holds the list of Mutex lock details
+  repeated Mutex mutexes = 4;
 }
 
 // SynchronizationStatus stores the status of semaphore and mutex.
@@ -1696,7 +1790,7 @@ message ValueFrom {
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
 
-  // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  // Selector (https://github.com/expr-lang/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
   optional string event = 7;
 
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
@@ -1736,7 +1830,7 @@ message Version {
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
 message VolumeClaimGC {
-  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess". Defaults to "OnWorkflowSuccess"
   optional string strategy = 1;
 }
 
@@ -1805,6 +1899,18 @@ message WorkflowEventBindingSpec {
   optional Submit submit = 2;
 }
 
+// WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level
+message WorkflowLevelArtifactGC {
+  // ArtifactGC is an embedded struct
+  optional ArtifactGC artifactGC = 1;
+
+  // ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails
+  optional bool forceFinalizerRemoval = 2;
+
+  // PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.
+  optional string podSpecPatch = 3;
+}
+
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowList {
@@ -1854,8 +1960,6 @@ message WorkflowSpec {
   // VolumeClaimTemplates is a list of claims that containers are allowed to reference.
   // The Workflow controller will create the claims at the beginning of the workflow
   // and delete the claims upon completion of the workflow
-  // +patchStrategy=merge
-  // +patchMergeKey=name
   repeated k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 6;
 
   // Parallelism limits the max total parallel pods that can execute at the same time in a workflow
@@ -1892,7 +1996,7 @@ message WorkflowSpec {
   // Host networking requested for this workflow pod. Default to false.
   optional bool hostNetwork = 14;
 
-  // Set DNS policy for the pod.
+  // Set DNS policy for workflow pods.
   // Defaults to "ClusterFirst".
   // Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
   // DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
@@ -1956,7 +2060,7 @@ message WorkflowSpec {
   // Controller will automatically add the selector with workflow name, if selector is empty.
   // Optional: Defaults to empty.
   // +optional
-  optional k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
+  optional k8s.io.api.policy.v1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
 
   // Metrics are a list of metrics emitted from this Workflow
   optional Metrics metrics = 32;
@@ -1994,12 +2098,14 @@ message WorkflowSpec {
 
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
-  optional ArtifactGC artifactGC = 43;
+  optional WorkflowLevelArtifactGC artifactGC = 43;
 }
 
 // WorkflowStatus contains overall status information about a workflow
 message WorkflowStatus {
   // Phase a simple, high-level summary of where the workflow is in its lifecycle.
+  // Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded",
+  // "Failed" or "Error" once the workflow has completed.
   optional string phase = 1;
 
   // Time at which this workflow started
@@ -2054,6 +2160,9 @@ message WorkflowStatus {
 
   // ArtifactGCStatus maintains the status of Artifact Garbage Collection
   optional ArtGCStatus artifactGCStatus = 19;
+
+  // TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
+  map<string, bool> taskResultsCompletionStatus = 20;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

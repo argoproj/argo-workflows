@@ -3,13 +3,14 @@ import * as React from 'react';
 import * as models from '../../../models';
 import {Timestamp} from '../../shared/components/timestamp';
 import {services} from '../../shared/services';
+import {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 
 interface Props {
     workflow: models.Workflow;
     archived: boolean;
 }
 
-export const WorkflowArtifacts = (props: Props) => {
+export function WorkflowArtifacts(props: Props) {
     const workflowStatusNodes = (props.workflow.status && props.workflow.status.nodes) || {};
     const artifacts =
         Object.keys(workflowStatusNodes)
@@ -53,11 +54,11 @@ export const WorkflowArtifacts = (props: Props) => {
                         <div className='columns small-4'>{artifact.stepName}</div>
                         <div className='columns small-3'>{artifact.path}</div>
                         <div className='columns small-3'>
-                            <Timestamp date={artifact.dateCreated} />
+                            <Timestamp date={artifact.dateCreated} timestampKey={TIMESTAMP_KEYS.WORKFLOW_ARTIFACTS_CREATED} />
                         </div>
                     </div>
                 ))}
             </div>
         </div>
     );
-};
+}

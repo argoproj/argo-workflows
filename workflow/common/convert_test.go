@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -79,7 +80,7 @@ status:
 	wf := ConvertCronWorkflowToWorkflow(&cronWf)
 	wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime] = "2021-02-19T10:29:05-08:00"
 	wfString, err := yaml.Marshal(wf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))
 
 	cronWfInstanceIdString := `apiVersion: argoproj.io/v1alpha1
@@ -106,16 +107,15 @@ spec:
 `
 
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	wf = ConvertCronWorkflowToWorkflow(&cronWf)
-	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
-		assert.Equal(t, wf.GetLabels()[LabelKeyControllerInstanceID], "test-controller")
-	}
+	require.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID)
+	assert.Equal(t, "test-controller", wf.GetLabels()[LabelKeyControllerInstanceID])
 
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	scheduledTime, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05-07:00")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	wf = ConvertCronWorkflowToWorkflowWithProperties(&cronWf, "test-name", scheduledTime)
 	assert.Equal(t, "test-name", wf.Name)
 	assert.Len(t, wf.GetAnnotations(), 2)

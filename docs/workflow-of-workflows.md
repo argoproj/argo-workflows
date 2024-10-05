@@ -8,7 +8,7 @@ The Workflow of Workflows pattern involves a parent workflow triggering one or m
 
 ## Examples
 
-You can use `workflowTemplateRef` to trigger a workflow inline.  
+You can use `workflowTemplateRef` to trigger a workflow inline.
 
 1. Define your workflow as a `workflowtemplate`.
 
@@ -18,19 +18,19 @@ kind: WorkflowTemplate
 metadata:
   name: workflow-template-submittable
 spec:
-  entrypoint: whalesay-template
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message
         value: hello world
   templates:
-    - name: whalesay-template
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]
 ```
 
@@ -50,13 +50,13 @@ spec:
     - name: main
       steps:
         - - name: workflow1
-            template: triggerWorkflowUsingResourceWithoutArgument
+            template: resource-without-argument
             arguments:
               parameters:
               - name: workflowtemplate
                 value: "workflow-template-submittable"
         - - name: workflow2
-            template: triggerWorkflowUsingResourceWithArgument
+            template: resource-with-argument
             arguments:
               parameters:
               - name: workflowtemplate
@@ -64,7 +64,7 @@ spec:
               - name: message
                 value: "Welcome Argo"
 
-    - name: triggerWorkflowUsingResourceWithoutArgument
+    - name: resource-without-argument
       inputs:
         parameters:
           - name: workflowtemplate
@@ -81,7 +81,7 @@ spec:
         successCondition: status.phase == Succeeded
         failureCondition: status.phase in (Failed, Error)
 
-    - name: triggerWorkflowUsingResourceWithArgument
+    - name: resource-with-argument
       inputs:
         parameters:
           - name: workflowtemplate

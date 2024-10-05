@@ -1,51 +1,31 @@
-import {NavigationManager, NotificationsManager, PopupManager} from 'argo-ui';
-
 import {createBrowserHistory} from 'history';
-import * as PropTypes from 'prop-types';
 import * as React from 'react';
+import {NavigationManager} from 'argo-ui/src/components/navigation';
+import {NotificationsManager} from 'argo-ui/src/components/notifications/notification-manager';
+import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
+
+import 'argo-ui/src/styles/main.scss';
+
 import {AppRouter} from './app-router';
 import {ContextApis, Provider} from './shared/context';
 
 const history = createBrowserHistory();
 
-export class App extends React.Component<{}> {
-    public static childContextTypes = {
-        history: PropTypes.object,
-        apis: PropTypes.object
+export function App() {
+    const popupManager: PopupManager = new PopupManager();
+    const notificationsManager: NotificationsManager = new NotificationsManager();
+    const navigationManager: NavigationManager = new NavigationManager(history);
+
+    const providerContext: ContextApis = {
+        notifications: notificationsManager,
+        popup: popupManager,
+        navigation: navigationManager,
+        history
     };
 
-    private readonly popupManager: PopupManager;
-    private readonly notificationsManager: NotificationsManager;
-    private readonly navigationManager: NavigationManager;
-
-    constructor(props: {}) {
-        super(props);
-        this.popupManager = new PopupManager();
-        this.notificationsManager = new NotificationsManager();
-        this.navigationManager = new NavigationManager(history);
-    }
-
-    public render() {
-        const providerContext: ContextApis = {
-            notifications: this.notificationsManager,
-            popup: this.popupManager,
-            navigation: this.navigationManager,
-            history
-        };
-        return (
-            <Provider value={providerContext}>
-                <AppRouter history={history} notificationsManager={this.notificationsManager} popupManager={this.popupManager} />
-            </Provider>
-        );
-    }
-
-    public getChildContext() {
-        return {
-            history,
-            apis: {
-                popup: this.popupManager,
-                notifications: this.notificationsManager
-            }
-        };
-    }
+    return (
+        <Provider value={providerContext}>
+            <AppRouter history={history} notificationsManager={notificationsManager} popupManager={popupManager} />
+        </Provider>
+    );
 }

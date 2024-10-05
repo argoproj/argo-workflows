@@ -3,41 +3,33 @@ kind: Tasks
 metadata:
   annotations:
     help: |
-      Install `kit` by following https://github.com/alexec/kit#install.
-      
+      Install `kit` by following https://github.com/kitproj/kit#install.
+
       Run `kit up` to start argo.
 
       - `env PROFILE=mysql kit up` to start with MySQL.
       - `env PROFILE=plugins ARGO_EXECUTOR_PLUGINS=true kit up` to start with plugins.
       - `env PROFILE=sso ARGO_AUTH_MODE=sso kit up` to start with SSO.
-      
-      The app will be up-and-running between 15s and 1m later (if hot compiled or cold). 
+
+      The app will be up-and-running between 15s and 1m later (if hot compiled or cold).
       Any changes made to the source code will be automatically recompiled and the app restarted, typically within a few seconds.
   name: argo-workflows
 spec:
   tasks:
     - name: go-deps
       command: go mod download
-      mutex: deps
-    - name: static-files
-      command: make server/static/files.go STATIC_FILES=false
-      dependencies: go-deps
-    - command: go build -v ./...
-      name: go-build
-      dependencies: static-files go-deps
-    - name: cluster-info
-      command: kubectl cluster-info
-    - name: docker-ps
-      command: docker ps
     - name: install
       command: sh -c "make install PROFILE=$PROFILE"
       env:
         - PROFILE=minimal
-      dependencies: cluster-info go-deps
+      dependencies: go-deps
       watch: manifests
-    - command: make ./dist/workflow-controller
-      dependencies: go-build
-      name: build-controller
+      mutex: docker
+    - name: build-controller
+      command: make ./dist/workflow-controller
+      watch: cmd/workflow-controller config errors persist pkg util workflow
+      dependencies: go-deps
+      mutex: build
     - name: port-forward
       command: ./hack/port-forward.sh
       ports: 9000
@@ -50,7 +42,7 @@ spec:
         - ARGO_NAMESPACE=argo
         - ARGO_NAMESPACED=true
         - ARGO_MANAGED_NAMESPACE=argo
-        - ARGO_LOG_LEVEL=info
+        - ARGO_LOGLEVEL=info
         - ARGO_REMOVE_PVC_PROTECTION_FINALIZER=true
         - ARGO_PROGRESS_PATCH_TICK_DURATION=7s
         - DEFAULT_REQUEUE_TIME=1s
@@ -61,44 +53,46 @@ spec:
         - UPPERIO_DB_DEBUG=1
         - ARCHIVED_WORKFLOW_GC_PERIOD=30s
       ports: "9090"
-      watch: cmd/workflow-controller config errors persist pkg util workflow
     - name: build-argo
       command: make ./dist/argo
-      dependencies: go-build
+      dependencies: go-deps
       env:
         - STATIC_FILES=false
       watch: cmd/argo config errors persist pkg util server workflow
+      mutex: build
     - name: server
       command: ./dist/argo server
-      dependencies: build-argo controller port-forward
+      dependencies: build-argo port-forward
       env:
         - ARGO_X_FRAME_OPTIONS=SAMEORIGIN
         - ARGO_SECURE=false
         - ARGO_NAMESPACE=argo
         - ARGO_NAMESPACED=true
-        - ARGO_LOG_LEVEL=info
+        - ARGO_LOGLEVEL=info
         - ARGO_AUTH_MODE=hybrid
         - ARGO_MANAGED_NAMESPACE=argo
         - UPPERIO_DB_DEBUG=1
       ports: "2746"
     - name: ui-deps
-      command: yarn --cwd ui install
-      mutex: deps
-    - name: ui-build
-      command: yarn --cwd ui build
-      dependencies: ui-deps
+      command: yarn install
+      workingDir: ui
+      watch: ui/package.json ui/yarn.lock
     - name: ui
-      command: yarn --cwd ui start
-      dependencies: ui-deps server
+      command: yarn start
+      workingDir: ui
+      dependencies: ui-deps
       ports: "8080"
     - name: executor
       command: make argoexec-image
-      dependencies: docker-ps
       watch: cmd/argoexec config errors pkg util workflow
+      mutex: docker
     - name: example
       command: kubectl create -f examples/hello-world.yaml
-      dependencies: controller
+      dependencies: install
+      mutex: docker
     - name: build
-      dependencies: build-controller build-argo ui-build
+      dependencies: build-controller build-argo
+    - name: pre-up
+      dependencies: build install executor example
     - name: up
-      dependencies: controller server executor ui example
+      dependencies: pre-up controller server ui

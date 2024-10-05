@@ -8,20 +8,20 @@ permissions:
   contents: read
 
 jobs:
-  sdk:
+  sdks:
+    name: Publish SDKs
+    if: github.repository == 'argoproj/argo-workflows'
     permissions:
       packages: write # for publishing packages
       contents: write  # for creating releases
-    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
-    name: Publish SDK
     strategy:
       matrix:
         name:
         - java
         - python
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - run: make --directory sdks/${{matrix.name}} publish -B
         env:
           JAVA_SDK_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

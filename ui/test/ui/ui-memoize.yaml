@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: ui-memoize
+spec:
+  templates:
+    - name: workflow
+      steps:
+        - - name: memoize
+            template: whalesay
+          - name: fail
+            template: intentional-fail
+            arguments:
+              parameters:
+                - name: flag
+                  value: '{{workflow.parameters.flag}}'
+    - name: whalesay
+      outputs:
+        parameters:
+          - name: hello
+            valueFrom:
+              path: /tmp/hello_world.txt
+      container:
+        name: ''
+        image: docker/whalesay:latest
+        command:
+          - sh
+          - '-c'
+        args:
+          - cowsay world > /tmp/hello_world.txt
+      memoize:
+        key: cache-key
+        cache:
+          configMap:
+            name: cache-config
+            key: ''
+        maxAge: 10s
+    - name: intentional-fail
+      inputs:
+        parameters:
+          - name: flag
+      container:
+        name: ''
+        image: alpine:latest
+        command:
+          - sh
+          - '-c'
+        args:
+          - >-
+            echo "{{inputs.parameters.flag}}" && if [[
+            "{{inputs.parameters.flag}}" == 'fail' ]]; then echo "intentional
+            failure" && exit 1; else echo "ok" exit 0; fi
+  entrypoint: workflow
+  arguments:
+    parameters:
+      - name: flag

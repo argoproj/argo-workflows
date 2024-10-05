@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -41,7 +42,7 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getA
 		printNode(w, node, workflowName, "", getArgs, util.GetPodNameVersion())
 	}
 	err := w.Flush()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, result.String())
 }
 
@@ -59,6 +60,8 @@ func TestPrintNode(t *testing.T) {
 	timestamp := metav1.Time{
 		Time: time.Now(),
 	}
+
+	// Node without TemplateRef
 	node := wfv1.NodeStatus{
 		Name:         nodeName,
 		Phase:        wfv1.NodeRunning,
@@ -72,7 +75,9 @@ func TestPrintNode(t *testing.T) {
 	}
 	node.HostNodeName = kubernetesNodeName
 	// derive expected pod name:
-	expectedPodName := util.GeneratePodName(workflowName, nodeName, nodeTemplateName, nodeID, util.GetPodNameVersion())
+	templateName := util.GetTemplateFromNode(node)
+	expectedPodName := util.GeneratePodName(workflowName, nodeName, templateName, nodeID, util.GetPodNameVersion())
+
 	t.Log(expectedPodName)
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
@@ -104,17 +109,18 @@ func TestPrintNode(t *testing.T) {
 	}
 
 	node.TemplateName = nodeTemplateName
-	expectedPodName = util.GeneratePodName(workflowName, nodeName, nodeTemplateName, nodeID, util.GetPodNameVersion())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypeSuspend
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, getArgs)
 
+	// Node with templateRef
+	node.TemplateName = ""
 	node.TemplateRef = &wfv1.TemplateRef{
 		Name:     nodeTemplateRefName,
 		Template: nodeTemplateRefName,
 	}
-	templateName := fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
+	templateName = util.GetTemplateFromNode(node)
 	expectedPodName = util.GeneratePodName(workflowName, nodeName, templateName, nodeID, util.GetPodNameVersion())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
 
@@ -417,7 +423,7 @@ func Test_printWorkflowHelperNudges(t *testing.T) {
 
 	securityNudges := "This workflow does not have security context set. " +
 		"You can run your workflow pods more securely by setting it.\n" +
-		"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
+		"Learn more at https://argo-workflows.readthedocs.io/en/latest/workflow-pod-security-context/\n"
 
 	t.Run("SecuredWorkflow", func(t *testing.T) {
 		output := PrintWorkflowHelper(&securedWf, GetFlags{})

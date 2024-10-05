@@ -1,12 +1,13 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
+
 import {ScopedLocalStorage} from '../shared/scoped-local-storage';
-import {FeedbackModal} from './feedback/feedback-modal';
-import {FirstTimeUserModal} from './first-time-user/first-time-user-modal';
-import {NewVersionModal} from './new-version/new-version-modal';
+import {FeedbackModal} from './feedback-modal';
+import {FirstTimeUserModal} from './first-time-user-modal';
+import {NewVersionModal} from './new-version-modal';
 import {majorMinor} from './version';
 
-export const ModalSwitch = ({version, modals}: {version: string; modals: {[key: string]: boolean}}) => {
+export function ModalSwitch({version, modals}: {version: string; modals: {[key: string]: boolean}}) {
     const localStorage = new ScopedLocalStorage('modal');
     const [ftu, setFtu] = useState<string>(localStorage.getItem('ftu', ''));
     useEffect(() => localStorage.setItem('ftu', ftu, ''), [ftu]);
@@ -32,4 +33,4 @@ export const ModalSwitch = ({version, modals}: {version: string; modals: {[key: 
         return <NewVersionModal dismiss={() => setLastVersion(majorMinorVersion)} version={version} />;
     }
     return <></>;
-};
+}

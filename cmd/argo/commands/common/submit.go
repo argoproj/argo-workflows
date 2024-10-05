@@ -9,7 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-// cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
+// CliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
 type CliSubmitOpts struct {
 	Output        string // --output
 	Wait          bool   // --wait
@@ -22,21 +22,26 @@ type CliSubmitOpts struct {
 	Parameters    []string // --parameter
 }
 
-func WaitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts CliSubmitOpts) {
+func WaitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts CliSubmitOpts) error {
 	if cliSubmitOpts.Log {
 		for _, workflow := range workflowNames {
-			LogWorkflow(ctx, serviceClient, namespace, workflow, "", "", "", &corev1.PodLogOptions{
+			if err := LogWorkflow(ctx, serviceClient, namespace, workflow, "", "", "", &corev1.PodLogOptions{
 				Container: common.MainContainerName,
 				Follow:    true,
 				Previous:  false,
-			})
+			}); err != nil {
+				return err
+			}
 		}
 	}
 	if cliSubmitOpts.Wait {
 		WaitWorkflows(ctx, serviceClient, namespace, workflowNames, false, !(cliSubmitOpts.Output == "" || cliSubmitOpts.Output == "wide"))
 	} else if cliSubmitOpts.Watch {
 		for _, workflow := range workflowNames {
-			WatchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.GetArgs)
+			if err := WatchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.GetArgs); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }

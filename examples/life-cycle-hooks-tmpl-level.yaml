@@ -9,7 +9,7 @@
           steps:
             - - name: step-1
                 hooks:
-                  exit:
+                  running: # Name of hook does not matter
                     # Expr will not support `-` on variable name. Variable should wrap with `[]`
                     expression: steps["step-1"].status == "Running"
                     template: http
@@ -19,20 +19,20 @@
                 template: echo
             - - name: step2
                 hooks:
-                  exit:
+                  running:
                     expression: steps.step2.status == "Running"
                     template: http
                   success:
                     expression: steps.step2.status == "Succeeded"
                     template: http
                 template: echo
-        
+
         - name: echo
           container:
             image: alpine:3.6
             command: [sh, -c]
             args: ["echo \"it was heads\""]
-        
+
         - name: http
           http:
             # url: http://dummy.restapiexample.com/api/v1/employees

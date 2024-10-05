@@ -1,3 +1,3 @@
 # Roadmap
 
-[Open the roadmap](https://docs.google.com/document/d/1TzhgIPHnlUI9tVqcjoZVmvjuPAIZf5AyygGqL98BBaI/edit?usp=sharing)
+The roadmap is currently being revamped. If you want to join the discussions, please join our [contributors meeting](https://bit.ly/argo-data-weekly).

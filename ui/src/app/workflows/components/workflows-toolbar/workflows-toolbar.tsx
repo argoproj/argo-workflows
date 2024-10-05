@@ -1,120 +1,130 @@
-import {NotificationType} from 'argo-ui';
-import * as PropTypes from 'prop-types';
+import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
 import * as React from 'react';
-import {Workflow} from '../../../../models';
-import {AppContext, Consumer} from '../../../shared/context';
-import * as Actions from '../../../shared/workflow-operations-map';
-import {WorkflowOperation, WorkflowOperationAction} from '../../../shared/workflow-operations-map';
+import {useContext, useMemo} from 'react';
 
-require('./workflows-toolbar.scss');
+import {isArchivedWorkflow, isWorkflowInCluster, Workflow} from '../../../../models';
+import {Context} from '../../../shared/context';
+import {services} from '../../../shared/services';
+import * as Actions from '../../../shared/workflow-operations-map';
+import {WorkflowOperation, WorkflowOperationAction, WorkflowOperationName} from '../../../shared/workflow-operations-map';
+
+import './workflows-toolbar.scss';
 
 interface WorkflowsToolbarProps {
     selectedWorkflows: Map<string, Workflow>;
-    loadWorkflows: () => void;
-    isDisabled: Actions.OperationDisabled;
+    disabledActions: Actions.OperationDisabled;
     clearSelection: () => void;
+    loadWorkflows: () => void;
 }
 
-interface WorkflowGroupAction extends WorkflowOperation {
-    groupIsDisabled: boolean;
-    className: string;
-    groupAction: () => Promise<any>;
+interface WorkflowsOperation extends WorkflowOperation {
+    isDisabled: boolean;
+    action: () => Promise<any>;
 }
 
-export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}> {
-    public static contextTypes = {
-        router: PropTypes.object,
-        apis: PropTypes.object
-    };
+export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
+    const {popup, notifications} = useContext(Context);
+    const numberSelected = props.selectedWorkflows.size;
 
-    constructor(props: WorkflowsToolbarProps) {
-        super(props);
-    }
-
-    public render() {
-        return (
-            <Consumer>
-                {ctx => (
-                    <div className={`workflows-toolbar ${this.getNumberSelected() === 0 ? 'hidden' : ''}`}>
-                        <div className='workflows-toolbar__count'>
-                            {this.getNumberSelected() === 0 ? 'No' : this.getNumberSelected()}
-                            &nbsp;workflow{this.getNumberSelected() === 1 ? '' : 's'} selected
-                        </div>
-                        <div className='workflows-toolbar__actions'>{this.renderActions(ctx)}</div>
-                    </div>
-                )}
-            </Consumer>
-        );
-    }
-
-    private getNumberSelected(): number {
-        return this.props.selectedWorkflows.size;
-    }
-
-    private performActionOnSelectedWorkflows(ctx: any, title: string, action: WorkflowOperationAction): Promise<any> {
-        if (!confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`)) {
-            return Promise.resolve(false);
-        }
-        const promises: Promise<any>[] = [];
-        this.props.selectedWorkflows.forEach((wf: Workflow) => {
-            promises.push(
-                action(wf).catch(() => {
-                    this.props.loadWorkflows();
-                    this.appContext.apis.notifications.show({
-                        content: `Unable to ${title} workflow`,
-                        type: NotificationType.Error
-                    });
-                })
-            );
-        });
-        return Promise.all(promises);
-    }
-
-    private renderActions(ctx: any): JSX.Element[] {
-        const actionButtons = [];
+    const operations = useMemo<WorkflowsOperation[]>(() => {
         const actions: any = Actions.WorkflowOperationsMap;
-        const disabled: any = this.props.isDisabled;
-        const groupActions: WorkflowGroupAction[] = Object.keys(actions).map(actionName => {
+
+        return Object.keys(actions).map((actionName: WorkflowOperationName) => {
             const action = actions[actionName];
             return {
                 title: action.title,
                 iconClassName: action.iconClassName,
-                groupIsDisabled: disabled[actionName],
-                action,
-                groupAction: () => {
-                    return this.performActionOnSelectedWorkflows(ctx, action.title, action.action).then(confirmed => {
-                        if (confirmed) {
-                            this.props.clearSelection();
-                            this.appContext.apis.notifications.show({
-                                content: `Performed '${action.title}' on selected workflows.`,
-                                type: NotificationType.Success
-                            });
-                            this.props.loadWorkflows();
+                isDisabled: props.disabledActions[actionName],
+                action: async () => {
+                    const confirmed = await popup.confirm('Confirm', `Are you sure you want to ${action.title.toLowerCase()} all selected workflows?`);
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    let deleteArchived = false;
+                    if (action.title === 'DELETE') {
+                        // check if there are archived workflows to delete
+                        for (const entry of props.selectedWorkflows) {
+                            if (isArchivedWorkflow(entry[1])) {
+                                deleteArchived = await popup.confirm('Confirm', 'Do you also want to delete them from the Archived Workflows database?');
+                                break;
+                            }
                         }
+                    }
+
+                    await performActionOnSelectedWorkflows(action.title, action.action, deleteArchived);
+
+                    props.clearSelection();
+                    notifications.show({
+                        content: `Performed '${action.title}' on selected workflows.`,
+                        type: NotificationType.Success
                     });
+                    props.loadWorkflows();
                 },
-                className: action.title,
                 disabled: () => false
-            } as WorkflowGroupAction;
+            } as WorkflowsOperation;
         });
-        for (const groupAction of groupActions) {
-            actionButtons.push(
-                <button
-                    key={groupAction.title}
-                    onClick={() => {
-                        groupAction.groupAction().catch();
-                    }}
-                    className={`workflows-toolbar__actions--${groupAction.className} workflows-toolbar__actions--action`}
-                    disabled={this.getNumberSelected() === 0 || groupAction.groupIsDisabled}>
-                    <i className={groupAction.iconClassName} />
-                    &nbsp;{groupAction.title}
-                </button>
-            );
-        }
-        return actionButtons;
+    }, [props.selectedWorkflows]);
+
+    async function performActionOnSelectedWorkflows(title: string, action: WorkflowOperationAction, deleteArchived: boolean): Promise<any> {
+        const promises: Promise<any>[] = [];
+        props.selectedWorkflows.forEach((wf: Workflow) => {
+            if (title === 'DELETE') {
+                // The ones without archivalStatus label or with 'Archived' labels are the live workflows.
+                if (isWorkflowInCluster(wf)) {
+                    promises.push(
+                        services.workflows.delete(wf.metadata.name, wf.metadata.namespace).catch(reason =>
+                            notifications.show({
+                                content: `Unable to delete workflow ${wf.metadata.name} in the cluster: ${reason.toString()}`,
+                                type: NotificationType.Error
+                            })
+                        )
+                    );
+                }
+                if (deleteArchived && isArchivedWorkflow(wf)) {
+                    promises.push(
+                        services.workflows.deleteArchived(wf.metadata.uid, wf.metadata.namespace).catch(reason =>
+                            notifications.show({
+                                content: `Unable to delete workflow ${wf.metadata.name} in database: ${reason.toString()}`,
+                                type: NotificationType.Error
+                            })
+                        )
+                    );
+                }
+            } else {
+                promises.push(
+                    action(wf).catch(reason => {
+                        notifications.show({
+                            content: `Unable to ${title} workflow: ${reason.content.toString()}`,
+                            type: NotificationType.Error
+                        });
+                    })
+                );
+            }
+        });
+        return Promise.all(promises);
     }
 
-    private get appContext(): AppContext {
-        return this.context as AppContext;
-    }
+    return (
+        <div className={`workflows-toolbar ${numberSelected === 0 ? 'hidden' : ''}`}>
+            <div className='workflows-toolbar__count'>
+                {numberSelected === 0 ? 'No' : numberSelected}
+                &nbsp;workflow{numberSelected === 1 ? '' : 's'} selected
+            </div>
+            <div className='workflows-toolbar__actions'>
+                {operations.map(operation => {
+                    return (
+                        <button
+                            key={operation.title}
+                            onClick={operation.action}
+                            className={`workflows-toolbar__actions--${operation.title} workflows-toolbar__actions--action`}
+                            disabled={numberSelected === 0 || operation.isDisabled}>
+                            <i className={operation.iconClassName} />
+                            &nbsp;{operation.title}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
 }

@@ -2,11 +2,11 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"os"
 	"sort"
 	"strings"
 
-	"github.com/argoproj/pkg/errors"
 	argotime "github.com/argoproj/pkg/time"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -22,19 +22,19 @@ import (
 )
 
 type listFlags struct {
-	namespace     string
-	status        []string
-	completed     bool
-	running       bool
-	resubmitted   bool
-	prefix        string
-	output        string
-	createdSince  string
-	finishedAfter string
-	chunkSize     int64
-	noHeaders     bool
-	labels        string
-	fields        string
+	namespace      string
+	status         []string
+	completed      bool
+	running        bool
+	resubmitted    bool
+	prefix         string
+	output         string
+	createdSince   string
+	finishedBefore string
+	chunkSize      int64
+	noHeaders      bool
+	labels         string
+	fields         string
 }
 
 var (
@@ -64,25 +64,57 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflows",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		Example: `# List all workflows:
+  argo list
+
+# List all workflows from all namespaces:
+  argo list -A
+
+# List all running workflows:
+  argo list --running
+
+# List all completed workflows:
+  argo list --completed
+
+ # List workflows created within the last 10m:
+  argo list --since 10m
+
+# List workflows that finished more than 2h ago:
+  argo list --older 2h
+
+# List workflows with more information (such as parameters):
+  argo list -o wide
+
+# List workflows in YAML format:
+  argo list -o yaml
+
+# List workflows that have both labels:
+  argo list -l label1=value1,label2=value2
+`,
+
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			if !allNamespaces {
 				listArgs.namespace = client.Namespace()
 			}
 			workflows, err := listWorkflows(ctx, serviceClient, listArgs)
-			errors.CheckError(err)
-			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
+			if err != nil {
+				return err
+			}
+			return printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
 				NoHeaders: listArgs.noHeaders,
 				Namespace: allNamespaces,
 				Output:    listArgs.output,
 			})
-			errors.CheckError(err)
 		},
 	}
 	command.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
 	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Filter workflows by prefix")
-	command.Flags().StringVar(&listArgs.finishedAfter, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringVar(&listArgs.finishedBefore, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show completed workflows. Mutually exclusive with --running.")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show running workflows. Mutually exclusive with --completed.")
@@ -101,7 +133,9 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		Limit: flags.chunkSize,
 	}
 	labelSelector, err := labels.Parse(flags.labels)
-	errors.CheckError(err)
+	if err != nil {
+		return nil, err
+	}
 	if len(flags.status) != 0 {
 		req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, flags.status)
 		if req != nil {
@@ -109,7 +143,7 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		}
 	}
 	if flags.completed && flags.running {
-		log.Fatal("--completed and --running cannot be used together")
+		return nil, errors.New("--completed and --running cannot be used together")
 	}
 	if flags.completed {
 		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
@@ -146,21 +180,29 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		Filter(func(wf wfv1.Workflow) bool {
 			return strings.HasPrefix(wf.ObjectMeta.Name, flags.prefix)
 		})
-	if flags.createdSince != "" && flags.finishedAfter != "" {
+	if flags.createdSince != "" && flags.finishedBefore != "" {
 		startTime, err := argotime.ParseSince(flags.createdSince)
-		errors.CheckError(err)
-		endTime, err := argotime.ParseSince(flags.finishedAfter)
-		errors.CheckError(err)
+		if err != nil {
+			return nil, err
+		}
+		endTime, err := argotime.ParseSince(flags.finishedBefore)
+		if err != nil {
+			return nil, err
+		}
 		workflows = workflows.Filter(wfv1.WorkflowRanBetween(*startTime, *endTime))
 	} else {
 		if flags.createdSince != "" {
 			t, err := argotime.ParseSince(flags.createdSince)
-			errors.CheckError(err)
+			if err != nil {
+				return nil, err
+			}
 			workflows = workflows.Filter(wfv1.WorkflowCreatedAfter(*t))
 		}
-		if flags.finishedAfter != "" {
-			t, err := argotime.ParseSince(flags.finishedAfter)
-			errors.CheckError(err)
+		if flags.finishedBefore != "" {
+			t, err := argotime.ParseSince(flags.finishedBefore)
+			if err != nil {
+				return nil, err
+			}
 			workflows = workflows.Filter(wfv1.WorkflowFinishedBefore(*t))
 		}
 	}

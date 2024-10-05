@@ -1,18 +1,6 @@
 # https://golangci-lint.run/usage/quick-start/
 run:
-  timeout: 8m
-  skip-dirs:
-    - dist
-    - docs
-    - examples
-    - hack
-    - manifests
-    - pkg/client
-    - sdks
-    - ui
-    - vendor
-  skip-files:
-    - server/static/files.go
+  timeout: 12m
   build-tags:
     - api
     - cli
@@ -24,12 +12,14 @@ run:
     - plugins
 linters:
   enable:
+    - asasalint
+    - bidichk
     - bodyclose
+    - copyloopvar
     - errcheck
     - goimports
     # only minor issues
     # - errorlint
-    - exportloopref
     # seems to have bugs in recent version, also slow
     # - gci
     - gosec
@@ -37,9 +27,13 @@ linters:
     - govet
     - ineffassign
     - misspell
+    - nakedret
+    - nosprintfhostport
+    - reassign
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
+    - testifylint
     - typecheck
     - unparam
     - unused
@@ -58,10 +52,18 @@ linters-settings:
       # G601: Implicit memory aliasing in for loop.
       - G601
 issues:
-  exclude:
-    # We are leaving io/ioutil for now to make backports easier
-    # https://github.com/argoproj/argo-workflows/pull/6964#issuecomment-946827019
-    - "SA1019: \"io/ioutil\" has been deprecated since Go 1.16"
   exclude-rules:
     - path: server/artifacts/artifact_server_test.go
       text: "response body must be closed"
+  exclude-dirs:
+    - dist
+    - docs
+    - examples
+    - hack
+    - manifests
+    - pkg/client
+    - sdks
+    - ui
+    - vendor
+  exclude-files:
+    - server/static/files.go

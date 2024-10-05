@@ -17,3 +17,8 @@ export function uiUrlWithParams(uiPath: string, params: string[]): string {
 export function apiUrl(apiPath: string): string {
     return `${baseUrl()}${apiPath}`;
 }
+
+export function absoluteUrl(path: string): string {
+    const base = document.baseURI.endsWith('/') ? document.baseURI : document.baseURI + '/';
+    return `${base}${path}`;
+}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -34,14 +35,14 @@ spec:
               failed: true
             arguments:
               parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-  
+
     - name: http
       inputs:
         parameters:
           - name: url
       http:
        url: "{{inputs.parameters.url}}"
-      
+
 `)
 	ctx := context.Background()
 	var ts wfv1.WorkflowTaskSet
@@ -68,7 +69,7 @@ spec:
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
@@ -78,7 +79,7 @@ spec:
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
@@ -93,7 +94,7 @@ spec:
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
@@ -103,7 +104,7 @@ spec:
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
@@ -135,7 +136,7 @@ spec:
               failed: true
             arguments:
               parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-  
+
     - name: http
       inputs:
         parameters:
@@ -292,12 +293,12 @@ status:
 		cancel, controller := newController(wf, ts)
 		defer cancel()
 		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		err = woc.removeCompletedTaskSetStatus(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
 
@@ -305,8 +306,8 @@ status:
 			assert.NotNil(t, ts)
 			assert.Equal(t, ts.Name, wf.Name)
 			assert.Equal(t, ts.Namespace, wf.Namespace)
-			assert.Len(t, ts.Spec.Tasks, 0)
-			assert.Len(t, ts.Status.Nodes, 0)
+			assert.Empty(t, ts.Spec.Tasks)
+			assert.Empty(t, ts.Status.Nodes)
 		}
 
 	})
@@ -321,17 +322,12 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 	t.Run("reconcileTaskSet", func(t *testing.T) {
 		woc.operate(ctx)
 		err := woc.reconcileTaskSet(ctx)
-		assert.NoError(t, err)
-	})
-	t.Run("completeTaskSet", func(t *testing.T) {
-		woc.operate(ctx)
-		err := woc.completeTaskSet(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("removeCompletedTaskSetStatus", func(t *testing.T) {
 		woc.operate(ctx)
 		err := woc.removeCompletedTaskSetStatus(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
@@ -343,7 +339,7 @@ metadata:
   namespace: default
 spec:
   entrypoint: main
-  templates: 
+  templates:
     - name: main
       http:
        url: "http://localhost"
@@ -401,13 +397,13 @@ status:
 		cancel, controller := newController(wf, ts)
 		defer cancel()
 		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		time.Sleep(1 * time.Second)
 		err = woc.reconcileTaskSet(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		memo, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "cache-demo-1", v1.GetOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, memo.Data["cache-demo-1"])
 	})
 }

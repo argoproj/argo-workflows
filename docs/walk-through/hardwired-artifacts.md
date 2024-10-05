@@ -1,6 +1,6 @@
 # Hardwired Artifacts
 
-With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common, so there is built-in support for git, HTTP, GCS and S3 artifacts.
+You can use any container image to generate any kind of artifact. In practice, however, certain types of artifacts are very common, so there is built-in support for git, HTTP, GCS, and S3 artifacts.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -13,13 +13,13 @@ spec:
   - name: hardwired-artifact
     inputs:
       artifacts:
-      # Check out the master branch of the argo repo and place it at /src
+      # Check out the main branch of the argo repo and place it at /src
       # revision can be anything that git checkout accepts: branch, commit, tag, etc.
       - name: argo-source
         path: /src
         git:
           repo: https://github.com/argoproj/argo-workflows.git
-          revision: "master"
+          revision: "main"
       # Download kubectl 1.8.0 and place it at /bin/kubectl
       - name: kubectl
         path: /bin/kubectl

@@ -2,7 +2,7 @@
 
 > v3.0 and after
 
-A key-only artifact is an input or output artifact where you only specific the key, omitting the bucket, secrets etc. When these are omitted, the bucket/secrets from the configured artifact repository is used.
+A key-only artifact is an input or output artifact where you only specify the key, omitting the bucket, secrets etc. When these are omitted, the bucket/secrets from the configured artifact repository is used.
 
 This allows you to move the configuration of the artifact repository out of the workflow specification.
 

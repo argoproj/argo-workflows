@@ -62,7 +62,8 @@ func WorkflowSemaphoreKeysIndexFunc() cache.IndexFunc {
 		if !ok {
 			return nil, nil
 		}
-		if un.GetLabels()[common.LabelKeyCompleted] != "false" {
+		completed, ok := un.GetLabels()[common.LabelKeyCompleted]
+		if ok && completed != "false" {
 			return nil, nil
 		}
 		wf, err := util.FromUnstructured(un)

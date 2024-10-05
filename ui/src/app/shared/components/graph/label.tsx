@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-export const formatLabel = (label: string) => {
+export function formatLabel(label: string) {
     if (!label) {
         return;
     }
@@ -54,4 +54,4 @@ export const formatLabel = (label: string) => {
             </tspan>
         </>
     );
-};
+}

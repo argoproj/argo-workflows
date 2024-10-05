@@ -1,5 +1,6 @@
 import * as React from 'react';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
+
 import {TextInput} from '../../../shared/components/text-input';
 import {ScopedLocalStorage} from '../../scoped-local-storage';
 import {FilterDropDown} from '../filter-drop-down';
@@ -9,20 +10,12 @@ import {formatLabel} from './label';
 import {layout} from './layout';
 import {Graph, Node} from './types';
 
-require('./graph-panel.scss');
+import './graph-panel.scss';
 
 type IconShape = 'rect' | 'circle';
 
-interface NodeGenres {
+interface INodeSelectionMap {
     [type: string]: boolean;
-}
-
-interface NodeClassNames {
-    [type: string]: boolean;
-}
-
-interface NodeTags {
-    [key: string]: boolean;
 }
 
 interface Props {
@@ -31,11 +24,11 @@ interface Props {
     options?: React.ReactNode; // add to the option panel
     classNames?: string;
     nodeGenresTitle: string;
-    nodeGenres: NodeGenres;
+    nodeGenres: INodeSelectionMap;
     nodeClassNamesTitle?: string;
-    nodeClassNames?: NodeClassNames;
+    nodeClassNames?: INodeSelectionMap;
     nodeTagsTitle?: string;
-    nodeTags?: NodeTags;
+    nodeTags?: INodeSelectionMap;
     nodeSize?: number; // default "64"
     horizontal?: boolean; // default "false"
     hideNodeTypes?: boolean; // default "false"
@@ -48,15 +41,16 @@ interface Props {
 
 const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => b && Object.assign(Object.assign({}, b), a);
 
-export const GraphPanel = (props: Props) => {
+export function GraphPanel(props: Props) {
     const storage = new ScopedLocalStorage('graph/' + props.storageScope);
-    const [nodeSize, setNodeSize] = React.useState<number>(storage.getItem('nodeSize', props.nodeSize));
-    const [horizontal, setHorizontal] = React.useState<boolean>(storage.getItem('horizontal', !!props.horizontal));
-    const [fast, setFast] = React.useState<boolean>(storage.getItem('fast', false));
-    const [nodeGenres, setNodeGenres] = React.useState<NodeGenres>(storage.getItem('nodeGenres', props.nodeGenres));
-    const [nodeClassNames, setNodeClassNames] = React.useState<NodeClassNames>(storage.getItem('nodeClassNames', props.nodeClassNames));
-    const [nodeTags, setNodeTags] = React.useState<NodeTags>(props.nodeTags);
-    const [nodeSearchKeyword, setNodeSearchKeyword] = React.useState<string>('');
+    const [nodeSize, setNodeSize] = useState<number>(storage.getItem('nodeSize', props.nodeSize));
+    const [horizontal, setHorizontal] = useState<boolean>(storage.getItem('horizontal', !!props.horizontal));
+    const [fast, setFast] = useState<boolean>(storage.getItem('fast', false));
+    const [nodeGenres, setNodeGenres] = useState<INodeSelectionMap>(storage.getItem('nodeGenres', props.nodeGenres));
+    const [nodeClassNames, setNodeClassNames] = useState<INodeSelectionMap>(storage.getItem('nodeClassNames', props.nodeClassNames));
+    const [nodeTags, setNodeTags] = useState<INodeSelectionMap>(props.nodeTags);
+    const [checkAll, setCheckAll] = useState<boolean>(true);
+    const [nodeSearchKeyword, setNodeSearchKeyword] = useState<string>('');
 
     useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize), [nodeSize]);
     useEffect(() => storage.setItem('horizontal', horizontal, props.horizontal), [horizontal]);
@@ -70,7 +64,12 @@ export const GraphPanel = (props: Props) => {
     useEffect(() => setNodeClassNames(merge(nodeClassNames, props.nodeClassNames)), [props.nodeClassNames]);
     useEffect(() => setNodeTags(merge(nodeTags, props.nodeTags)), [props.nodeTags]);
 
-    const visible = (id: Node) => {
+    useEffect(() => {
+        const allSelected = getIsAllSelected(nodeClassNames, nodeTags, nodeGenres);
+        setCheckAll(allSelected);
+    }, [nodeGenres, nodeClassNames, nodeTags]);
+
+    function visible(id: Node) {
         const label = props.graph.nodes.get(id);
         // If the node matches the search string, return without considering filters
         if (nodeSearchKeyword && label.label.includes(nodeSearchKeyword)) {
@@ -89,7 +88,55 @@ export const GraphPanel = (props: Props) => {
             return false;
         }
         return true;
-    };
+    }
+
+    function checkBoxHandler(callback: React.Dispatch<React.SetStateAction<INodeSelectionMap>>, label: string, checked: boolean) {
+        callback(v => {
+            return {
+                ...v,
+                [label]: checked
+            };
+        });
+    }
+
+    function getNodeMapWithAllNodesSetToValue(nodeSelectionMap: INodeSelectionMap, value: boolean) {
+        return Object.keys(nodeSelectionMap).reduce((accumulatedMap, nextKey) => {
+            return {
+                ...accumulatedMap,
+                [nextKey]: value
+            };
+        }, {});
+    }
+
+    function getIsAllSelected(classNames: INodeSelectionMap, tags: INodeSelectionMap, genres: INodeSelectionMap) {
+        const nodeSelections: INodeSelectionMap = {...classNames, ...tags, ...genres};
+        const totalNodeCount = Object.keys(nodeSelections).length;
+
+        const selectedNodeCount = Object.keys(nodeSelections).reduce((accumulatedTotal, key) => {
+            if (nodeSelections[key]) {
+                return accumulatedTotal + 1;
+            } else {
+                return accumulatedTotal;
+            }
+        }, 0);
+
+        return selectedNodeCount === totalNodeCount;
+    }
+
+    function onSelectAll(
+        classNames: INodeSelectionMap,
+        tags: INodeSelectionMap,
+        genres: INodeSelectionMap,
+        setClassNames: React.Dispatch<React.SetStateAction<INodeSelectionMap>>,
+        setTags: React.Dispatch<React.SetStateAction<INodeSelectionMap>>,
+        setGenres: React.Dispatch<React.SetStateAction<INodeSelectionMap>>
+    ) {
+        const isAllSelected = getIsAllSelected(classNames, tags, genres);
+
+        setClassNames(getNodeMapWithAllNodesSetToValue(classNames, !isAllSelected));
+        setTags(getNodeMapWithAllNodesSetToValue(tags, !isAllSelected));
+        setGenres(getNodeMapWithAllNodesSetToValue(genres, !isAllSelected));
+    }
 
     layout(props.graph, nodeSize, horizontal, id => !visible(id), fast);
     const width = props.graph.width;
@@ -102,33 +149,31 @@ export const GraphPanel = (props: Props) => {
                     <FilterDropDown
                         sections={[
                             {
+                                title: '',
+                                values: {'Check All': checkAll},
+                                onChange: () => {
+                                    onSelectAll(nodeClassNames, nodeTags, nodeGenres, setNodeClassNames, setNodeTags, setNodeGenres);
+                                }
+                            },
+                            {
                                 title: props.nodeGenresTitle,
                                 values: nodeGenres,
                                 onChange: (label, checked) => {
-                                    setNodeGenres(v => {
-                                        v[label] = checked;
-                                        return Object.assign({}, v);
-                                    });
+                                    checkBoxHandler(setNodeGenres, label, checked);
                                 }
                             },
                             {
                                 title: props.nodeClassNamesTitle,
                                 values: nodeClassNames,
                                 onChange: (label, checked) => {
-                                    setNodeClassNames(v => {
-                                        v[label] = checked;
-                                        return Object.assign({}, v);
-                                    });
+                                    checkBoxHandler(setNodeClassNames, label, checked);
                                 }
                             },
                             {
                                 title: props.nodeTagsTitle,
                                 values: nodeTags,
                                 onChange: (label, checked) => {
-                                    setNodeTags(v => {
-                                        v[label] = checked;
-                                        return Object.assign({}, v);
-                                    });
+                                    checkBoxHandler(setNodeTags, label, checked);
                                 }
                             }
                         ]}
@@ -232,7 +277,7 @@ export const GraphPanel = (props: Props) => {
             </div>
         </div>
     );
-};
+}
 
 GraphPanel.defaultProps = {
     nodeSize: 64

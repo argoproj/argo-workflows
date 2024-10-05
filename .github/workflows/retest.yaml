@@ -1,0 +1,25 @@
+name: Detect and Trigger Retest
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+  retest:
+    # PR comments where a Member types "/retest" exactly
+    if: github.event.issue.pull_request && github.event.comment.author_association == 'MEMBER' && github.event.comment.body == '/retest'
+    permissions:
+      actions: write # for re-running failed jobs: https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#re-run-a-job-from-a-workflow-run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-run failed jobs for this PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          SHA_REF=$(gh api "/repos/$REPO/pulls/$PR_NUMBER/commits" | jq -r '.[].sha' | tail -n 1)
+          RUN_ID=$(gh api "repos/$REPO/actions/workflows/ci-build.yaml/runs?per_page=1&event=pull_request&head_sha=$SHA_REF" | jq -r '.workflow_runs[] | .id')
+          gh api --method POST repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs

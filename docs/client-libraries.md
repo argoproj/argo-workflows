@@ -7,15 +7,16 @@ yourself. You can use a client library for the programming language you are usin
 
 Client libraries often handle common tasks such as authentication for you.
 
-## Officially-supported client libraries
+## Auto-generated client libraries
 
-The following client libraries are officially maintained by the Argo team.
+The following client libraries are auto-generated using [OpenAPI Generator](https://github.com/OpenAPITools/openapi-generator-cli).
+Please expect very minimal support from the Argo team.
 
 | Language | Client Library                                                                                      | Examples/Docs                                                                                 |
 |----------|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| Golang   | [`apiclient.go`](https://github.com/argoproj/argo-workflows/blob/master/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/master/cmd/argo/commands/submit.go) |
-| Java     | [Java](https://github.com/argoproj/argo-workflows/blob/master/sdks/java)                            |                                                                                               |
-| Python   | [Python](https://github.com/argoproj/argo-workflows/blob/master/sdks/python)                        |                                                                                               |
+| Golang   | [`apiclient.go`](https://github.com/argoproj/argo-workflows/blob/main/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/main/cmd/argo/commands/submit.go) |
+| Java     | [Java](https://github.com/argoproj/argo-workflows/blob/main/sdks/java)                            |                                                                                               |
+| Python   | [Python](https://github.com/argoproj/argo-workflows/blob/main/sdks/python)                        |                                                                                               |
 
 ## Community-maintained client libraries
 

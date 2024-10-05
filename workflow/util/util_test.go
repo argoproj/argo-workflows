@@ -2,23 +2,30 @@ package util
 
 import (
 	"context"
-	"io/ioutil"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
 )
 
@@ -44,7 +51,7 @@ spec:
 	wfClientSet := argofake.NewSimpleClientset()
 	ctx := context.Background()
 	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, &wfv1.SubmitOpts{DryRun: true})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, wf.Spec, newWf.Spec)
 	assert.Equal(t, wf.Status, newWf.Status)
 }
@@ -63,12 +70,13 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		},
 	}
 	onExitID := wf.NodeID(onExitName)
-	wf.Status.Nodes[onExitID] = wfv1.NodeStatus{
+	onExitNode := wfv1.NodeStatus{
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
-	newWF, err := FormulateResubmitWorkflow(&wf, true, nil)
-	assert.NoError(t, err)
+	wf.Status.Nodes.Set(onExitID, onExitNode)
+	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
+	require.NoError(t, err)
 	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
@@ -99,14 +107,14 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				content := []byte(tc.contents[i])
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
-				err := ioutil.WriteFile(tmpfn, content, 0o600)
+				err := os.WriteFile(tmpfn, content, 0o600)
 				if err != nil {
 					t.Error("Could not write to temporary file")
 				}
 			}
 			body, err := ReadFromFilePathsOrUrls(filePaths...)
 			assert.Equal(t, len(body), len(filePaths))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			for i := range body {
 				assert.Equal(t, body[i], []byte(tc.contents[i]))
 			}
@@ -147,44 +155,17 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
 				if tc.exists[i] {
-					err := ioutil.WriteFile(tmpfn, content, 0o600)
+					err := os.WriteFile(tmpfn, content, 0o600)
 					if err != nil {
 						t.Error("Could not write to temporary file")
 					}
 				}
 			}
 			body, err := ReadFromFilePathsOrUrls(filePaths...)
-			assert.NotNil(t, err)
-			assert.Equal(t, len(body), 0)
+			require.Error(t, err)
+			assert.Empty(t, body)
 		})
 	}
-}
-
-var yamlStr = `
-containers:
-  - name: main
-    resources:
-      limits:
-        cpu: 1000m
-`
-
-func TestPodSpecPatchMerge(t *testing.T) {
-	tmpl := wfv1.Template{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"cpu\": \"1000m\"}}}]}"}
-	wf := wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
-	merged, err := PodSpecPatchMerge(&wf, &tmpl)
-	assert.NoError(t, err)
-	var spec v1.PodSpec
-	wfv1.MustUnmarshal([]byte(merged), &spec)
-	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
-	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
-
-	tmpl = wfv1.Template{PodSpecPatch: yamlStr}
-	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
-	merged, err = PodSpecPatchMerge(&wf, &tmpl)
-	assert.NoError(t, err)
-	wfv1.MustUnmarshal([]byte(merged), &spec)
-	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
-	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
 }
 
 var suspendedWf = `
@@ -262,30 +243,62 @@ status:
 `
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+	t.Run("Withought user info", func(t *testing.T) {
+		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
-	ctx := context.Background()
-	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	assert.NoError(t, err)
+		ctx := context.Background()
+		_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
+		require.NoError(t, err)
 
-	// will return error as displayName does not match any nodes
-	err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
-	assert.Error(t, err)
+		// will return error as displayName does not match any nodes
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
+		require.Error(t, err)
 
-	// displayName didn't match suspend node so should still be running
-	wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+		// displayName didn't match suspend node so should still be running
+		wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
-	assert.NoError(t, err)
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
+		require.NoError(t, err)
 
-	// displayName matched node so has succeeded
-	wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-	if assert.NoError(t, err) {
+		// displayName matched node so has succeeded
+		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
+		require.NoError(t, err)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-	}
+		assert.Equal(t, "", wf.Status.Nodes.FindByDisplayName("approve").Message)
+	})
+
+	t.Run("With user info", func(t *testing.T) {
+		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+
+		ctx := context.WithValue(context.TODO(), auth.ClaimsKey,
+			&types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"})
+		uim := creator.UserInfoMap(ctx)
+
+		_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		// will return error as displayName does not match any nodes
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
+		require.Error(t, err)
+
+		// displayName didn't match suspend node so should still be running
+		wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+
+		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
+		require.NoError(t, err)
+
+		// displayName matched node so has succeeded
+		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+		assert.Equal(t, fmt.Sprintf("Resumed by: %v", uim), wf.Status.Nodes.FindByDisplayName("approve").Message)
+	})
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
@@ -294,31 +307,31 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// will return error as displayName does not match any nodes
 	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "error occurred")
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// displayName didn't match suspend node so should still be running
 	wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
 	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "error occurred")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// displayName matched node so has succeeded
 	wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
 	origWf.Status = wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded}
 	origWf.Name = "succeeded-wf"
 	_, err = wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "succeeded-wf", "", "")
-	assert.EqualError(t, err, "cannot shutdown a completed workflow")
+	require.EqualError(t, err, "cannot shutdown a completed workflow: workflow: \"succeeded-wf\", namespace: \"\"")
 }
 
 // Regression test for #6478
@@ -453,23 +466,22 @@ func TestUpdateSuspendedNode(t *testing.T) {
 
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	if assert.NoError(t, err) {
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
-		assert.EqualError(t, err, "workflows.argoproj.io \"does-not-exist\" not found")
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
-		assert.EqualError(t, err, "currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
-		assert.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
-		assert.NoError(t, err)
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
-		assert.NoError(t, err)
+	require.NoError(t, err)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+	require.EqualError(t, err, "workflows.argoproj.io \"does-not-exist\" not found")
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+	require.EqualError(t, err, "currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
+	require.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+	require.NoError(t, err)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
+	require.NoError(t, err)
 
-		//make sure global variable was updated
-		wf, err := wfIf.Get(ctx, "suspend-template", metav1.GetOptions{})
-		assert.NoError(t, err)
-		assert.Equal(t, "Hello World 2", wf.Status.Outputs.Parameters[0].Value.String())
-	}
+	// make sure global variable was updated
+	wf, err := wfIf.Get(ctx, "suspend-template", metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "Hello World 2", wf.Status.Outputs.Parameters[0].Value.String())
 
 	noSpaceWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 	noSpaceWf.Name = "suspend-template-no-outputs"
@@ -477,10 +489,9 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	node.Outputs = nil
 	noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"] = node
 	_, err = wfIf.Create(ctx, noSpaceWf, metav1.CreateOptions{})
-	if assert.NoError(t, err) {
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
-		assert.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
-	}
+	require.NoError(t, err)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+	require.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
 }
 
 func TestSelectorMatchesNode(t *testing.T) {
@@ -533,7 +544,7 @@ func TestSelectorMatchesNode(t *testing.T) {
 				},
 			}
 			selector, err := fields.ParseSelector(tc.selector)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			if tc.outcome {
 				assert.True(t, SelectorMatchesNode(selector, node))
 			} else {
@@ -556,28 +567,27 @@ func TestGetNodeType(t *testing.T) {
 
 func TestApplySubmitOpts(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
-		assert.NoError(t, ApplySubmitOpts(&wfv1.Workflow{}, nil))
+		require.NoError(t, ApplySubmitOpts(&wfv1.Workflow{}, nil))
 	})
 	t.Run("InvalidLabels", func(t *testing.T) {
-		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Labels: "a"}))
+		require.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Labels: "a"}))
 	})
 	t.Run("Labels", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1,b=1"})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, wf.GetLabels(), 2)
 	})
 	t.Run("MergeLabels", func(t *testing.T) {
 		wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"a": "0", "b": "0"}}}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1"})
-		assert.NoError(t, err)
-		if assert.Len(t, wf.GetLabels(), 2) {
-			assert.Equal(t, "1", wf.GetLabels()["a"])
-			assert.Equal(t, "0", wf.GetLabels()["b"])
-		}
+		require.NoError(t, err)
+		require.Len(t, wf.GetLabels(), 2)
+		assert.Equal(t, "1", wf.GetLabels()["a"])
+		assert.Equal(t, "0", wf.GetLabels()["b"])
 	})
 	t.Run("InvalidParameters", func(t *testing.T) {
-		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Parameters: []string{"a"}}))
+		require.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Parameters: []string{"a"}}))
 	})
 	t.Run("Parameters", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -588,34 +598,32 @@ func TestApplySubmitOpts(t *testing.T) {
 			},
 		}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=81861780812"}})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
-		if assert.Len(t, parameters, 1) {
-			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", parameters[0].Value.String())
-		}
+		require.Len(t, parameters, 1)
+		assert.Equal(t, "a", parameters[0].Name)
+		assert.Equal(t, "81861780812", parameters[0].Value.String())
 	})
 	t.Run("PodPriorityClassName", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{PodPriorityClassName: "abc"})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "abc", wf.Spec.PodPriorityClassName)
 	})
 }
 
 func TestReadParametersFile(t *testing.T) {
-	file, err := ioutil.TempFile("", "")
-	assert.NoError(t, err)
+	file, err := os.CreateTemp("", "")
+	require.NoError(t, err)
 	defer func() { _ = os.Remove(file.Name()) }()
-	err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
-	assert.NoError(t, err)
+	err = os.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
+	require.NoError(t, err)
 	opts := &wfv1.SubmitOpts{}
 	err = ReadParametersFile(file.Name(), opts)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	parameters := opts.Parameters
-	if assert.Len(t, parameters, 1) {
-		assert.Equal(t, "a=81861780812", parameters[0])
-	}
+	require.Len(t, parameters, 1)
+	assert.Equal(t, "a=81861780812", parameters[0])
 }
 
 func TestFormulateResubmitWorkflow(t *testing.T) {
@@ -640,21 +648,70 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false, nil)
-		if assert.NoError(t, err) {
-			assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
-			assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
-			assert.Contains(t, wf.GetLabels(), common.LabelKeyCronWorkflow)
-			assert.Contains(t, wf.GetLabels(), common.LabelKeyWorkflowTemplate)
-			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
-			assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
-			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
-			assert.NotContains(t, wf.GetLabels(), common.LabelKeyWorkflowArchivingStatus)
-			assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
-			assert.Equal(t, 1, len(wf.OwnerReferences))
-			assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
-			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
+		require.NoError(t, err)
+		assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
+		assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
+		assert.Contains(t, wf.GetLabels(), common.LabelKeyCronWorkflow)
+		assert.Contains(t, wf.GetLabels(), common.LabelKeyWorkflowTemplate)
+		assert.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
+		assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
+		assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
+		assert.NotContains(t, wf.GetLabels(), common.LabelKeyWorkflowArchivingStatus)
+		assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
+		assert.Len(t, wf.OwnerReferences, 1)
+		assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
+		assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
+	})
+	t.Run("OverrideCreatorLabels", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyCreator:                  "xxxx-xxxx-xxxx",
+					common.LabelKeyCreatorEmail:             "foo.at.example.com",
+					common.LabelKeyCreatorPreferredUsername: "foo",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "test",
+						Name:       "testObj",
+					},
+				},
+			},
 		}
+		ctx := context.WithValue(context.Background(), auth.ClaimsKey, &types.Claims{
+			Claims:            jwt.Claims{Subject: "yyyy-yyyy-yyyy-yyyy"},
+			Email:             "bar.at.example.com",
+			PreferredUsername: "bar",
+		})
+		wf, err := FormulateResubmitWorkflow(ctx, wf, false, nil)
+		require.NoError(t, err)
+		assert.Equal(t, "yyyy-yyyy-yyyy-yyyy", wf.Labels[common.LabelKeyCreator])
+		assert.Equal(t, "bar.at.example.com", wf.Labels[common.LabelKeyCreatorEmail])
+		assert.Equal(t, "bar", wf.Labels[common.LabelKeyCreatorPreferredUsername])
+	})
+	t.Run("UnlabelCreatorLabels", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyCreator:                  "xxxx-xxxx-xxxx",
+					common.LabelKeyCreatorEmail:             "foo.at.example.com",
+					common.LabelKeyCreatorPreferredUsername: "foo",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "test",
+						Name:       "testObj",
+					},
+				},
+			},
+		}
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
+		require.NoError(t, err)
+		assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
+		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
+		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorPreferredUsername], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorPreferredUsername)
+
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -664,10 +721,9 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			}},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false, []string{"message=modified"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
-		}
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, []string{"message=modified"})
+		require.NoError(t, err)
+		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 	})
 }
 
@@ -828,13 +884,12 @@ func TestDeepDeleteNodes(t *testing.T) {
 
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	if assert.NoError(t, err) {
-		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
-		assert.NoError(t, err)
-		newWfBytes, err := yaml.Marshal(newWf)
-		assert.NoError(t, err)
-		assert.NotContains(t, string(newWfBytes), "steps-9fkqc-3224593506")
-	}
+	require.NoError(t, err)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	newWfBytes, err := yaml.Marshal(newWf)
+	require.NoError(t, err)
+	assert.NotContains(t, string(newWfBytes), "steps-9fkqc-3224593506")
 }
 
 var exitHandler = `
@@ -861,8 +916,8 @@ spec:
           - python
         resources: {}
         source: |
-          import sys; 
-          exit_code = 1; 
+          import sys;
+          exit_code = 1;
           sys.exit(exit_code)
     - name: handler
       inputs:
@@ -959,20 +1014,19 @@ func TestRetryExitHandler(t *testing.T) {
 
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	if assert.NoError(t, err) {
-		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
-		assert.NoError(t, err)
-		newWfBytes, err := yaml.Marshal(newWf)
-		assert.NoError(t, err)
-		t.Log(string(newWfBytes))
-		assert.NotContains(t, string(newWfBytes), "retry-script-6xt68-3924170365")
-	}
+	require.NoError(t, err)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	newWfBytes, err := yaml.Marshal(newWf)
+	require.NoError(t, err)
+	t.Log(string(newWfBytes))
+	assert.NotContains(t, string(newWfBytes), "retry-script-6xt68-3924170365")
 }
 
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := context.Background()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
-	createdTime := metav1.Time{Time: time.Now().UTC()}
+	createdTime := metav1.Time{Time: time.Now().Add(-1 * time.Second).UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
 	t.Run("Steps", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -993,29 +1047,29 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
-		if assert.NoError(t, err) {
-			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
-			assert.True(t, wf.Status.StartedAt.After(createdTime.Time))
-			assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
-			assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
-			for _, node := range wf.Status.Nodes {
-				switch node.Phase {
-				case wfv1.NodeSucceeded:
-					assert.Equal(t, "succeeded", node.Message)
-					assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-					assert.Equal(t, createdTime, node.StartedAt)
-					assert.Equal(t, finishedTime, node.FinishedAt)
-				case wfv1.NodeFailed:
-					assert.Equal(t, "", node.Message)
-					assert.Equal(t, wfv1.NodeRunning, node.Phase)
-					assert.Equal(t, metav1.Time{}, node.FinishedAt)
-					assert.True(t, node.StartedAt.After(createdTime.Time))
-				}
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+		assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
+		assert.True(t, wf.Status.StartedAt.After(createdTime.Time))
+		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
+		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
+		for _, node := range wf.Status.Nodes {
+			switch node.Phase {
+			case wfv1.NodeSucceeded:
+				assert.Equal(t, "succeeded", node.Message)
+				assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+				assert.Equal(t, createdTime, node.StartedAt)
+				assert.Equal(t, finishedTime, node.FinishedAt)
+			case wfv1.NodeFailed:
+				assert.Equal(t, "", node.Message)
+				assert.Equal(t, wfv1.NodeRunning, node.Phase)
+				assert.Equal(t, metav1.Time{}, node.FinishedAt)
+				assert.True(t, node.StartedAt.After(createdTime.Time))
 			}
 		}
+
 	})
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1030,14 +1084,11 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
-		if assert.NoError(t, err) {
-			if assert.Len(t, wf.Status.Nodes, 1) {
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
-			}
-
-		}
+		require.NoError(t, err)
+		require.Len(t, wf.Status.Nodes, 1)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
 	})
 	t.Run("Skipped and Suspended Nodes", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1065,20 +1116,18 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 				}},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
-		if assert.NoError(t, err) {
-			if assert.Len(t, wf.Status.Nodes, 3) {
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
-				assert.Equal(t, wfv1.Parameter{
-					Name:      "param-1",
-					Value:     nil,
-					ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
-				}, wf.Status.Nodes["suspended"].Outputs.Parameters[0])
-				assert.Equal(t, wfv1.NodeSkipped, wf.Status.Nodes["skipped"].Phase)
-			}
-		}
+		require.NoError(t, err)
+		require.Len(t, wf.Status.Nodes, 3)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
+		assert.Equal(t, wfv1.Parameter{
+			Name:      "param-1",
+			Value:     nil,
+			ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
+		}, wf.Status.Nodes["suspended"].Outputs.Parameters[0])
+		assert.Equal(t, wfv1.NodeSkipped, wf.Status.Nodes["skipped"].Phase)
 	})
 	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1097,17 +1146,15 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
-		if assert.NoError(t, err) {
-			// Node #3, #4 are deleted and will be recreated so only 3 nodes left in wf.Status.Nodes
-			if assert.Len(t, wf.Status.Nodes, 3) {
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
-				// The parent group nodes should be running.
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
-			}
-		}
+		require.NoError(t, err)
+		// Node #3, #4 are deleted and will be recreated so only 3 nodes left in wf.Status.Nodes
+		require.Len(t, wf.Status.Nodes, 3)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+		// The parent group nodes should be running.
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 	})
 	t.Run("Nested DAG without Node Selected", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1126,18 +1173,17 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
-		if assert.NoError(t, err) {
-			// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
-			if assert.Len(t, wf.Status.Nodes, 4) {
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-				assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
-			}
-		}
+		require.NoError(t, err)
+		// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
+		require.Len(t, wf.Status.Nodes, 4)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+		assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
+
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1157,9 +1203,175 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 				}},
 		}
 		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+		require.NoError(t, err)
+		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+
+	})
+
+	t.Run("OverrideParamsSubmitFromWfTmpl", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "override-param-wf",
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+				Parameters: []wfv1.Parameter{
+					{Name: "message", Value: wfv1.AnyStringPtr("default")},
+				},
+			}},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+				},
+				StoredWorkflowSpec: &wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{Name: "message", Value: wfv1.AnyStringPtr("default")},
+					}},
+				}},
 		}
+		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+		require.NoError(t, err)
+		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+		assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
+
+	})
+
+	t.Run("Fail on running workflow", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "running-workflow-1",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowRunning,
+				Nodes: map[string]wfv1.NodeStatus{},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.Error(t, err)
+	})
+
+	t.Run("Fail on pending workflow", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "pending-workflow-1",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowPending,
+				Nodes: map[string]wfv1.NodeStatus{},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.Error(t, err)
+	})
+
+	t.Run("Fail on successful workflow without restartSuccessful and nodeFieldSelector", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "successful-workflow-1",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowSucceeded,
+				Nodes: map[string]wfv1.NodeStatus{
+					"successful-workflow-1": {ID: "successful-workflow-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":                     {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "successful-workflow-1", Children: []string{"2"}},
+					"2":                     {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.Error(t, err)
+	})
+
+	t.Run("Retry successful workflow with restartSuccessful and nodeFieldSelector", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "successful-workflow-2",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowSucceeded,
+				Nodes: map[string]wfv1.NodeStatus{
+					"successful-workflow-2": {ID: "successful-workflow-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":                     {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "successful-workflow-2", Children: []string{"2", "4"}},
+					"2":                     {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
+					"3":                     {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":                     {ID: "4", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=4", nil)
+		require.NoError(t, err)
+		// Node #4 is deleted and will be recreated so only 4 nodes left in wf.Status.Nodes
+		require.Len(t, wf.Status.Nodes, 4)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["successful-workflow-2"].Phase)
+		// The parent group nodes should be running.
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+	})
+
+	t.Run("Retry continue on failed workflow", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "continue-on-failed-workflow",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"continue-on-failed-workflow": {ID: "continue-on-failed-workflow", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"1"}, OutboundNodes: []string{"3", "5"}},
+					"1":                           {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Children: []string{"2", "4"}, Name: "node1"},
+					"2":                           {ID: "2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Children: []string{"3"}, Name: "node2"},
+					"3":                           {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Name: "node3"},
+					"4":                           {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow", Children: []string{"5"}, Name: "node4"},
+					"5":                           {ID: "5", Phase: wfv1.NodeOmitted, Type: wfv1.NodeTypeSkipped, BoundaryID: "continue-on-failed-workflow", Name: "node5"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.NoError(t, err)
+		require.Len(t, wf.Status.Nodes, 4)
+		assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes["2"].Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+		assert.Len(t, podsToDelete, 2)
+	})
+
+	t.Run("Retry continue on failed workflow with restartSuccessful and nodeFieldSelector", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "continue-on-failed-workflow-2",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"continue-on-failed-workflow-2": {ID: "continue-on-failed-workflow-2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"1"}, OutboundNodes: []string{"3", "5"}},
+					"1":                             {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Children: []string{"2", "4"}, Name: "node1"},
+					"2":                             {ID: "2", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Children: []string{"3"}, Name: "node2"},
+					"3":                             {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Name: "node3"},
+					"4":                             {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "continue-on-failed-workflow-2", Children: []string{"5"}, Name: "node4"},
+					"5":                             {ID: "5", Phase: wfv1.NodeOmitted, Type: wfv1.NodeTypeSkipped, BoundaryID: "continue-on-failed-workflow-2", Name: "node5"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
+		require.NoError(t, err)
+		require.Len(t, wf.Status.Nodes, 2)
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["continue-on-failed-workflow-2"].Phase)
+		assert.Len(t, podsToDelete, 4)
 	})
 }
 
@@ -1183,17 +1395,16 @@ spec:
           image: my-image`), un)
 	x := &wfv1.CronWorkflow{}
 	err := FromUnstructuredObj(un, x)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestToUnstructured(t *testing.T) {
 	un, err := ToUnstructured(&wfv1.Workflow{})
-	if assert.NoError(t, err) {
-		gv := un.GetObjectKind().GroupVersionKind()
-		assert.Equal(t, workflow.WorkflowKind, gv.Kind)
-		assert.Equal(t, workflow.Group, gv.Group)
-		assert.Equal(t, workflow.Version, gv.Version)
-	}
+	require.NoError(t, err)
+	gv := un.GetObjectKind().GroupVersionKind()
+	assert.Equal(t, workflow.WorkflowKind, gv.Kind)
+	assert.Equal(t, workflow.Group, gv.Group)
+	assert.Equal(t, workflow.Version, gv.Version)
 }
 
 func TestGetTemplateFromNode(t *testing.T) {
@@ -1703,26 +1914,26 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 
 	// Retry top individual pod node
 	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step1", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 1)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
-	assert.Equal(t, 6, len(podsToDelete))
+	assert.Len(t, podsToDelete, 6)
 
 	// Retry top individual suspend node
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step2", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 3, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 3)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
-	assert.Equal(t, 5, len(podsToDelete))
+	assert.Len(t, podsToDelete, 5)
 
 	// Retry the starting on first DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 12, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 12)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1737,13 +1948,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, 3, len(podsToDelete))
+	assert.Len(t, podsToDelete, 3)
 
 	// Retry the starting on second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 12, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 12)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1758,13 +1969,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, 3, len(podsToDelete))
+	assert.Len(t, podsToDelete, 3)
 
 	// Retry the first individual node (suspended node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 12, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 12)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1779,13 +1990,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, 3, len(podsToDelete))
+	assert.Len(t, podsToDelete, 3)
 
 	// Retry the second individual node (pod node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 12, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 12)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1801,13 +2012,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
 	// The suspended node remains succeeded
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
-	assert.Equal(t, 3, len(podsToDelete))
+	assert.Len(t, podsToDelete, 3)
 
 	// Retry the third individual node (pod node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step3", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 13, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 13)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1824,13 +2035,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	// The suspended node remains succeeded
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
-	assert.Equal(t, 2, len(podsToDelete))
+	assert.Len(t, podsToDelete, 2)
 
 	// Retry the last individual node (suspend node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 15, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 15)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1848,13 +2059,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
-	assert.Equal(t, 1, len(podsToDelete))
+	assert.Len(t, podsToDelete, 1)
 
 	// Retry the node that connects the two branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step4", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 16, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 16)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1871,13 +2082,13 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
-	assert.Equal(t, 1, len(podsToDelete))
+	assert.Len(t, podsToDelete, 1)
 
 	// Retry the last node (failing node)
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step5-tofail", nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 16, len(wf.Status.Nodes))
+	require.NoError(t, err)
+	assert.Len(t, wf.Status.Nodes, 16)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
@@ -1894,5 +2105,5 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
-	assert.Equal(t, 1, len(podsToDelete))
+	assert.Len(t, podsToDelete, 1)
 }

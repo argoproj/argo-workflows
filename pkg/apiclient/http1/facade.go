@@ -3,6 +3,7 @@ package http1
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -25,35 +26,36 @@ type Facade struct {
 	authorization      string
 	insecureSkipVerify bool
 	headers            []string
+	httpClient         *http.Client
 }
 
-func NewFacade(baseUrl, authorization string, insecureSkipVerify bool, headers []string) Facade {
-	return Facade{baseUrl, authorization, insecureSkipVerify, headers}
+func NewFacade(baseUrl, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
+	return Facade{baseUrl, authorization, insecureSkipVerify, headers, httpClient}
 }
 
-func (h Facade) Get(in, out interface{}, path string) error {
-	return h.do(in, out, "GET", path)
+func (h Facade) Get(ctx context.Context, in, out interface{}, path string) error {
+	return h.do(ctx, in, out, "GET", path)
 }
 
-func (h Facade) Put(in, out interface{}, path string) error {
-	return h.do(in, out, "PUT", path)
+func (h Facade) Put(ctx context.Context, in, out interface{}, path string) error {
+	return h.do(ctx, in, out, "PUT", path)
 }
 
-func (h Facade) Post(in, out interface{}, path string) error {
-	return h.do(in, out, "POST", path)
+func (h Facade) Post(ctx context.Context, in, out interface{}, path string) error {
+	return h.do(ctx, in, out, "POST", path)
 }
 
-func (h Facade) Delete(in, out interface{}, path string) error {
-	return h.do(in, out, "DELETE", path)
+func (h Facade) Delete(ctx context.Context, in, out interface{}, path string) error {
+	return h.do(ctx, in, out, "DELETE", path)
 }
 
-func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, error) {
+func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path string) (*bufio.Reader, error) {
 	method := "GET"
 	u, err := h.url(method, path, in)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -65,12 +67,15 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: h.insecureSkipVerify,
+	client := h.httpClient
+	if h.httpClient == nil {
+		client = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: h.insecureSkipVerify,
+				},
 			},
-		},
+		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -78,12 +83,13 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	}
 	err = errFromResponse(resp)
 	if err != nil {
+		resp.Body.Close()
 		return nil, err
 	}
 	return bufio.NewReader(resp.Body), nil
 }
 
-func (h Facade) do(in interface{}, out interface{}, method string, path string) error {
+func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method string, path string) error {
 	var data []byte
 	if method != "GET" {
 		var err error
@@ -96,7 +102,7 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(method, u.String(), bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, method, u.String(), bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
@@ -107,13 +113,16 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: h.insecureSkipVerify,
+	client := h.httpClient
+	if h.httpClient == nil {
+		client = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: h.insecureSkipVerify,
+				},
+				DisableKeepAlives: true,
 			},
-			DisableKeepAlives: true,
-		},
+		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -155,7 +164,7 @@ func errFromResponse(r *http.Response) error {
 		Message string     `json:"message"`
 	}{}
 	if err := json.NewDecoder(r.Body).Decode(x); err == nil {
-		return status.Errorf(x.Code, x.Message)
+		return status.Error(x.Code, x.Message)
 	}
 	return status.Error(codes.Internal, fmt.Sprintf(": %v", r))
 }

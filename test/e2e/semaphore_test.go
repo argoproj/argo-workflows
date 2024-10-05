@@ -1,5 +1,4 @@
 //go:build functional
-// +build functional
 
 package e2e
 
@@ -29,8 +28,8 @@ func (s *SemaphoreSuite) TestSynchronizationWfLevelMutex() {
 		Workflow("@functional/synchronization-mutex-wf-level.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, time.Minute).
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, 90*time.Second).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
 }
 
 func (s *SemaphoreSuite) TestTemplateLevelMutex() {
@@ -38,8 +37,8 @@ func (s *SemaphoreSuite) TestTemplateLevelMutex() {
 		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, time.Minute).
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
+		WaitForWorkflow(fixtures.ToBeWaitingOnAMutex, 90*time.Second).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
 }
 
 func (s *SemaphoreSuite) TestWorkflowLevelSemaphore() {
@@ -48,12 +47,12 @@ func (s *SemaphoreSuite) TestWorkflowLevelSemaphore() {
 		When().
 		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHavePhase(wfv1.WorkflowUnknown), time.Minute).
+		WaitForWorkflow(fixtures.ToHavePhase(wfv1.WorkflowUnknown), 90*time.Second).
 		WaitForWorkflow().
 		DeleteConfigMap("my-config").
 		Then().
 		When().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
 }
 
 func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
@@ -62,7 +61,7 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 		When().
 		CreateConfigMap("my-config", map[string]string{"template": "1"}, map[string]string{}).
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning, time.Minute).
+		WaitForWorkflow(fixtures.ToBeRunning, 90*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.True(t, status.Nodes.Any(func(n wfv1.NodeStatus) bool {
@@ -70,7 +69,7 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 			}))
 		}).
 		When().
-		WaitForWorkflow(time.Minute)
+		WaitForWorkflow(time.Second * 90)
 }
 
 func (s *SemaphoreSuite) TestSynchronizationTmplLevelMutexAndSemaphore() {
@@ -79,7 +78,26 @@ func (s *SemaphoreSuite) TestSynchronizationTmplLevelMutexAndSemaphore() {
 		When().
 		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
+}
+
+func (s *SemaphoreSuite) TestSynchronizationMultiple() {
+	s.Given().
+		Workflow("@functional/synchronization-multiple.yaml").
+		When().
+		CreateConfigMap("my-config", map[string]string{"workflow": "2"}, map[string]string{}).
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
+}
+
+// Legacy CRD entries: mutex and semaphore
+func (s *SemaphoreSuite) TestSynchronizationLegacyMutexAndSemaphore() {
+	s.Given().
+		Workflow("@functional/synchronization-legacy-mutex-semaphore.yaml").
+		When().
+		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
 }
 
 func TestSemaphoreSuite(t *testing.T) {

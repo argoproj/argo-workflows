@@ -16,6 +16,7 @@
         line-height: 24px;
         display: inline-block;
         vertical-align: middle;
+        overflow-x: auto !important; // override `.workflow-details__atribute-grid pre` selector
     }
 
     &__artifact-details span {
@@ -61,7 +62,7 @@
         span {
             color: $argo-color-teal-5;
         }
-        
+
         i {
             float: right;
             font-size: 1.5em;

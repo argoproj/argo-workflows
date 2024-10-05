@@ -4,11 +4,12 @@ import (
 	"archive/tar"
 	"bytes"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
 )
@@ -16,7 +17,7 @@ import (
 // TestCompressContentString ensures compressing then decompressing a content string works as expected
 func TestCompressContentString(t *testing.T) {
 	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
-		_ = os.Setenv(file.GZipImplEnvVarKey, gzipImpl)
+		t.Setenv(file.GZipImplEnvVarKey, gzipImpl)
 		content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"name\":\"pod-limits-rrdm8[0]." +
 			"run-pod(0:0)\",\"displayName\":\"run-pod(0:0)\",\"type\":\"Pod\",\"templateName\":\"run-pod\",\"phase\":" +
 			"\"Succeeded\",\"boundaryID\":\"pod-limits-rrdm8\",\"startedAt\":\"2019-03-07T19:14:50Z\",\"finishedAt\":" +
@@ -28,24 +29,22 @@ func TestCompressContentString(t *testing.T) {
 
 		assert.Equal(t, content, resultString)
 	}
-	_ = os.Unsetenv(file.GZipImplEnvVarKey)
 }
 
 // TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.
 func TestGetGzipReader(t *testing.T) {
 	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
-		_ = os.Setenv(file.GZipImplEnvVarKey, gzipImpl)
+		t.Setenv(file.GZipImplEnvVarKey, gzipImpl)
 		rawContent := "this is the content"
 		content := file.CompressEncodeString(rawContent)
 		buf, err := base64.StdEncoding.DecodeString(content)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		bufReader := bytes.NewReader(buf)
 		reader, err := file.GetGzipReader(bufReader)
-		assert.NoError(t, err)
-		res, err := ioutil.ReadAll(reader)
-		assert.NoError(t, err)
+		require.NoError(t, err)
+		res, err := io.ReadAll(reader)
+		require.NoError(t, err)
 		assert.Equal(t, rawContent, string(res))
-		_ = os.Unsetenv(file.GZipImplEnvVarKey)
 	}
 }
 
@@ -65,12 +64,13 @@ func TestExistsInTar(t *testing.T) {
 			}
 			hdr := tar.Header{Name: f.name, Mode: int64(mode), Size: int64(len(f.body))}
 			err := writer.WriteHeader(&hdr)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = writer.Write([]byte(f.body))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 		err := writer.Close()
-		assert.NoError(t, err)
+		require.NoError(t, err)
+
 		return tar.NewReader(&buf)
 	}
 
@@ -134,7 +134,6 @@ func TestExistsInTar(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		tc := tc
 		t.Run("source path "+tc.sourcePath, func(t *testing.T) {
 			t.Parallel()
 			tarReader := newTarReader(t, tc.files)

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/go-sql-driver/mysql"
-	"upper.io/db.v3"
+	"github.com/upper/db/v4"
 )
 
 type dbType string
@@ -12,9 +12,10 @@ type dbType string
 const (
 	MySQL    dbType = "mysql"
 	Postgres dbType = "postgres"
+	SQLite   dbType = "sqlite"
 )
 
-func dbTypeFor(session db.Database) dbType {
+func dbTypeFor(session db.Session) dbType {
 	switch session.Driver().(*sql.DB).Driver().(type) {
 	case *mysql.MySQLDriver:
 		return MySQL

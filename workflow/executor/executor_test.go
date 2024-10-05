@@ -4,18 +4,19 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -26,6 +27,7 @@ import (
 const (
 	fakePodName       = "fake-test-pod-1234567890"
 	fakeWorkflow      = "my-wf"
+	fakeWorkflowUID   = "my-wf-uid"
 	fakePodUID        = "my-pod-uid"
 	fakeNodeID        = "my-node-id"
 	fakeNamespace     = "default"
@@ -78,7 +80,7 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 				},
 			}
 			err := we.LoadArtifacts(context.Background())
-			assert.EqualError(t, err, test.error)
+			require.EqualError(t, err, test.error)
 		})
 	}
 }
@@ -109,7 +111,7 @@ func TestSaveParameters(t *testing.T) {
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
 }
 
@@ -196,8 +198,8 @@ func TestDefaultParameters(t *testing.T) {
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
-	assert.NoError(t, err)
-	assert.Equal(t, we.Template.Outputs.Parameters[0].Value.String(), "Default Value")
+	require.NoError(t, err)
+	assert.Equal(t, "Default Value", we.Template.Outputs.Parameters[0].Value.String())
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
@@ -227,11 +229,15 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 
 	ctx := context.Background()
 	err := we.SaveParameters(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "", we.Template.Outputs.Parameters[0].Value.String())
 }
 
 func TestIsTarball(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// TODO: fix this test in windows
+		t.Skip("test not working in windows - temp disable")
+	}
 	tests := []struct {
 		path      string
 		isTarball bool
@@ -249,30 +255,34 @@ func TestIsTarball(t *testing.T) {
 	for _, test := range tests {
 		ok, err := isTarball(test.path)
 		if test.expectErr {
-			assert.Error(t, err, test.path)
+			require.Error(t, err, test.path)
 		} else {
-			assert.NoError(t, err, test.path)
+			require.NoError(t, err, test.path)
 		}
 		assert.Equal(t, test.isTarball, ok, test.path)
 	}
 }
 
 func TestUnzip(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// TODO: fix this test in windows
+		t.Skip("test not working in windows - temp disable")
+	}
 	zipPath := "testdata/file.zip"
 	destPath := "testdata/unzippedFile"
 
 	// test
 	err := unzip(zipPath, destPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// check unzipped file
 	fileInfo, err := os.Stat(destPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, fileInfo.Mode().IsRegular())
 
 	// cleanup
 	err = os.Remove(destPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestUntar(t *testing.T) {
@@ -280,32 +290,46 @@ func TestUntar(t *testing.T) {
 	destPath := "testdata/untarredDir"
 	filePath := "testdata/untarredDir/file"
 	linkPath := "testdata/untarredDir/link"
+	emptyDirPath := "testdata/untarredDir/empty-dir"
 
 	// test
 	err := untar(tarPath, destPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// check untarred contents
 	fileInfo, err := os.Stat(destPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, fileInfo.Mode().IsDir())
 	fileInfo, err = os.Stat(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, fileInfo.Mode().IsRegular())
+	dirInfo, err := os.Stat(destPath)
+	require.NoError(t, err)
+	// check that the modification time of the file is retained
+	assert.True(t, fileInfo.ModTime().Before(dirInfo.ModTime()))
 	fileInfo, err = os.Stat(linkPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, fileInfo.Mode().IsRegular())
+	fileInfo, err = os.Stat(emptyDirPath)
+	require.NoError(t, err)
+	assert.True(t, fileInfo.Mode().IsDir())
 
 	// cleanup
 	err = os.Remove(linkPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = os.Remove(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	err = os.Remove(emptyDirPath)
+	require.NoError(t, err)
 	err = os.Remove(destPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestChmod(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod does not work in windows")
+	}
+
 	type perm struct {
 		dir  string
 		file string
@@ -338,21 +362,21 @@ func TestChmod(t *testing.T) {
 		// Setup directory and file for testing
 		tempDir := t.TempDir()
 
-		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
-		assert.NoError(t, err)
+		tempFile, err := os.CreateTemp(tempDir, "chmod-file-test")
+		require.NoError(t, err)
 
 		// Run chmod function
 		err = chmod(tempDir, test.mode, test.recurse)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Check directory mode if set
 		dirPermission, err := os.Stat(tempDir)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, dirPermission.Mode().String(), test.permissions.dir)
 
 		// Check file mode mode if set
 		filePermission, err := os.Stat(tempFile.Name())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
 	}
 }
@@ -360,12 +384,13 @@ func TestChmod(t *testing.T) {
 func TestSaveArtifacts(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	templateWithOutParam := wfv1.Template{
 		Inputs: wfv1.Inputs{
 			Artifacts: []wfv1.Artifact{
 				{
 					Name: "samedir",
-					Path: "/samedir",
+					Path: string(os.PathSeparator) + "samedir",
 				},
 			},
 		},
@@ -373,7 +398,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name:     "samedir",
-					Path:     "/samedir",
+					Path:     string(os.PathSeparator) + "samedir",
 					Optional: true,
 				},
 			},
@@ -384,7 +409,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name: "samedir",
-					Path: "/samedir",
+					Path: string(os.PathSeparator) + "samedir",
 				},
 			},
 		},
@@ -392,7 +417,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name:     "samedir",
-					Path:     "/samedir",
+					Path:     string(os.PathSeparator) + "samedir",
 					Optional: false,
 				},
 			},
@@ -403,7 +428,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name: "samedir",
-					Path: "/samedir",
+					Path: string(os.PathSeparator) + "samedir",
 				},
 			},
 		},
@@ -411,7 +436,7 @@ func TestSaveArtifacts(t *testing.T) {
 			Artifacts: []wfv1.Artifact{
 				{
 					Name:     "samedir",
-					Path:     "/samedir",
+					Path:     string(os.PathSeparator) + "samedir",
 					Optional: true,
 					Archive: &wfv1.ArchiveStrategy{
 						Zip: &wfv1.ZipStrategy{},
@@ -426,31 +451,34 @@ func TestSaveArtifacts(t *testing.T) {
 	}{
 		{
 			workflowExecutor: WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        templateWithOutParam,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
+				PodName:          fakePodName,
+				Template:         templateWithOutParam,
+				ClientSet:        fakeClientset,
+				Namespace:        fakeNamespace,
+				RuntimeExecutor:  &mockRuntimeExecutor,
+				taskResultClient: mockTaskResultClient,
 			},
 			expectError: false,
 		},
 		{
 			workflowExecutor: WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        templateOptionFalse,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
+				PodName:          fakePodName,
+				Template:         templateOptionFalse,
+				ClientSet:        fakeClientset,
+				Namespace:        fakeNamespace,
+				RuntimeExecutor:  &mockRuntimeExecutor,
+				taskResultClient: mockTaskResultClient,
 			},
 			expectError: true,
 		},
 		{
 			workflowExecutor: WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        templateZipArchive,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
+				PodName:          fakePodName,
+				Template:         templateZipArchive,
+				ClientSet:        fakeClientset,
+				Namespace:        fakeNamespace,
+				RuntimeExecutor:  &mockRuntimeExecutor,
+				taskResultClient: mockTaskResultClient,
 			},
 			expectError: false,
 		},
@@ -458,12 +486,12 @@ func TestSaveArtifacts(t *testing.T) {
 
 	for _, tt := range tests {
 		ctx := context.Background()
-		err := tt.workflowExecutor.SaveArtifacts(ctx)
+		_, err := tt.workflowExecutor.SaveArtifacts(ctx)
 		if err != nil {
-			assert.Equal(t, tt.expectError, true)
+			assert.True(t, tt.expectError)
 			continue
 		}
-		assert.Equal(t, tt.expectError, false)
+		assert.False(t, tt.expectError)
 	}
 }
 
@@ -488,6 +516,7 @@ func TestMonitorProgress(t *testing.T) {
 		fakePodName,
 		fakePodUID,
 		fakeWorkflow,
+		fakeWorkflowUID,
 		fakeNodeID,
 		fakeNamespace,
 		&mocks.ContainerRuntimeExecutor{},
@@ -501,26 +530,25 @@ func TestMonitorProgress(t *testing.T) {
 	go we.monitorProgress(ctx, progressFile)
 
 	err := os.WriteFile(progressFile, []byte("100/100\n"), os.ModePerm)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	time.Sleep(time.Second)
 
 	result, err := taskResults.Get(ctx, fakeNodeID, metav1.GetOptions{})
-	if assert.NoError(t, err) {
-		assert.Equal(t, fakeWorkflow, result.Labels[common.LabelKeyWorkflow])
-		assert.Len(t, result.OwnerReferences, 1)
-		assert.Equal(t, wfv1.Progress("100/100"), result.Progress)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, fakeWorkflow, result.Labels[common.LabelKeyWorkflow])
+	assert.Len(t, result.OwnerReferences, 1)
+	assert.Equal(t, wfv1.Progress("100/100"), result.Progress)
 }
 
 func TestSaveLogs(t *testing.T) {
-	const artStorageError = "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/"
+	const artStorageError = "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/"
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	mockRuntimeExecutor.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).Return(io.NopCloser(strings.NewReader("hello world")), nil)
 	t.Run("Simple Pod node", func(t *testing.T) {
 		templateWithArchiveLogs := wfv1.Template{
 			ArchiveLocation: &wfv1.ArtifactLocation{
-				ArchiveLogs: pointer.BoolPtr(true),
+				ArchiveLogs: ptr.To(true),
 			},
 		}
 		we := WorkflowExecutor{
@@ -529,7 +557,39 @@ func TestSaveLogs(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		we.SaveLogs(ctx)
-		assert.EqualError(t, we.errors[0], artStorageError)
+		logArtifacts := we.SaveLogs(ctx)
+
+		require.EqualError(t, we.errors[0], artStorageError)
+		assert.Empty(t, logArtifacts)
 	})
+}
+
+func TestReportOutputs(t *testing.T) {
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	t.Run("Simple report output", func(t *testing.T) {
+		artifacts := []wfv1.Artifact{
+			{
+				Name: "samedir",
+				Path: "/samedir",
+			},
+		}
+		templateWithArtifacts := wfv1.Template{
+			Inputs: wfv1.Inputs{
+				Artifacts: artifacts,
+			},
+		}
+		we := WorkflowExecutor{
+			Template:         templateWithArtifacts,
+			RuntimeExecutor:  &mockRuntimeExecutor,
+			taskResultClient: mockTaskResultClient,
+		}
+
+		ctx := context.Background()
+		err := we.ReportOutputs(ctx, artifacts)
+
+		require.NoError(t, err)
+		assert.Empty(t, we.errors)
+	})
+
 }

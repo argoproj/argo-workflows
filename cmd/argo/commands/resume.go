@@ -1,8 +1,8 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
@@ -20,22 +20,40 @@ func NewResumeCommand() *cobra.Command {
 
 	command := &cobra.Command{
 		Use:   "resume WORKFLOW1 WORKFLOW2...",
-		Short: "resume zero or more workflows",
-		Example: `# Resume a workflow that has been stopped or suspended:
+		Short: "resume zero or more workflows (opposite of suspend)",
+		Example: `# Resume a workflow that has been suspended:
 
   argo resume my-wf
 
+# Resume multiple workflows:
+		
+  argo resume my-wf my-other-wf my-third-wf		
+		
 # Resume the latest workflow:
+		
   argo resume @latest
+		
+# Resume multiple workflows by node field selector:
+		
+  argo resume --node-field-selector inputs.paramaters.myparam.value=abc		
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 && resumeArgs.nodeFieldSelector == "" {
+				return errors.New("requires either node field selector or workflow")
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
 			selector, err := fields.ParseSelector(resumeArgs.nodeFieldSelector)
 			if err != nil {
-				log.Fatalf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
+				return fmt.Errorf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
 			}
 
 			for _, wfName := range args {
@@ -45,10 +63,11 @@ func NewResumeCommand() *cobra.Command {
 					NodeFieldSelector: selector.String(),
 				})
 				if err != nil {
-					log.Fatalf("Failed to resume %s: %+v", wfName, err)
+					return fmt.Errorf("Failed to resume %s: %+v", wfName, err)
 				}
 				fmt.Printf("workflow %s resumed\n", wfName)
 			}
+			return nil
 		},
 	}
 	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")

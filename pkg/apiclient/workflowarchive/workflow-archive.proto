@@ -15,6 +15,7 @@ message ListArchivedWorkflowsRequest {
 message GetArchivedWorkflowRequest {
   string uid = 1;
   string namespace = 2;
+  string name = 3;
 }
 message DeleteArchivedWorkflowRequest {
   string uid = 1;

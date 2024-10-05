@@ -1,0 +1,78 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: loop-fail-3
+spec:
+  entrypoint: constrained-loops-with-volumes
+  parallelism: 1
+  volumeClaimTemplates:
+  - metadata:
+      name: one
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  - metadata:
+      name: two
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  
+  
+  templates:
+  - name: constrained-loops-with-volumes
+    steps:
+    - - name: write-and-read-msg-from-pvc
+        template: write-and-read-msg-from-pvc
+        arguments:
+          parameters:
+          - name: pvc
+            value: '{{item}}'
+        withItems: 
+          - one
+          - two
+  - name: write-and-read-msg-from-pvc
+    inputs:
+      parameters:
+      - name: pvc
+    steps:
+    - - name: write-msg
+        template: write-msg
+        arguments:
+          parameters:
+          - name: pvc
+            value: '{{inputs.parameters.pvc}}'        
+    - - name: read-msg
+        template: read-msg
+        arguments:
+          parameters:
+          - name: pvc
+            value: '{{inputs.parameters.pvc}}'
+  - name: write-msg
+    inputs:
+      parameters:
+      - name: pvc
+    script:
+      image: busybox:stable
+      command: ["sh"]
+      source: | 
+        echo "Hello! i'm writing to pvc; '{{inputs.parameters.pvc}}'" >> /pvc/msg
+      volumeMounts:
+      - name: '{{inputs.parameters.pvc}}'
+        mountPath: /pvc
+  - name: read-msg
+    inputs:
+      parameters:
+      - name: pvc
+    script:
+      image: busybox:stable
+      command: ["sh"]
+      source: | 
+        echo "Found the following message;"
+        cat /pvc/msg
+      volumeMounts:
+      - name: '{{inputs.parameters.pvc}}'
+        mountPath: /pvc

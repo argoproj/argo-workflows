@@ -3,7 +3,7 @@
 delete workflows
 
 ```
-argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ] [flags]
+argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] [--status STATUS] ] [flags]
 ```
 
 ### Examples
@@ -31,14 +31,16 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
   -h, --help                    help for delete
       --older string            Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
       --prefix string           Delete workflows by prefix
+      --query-chunk-size int    Run the list query in chunks (deletes will still be executed individually)
       --resubmitted             Delete resubmitted workflows
   -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+      --status strings          Delete by status (comma separated)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
@@ -49,6 +51,7 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
+      --disable-compression            If true, opt-out of response compression for all requests to the server
       --gloglevel int                  Set the glog logging level
   -H, --header strings                 Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure

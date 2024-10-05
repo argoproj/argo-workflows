@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -24,7 +24,7 @@ spec:
     steps:
     - - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -33,7 +33,7 @@ spec:
         template: whalesay
     - - name: leafB
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -92,7 +92,7 @@ spec:
       tasks:
       - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -102,7 +102,7 @@ spec:
       - name: leafB
         dependencies: [leafA]
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -160,7 +160,7 @@ spec:
     steps:
     - - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               artifacts:
@@ -209,6 +209,7 @@ func TestStepsOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
@@ -235,7 +236,7 @@ spec:
       tasks:
       - name: leafA
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               artifacts:
@@ -283,6 +284,7 @@ func TestDAGOnExitTmplWithArt(t *testing.T) {
 				},
 			}
 			woc.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
@@ -312,7 +314,7 @@ spec:
         template: whalesay
     - - name: leafB
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -354,7 +356,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: pointer.StringPtr("ok"), Parameters: []wfv1.Parameter{{}}}))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
@@ -383,6 +385,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 				},
 			}
 			woc2.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 
@@ -416,7 +419,7 @@ spec:
       - name: leafB
         dependencies: [leafA]
         hooks:
-          exit: 
+          exit:
             template: exitContainer
             arguments:
               parameters:
@@ -458,7 +461,7 @@ func TestDAGOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Parameters: []wfv1.Parameter{{}}}))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
@@ -487,6 +490,7 @@ func TestDAGOnExit(t *testing.T) {
 				},
 			}
 			woc2.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
 	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
@@ -746,16 +750,14 @@ func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Len(t, taskSets.Items, 0)
-	}
+	require.NoError(t, err)
+	assert.Empty(t, taskSets.Items)
 	woc.operate(ctx)
 
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 	taskSets, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Len(t, taskSets.Items, 1)
-	}
+	require.NoError(t, err)
+	assert.Len(t, taskSets.Items, 1)
 }
 
 var testWorkflowOnExitStepsHttpReconciliation = `apiVersion: argoproj.io/v1alpha1
@@ -824,8 +826,6 @@ status:
       type: Steps
     hello-world-647r7-1045616760:
       boundaryID: hello-world-647r7-206029318
-      children:
-      - hello-world-647r7-370991976
       displayName: '[0]'
       finishedAt: null
       id: hello-world-647r7-1045616760
@@ -848,17 +848,15 @@ func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Len(t, taskSets.Items, 0)
-	}
+	require.NoError(t, err)
+	assert.Empty(t, taskSets.Items)
 
 	woc.operate(ctx)
 
 	assert.Len(t, woc.wf.Status.Nodes, 4)
 	taskSets, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Len(t, taskSets.Items, 1)
-	}
+	require.NoError(t, err)
+	assert.Len(t, taskSets.Items, 1)
 }
 
 func TestWorkflowOnExitWorkflowStatus(t *testing.T) {
@@ -993,9 +991,79 @@ status:
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
-	if assert.NoError(t, err) {
-		assert.Len(t, taskSets.Items, 0)
-	}
+	require.NoError(t, err)
+	assert.Empty(t, taskSets.Items)
 	woc.operate(ctx)
-	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowRunning)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+func TestStepsTemplateOnExitStatusArgument(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: lifecycle-hook-tmpl-level-
+  labels:
+    test: test
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: main
+            template: echo
+            hooks:
+              exit:
+                template: hook
+                arguments:
+                  parameters:
+                    - name: status
+                      value: "{{steps.main.status}}"
+    - name: echo
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["echo hi"]
+    - name: hook
+      inputs:
+        parameters:
+          - name: status
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.status}}"]
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	var hasExitNode bool
+	var exitNodeName string
+
+	for _, node := range woc.wf.Status.Nodes {
+		if node.IsExitNode() {
+			hasExitNode = true
+			exitNodeName = node.DisplayName
+			break
+		}
+	}
+
+	assert.True(t, hasExitNode)
+	assert.NotEmpty(t, exitNodeName)
+
+	hookNode := woc.wf.Status.Nodes.FindByDisplayName(exitNodeName)
+
+	require.NotNil(t, hookNode)
+	assert.NotNil(t, hookNode.Inputs)
+	require.Len(t, hookNode.Inputs.Parameters, 1)
+	assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
+	assert.Equal(t, hookNode.Inputs.Parameters[0].Value.String(), string(apiv1.PodFailed))
 }

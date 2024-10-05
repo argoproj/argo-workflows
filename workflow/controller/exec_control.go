@@ -21,12 +21,13 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 
 	nodeID := woc.nodeID(pod)
 	wfNodesLock.RLock()
-	node, ok := woc.wf.Status.Nodes[nodeID]
+	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	wfNodesLock.RUnlock()
-	if !ok {
+	if err != nil {
+		woc.log.Errorf("was unable to obtain node for %s", nodeID)
 		return
 	}
-	//node is already completed
+	// node is already completed
 	if node.Fulfilled() {
 		return
 	}
@@ -79,14 +80,23 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 	wfNodesLock.Lock()
 	defer wfNodesLock.Unlock()
 
-	node := woc.wf.Status.Nodes[nodeID]
+	node, err := woc.wf.Status.Nodes.Get(nodeID)
+	if err != nil {
+		woc.log.Errorf("was not abble to obtain node for %s", nodeID)
+		return
+	}
 	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg)
+
+	children, err := woc.wf.Status.Nodes.NestedChildrenStatus(nodeID)
+	if err != nil {
+		woc.log.Errorf("was not able to obtain children: %s", err)
+		return
+	}
 
 	// if node is a pod created from ContainerSet template
 	// then need to fail child nodes so they will not hang in Pending after pod deletion
-	for _, nodeID := range node.Children {
-		child := woc.wf.Status.Nodes[nodeID]
-		if !child.IsExitNode() && !child.Fulfilled() {
+	for _, child := range children {
+		if !child.Fulfilled() {
 			woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg)
 		}
 	}
@@ -94,7 +104,9 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
 func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
-	woc.log.Infof("Checking daemoned children of %s", nodeID)
+	if nodeID != "" {
+		woc.log.Debugf("Checking daemoned children of %s", nodeID)
+	}
 	for _, childNode := range woc.wf.Status.Nodes {
 		if childNode.BoundaryID != nodeID {
 			continue
@@ -102,11 +114,11 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if !childNode.IsDaemoned() {
 			continue
 		}
-		podName := util.GeneratePodName(woc.wf.Name, childNode.Name, childNode.TemplateName, childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
+		podName := util.GeneratePodName(woc.wf.Name, childNode.Name, util.GetTemplateFromNode(childNode), childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, terminateContainers)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
-		woc.wf.Status.Nodes[childNode.ID] = childNode
+		woc.wf.Status.Nodes.Set(childNode.ID, childNode)
 		woc.updated = true
 	}
 }

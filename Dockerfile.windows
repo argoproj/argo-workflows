@@ -4,11 +4,14 @@
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
 
-ARG IMAGE_OS_VERSION=1809
+ARG IMAGE_OS_VERSION=ltsc2022-amd64
+ARG GIT_COMMIT=unknown
+ARG GIT_TAG=unknown
+ARG GIT_TREE_STATE=unknown
 
 # had issues with official golange image for windows so I'm using plain servercore
 FROM mcr.microsoft.com/windows/servercore:${IMAGE_OS_VERSION} as builder
-ENV GOLANG_VERSION=1.19
+ENV GOLANG_VERSION=1.23
 SHELL ["powershell", "-Command"]
 
 # install chocolatey package manager
@@ -39,13 +42,15 @@ RUN SETX /m path C:\app;%path%
 ####################################################################################################
 FROM builder as argo-build
 
+ARG GIT_COMMIT
+ARG GIT_TAG
+ARG GIT_TREE_STATE
+
 # Perform the build
 WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
 COPY . .
-# check we can use Git
-RUN git rev-parse HEAD
 # run in git bash for all the shell commands in Makefile to work
-RUN bash -c 'make dist/argoexec'
+RUN bash -c 'make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE} HACK_PKG_FILES_AS_PKGS=true'
 
 ####################################################################################################
 # argoexec

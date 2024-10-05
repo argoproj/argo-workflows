@@ -5,7 +5,7 @@
 #   localhost:9091/graph
 #
 # Note: this assumes the workflow-controller is emitting metrics in the default port (9090). This will need to
-# be modified if the default is overriden.
+# be modified if the default is overridden.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

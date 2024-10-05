@@ -4,6 +4,5 @@ kind: Kustomization
 resources:
   - ../base
 
-patchesStrategicMerge:
-  - overlays/workflow-controller-configmap.yaml
-
+patches:
+  - path: overlays/workflow-controller-configmap.yaml

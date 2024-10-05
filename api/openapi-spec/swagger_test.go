@@ -2,7 +2,7 @@ package openapi_spec
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +12,7 @@ type obj = map[string]interface{}
 
 func TestSwagger(t *testing.T) {
 	swagger := obj{}
-	data, err := ioutil.ReadFile("swagger.json")
+	data, err := os.ReadFile("swagger.json")
 	if err != nil {
 		panic(err)
 	}
@@ -87,13 +87,13 @@ func TestSwagger(t *testing.T) {
 		assert.Contains(t, required, "image")
 		assert.NotContains(t, required, "name")
 	})
-	// this test makes sure we can deal with an instance where we are wrong vs Kuberenetes
+	// this test makes sure we can deal with an instance where we are wrong vs Kubernetes
 	t.Run("io.k8s.api.core.v1.SecretKeySelector", func(t *testing.T) {
 		definition := definitions["io.k8s.api.core.v1.SecretKeySelector"].(obj)
 		properties := definition["properties"]
 		assert.Contains(t, properties, "name")
 	})
-	// this test makes sure we can deal with an instance where we are wrong vs Kuberenetes
+	// this test makes sure we can deal with an instance where we are wrong vs Kubernetes
 	t.Run("io.k8s.api.core.v1.Volume", func(t *testing.T) {
 		definition := definitions["io.k8s.api.core.v1.Volume"].(obj)
 		properties := definition["properties"]

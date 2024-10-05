@@ -7,7 +7,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/klauspost/pgzip"
@@ -15,7 +16,14 @@ import (
 	"k8s.io/utils/env"
 )
 
-var gzipImpl = env.GetString(GZipImplEnvVarKey, PGZIP)
+var (
+	gzipImpl    = env.GetString(GZipImplEnvVarKey, PGZIP)
+	manifestExt = map[string]bool{
+		".yaml": true,
+		".yml":  true,
+		".json": true,
+	}
+)
 
 const (
 	GZipImplEnvVarKey = "GZIP_IMPLEMENTATION"
@@ -117,5 +125,42 @@ func DecompressContent(content []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to decompress: %w", err)
 	}
 	defer close(gzipReader)
-	return ioutil.ReadAll(gzipReader)
+	return io.ReadAll(gzipReader)
+}
+
+// WalkManifests is based on filepath.Walk but will only walk through Kubernetes manifests
+func WalkManifests(root string, fn func(path string, data []byte) error) error {
+	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		var r io.Reader
+		switch {
+		case path == "-":
+			path = "stdin"
+			r = os.Stdin
+		case err != nil:
+			return err
+		case strings.HasPrefix(path, "/dev/") || manifestExt[filepath.Ext(path)]:
+			f, err := os.Open(filepath.Clean(path))
+			if err != nil {
+				return err
+			}
+			defer func() {
+				if err := f.Close(); err != nil {
+					log.Fatalf("Error closing file[%s]: %v", path, err)
+				}
+			}()
+			r = f
+		case info.IsDir():
+			return nil // skip
+		default:
+			log.Debugf("ignoring file with unknown extension: %s", path)
+			return nil
+		}
+
+		bytes, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+
+		return fn(path, bytes)
+	})
 }

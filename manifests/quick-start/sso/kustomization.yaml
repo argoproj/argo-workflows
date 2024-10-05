@@ -5,6 +5,6 @@ resources:
   - ../base
   - dex
 
-patchesStrategicMerge:
-  - overlays/workflow-controller-configmap.yaml
-  - overlays/argo-server-sa.yaml
+patches:
+  - path: overlays/workflow-controller-configmap.yaml
+  - path: overlays/argo-server-sa.yaml

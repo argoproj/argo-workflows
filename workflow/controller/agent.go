@@ -11,13 +11,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func (woc *wfOperationCtx) getAgentPodName() string {
@@ -39,21 +40,21 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 	}
 	// Check Pod is just created
 	if pod.Status.Phase != "" {
-		woc.updateAgentPodStatus(ctx, pod)
+		woc.updateAgentPodStatus(pod)
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
+func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
 	woc.log.Info("updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(pod)
-	if newPhase == wfv1.WorkflowFailed || newPhase == wfv1.WorkflowError {
-		woc.markWorkflowError(ctx, fmt.Errorf("agent pod failed with reason %s", message))
+	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
+		woc.markTaskSetNodesError(fmt.Errorf(`agent pod failed with reason:"%s"`, message))
 	}
 }
 
-func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
-	var newPhase wfv1.WorkflowPhase
+func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.NodePhase, string) {
+	var newPhase wfv1.NodePhase
 	var message string
 	log.WithField("namespace", pod.Namespace).
 		WithField("podName", pod.Name).
@@ -62,10 +63,10 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
 		return "", ""
 	case apiv1.PodFailed:
-		newPhase = wfv1.WorkflowFailed
+		newPhase = wfv1.NodeFailed
 		message = pod.Status.Message
 	default:
-		newPhase = wfv1.WorkflowError
+		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 	}
 	return newPhase, message
@@ -173,15 +174,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             envVars,
-		SecurityContext: &apiv1.SecurityContext{
-			Capabilities: &apiv1.Capabilities{
-				Drop: []apiv1.Capability{"ALL"},
-			},
-			RunAsNonRoot:             pointer.BoolPtr(true),
-			RunAsUser:                pointer.Int64Ptr(8737),
-			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-			AllowPrivilegeEscalation: pointer.BoolPtr(false),
-		},
+		SecurityContext: common.MinimalCtrSC(),
 		Resources: apiv1.ResourceRequirements{
 			Requests: map[apiv1.ResourceName]resource.Quantity{
 				"cpu":    resource.MustParse("10m"),
@@ -197,11 +190,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
 	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = []string{"agent", "init"}
+	agentInitCtr.Args = []string{"agent", "init", "--loglevel", getExecutorLogLevel()}
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
-	agentMainCtr.Args = []string{"agent", "main"}
+	agentMainCtr.Args = []string{"agent", "main", "--loglevel", getExecutorLogLevel()}
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -220,14 +213,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			},
 		},
 		Spec: apiv1.PodSpec{
-			RestartPolicy:    apiv1.RestartPolicyOnFailure,
-			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
-			SecurityContext: &apiv1.PodSecurityContext{
-				RunAsNonRoot: pointer.BoolPtr(true),
-				RunAsUser:    pointer.Int64Ptr(8737),
-			},
+			RestartPolicy:                apiv1.RestartPolicyOnFailure,
+			ImagePullSecrets:             woc.execWf.Spec.ImagePullSecrets,
+			SecurityContext:              common.MinimalPodSC(),
 			ServiceAccountName:           serviceAccountName,
-			AutomountServiceAccountToken: pointer.BoolPtr(false),
+			AutomountServiceAccountToken: ptr.To(false),
 			Volumes:                      podVolumes,
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
@@ -240,8 +230,17 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	tmpl := &wfv1.Template{}
-	addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl)
+	woc.addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
 	woc.addMetadata(pod, tmpl)
+	woc.addDNSConfig(pod)
+
+	if woc.execWf.Spec.HasPodSpecPatch() {
+		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
+		}
+		pod.Spec = *patchedPodSpec
+	}
 
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
@@ -253,7 +252,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	if err != nil {
 		log.WithError(err).Info("Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
-			return created, nil
+			// get a reference to the currently existing Pod since the created pod returned before was nil.
+			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
+				return existing, nil
+			}
 		}
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}
@@ -293,17 +295,17 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 }
 
 func addresses(containers []apiv1.Container) []string {
-	var addresses []string
+	var pluginAddresses []string
 	for _, c := range containers {
-		addresses = append(addresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
+		pluginAddresses = append(pluginAddresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
 	}
-	return addresses
+	return pluginAddresses
 }
 
 func names(containers []apiv1.Container) []string {
-	var addresses []string
+	var pluginNames []string
 	for _, c := range containers {
-		addresses = append(addresses, c.Name)
+		pluginNames = append(pluginNames, c.Name)
 	}
-	return addresses
+	return pluginNames
 }

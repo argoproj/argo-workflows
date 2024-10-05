@@ -1,7 +1,8 @@
 import * as React from 'react';
+
 import {Icon} from './icon';
 
-export const BigButton = ({icon, title, onClick, href}: {icon: Icon; title: string; onClick?: () => void; href?: string}) => {
+export function BigButton({icon, title, onClick, href}: {icon: Icon; title: string; onClick?: () => void; href?: string}) {
     return (
         <a
             style={{
@@ -19,11 +20,12 @@ export const BigButton = ({icon, title, onClick, href}: {icon: Icon; title: stri
             }}
             target='_blank'
             onClick={onClick}
-            href={href}>
+            href={href}
+            rel='noreferrer'>
             <div style={{fontSize: '28pt', lineHeight: '65px', verticalAlign: 'bottom'}}>
                 <i className={'fa fa-' + icon} />
             </div>
             <div style={{fontSize: '14pt'}}>{title}</div>
         </a>
     );
-};
+}

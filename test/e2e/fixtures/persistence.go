@@ -1,8 +1,8 @@
 package fixtures
 
 import (
+	"github.com/upper/db/v4"
 	"k8s.io/client-go/kubernetes"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -10,7 +10,7 @@ import (
 )
 
 type Persistence struct {
-	session               sqlbuilder.Database
+	session               db.Session
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	workflowArchive       sqldb.WorkflowArchive
 }
@@ -24,7 +24,11 @@ func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *P
 		if persistence.MySQL != nil {
 			persistence.MySQL.Host = "localhost"
 		}
-		session, tableName, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
+		session, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
+		if err != nil {
+			panic(err)
+		}
+		tableName, err := sqldb.GetTableName(persistence)
 		if err != nil {
 			panic(err)
 		}

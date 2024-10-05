@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/argoproj/pkg/file"
-	"gopkg.in/jcmturner/gokrb5.v5/credentials"
-	"gopkg.in/jcmturner/gokrb5.v5/keytab"
+	"github.com/jcmturner/gokrb5/v8/credentials"
+	"github.com/jcmturner/gokrb5/v8/keytab"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -20,11 +20,12 @@ import (
 
 // ArtifactDriver is a driver for HDFS
 type ArtifactDriver struct {
-	Addresses  []string // comma-separated name nodes
-	Path       string
-	Force      bool
-	HDFSUser   string
-	KrbOptions *KrbOptions
+	Addresses              []string // comma-separated name nodes
+	Path                   string
+	Force                  bool
+	HDFSUser               string
+	KrbOptions             *KrbOptions
+	DataTransferProtection string
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -73,6 +74,7 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 	if hasKrbCCache && (art.KrbServicePrincipalName == "" || art.KrbConfigConfigMap == nil) {
 		return errors.Errorf(errors.CodeBadRequest, "%s.krbServicePrincipalName and %s.krbConfigConfigMap are required with %s.krbCCacheSecret", errPrefix, errPrefix, errPrefix)
 	}
+
 	return nil
 }
 
@@ -93,13 +95,14 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 		if err != nil {
 			return nil, err
 		}
-		ccache, err := credentials.ParseCCache([]byte(bytes))
+		ccache := new(credentials.CCache)
+		err = ccache.Unmarshal([]byte(bytes))
 		if err != nil {
 			return nil, err
 		}
 		krbOptions = &KrbOptions{
 			CCacheOptions: &CCacheOptions{
-				CCache: ccache,
+				CCache: *ccache,
 			},
 			Config:               krbConfig,
 			ServicePrincipalName: art.KrbServicePrincipalName,
@@ -110,13 +113,14 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 		if err != nil {
 			return nil, err
 		}
-		ktb, err := keytab.Parse([]byte(bytes))
+		ktb := keytab.New()
+		err = ktb.Unmarshal([]byte(bytes))
 		if err != nil {
 			return nil, err
 		}
 		krbOptions = &KrbOptions{
 			KeytabOptions: &KeytabOptions{
-				Keytab:   ktb,
+				Keytab:   *ktb,
 				Username: art.KrbUsername,
 				Realm:    art.KrbRealm,
 			},
@@ -126,18 +130,19 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 	}
 
 	driver := ArtifactDriver{
-		Addresses:  art.Addresses,
-		Path:       art.Path,
-		Force:      art.Force,
-		HDFSUser:   art.HDFSUser,
-		KrbOptions: krbOptions,
+		Addresses:              art.Addresses,
+		Path:                   art.Path,
+		Force:                  art.Force,
+		HDFSUser:               art.HDFSUser,
+		KrbOptions:             krbOptions,
+		DataTransferProtection: art.DataTransferProtection,
 	}
 	return &driver, nil
 }
 
 // Load downloads artifacts from HDFS compliant storage
 func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
-	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.KrbOptions)
+	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.DataTransferProtection, driver.KrbOptions)
 	if err != nil {
 		return err
 	}
@@ -194,7 +199,7 @@ func (driver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error
 
 // Save saves an artifact to HDFS compliant storage
 func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.KrbOptions)
+	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.DataTransferProtection, driver.KrbOptions)
 	if err != nil {
 		return err
 	}

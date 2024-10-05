@@ -7,5 +7,5 @@ resources:
   - postgres-deployment.yaml
   - postgres-service.yaml
 
-patchesStrategicMerge:
-  - overlays/workflow-controller-configmap.yaml
+patches:
+  - path: overlays/workflow-controller-configmap.yaml

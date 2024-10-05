@@ -132,7 +132,11 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					logCtx.Error(err)
 					return
 				}
-
+				defer func() {
+					if err := stream.Close(); err != nil {
+						logCtx.Warn("Failed to close stream", err)
+					}
+				}()
 				scanner := bufio.NewScanner(stream)
 				//give it more space for long line
 				scanner.Buffer(make([]byte, startBufSize), maxTokenLength)

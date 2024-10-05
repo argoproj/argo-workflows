@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"sigs.k8s.io/yaml"
@@ -22,7 +22,7 @@ func MustUnmarshal(text, v interface{}) {
 		}
 		if x[0] == '@' {
 			filename := string(x[1:])
-			y, err := ioutil.ReadFile(filepath.Clean(filename))
+			y, err := os.ReadFile(filepath.Clean(filename))
 			if err != nil {
 				panic(fmt.Errorf("failed to read file %s: %w", filename, err))
 			}
@@ -49,7 +49,7 @@ func MustMarshallJSON(v interface{}) string {
 	return string(data)
 }
 
-func MustUnmarshalClusterWorkflow(text interface{}) *ClusterWorkflowTemplate {
+func MustUnmarshalClusterWorkflowTemplate(text interface{}) *ClusterWorkflowTemplate {
 	x := &ClusterWorkflowTemplate{}
 	MustUnmarshal(text, &x)
 	return x

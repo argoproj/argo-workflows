@@ -88,7 +88,7 @@ func AllTerminated(containerStatuses []v1.ContainerStatus, containerNames []stri
 	return true
 }
 
-// TerminatePodWithContainerID invoke the given SIG against the PID1 of the container.
+// TerminatePodWithContainerNames invoke the given SIG against the PID1 of the container.
 // No-op if the container is on the hostPID
 func TerminatePodWithContainerNames(ctx context.Context, c KubernetesClientInterface, containerNames []string, sig syscall.Signal) error {
 	pod, containerStatuses, err := c.GetContainerStatuses(ctx)

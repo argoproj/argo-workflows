@@ -13,7 +13,7 @@
   "host": "localhost:2746",
   "info": {
     "title": "Argo Workflows API",
-    "description": "Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. For more information, please see https://argoproj.github.io/argo-workflows/",
+    "description": "Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. For more information, please see https://argo-workflows.readthedocs.io/en/latest/",
     "version": "VERSION"
   },
   "securityDefinitions": {
@@ -51,7 +51,7 @@
             "required": true,
             "enum": [
               "workflow",
-              "archived-workflows "
+              "archived-workflows"
             ]
           },
           {

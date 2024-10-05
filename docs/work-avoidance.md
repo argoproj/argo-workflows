@@ -2,7 +2,11 @@
 
 > v2.9 and after
 
-You can make workflows faster and more robust by employing **work avoidance**. A workflow that utilizes this is simply a workflow containing steps that do not run if the work has already been done. This simplest way to do this is to use **marker files**.
+You can make workflows faster and more robust by employing **work avoidance**. A workflow that utilizes this is simply a workflow containing steps that do not run if the work has already been done.
+
+This is a technique is similar to [memoization](memoization.md). Work avoidance is totally in your control and you make the decisions as to have to skip the work. [Memoization](memoization.md) is a feature of Argo Workflows to automatically skip steps which generate outputs. Prior to version 3.5 this required `outputs` to be specified, but you can use memoization for all steps and tasks in version 3.5 or later.
+
+This simplest way to do this is to use **marker files**.
 
 Use cases:
 
@@ -28,7 +32,7 @@ touch /work/markers/$(date +%Y-%m-%d)-echo-{{inputs.parameters.num}}
 
 You need to store the marker files between workflows and this can be achieved using [a PVC](fields.md#persistentvolumeclaim) and [optional input artifact](fields.md#artifact).
 
-[This complete work avoidance example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/work-avoidance.yaml) has the following:
+[This complete work avoidance example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/work-avoidance.yaml) has the following:
 
 * A PVC to store the markers on.
 * A `load-markers` step that loads the marker files from artifact storage.

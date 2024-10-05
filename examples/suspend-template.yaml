@@ -19,23 +19,23 @@ spec:
   - name: suspend
     steps:
     - - name: build
-        template: whalesay
+        template: hello-world
     - - name: approve
         template: approve
     - - name: delay
         template: delay
     - - name: release
-        template: whalesay
+        template: hello-world
 
   - name: approve
     suspend: {}
 
   - name: delay
     suspend:
-      duration: "20"    # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+      duration: "20"    # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h"
 
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]

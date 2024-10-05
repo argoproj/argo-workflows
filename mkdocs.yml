@@ -1,5 +1,6 @@
 site_name: Argo Workflows - The workflow engine for Kubernetes
 repo_url: https://github.com/argoproj/argo-workflows
+edit_uri: https://github.com/argoproj/argo-workflows/edit/main/docs
 strict: true
 theme:
   name: material
@@ -29,10 +30,30 @@ extra:
 markdown_extensions:
   - codehilite
   - admonition
-  - pymdownx.superfences
+  - md_in_html
   - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        # support mermaid diagrams per https://squidfunk.github.io/mkdocs-material/reference/diagrams/#configuration
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
       permalink: true
+plugins:
+  - redirects:
+      redirect_maps:
+        use-cases/webhdfs.md: webhdfs.md
+        manually-create-secrets.md: service-account-secrets.md
+  - search # re-include the default: https://www.mkdocs.org/user-guide/configuration/#plugins,
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+exclude_docs: |
+  /proposals/
+  /requirements.txt
+
 nav:
   - Home: README.md
   - Getting Started:
@@ -42,27 +63,36 @@ nav:
           - walk-through/index.md
           - walk-through/argo-cli.md
           - walk-through/hello-world.md
+          # basics
           - walk-through/parameters.md
           - walk-through/steps.md
           - walk-through/dag.md
-          - walk-through/artifacts.md
           - walk-through/the-structure-of-workflow-specs.md
-          - walk-through/secrets.md
+          # artifacts
+          - walk-through/artifacts.md
+          - walk-through/hardwired-artifacts.md
+          # outputs
           - walk-through/scripts-and-results.md
           - walk-through/output-parameters.md
+          # mounts
+          - walk-through/secrets.md
+          - walk-through/volumes.md
+          # control flow
           - walk-through/loops.md
           - walk-through/conditionals.md
-          - walk-through/retrying-failed-or-errored-steps.md
           - walk-through/recursion.md
+          # exit conditions
+          - walk-through/retrying-failed-or-errored-steps.md
           - walk-through/exit-handlers.md
           - walk-through/timeouts.md
-          - walk-through/volumes.md
+          # template types
           - walk-through/suspending.md
+          - walk-through/kubernetes-resources.md
+          # container configuration
           - walk-through/daemon-containers.md
           - walk-through/sidecars.md
-          - walk-through/hardwired-artifacts.md
-          - walk-through/kubernetes-resources.md
           - walk-through/docker-in-docker-using-sidecars.md
+          # misc
           - walk-through/custom-template-variable-reference.md
           - walk-through/continuous-integration-examples.md
   - User Guide:
@@ -75,6 +105,8 @@ nav:
           - http-template.md
           - container-set-template.md
           - data-sourcing-and-transformation.md
+          - resource-template.md
+          - suspend-template.md
           - inline-templates.md
       - Artifacts:
           - workflow-inputs.md
@@ -105,10 +137,12 @@ nav:
           - workflow-of-workflows.md
           - workflow-notifications.md
           - work-avoidance.md
+          - webhdfs.md
       - UI Features:
           - artifact-visualization.md
           - widgets.md
           - intermediate-inputs.md
+          - title-and-description.md
       - Debugging Tools:
           - workflow-events.md
           - debug-pause.md
@@ -136,9 +170,8 @@ nav:
           - use-cases/data-processing.md
           - use-cases/infrastructure-automation.md
           - use-cases/machine-learning.md
-          - use-cases/other.md
           - use-cases/stream-processing.md
-          - use-cases/webhdfs.md
+          - use-cases/other.md # other should always be last
       - FAQ: faq.md
       - kubectl.md
       - ide-setup.md
@@ -161,6 +194,7 @@ nav:
           - argo cluster-template get: cli/argo_cluster-template_get.md
           - argo cluster-template lint: cli/argo_cluster-template_lint.md
           - argo cluster-template list: cli/argo_cluster-template_list.md
+          - argo cluster-template update: cli/argo_cluster-template_update.md
           - argo completion: cli/argo_completion.md
           - argo cp: cli/argo_cp.md
           - argo cron: cli/argo_cron.md
@@ -171,6 +205,7 @@ nav:
           - argo cron list: cli/argo_cron_list.md
           - argo cron resume: cli/argo_cron_resume.md
           - argo cron suspend: cli/argo_cron_suspend.md
+          - argo cron update: cli/argo_cron_update.md
           - argo delete: cli/argo_delete.md
           - argo executor-plugin: cli/argo_executor-plugin.md
           - argo executor-plugin build: cli/argo_executor-plugin_build.md
@@ -192,6 +227,7 @@ nav:
           - argo template get: cli/argo_template_get.md
           - argo template lint: cli/argo_template_lint.md
           - argo template list: cli/argo_template_list.md
+          - argo template update: cli/argo_template_update.md
           - argo terminate: cli/argo_terminate.md
           - argo version: cli/argo_version.md
           - argo wait: cli/argo_wait.md
@@ -215,7 +251,8 @@ nav:
           - workflow-executors.md
           - workflow-restrictions.md
           - sidecar-injection.md
-          - manually-create-secrets.md
+          - service-account-secrets.md
+          - parallelism.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md
@@ -230,17 +267,17 @@ nav:
       - windows.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - running-nix.md
       - architecture.md
       - running-locally.md
       - doc-changes.md
-      - mentoring.md
       - public-api.md
       - static-code-analysis.md
       - stress-testing.md
       - releasing.md
       - survey-data-privacy.md
   - Roadmap: roadmap.md
-  - Blog: https://blog.argoproj.io/
-  - Slack: https://argoproj.github.io/community/join-slack
-  - Twitter: https://twitter.com/argoproj
-  - LinkedIn: https://www.linkedin.com/company/argoproj/
+  - Blog ⧉: https://blog.argoproj.io/
+  - Slack ⧉: https://argoproj.github.io/community/join-slack
+  - Twitter ⧉: https://twitter.com/argoproj
+  - LinkedIn ⧉: https://www.linkedin.com/company/argoproj/

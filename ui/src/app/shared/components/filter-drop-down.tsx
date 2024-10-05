@@ -1,6 +1,7 @@
-import {Checkbox} from 'argo-ui';
-import * as classNames from 'classnames';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
+import classNames from 'classnames';
 import * as React from 'react';
+
 import {DropDown} from './dropdown/dropdown';
 
 interface FilterDropDownProps {
@@ -13,16 +14,16 @@ export interface FilterDropSection {
     onChange: (label: string, checked: boolean) => void;
 }
 
-export const FilterDropDown = (props: FilterDropDownProps) => {
+export function FilterDropDown(props: FilterDropDownProps) {
     return (
         <DropDown
             isMenu={true}
-            anchor={() => (
+            anchor={
                 <div className={classNames('top-bar__filter')} title='Filter'>
                     <i className='argo-icon-filter' aria-hidden='true' />
                     <i className='fa fa-angle-down' aria-hidden='true' />
                 </div>
-            )}>
+            }>
             <ul>
                 {props.sections
                     .filter(item => item.values)
@@ -36,8 +37,8 @@ export const FilterDropDown = (props: FilterDropDownProps) => {
                                 .map(([label, checked]) => (
                                     <li key={label} className={classNames('top-bar__filter-item')}>
                                         <React.Fragment>
-                                            <Checkbox id={`filter__${label}`} checked={checked} onChange={v => item.onChange(label, v)} />
-                                            <label htmlFor={`filter__${label}`}>{label}</label>
+                                            <Checkbox id={`filter__${i}_${label}`} checked={checked} onChange={v => item.onChange(label, v)} />
+                                            <label htmlFor={`filter__${i}_${label}`}>{label}</label>
                                         </React.Fragment>
                                     </li>
                                 ))}
@@ -46,4 +47,4 @@ export const FilterDropDown = (props: FilterDropDownProps) => {
             </ul>
         </DropDown>
     );
-};
+}

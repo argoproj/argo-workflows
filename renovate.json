@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "nix": {
+    "enabled": true
+  },
+  "includePaths": [
+    "**/dev/nix/flake.nix"
+  ]
+}

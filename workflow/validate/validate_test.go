@@ -2,10 +2,12 @@ package validate
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -123,17 +125,13 @@ spec:
 
 func TestDuplicateOrEmptyNames(t *testing.T) {
 	err := validate(dupTemplateNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "not unique")
-	}
+	require.ErrorContains(t, err, "not unique")
+
 	err = validate(dupInputNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "not unique")
-	}
+	require.ErrorContains(t, err, "not unique")
+
 	err = validate(emptyName)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "name is required")
-	}
+	require.ErrorContains(t, err, "name is required")
 }
 
 var unresolvedInput = `
@@ -202,17 +200,13 @@ spec:
 
 func TestUnresolved(t *testing.T) {
 	err := validate(unresolvedInput)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "failed to resolve")
-	}
+	require.ErrorContains(t, err, "failed to resolve")
+
 	err = validate(unresolvedStepInput)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "failed to resolve")
-	}
+	require.ErrorContains(t, err, "failed to resolve")
+
 	err = validate(unresolvedOutput)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "failed to resolve")
-	}
+	require.ErrorContains(t, err, "failed to resolve")
 }
 
 var ioArtifactPaths = `
@@ -258,7 +252,7 @@ spec:
 
 func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
 	err := validate(ioArtifactPaths)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var outputParameterPath = `
@@ -282,7 +276,7 @@ spec:
 
 func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
 	err := validate(outputParameterPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var stepOutputReferences = `
@@ -319,7 +313,7 @@ spec:
 
 func TestStepOutputReference(t *testing.T) {
 	err := validate(stepOutputReferences)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var stepStatusReferences = `
@@ -357,7 +351,7 @@ spec:
 
 func TestStepStatusReference(t *testing.T) {
 	err := validate(stepStatusReferences)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var stepStatusReferencesNoFutureReference = `
@@ -396,9 +390,7 @@ spec:
 func TestStepStatusReferenceNoFutureReference(t *testing.T) {
 	err := validate(stepStatusReferencesNoFutureReference)
 	// Can't reference the status of steps that have not run yet
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "failed to resolve {{steps.two.status}}")
-	}
+	require.ErrorContains(t, err, "failed to resolve {{steps.two.status}}")
 }
 
 var stepArtReferences = `
@@ -454,7 +446,7 @@ spec:
 
 func TestStepArtReference(t *testing.T) {
 	err := validate(stepArtReferences)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var paramWithValueFromConfigMapRef = `
@@ -479,7 +471,7 @@ spec:
 
 func TestParamWithValueFromConfigMapRef(t *testing.T) {
 	err := validate(paramWithValueFromConfigMapRef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var paramWithoutValue = `
@@ -500,9 +492,7 @@ spec:
 
 func TestParamWithoutValue(t *testing.T) {
 	err := validate(paramWithoutValue)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "not supplied")
-	}
+	require.ErrorContains(t, err, "not supplied")
 }
 
 var globalParam = `
@@ -566,7 +556,7 @@ spec:
     - name: missing
   entrypoint: whalesay
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -634,13 +624,13 @@ spec:
 
 func TestGlobalParam(t *testing.T) {
 	err := validate(globalParam)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = validate(nestedGlobalParam)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = validate(unsuppliedArgValue)
-	assert.EqualError(t, err, "spec.arguments.missing.value is required")
+	require.EqualError(t, err, "spec.arguments.missing.value or spec.arguments.missing.valueFrom is required")
 }
 
 var invalidTemplateNames = `
@@ -661,9 +651,7 @@ spec:
 
 func TestInvalidTemplateName(t *testing.T) {
 	err := validate(invalidTemplateNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), invalidErr)
-	}
+	require.ErrorContains(t, err, invalidErr)
 }
 
 var invalidArgParamNames = `
@@ -688,7 +676,7 @@ spec:
 
 func TestInvalidArgParamName(t *testing.T) {
 	err := validate(invalidArgParamNames)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 var invalidArgArtNames = `
@@ -719,9 +707,7 @@ spec:
 
 func TestInvalidArgArtName(t *testing.T) {
 	err := validate(invalidArgArtNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), invalidErr)
-	}
+	require.ErrorContains(t, err, invalidErr)
 }
 
 var invalidStepNames = `
@@ -766,9 +752,7 @@ spec:
 
 func TestInvalidStepName(t *testing.T) {
 	err := validate(invalidStepNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), invalidErr)
-	}
+	require.ErrorContains(t, err, invalidErr)
 }
 
 var invalidInputParamNames = `
@@ -792,9 +776,7 @@ spec:
 
 func TestInvalidInputParamName(t *testing.T) {
 	err := validate(invalidInputParamNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), invalidErr)
-	}
+	require.ErrorContains(t, err, invalidErr)
 }
 
 var invalidInputArtNames = `
@@ -844,9 +826,7 @@ spec:
 
 func TestInvalidInputArtName(t *testing.T) {
 	err := validate(invalidInputArtNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), invalidErr)
-	}
+	require.ErrorContains(t, err, invalidErr)
 }
 
 var invalidOutputArtNames = `
@@ -870,9 +850,7 @@ spec:
 
 func TestInvalidOutputArtName(t *testing.T) {
 	err := validate(invalidOutputArtNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), invalidErr)
-	}
+	require.Error(t, err, invalidErr)
 }
 
 var invalidOutputParamNames = `
@@ -985,25 +963,19 @@ spec:
 
 func TestInvalidOutputParam(t *testing.T) {
 	err := validate(invalidOutputParamNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), invalidErr)
-	}
+	require.ErrorContains(t, err, invalidErr)
+
 	err = validate(invalidOutputMissingValueFrom)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "does not have valueFrom or value specified")
-	}
+	require.ErrorContains(t, err, "does not have valueFrom or value specified")
+
 	err = validate(invalidOutputMultipleValueFrom)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "multiple valueFrom")
-	}
+	require.ErrorContains(t, err, "multiple valueFrom")
+
 	err = validate(invalidOutputIncompatibleValueFromPath)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), ".path must be specified for Container templates")
-	}
+	require.ErrorContains(t, err, ".path must be specified for Container templates")
+
 	err = validate(invalidOutputIncompatibleValueFromParam)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), ".parameter or expression must be specified for Steps templates")
-	}
+	require.ErrorContains(t, err, ".parameter or expression must be specified for Steps templates")
 }
 
 var multipleTemplateTypes = `
@@ -1030,9 +1002,7 @@ spec:
 
 func TestMultipleTemplateTypes(t *testing.T) {
 	err := validate(multipleTemplateTypes)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "multiple template types specified")
-	}
+	require.ErrorContains(t, err, "multiple template types specified")
 }
 
 var exitHandlerWorkflowStatusOnExit = `
@@ -1074,11 +1044,11 @@ spec:
 func TestExitHandler(t *testing.T) {
 	// ensure {{workflow.status}} is not available when not in exit handler
 	err := validate(workflowStatusNotOnExit)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// ensure {{workflow.status}} is available in exit handler
 	err = validate(exitHandlerWorkflowStatusOnExit)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var workflowWithPriority = `
@@ -1099,7 +1069,7 @@ spec:
 
 func TestPriorityVariable(t *testing.T) {
 	err := validate(workflowWithPriority)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var volumeMountArtifactPathCollision = `
@@ -1140,15 +1110,14 @@ func TestVolumeMountArtifactPathCollision(t *testing.T) {
 
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "already mounted")
-	}
+	require.ErrorContains(t, err, "already mounted")
+
 	// tweak the mount path and validation should now be successful
 	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
 
 	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var activeDeadlineSeconds = `
@@ -1169,9 +1138,7 @@ spec:
 
 func TestValidActiveDeadlineSeconds(t *testing.T) {
 	err := validate(activeDeadlineSeconds)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "activeDeadlineSeconds must be a positive integer > 0")
-	}
+	require.ErrorContains(t, err, "activeDeadlineSeconds must be a positive integer > 0")
 }
 
 var leafWithParallelism = `
@@ -1192,9 +1159,7 @@ spec:
 
 func TestLeafWithParallelism(t *testing.T) {
 	err := validate(leafWithParallelism)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "is only valid")
-	}
+	require.ErrorContains(t, err, "is only valid")
 }
 
 var invalidStepsArgumentNoFromOrLocation = `
@@ -1254,13 +1219,10 @@ spec:
 
 func TestInvalidArgumentNoFromOrLocation(t *testing.T) {
 	err := validate(invalidStepsArgumentNoFromOrLocation)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "from, artifact location, or key is required")
-	}
+	require.ErrorContains(t, err, "from, artifact location, or key is required")
+
 	err = validate(invalidDAGArgumentNoFromOrLocation)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "from, artifact location, or key is required")
-	}
+	require.ErrorContains(t, err, "from, artifact location, or key is required")
 }
 
 var invalidArgumentNoValue = `
@@ -1291,9 +1253,9 @@ spec:
 
 func TestInvalidArgumentNoValue(t *testing.T) {
 	err := validate(invalidArgumentNoValue)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), ".value is required")
-	}
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), ".value or ")
+	assert.Contains(t, err.Error(), ".valueFrom is required")
 }
 
 var validWithItems = `
@@ -1332,7 +1294,7 @@ spec:
 
 func TestValidWithItems(t *testing.T) {
 	err := validate(validWithItems)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var podNameVariable = `
@@ -1366,13 +1328,13 @@ spec:
 
 func TestPodNameVariable(t *testing.T) {
 	err := validate(podNameVariable)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-outputs-variable.yaml"), ValidateOpts{})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var specArgumentNoValue = `
@@ -1398,10 +1360,10 @@ func TestSpecArgumentNoValue(t *testing.T) {
 	wf := unmarshalWf(specArgumentNoValue)
 
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 var specArgumentSnakeCase = `
@@ -1438,7 +1400,7 @@ func TestSpecArgumentSnakeCase(t *testing.T) {
 
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var specBadSequenceCountAndEnd = `
@@ -1475,7 +1437,7 @@ func TestSpecBadSequenceCountAndEnd(t *testing.T) {
 
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 var customVariableInput = `
@@ -1497,7 +1459,7 @@ func TestCustomTemplatVariable(t *testing.T) {
 
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
 
-	assert.Equal(t, err, nil)
+	require.NoError(t, err)
 }
 
 var templateRefTarget = `
@@ -1515,7 +1477,7 @@ spec:
 
 func TestWorkflowTemplate(t *testing.T) {
 	err := validateWorkflowTemplate(templateRefTarget, ValidateOpts{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var templateWithGlobalParams = `
@@ -1533,7 +1495,7 @@ spec:
 
 func TestWorkflowTemplateWithGlobalParams(t *testing.T) {
 	err := validateWorkflowTemplate(templateWithGlobalParams, ValidateOpts{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var templateRefNestedTarget = `
@@ -1569,11 +1531,11 @@ spec:
 
 func TestNestedTemplateRef(t *testing.T) {
 	err := createWorkflowTemplateFromSpec(templateRefTarget)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = createWorkflowTemplateFromSpec(templateRefNestedTarget)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validate(nestedTemplateRef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var undefinedTemplateRef = `
@@ -1594,9 +1556,7 @@ spec:
 
 func TestUndefinedTemplateRef(t *testing.T) {
 	err := validate(undefinedTemplateRef)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "not found")
-	}
+	require.ErrorContains(t, err, "not found")
 }
 
 var validResourceWorkflow = `
@@ -1623,7 +1583,7 @@ func TestValidResourceWorkflow(t *testing.T) {
 
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
-	assert.Equal(t, err, nil)
+	require.NoError(t, err)
 }
 
 var invalidResourceWorkflow = `
@@ -1666,11 +1626,11 @@ spec:
 func TestInvalidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(invalidResourceWorkflow)
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-	assert.EqualError(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
+	require.EqualError(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
 
 	wf = unmarshalWf(invalidActionResourceWorkflow)
 	err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-	assert.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
+	require.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
 }
 
 var invalidPodGC = `
@@ -1690,7 +1650,7 @@ spec:
 func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
+	require.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 }
 
 func TestInvalidPodGCLabelSelector(t *testing.T) {
@@ -1709,7 +1669,7 @@ spec:
       image: docker/whalesay
 `)
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-	assert.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid pod selector operator")
+	require.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid label selector operator")
 }
 
 var allowPlaceholderInVariableTakenFromInputs = `
@@ -1812,7 +1772,7 @@ func TestAllowPlaceholderInVariableTakenFromInputs(t *testing.T) {
 		wf := unmarshalWf(allowPlaceholderInVariableTakenFromInputs)
 		err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -1866,12 +1826,12 @@ spec:
       args: ["echo {{inputs.parameters.parameter}}"]
 `
 
-// TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
+// TestRuntimeResolutionOfVariableNames verifies an error against a workflow of an invalid resource.
 func TestRuntimeResolutionOfVariableNames(t *testing.T) {
 	wf := unmarshalWf(runtimeResolutionOfVariableNames)
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var stepWithItemParam = `
@@ -1919,7 +1879,7 @@ spec:
 
 func TestStepWithItemParam(t *testing.T) {
 	err := validate(stepWithItemParam)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var invalidMetricName = `
@@ -1943,7 +1903,7 @@ spec:
 
 func TestInvalidMetricName(t *testing.T) {
 	err := validate(invalidMetricName)
-	assert.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters, '_', or ':'")
+	require.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters or '_'")
 }
 
 var invalidMetricLabelName = `
@@ -1970,7 +1930,7 @@ spec:
 
 func TestInvalidMetricLabelName(t *testing.T) {
 	err := validate(invalidMetricLabelName)
-	assert.EqualError(t, err, "metric label 'invalid.key' is invalid: keys may only contain alphanumeric characters, '_', or ':'")
+	require.EqualError(t, err, "metric label 'invalid.key' is invalid: keys may only contain alphanumeric characters or '_'")
 }
 
 var invalidMetricHelp = `
@@ -1993,7 +1953,7 @@ spec:
 
 func TestInvalidMetricHelp(t *testing.T) {
 	err := validate(invalidMetricHelp)
-	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' must contain a help string under 'help: ' field")
+	require.EqualError(t, err, "templates.whalesay metric 'metric_name' must contain a help string under 'help: ' field")
 }
 
 var invalidRealtimeMetricGauge = `
@@ -2018,7 +1978,7 @@ spec:
 
 func TestInvalidMetricGauge(t *testing.T) {
 	err := validate(invalidRealtimeMetricGauge)
-	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' error: 'resourcesDuration.*' metrics cannot be used in real-time")
+	require.EqualError(t, err, "templates.whalesay metric 'metric_name' error: 'resourcesDuration.*' metrics cannot be used in real-time")
 }
 
 var invalidNoValueMetricGauge = `
@@ -2042,7 +2002,7 @@ spec:
 
 func TestInvalidNoValueMetricGauge(t *testing.T) {
 	err := validate(invalidNoValueMetricGauge)
-	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' error: missing gauge.value")
+	require.EqualError(t, err, "templates.whalesay metric 'metric_name' error: missing gauge.value")
 }
 
 var validMetricGauges = `
@@ -2076,7 +2036,7 @@ spec:
 
 func TestValidMetricGauge(t *testing.T) {
 	err := validate(validMetricGauges)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var globalVariables = `
@@ -2125,7 +2085,7 @@ spec:
 
 func TestWorkflowGlobalVariables(t *testing.T) {
 	err := validate(globalVariables)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var wfTemplateWithEntrypoint = `
@@ -2148,7 +2108,7 @@ spec:
 
 func TestWorkflowTemplateWithEntrypoint(t *testing.T) {
 	err := validateWorkflowTemplate(wfTemplateWithEntrypoint, ValidateOpts{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var wfWithWFTRefNoEntrypoint = `
@@ -2179,9 +2139,9 @@ spec:
 
 func TestWorkflowWithWFTRefWithEntrypoint(t *testing.T) {
 	err := createWorkflowTemplateFromSpec(templateWithEntrypoint)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validate(wfWithWFTRefNoEntrypoint)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 const wfWithWFTRef = `
@@ -2191,7 +2151,7 @@ metadata:
   generateName: hello-world-
 spec:
   entrypoint: A
-  serviceAccountName: argo
+  serviceAccountName: default
   parallelism: 1
   volumes:
   - name: workdir
@@ -2210,9 +2170,9 @@ spec:
 
 func TestWorkflowWithWFTRef(t *testing.T) {
 	err := createWorkflowTemplateFromSpec(templateRefTarget)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validate(wfWithWFTRef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 const invalidWFWithWFTRef = `
@@ -2237,9 +2197,9 @@ spec:
 
 func TestValidateFieldsWithWFTRef(t *testing.T) {
 	err := createWorkflowTemplateFromSpec(templateRefTarget)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validate(invalidWFWithWFTRef)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 var invalidWfNoImage = `apiVersion: argoproj.io/v1alpha1
@@ -2259,7 +2219,7 @@ spec:
 
 func TestInvalidWfNoImageField(t *testing.T) {
 	err := validate(invalidWfNoImage)
-	assert.EqualError(t, err, "templates.whalesay.container.image may not be empty")
+	require.EqualError(t, err, "templates.whalesay.container.image may not be empty")
 }
 
 var invalidWfNoImageScript = `apiVersion: argoproj.io/v1alpha1
@@ -2279,7 +2239,144 @@ spec:
 
 func TestInvalidWfNoImageFieldScript(t *testing.T) {
 	err := validate(invalidWfNoImageScript)
-	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
+	require.EqualError(t, err, "templates.whalesay.script.image may not be empty")
+}
+
+var invalidWfNoImageScriptInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      command: [cowsay]
+  templates:
+  - name: whalesay
+    script:
+      args:
+      - hello world
+      env: []`
+
+func TestIinvalidWfNoImageScriptInTemplateDefault(t *testing.T) {
+	err := validate(invalidWfNoImageScriptInTemplateDefault)
+	require.EqualError(t, err, "templates.whalesay.script.image may not be empty")
+}
+
+var validWfImageScriptInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    script:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestValidWfImageScriptInTemplateDefault(t *testing.T) {
+	err := validate(validWfImageScriptInTemplateDefault)
+	require.NoError(t, err)
+}
+
+var validWfImageContainerInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    container:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    container:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestValidWfImageContainerInTemplateDefault(t *testing.T) {
+	err := validate(validWfImageContainerInTemplateDefault)
+	require.NoError(t, err)
+}
+
+var templateRefScriptImageDefaultTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-no-script-image
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    script:
+      command: [cowsay]
+      args: [hello world]
+`
+
+var wfWithWFTRefScriptImageInDefault = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-no-script-image
+`
+
+func TestValidateFieldsWithWFTRefScriptImageInDefault(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(templateRefScriptImageDefaultTarget)
+	require.NoError(t, err)
+	err = validate(wfWithWFTRefScriptImageInDefault)
+	require.NoError(t, err)
+}
+
+var templateRefContainerImageDefaultTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-no-container-image
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    container:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    container:
+      command: [cowsay]
+      args: [hello world]
+`
+
+var wfWithWFTRefContainerImageInDefault = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-no-container-image
+`
+
+func TestValidateFieldsWithWFTRefContainerImageInDefault(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(templateRefContainerImageDefaultTarget)
+	require.NoError(t, err)
+	err = validate(wfWithWFTRefContainerImageInDefault)
+	require.NoError(t, err)
 }
 
 var templateRefWithParam = `
@@ -2316,9 +2413,9 @@ spec:
 
 func TestWorkflowWithWFTRefWithOverrideParam(t *testing.T) {
 	err := createWorkflowTemplateFromSpec(templateRefWithParam)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validate(wfWithWFTRefOverrideParam)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var testWorkflowTemplateLabels = `
@@ -2348,7 +2445,7 @@ spec:
 
 func TestWorkflowTemplateLabels(t *testing.T) {
 	err := validateWorkflowTemplate(testWorkflowTemplateLabels, ValidateOpts{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 const templateRefWithArtifactArgument = `
@@ -2388,9 +2485,9 @@ spec:
 
 func TestWorkflowWithWFTRefWithOutOwnArtifactArgument(t *testing.T) {
 	err := createWorkflowTemplateFromSpec(templateRefWithArtifactArgument)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validate(wfWithWFTRefAndNoOwnArtifact)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 const wfWithWFTRefAndOwnArtifactArgument = `
@@ -2411,9 +2508,9 @@ spec:
 
 func TestWorkflowWithWFTRefWithArtifactArgument(t *testing.T) {
 	err := createWorkflowTemplateFromSpec(templateRefWithArtifactArgument)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validate(wfWithWFTRefAndOwnArtifactArgument)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var workflowTeamplateWithEnumValues = `
@@ -2545,38 +2642,106 @@ spec:
 
 func TestWorkflowTemplateWithEnumValue(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTeamplateWithEnumValues, ValidateOpts{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValues, ValidateOpts{Lint: true})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValues, ValidateOpts{Submit: true})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestWorkflowTemplateWithEmptyEnumList(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{})
-	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
+	require.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 	err = validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{Lint: true})
-	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
+	require.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 	err = validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{Submit: true})
-	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
+	require.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 }
 
 func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{})
-	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+	require.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 	err = validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Lint: true})
-	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+	require.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 	err = validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Submit: true})
-	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+	require.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 }
 
 func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{})
-	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	require.NoError(t, err)
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Lint: true})
-	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	require.NoError(t, err)
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Submit: true})
-	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	require.EqualError(t, err, "spec.arguments.message.value or spec.arguments.message.valueFrom is required")
+}
+
+var resourceManifestWithExpressions = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+spec:
+  restartPolicy: Never
+  containers:
+  - name: 'foo'
+    image: docker/whalesay
+    command: [cowsay]
+    args: ["{{ = asInt(inputs.parameters.intParam) }}"]
+    ports:
+    - containerPort: {{=asInt(inputs.parameters.intParam)}}
+`
+
+func TestSubstituteResourceManifestExpressions(t *testing.T) {
+	replaced := SubstituteResourceManifestExpressions(resourceManifestWithExpressions)
+	assert.NotEqual(t, resourceManifestWithExpressions, replaced)
+
+	// despite spacing in the expr itself we should have only 1 placeholder here
+	patt, _ := regexp.Compile(`placeholder\-\d+`)
+	matches := patt.FindAllString(replaced, -1)
+	assert.Len(t, matches, 2)
+	assert.Equal(t, matches[0], matches[1])
+}
+
+var validWorkflowTemplateWithResourceManifest = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-with-resource-expr
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: intParam
+            value: '20'
+          - name: strParam
+            value: 'foobarbaz'
+      outputs: {}
+      metadata: {}
+      resource:
+        action: create
+        setOwnerReference: true
+        manifest: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: foo
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: 'foo'
+              image: docker/whalesay
+              command: [cowsay]
+              args: ["{{=sprig.replace("bar", "baz", inputs.parameters.strParam)}}"]
+              ports:
+              - containerPort: {{=asInt(inputs.parameters.intParam)}}
+`
+
+func TestWorkflowTemplateWithResourceManifest(t *testing.T) {
+	err := validate(validWorkflowTemplateWithResourceManifest)
+	require.NoError(t, err)
 }
 
 var validActiveDeadlineSecondsArgoVariable = `
@@ -2620,25 +2785,25 @@ spec:
 
 func TestValidActiveDeadlineSecondsArgoVariable(t *testing.T) {
 	err := validateWorkflowTemplate(validActiveDeadlineSecondsArgoVariable, ValidateOpts{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestMaxLengthName(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-	assert.EqualError(t, err, "workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+	require.EqualError(t, err, "workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	wftmpl := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
 	err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl, ValidateOpts{})
-	assert.EqualError(t, err, "workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+	require.EqualError(t, err, "workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	cwftmpl := &wfv1.ClusterWorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
 	err = ValidateClusterWorkflowTemplate(wftmplGetter, cwftmplGetter, cwftmpl, ValidateOpts{})
-	assert.EqualError(t, err, "cluster workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
+	require.EqualError(t, err, "cluster workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
 	err = ValidateCronWorkflow(wftmplGetter, cwftmplGetter, cwf)
-	assert.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
+	require.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }
 
 var invalidContainerSetDependencyNotFound = `
@@ -2668,9 +2833,7 @@ spec:
 
 func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
 	err := validate(invalidContainerSetDependencyNotFound)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "templates.main.containerSet.containers.b dependency 'c' not defined")
-	}
+	require.ErrorContains(t, err, "templates.main.containerSet.containers.b dependency 'c' not defined")
 }
 
 func TestInvalidContainerSetNoMainContainer(t *testing.T) {
@@ -2737,9 +2900,7 @@ spec:
 	}
 	for _, manifest := range invalidManifests {
 		err := validateWorkflowTemplate(manifest, ValidateOpts{})
-		if assert.NotNil(t, err) {
-			assert.Contains(t, err.Error(), "containerSet.containers must have a container named \"main\" for input or output")
-		}
+		require.ErrorContains(t, err, "containerSet.containers must have a container named \"main\" for input or output")
 	}
 }
 
@@ -2776,7 +2937,7 @@ spec:
 		dependencies: make(map[string]map[string]common.DependencyType),
 	}
 	err := sortDAGTasks(&tmpl, dagValidationCtx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	var taskOrderAfterSort, expectedOrder []string
 	expectedOrder = []string{"8ea51cf2", "ba1f414f", "f7d273f8"}
 	for _, task := range tmpl.DAG.Tasks {
@@ -2793,7 +2954,7 @@ metadata:
 spec:
   entrypoint: steps-timing
   templates:
-    
+
     - name: steps-timing
       steps:
         - - name: one
@@ -2808,12 +2969,12 @@ spec:
                   value: "{{steps.one.finishedAt}}"
                 - name: id
                   value: "{{steps.one.id}}"
-    
+
     - name: wait
       container:
         image: alpine:3.7
         command: [sleep, "5"]
-    
+
     - name: printer
       inputs:
         parameters:
@@ -2824,7 +2985,7 @@ spec:
         image: alpine:3.7
         command: [echo, "{{inputs.parameters.startedat}}"]`
 	err := validate(wf)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var templateReferenceWorkflowConfigMapRefArgument = `
@@ -2834,7 +2995,6 @@ metadata:
   generateName: arguments-parameters-from-configmap-
 spec:
   entrypoint: whalesay
-  serviceAccountName: argo
   arguments:
     parameters:
     - name: message
@@ -2855,7 +3015,7 @@ spec:
 
 func TestTemplateReferenceWorkflowConfigMapRefArgument(t *testing.T) {
 	err := validate(templateReferenceWorkflowConfigMapRefArgument)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var stepsOutputParametersForScript = `
@@ -2902,7 +3062,7 @@ spec:
 
 func TestStepsOutputParametersForScript(t *testing.T) {
 	err := validate(stepsOutputParametersForScript)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var stepsOutputParametersForContainerSet = `
@@ -2952,7 +3112,7 @@ spec:
 
 func TestStepsOutputParametersForContainerSet(t *testing.T) {
 	err := validate(stepsOutputParametersForContainerSet)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var globalAnnotationsAndLabels = `apiVersion: argoproj.io/v1alpha1
@@ -2979,7 +3139,7 @@ spec:
 
 func TestResolveAnnotationsAndLabelsJSson(t *testing.T) {
 	err := validate(globalAnnotationsAndLabels)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var testInitContainerHasName = `
@@ -3015,7 +3175,7 @@ spec:
 
 func TestInitContainerHasName(t *testing.T) {
 	err := validate(testInitContainerHasName)
-	assert.EqualError(t, err, "templates.main.tasks.spurious initContainers must all have container name")
+	require.EqualError(t, err, "templates.main.tasks.spurious initContainers must all have container name")
 }
 
 var nodeNamePlumbsCorrectly = `
@@ -3048,7 +3208,7 @@ spec:
 
 func TestNodeNameParameterInterpoliates(t *testing.T) {
 	err := validate(nodeNamePlumbsCorrectly)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
@@ -3099,17 +3259,38 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 			wftmpl := wfv1.MustUnmarshalWorkflowTemplate(tt.workflowTemplate)
 			err := createWorkflowTemplate(wftmpl)
 			if err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 			if tt.expectedSuccess {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 
 			_ = deleteWorkflowTemplate(wftmpl.Name)
 		})
 	}
+}
+
+var spacedParameterWorkflowTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+    generateName: hello-world-
+spec:
+  entrypoint: helloworld
+
+  templates:
+  - name: helloworld
+    container:
+      image: "alpine:3.18"
+      command: ["echo", "{{  workflow.thisdoesnotexist  }}"]
+`
+
+func TestShouldCheckValidationToSpacedParameters(t *testing.T) {
+	err := validate(spacedParameterWorkflowTemplate)
+	// Do not allow leading or trailing spaces in parameters
+	require.ErrorContains(t, err, "failed to resolve {{  workflow.thisdoesnotexist  }}")
 }

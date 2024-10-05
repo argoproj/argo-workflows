@@ -4,7 +4,7 @@ import {ArtifactRepositoryRefStatus, NODE_PHASE, NodeStatus} from '../../../../m
 import {nodeArtifacts} from '../../../shared/artifacts';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
-import {Utils} from '../../../shared/utils';
+import {shortNodeName} from '../../utils';
 import {genres} from './genres';
 import {getCollapsedNodeName, getMessage, getNodeParent, isCollapsedNode} from './graph/collapsible-node';
 import {icons} from './icons';
@@ -39,7 +39,7 @@ function getNodeLabelTemplateName(n: NodeStatus): string {
 function nodeLabel(n: NodeStatus) {
     const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
     return {
-        label: Utils.shortNodeName(n),
+        label: shortNodeName(n),
         genre: n.type,
         icon: icons[phase] || icons.Pending,
         progress: phase === 'Running' && progress(n),
@@ -292,13 +292,16 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     private getOutboundNodes(nodeID: string): string[] {
         const node = this.getNode(nodeID);
-        if (node.type === 'Pod' || node.type === 'Skipped') {
+        if (node === null || node === undefined) {
+            return [];
+        }
+        if (node?.type === 'Pod' || node?.type === 'Skipped') {
             return [node.id];
         }
         let outbound = Array<string>();
         for (const outboundNodeID of node.outboundNodes || []) {
             const outNode = this.getNode(outboundNodeID);
-            if (outNode.type === 'Pod') {
+            if (outNode?.type === 'Pod') {
                 outbound.push(outboundNodeID);
             } else {
                 outbound = outbound.concat(this.getOutboundNodes(outboundNodeID));

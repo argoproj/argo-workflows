@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
+
 import {ArtifactRepositoryRefStatus, NodeStatus} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -9,7 +10,7 @@ import {RetryWatch} from '../shared/retry-watch';
 import {services} from '../shared/services';
 import {WorkflowDag} from '../workflows/components/workflow-dag/workflow-dag';
 
-export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
+export function WorkflowGraph({history, match}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
     const namespace = match.params.namespace;
     const name = queryParams.get('name');
@@ -71,4 +72,4 @@ export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
             />
         </>
     );
-};
+}

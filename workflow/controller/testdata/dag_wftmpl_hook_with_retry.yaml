@@ -1,0 +1,52 @@
+# https://github.com/argoproj/argo-workflows/issues/12120
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-wftmpl-hook-with-retry
+  namespace: argo
+spec:
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: task
+            template: task
+            hooks:
+              failure:
+                template: exit-handler
+                expression: tasks["task"].status == "Failed"
+          - name: finish
+            template: finish
+            dependencies:
+              - task
+    - name: task
+      container:
+        name: ''
+        image: alpine:latest
+        command:
+          - sh
+          - '-c'
+        args:
+          - exit 1;
+    - name: exit-handler
+      container:
+        name: ''
+        image: alpine:latest
+        command:
+          - sh
+          - '-c'
+        args:
+          - exit 1;
+      retryStrategy:
+        limit: 1
+        retryPolicy: Always
+    - name: finish
+      container:
+        name: ''
+        image: alpine:latest
+        command:
+          - sh
+          - '-c'
+        args:
+          - echo "Finished!";
+  entrypoint: main

@@ -15,7 +15,7 @@ const (
 )
 
 type Template interface {
-	Replace(replaceMap map[string]string, allowUnresolved bool) (string, error)
+	Replace(replaceMap map[string]interface{}, allowUnresolved bool) (string, error)
 }
 
 func NewTemplate(s string) (Template, error) {
@@ -30,13 +30,13 @@ type impl struct {
 	*fasttemplate.Template
 }
 
-func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (string, error) {
+func (t *impl) Replace(replaceMap map[string]interface{}, allowUnresolved bool) (string, error) {
 	replacedTmpl := &bytes.Buffer{}
 	_, err := t.Template.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)
 		switch kind {
 		case kindExpression:
-			env := exprenv.GetFuncMap(EnvMap(replaceMap))
+			env := exprenv.GetFuncMap(replaceMap)
 			return expressionReplace(w, expression, env, allowUnresolved)
 		default:
 			return simpleReplace(w, tag, replaceMap, allowUnresolved)

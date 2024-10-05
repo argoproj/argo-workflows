@@ -6,7 +6,7 @@ metadata:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
-      Conditional aartifacts provide a way to choose the output artifacts based on expression.
+      Conditional artifacts provide a way to choose the output artifacts based on expression.
 
       In this example the main template has two steps which will run conditionall using `when` .
 

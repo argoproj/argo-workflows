@@ -20,7 +20,6 @@ export function getResolvedTemplates(workflow: models.Workflow, node: models.Nod
         }
         if (!tmpl) {
             const name = templRef.StoredTemplateName || tmpTemplate.template;
-            // tslint:disable-next-line: no-console
             console.error(`StoredTemplate ${name} not found`);
             return undefined;
         }
@@ -30,7 +29,6 @@ export function getResolvedTemplates(workflow: models.Workflow, node: models.Nod
         }
         tmpTemplate = tmpl;
         if (i === maxDepth) {
-            // tslint:disable-next-line: no-console
             console.error(`Template reference too deep`);
             return undefined;
         }

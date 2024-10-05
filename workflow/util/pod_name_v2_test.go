@@ -42,7 +42,7 @@ func TestPodNameV2(t *testing.T) {
 	expected = fmt.Sprintf("%s-%s", longWfName, longTemplateName)
 	actual = ensurePodNamePrefixLength(expected)
 
-	assert.Equal(t, maxK8sResourceNameLength-k8sNamingHashLength-1, len(actual))
+	assert.Len(t, actual, maxK8sResourceNameLength-k8sNamingHashLength-1)
 
 	longPrefix := fmt.Sprintf("%s-%s", longWfName, longTemplateName)
 	expectedPodName = fmt.Sprintf("%s-%v", longPrefix[0:maxK8sResourceNameLength-k8sNamingHashLength-1], h.Sum32())
@@ -50,4 +50,8 @@ func TestPodNameV2(t *testing.T) {
 	name = GeneratePodName(longWfName, nodeName, longTemplateName, nodeID, PodNameV2)
 	assert.Equal(t, expectedPodName, name)
 
+	h = fnv.New32a()
+	_, _ = h.Write([]byte("stp.inline"))
+	name = GeneratePodName(shortWfName, "stp.inline", "", nodeID, PodNameV2)
+	assert.Equal(t, fmt.Sprintf("wfname-%v", h.Sum32()), name)
 }

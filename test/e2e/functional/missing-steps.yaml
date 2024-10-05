@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: missing-steps
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - arguments:
+          parameters:
+          - name: script
+            value: |
+              echo hello
+        name: step1
+        template: work
+    - - arguments:
+          parameters:
+          - name: script
+            value: |
+              echo world
+        name: step2
+        template: work
+  - name: work
+    inputs:
+      parameters:
+        - name: script
+        - name: outputArtifactResultFilePath
+          default: /tmp/output
+      artifacts:
+        - name: inputFile
+          optional: true
+    outputs:
+      parameters:
+        - name: result
+          valueFrom:
+            parameter: '{{steps.execute-script.outputs.result}}'
+      artifacts:
+        - name: resultFile
+          optional: true
+          from: '{{steps.execute-script.outputs.artifacts.resultFile}}'
+    steps:
+      - - name: execute-script
+          template: execute-target-script
+          arguments:
+            parameters:
+              - name: script
+                value: '{{inputs.parameters.script}}'
+              - name: outputArtifactResultFilePath
+                value: '{{inputs.parameters.outputArtifactResultFilePath}}'
+            artifacts:
+              - name: inputFile
+                from: '{{inputs.artifacts.inputFile}}'
+  - name: execute-target-script
+    inputs:
+      parameters:
+        - name: script
+        - name: outputArtifactResultFilePath
+          default: /tmp/output
+      artifacts:
+        - name: inputFile
+          optional: true
+          path: /tmp/inputFile
+    outputs:
+      artifacts:
+        - name: resultFile
+          optional: true
+          path: '{{inputs.parameters.outputArtifactResultFilePath}}'
+    script:
+      command: [ 'bash' ]
+      image: 'argoproj/argosay:v2'
+      source: '{{inputs.parameters.script}}'

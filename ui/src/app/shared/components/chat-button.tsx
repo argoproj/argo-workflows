@@ -1,16 +1,16 @@
-import React = require('react');
+import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Link} from '../../../models';
 import {services} from '../services';
 
-export const ChatButton = () => {
+export function ChatButton() {
     const [link, setLink] = useState<Link>();
 
     useEffect(() => {
         services.info
             .getInfo()
             .then(info => info.links)
-            .then(links => (links || []).concat({name: 'Get help', scope: 'chat', url: 'https://argoproj.github.io/argo-workflows/'}).filter(x => x.scope === 'chat'))
+            .then(links => (links || []).concat({name: 'Get help', scope: 'chat', url: 'https://argo-workflows.readthedocs.io/en/latest/'}).filter(x => x.scope === 'chat'))
             .then(links => {
                 setLink(links[0]);
             });
@@ -27,4 +27,4 @@ export const ChatButton = () => {
             </a>
         </div>
     );
-};
+}

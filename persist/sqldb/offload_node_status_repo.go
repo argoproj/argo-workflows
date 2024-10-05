@@ -8,8 +8,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"upper.io/db.v3"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
@@ -31,7 +30,7 @@ type OffloadNodeStatusRepo interface {
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
+func NewOffloadNodeStatusRepo(session db.Session, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
 	ttl := env.LookupEnvDurationOr("OFFLOAD_NODE_STATUS_TTL", 5*time.Minute)
@@ -47,7 +46,7 @@ type nodesRecord struct {
 }
 
 type nodeOffloadRepo struct {
-	session     sqlbuilder.Database
+	session     db.Session
 	clusterName string
 	tableName   string
 	// time to live - at what ttl an offload becomes old
@@ -96,27 +95,8 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 		}
 		logCtx.WithField("err", err).Info("Ignoring duplicate key error")
 	}
-
-	logCtx.Debug("Nodes offloaded, cleaning up old offloads")
-
-	// This might fail, which kind of fine (maybe a bug).
-	// It might not delete all records, which is also fine, as we always key on resource version.
-	// We also want to keep enough around so that we can service watches.
-	rs, err := wdc.session.
-		DeleteFrom(wdc.tableName).
-		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(db.Cond{"uid": uid}).
-		And(db.Cond{"version <>": version}).
-		And(wdc.oldOffload()).
-		Exec()
-	if err != nil {
-		return "", err
-	}
-	rowsAffected, err := rs.RowsAffected()
-	if err != nil {
-		return "", err
-	}
-	logCtx.WithField("rowsAffected", rowsAffected).Debug("Deleted offloaded nodes")
+	// Don't need to clean up the old records here, we have a scheduled cleanup mechanism.
+	// If we clean them up here, when we update, if there is an update conflict, we will not be able to go back.
 	return version, nil
 }
 
@@ -135,7 +115,7 @@ func isDuplicateKeyError(err error) bool {
 func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
 	log.WithFields(log.Fields{"uid": uid, "version": version}).Debug("Getting offloaded nodes")
 	r := &nodesRecord{}
-	err := wdc.session.
+	err := wdc.session.SQL().
 		SelectFrom(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(db.Cond{"uid": uid}).
@@ -155,7 +135,7 @@ func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
 func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing offloaded nodes")
 	var records []nodesRecord
-	err := wdc.session.
+	err := wdc.session.SQL().
 		Select("uid", "version", "nodes").
 		From(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
@@ -181,7 +161,7 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) (map[string][]string, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
 	var records []UUIDVersion
-	err := wdc.session.
+	err := wdc.session.SQL().
 		Select("uid", "version").
 		From(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
@@ -207,7 +187,7 @@ func (wdc *nodeOffloadRepo) Delete(uid, version string) error {
 	}
 	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
 	logCtx.Debug("Deleting offloaded nodes")
-	rs, err := wdc.session.
+	rs, err := wdc.session.SQL().
 		DeleteFrom(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(db.Cond{"uid": uid}).

@@ -24,7 +24,8 @@ message WorkflowTemplateGetRequest {
 
 message WorkflowTemplateListRequest {
   string namespace = 1;
-  k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+  string namePattern = 2;
+  k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 3;
 }
 
 message WorkflowTemplateUpdateRequest {

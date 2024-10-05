@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import MonacoEditor from 'react-monaco-editor';
+
 import {Artifact, ArtifactRepository, execSpec, Workflow} from '../../../../models';
 import {artifactKey, artifactURN} from '../../../shared/artifacts';
 import ErrorBoundary from '../../../shared/components/error-boundary';
@@ -8,11 +8,12 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-panel';
 import {GiveFeedbackLink} from '../../../shared/components/give-feedback-link';
 import {LinkButton} from '../../../shared/components/link-button';
-import {useCollectEvent} from '../../../shared/components/use-collect-event';
+import {SuspenseMonacoEditor} from '../../../shared/components/suspense-monaco-editor';
+import {useCollectEvent} from '../../../shared/use-collect-event';
 import {services} from '../../../shared/services';
 import requests from '../../../shared/services/requests';
 
-export const ArtifactPanel = ({
+export function ArtifactPanel({
     workflow,
     artifact,
     archived,
@@ -20,9 +21,9 @@ export const ArtifactPanel = ({
 }: {
     workflow: Workflow;
     artifact: Artifact & {nodeId: string; artifactNameDiscriminator: string};
-    archived?: boolean;
+    archived: boolean;
     artifactRepository: ArtifactRepository;
-}) => {
+}) {
     const input = artifact.artifactNameDiscriminator === 'input';
     const downloadUrl = services.workflows.getArtifactDownloadUrl(workflow, artifact.nodeId, artifact.name, archived, input);
 
@@ -82,14 +83,18 @@ export const ArtifactPanel = ({
                         ) : show ? (
                             <ViewBox>
                                 {object ? (
-                                    <MonacoEditor
+                                    <SuspenseMonacoEditor
                                         value={object}
                                         language='json'
                                         height='500px'
                                         options={{
                                             readOnly: true,
-                                            minimap: {enabled: false},
-                                            renderIndentGuides: true
+                                            minimap: {
+                                                enabled: false
+                                            },
+                                            guides: {
+                                                indentation: true
+                                            }
                                         }}
                                     />
                                 ) : (
@@ -100,7 +105,7 @@ export const ArtifactPanel = ({
                             <p>Artifact cannot be shown because it is a tgz.</p>
                         ) : (
                             <p>
-                                Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
+                                Unknown extension &quot;{ext}&quot;, <a onClick={() => setShow(true)}>show anyway</a>.
                             </p>
                         )}
                         {artifactGCStrategy !== '' && artifactGCStrategy !== 'Never' && !artifact.deleted && (
@@ -119,6 +124,6 @@ export const ArtifactPanel = ({
             </FirstTimeUserPanel>
         </div>
     );
-};
+}
 
 const ViewBox = ({children}: {children: React.ReactElement}) => <div style={{border: 'solid 1px #ddd', padding: 10}}>{children}</div>;

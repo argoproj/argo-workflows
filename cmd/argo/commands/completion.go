@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -42,22 +41,13 @@ __argo_get_cron_workflow() {
 
 __argo_get_logs() {
 	# Determine if were completing a workflow or not.
-	local workflow=0
-	for comp_word in "${COMP_WORDS[@]}"; do
-		if [[ $comp_word =~ ^(-w|--workflow)$ ]]; then
-			workflow=1
-			break
-		fi
-	done
-
-	# If completing a workflow, call normal function.
-	if [[ $workflow -eq 1 ]]; then
+	if [[ $prev == "logs" ]]; then
 		__argo_get_workflow && return $?
-	fi
-
+ 	fi
+    local workflow=$prev
 	# Otherwise, complete the list of pods
 	local -a kubectl_out
-	if kubectl_out=($(kubectl get pods --no-headers --label-columns=workflows.argoproj.io/workflow 2>/dev/null | awk '{if ($6!="") print $1}' 2>/dev/null)); then
+	if kubectl_out=($(kubectl get pods --no-headers --selector=workflows.argoproj.io/workflow="${workflow}" 2>/dev/null | awk '{print $1}' 2>/dev/null)); then
 		COMPREPLY+=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
 	fi
 }
@@ -108,7 +98,7 @@ __argo_custom_func() {
 		    __argo_list_files
 			return
 			;;
-		argo_cron_get | argo_cron_delete | argo_cron_resume | argo_cron_subspend)
+		argo_cron_get | argo_cron_delete | argo_cron_resume | argo_cron_suspend)
 			__argo_get_cron_workflow
 			return
 			;;
@@ -126,8 +116,8 @@ __argo_custom_func() {
 func NewCompletionCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "completion SHELL",
-		Short: "output shell completion code for the specified shell (bash or zsh)",
-		Long: `Write bash or zsh shell completion code to standard output.
+		Short: "output shell completion code for the specified shell (bash, zsh or fish)",
+		Long: `Write bash, zsh or fish shell completion code to standard output.
 
 For bash, ensure you have bash completions installed and enabled.
 To access completions in your current shell, run
@@ -136,29 +126,37 @@ Alternatively, write it to a file and source in .bash_profile
 
 For zsh, output to a file in a directory referenced by the $fpath shell
 variable.
+
+For fish, output to a file in ~/.config/fish/completions
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			shell := args[0]
 			rootCommand := NewCommand()
 			rootCommand.BashCompletionFunction = bashCompletionFunc
-			availableCompletions := map[string]func(io.Writer) error{
-				"bash": rootCommand.GenBashCompletion,
-				"zsh":  rootCommand.GenZshCompletion,
+			availableCompletions := map[string]func(out io.Writer, cmd *cobra.Command) error{
+				"bash": runCompletionBash,
+				"zsh":  runCompletionZsh,
+				"fish": runCompletionFish,
 			}
 			completion, ok := availableCompletions[shell]
 			if !ok {
-				fmt.Printf("Invalid shell '%s'. The supported shells are bash and zsh.\n", shell)
-				os.Exit(1)
+				return fmt.Errorf("Invalid shell '%s'. The supported shells are bash and zsh.\n", shell)
 			}
-			if err := completion(os.Stdout); err != nil {
-				log.Fatal(err)
-			}
+			return completion(os.Stdout, rootCommand)
 		},
 	}
-
 	return command
+}
+
+func runCompletionBash(out io.Writer, cmd *cobra.Command) error {
+	return cmd.GenBashCompletion(out)
+}
+
+func runCompletionZsh(out io.Writer, cmd *cobra.Command) error {
+	return cmd.GenZshCompletion(out)
+}
+
+func runCompletionFish(out io.Writer, cmd *cobra.Command) error {
+	return cmd.GenFishCompletion(out, true)
 }

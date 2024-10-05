@@ -1,6 +1,6 @@
 # Security
 
-[To report security issues](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
+[To report security issues](https://github.com/argoproj/argo-workflows/blob/main/SECURITY.md).
 
 💡 Read [Practical Argo Workflows Hardening](https://blog.argoproj.io/practical-argo-workflows-hardening-dd8429acc1ce).
 
@@ -16,7 +16,7 @@ The controller has permission (via Kubernetes RBAC + its config map) with either
 * Create/get/delete pods, PVCs, and PDBs.
 * List/get template, config maps, service accounts, and secrets.
 
-See [workflow controller cluster-role](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [workflow-controller-role.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
+See [`workflow-controller-cluster-role.yaml`](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [`workflow-controller-role.yaml`](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
 
 ### User Permissions
 
@@ -29,7 +29,47 @@ If the user only has permission to create workflows, then they will be typically
 !!! Warning
     If you allow users to create workflows in the controller's namespace (typically `argo`), it may be possible for users to modify the controller itself.  In a namespace-install the managed namespace should therefore not be the controller's namespace.
 
-You can typically further restrict what a user can do to just being able to submit workflows from templates using [the workflow requirements feature](workflow-restrictions.md).
+You can typically further restrict what a user can do to just being able to submit workflows from templates using [the workflow restrictions feature](workflow-restrictions.md).
+
+#### UI Access
+
+If you want a user to have read-only access to the entirety of the Argo UI for their namespace, a sample role for them may look like:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ui-user-read-only
+rules:
+  # k8s standard APIs
+  - apiGroups:
+      - ""
+    resources:
+      - events
+      - pods
+      - pods/log
+    verbs:
+      - get
+      - list
+      - watch
+  # Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/main/manifests/cluster-install/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - eventsources
+      - sensors
+      - workflows
+      - workfloweventbindings
+      - workflowtemplates
+      - clusterworkflowtemplates
+      - cronworkflows
+      - cronworkflows
+      - workflowtaskresults
+    verbs:
+      - get
+      - list
+      - watch
+```
 
 ### Workflow Pod Permissions
 
@@ -44,7 +84,7 @@ This service account typically needs [permissions](workflow-rbac.md).
 
 Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.
 
-The main container will have the service account token mounted , allowing the main container to patch pods (among other permissions). Set `automountServiceAccountToken` to false to prevent this. See [fields](fields.md).
+The main container will have the service account token mounted, allowing the main container to patch pods (among other permissions). Set `automountServiceAccountToken` to false to prevent this. See [fields](fields.md).
 
 By default, workflows pods run as `root`. To further secure workflow pods, set the [workflow pod security context](workflow-pod-security-context.md).
 
@@ -64,7 +104,7 @@ Finally, you should configure the `argo-server` role and role binding with the c
 
 ### Read-Only
 
-You can achieve this by configuring the `argo-server` role ([example](https://github.com/argoproj/argo-workflows/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml) with only read access (i.e. only `get`/`list`/`watch` verbs).
+You can achieve this by configuring the `argo-server` role ([example](https://github.com/argoproj/argo-workflows/blob/main/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml) with only read access (i.e. only `get`/`list`/`watch` verbs)).
 
 ## Network Security
 

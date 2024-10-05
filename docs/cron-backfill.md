@@ -10,7 +10,7 @@
 2. Create your cron workflow to run daily and invoke that template.
 3. Create a backfill workflow that uses `withSequence` to run the job for each date.
 
-This [full example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/cron-backfill.yaml) contains:
+This [full example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/cron-backfill.yaml) contains:
 
 * A workflow template named `job`.
 * A cron workflow named `daily-job`.

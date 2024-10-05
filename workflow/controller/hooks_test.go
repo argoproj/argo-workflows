@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -144,8 +146,10 @@ status:
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-bgsf6.hooks.error")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 	node = woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-bgsf6.hooks.running")
 	assert.Nil(t, node)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
 func TestExecuteTmplLifeCycleHook(t *testing.T) {
@@ -262,6 +266,7 @@ status:
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("step1.hooks.error")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 	node = woc.wf.Status.Nodes.FindByDisplayName("step1.hooks.running")
 	assert.Nil(t, node)
 }
@@ -546,7 +551,9 @@ status:
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error"))
+	node := woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error")
+	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 }
 
 func TestTemplateRefWithHook(t *testing.T) {
@@ -772,8 +779,9 @@ status:
 	for _, node := range woc.wf.Status.Nodes {
 		fmt.Println(node.DisplayName, node.Phase)
 	}
-	assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error"))
-
+	node := woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error")
+	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 }
 
 func TestWfTemplateRefWithHook(t *testing.T) {
@@ -933,6 +941,7 @@ status:
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-fh7t4.hooks.Failed")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 }
 
 func TestWfHookHasFailures(t *testing.T) {
@@ -989,9 +998,263 @@ spec:
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
-	err := woc.podReconciliation(ctx)
-	assert.NoError(t, err)
+	err, _ := woc.podReconciliation(ctx)
+	require.NoError(t, err)
 	node = woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
 	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+}
+
+func TestWfHookNoExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-failures
+  namespace: argo
+spec:
+  entrypoint: message
+  hooks:
+    failure:
+      template: message
+  templates:
+    - name: message
+      script:
+        image: alpine:latest
+        command: [sh]
+        source: |
+          echo Hi
+`)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Equal(t, "invalid spec: hooks.failure Expression required", woc.wf.Status.Message)
+}
+
+func TestStepHookNoExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-failures
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: step-1
+            template: message
+            hooks:
+              foo:
+                template: message
+    - name: message
+      script:
+        image: alpine:latest
+        command: [sh]
+        source: |
+          echo Hi
+`)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Equal(t, "invalid spec: templates.main.steps[0].step-1.foo Expression required", woc.wf.Status.Message)
+}
+
+func TestWfHookWfWaitForTriggeredHook(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-running
+  namespace: argo
+spec:
+  entrypoint: main
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: sleep
+    # This hook never triggered by following test.
+    # To guarantee workflow does not wait forever for untriggered hooks.
+    failure:
+      expression: workflow.status == "Failed"
+      template: sleep
+  templates:
+    - name: main
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo", "This template finish fastest"]
+    - name: sleep
+      script:
+        image: alpine:latest
+        command: [sh]
+        source: |
+          sleep 10
+`)
+
+	// Setup
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+
+	// Check if running hook is triggered
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
+
+	// Make all pods running
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
+
+	// Make main pod completed
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pod, _ := podcs.Get(ctx, "hook-running", metav1.GetOptions{})
+	pod.Status.Phase = apiv1.PodSucceeded
+	updatedPod, _ := podcs.Update(ctx, pod, metav1.UpdateOptions{})
+	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(pod))
+	_ = woc.controller.podInformer.GetStore().Update(updatedPod)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
+	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running")
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.Nil(t, node.NodeFlag)
+	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// Make all pod completed
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.Progress("2/2"), woc.wf.Status.Progress)
+	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running.hooks.running")
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
+	node = woc.wf.Status.Nodes.FindByDisplayName("hook-running")
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.Nil(t, node.NodeFlag)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestWfTemplHookWfWaitForTriggeredHook(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-running
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: job
+            template: exit0
+            hooks:
+              running:
+                expression: steps['job'].status == "Running"
+                template: hook
+              failed:
+                expression: steps['job'].status == "Failed"
+                template: hook
+    - name: hook
+      script:
+        image: alpine:latest
+        command: [/bin/sh]
+        source: |
+          sleep 5
+    - name: exit0
+      script:
+        image: alpine:latest
+        command: [/bin/sh]
+        source: |
+          exit 0
+`)
+
+	// Setup
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+
+	// Check if running hook is triggered
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
+	assert.NotNil(t, node)
+	assert.True(t, node.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+
+	// Make all pods running
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	node = woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
+
+	// Make main pod completed
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, _ := podcs.List(ctx, metav1.ListOptions{})
+	pod := pods.Items[0]
+	pod.Status.Phase = apiv1.PodSucceeded
+	updatedPod, _ := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
+	_ = woc.controller.podInformer.GetStore().Update(updatedPod)
+	woc.wf.Status.MarkTaskResultComplete(woc.nodeID(&pod))
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.Progress("1/2"), woc.wf.Status.Progress)
+	node = woc.wf.Status.Nodes.FindByDisplayName("job")
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.Nil(t, node.NodeFlag)
+	node = woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// Make all pod completed
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.Progress("2/2"), woc.wf.Status.Progress)
+	node = woc.wf.Status.Nodes.FindByDisplayName("job.hooks.running")
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.True(t, node.NodeFlag.Hooked)
+	node = woc.wf.Status.Nodes.FindByDisplayName("job")
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	assert.Nil(t, node.NodeFlag)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

@@ -3,8 +3,6 @@ package apiclient
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
@@ -13,6 +11,7 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/file"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 
 	"sigs.k8s.io/yaml"
@@ -50,18 +49,7 @@ func newOfflineClient(paths []string) (context.Context, Client, error) {
 	workflowTemplateGetters := offlineWorkflowTemplateGetterMap{}
 
 	for _, basePath := range paths {
-		err := filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
-			if info.IsDir() {
-				return nil
-			}
-			if err != nil {
-				return err
-			}
-
-			bytes, err := os.ReadFile(path)
-			if err != nil {
-				return fmt.Errorf("failed to read file %s: %w", path, err)
-			}
+		err := file.WalkManifests(basePath, func(path string, bytes []byte) error {
 			var generic map[string]interface{}
 			if err := yaml.Unmarshal(bytes, &generic); err != nil {
 				return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)

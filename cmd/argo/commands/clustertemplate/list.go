@@ -2,7 +2,6 @@ package clustertemplate
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"text/tabwriter"
 
@@ -22,16 +21,28 @@ func NewListCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cluster workflow templates",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		Example: `# List Cluster Workflow Templates:
+  argo cluster-template list
+	
+# List Cluster Workflow Templates with additional details such as labels, annotations, and status:
+  argo cluster-template list --output wide
+  
+# List Cluster Workflow Templates by name only:
+  argo cluster-template list -o name
+`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{})
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			switch listArgs.output {
 			case "", "wide":
@@ -41,8 +52,9 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(cwftmp.ObjectMeta.Name)
 				}
 			default:
-				log.Fatalf("Unknown output mode: %s", listArgs.output)
+				return fmt.Errorf("Unknown output mode: %s", listArgs.output)
 			}
+			return nil
 		},
 	}
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")

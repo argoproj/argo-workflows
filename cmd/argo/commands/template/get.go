@@ -1,17 +1,10 @@
 package template
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-
-	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -20,11 +13,14 @@ func NewGetCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			namespace := client.Namespace()
 			for _, name := range args {
@@ -33,37 +29,14 @@ func NewGetCommand() *cobra.Command {
 					Namespace: namespace,
 				})
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 				printWorkflowTemplate(wftmpl, output)
 			}
+			return nil
 		},
 	}
 
 	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	return command
-}
-
-func printWorkflowTemplate(wf *wfv1.WorkflowTemplate, outFmt string) {
-	switch outFmt {
-	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
-	case "json":
-		outBytes, _ := json.MarshalIndent(wf, "", "    ")
-		fmt.Println(string(outBytes))
-	case "yaml":
-		outBytes, _ := yaml.Marshal(wf)
-		fmt.Print(string(outBytes))
-	case "wide", "":
-		printWorkflowTemplateHelper(wf)
-	default:
-		log.Fatalf("Unknown output format: %s", outFmt)
-	}
-}
-
-func printWorkflowTemplateHelper(wf *wfv1.WorkflowTemplate) {
-	const fmtStr = "%-20s %v\n"
-	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
-	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 }

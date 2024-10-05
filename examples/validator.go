@@ -2,10 +2,9 @@ package validation
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"strings"
 	"path/filepath"
+	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
 	"sigs.k8s.io/yaml"
@@ -22,7 +21,7 @@ func contains(s []string, e string) bool {
 }
 
 func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[string][]string, error) {
-	schemaBytes, err := ioutil.ReadFile("../api/jsonschema/schema.json")
+	schemaBytes, err := os.ReadFile("../api/jsonschema/schema.json")
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +44,7 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 		if filepath.Ext(path) != ".yaml" {
 			return nil
 		}
-		yamlBytes, err := ioutil.ReadFile(filepath.Clean(path))
+		yamlBytes, err := os.ReadFile(filepath.Clean(path))
 		if err != nil {
 			return err
 		}
@@ -67,15 +66,16 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 			errorDescriptions := []string{}
 			for _, err := range result.Errors() {
 				// port should be port number or port reference string, using string port number will cause issue
-				// due swagger 2.0 limitation, we can only specify one data type (we use string, same as k8s api swagger)
-				if strings.HasSuffix(err.Field(), "httpGet.port") && err.Description() == "Invalid type. Expected: string, given: integer" {
+				// due swagger 2.0 limitation, we can only specify one data type (we use string, same as k8s api swagger).
+				// Similarly, we cannot use string minAvailable either.
+				if (strings.HasSuffix(err.Field(), "httpGet.port") || strings.HasSuffix(err.Field(), "podDisruptionBudget.minAvailable")) && err.Description() == "Invalid type. Expected: string, given: integer" {
 					incorrectError = true
 					continue
 				} else {
 					errorDescriptions = append(errorDescriptions, fmt.Sprintf("%s in %s", err.Description(), err.Context().String()))
 				}
 			}
-			
+
 			if !(incorrectError && len(errorDescriptions) == 1) {
 				failed[path] = errorDescriptions
 			}

@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ClusterWorkflowTemplate
 metadata:
-  name: cluster-workflow-template-whalesay-template
+  name: cluster-workflow-template-print-message
 spec:
   templates:
-  - name: whalesay-template
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ---
 apiVersion: argoproj.io/v1alpha1
@@ -34,20 +34,20 @@ metadata:
   name: cluster-workflow-template-inner-steps
 spec:
   templates:
-  - name: whalesay-template
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
   - name: inner-steps
     steps:
     - - name: inner-hello1
         templateRef:
-          name: cluster-workflow-template-whalesay-template
-          template: whalesay-template
+          name: cluster-workflow-template-print-message
+          template: print-message
           clusterScope: true
         arguments:
           parameters:
@@ -55,8 +55,8 @@ spec:
             value: "inner-hello1"
     - - name: inner-hello2a
         templateRef:
-          name: cluster-workflow-template-whalesay-template
-          template: whalesay-template
+          name: cluster-workflow-template-print-message
+          template: print-message
           clusterScope: true
         arguments:
           parameters:
@@ -64,8 +64,8 @@ spec:
             value: "inner-hello2a"
       - name: inner-hello2b
         templateRef:
-          name: cluster-workflow-template-whalesay-template
-          template: whalesay-template
+          name: cluster-workflow-template-print-message
+          template: print-message
           clusterScope: true
         arguments:
           parameters:
@@ -85,21 +85,21 @@ metadata:
   name: cluster-workflow-template-inner-dag
 spec:
   templates:
-  - name: whalesay-template
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
   - name: inner-diamond
     dag:
       tasks:
       - name: inner-A
         templateRef:
-          name: cluster-workflow-template-whalesay-template
-          template: whalesay-template
+          name: cluster-workflow-template-print-message
+          template: print-message
           clusterScope: true
         arguments:
           parameters:
@@ -107,14 +107,14 @@ spec:
             value: inner-A
       - name: inner-B
         depends: "inner-A"
-        template: whalesay-template
+        template: print-message
         arguments:
           parameters:
           - name: message
             value: inner-B
       - name: inner-C
         depends: "inner-A"
-        template: whalesay-template
+        template: print-message
         arguments:
           parameters:
           - name: message
@@ -122,8 +122,8 @@ spec:
       - name: inner-D
         depends: "inner-B && inner-C"
         templateRef:
-          name: cluster-workflow-template-whalesay-template
-          template: whalesay-template
+          name: cluster-workflow-template-print-message
+          template: print-message
           clusterScope: true
         arguments:
           parameters:
@@ -135,17 +135,17 @@ kind: ClusterWorkflowTemplate
 metadata:
   name: cluster-workflow-template-submittable
 spec:
-  entryPoint: whalesay-template
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message
         value: hello world
   templates:
-    - name: whalesay-template
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["{{inputs.parameters.message}}"]

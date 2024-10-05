@@ -1,6 +1,7 @@
 import * as React from 'react';
+
 import {Workflow} from '../../../../models';
-import {ObjectEditor} from '../../../shared/components/object-editor/object-editor';
+import {ObjectEditor} from '../../../shared/components/object-editor';
 
 export const WorkflowResourcePanel = (props: {workflow: Workflow}) => (
     <div className='white-box'>

@@ -7,15 +7,15 @@ permissions:
 
 jobs:
   review:
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: write
     if: ${{ github.actor == 'dependabot[bot]' && github.repository == 'argoproj/argo-workflows'}}
+    permissions:
+      pull-requests: write # for approving a PR
+      contents: write # for enabling auto-merge on a PR
+    runs-on: ubuntu-latest
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v1.3.6
+        uses: dependabot/fetch-metadata@c9c4182bf1b97f5224aee3906fd373f6b61b4526 # v1.6.0
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Approve PR

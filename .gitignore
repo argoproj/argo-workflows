@@ -45,3 +45,6 @@ sdks/python/client/dist/*
 manifests/install.yaml
 manifests/namespace-install.yaml
 /logs
+node_modules 
+result
+.devenv

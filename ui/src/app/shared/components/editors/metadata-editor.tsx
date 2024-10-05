@@ -1,9 +1,10 @@
 import * as React from 'react';
+
 import {kubernetes} from '../../../../models';
 import {TextInput} from '../text-input';
 import {LabelsAndAnnotationsEditor} from './labels-and-annotations-editor';
 
-export const MetadataEditor = ({onChange, value}: {value: kubernetes.ObjectMeta; onChange: (value: kubernetes.ObjectMeta) => void}) => {
+export function MetadataEditor({onChange, value}: {value: kubernetes.ObjectMeta; onChange: (value: kubernetes.ObjectMeta) => void}) {
     return (
         <>
             <div className='white-box'>
@@ -29,4 +30,4 @@ export const MetadataEditor = ({onChange, value}: {value: kubernetes.ObjectMeta;
             <LabelsAndAnnotationsEditor value={value} onChange={onChange} />
         </>
     );
-};
+}

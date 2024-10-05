@@ -18,7 +18,7 @@ type ResourceRateLimit struct {
 	Burst int     `json:"burst"`
 }
 
-// Config contain the configuration settings for the workflow controller
+// Config contains the configuration settings for the workflow controller
 type Config struct {
 
 	// NodeEvents configures how node events are emitted
@@ -71,6 +71,9 @@ type Config struct {
 	// Links to related apps.
 	Links []*wfv1.Link `json:"links,omitempty"`
 
+	// Columns are custom columns that will be exposed in the Workflow List View.
+	Columns []*wfv1.Column `json:"columns,omitempty"`
+
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
@@ -82,21 +85,22 @@ type Config struct {
 	// Defaults to the Kubernetes default of 30 seconds.
 	PodGCGracePeriodSeconds *int64 `json:"podGCGracePeriodSeconds,omitempty"`
 
-	// PodGCDeleteDelayDuration specifies the duration in seconds before the pods in the GC queue get deleted.
-	// Value must be non-negative integer. A zero value indicates that the pods will be deleted immediately.
+	// PodGCDeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
+	// Value must be non-negative. A zero value indicates that the pods will be deleted immediately.
 	// Defaults to 5 seconds.
 	PodGCDeleteDelayDuration *metav1.Duration `json:"podGCDeleteDelayDuration,omitempty"`
 
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
-	// Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
+	// Adds configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
-	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
+	// https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
 
+	// Workflow retention by number of workflows
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 
 	// NavColor is an ui navigation bar background color
@@ -232,25 +236,32 @@ func (c DatabaseConfig) GetHostname() string {
 
 type PostgreSQLConfig struct {
 	DatabaseConfig
-	SSL              bool                    `json:"ssl,omitempty"`
-	SSLMode          string                  `json:"sslMode,omitempty"`
-	CaCertSecret     apiv1.SecretKeySelector `json:"caCertSecret,omitempty"`
-	ClientCertSecret apiv1.SecretKeySelector `json:"clientCertSecret,omitempty"`
-	ClientKeySecret  apiv1.SecretKeySelector `json:"clientKeySecret,omitempty"`
-	CertPath         string                  `json:"certPath"`
-}
-
-func (c PostgreSQLConfig) GetPGCertPath() string {
-	if c.CertPath != "" {
-		return c.CertPath
-	}
-	return "/home/argo/pgcerts"
+	SSL     bool   `json:"ssl,omitempty"`
+	SSLMode string `json:"sslMode,omitempty"`
 }
 
 type MySQLConfig struct {
 	DatabaseConfig
 	Options map[string]string `json:"options,omitempty"`
 }
+
+// MetricModifier are modifiers for an individual named metric to change their behaviour
+type MetricModifier struct {
+	// Disabled disables the emission of this metric completely
+	Disabled bool `json:"disabled,omitempty"`
+	// DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality
+	DisabledAttributes []string `json:"disabledAttributes"`
+	// HistogramBuckets allow configuring of the buckets used in a histogram
+	// Has no effect on non-histogram buckets
+	HistogramBuckets []float64 `json:"histogramBuckets,omitempty"`
+}
+
+type MetricsTemporality string
+
+const (
+	MetricsTemporalityCumulative MetricsTemporality = "Cumulative"
+	MetricsTemporalityDelta      MetricsTemporality = "Delta"
+)
 
 // MetricsConfig defines a config for a metrics server
 type MetricsConfig struct {
@@ -267,8 +278,14 @@ type MetricsConfig struct {
 	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
-	// Secure is a flag that starts the metrics servers using TLS
+	// Secure is a flag that starts the metrics servers using TLS, defaults to true
 	Secure *bool `json:"secure,omitempty"`
+	// Modifiers configure metrics by name
+	Modifiers map[string]MetricModifier `json:"modifiers,omitempty"`
+	// Temporality of the OpenTelemetry metrics.
+	// Enum of Cumulative or Delta, defaulting to Cumulative.
+	// No effect on Prometheus metrics, which are always Cumulative.
+	Temporality MetricsTemporality `json:"temporality,omitempty"`
 }
 
 func (mc MetricsConfig) GetSecure(defaultValue bool) bool {

@@ -12,19 +12,19 @@ kind: Workflow
 metadata:
   generateName: hello-world-parameters-
 spec:
-  entrypoint: whalesay
+  entrypoint: print-message
   arguments:
     parameters:
       - name: message
         value: hello world
   templates:
-    - name: whalesay
+    - name: print-message
       inputs:
         parameters:
           - name: message
       container:
-        image: docker/whalesay
-        command: [ cowsay ]
+        image: busybox
+        command: [ echo ]
         args: [ "{{inputs.parameters.message}}" ]
 ```
 
@@ -44,19 +44,19 @@ The tag is substituted with the variable that has a name the same as the tag.
 Simple tags **may** have white-space between the brackets and variable as seen below. However, there is a known issue where variables may fail to interpolate with white-space, so it is recommended to avoid using white-space until this issue is resolved. [Please report](https://github.com/argoproj/argo-workflows/issues/8960) unexpected behavior with reproducible examples.
 
 ```yaml
-args: [ "{{ inputs.parameters.message }}" ]  
+args: [ "{{ inputs.parameters.message }}" ]
 ```
 
 ### Expression
 
-> Since v3.1
+> v3.1 and after
 
 The tag is substituted with the result of evaluating the tag as an expression.
 
 Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
 indexing into the parameter or step map, e.g. `inputs.parameters['my-param']` or `steps['my-step'].outputs.result`.
 
-[Learn about the expression syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).
+[Learn more about the expression syntax](https://expr-lang.org/docs/language-definition).
 
 #### Examples
 
@@ -118,8 +118,10 @@ Trim a string:
 sprig.trim(inputs.parameters['my-string-param'])
 ```
 
-!!! Warning In Sprig functions, errors are often not raised. E.g. if `int` is used on an invalid value, it
-returns `0`. Please review the Sprig documentation to understand which functions do and which do not.
+!!! Warning "Sprig error handling"
+    Sprig functions often do not raise errors.
+    For example, if `int` is used on an invalid value, it returns `0`.
+    Please review the Sprig documentation to understand which functions raise errors and which do not.
 
 ## Reference
 
@@ -143,6 +145,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
+| `steps.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
@@ -159,6 +162,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
 | `tasks.<TASKNAME>.startedAt` | Time-stamp when the task started |
 | `tasks.<TASKNAME>.finishedAt` | Time-stamp when the task finished |
+| `tasks.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
@@ -166,7 +170,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 
 ### HTTP Templates
 
-> Since v3.3
+> v3.3 and after
 
 Only available for `successCondition`
 
@@ -180,6 +184,20 @@ Only available for `successCondition`
 | `response.body` | Response body (`string`) |
 | `response.headers` | Response headers (`map[string][]string`) |
 
+### CronWorkflows
+
+> v3.6 and after
+
+| Variable | Description|
+|----------|------------|
+| `cronworkflow.name` | Name of the CronWorkflow (`string`) |
+| `cronworkflow.namespace` | Namespace of the CronWorkflow (`string`) |
+| `cronworkflow.labels.<NAME>` | CronWorkflow labels (`string`) |
+| `cronworkflow.labels.json` | CronWorkflow labels as a JSON string (`string`) |
+| `cronworkflow.annotations.<NAME>` | CronWorkflow annotations (`string`) |
+| `cronworkflow.annotations.json` | CronWorkflow annotations as a JSON string (`string`) |
+| `cronworkflow.lastScheduledTime` | The time since this workflow was last scheduled, value is nil on first run (`*time.Time`) |
+
 ### `RetryStrategy`
 
 When using the `expression` field within `retryStrategy`, special variables are available.
@@ -187,8 +205,9 @@ When using the `expression` field within `retryStrategy`, special variables are 
 | Variable | Description|
 |----------|------------|
 | `lastRetry.exitCode` | Exit code of the last retry |
-| `lastRetry.Status` | Status of the last retry |
-| `lastRetry.Duration` | Duration in seconds of the last retry |
+| `lastRetry.status` | Status of the last retry |
+| `lastRetry.duration` | Duration in seconds of the last retry |
+| `lastRetry.message` | Message output from the last retry (available from version 3.5) |
 
 Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`expression: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`expression: "{{=lastRetry.exitCode != '2'}}"`).
 
@@ -214,15 +233,16 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 When emitting custom metrics in a `template`, special variables are available that allow self-reference to the current
 step.
 
-| Variable | Description|
-|----------|------------|
-| `status` | Phase status of the metric-emitting template |
-| `duration` | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`) |
-| `exitCode` | Exit code of the metric-emitting template |
-| `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
-| `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
-| `outputs.result` | Output result of the metric-emitting template |
-| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc.|
+| Variable                         | Description                                                                                                                                                                                  |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `status`                         | Phase status of the metric-emitting template                                                                                                                                                 |
+| `duration`                       | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`)                                              |
+| `exitCode`                       | Exit code of the metric-emitting template                                                                                                                                                    |
+| `inputs.parameters.<NAME>`       | Input parameter of the metric-emitting template                                                                                                                                              |
+| `outputs.parameters.<NAME>`      | Output parameter of the metric-emitting template                                                                                                                                             |
+| `outputs.result`                 | Output result of the metric-emitting template                                                                                                                                                |
+| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc. |
+| `retries`                        | Retried count by retry strategy                                                                                                                                                              |
 
 ### Real-Time Metrics
 
@@ -244,6 +264,7 @@ For `Template`-level metrics:
 |----------|------------|
 | `workflow.name` | Workflow name |
 | `workflow.namespace` | Workflow namespace |
+| `workflow.mainEntrypoint` | Workflow's initial entrypoint |
 | `workflow.serviceAccountName` | Workflow service account name |
 | `workflow.uid` | Workflow UID. Useful for setting ownership reference to a resource, or a unique artifact location |
 | `workflow.parameters.<NAME>` | Input parameter to the workflow |
@@ -259,7 +280,7 @@ For `Template`-level metrics:
 | `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation time-stamp formatted with a [`strftime`](http://strftime.org) format character. |
 | `workflow.creationTimestamp.RFC3339` | Creation time-stamp formatted with in RFC 3339. |
 | `workflow.priority` | Workflow priority |
-| `workflow.duration` | Workflow duration estimate, may differ from actual duration by a couple of seconds |
+| `workflow.duration` | Workflow duration estimate in seconds, may differ from actual duration by a couple of seconds |
 | `workflow.scheduledTime` | Scheduled runtime formatted in RFC 3339 (only available for `CronWorkflow`) |
 
 ### Exit Handler
@@ -268,3 +289,75 @@ For `Template`-level metrics:
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
 | `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
+
+### `stopStrategy`
+
+> v3.6 and after
+
+When using the `condition` field within the [`stopStrategy` of a `CronWorkflow`](cron-workflows.md#automatically-stopping-a-cronworkflow), special variables are available.
+
+| Variable | Description|
+|----------|------------|
+| `failed` | Counts how many times child workflows failed |
+| `succeeded` | Counts how many times child workflows succeeded |
+
+### Knowing where you are
+
+The idea with creating a `WorkflowTemplate` is that they are reusable bits of code you will use in many actual Workflows. Sometimes it is useful to know which workflow you are part of.
+
+`workflow.mainEntrypoint` is one way you can do this. If each of your actual workflows has a differing entrypoint, you can identify the workflow you're part of. Given this use in a `WorkflowTemplate`:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: say-main-entrypoint
+spec:
+  entrypoint: echo
+  templates:
+  - name: echo
+    container:
+      image: alpine
+      command: [echo]
+      args: ["{{workflow.mainEntrypoint}}"]
+```
+
+I can distinguish my caller:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: foo-
+spec:
+  entrypoint: foo
+  templates:
+    - name: foo
+      steps:
+      - - name: step
+          templateRef:
+            name: say-main-entrypoint
+            template: echo
+```
+
+results in a log of `foo`
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: bar-
+spec:
+  entrypoint: bar
+  templates:
+    - name: bar
+      steps:
+      - - name: step
+          templateRef:
+            name: say-main-entrypoint
+            template: echo
+```
+
+results in a log of `bar`
+
+This shouldn't be that helpful in logging, you should be able to identify workflows through other labels in your cluster's log tool, but can be helpful when generating metrics for the workflow for example.

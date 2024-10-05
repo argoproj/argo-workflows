@@ -21,46 +21,52 @@ The workflow will pause at a `Suspend` node, and user will be able to update par
 
 ## Intermediate Parameters Approval Example
 
-- The below example shows static enum values `approval` step.
+- The [below example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/intermediate-parameters.yaml) shows static enum values `approval` step.
 - The user will be able to choose between `[YES, NO]` which will be used in subsequent steps.
 
-[![Approval Example Demo](https://img.youtube.com/vi/eyeZ2oddwWE/0.jpg)](https://youtu.be/eyeZ2oddwWE)
+[![Approval Example Demo](assets/intermediate-inputs.png)](https://youtu.be/eyeZ2oddwWE)
 
 ```yaml
-
-entrypoint: cicd-pipeline
-templates:
-   - name: cicd-pipeline
-     steps:
-        - - name: deploy-pre-prod
-            template: deploy
-        - - name: approval
-            template: approval
-        - - name: deploy-prod
-            template: deploy
-            when: '{{steps.approval.outputs.parameters.approve}} == YES'
-   - name: approval
-     suspend: {}
-     inputs:
-        parameters:
-           - name: approve
-             default: 'NO'
-             enum:
-                - 'YES'
-                - 'NO'
-     outputs:
-        parameters:
-           - name: approve
-             valueFrom:
-                supplied: {}
-   - name: deploy
-     container:
-        image: 'argoproj/argosay:v2'
-        command:
-           - /argosay
-        args:
-           - echo
-           - deploying
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: intermediate-parameters-cicd-
+spec:
+  entrypoint: cicd-pipeline
+  templates:
+    - name: cicd-pipeline
+      steps:
+          - - name: deploy-pre-prod
+              template: deploy
+          - - name: approval
+              template: approval
+          - - name: deploy-prod
+              template: deploy
+              when: '{{steps.approval.outputs.parameters.approve}} == YES'
+    - name: approval
+      suspend: {}
+      inputs:
+          parameters:
+            - name: approve
+              default: 'NO'
+              enum:
+                  - 'YES'
+                  - 'NO'
+              description: >-
+                Choose YES to continue workflow and deploy to production
+      outputs:
+          parameters:
+            - name: approve
+              valueFrom:
+                  supplied: {}
+    - name: deploy
+      container:
+          image: 'argoproj/argosay:v2'
+          command:
+            - /argosay
+          args:
+            - echo
+            - deploying
 ```
 
 ## Intermediate Parameters DB Schema Update Example
@@ -71,64 +77,71 @@ templates:
 - Since this `json` has a `key` called `enum`, with an array of options, the UI will parse this and display it as a dropdown.
 - The output can be any string also, in which case the UI will display it as a text field. Which the user can later edit.
 
-[![DB Schema Update Example Demo](https://img.youtube.com/vi/QgE-1782YJc/0.jpg)](https://youtu.be/QgE-1782YJc)
+[![DB Schema Update Example Demo](assets/intermediate-inputs.png)](https://youtu.be/QgE-1782YJc)
 
 ```yaml
-entrypoint: db-schema-update
-templates:
-    - name: db-schema-update
-      steps:
-        - - name: generate-db-list
-            template: generate-db-list
-        - - name: choose-db
-            template: choose-db
-            arguments:
-              parameters:
-                - name: db_name
-                  value: '{{steps.generate-db-list.outputs.parameters.db_list}}'
-        - - name: update-schema
-            template: update-schema
-            arguments:
-              parameters:
-                - name: db_name
-                  value: '{{steps.choose-db.outputs.parameters.db_name}}'
-    - name: generate-db-list
-      outputs:
-        parameters:
-          - name: db_list
-            valueFrom:
-              path: /tmp/db_list.txt
-      container:
-        name: main
-        image: 'argoproj/argosay:v2'
-        command:
-          - sh
-          - '-c'
-        args:
-          - >-
-            echo "{\"enum\": [\"db1\", \"db2\", \"db3\"]}" | tee /tmp/db_list.txt
-    - name: choose-db
-      inputs:
-        parameters:
-          - name: db_name
-      outputs:
-        parameters:
-          - name: db_name
-            valueFrom:
-              supplied: {}
-      suspend: {}
-    - name: update-schema
-      inputs:
-        parameters:
-          - name: db_name
-      container:
-        name: main
-        image: 'argoproj/argosay:v2'
-        command:
-          - sh
-          - '-c'
-        args:
-          - echo Updating DB {{inputs.parameters.db_name}}
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: intermediate-parameters-db-
+spec:
+  entrypoint: db-schema-update
+  templates:
+      - name: db-schema-update
+        steps:
+          - - name: generate-db-list
+              template: generate-db-list
+          - - name: choose-db
+              template: choose-db
+              arguments:
+                parameters:
+                  - name: db_name
+                    value: '{{steps.generate-db-list.outputs.parameters.db_list}}'
+          - - name: update-schema
+              template: update-schema
+              arguments:
+                parameters:
+                  - name: db_name
+                    value: '{{steps.choose-db.outputs.parameters.db_name}}'
+      - name: generate-db-list
+        outputs:
+          parameters:
+            - name: db_list
+              valueFrom:
+                path: /tmp/db_list.txt
+        container:
+          name: main
+          image: 'argoproj/argosay:v2'
+          command:
+            - sh
+            - '-c'
+          args:
+            - >-
+              echo "{\"enum\": [\"db1\", \"db2\", \"db3\"]}" | tee /tmp/db_list.txt
+      - name: choose-db
+        inputs:
+          parameters:
+            - name: db_name
+              description: >-
+                Choose DB to update a schema
+        outputs:
+          parameters:
+            - name: db_name
+              valueFrom:
+                supplied: {}
+        suspend: {}
+      - name: update-schema
+        inputs:
+          parameters:
+            - name: db_name
+        container:
+          name: main
+          image: 'argoproj/argosay:v2'
+          command:
+            - sh
+            - '-c'
+          args:
+            - echo Updating DB {{inputs.parameters.db_name}}
 ```
 
 ### Some Important Details

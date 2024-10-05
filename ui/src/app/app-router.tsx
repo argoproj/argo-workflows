@@ -1,12 +1,15 @@
-import {Layout, Notifications, NotificationsManager, NotificationType, Popup, PopupManager, PopupProps} from 'argo-ui';
 import * as H from 'history';
+import {Layout} from 'argo-ui/src/components/layout/layout';
+import {NotificationsManager} from 'argo-ui/src/components/notifications/notification-manager';
+import {Notifications, NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
+import {Popup, PopupProps} from 'argo-ui/src/components/popup/popup';
 
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Redirect, Route, Router, Switch} from 'react-router';
 import {Version} from '../models';
-import apidocs from './apidocs';
-import archivedWorkflows from './archived-workflows';
+import apiDocs from './api-docs';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
 import eventflow from './event-flow';
@@ -21,7 +24,7 @@ import {uiUrl} from './shared/base';
 import {ChatButton} from './shared/components/chat-button';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
-import {Utils} from './shared/utils';
+import * as nsUtils from './shared/namespaces';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
@@ -35,7 +38,6 @@ const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 const cronWorkflowsUrl = uiUrl('cron-workflows');
-const archivedWorkflowsUrl = uiUrl('archived-workflows');
 const eventSourceUrl = uiUrl('event-sources');
 const pluginsUrl = uiUrl('plugins');
 const helpUrl = uiUrl('help');
@@ -45,7 +47,7 @@ const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
 const reportsUrl = uiUrl('reports');
 
-export const AppRouter = ({popupManager, history, notificationsManager}: {popupManager: PopupManager; history: H.History; notificationsManager: NotificationsManager}) => {
+export function AppRouter({popupManager, history, notificationsManager}: {popupManager: PopupManager; history: H.History; notificationsManager: NotificationsManager}) {
     const [popupProps, setPopupProps] = useState<PopupProps>();
     const [modals, setModals] = useState<{string: boolean}>();
     const [version, setVersion] = useState<Version>();
@@ -57,21 +59,21 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             type: NotificationType.Error
         });
     };
-    Utils.onNamespaceChange = setNamespace;
+    nsUtils.setOnNamespaceChange(setNamespace);
     useEffect(() => {
         const sub = popupManager.popupProps.subscribe(setPopupProps);
         return () => sub.unsubscribe();
     }, [popupManager]);
     useEffect(() => {
         services.info.getUserInfo().then(userInfo => {
-            Utils.userNamespace = userInfo.serviceAccountNamespace;
-            setNamespace(Utils.currentNamespace);
+            nsUtils.setUserNamespace(userInfo.serviceAccountNamespace);
+            setNamespace(nsUtils.getCurrentNamespace());
         });
         services.info
             .getInfo()
             .then(info => {
-                Utils.managedNamespace = info.managedNamespace;
-                setNamespace(Utils.currentNamespace);
+                nsUtils.setManagedNamespace(info.managedNamespace);
+                setNamespace(nsUtils.getCurrentNamespace());
                 setModals(info.modals);
                 setNavBarBackgroundColor(info.navColor);
             })
@@ -80,7 +82,8 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             .catch(setError);
     }, []);
 
-    const namespaceSuffix = Utils.managedNamespace ? '' : '/' + namespace;
+    const managedNamespace = nsUtils.getManagedNamespace();
+    const namespaceSuffix = managedNamespace ? '' : '/' + (namespace || '');
     return (
         <>
             {popupProps && <Popup {...popupProps} />}
@@ -131,11 +134,6 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-link'
                             },
                             {
-                                title: 'Archived Workflows',
-                                path: archivedWorkflowsUrl + namespaceSuffix,
-                                iconClassName: 'fa fa-archive'
-                            },
-                            {
                                 title: 'Reports',
                                 path: reportsUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-chart-bar'
@@ -176,14 +174,13 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
                                 <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
                                 <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
-                                <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
                                 <Route path={reportsUrl} component={reports.component} />
                                 <Route path={pluginsUrl} component={plugins.component} />
                                 <Route exact={true} strict={true} path={helpUrl} component={help.component} />
-                                <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />
+                                <Route exact={true} strict={true} path={apiDocsUrl} component={apiDocs.component} />
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
                                 <Route exact={true} strict={true} path={loginUrl} component={login.component} />
-                                {Utils.managedNamespace && <Redirect to={workflowsUrl} />}
+                                {managedNamespace && <Redirect to={workflowsUrl} />}
                                 {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
                             </Switch>
                         </ErrorBoundary>
@@ -194,4 +191,4 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             </Router>
         </>
     );
-};
+}

@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-with-recreated-pvc
+spec:
+  volumeClaimGC:
+    strategy: OnWorkflowCompletion
+  entrypoint: volumes-pvc-example
+  volumeClaimTemplates:
+    - metadata:
+        name: workdir
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+
+  templates:
+    - name: volumes-pvc-example
+      steps:
+        - - name: generate
+            template: whalesay
+        - - name: print
+            template: print-message
+
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/vol
+
+    - name: print-message
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["exit 1"]
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/vol

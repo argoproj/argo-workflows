@@ -2,10 +2,12 @@ package s3
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
@@ -26,8 +28,10 @@ type ArtifactDriver struct {
 	Endpoint              string
 	Region                string
 	Secure                bool
+	TrustedCA             string
 	AccessKey             string
 	SecretKey             string
+	SessionToken          string
 	RoleARN               string
 	UseSDKCreds           bool
 	Context               context.Context
@@ -39,23 +43,34 @@ type ArtifactDriver struct {
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 
-// newMinioClient instantiates a new minio client object.
+// newS3Client instantiates a new S3 client object.
 func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Client, error) {
 	opts := argos3.S3ClientOpts{
-		Endpoint:    s3Driver.Endpoint,
-		Region:      s3Driver.Region,
-		Secure:      s3Driver.Secure,
-		AccessKey:   s3Driver.AccessKey,
-		SecretKey:   s3Driver.SecretKey,
-		RoleARN:     s3Driver.RoleARN,
-		Trace:       os.Getenv(common.EnvVarArgoTrace) == "1",
-		UseSDKCreds: s3Driver.UseSDKCreds,
+		Endpoint:     s3Driver.Endpoint,
+		Region:       s3Driver.Region,
+		Secure:       s3Driver.Secure,
+		AccessKey:    s3Driver.AccessKey,
+		SecretKey:    s3Driver.SecretKey,
+		SessionToken: s3Driver.SessionToken,
+		RoleARN:      s3Driver.RoleARN,
+		Trace:        os.Getenv(common.EnvVarArgoTrace) == "1",
+		UseSDKCreds:  s3Driver.UseSDKCreds,
 		EncryptOpts: argos3.EncryptOpts{
 			KmsKeyId:              s3Driver.KmsKeyId,
 			KmsEncryptionContext:  s3Driver.KmsEncryptionContext,
 			Enabled:               s3Driver.EnableEncryption,
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
 		},
+	}
+
+	if tr, err := argos3.GetDefaultTransport(opts); err == nil {
+		if s3Driver.Secure && s3Driver.TrustedCA != "" {
+			// Trust only the provided root CA
+			pool := x509.NewCertPool()
+			pool.AppendCertsFromPEM([]byte(s3Driver.TrustedCA))
+			tr.TLSClientConfig.RootCAs = pool
+		}
+		opts.Transport = tr
 	}
 
 	return argos3.NewS3Client(ctx, opts)
@@ -168,7 +183,23 @@ func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 		if err != nil {
 			return err
 		}
-		return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+
+		// check suffix instead of s3cli.IsDirectory as it requires another request for file delete (most scenarios)
+		if !strings.HasSuffix(artifact.S3.Key, "/") {
+			return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+		}
+
+		keys, err := s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
+		if err != nil {
+			return fmt.Errorf("unable to list files in %s: %s", artifact.S3.Key, err)
+		}
+		for _, objKey := range keys {
+			err = s3cli.Delete(artifact.S3.Bucket, objKey)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 
 	return err

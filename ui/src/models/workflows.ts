@@ -264,7 +264,7 @@ export interface Script {
 }
 
 /**
- * UserContainer is is a container specified by a user.
+ * UserContainer is a container specified by a user.
  */
 export interface UserContainer {
     /**
@@ -539,6 +539,26 @@ export interface Workflow {
 
 export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
 
+export const archivalStatus = 'workflows.argoproj.io/workflow-archiving-status';
+
+export function isWorkflowInCluster(wf: Workflow): boolean {
+    if (!wf) {
+        return false;
+    }
+
+    const labelValue = wf.metadata?.labels?.[archivalStatus];
+    return !labelValue || labelValue === 'Pending' || labelValue === 'Archived';
+}
+
+export function isArchivedWorkflow(wf?: Workflow): boolean {
+    if (!wf) {
+        return false;
+    }
+
+    const labelValue = wf.metadata?.labels?.[archivalStatus];
+    return labelValue === 'Archived' || labelValue === 'Persisted';
+}
+
 export type NodeType = 'Pod' | 'Container' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
 
 export interface NodeStatus {
@@ -696,7 +716,7 @@ export interface WorkflowStatus {
     /**
      * Phase a simple, high-level summary of where the workflow is in its lifecycle.
      */
-    phase: NodePhase;
+    phase: WorkflowPhase;
     startedAt: kubernetes.Time;
     finishedAt: kubernetes.Time;
     /**
@@ -807,6 +827,7 @@ export interface WorkflowSpec {
      */
     podGC?: {
         strategy?: string;
+        deleteDelayDuration?: string;
     };
     /**
      * SecurityContext holds pod-level security attributes and common container settings.
@@ -1013,6 +1034,6 @@ export function getColorForNodePhase(p: NodePhase) {
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';
 
 export interface LogEntry {
-    content: string;
+    content?: string;
     podName?: string;
 }

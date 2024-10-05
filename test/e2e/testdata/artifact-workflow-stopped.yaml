@@ -1,0 +1,117 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-stopped-
+spec:
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+      workflows.argoproj.io/workflow: "wf-stopped"
+  entrypoint: wf-stopped-main
+  serviceAccountName: argo
+  executor:
+    serviceAccountName: default
+  volumeClaimTemplates:
+    - metadata:
+        name: artifacts
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+  templates:
+    - name: wf-stopped-main
+      dag:
+        tasks:
+          - name: create-artifact
+            template: artifact-creator
+          - name: delay-stop-workflow
+            template: delay-stop
+          - name: stop-workflow
+            template: workflow-stopper
+            dependencies: [delay-stop-workflow]
+    - name: delay-stop
+      container:
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
+        args:
+          - |
+            echo "Delaying workflow stop"
+            ls /mnt
+            x=0
+            while [ $x -le 60 ]
+            do
+              sleep 1
+              if [ -f "/mnt/vol/test.txt" ] && [ -f "/mnt/vol/globaltest.txt" ]; then
+                echo "Artifact found in shared volume"
+                break
+              fi
+              x=$(( $x + 1 ))
+            done
+    - name: workflow-stopper
+      container:
+        image: quay.io/argoproj/argocli:latest
+        imagePullPolicy: Never
+        args:
+          - stop
+          - -l
+          - workflows.argoproj.io/workflow=wf-stopped
+          - --namespace=argo
+          - --loglevel=debug
+    - name: artifact-creator
+      metadata:
+        labels:
+          template: "artifact-creator"
+      container:
+        image: alpine:latest
+        volumeMounts:
+          - name: artifacts
+            mountPath: /mnt/vol
+        command: [sh, -c]
+        args:
+          - |
+            echo 'testing' > /mnt/vol/test.txt
+            echo 'testing global' > /mnt/vol/globaltest.txt
+            echo "Artifact saved to /mnt/vol/test.txt"
+            echo "Pretending to continue to do work."
+            ls /mnt
+            while :
+            do
+              sleep 1
+            done
+      outputs:
+        artifacts:
+          - name: local-artifact
+            path: /mnt/vol/test.txt
+            s3:
+              key: local-artifact
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            archive:
+              none: {}
+          - name: global-artifact
+            globalName: global-artifact-global-name
+            path: /mnt/vol/globaltest.txt
+            s3:
+              key: global-artifact
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            archive:
+              none: {}

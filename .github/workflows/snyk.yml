@@ -2,6 +2,11 @@ name: Snyk
 on:
   schedule:
     - cron: "30 2 * * *"
+  push:
+    branches:
+      - main
+      - release-*
+
 permissions:
   contents: read
 
@@ -9,27 +14,34 @@ jobs:
   # we do not scan images here, they're scanned here: https://app.snyk.io/org/argoproj/projects
 
   golang:
+    name: Scan Go deps
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
-      - uses: actions/checkout@v3
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/golang@master
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Run Snyk to check for Go vulnerabilities
+        uses: snyk/actions/golang@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
         with:
           args: --severity-threshold=high
 
   node:
+    name: Scan Node deps
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+        with:
+          node-version: "20" # change in all GH Workflows
+          cache: yarn
+          cache-dependency-path: ui/yarn.lock
       - run: yarn --cwd ui install
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@master
+      - name: Run Snyk to check for Node vulnerabilities
+        uses: snyk/actions/node@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
         with:
           args: --file=ui/package.json --severity-threshold=high
 

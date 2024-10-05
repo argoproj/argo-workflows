@@ -36,10 +36,12 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 	if art.S3 != nil {
 		var accessKey string
 		var secretKey string
+		var sessionToken string
 		var serverSideCustomerKey string
 		var kmsKeyId string
 		var kmsEncryptionContext string
 		var enableEncryption bool
+		var caKey string
 
 		if art.S3.AccessKeySecret != nil && art.S3.AccessKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
@@ -52,6 +54,14 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 				return nil, err
 			}
 			secretKey = secretKeyBytes
+
+			if art.S3.SessionTokenSecret != nil && art.S3.SessionTokenSecret.Name != "" {
+				sessionTokenBytes, err := ri.GetSecret(ctx, art.S3.SessionTokenSecret.Name, art.S3.SessionTokenSecret.Key)
+				if err != nil {
+					return nil, err
+				}
+				sessionToken = sessionTokenBytes
+			}
 		}
 
 		if art.S3.EncryptionOptions != nil {
@@ -72,11 +82,21 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			kmsEncryptionContext = art.S3.EncryptionOptions.KmsEncryptionContext
 		}
 
+		if art.S3.CASecret != nil && art.S3.CASecret.Name != "" {
+			caBytes, err := ri.GetSecret(ctx, art.S3.CASecret.Name, art.S3.CASecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			caKey = caBytes
+		}
+
 		driver := s3.ArtifactDriver{
 			Endpoint:              art.S3.Endpoint,
 			AccessKey:             accessKey,
 			SecretKey:             secretKey,
+			SessionToken:          sessionToken,
 			Secure:                art.S3.Insecure == nil || !*art.S3.Insecure,
+			TrustedCA:             caKey,
 			Region:                art.S3.Region,
 			RoleARN:               art.S3.RoleARN,
 			UseSDKCreds:           art.S3.UseSDKCreds,
@@ -197,7 +217,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var accessKey string
 		var secretKey string
 
-		if art.OSS.AccessKeySecret != nil && art.OSS.AccessKeySecret.Name != "" {
+		if !art.OSS.UseSDKCreds && art.OSS.AccessKeySecret != nil && art.OSS.AccessKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
@@ -215,6 +235,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			AccessKey:     accessKey,
 			SecretKey:     secretKey,
 			SecurityToken: art.OSS.SecurityToken,
+			UseSDKCreds:   art.OSS.UseSDKCreds,
 		}
 		return &driver, nil
 	}

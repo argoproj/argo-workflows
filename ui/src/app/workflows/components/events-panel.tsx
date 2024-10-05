@@ -4,13 +4,14 @@ import {map} from 'rxjs/operators';
 import {Event} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Notice} from '../../shared/components/notice';
-import {Timestamp} from '../../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../../shared/components/timestamp';
 import {ToggleButton} from '../../shared/components/toggle-button';
 import debounce from '../../shared/debounce';
 import {ListWatch} from '../../shared/list-watch';
 import {services} from '../../shared/services';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 
-export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: string; kind: string}) => {
+export function EventsPanel({namespace, name, kind}: {namespace: string; name: string; kind: string}) {
     const [showAll, setShowAll] = useState(false);
     const [hideNormal, setHideNormal] = useState(false);
     const [events, setEvents] = useState<Event[]>();
@@ -53,7 +54,7 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
     const tableRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        const calculateTooltips = () => {
+        function calculateTooltips() {
             const table = tableRef.current;
 
             if (table) {
@@ -64,7 +65,6 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                 // not valid to use `for of` loops with NodeList.  When that target is changed or if
                 // downlevelIteration is enabled, we can swap this to use a `for of` loop.
 
-                // tslint:disable-next-line:prefer-for-of
                 for (let i = 0; i < columns.length; i++) {
                     const col = columns[i];
 
@@ -75,7 +75,7 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                     }
                 }
             }
-        };
+        }
 
         const [debouncedCalculateTooltips, cleanup] = debounce(calculateTooltips, 1000);
 
@@ -87,6 +87,8 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
             window.removeEventListener('resize', debouncedCalculateTooltips);
         };
     });
+
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.EVENTS_PANEL_LAST);
 
     return (
         <>
@@ -107,7 +109,9 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                 <div ref={tableRef} className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1'>Type</div>
-                        <div className='columns small-2'>Last Seen</div>
+                        <div className='columns small-2'>
+                            Last Seen <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                        </div>
                         <div className='columns small-2'>Reason</div>
                         <div className='columns small-2'>Object</div>
                         <div className='columns small-5'>Message</div>
@@ -121,7 +125,7 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                                     {e.type === 'Normal' ? <i className='fa fa-check-circle status-icon--init' /> : <i className='fa fa-exclamation-circle status-icon--pending' />}
                                 </div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={e.lastTimestamp} />
+                                    <Timestamp date={e.lastTimestamp} displayISOFormat={storedDisplayISOFormat} />
                                 </div>
                                 <div className='columns small-2'>{e.reason}</div>
                                 <div className='columns small-2'>
@@ -134,4 +138,4 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
             )}
         </>
     );
-};
+}

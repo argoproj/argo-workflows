@@ -1,18 +1,22 @@
 import * as React from 'react';
+
 import {Arguments, Parameter, WorkflowSpec} from '../../../../models';
 import {KeyValueEditor} from './key-value-editor';
 
-export const WorkflowParametersEditor = <T extends WorkflowSpec>(props: {value: T; onChange: (value: T) => void; onError: (error: Error) => void}) => {
+export function WorkflowParametersEditor<T extends WorkflowSpec>(props: {value: T; onChange: (value: T) => void; onError: (error: Error) => void}) {
     const parameterKeyValues =
         props.value &&
         props.value.arguments &&
         props.value.arguments.parameters &&
         props.value.arguments.parameters
             .map(param => [param.name, param.value])
-            .reduce((obj, [key, val]) => {
-                obj[key] = val;
-                return obj;
-            }, {} as {[key: string]: string});
+            .reduce(
+                (obj, [key, val]) => {
+                    obj[key] = val;
+                    return obj;
+                },
+                {} as {[key: string]: string}
+            );
 
     return (
         <>
@@ -29,7 +33,7 @@ export const WorkflowParametersEditor = <T extends WorkflowSpec>(props: {value: 
                                 ({
                                     name: k,
                                     value: v
-                                } as Parameter)
+                                }) as Parameter
                         );
                         props.onChange(props.value);
                     }}
@@ -37,4 +41,4 @@ export const WorkflowParametersEditor = <T extends WorkflowSpec>(props: {value: 
             </div>
         </>
     );
-};
+}

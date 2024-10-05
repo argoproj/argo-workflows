@@ -1,4 +1,4 @@
-import {EventFlowContainer} from './components/event-flow-container';
+import {EventFlowContainer} from './event-flow-container';
 
 export default {
     component: EventFlowContainer

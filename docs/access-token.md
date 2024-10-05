@@ -9,7 +9,7 @@ If you want to automate tasks with the Argo Server API or CLI, you will need an 
 Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:
 
 ```bash
-kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io 
+kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io
 ```
 
 Create a service account for your service:
@@ -36,7 +36,7 @@ kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 You now need to create a secret to hold your token:
 
 ```bash
-    kubectl apply -f - <<EOF
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -85,7 +85,7 @@ ARGO_NAMESPACE=sandbox
 
 ### Start container with settings above
 
-> Note: Example for  getting list of templates from an existing namespace
+Example for listing templates in a namespace:
 
 ```bash
 docker run --rm -it \

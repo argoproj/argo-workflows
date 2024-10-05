@@ -7,12 +7,11 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       This is a simple hello world example.
-      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   templates:
-  - name: whalesay
+  - name: hello-world
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["hello world"]

@@ -1,10 +1,11 @@
 import * as React from 'react';
+
 import {NODE_PHASE, NodePhase} from '../../../models';
 import {formatDuration} from '../duration';
 import {ProgressLine} from './progress-line';
 
 // duration panel in seconds
-export const DurationPanel = (props: {phase: NodePhase; duration: number; estimatedDuration?: number}) => {
+export function DurationPanel(props: {phase: NodePhase; duration: number; estimatedDuration?: number}) {
     if (props.phase === NODE_PHASE.RUNNING && props.estimatedDuration) {
         return (
             <>
@@ -16,4 +17,4 @@ export const DurationPanel = (props: {phase: NodePhase; duration: number; estima
         );
     }
     return <>{formatDuration(props.duration)}</>;
-};
+}
