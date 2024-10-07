@@ -115,7 +115,7 @@ An incomplete list of features Argo Workflows provide:
 * Multiple executors
 * Multiple pod and workflow garbage collection strategies
 * Automatically calculated resource usage per step
-* Java/Golang/Python SDKs
+* Java and Golang SDKs
 * Pod Disruption Budget support
 * Single-sign on (OAuth2/OIDC)
 * Webhook triggering
