@@ -32,7 +32,7 @@ func main() {
 		session, err = createDBSession(dsn)
 		return
 	}
-	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "c", "postgres://postgres@localhost:5432/postgres", "DSN connection string")
+	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "c", "postgres://postgres@localhost:5432/postgres", "DSN connection string. For MySQL, use 'mysql:password@tcp/argo'.")
 	rootCmd.AddCommand(NewMigrateCommand())
 	rootCmd.AddCommand(NewFakeDataCommand())
 
@@ -91,7 +91,7 @@ func NewFakeDataCommand() *cobra.Command {
 }
 
 func createDBSession(dsn string) (db.Session, error) {
-	if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
+	if strings.HasPrefix(dsn, "postgres") {
 		url, err := postgresqladp.ParseURL(dsn)
 		if err != nil {
 			return nil, err

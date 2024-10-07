@@ -224,7 +224,7 @@ Available Commands:
   migrate                 Force DB migration for given cluster/table
 
 Flags:
-  -c, --dsn string   DSN connection string (default "postgres://postgres@localhost:5432/postgres")
+  -c, --dsn string   DSN connection string. For MySQL, use 'mysql:password@tcp/argo'. (default "postgres://postgres@localhost:5432/postgres")
   -h, --help         help for db
 
 Use "db [command] --help" for more information about a command.
