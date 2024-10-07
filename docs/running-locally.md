@@ -224,9 +224,8 @@ Available Commands:
   migrate                 Force DB migration for given cluster/table
 
 Flags:
-  -d, --driver string   Database type (mysql or postgresql) (default "postgresql")
-  -c, --dsn string      DSN connection string (default "postgres://postgres@localhost:5432/postgres")
-  -h, --help            help for db
+  -c, --dsn string   DSN connection string (default "postgres://postgres@localhost:5432/postgres")
+  -h, --help         help for db
 
 Use "db [command] --help" for more information about a command.
 ```

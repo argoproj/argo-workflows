@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/upper/db/v4"
@@ -15,21 +17,21 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var session db.Session
 
 func main() {
-	var dbtype, dsn string
+	var dsn string
 	rootCmd := &cobra.Command{
 		Use:   "db",
 		Short: "CLI for developers to use when working on the DB locally",
 	}
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) (err error) {
-		session, err = createDBSession(dbtype, dsn)
+		session, err = createDBSession(dsn)
 		return
 	}
-	rootCmd.PersistentFlags().StringVarP(&dbtype, "driver", "d", "postgresql", "Database type (mysql or postgresql)")
 	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "c", "postgres://postgres@localhost:5432/postgres", "DSN connection string")
 	rootCmd.AddCommand(NewMigrateCommand())
 	rootCmd.AddCommand(NewFakeDataCommand())
@@ -88,8 +90,8 @@ func NewFakeDataCommand() *cobra.Command {
 	return fakeDataCmd
 }
 
-func createDBSession(dbtype, dsn string) (db.Session, error) {
-	if dbtype == "postgresql" {
+func createDBSession(dsn string) (db.Session, error) {
+	if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
 		url, err := postgresqladp.ParseURL(dsn)
 		if err != nil {
 			return nil, err
@@ -121,12 +123,21 @@ func randomPhase() wfv1.WorkflowPhase {
 	return phases[rand.Intn(len(phases))]
 }
 
+func randomTime() time.Time {
+	min := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
+	max := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
+	return time.Unix(rand.Int63nRange(min, max), 0)
+}
+
 func randomizeWorkflow(wfTmpl *wfv1.Workflow, namespaces []string) *wfv1.Workflow {
 	wf := wfTmpl.DeepCopy()
 	wf.Name = rand.String(rand.IntnRange(10, 30))
 	wf.Namespace = namespaces[rand.Intn(len(namespaces))]
 	wf.UID = uuid.NewUUID()
 	wf.Status.Phase = randomPhase()
+	startTime := randomTime()
+	wf.Status.StartedAt = metav1.NewTime(startTime)
+	wf.Status.FinishedAt = metav1.NewTime(startTime.Add(time.Second * time.Duration(rand.IntnRange(5, 300))))
 	if wf.Labels == nil {
 		wf.Labels = map[string]string{}
 	}
