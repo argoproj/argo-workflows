@@ -210,7 +210,7 @@ If tests run slowly or time out, factory reset your Kubernetes cluster.
 
 The `go run ./hack/db` CLI provides a few useful commands for working with the DB locally:
 
-```
+```console
 $ go run ./hack/db
 CLI for developers to use when working on the DB locally
 
