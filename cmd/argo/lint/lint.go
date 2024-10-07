@@ -6,7 +6,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -80,19 +79,26 @@ func GetFormatter(fmtr string) (Formatter, error) {
 
 // RunLint lints the specified kinds in the specified files and prints the results to os.Stdout.
 // If linting fails it will exit with status code 1.
-func RunLint(ctx context.Context, client apiclient.Client, kinds []string, output string, offline bool, opts LintOptions) {
+func RunLint(ctx context.Context, client apiclient.Client, kinds []string, output string, offline bool, opts LintOptions) error {
 	fmtr, err := GetFormatter(output)
-	errors.CheckError(err)
+	if err != nil {
+		return err
+	}
 	clients, err := getLintClients(client, kinds)
-	errors.CheckError(err)
+	if err != nil {
+		return err
+	}
 	opts.ServiceClients = clients
 	opts.Formatter = fmtr
 	res, err := Lint(ctx, &opts)
-	errors.CheckError(err)
+	if err != nil {
+		return err
+	}
 
 	if !res.Success {
 		log.StandardLogger().Exit(1)
 	}
+	return nil
 }
 
 // Lint reads all files, returns linting errors of all of the enitities of the specified kinds.

@@ -3,7 +3,6 @@ package cron
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 
@@ -28,10 +27,15 @@ func NewCreateCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a cron workflow",
-		Run: func(cmd *cobra.Command, args []string) {
-			checkArgs(cmd, args, parametersFile, &submitOpts)
-
-			CreateCronWorkflows(cmd.Context(), args, &cliCreateOpts, &submitOpts)
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if parametersFile != "" {
+				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				if err != nil {
+					return err
+				}
+			}
+			return CreateCronWorkflows(cmd.Context(), args, &cliCreateOpts, &submitOpts)
 		},
 	}
 
@@ -42,11 +46,14 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
-	ctx, apiClient := client.NewAPIClient(ctx)
+func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) error {
+	ctx, apiClient, err := client.NewAPIClient(ctx)
+	if err != nil {
+		return err
+	}
 	serviceClient, err := apiClient.NewCronWorkflowServiceClient()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	cronWorkflows := generateCronWorkflows(filePaths, cliOpts.strict)
@@ -59,7 +66,7 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}
 		err := util.ApplySubmitOpts(&newWf, submitOpts)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		cronWf.Spec.WorkflowSpec = newWf.Spec
 		// We have only copied the workflow spec to the cron workflow but not the metadata
@@ -81,8 +88,9 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {
-			log.Fatalf("Failed to create cron workflow: %v", err)
+			return fmt.Errorf("Failed to create cron workflow: %v", err)
 		}
 		fmt.Print(getCronWorkflowGet(created))
 	}
+	return nil
 }

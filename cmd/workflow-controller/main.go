@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/cli"
-	"github.com/argoproj/pkg/errors"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
@@ -112,7 +111,9 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins)
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {

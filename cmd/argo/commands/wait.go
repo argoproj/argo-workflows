@@ -20,11 +20,15 @@ func NewWaitCommand() *cobra.Command {
 
   argo wait @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			common.WaitWorkflows(ctx, serviceClient, namespace, args, ignoreNotFound, false)
+			return nil
 		},
 	}
 	command.Flags().BoolVar(&ignoreNotFound, "ignore-not-found", false, "Ignore the wait if the workflow is not found")

@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -130,11 +129,8 @@ variable.
 
 For fish, output to a file in ~/.config/fish/completions
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			shell := args[0]
 			rootCommand := NewCommand()
 			rootCommand.BashCompletionFunction = bashCompletionFunc
@@ -145,12 +141,9 @@ For fish, output to a file in ~/.config/fish/completions
 			}
 			completion, ok := availableCompletions[shell]
 			if !ok {
-				fmt.Printf("Invalid shell '%s'. The supported shells are bash and zsh.\n", shell)
-				os.Exit(1)
+				return fmt.Errorf("Invalid shell '%s'. The supported shells are bash and zsh.\n", shell)
 			}
-			if err := completion(os.Stdout, rootCommand); err != nil {
-				log.Fatal(err)
-			}
+			return completion(os.Stdout, rootCommand)
 		},
 	}
 	return command

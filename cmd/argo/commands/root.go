@@ -89,8 +89,8 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 
 	ARGO_BASE_HREF=/argo
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.HelpFunc()(cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
 		},
 	}
 

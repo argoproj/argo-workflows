@@ -21,7 +21,7 @@
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.5.1",
         "cron-parser": "^4.9.0",
-        "cronstrue": "^2.47.0",
+        "cronstrue": "^2.50.0",
         "dagre": "^0.8.5",
         "history": "^4.10.1",
         "js-yaml": "^4.1.0",

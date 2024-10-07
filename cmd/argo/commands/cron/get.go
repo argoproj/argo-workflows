@@ -1,9 +1,6 @@
 package cron
 
 import (
-	"os"
-
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
@@ -16,15 +13,16 @@ func NewGetCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "get CRON_WORKFLOW...",
 		Short: "display details about a cron workflow",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
 			}
-
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			namespace := client.Namespace()
 
 			for _, arg := range args {
@@ -32,9 +30,12 @@ func NewGetCommand() *cobra.Command {
 					Name:      arg,
 					Namespace: namespace,
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				printCronWorkflow(cronWf, output)
 			}
+			return nil
 		},
 	}
 

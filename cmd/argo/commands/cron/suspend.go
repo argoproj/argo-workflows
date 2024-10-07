@@ -3,7 +3,6 @@ package cron
 import (
 	"fmt"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
@@ -15,20 +14,28 @@ func NewSuspendCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "suspend CRON_WORKFLOW...",
 		Short: "suspend zero or more cron workflows",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			namespace := client.Namespace()
 			for _, name := range args {
 				cronWf, err := serviceClient.SuspendCronWorkflow(ctx, &cronworkflowpkg.CronWorkflowSuspendRequest{
 					Name:      name,
 					Namespace: namespace,
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				cronWf.Spec.Suspend = true
 				fmt.Printf("CronWorkflow '%s' suspended\n", name)
 			}
+			return nil
 		},
 	}
 	return command

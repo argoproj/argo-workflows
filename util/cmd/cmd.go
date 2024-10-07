@@ -20,9 +20,10 @@ func NewVersionCmd(cliName string) *cobra.Command {
 	versionCmd := cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			version := argo.GetVersion()
 			PrintVersion(cliName, version, short)
+			return nil
 		},
 	}
 	versionCmd.Flags().BoolVar(&short, "short", false, "print just the version number")

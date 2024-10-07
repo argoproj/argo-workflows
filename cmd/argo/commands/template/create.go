@@ -2,8 +2,7 @@ package template
 
 import (
 	"context"
-	"log"
-	"os"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -21,13 +20,9 @@ func NewCreateCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a workflow template",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-
-			CreateWorkflowTemplates(cmd.Context(), args, &cliCreateOpts)
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return CreateWorkflowTemplates(cmd.Context(), args, &cliCreateOpts)
 		},
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -35,14 +30,17 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func CreateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts) {
+func CreateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts) error {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
-	ctx, apiClient := client.NewAPIClient(ctx)
+	ctx, apiClient, err := client.NewAPIClient(ctx)
+	if err != nil {
+		return err
+	}
 	serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	workflowTemplates := generateWorkflowTemplates(filePaths, cliOpts.strict)
@@ -56,8 +54,9 @@ func CreateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Template:  &wftmpl,
 		})
 		if err != nil {
-			log.Fatalf("Failed to create workflow template: %v", err)
+			return fmt.Errorf("Failed to create workflow template: %v", err)
 		}
 		printWorkflowTemplate(created, cliOpts.output)
 	}
+	return nil
 }

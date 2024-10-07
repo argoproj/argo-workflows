@@ -2,7 +2,6 @@ package executorplugin
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -14,11 +13,8 @@ func NewBuildCommand() *cobra.Command {
 		Use:          "build DIR",
 		Short:        "build an executor plugin",
 		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
 			pluginDir := args[0]
 			plug, err := loadPluginManifest(pluginDir)
 			if err != nil {

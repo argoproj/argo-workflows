@@ -50,8 +50,8 @@ func NewRootCommand() *cobra.Command {
 	command := cobra.Command{
 		Use:   CLIName,
 		Short: "argoexec is the executor sidecar to workflow containers",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.HelpFunc()(cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
 		},
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			initConfig()
