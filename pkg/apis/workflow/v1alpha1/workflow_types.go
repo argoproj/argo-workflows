@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -999,6 +1000,11 @@ func (a *Artifact) CleanPath() error {
 	// Any resolved path should always be within the /tmp/safe/ directory.
 	safeDir := ""
 	slashDotDotRe := regexp.MustCompile(fmt.Sprintf(`%c..$`, os.PathSeparator))
+	if runtime.GOOS == "windows" {
+		// windows PathSeparator is \ and needs escaping
+		slashDotDotRe = regexp.MustCompile(fmt.Sprintf(`\%c..$`, os.PathSeparator))
+	}
+
 	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
 	if strings.Contains(a.Path, slashDotDotSlash) {
 		safeDir = a.Path[:strings.Index(a.Path, slashDotDotSlash)]

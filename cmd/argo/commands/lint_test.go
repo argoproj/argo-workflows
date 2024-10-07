@@ -164,6 +164,7 @@ spec:
 		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
 		os.Stdin, err = os.Open(clusterWftmplPath)
 		require.NoError(t, err)
+		defer func() { _ = os.Stdin.Close() }() // close previously opened path to avoid errors trying to remove the file.
 
 		runLint(context.Background(), []string{workflowPath, wftmplPath, "-"}, true, nil, "pretty", true)
 
