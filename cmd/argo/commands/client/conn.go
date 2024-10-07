@@ -54,23 +54,23 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVarP(&ArgoServerOpts.InsecureSkipVerify, "insecure-skip-verify", "k", os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true", "If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.")
 }
 
-func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client) {
-	ctx, client, err := apiclient.NewClientFromOpts(
+func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
+	return apiclient.NewClientFromOpts(
 		apiclient.Opts{
 			ArgoServerOpts: ArgoServerOpts,
 			InstanceID:     instanceID,
 			AuthSupplier: func() string {
-				return GetAuthString()
+				authString, err := GetAuthString()
+				if err != nil {
+					log.Fatal(err)
+				}
+				return authString
 			},
 			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
 			Offline:              Offline,
 			OfflineFiles:         OfflineFiles,
 			Context:              ctx,
 		})
-	if err != nil {
-		log.Fatal(err)
-	}
-	return ctx, client
 }
 
 func Namespace() string {
@@ -91,20 +91,20 @@ func Namespace() string {
 	return namespace
 }
 
-func GetAuthString() string {
+func GetAuthString() (string, error) {
 	token, ok := os.LookupEnv("ARGO_TOKEN")
 	if ok {
-		return token
+		return token, nil
 	}
 	restConfig, err := GetConfig().ClientConfig()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	version := argo.GetVersion()
 	restConfig = restclient.AddUserAgent(restConfig, fmt.Sprintf("argo-workflows/%s argo-cli", version.Version))
 	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	return authString
+	return authString, nil
 }

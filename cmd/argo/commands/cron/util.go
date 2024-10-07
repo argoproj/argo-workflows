@@ -4,19 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
 	argoJson "github.com/argoproj/pkg/json"
 	"github.com/robfig/cron/v3"
-	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -59,18 +56,6 @@ func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkf
 	}
 
 	return cronWorkflows
-}
-
-func checkArgs(cmd *cobra.Command, args []string, parametersFile string, submitOpts *v1alpha1.SubmitOpts) {
-	if len(args) == 0 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
-	}
-
-	if parametersFile != "" {
-		err := util.ReadParametersFile(parametersFile, submitOpts)
-		errors.CheckError(err)
-	}
 }
 
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
