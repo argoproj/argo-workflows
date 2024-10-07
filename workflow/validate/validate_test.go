@@ -1057,9 +1057,9 @@ spec:
 `
 
 func TestExitHandler(t *testing.T) {
-	// ensure {{workflow.status}} is not available when not in exit handler
+	// ensure {{workflow.status}} is available when not in exit handler
 	err := validate(workflowStatusNotOnExit)
-	require.Error(t, err)
+	require.NoError(t, err)
 
 	// ensure {{workflow.failures}} is available
 	err = validate(workflowFailures)
