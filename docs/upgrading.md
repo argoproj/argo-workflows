@@ -5,6 +5,11 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.6
 
+### JSON templating fix
+
+When accessing a structure or array from json structure in a `jsonpath` expression you could end up getting a golang representation of the structure in error.
+This will now return the json representation as hoped - see #12909.
+
 ### Fixed Server `--basehref` inconsistency
 
 For consistency, the Server now uses `--base-href` and `ARGO_BASE_HREF`.
