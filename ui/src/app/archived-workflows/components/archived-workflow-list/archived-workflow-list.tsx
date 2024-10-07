@@ -80,7 +80,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     public componentDidUpdate(): void {
         if (this.state.deep === true && this.state.workflows && this.state.workflows.length === 1) {
             const workflow = this.state.workflows[0];
-            const url = uiUrl('/archived-workflows/' + workflow.metadata.namespace + '/' + (workflow.metadata.uid || ''));
+            const url = uiUrl('archived-workflows/' + workflow.metadata.namespace + '/' + (workflow.metadata.uid || ''));
             this.props.history.push(url);
         }
     }
