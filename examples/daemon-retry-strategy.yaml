@@ -1,12 +1,12 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: daemon-nginx-
+  generateName: daemon-retry-
 spec:
   entrypoint: daemon-retry-example
 
   templates:
-  - name: daemon-nginx-example
+  - name: daemon-retry-example
     steps:
     - - name: nginx-server
         template: nginx-server
@@ -20,6 +20,8 @@ spec:
           count: 10
 
   - name: nginx-server
+    retryStrategy:
+      limit: "10"
     daemon: true
     container:
       image: nginx:1.13
@@ -34,11 +36,13 @@ spec:
     inputs:
       parameters:
       - name: server-ip
+    retryStrategy:
+      limit: "10"
     synchronization:
       mutex:
-        name: client
+        name: client-{{workflow.uid}}
     container:
       image: appropriate/curl:latest
       command: ["/bin/sh", "-c"]
-      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && sleep 10"]
+      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && sleep 10 && exit 1"]
 
