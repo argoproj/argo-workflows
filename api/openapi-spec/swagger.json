@@ -10868,7 +10868,7 @@
       ],
       "properties": {
         "expression": {
-          "description": "Expression is an expression that stops scheduling workflows when true. Use the variables `io.argoproj.workflow.v1alpha1.failed` or `cronio.argoproj.REPLACEME.v1alpha1.succeeded` to access the number of failed or successful child workflows. v3.6 and after",
+          "description": "Expression is an expression that stops scheduling workflows when true. Use the `cronworkflow` variables `failed` or `succeeded` to access the number of failed or successful child workflows. v3.6 and after",
           "type": "string"
         }
       }
