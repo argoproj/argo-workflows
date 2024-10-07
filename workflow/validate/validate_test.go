@@ -1038,6 +1038,21 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
+      args: ["echo {{workflow.status}}"]
+`
+
+var workflowFailures = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: pass
+  templates:
+  - name: pass
+    container:
+      image: alpine:latest
+      command: [sh, -c]
       args: ["echo {{workflow.failures}}"]
 `
 
@@ -1045,6 +1060,10 @@ func TestExitHandler(t *testing.T) {
 	// ensure {{workflow.status}} is not available when not in exit handler
 	err := validate(workflowStatusNotOnExit)
 	require.Error(t, err)
+
+	// ensure {{workflow.failures}} is available
+	err = validate(workflowFailures)
+	require.NoError(t, err)
 
 	// ensure {{workflow.status}} is available in exit handler
 	err = validate(exitHandlerWorkflowStatusOnExit)
