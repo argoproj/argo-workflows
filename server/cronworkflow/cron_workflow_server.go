@@ -11,7 +11,9 @@ import (
 
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
@@ -22,16 +24,25 @@ import (
 
 type cronWorkflowServiceServer struct {
 	instanceIDService instanceid.Service
+	wftmplStore       servertypes.WorkflowTemplateStore
 }
 
 // NewCronWorkflowServer returns a new cronWorkflowServiceServer
-func NewCronWorkflowServer(instanceIDService instanceid.Service) cronworkflowpkg.CronWorkflowServiceServer {
-	return &cronWorkflowServiceServer{instanceIDService}
+func NewCronWorkflowServer(instanceIDService instanceid.Service,
+	wftmplStore servertypes.WorkflowTemplateStore) cronworkflowpkg.CronWorkflowServiceServer {
+	return &cronWorkflowServiceServer{instanceIDService, wftmplStore}
+}
+
+func (s *cronWorkflowServiceServer) wftmplGetter(wfClient versioned.Interface, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
+	if s.wftmplStore != nil {
+		return s.wftmplStore.Getter(namespace)
+	}
+	return templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 }
 
 func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *cronworkflowpkg.LintCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	wftmplGetter := c.wftmplGetter(wfClient, req.Namespace)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	c.instanceIDService.Label(req.CronWorkflow)
 	creator.Label(ctx, req.CronWorkflow)
@@ -62,7 +73,7 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 	}
 	c.instanceIDService.Label(req.CronWorkflow)
 	creator.Label(ctx, req.CronWorkflow)
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	wftmplGetter := c.wftmplGetter(wfClient, req.Namespace)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow)
 	if err != nil {
@@ -89,7 +100,7 @@ func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	wftmplGetter := c.wftmplGetter(wfClient, req.Namespace)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	if err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow); err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
