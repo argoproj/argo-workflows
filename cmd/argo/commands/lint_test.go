@@ -278,6 +278,7 @@ spec:
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
 		runLint(context.Background(), []string{workflowMultiDocsPath}, true, nil, "pretty", false)
 
+		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
 	})
 
