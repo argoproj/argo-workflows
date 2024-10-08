@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
@@ -255,16 +257,21 @@ var testExporter *telemetry.TestMetricsExporter
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects, coreObjects []runtime.Object
+	var dynamicClient *dynamicfake.FakeDynamicClient
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case *apiv1.ServiceAccount:
 			coreObjects = append(coreObjects, v)
 		case runtime.Object:
 			objects = append(objects, v)
+		case *dynamicfake.FakeDynamicClient:
+			dynamicClient = v
 		}
 	}
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
-	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
+	if dynamicClient == nil {
+		dynamicClient = dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
+	}
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset(coreObjects...)
@@ -322,16 +329,25 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+		if err := wfc.wfInformer.SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			panic(err)
+		}
+
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+		if err := wfc.taskResultInformer.SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			panic(err)
+		}
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+		if err := wfc.wftmplInformer.Informer().SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			panic(err)
+		}
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
 		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
-
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
@@ -339,6 +355,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
+		if err := wfc.cwftmplInformer.Informer().SetWatchErrorHandler(wfc.WatchErrorHandler); err != nil {
+			panic(err)
+		}
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
@@ -1264,4 +1283,21 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	woc.operate(ctx)
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestInformerPagination(t *testing.T) {
+	watcher := watch.NewFake()
+	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme)
+	dynamicClient.Fake.PrependWatchReactor("workflows", func(action k8stesting.Action) (handled bool, ret watch.Interface, err error) {
+		err2 := errors.StatusError{
+			ErrStatus: metav1.Status{
+				Reason: metav1.StatusReasonTimeout,
+			},
+		}
+		return true, watcher, &err2
+	})
+
+	cancel, controller := newController(dynamicClient)
+	defer cancel()
+	assert.Equal(t, int64(common.DefaultPageSize), controller.WatchListPageSize)
 }
