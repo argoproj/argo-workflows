@@ -28,6 +28,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	argoutil "github.com/argoproj/argo-workflows/v3/util"
@@ -43,8 +44,9 @@ import (
 )
 
 const (
-	latestAlias    = "@latest"
-	reSyncDuration = 20 * time.Minute
+	latestAlias                  = "@latest"
+	reSyncDuration               = 20 * time.Minute
+	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
 type workflowServer struct {
@@ -54,18 +56,20 @@ type workflowServer struct {
 	wfArchive             sqldb.WorkflowArchive
 	wfLister              store.WorkflowLister
 	wfReflector           *cache.Reflector
+	wftmplStore           servertypes.WorkflowTemplateStore
 }
 
 var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, namespace *string) *workflowServer {
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, namespace *string) *workflowServer {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
 		hydrator:              hydrator.New(offloadNodeStatusRepo),
 		wfArchive:             wfArchive,
 		wfLister:              wfLister,
+		wftmplStore:           wftmplStore,
 	}
 	if wfStore != nil && namespace != nil {
 		lw := &cache.ListWatch{
@@ -80,6 +84,13 @@ func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRe
 		ws.wfReflector = wfReflector
 	}
 	return ws
+}
+
+func (s *workflowServer) wftmplGetter(wfClient versioned.Interface, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
+	if s.wftmplStore != nil {
+		return s.wftmplStore.Getter(namespace)
+	}
+	return templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 }
 
 func (s *workflowServer) Run(stopCh <-chan struct{}) {
@@ -102,7 +113,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	s.instanceIDService.Label(req.Workflow)
 	creator.Label(ctx, req.Workflow)
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	wftmplGetter := s.wftmplGetter(wfClient, req.Workflow.Namespace)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 	err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, validate.ValidateOpts{})
@@ -660,7 +671,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 		return nil, fmt.Errorf("unable to get a workflow")
 	}
 	wfClient := auth.GetWfClient(ctx)
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	wftmplGetter := s.wftmplGetter(wfClient, req.Workflow.Namespace)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	s.instanceIDService.Label(req.Workflow)
 	creator.Label(ctx, req.Workflow)
@@ -774,7 +785,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	wftmplGetter := s.wftmplGetter(wfClient, req.Namespace)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})

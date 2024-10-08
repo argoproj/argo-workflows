@@ -40,6 +40,7 @@ var (
 type argoKubeClient struct {
 	instanceIDService instanceid.Service
 	wfClient          workflow.Interface
+	wfInformer        types.WorkflowTemplateStore
 }
 
 var _ Client = &argoKubeClient{}
@@ -56,6 +57,14 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)
 	}
 	wfClient, err := workflow.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	namespace, _, err := clientConfig.Namespace()
+	if err != nil {
+		return nil, nil, err
+	}
+	wftmplInformer, err := workflowtemplateserver.NewInformer(restConfig, namespace)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -86,13 +95,13 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	if err != nil {
 		return nil, nil, err
 	}
-	return ctx, &argoKubeClient{instanceIDService, wfClient}, nil
+	return ctx, &argoKubeClient{instanceIDService, wfClient, wftmplInformer}, nil
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
 	wfLister := store.NewKubeLister(a.wfClient)
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, wfLister, nil, nil)}}
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, wfLister, nil, a.wfInformer, nil)}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkflowServiceClient, error) {
