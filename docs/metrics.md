@@ -1,8 +1,8 @@
-# Prometheus Metrics
+# Metrics
 
 > v2.7 and after
 
-!!! Metrics changes in 3.6
+!!! Warning "Metrics changes in 3.6"
     Please read [this short guide](upgrading.md#metrics-changes) on what you must consider when upgrading to 3.6.
 
 ## Introduction
@@ -60,6 +60,42 @@ metricsConfig: |
 
 ### Prometheus scraping
 
+A metrics service is not installed as part of [the default installation](quick-start.md) so you will need to add one if you wish to use a Prometheus Service Monitor.
+If you have more than one controller pod, using one as a [hot-standby](high-availability.md), you should use [a headless service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) to ensure that each pod is being scraped so that no metrics are missed.
+
+```yaml
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: workflow-controller
+  name: workflow-controller-metrics
+  namespace: argo
+spec:
+  clusterIP: None
+  ports:
+  - name: metrics
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: workflow-controller
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argo-workflows
+  namespace: argo
+spec:
+  endpoints:
+  - port: metrics
+  selector:
+    matchLabels:
+      app: workflow-controller
+EOF
+```
+
 You can adjust various elements of the Prometheus metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
 
 ```yaml
@@ -85,7 +121,13 @@ The metric names emitted by this mechanism are prefixed with `argo_workflows_`.
 `Attributes` are exposed as Prometheus `labels` of the same name.
 
 Prometheus metrics will return empty metrics on a workflow controller which is not the leader.
-All metrics emitted over Prometheus will have `argo_workflows_` prefixed to their name.
+
+By port-forwarding to the leader controller Pod you can view the metrics in your browser at `https://localhost:9090/metrics`.
+Assuming you only have one controller replica, you can port-forward with:
+
+```bash
+kubectl -n argo port-forward deploy/workflow-controller 9090:9090
+```
 
 ### Common
 
@@ -197,18 +239,31 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
 - Errors: `count` and `error_count`
 - Saturation: `workers_busy` and `workflow_condition`
 
-!!! High cardinality
+!!! Warning "High cardinality"
     Some metric attributes may have high cardinality and are marked with ⚠️ to warn you. You may need to disable this metric or disable the attribute.
+
 <!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
 <!-- titles are without argo_workflows prefix -->
-#### `cronworkflows_triggered_total`
 
-A counter of the number of times a CronWorkflow has been
+#### `cronworkflows_concurrencypolicy_triggered`
+
+A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running.
 
 | attribute   | explanation                               |
 |-------------|-------------------------------------------|
-| `name`     | ⚠️ The name of the CronWorkflow. |
-| `namespace` | The namespace in which the pod is running |
+| `name`     | ⚠️ The name of the CronWorkflow |
+| `namespace` | The namespace of the CronWorkflow |
+| `concurrency_policy` | The concurrency policy which was triggered, will be either `Forbid` or `Replace` |
+
+#### `cronworkflows_triggered_total`
+
+A counter of the number of times a CronWorkflow has been triggered.
+Suppressed runs due to `concurrencyPolicy: Forbid` will not be counted.
+
+| attribute   | explanation                               |
+|-------------|-------------------------------------------|
+| `name`     | ⚠️ The name of the CronWorkflow |
+| `namespace` | The namespace of the CronWorkflow |
 
 #### `gauge`
 
@@ -229,8 +284,8 @@ A counter of certain errors incurred by the controller.
 The currently tracked specific errors are
 
 - `OperationPanic` - the controller `panic()` on a programming bug
-- `CronWorkflowSubmissionError` - A cron workflow failed submission
-- `CronWorkflowSpecError` - A cron workflow has an invalid specification
+- `CronWorkflowSubmissionError` - A CronWorkflow failed submission
+- `CronWorkflowSpecError` - A CronWorkflow has an invalid specification
 
 #### `k8s_request_total`
 
@@ -624,46 +679,3 @@ To define a real-time metric simply add `realtime: true` to a gauge metric with 
     realtime: true
     value: "{{duration}}"
 ```
-
-## Metrics endpoint
-
-By default, metrics are emitted by the workflow-controller on port 9090 on the `/metrics` path.
-By port-forwarding to the pod you can view the metrics in your browser at `http://localhost:9090/metrics`:
-
-`kubectl -n argo port-forward deploy/workflow-controller 9090:9090`
-
-A metrics service is not installed as part of [the default installation](quick-start.md) so you will need to add one if you wish to use a Prometheus Service Monitor:
-
-```yaml
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: workflow-controller
-  name: workflow-controller-metrics
-  namespace: argo
-spec:
-  ports:
-  - name: metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
-  selector:
-    app: workflow-controller
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: argo-workflows
-  namespace: argo
-spec:
-  endpoints:
-  - port: metrics
-  selector:
-    matchLabels:
-      app: workflow-controller
-EOF
-```
-
-If you have more than one controller pod, using one as a [hot-standby](high-availability.md), you should use [a headless service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) to ensure that each pod is being scraped so that no metrics are missed.

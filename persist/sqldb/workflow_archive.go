@@ -163,15 +163,36 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 		return nil, err
 	}
 
-	selector := r.session.SQL().
-		Select(selectQuery).
+	subSelector := r.session.SQL().
+		Select(db.Raw("uid")).
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+	subSelector, err = BuildArchivedWorkflowSelector(subSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
 	if err != nil {
 		return nil, err
 	}
+
+	if r.dbType == MySQL {
+		// workaround for mysql 42000 error (Unsupported subquery syntax):
+		//
+		//     Error 1235 (42000): This version of MySQL doesn't yet support 'LIMIT \u0026 IN/ALL/ANY/SOME subquery'
+		//
+		// more context:
+		// * https://dev.mysql.com/doc/refman/8.0/en/subquery-errors.html
+		// * https://dev.to/gkoniaris/limit-mysql-subquery-results-inside-a-where-in-clause-using-laravel-s-eloquent-orm-26en
+		subSelector = r.session.SQL().Select(db.Raw("*")).From(subSelector).As("x")
+	}
+
+	// why a subquery? the json unmarshal triggers for every row in the filter
+	// query. by filtering on uid first, we delay json parsing until a single
+	// row, speeding up the query(e.g. up to 257 times faster for some
+	// deployments).
+	//
+	// more context: https://github.com/argoproj/argo-workflows/pull/13566
+	selector := r.session.SQL().Select(selectQuery).From(archiveTableName).Where(
+		r.clusterManagedNamespaceAndInstanceID().And(db.Cond{"uid IN": subSelector}),
+	)
 
 	err = selector.All(&archivedWfs)
 	if err != nil {

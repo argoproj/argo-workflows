@@ -3,10 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -29,12 +26,12 @@ func NewGetCommand() *cobra.Command {
 # Get the latest workflow:
   argo get @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
 			}
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {
@@ -42,9 +39,14 @@ func NewGetCommand() *cobra.Command {
 					Name:      name,
 					Namespace: namespace,
 				})
-				errors.CheckError(err)
-				printWorkflow(wf, getArgs)
+				if err != nil {
+					return err
+				}
+				if err := printWorkflow(wf, getArgs); err != nil {
+					return err
+				}
 			}
+			return nil
 		},
 	}
 
@@ -56,7 +58,7 @@ func NewGetCommand() *cobra.Command {
 	return command
 }
 
-func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) {
+func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) error {
 	switch getArgs.Output {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -69,6 +71,7 @@ func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) {
 	case "short", "wide", "":
 		fmt.Print(common.PrintWorkflowHelper(wf, getArgs))
 	default:
-		log.Fatalf("Unknown output format: %s", getArgs.Output)
+		return fmt.Errorf("Unknown output format: %s", getArgs.Output)
 	}
+	return nil
 }

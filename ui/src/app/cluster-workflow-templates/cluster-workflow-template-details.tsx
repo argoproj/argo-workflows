@@ -15,8 +15,9 @@ import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
+import {useEditableObject} from '../shared/use-editable-object';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
 import {ClusterWorkflowTemplateEditor} from './cluster-workflow-template-editor';
@@ -36,8 +37,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     const [columns, setColumns] = useState<models.Column[]>([]);
 
     const [error, setError] = useState<Error>();
-    const [template, setTemplate] = useState<ClusterWorkflowTemplate>();
-    const [edited, setEdited] = useState(false);
+    const [template, edited, setTemplate, resetTemplate] = useEditableObject<ClusterWorkflowTemplate>();
 
     useEffect(
         useQueryParams(history, p => {
@@ -47,7 +47,6 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
         [history]
     );
 
-    useEffect(() => setEdited(true), [template]);
     useEffect(() => {
         history.push(historyUrl('cluster-workflow-templates/{name}', {name, sidePanel, tab}));
     }, [name, sidePanel, tab]);
@@ -56,8 +55,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
         (async () => {
             try {
                 const newTemplate = await services.clusterWorkflowTemplate.get(name);
-                setTemplate(newTemplate);
-                setEdited(false); // set back to false
+                resetTemplate(newTemplate);
                 setError(null);
             } catch (err) {
                 setError(err);
@@ -73,7 +71,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
 
                 setWorkflows(workflowList.items);
                 setColumns(info.columns);
-                setNamespace(Utils.getNamespaceWithDefault(info.managedNamespace));
+                setNamespace(nsUtils.getNamespaceWithDefault(info.managedNamespace));
                 setError(null);
             } catch (err) {
                 setError(err);
@@ -106,7 +104,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                             action: () => {
                                 services.clusterWorkflowTemplate
                                     .update(template, name)
-                                    .then(setTemplate)
+                                    .then(resetTemplate)
                                     .then(() =>
                                         notifications.show({
                                             content: 'Updated',
@@ -114,7 +112,6 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                                         })
                                     )
                                     .then(() => setError(null))
-                                    .then(() => setEdited(false))
                                     .catch(setError);
                             }
                         },

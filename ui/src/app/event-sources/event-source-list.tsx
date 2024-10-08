@@ -8,7 +8,7 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {EventSource, kubernetes} from '../../models';
 import {ID} from '../event-flow/id';
-import {Utils as EventsUtils} from '../sensors/utils';
+import {statusIconClasses} from '../sensors/utils';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Node} from '../shared/components/graph/types';
@@ -22,7 +22,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceCreator} from './event-source-creator';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
@@ -36,7 +36,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
@@ -53,7 +53,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
     useEffect(
         () =>
             history.push(
-                historyUrl('event-sources' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('event-sources' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel,
                     selectedNode,
@@ -140,7 +140,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
                                 key={`${es.metadata.namespace}/${es.metadata.name}`}
                                 to={uiUrl(`event-sources/${es.metadata.namespace}/${es.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <i className={classNames('fa', EventsUtils.statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))} />
+                                    <i className={classNames('fa', statusIconClasses(es.status != null ? es.status.conditions : [], 'fas fa-bolt'))} />
                                 </div>
                                 <div className='columns small-4'>{es.metadata.name}</div>
                                 <div className='columns small-3'>{es.metadata.namespace}</div>

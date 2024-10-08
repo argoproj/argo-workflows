@@ -21,7 +21,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {CronWorkflowCreator} from './cron-workflow-creator';
 import {CronWorkflowFilters} from './cron-workflow-filters';
 import {PrettySchedule} from './pretty-schedule';
@@ -36,7 +36,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
-    const [namespace, setNamespace] = useState<string>(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [labels, setLabels] = useState<string[]>([]);
     const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
@@ -55,7 +55,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     useEffect(
         () =>
             history.push(
-                historyUrl('cron-workflows' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     sidePanel
                 })
@@ -142,7 +142,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                     <div className='columns small-2'>NAME</div>
                                     <div className='columns small-2'>NAMESPACE</div>
                                     <div className='columns small-1'>TimeZone</div>
-                                    <div className='columns small-1'>SCHEDULE</div>
+                                    <div className='columns small-1'>SCHEDULES</div>
                                     <div className='columns small-1' />
                                     <div className='columns small-2'>
                                         CREATED{' '}
@@ -169,7 +169,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                         <div className='columns small-1'>{w.metadata.namespace}</div>
                                         <div className='columns small-1'>{w.spec.timezone}</div>
                                         <div className='columns small-1'>
-                                            {w.spec.schedule != ''
+                                            {w.spec.schedule
                                                 ? w.spec.schedule
                                                 : w.spec.schedules.map(schedule => (
                                                       <>
@@ -179,7 +179,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                                   ))}
                                         </div>
                                         <div className='columns small-2'>
-                                            {w.spec.schedule != '' ? (
+                                            {w.spec.schedule ? (
                                                 <PrettySchedule schedule={w.spec.schedule} />
                                             ) : (
                                                 <>
@@ -200,7 +200,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                                 ''
                                             ) : (
                                                 <Ticker intervalMs={1000}>
-                                                    {() => <Timestamp date={getCronNextScheduledTime(w.spec)} displayISOFormat={storedDisplayISOFormatNextScheduled} />}
+                                                    {() => <Timestamp date={getSpecNextScheduledTime(w.spec)} displayISOFormat={storedDisplayISOFormatNextScheduled} />}
                                                 </Ticker>
                                             )}
                                         </div>
@@ -222,8 +222,8 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     );
 }
 
-function getCronNextScheduledTime(spec: CronWorkflowSpec): Date {
-    if (spec.schedule != '') {
+function getSpecNextScheduledTime(spec: CronWorkflowSpec): Date {
+    if (spec.schedule) {
         return getNextScheduledTime(spec.schedule, spec.timezone);
     }
 

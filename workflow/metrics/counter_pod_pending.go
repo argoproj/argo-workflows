@@ -3,6 +3,8 @@ package metrics
 import (
 	"context"
 	"strings"
+
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
 const (
@@ -10,11 +12,11 @@ const (
 )
 
 func addPodPendingCounter(_ context.Context, m *Metrics) error {
-	return m.createInstrument(int64Counter,
+	return m.CreateInstrument(telemetry.Int64Counter,
 		namePodPending,
 		"Total number of pods that started pending by reason",
 		"{pod}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 }
 
@@ -28,9 +30,9 @@ func (m *Metrics) ChangePodPending(ctx context.Context, reason, namespace string
 		// the pod_phase metric can cope with this being visible
 		return
 	default:
-		m.addInt(ctx, namePodPending, 1, instAttribs{
-			{name: labelPodPendingReason, value: splitReason[0]},
-			{name: labelPodNamespace, value: namespace},
+		m.AddInt(ctx, namePodPending, 1, telemetry.InstAttribs{
+			{Name: telemetry.AttribPodPendingReason, Value: splitReason[0]},
+			{Name: telemetry.AttribPodNamespace, Value: namespace},
 		})
 	}
 }

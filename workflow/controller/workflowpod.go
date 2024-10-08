@@ -15,7 +15,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -240,7 +240,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	// Configuring default container to be used with commands like "kubectl exec/logs".
-	// Select "main" container if it's available. In other case use the last container (can happent when pod created from ContainerSet).
+	// Select "main" container if it's available. In other case use the last container (can happen when pod created from ContainerSet).
 	defaultContainer := pod.Spec.Containers[len(pod.Spec.Containers)-1].Name
 	for _, c := range pod.Spec.Containers {
 		if c.Name == common.MainContainerName {
@@ -703,7 +703,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		// TODO: always set RO FS once #10787 is fixed
 		exec.SecurityContext.ReadOnlyRootFilesystem = nil
 		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
-			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
+			exec.SecurityContext.ReadOnlyRootFilesystem = ptr.To(true)
 		}
 	}
 	if woc.controller.Config.KubeConfig != nil {
@@ -1308,6 +1308,9 @@ func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, ar
 		if artifactLocation.S3 != nil {
 			createSecretVal(volMap, artifactLocation.S3.AccessKeySecret, keyMap)
 			createSecretVal(volMap, artifactLocation.S3.SecretKeySecret, keyMap)
+			if artifactLocation.S3.SessionTokenSecret != nil {
+				createSecretVal(volMap, artifactLocation.S3.SessionTokenSecret, keyMap)
+			}
 			sseCUsed := artifactLocation.S3.EncryptionOptions != nil && artifactLocation.S3.EncryptionOptions.EnableEncryption && artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret != nil
 			if sseCUsed {
 				createSecretVal(volMap, artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret, keyMap)

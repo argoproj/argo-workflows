@@ -286,6 +286,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -300,6 +301,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -317,6 +319,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -354,6 +357,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -384,6 +388,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -402,6 +407,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -414,6 +420,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -432,6 +439,8 @@ spec:
                           items:
                             type: string
                           type: array
+                        dataTransferProtection:
+                          type: string
                         force:
                           type: boolean
                         hdfsUser:
@@ -441,6 +450,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -453,6 +463,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -465,6 +476,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -494,6 +506,7 @@ spec:
                                     key:
                                       type: string
                                     name:
+                                      default: ""
                                       type: string
                                     optional:
                                       type: boolean
@@ -506,6 +519,7 @@ spec:
                                     key:
                                       type: string
                                     name:
+                                      default: ""
                                       type: string
                                     optional:
                                       type: boolean
@@ -521,6 +535,7 @@ spec:
                                     key:
                                       type: string
                                     name:
+                                      default: ""
                                       type: string
                                     optional:
                                       type: boolean
@@ -533,6 +548,7 @@ spec:
                                     key:
                                       type: string
                                     name:
+                                      default: ""
                                       type: string
                                     optional:
                                       type: boolean
@@ -548,6 +564,7 @@ spec:
                                     key:
                                       type: string
                                     name:
+                                      default: ""
                                       type: string
                                     optional:
                                       type: boolean
@@ -560,6 +577,7 @@ spec:
                                     key:
                                       type: string
                                     name:
+                                      default: ""
                                       type: string
                                     optional:
                                       type: boolean
@@ -587,6 +605,7 @@ spec:
                                     key:
                                       type: string
                                     name:
+                                      default: ""
                                       type: string
                                     optional:
                                       type: boolean
@@ -627,6 +646,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -656,6 +676,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -688,6 +709,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -702,6 +724,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -727,6 +750,7 @@ spec:
                                 key:
                                   type: string
                                 name:
+                                  default: ""
                                   type: string
                                 optional:
                                   type: boolean
@@ -750,6 +774,20 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
+                              type: string
+                            optional:
+                              type: boolean
+                          required:
+                          - key
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        sessionTokenSecret:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean
@@ -792,6 +830,7 @@ spec:
                             key:
                               type: string
                             name:
+                              default: ""
                               type: string
                             optional:
                               type: boolean

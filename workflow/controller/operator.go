@@ -15,8 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
-
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
@@ -33,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -51,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	argoruntime "github.com/argoproj/argo-workflows/v3/util/runtime"
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -60,7 +59,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/progress"
-	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
@@ -234,10 +232,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.addArtifactGCFinalizer()
 
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
-	err = woc.taskResultReconciliation()
-	if err != nil {
-		woc.markWorkflowError(ctx, fmt.Errorf("failed to reconcile: %v", err))
-	}
+	woc.taskResultReconciliation()
 
 	// Do artifact GC if task result reconciliation is complete.
 	if woc.wf.Status.Fulfilled() {
@@ -255,9 +250,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
-		acquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, "", woc.execWf.Spec.Synchronization)
+		acquired, wfUpdate, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(woc.wf, "", woc.execWf.Spec.Synchronization)
 		if err != nil {
-			woc.log.Warn("Failed to acquire the lock")
+			woc.log.Warnf("Failed to acquire the lock %s", failedLockName)
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
 			return
 		}
@@ -504,7 +499,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			case wfv1.NodeFailed:
 				woc.markWorkflowFailed(ctx, onExitNode.Message)
 			default:
-				woc.markWorkflowError(ctx, fmt.Errorf(onExitNode.Message))
+				woc.markWorkflowError(ctx, fmt.Errorf("%s", onExitNode.Message))
 			}
 		} else {
 			woc.markWorkflowSuccess(ctx)
@@ -999,7 +994,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		maxDurationDeadline := time.Time{}
 		// Process max duration limit
 		if retryStrategy.Backoff.MaxDuration != "" && len(childNodeIds) > 0 {
-			maxDuration, err := parseStringToDuration(retryStrategy.Backoff.MaxDuration)
+			maxDuration, err := wfv1.ParseStringToDuration(retryStrategy.Backoff.MaxDuration)
 			if err != nil {
 				return nil, false, err
 			}
@@ -1019,7 +1014,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			return nil, false, fmt.Errorf("no base duration specified for retryStrategy")
 		}
 
-		baseDuration, err := parseStringToDuration(retryStrategy.Backoff.Duration)
+		baseDuration, err := wfv1.ParseStringToDuration(retryStrategy.Backoff.Duration)
 		if err != nil {
 			return nil, false, err
 		}
@@ -1227,7 +1222,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 			}
 
 			if recentlyStarted {
-				// If the pod was deleted, then we it is possible that the controller never get another informer message about it.
+				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
 				// workflow will not update for 20m. Requeuing here prevents that happening.
 				woc.requeue()
@@ -1317,19 +1312,6 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 	return pods, nil
 }
 
-func (woc *wfOperationCtx) getAllWorkflowPodsMap() (map[string]*apiv1.Pod, error) {
-	podList, err := woc.getAllWorkflowPods()
-	if err != nil {
-		return nil, err
-	}
-	podMap := make(map[string]*apiv1.Pod)
-	for _, pod := range podList {
-		nodeID := woc.nodeID(pod)
-		podMap[nodeID] = pod
-	}
-	return podMap, nil
-}
-
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	podSpecByte, err := json.Marshal(pod)
 	log := log.WithField("workflow", wfName).
@@ -1391,7 +1373,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				}
 				// proceed to mark node as running and daemoned
 				new.Phase = wfv1.NodeRunning
-				new.Daemoned = pointer.Bool(true)
+				new.Daemoned = ptr.To(true)
 				if !old.IsDaemoned() {
 					woc.log.WithField("nodeId", old.ID).Info("Node became daemoned")
 				}
@@ -1443,35 +1425,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		new.PodIP = pod.Status.PodIP
 	}
 
-	// If `AnnotationKeyReportOutputsCompleted` is set, it means RBAC prevented WorkflowTaskResult from being written.
-	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		resultName := woc.nodeID(pod)
-		if x == "true" {
-			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else {
-			woc.wf.Status.MarkTaskResultIncomplete(resultName)
-		}
-
-		// Get node outputs from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
-		if x, ok = pod.Annotations[common.AnnotationKeyOutputs]; ok {
-			if new.Outputs == nil {
-				new.Outputs = &wfv1.Outputs{}
-			}
-			if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
-				new.Phase = wfv1.NodeError
-				new.Message = err.Error()
-			}
-		}
-
-		// Get node progress from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
-		if x, ok = pod.Annotations[common.AnnotationKeyProgress]; ok {
-			if p, ok := wfv1.ParseProgress(x); ok {
-				new.Progress = p
-			}
-		}
-	}
-
 	new.HostNodeName = pod.Spec.NodeName
 
 	if !new.Progress.IsValid() {
@@ -1485,7 +1438,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if new.Outputs == nil {
 			new.Outputs = &wfv1.Outputs{}
 		}
-		new.Outputs.ExitCode = pointer.String(fmt.Sprint(*exitCode))
+		new.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
 	}
 
 	for _, c := range pod.Status.InitContainerStatuses {
@@ -1525,8 +1478,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.wf.Status.MarkTaskResultComplete(nodeID)
 	}
 
-	// if we are transitioning from Pending to a different state, clear out unchanged message
-	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && old.Message == new.Message {
+	// if we are transitioning from Pending to a different state (except Fail or Error), clear out unchanged message
+	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && new.Phase != wfv1.NodeFailed && new.Phase != wfv1.NodeError && old.Message == new.Message {
 		new.Message = ""
 	}
 
@@ -1554,7 +1507,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 func getExitCode(pod *apiv1.Pod) *int32 {
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.MainContainerName && c.State.Terminated != nil {
-			return pointer.Int32(c.State.Terminated.ExitCode)
+			return ptr.To(c.State.Terminated.ExitCode)
 		}
 	}
 	return nil
@@ -2019,7 +1972,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	unlockedNode := false
 
 	if processedTmpl.Synchronization != nil {
-		lockAcquired, wfUpdated, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
+		lockAcquired, wfUpdated, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
@@ -2027,14 +1980,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if node == nil {
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, msg)
 			}
-			lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
-			if err != nil {
-				// If an error were to be returned here, it would have been caught by TryAcquire. If it didn't, then it is
-				// unexpected behavior and is a bug.
-				panic("bug: GetLockName should not return an error after a call to TryAcquire")
-			}
-			woc.log.Infof("Could not acquire lock named: %s", lockName)
-			return woc.markNodeWaitingForLock(node.Name, lockName.EncodeName())
+			woc.log.Infof("Could not acquire lock named: %s", failedLockName)
+			return woc.markNodeWaitingForLock(node.Name, failedLockName)
 		} else {
 			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
@@ -3285,13 +3232,64 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	// Adding per-output aggregated value placeholders
 	for outputName, valueList := range outputParamValueLists {
 		key = fmt.Sprintf("%s.outputs.parameters.%s", prefix, outputName)
-		valueListJSON, err := json.Marshal(valueList)
+		valueListJson, err := aggregatedJsonValueList(valueList)
 		if err != nil {
 			return err
 		}
-		scope.addParamToScope(key, string(valueListJSON))
+		scope.addParamToScope(key, valueListJson)
 	}
 	return nil
+}
+
+// tryJsonUnmarshal unmarshals each item in the list assuming it is
+// JSON and NOT a plain JSON value.
+// If returns success only if all items can be unmarshalled and are either
+// maps or lists
+func tryJsonUnmarshal(valueList []string) ([]interface{}, bool) {
+	success := true
+	var list []interface{}
+	for _, value := range valueList {
+		var unmarshalledValue interface{}
+		err := json.Unmarshal([]byte(value), &unmarshalledValue)
+		if err != nil {
+			success = false
+			break // Unmarshal failed, fall back to strings
+		}
+		switch unmarshalledValue.(type) {
+		case []interface{}:
+		case map[string]interface{}:
+			// Keep these types
+		default:
+			// Drop anything else
+			success = false
+		}
+		if !success {
+			break
+		}
+		list = append(list, unmarshalledValue)
+	}
+	return list, success
+}
+
+// aggregatedJsonValueList returns a string containing a JSON list, holding
+// all of the values from the valueList.
+// It tries to understand what's wanted from  inner JSON using tryJsonUnmarshall
+func aggregatedJsonValueList(valueList []string) (string, error) {
+	unmarshalledList, success := tryJsonUnmarshal(valueList)
+	var valueListJSON []byte
+	var err error
+	if success {
+		valueListJSON, err = json.Marshal(unmarshalledList)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		valueListJSON, err = json.Marshal(valueList)
+		if err != nil {
+			return "", err
+		}
+	}
+	return string(valueListJSON), nil
 }
 
 // addParamToGlobalScope exports any desired node outputs to the global scope, and adds it to the global outputs.
@@ -3441,7 +3439,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		if err != nil {
 			return nil, err
 		}
-		suspendDuration, err := parseStringToDuration(tmpl.Suspend.Duration)
+		suspendDuration, err := wfv1.ParseStringToDuration(tmpl.Suspend.Duration)
 		if err != nil {
 			return node, err
 		}
@@ -3514,21 +3512,8 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 	return node
 }
 
-func parseStringToDuration(durationString string) (time.Duration, error) {
-	var suspendDuration time.Duration
-	// If no units are attached, treat as seconds
-	if val, err := strconv.Atoi(durationString); err == nil {
-		suspendDuration = time.Duration(val) * time.Second
-	} else if duration, err := time.ParseDuration(durationString); err == nil {
-		suspendDuration = duration
-	} else {
-		return 0, fmt.Errorf("unable to parse %s as a duration: %w", durationString, err)
-	}
-	return suspendDuration, nil
-}
-
 func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {
-	replaceMap := make(map[string]string)
+	replaceMap := make(map[string]interface{})
 	var newName string
 
 	switch item.GetType() {

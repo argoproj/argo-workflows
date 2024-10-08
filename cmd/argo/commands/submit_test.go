@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
@@ -15,14 +16,25 @@ import (
 )
 
 func Test_submitWorkflows(t *testing.T) {
+	t.Run("Submit workflow with invalid options", func(t *testing.T) {
+		c := &workflowmocks.WorkflowServiceClient{}
+		err := submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{Watch: true, Wait: true})
+		require.Error(t, err, "--wait cannot be combined with --watch")
+	})
+	t.Run("Submit without providing workflow", func(t *testing.T) {
+		c := &workflowmocks.WorkflowServiceClient{}
+		err := submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
+		require.Error(t, err, "No Workflow found in given files")
+	})
 	t.Run("Submit workflow with priority set in spec", func(t *testing.T) {
 		c := &workflowmocks.WorkflowServiceClient{}
 		priority := int32(70)
 		workflow := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "argo"}, Spec: wfv1.WorkflowSpec{Priority: &priority}}
 
 		c.On("CreateWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
-		submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
+		err := submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &common.CliSubmitOpts{})
 
+		require.NoError(t, err)
 		arg := c.Mock.Calls[0].Arguments[1]
 		wfC, ok := arg.(*workflowpkg.WorkflowCreateRequest)
 		if !ok {
@@ -41,8 +53,9 @@ func Test_submitWorkflows(t *testing.T) {
 		cliSubmitOpts := common.CliSubmitOpts{Priority: &priorityCLI}
 
 		c.On("CreateWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
-		submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &cliSubmitOpts)
+		err := submitWorkflows(context.TODO(), c, "argo", []wfv1.Workflow{workflow}, &wfv1.SubmitOpts{}, &cliSubmitOpts)
 
+		require.NoError(t, err)
 		arg := c.Mock.Calls[0].Arguments[1]
 		wfC, ok := arg.(*workflowpkg.WorkflowCreateRequest)
 		if !ok {

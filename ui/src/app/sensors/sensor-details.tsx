@@ -15,6 +15,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
+import {useEditableObject} from '../shared/use-editable-object';
 import {SensorEditor} from './sensor-editor';
 import {SensorSidePanel} from './sensor-side-panel';
 
@@ -29,8 +30,7 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [name] = useState(match.params.name);
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
-    const [sensor, setSensor] = useState<Sensor>();
-    const [edited, setEdited] = useState(false);
+    const [sensor, edited, setSensor, resetSensor] = useEditableObject<Sensor>();
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
@@ -58,13 +58,10 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     useEffect(() => {
         services.sensor
             .get(name, namespace)
-            .then(setSensor)
-            .then(() => setEdited(false))
+            .then(resetSensor)
             .then(() => setError(null))
             .catch(setError);
     }, [namespace, name]);
-
-    useEffect(() => setEdited(true), [sensor]);
 
     useCollectEvent('openedSensorDetails');
 
@@ -94,9 +91,8 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
                             action: () =>
                                 services.sensor
                                     .update(sensor, namespace)
-                                    .then(setSensor)
+                                    .then(resetSensor)
                                     .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
-                                    .then(() => setEdited(false))
                                     .then(() => setError(null))
                                     .catch(setError)
                         },

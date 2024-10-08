@@ -33,7 +33,7 @@ spec:
   serviceAccountName: argo
   automountServiceAccountToken: false
   executor:
-    serviceAccountName: argo 
+    serviceAccountName: get-cm
   entrypoint: main
   templates:
     - name: main
@@ -67,7 +67,7 @@ spec:
   serviceAccountName: argo
   automountServiceAccountToken: false
   executor:
-    serviceAccountName: argo
+    serviceAccountName: get-cm
   entrypoint: main
   templates:
     - name: main

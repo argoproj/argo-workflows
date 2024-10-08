@@ -34,20 +34,21 @@ func NewAgentCommand() *cobra.Command {
 func NewAgentInitCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "init",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			for _, name := range getPluginNames() {
 				filename := tokenFilename(name)
 				log.WithField("plugin", name).
 					WithField("filename", filename).
 					Info("creating token file for plugin")
 				if err := os.Mkdir(filepath.Dir(filename), 0o770); err != nil {
-					log.Fatal(err)
+					return err
 				}
 				token := rand.String(32) // this could have 26^32 ~= 2 x 10^45  possible values, not guessable in reasonable time
 				if err := os.WriteFile(filename, []byte(token), 0o440); err != nil {
-					log.Fatal(err)
+					return err
 				}
 			}
+			return nil
 		},
 	}
 }

@@ -72,6 +72,7 @@ JetBrains
 KNative
 Kaniko
 Katacoda
+Katib
 Kerberos
 Killercoda
 KubectlExec
@@ -82,6 +83,7 @@ Lifecycle-Hook
 LitmusChaos
 MLOps
 Makefile
+Metaflow
 MinIO
 Minikube
 MySQL
@@ -185,6 +187,7 @@ memoizing
 metadata
 minikube
 mutex
+mutexes
 namespace
 namespaces
 natively
@@ -205,6 +208,7 @@ sandboxed
 shortcodes
 stateful
 stderr
+symlinks
 temporality
 triaged
 un-reconciled

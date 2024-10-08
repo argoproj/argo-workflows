@@ -23,15 +23,17 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -248,7 +250,7 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 }
 
 // test exporter extract metric values from the metrics subsystem
-var testExporter *metrics.TestExporter
+var testExporter *telemetry.TestMetricsExporter
 
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
@@ -360,7 +362,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
 	cancel, controller := newController(func(controller *WorkflowController) {
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
-			Spec: wfv1.WorkflowSpec{HostNetwork: pointer.Bool(true)},
+			Spec: wfv1.WorkflowSpec{HostNetwork: ptr.To(true)},
 		}
 	})
 	return cancel, controller
@@ -378,13 +380,13 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 				},
 			},
 			Spec: wfv1.WorkflowSpec{
-				HostNetwork:        pointer.Bool(true),
+				HostNetwork:        ptr.To(true),
 				Entrypoint:         "good_entrypoint",
 				ServiceAccountName: "my_service_account",
 				TTLStrategy: &wfv1.TTLStrategy{
-					SecondsAfterCompletion: pointer.Int32(10),
-					SecondsAfterSuccess:    pointer.Int32(10),
-					SecondsAfterFailure:    pointer.Int32(10),
+					SecondsAfterCompletion: ptr.To(int32(10)),
+					SecondsAfterSuccess:    ptr.To(int32(10)),
+					SecondsAfterFailure:    ptr.To(int32(10)),
 				},
 			},
 		}
@@ -402,12 +404,12 @@ func newControllerWithDefaultsVolumeClaimTemplate() (context.CancelFunc, *Workfl
 					},
 					Spec: apiv1.PersistentVolumeClaimSpec{
 						AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
-						Resources: apiv1.ResourceRequirements{
+						Resources: apiv1.VolumeResourceRequirements{
 							Requests: apiv1.ResourceList{
 								apiv1.ResourceStorage: resource.MustParse("1Mi"),
 							},
 						},
-						StorageClassName: pointer.String("local-path"),
+						StorageClassName: ptr.To("local-path"),
 					},
 				}},
 			},
@@ -446,20 +448,42 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 }
 
-type with func(pod *apiv1.Pod)
+type with func(pod *apiv1.Pod, woc *wfOperationCtx)
 
-func withOutputs(v interface{}) with {
-	switch x := v.(type) {
-	case string:
-		return withAnnotation(common.AnnotationKeyOutputs, x)
-	default:
-		return withOutputs(wfv1.MustMarshallJSON(x))
+func withOutputs(outputs wfv1.Outputs) with {
+	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
+		nodeId := woc.nodeID(pod)
+		taskResult := &wfv1.WorkflowTaskResult{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: workflow.APIVersion,
+				Kind:       workflow.WorkflowTaskResultKind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: nodeId,
+				Labels: map[string]string{
+					common.LabelKeyWorkflow:               woc.wf.Name,
+					common.LabelKeyReportOutputsCompleted: "true",
+				},
+			},
+			NodeResult: wfv1.NodeResult{
+				Phase:   wfv1.NodeSucceeded,
+				Outputs: &outputs,
+			},
+		}
+		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+			Create(
+				context.Background(),
+				taskResult,
+				metav1.CreateOptions{},
+			)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
-func withProgress(v string) with { return withAnnotation(common.AnnotationKeyProgress, v) }
 
 func withExitCode(v int32) with {
-	return func(pod *apiv1.Pod) {
+	return func(pod *apiv1.Pod, _ *wfOperationCtx) {
 		for _, c := range pod.Spec.Containers {
 			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
 				Name: c.Name,
@@ -471,10 +495,6 @@ func withExitCode(v int32) with {
 			})
 		}
 	}
-}
-
-func withAnnotation(key, val string) with {
-	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
 }
 
 // createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
@@ -531,7 +551,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 				pod.Status.Message = "Pod failed"
 			}
 			for _, w := range with {
-				w(&pod)
+				w(&pod, woc)
 			}
 			updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
 			if err != nil {
