@@ -92,6 +92,7 @@ type argoServer struct {
 	apiRateLimiter           limiter.Store
 	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
+	restConfig               *rest.Config
 }
 
 type ArgoServerOpts struct {
@@ -184,6 +185,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		apiRateLimiter:           store,
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
+		restConfig:               opts.RestConfig,
 	}, nil
 }
 
@@ -227,6 +229,11 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
+	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
+	wftmplInformer, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
+	if err != nil {
+		log.Fatal(err)
+	}
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
@@ -236,8 +243,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
-	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
-	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, &resourceCacheNamespace)
+	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplInformer, &resourceCacheNamespace)
 	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -267,6 +273,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	httpL := tcpm.Match(cmux.HTTP1Fast())
 	grpcL := tcpm.Match(cmux.Any())
 
+	wftmplInformer.Run(as.stopCh)
 	go eventServer.Run(as.stopCh)
 	go workflowServer.Run(as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
