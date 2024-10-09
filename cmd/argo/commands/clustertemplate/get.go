@@ -4,11 +4,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 )
 
 func NewGetCommand() *cobra.Command {
-	var output string
+	var output = common.NewPrintWorkflowOutputValue("")
 
 	command := &cobra.Command{
 		Use:   "get CLUSTER WORKFLOW_TEMPLATE...",
@@ -29,12 +30,12 @@ func NewGetCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				printClusterWorkflowTemplate(wftmpl, output)
+				printClusterWorkflowTemplate(wftmpl, output.String())
 			}
 			return nil
 		},
 	}
 
-	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
+	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
 	return command
 }

@@ -7,20 +7,21 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type cliCreateOpts struct {
-	output   string // --output
-	schedule string // --schedule
-	strict   bool   // --strict
+	output   common.EnumFlagValue // --output
+	schedule string               // --schedule
+	strict   bool                 // --strict
 }
 
 func NewCreateCommand() *cobra.Command {
 	var (
-		cliCreateOpts  cliCreateOpts
+		cliCreateOpts  = cliCreateOpts{output: common.NewPrintWorkflowOutputValue("")}
 		submitOpts     wfv1.SubmitOpts
 		parametersFile string
 	)
@@ -40,7 +41,7 @@ func NewCreateCommand() *cobra.Command {
 	}
 
 	util.PopulateSubmitOpts(command, &submitOpts, &parametersFile, false)
-	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliCreateOpts.output, "output", "o", "Output format. "+cliCreateOpts.output.Usage())
 	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().StringVar(&cliCreateOpts.schedule, "schedule", "", "override cron workflow schedule")
 	return command

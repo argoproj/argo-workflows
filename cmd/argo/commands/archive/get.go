@@ -10,12 +10,16 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
-	var output string
+	var output = common.EnumFlagValue{
+		AllowedValues: []string{"json", "yaml", "wide"},
+		Value:         "wide",
+	}
 	command := &cobra.Command{
 		Use:   "get UID",
 		Short: "get a workflow in the archive",
@@ -41,11 +45,11 @@ func NewGetCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			printWorkflow(wf, output)
+			printWorkflow(wf, output.String())
 			return nil
 		},
 	}
-	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
+	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
 	return command
 }
 

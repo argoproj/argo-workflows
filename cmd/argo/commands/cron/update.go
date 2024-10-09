@@ -7,19 +7,20 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type cliUpdateOpts struct {
-	output string // --output
-	strict bool   // --strict
+	output common.EnumFlagValue // --output
+	strict bool                 // --strict
 }
 
 func NewUpdateCommand() *cobra.Command {
 	var (
-		cliUpdateOpts  cliUpdateOpts
+		cliUpdateOpts  = cliUpdateOpts{output: common.NewPrintWorkflowOutputValue("")}
 		submitOpts     wfv1.SubmitOpts
 		parametersFile string
 	)
@@ -48,7 +49,7 @@ func NewUpdateCommand() *cobra.Command {
 	}
 
 	util.PopulateSubmitOpts(command, &submitOpts, &parametersFile, false)
-	command.Flags().StringVarP(&cliUpdateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliUpdateOpts.output, "output", "o", "Output format. "+cliUpdateOpts.output.Usage())
 	command.Flags().BoolVar(&cliUpdateOpts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }

@@ -14,7 +14,11 @@ import (
 )
 
 func NewGetCommand() *cobra.Command {
-	var getArgs common.GetFlags
+	var getArgs = common.GetFlags{
+		Output: common.EnumFlagValue{
+			AllowedValues: []string{"name", "json", "yaml", "short", "wide"},
+		},
+	}
 
 	command := &cobra.Command{
 		Use:   "get WORKFLOW...",
@@ -50,7 +54,7 @@ func NewGetCommand() *cobra.Command {
 		},
 	}
 
-	command.Flags().StringVarP(&getArgs.Output, "output", "o", "", "Output format. One of: json|yaml|short|wide")
+	command.Flags().VarP(&getArgs.Output, "output", "o", "Output format. "+getArgs.Output.Usage())
 	command.Flags().BoolVar(&common.NoColor, "no-color", false, "Disable colorized output")
 	command.Flags().BoolVar(&common.NoUtf8, "no-utf8", false, "Use plain 7-bits ascii characters")
 	command.Flags().StringVar(&getArgs.Status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
@@ -59,7 +63,7 @@ func NewGetCommand() *cobra.Command {
 }
 
 func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) error {
-	switch getArgs.Output {
+	switch getArgs.Output.String() {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
 	case "json":

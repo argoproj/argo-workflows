@@ -7,16 +7,17 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
 )
 
 type cliUpdateOpts struct {
-	output string // --output
-	strict bool   // --strict
+	output common.EnumFlagValue // --output
+	strict bool                 // --strict
 }
 
 func NewUpdateCommand() *cobra.Command {
-	var cliUpdateOpts cliUpdateOpts
+	var cliUpdateOpts = cliUpdateOpts{output: common.NewPrintWorkflowOutputValue("")}
 	command := &cobra.Command{
 		Use:   "update FILE1 FILE2...",
 		Short: "update a cluster workflow template",
@@ -34,7 +35,7 @@ func NewUpdateCommand() *cobra.Command {
 			return updateClusterWorkflowTemplates(cmd.Context(), args, &cliUpdateOpts)
 		},
 	}
-	command.Flags().StringVarP(&cliUpdateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliUpdateOpts.output, "output", "o", "Output format. "+cliUpdateOpts.output.Usage())
 	command.Flags().BoolVar(&cliUpdateOpts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
@@ -68,7 +69,7 @@ func updateClusterWorkflowTemplates(ctx context.Context, filePaths []string, cli
 		if err != nil {
 			return fmt.Errorf("Failed to update cluster workflow template: %s,  %v", wftmpl.Name, err)
 		}
-		printClusterWorkflowTemplate(updated, cliOpts.output)
+		printClusterWorkflowTemplate(updated, cliOpts.output.String())
 	}
 	return nil
 }

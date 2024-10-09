@@ -10,7 +10,7 @@ argo template get WORKFLOW_TEMPLATE... [flags]
 
 ```
   -h, --help            help for get
-  -o, --output string   Output format. One of: json|yaml|wide
+  -o, --output string   Output format. One of: name|json|yaml|wide
 ```
 
 ### Options inherited from parent commands

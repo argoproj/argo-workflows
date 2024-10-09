@@ -28,7 +28,7 @@ argo archive list [flags]
 ```
       --chunk-size int    Return large lists in chunks rather than all at once. Pass 0 to disable.
   -h, --help              help for list
-  -o, --output string     Output format. One of: json|yaml|wide (default "wide")
+  -o, --output string     Output format. One of: name|json|yaml|wide (default "wide")
   -l, --selector string   Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 

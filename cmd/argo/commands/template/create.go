@@ -7,16 +7,17 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 )
 
 type cliCreateOpts struct {
-	output string // --output
-	strict bool   // --strict
+	output common.EnumFlagValue // --output
+	strict bool                 // --strict
 }
 
 func NewCreateCommand() *cobra.Command {
-	var cliCreateOpts cliCreateOpts
+	var cliCreateOpts = cliCreateOpts{output: common.NewPrintWorkflowOutputValue("")}
 	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a workflow template",
@@ -25,7 +26,7 @@ func NewCreateCommand() *cobra.Command {
 			return CreateWorkflowTemplates(cmd.Context(), args, &cliCreateOpts)
 		},
 	}
-	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliCreateOpts.output, "output", "o", "Output format. "+cliCreateOpts.output.Usage())
 	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
@@ -56,7 +57,7 @@ func CreateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 		if err != nil {
 			return fmt.Errorf("Failed to create workflow template: %v", err)
 		}
-		printWorkflowTemplate(created, cliOpts.output)
+		printWorkflowTemplate(created, cliOpts.output.String())
 	}
 	return nil
 }
