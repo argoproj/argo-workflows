@@ -1,10 +1,14 @@
 package types
 
-import "github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+import (
+	"context"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+)
 
 type WorkflowTemplateStore interface {
-	Getter(namespace string) templateresolution.WorkflowTemplateNamespacedGetter
+	Getter(ctx context.Context, namespace string) templateresolution.WorkflowTemplateNamespacedGetter
 }
 type ClusterWorkflowTemplateStore interface {
-	Getter() templateresolution.ClusterWorkflowTemplateGetter
+	Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter
 }
