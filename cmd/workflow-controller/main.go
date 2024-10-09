@@ -121,7 +121,7 @@ func NewRootCommand() *cobra.Command {
 				log.WithField("id", "single-instance").Info("starting leading")
 
 				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
-				go wfController.RunPrometheusServer(ctx, false)
+				wfController.RunPrometheusServer(ctx, false)
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
@@ -136,7 +136,7 @@ func NewRootCommand() *cobra.Command {
 				// for controlling the dummy metrics server
 				dummyCtx, dummyCancel := context.WithCancel(context.Background())
 				defer dummyCancel()
-				go wfController.RunPrometheusServer(dummyCtx, true)
+				wg := wfController.RunPrometheusServer(dummyCtx, true)
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -150,12 +150,14 @@ func NewRootCommand() *cobra.Command {
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()
+							wg.Wait()
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
 							go wfController.RunPrometheusServer(ctx, false)
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info("stopped leading")
 							cancel()
+							wg.Wait()
 							go wfController.RunPrometheusServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {

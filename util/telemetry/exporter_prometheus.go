@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	promgo "github.com/prometheus/client_golang/prometheus"
@@ -53,7 +54,8 @@ func (config *Config) port() int {
 
 // RunPrometheusServer starts a prometheus metrics server
 // If 'isDummy' is set to true, the dummy metrics server will be started. If it's false, the prometheus metrics server will be started
-func (m *Metrics) RunPrometheusServer(ctx context.Context, isDummy bool) {
+func (m *Metrics) RunPrometheusServer(ctx context.Context, isDummy bool, wg *sync.WaitGroup) {
+	defer wg.Done()
 	if !m.config.Enabled {
 		return
 	}
