@@ -19,6 +19,7 @@ import (
 const testScopeName string = "argo-workflows-test"
 
 func TestDisablePrometheusServer(t *testing.T) {
+	var wg sync.WaitGroup
 	config := Config{
 		Enabled: false,
 		Path:    DefaultPrometheusServerPath,
@@ -28,8 +29,9 @@ func TestDisablePrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	go m.RunPrometheusServer(ctx, false, &sync.WaitGroup{})
-	time.Sleep(1 * time.Second) // to confirm that the server doesn't start, even if we wait
+	wg.Add(1)
+	go m.RunPrometheusServer(ctx, false, &wg)
+	wg.Wait()
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
 	if resp != nil {
 		defer resp.Body.Close()
@@ -49,6 +51,7 @@ func TestPrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
+	wg.Add(1)
 	go m.RunPrometheusServer(ctx, false, &wg)
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
@@ -63,7 +66,8 @@ func TestPrometheusServer(t *testing.T) {
 	bodyString := string(bodyBytes)
 	assert.NotEmpty(t, bodyString)
 
-	wg.Wait() // wait for server shutdown to prevent port conflicts with subsequent tests
+	cancel() // cancel and wait for server shutdown to prevent port conflicts with subsequent tests
+	wg.Wait()
 }
 
 func TestDummyPrometheusServer(t *testing.T) {
@@ -78,6 +82,7 @@ func TestDummyPrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
+	wg.Add(1)
 	go m.RunPrometheusServer(ctx, true, &wg)
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
@@ -93,5 +98,6 @@ func TestDummyPrometheusServer(t *testing.T) {
 
 	assert.Empty(t, bodyString) // expect the dummy metrics server to provide no metrics responses
 
-	wg.Wait() // wait for server shutdown to prevent port conflicts with subsequent tests
+	cancel() // cancel and wait for server shutdown to prevent port conflicts with subsequent tests
+	wg.Wait()
 }
