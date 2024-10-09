@@ -276,7 +276,7 @@ spec:
 		defer func() { logrus.StandardLogger().ExitFunc = nil }()
 		var fatal bool
 		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
-		runLint(context.Background(), []string{workflowMultiDocsPath}, true, nil, "pretty", false)
+		err = runLint(context.Background(), []string{workflowMultiDocsPath}, true, nil, "pretty", false)
 
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
