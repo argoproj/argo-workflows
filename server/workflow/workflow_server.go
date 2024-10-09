@@ -57,12 +57,13 @@ type workflowServer struct {
 	wfLister              store.WorkflowLister
 	wfReflector           *cache.Reflector
 	wftmplStore           servertypes.WorkflowTemplateStore
+	cwftmplStore          servertypes.ClusterWorkflowTemplateStore
 }
 
 var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, namespace *string) *workflowServer {
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, namespace *string) *workflowServer {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -70,6 +71,7 @@ func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRe
 		wfArchive:             wfArchive,
 		wfLister:              wfLister,
 		wftmplStore:           wftmplStore,
+		cwftmplStore:          cwftmplStore,
 	}
 	if wfStore != nil && namespace != nil {
 		lw := &cache.ListWatch{
@@ -93,6 +95,13 @@ func (s *workflowServer) wftmplGetter(wfClient versioned.Interface, namespace st
 	return templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 }
 
+func (s *workflowServer) cwftmplGetter(wfClient versioned.Interface) templateresolution.ClusterWorkflowTemplateGetter {
+	if s.wftmplStore != nil {
+		return s.cwftmplStore.Getter()
+	}
+	return templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+}
+
 func (s *workflowServer) Run(stopCh <-chan struct{}) {
 	if s.wfReflector != nil {
 		s.wfReflector.Run(stopCh)
@@ -114,7 +123,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	creator.Label(ctx, req.Workflow)
 
 	wftmplGetter := s.wftmplGetter(wfClient, req.Workflow.Namespace)
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	cwftmplGetter := s.cwftmplGetter(wfClient)
 
 	err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, validate.ValidateOpts{})
 	if err != nil {
@@ -672,7 +681,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	}
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := s.wftmplGetter(wfClient, req.Workflow.Namespace)
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	cwftmplGetter := s.cwftmplGetter(wfClient)
 	s.instanceIDService.Label(req.Workflow)
 	creator.Label(ctx, req.Workflow)
 
@@ -786,7 +795,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	}
 
 	wftmplGetter := s.wftmplGetter(wfClient, req.Namespace)
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	cwftmplGetter := s.cwftmplGetter(wfClient)
 
 	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
 	if err != nil {

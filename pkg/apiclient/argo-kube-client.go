@@ -41,6 +41,7 @@ type argoKubeClient struct {
 	instanceIDService instanceid.Service
 	wfClient          workflow.Interface
 	wfInformer        types.WorkflowTemplateStore
+	cwfInformer       types.ClusterWorkflowTemplateStore
 }
 
 var _ Client = &argoKubeClient{}
@@ -65,6 +66,10 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 		return nil, nil, err
 	}
 	wftmplInformer, err := workflowtemplateserver.NewInformer(restConfig, namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+	cwftmplInformer, err := clusterworkflowtmplserver.NewInformer(restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -95,13 +100,13 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	if err != nil {
 		return nil, nil, err
 	}
-	return ctx, &argoKubeClient{instanceIDService, wfClient, wftmplInformer}, nil
+	return ctx, &argoKubeClient{instanceIDService, wfClient, wftmplInformer, cwftmplInformer}, nil
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
 	wfLister := store.NewKubeLister(a.wfClient)
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, wfLister, nil, a.wfInformer, nil)}}
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, wfLister, nil, a.wfInformer, a.cwfInformer, nil)}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkflowServiceClient, error) {
