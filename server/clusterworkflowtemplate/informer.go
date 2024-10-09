@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	clientv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
@@ -54,14 +53,6 @@ func (cwti *Informer) Run(stopCh <-chan struct{}) {
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
-}
-
-// if namespace contains empty string Lister will use the namespace provided during initialization
-func (cwti *Informer) Lister(_ context.Context, namespace string) clientv1alpha1.ClusterWorkflowTemplateLister {
-	if cwti.informer == nil {
-		log.Fatal("Template informer not started")
-	}
-	return cwti.informer.Lister()
 }
 
 // if namespace contains empty string Lister will use the namespace provided during initialization
