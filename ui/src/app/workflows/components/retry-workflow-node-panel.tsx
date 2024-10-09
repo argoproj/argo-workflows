@@ -3,9 +3,8 @@ import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import React, {useState} from 'react';
 
 import {Parameter, RetryOpts, Workflow} from '../../../models';
-import {ParametersInput} from '../../shared/components/parameters-input';
+import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
 import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
 import {ErrorNotice} from '../../shared/components/error-notice';
 
 interface Props {
@@ -24,7 +23,7 @@ export function RetryWorkflowNode(props: Props) {
 
     async function submit() {
         const parameters: RetryOpts['parameters'] = overrideParameters
-            ? [...workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p))]
+            ? [...workflowParameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p))]
             : [];
         const opts: RetryOpts = {
             parameters,
