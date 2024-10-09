@@ -59,8 +59,7 @@ func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx contex
 }
 
 func (cwts *ClusterWorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, name string) (*v1alpha1.ClusterWorkflowTemplate, error) {
-	wfClient := auth.GetWfClient(ctx)
-	wfTmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, name, v1.GetOptions{})
+	wfTmpl, err := cwts.cwftmplStore.Getter(ctx).Get(name)
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.Internal)
 	}
