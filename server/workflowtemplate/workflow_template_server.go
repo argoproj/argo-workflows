@@ -12,13 +12,12 @@ import (
 
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
@@ -29,21 +28,13 @@ type WorkflowTemplateServer struct {
 }
 
 func NewWorkflowTemplateServer(instanceIDService instanceid.Service, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore) workflowtemplatepkg.WorkflowTemplateServiceServer {
+	if wftmplStore == nil {
+		wftmplStore = NewWfClientStore()
+	}
+	if cwftmplStore == nil {
+		cwftmplStore = clusterworkflowtemplate.NewCwfClientStore()
+	}
 	return &WorkflowTemplateServer{instanceIDService, wftmplStore, cwftmplStore}
-}
-
-func (s *WorkflowTemplateServer) wftmplGetter(wfClient versioned.Interface, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
-	if s.wftmplStore != nil {
-		return s.wftmplStore.Getter(namespace)
-	}
-	return templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
-}
-
-func (s *WorkflowTemplateServer) cwftmplGetter(wfClient versioned.Interface) templateresolution.ClusterWorkflowTemplateGetter {
-	if s.cwftmplStore != nil {
-		return s.cwftmplStore.Getter()
-	}
-	return templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 }
 
 func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
@@ -53,8 +44,8 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	}
 	wts.instanceIDService.Label(req.Template)
 	creator.Label(ctx, req.Template)
-	wftmplGetter := wts.wftmplGetter(wfClient, req.Namespace)
-	cwftmplGetter := wts.cwftmplGetter(wfClient)
+	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
+	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
 	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
@@ -186,11 +177,10 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 }
 
 func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
-	wfClient := auth.GetWfClient(ctx)
 	wts.instanceIDService.Label(req.Template)
 	creator.Label(ctx, req.Template)
-	wftmplGetter := wts.wftmplGetter(wfClient, req.Namespace)
-	cwftmplGetter := wts.cwftmplGetter(wfClient)
+	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
+	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
 	err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
@@ -207,8 +197,8 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 	wfClient := auth.GetWfClient(ctx)
-	wftmplGetter := wts.wftmplGetter(wfClient, req.Namespace)
-	cwftmplGetter := wts.cwftmplGetter(wfClient)
+	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
+	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
 	err = validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, validate.ValidateOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)

@@ -1,6 +1,7 @@
 package workflowtemplate
 
 import (
+	"context"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -58,7 +59,7 @@ func (wti *Informer) Run(stopCh <-chan struct{}) {
 }
 
 // if namespace contains empty string Lister will use the namespace provided during initialization
-func (wti *Informer) Lister(namespace string) clientv1alpha1.WorkflowTemplateNamespaceLister {
+func (wti *Informer) Lister(_ context.Context, namespace string) clientv1alpha1.WorkflowTemplateNamespaceLister {
 	if wti.informer == nil {
 		log.Fatal("Template informer not started")
 	}
@@ -69,7 +70,7 @@ func (wti *Informer) Lister(namespace string) clientv1alpha1.WorkflowTemplateNam
 }
 
 // if namespace contains empty string Lister will use the namespace provided during initialization
-func (wti *Informer) Getter(namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
+func (wti *Informer) Getter(_ context.Context, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
 	if wti.informer == nil {
 		log.Fatal("Template informer not started")
 	}

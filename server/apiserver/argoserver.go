@@ -230,7 +230,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
-	wftmplInformer, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
+	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -247,8 +247,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
-	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplInformer, cwftmplInformer, &resourceCacheNamespace)
-	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wftmplInformer, cwftmplInformer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
+	workflowServer := workflow.NewWorkflowServer(instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, &resourceCacheNamespace)
+	grpcServer := as.newGRPCServer(instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, eventServer, config.Links, config.Columns, config.NavColor)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -277,7 +277,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	httpL := tcpm.Match(cmux.HTTP1Fast())
 	grpcL := tcpm.Match(cmux.Any())
 
-	wftmplInformer.Run(as.stopCh)
+	wftmplStore.Run(as.stopCh)
 	go eventServer.Run(as.stopCh)
 	go workflowServer.Run(as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()

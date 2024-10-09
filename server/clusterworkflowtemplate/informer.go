@@ -1,6 +1,7 @@
 package clusterworkflowtemplate
 
 import (
+	"context"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -56,7 +57,7 @@ func (cwti *Informer) Run(stopCh <-chan struct{}) {
 }
 
 // if namespace contains empty string Lister will use the namespace provided during initialization
-func (cwti *Informer) Lister(namespace string) clientv1alpha1.ClusterWorkflowTemplateLister {
+func (cwti *Informer) Lister(_ context.Context, namespace string) clientv1alpha1.ClusterWorkflowTemplateLister {
 	if cwti.informer == nil {
 		log.Fatal("Template informer not started")
 	}
@@ -64,7 +65,7 @@ func (cwti *Informer) Lister(namespace string) clientv1alpha1.ClusterWorkflowTem
 }
 
 // if namespace contains empty string Lister will use the namespace provided during initialization
-func (cwti *Informer) Getter() templateresolution.ClusterWorkflowTemplateGetter {
+func (cwti *Informer) Getter(_ context.Context) templateresolution.ClusterWorkflowTemplateGetter {
 	if cwti.informer == nil {
 		log.Fatal("Template informer not started")
 	}
