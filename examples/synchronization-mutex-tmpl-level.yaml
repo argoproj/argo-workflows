@@ -1,6 +1,5 @@
 # This example demonstrates the use of a Synchronization Mutex lock on template execution. Mutex lock limits
 # only one of the template execution across the workflows in the namespace which has same Mutex lock.
-
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -28,8 +27,10 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      mutexes:
+      mutexes: # v3.6 and after
         - name: welcome
+      # mutex: # deprecated: v3.5 and before
+      #   name: welcome
     container:
       image: alpine:latest
       command: [sh, -c]
@@ -37,8 +38,10 @@ spec:
 
   - name: acquire-lock-1
     synchronization:
-      mutexes:
+      mutexes: # v3.6 and after
         - name: test
+      # mutex: # deprecated: v3.5 and before
+      #   name: test
     container:
       image: alpine:latest
       command: [sh, -c]
