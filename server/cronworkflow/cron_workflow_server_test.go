@@ -52,7 +52,7 @@ metadata:
 `, &unlabelled)
 
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
-	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), nil)
+	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), nil, nil)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
