@@ -66,8 +66,7 @@ func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req 
 }
 
 func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, namespace string, name string) (*v1alpha1.WorkflowTemplate, error) {
-	wfClient := auth.GetWfClient(ctx)
-	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(ctx, name, v1.GetOptions{})
+	wfTmpl, err := wts.wftmplStore.Getter(ctx, namespace).Get(name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
