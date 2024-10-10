@@ -211,4 +211,64 @@ spec:
 
 		assert.False(t, fatal, "should not have exited")
 	})
+
+	workflowMultiDocsPath := filepath.Join(subdir, "workflowMultiDocs.yaml")
+	err = os.WriteFile(workflowMultiDocsPath, []byte(`
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-template-local-arg-1
+spec:
+  templates:
+    - name: hello-world
+      inputs:
+        parameters:
+          - name: msg
+            value: 'hello world'
+      container:
+        image: busybox
+        command: [echo]
+        args: ['{{inputs.parameters.msg}}']
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-template-local-arg-2
+spec:
+  templates:
+    - name: hello-world
+      inputs:
+        parameters:
+          - name: msg
+            value: 'hello world'
+      container:
+        image: busybox
+        command: [echo]
+        args: ['{{inputs.parameters.msg}}']
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-local-arg-
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: hello-world-template-local-arg-2
+              template: hello-world
+`), 0644)
+	require.NoError(t, err)
+
+	t.Run("linting a workflow in multi-documents yaml", func(t *testing.T) {
+		defer func() { logrus.StandardLogger().ExitFunc = nil }()
+		var fatal bool
+		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
+		runLint(context.Background(), []string{workflowMultiDocsPath}, true, nil, "pretty", false)
+
+		assert.False(t, fatal, "should not have exited")
+	})
+
 }
