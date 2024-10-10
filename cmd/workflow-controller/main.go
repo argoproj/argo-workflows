@@ -159,7 +159,11 @@ func NewRootCommand() *cobra.Command {
 							dummyCancel()
 							wg.Wait()
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
-							go wfController.RunPrometheusServer(ctx, false)
+							wg.Add(1)
+							go func() {
+								wfController.RunPrometheusServer(ctx, false)
+								wg.Done()
+							}()
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info("stopped leading")
