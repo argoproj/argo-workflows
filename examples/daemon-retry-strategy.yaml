@@ -3,23 +3,23 @@ kind: Workflow
 metadata:
   generateName: daemon-retry-
 spec:
-  entrypoint: daemon-retry-example
+  entrypoint: main
 
   templates:
-  - name: daemon-retry-example
+  - name: main
     steps:
-    - - name: nginx-server
-        template: nginx-server
-    - - name: nginx-client
-        template: nginx-client
+    - - name: server
+        template: server
+    - - name: client
+        template: client
         arguments:
           parameters:
           - name: server-ip
-            value: "{{steps.nginx-server.ip}}"
+            value: "{{steps.server.ip}}"
         withSequence:
           count: 10
 
-  - name: nginx-server
+  - name: server
     retryStrategy:
       limit: "10"
     daemon: true
@@ -32,17 +32,15 @@ spec:
         initialDelaySeconds: 2
         timeoutSeconds: 1
 
-  - name: nginx-client
+  - name: client
     inputs:
       parameters:
       - name: server-ip
-    retryStrategy:
-      limit: "10"
     synchronization:
       mutex:
         name: client-{{workflow.uid}}
     container:
       image: appropriate/curl:latest
       command: ["/bin/sh", "-c"]
-      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && sleep 10 && exit 1"]
+      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && sleep 100"]
 
