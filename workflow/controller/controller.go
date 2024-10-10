@@ -379,11 +379,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	<-ctx.Done()
 }
 
-func (wfc *WorkflowController) RunPrometheusServer(ctx context.Context, isDummy bool) *gosync.WaitGroup {
-	var wg gosync.WaitGroup
-	wg.Add(1)
-	go wfc.metrics.RunPrometheusServer(ctx, isDummy, &wg)
-	return &wg
+func (wfc *WorkflowController) RunPrometheusServer(ctx context.Context, isDummy bool) {
+	wfc.metrics.RunPrometheusServer(ctx, isDummy)
 }
 
 // Create and the Synchronization Manager

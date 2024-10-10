@@ -19,7 +19,6 @@ import (
 const testScopeName string = "argo-workflows-test"
 
 func TestDisablePrometheusServer(t *testing.T) {
-	var wg sync.WaitGroup
 	config := Config{
 		Enabled: false,
 		Path:    DefaultPrometheusServerPath,
@@ -29,9 +28,7 @@ func TestDisablePrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	wg.Add(1)
-	go m.RunPrometheusServer(ctx, false, &wg)
-	wg.Wait()
+	m.RunPrometheusServer(ctx, false)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
 	if resp != nil {
 		defer resp.Body.Close()
@@ -52,7 +49,10 @@ func TestPrometheusServer(t *testing.T) {
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
 	wg.Add(1)
-	go m.RunPrometheusServer(ctx, false, &wg)
+	go func() {
+		m.RunPrometheusServer(ctx, false)
+		wg.Done()
+	}()
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
 	require.NoError(t, err)
@@ -83,7 +83,10 @@ func TestDummyPrometheusServer(t *testing.T) {
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
 	wg.Add(1)
-	go m.RunPrometheusServer(ctx, true, &wg)
+	go func() {
+		m.RunPrometheusServer(ctx, true)
+		wg.Done()
+	}()
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
 	require.NoError(t, err)
