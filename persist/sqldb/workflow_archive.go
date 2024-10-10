@@ -305,6 +305,25 @@ func nameEqual(name string) db.Cond {
 	return db.Cond{}
 }
 
+func nameNotEqual(name string) db.Cond {
+	if name != "" {
+		return db.Cond{"name !=": name}
+	}
+	return db.Cond{}
+}
+
+func nameOperator(name, op string) db.Cond {
+	if name != "" {
+		switch op {
+		case "!=":
+			return nameNotEqual(name)
+		case "=", "==", "":
+			return nameEqual(name)
+		}
+	}
+	return db.Cond{}
+}
+
 func namePrefixClause(namePrefix string) db.Cond {
 	if namePrefix != "" {
 		return db.Cond{"name LIKE": namePrefix + "%"}
@@ -410,7 +429,6 @@ func (r *workflowArchive) GetWorkflowForEstimator(namespace string, requirements
 			FinishedAt: v1.Time{Time: awf.FinishedAt},
 		},
 	}, nil
-
 }
 
 func (r *workflowArchive) DeleteWorkflow(uid string) error {

@@ -9,7 +9,7 @@ import (
 func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t dbType, options utils.ListOptions, count bool) (db.Selector, error) {
 	selector = selector.
 		And(namespaceEqual(options.Namespace)).
-		And(nameEqual(options.Name)).
+		And(nameOperator(options.Name, options.NameOperator)).
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt))

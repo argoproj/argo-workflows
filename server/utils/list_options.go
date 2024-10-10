@@ -13,12 +13,12 @@ import (
 )
 
 type ListOptions struct {
-	Namespace, Name, NamePrefix string
-	MinStartedAt, MaxStartedAt  time.Time
-	LabelRequirements           labels.Requirements
-	Limit, Offset               int
-	ShowRemainingItemCount      bool
-	StartedAtAscending          bool
+	Namespace, Name, NameOperator, NamePrefix string
+	MinStartedAt, MaxStartedAt                time.Time
+	LabelRequirements                         labels.Requirements
+	Limit, Offset                             int
+	ShowRemainingItemCount                    bool
+	StartedAtAscending                        bool
 }
 
 func (l ListOptions) WithLimit(limit int) ListOptions {
@@ -71,6 +71,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix string) (ListOp
 	// note that for backward compatibility, the field selector 'metadata.namespace' is also supported for now
 	namespace := ns // optional
 	name := ""
+	nameOperator := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
 	showRemainingItemCount := false
@@ -91,8 +92,13 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix string) (ListOp
 				return ListOptions{}, status.Errorf(codes.InvalidArgument,
 					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
 			}
-		} else if strings.HasPrefix(selector, "metadata.name=") {
-			name = strings.TrimPrefix(selector, "metadata.name=")
+		} else if strings.HasPrefix(selector, "metadata.name") {
+			var ok bool
+			nameOperator, name, ok = splitTerm(selector)
+			if !ok {
+				return ListOptions{}, status.Errorf(codes.InvalidArgument,
+					"unsupported fieldselector 'metadata.name' %s", selector)
+			}
 		} else if strings.HasPrefix(selector, "spec.startedAt>") {
 			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
 			if err != nil {
@@ -122,6 +128,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix string) (ListOp
 	return ListOptions{
 		Namespace:              namespace,
 		Name:                   name,
+		NameOperator:           nameOperator,
 		NamePrefix:             namePrefix,
 		MinStartedAt:           minStartedAt,
 		MaxStartedAt:           maxStartedAt,
@@ -130,4 +137,24 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix string) (ListOp
 		Offset:                 offset,
 		ShowRemainingItemCount: showRemainingItemCount,
 	}, nil
+}
+
+const (
+	notEqualOperator    = "!="
+	doubleEqualOperator = "=="
+	equalOperator       = "="
+)
+
+var termOperators = []string{notEqualOperator, doubleEqualOperator, equalOperator}
+
+func splitTerm(term string) (op, rhs string, ok bool) {
+	for i := range term {
+		remaining := term[i:]
+		for _, op := range termOperators {
+			if strings.HasPrefix(remaining, op) {
+				return op, term[i+len(op):], true
+			}
+		}
+	}
+	return "", "", false
 }
