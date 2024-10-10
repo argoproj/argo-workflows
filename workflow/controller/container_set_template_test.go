@@ -46,6 +46,7 @@ spec:
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
+		volumeDownwardArgo,
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
@@ -57,6 +58,7 @@ spec:
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "tmp-dir-argo", MountPath: "/tmp", SubPath: "0"},
+				volumeMountDownwardArgo,
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		case "ctr-0":
@@ -114,6 +116,7 @@ spec:
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
+		volumeDownwardArgo,
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "input-artifacts", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
@@ -135,6 +138,7 @@ spec:
 				{Name: "input-artifacts", MountPath: "/mainctrfs/in/in-0", SubPath: "in-0"},
 				{Name: "tmp-dir-argo", MountPath: "/tmp", SubPath: "0"},
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
+				volumeMountDownwardArgo,
 			}, c.VolumeMounts)
 		case "main":
 			assert.ElementsMatch(t, []corev1.VolumeMount{
@@ -193,6 +197,7 @@ spec:
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
+		volumeDownwardArgo,
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
@@ -206,6 +211,7 @@ spec:
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 				{Name: "tmp-dir-argo", MountPath: "/tmp", SubPath: "0"},
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
+				volumeMountDownwardArgo,
 			}, c.VolumeMounts)
 		case "main":
 			assert.ElementsMatch(t, []corev1.VolumeMount{

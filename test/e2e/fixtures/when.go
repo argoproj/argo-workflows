@@ -205,6 +205,7 @@ var (
 	ToBeSucceeded           = ToHavePhase(wfv1.WorkflowSucceeded)
 	ToBeErrored             = ToHavePhase(wfv1.WorkflowError)
 	ToBeFailed              = ToHavePhase(wfv1.WorkflowFailed)
+	ToBeCancelled           = ToHavePhase(wfv1.WorkflowCancelled)
 	ToBeCompleted Condition = func(wf *wfv1.Workflow) (bool, string) {
 		return wf.Labels[common.LabelKeyCompleted] == "true", "to be completed"
 	}
@@ -403,6 +404,17 @@ func (w *When) RemoveFinalizers(shouldErr bool) *When {
 
 	_, err := w.client.Patch(ctx, w.wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
 	if err != nil && shouldErr {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) CancelWorkflow() *When {
+	w.t.Helper()
+	ctx := context.Background()
+
+	_, err := w.client.Patch(ctx, w.wf.Name, types.MergePatchType, []byte("{\"spec\":{\"cancelled\":true}}"), metav1.PatchOptions{})
+	if err != nil {
 		w.t.Fatal(err)
 	}
 	return w

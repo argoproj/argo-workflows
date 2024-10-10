@@ -1199,6 +1199,11 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		})
 		defer t.Stop()
 	}
+	go func() {
+		if err := we.waitAndCancel(ctx); err != nil {
+			log.WithError(err).Error("failed to wait for cancel signal")
+		}
+	}()
 
 	var message string
 	log.Infof("Starting deadline monitor")
@@ -1212,6 +1217,23 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 	log.Info(message)
 	util.WriteTerminateMessage(message)
 	we.killContainers(ctx, containerNames)
+}
+
+func (we *WorkflowExecutor) waitAndCancel(ctx context.Context) error {
+	for {
+		info, err := os.Stat(common.DownwardMountCancelFile)
+		if err == nil && info.Size() > 0 {
+			we.killContainers(ctx, we.Template.GetMainContainerNames())
+			return nil
+		} else if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(1 * time.Second):
+		}
+	}
 }
 
 func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames []string) {

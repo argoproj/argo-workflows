@@ -159,10 +159,12 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	podVolumes := append(
 		pluginVolumes,
 		volumeVarArgo,
+		volumeDownwardArgo,
 		*tokenVolume,
 	)
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,
+		volumeMountDownwardArgo,
 		*tokenVolumeMount,
 	}
 	if certVolume != nil && certVolumeMount != nil {
