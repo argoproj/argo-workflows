@@ -111,7 +111,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		if err != nil {
 			return nil, err
 		}
-		if !sgNode.Fulfilled() {
+		if !sgNode.Phase.Fulfilled() || woc.nodeHasPendingDaemonChildren(sgNode) {
 			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.ID)
 			return node, nil
 		}
@@ -234,7 +234,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	if err != nil {
 		return nil, err
 	}
-	if node.Fulfilled() {
+	if node.Fulfilled() && !woc.nodeHasDaemonChildren(node) {
 		woc.log.Debugf("Step group node %v already marked completed", node)
 		return node, nil
 	}

@@ -558,10 +558,10 @@ endif
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1.*dex' /etc/hosts
 endif
-	grep '127.0.0.1.*azurite' /etc/hosts
-	grep '127.0.0.1.*minio' /etc/hosts
-	grep '127.0.0.1.*postgres' /etc/hosts
-	grep '127.0.0.1.*mysql' /etc/hosts
+	# grep '127.0.0.1.*azurite' /etc/hosts
+	# grep '127.0.0.1.*minio' /etc/hosts
+	# grep '127.0.0.1.*postgres' /etc/hosts
+	# grep '127.0.0.1.*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) PROFILE=$(PROFILE) kit $(TASKS)
 endif

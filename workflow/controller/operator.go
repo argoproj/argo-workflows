@@ -955,7 +955,7 @@ func (woc *wfOperationCtx) requeue() {
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
-	if node.Fulfilled() {
+	if node.Phase.Fulfilled() {
 		return node, true, nil
 	}
 
@@ -968,12 +968,17 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
-	if !lastChildNode.Fulfilled() {
+	if lastChildNode.IsDaemoned() && !lastChildNode.Phase.Fulfilled() {
+		node.Daemoned = ptr.To(true)
+		return node, true, nil
+	}
+
+	if !lastChildNode.Phase.Fulfilled() {
 		// last child node is still running.
 		return node, true, nil
 	}
 
-	if !lastChildNode.FailedOrError() {
+	if (!lastChildNode.FailedOrError() && !lastChildNode.IsDaemoned()) || (lastChildNode.IsDaemoned() && !lastChildNode.Phase.Fulfilled()) {
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
 		woc.wf.Status.Nodes.Set(node.ID, *node)
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
@@ -1072,7 +1077,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	}
 	woc.log.Infof("Retry Policy: %s (onFailed: %v, onError %v)", retryStrategy.RetryPolicyActual(), retryOnFailed, retryOnError)
 
-	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
+	if ((lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.IsDaemoned() && (lastChildNode.Phase == wfv1.NodeSucceeded)) && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
 		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
@@ -1347,17 +1352,21 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			woc.controller.metrics.ChangePodPending(ctx, new.Message, pod.ObjectMeta.Namespace)
 		}
 	case apiv1.PodSucceeded:
-		new.Phase = wfv1.NodeSucceeded
+		// if the pod is succeeded, we need to check if it is a daemoned step or not
+		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
+		if tmpl.IsDaemon() {
+			woc.log.Debugf("Daemoned pod %s succeeded. Marking it as failed", pod.Name)
+			new.Phase = wfv1.NodeFailed
+		} else {
+			new.Phase = wfv1.NodeSucceeded
+		}
+
 		new.Daemoned = nil
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
-		if tmpl != nil && tmpl.IsDaemon() {
-			new.Phase = wfv1.NodeSucceeded
-		} else {
-			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
-			woc.log.WithField("displayName", old.DisplayName).WithField("templateName", wfutil.GetTemplateFromNode(*old)).
-				WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
-		}
+		new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
+		woc.log.WithField("displayName", old.DisplayName).WithField("templateName", wfutil.GetTemplateFromNode(*old)).
+			WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
 		new.Daemoned = nil
 	case apiv1.PodRunning:
 		// Daemons are a special case we need to understand the rules:
@@ -2101,8 +2110,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		retryParentNode = processedRetryParentNode
 		childNodeIDs, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 
+
 		// The retry node might have completed by now.
-		if retryParentNode.Fulfilled() {
+		if retryParentNode.Phase.Fulfilled() || (lastChildNode != nil && !lastChildNode.Phase.Fulfilled() && lastChildNode.IsDaemoned()) {
 			// If retry node has completed, set the output of the last child node to its output.
 			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
 			if lastChildNode != nil {
@@ -2135,7 +2145,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 
 		var retryNum int
-		if lastChildNode != nil && !lastChildNode.Fulfilled() {
+		if lastChildNode != nil && !lastChildNode.Phase.Fulfilled() {
 			// Last child node is either still running, or in some cases the corresponding Pod hasn't even been
 			// created yet, for example if it exceeded the ResourceQuota
 			nodeName = lastChildNode.Name
@@ -2238,7 +2248,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			return node, err
 		}
 
-		if !retryNode.Fulfilled() && node.Fulfilled() { // if the retry child has completed we need to update outself
+		if !retryNode.Phase.Fulfilled() && node.Phase.Fulfilled() { // if the retry child has completed we need to update outself
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
@@ -2273,7 +2283,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 }
 
 func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template) *wfv1.NodeStatus {
-	if node == nil || !node.Fulfilled() {
+	if node == nil || !node.Phase.Fulfilled() {
 		return nil
 	}
 
@@ -2439,6 +2449,34 @@ func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedD
 func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	for _, node := range woc.wf.Status.Nodes {
 		if node.IsDaemoned() {
+			return true
+		}
+	}
+	return false
+}
+
+// check if node has any children who are daemoned
+func (woc *wfOperationCtx) nodeHasDaemonChildren(node *wfv1.NodeStatus) bool {
+	for _, childID := range node.Children {
+		childNode, err := woc.wf.Status.Nodes.Get(childID)
+		if err != nil {
+			continue
+		}
+		if childNode.IsDaemoned() {
+			return true
+		}
+	}
+	return false
+}
+
+// check if node has any children who are daemoned and pending
+func (woc *wfOperationCtx) nodeHasPendingDaemonChildren(node *wfv1.NodeStatus) bool {
+	for _, childID := range node.Children {
+		childNode, err := woc.wf.Status.Nodes.Get(childID)
+		if err != nil {
+			continue
+		}
+		if childNode.IsDaemoned() && childNode.Phase == wfv1.NodePending {
 			return true
 		}
 	}
