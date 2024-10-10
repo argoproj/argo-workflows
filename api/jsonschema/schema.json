@@ -4015,6 +4015,13 @@
     "io.argoproj.workflow.v1alpha1.ArtifactGC": {
       "description": "ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed",
       "properties": {
+        "env": {
+          "description": "Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "type": "array"
+        },
         "podMetadata": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
           "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion"
@@ -4026,6 +4033,20 @@
         "strategy": {
           "description": "Strategy is the strategy to use.",
           "type": "string"
+        },
+        "volumeMounts": {
+          "description": "VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+          },
+          "type": "array"
+        },
+        "volumes": {
+          "description": "Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -7646,6 +7667,13 @@
     "io.argoproj.workflow.v1alpha1.WorkflowLevelArtifactGC": {
       "description": "WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level",
       "properties": {
+        "env": {
+          "description": "Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "type": "array"
+        },
         "forceFinalizerRemoval": {
           "description": "ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails",
           "type": "boolean"
@@ -7665,6 +7693,20 @@
         "strategy": {
           "description": "Strategy is the strategy to use.",
           "type": "string"
+        },
+        "volumeMounts": {
+          "description": "VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+          },
+          "type": "array"
+        },
+        "volumes": {
+          "description": "Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
+          },
+          "type": "array"
         }
       },
       "type": "object"

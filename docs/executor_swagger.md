@@ -255,9 +255,12 @@ It will marshall back to string - marshalling is not symmetric.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion |  |
 | podMetadata | [Metadata](#metadata)| `Metadata` |  | |  |  |
 | serviceAccountName | string| `string` |  | | ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion |  |
 | strategy | [ArtifactGCStrategy](#artifact-g-c-strategy)| `ArtifactGCStrategy` |  | |  |  |
+| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion |  |
+| volumes | [][Volume](#volume)| `[]*Volume` |  | | Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion |  |
 
 
 

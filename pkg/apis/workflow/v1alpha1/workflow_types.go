@@ -1082,6 +1082,15 @@ type ArtifactGC struct {
 
 	// ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,3,opt,name=serviceAccountName"`
+
+	// Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion
+	Env []apiv1.EnvVar `json:"env,omitempty" protobuf:"bytes,4,rep,name=env"`
+
+	// Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion
+	Volumes []apiv1.Volume `json:"volumes,omitempty" protobuf:"bytes,5,rep,name=volumes"`
+
+	// VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion
+	VolumeMounts []apiv1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,6,rep,name=volumeMounts"`
 }
 
 // GetStrategy returns the VolumeClaimGCStrategy to use for the workflow

@@ -8,11 +8,14 @@ WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflo
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**env** | [**List&lt;io.kubernetes.client.openapi.models.V1EnvVar&gt;**](io.kubernetes.client.openapi.models.V1EnvVar.md) | Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion |  [optional]
 **forceFinalizerRemoval** | **Boolean** | ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails |  [optional]
 **podMetadata** | [**IoArgoprojWorkflowV1alpha1Metadata**](IoArgoprojWorkflowV1alpha1Metadata.md) |  |  [optional]
 **podSpecPatch** | **String** | PodSpecPatch holds strategic merge patch to apply against the artgc pod spec. |  [optional]
 **serviceAccountName** | **String** | ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion |  [optional]
 **strategy** | **String** | Strategy is the strategy to use. |  [optional]
+**volumeMounts** | [**List&lt;io.kubernetes.client.openapi.models.V1VolumeMount&gt;**](io.kubernetes.client.openapi.models.V1VolumeMount.md) | VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion |  [optional]
+**volumes** | [**List&lt;io.kubernetes.client.openapi.models.V1Volume&gt;**](io.kubernetes.client.openapi.models.V1Volume.md) | Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion |  [optional]
 
 
 
