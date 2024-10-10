@@ -44,7 +44,7 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 | Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
 | `schedule`                   | None | [Cron schedule](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`. Deprecated, use `schedules`. |
-| `schedules`                   | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Either `schedule` or `schedules` must be provided. |
+| `schedules`                  | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Either `schedule` or `schedules` must be provided. |
 | `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
 | `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly |
 | `concurrencyPolicy`          | `Allow`                | What to do if multiple `Workflows` are scheduled at the same time. `Allow`: allow all, `Replace`: remove all old before scheduling new, `Forbid`: do not allow any new while there are old  |
@@ -52,6 +52,7 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 | `successfulJobsHistoryLimit` | `3`                    | Number of successful `Workflows` to persist |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` to persist |
 | `stopStrategy`               | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on a condition |
+| `when`                       | None | v3.6 and after: An optional [expression](walk-through/conditionals.md) which will be evaluated on each cron schedule hit and the workflow will only run if it evaluates to `true` |
 
 ### Cron Schedule Syntax
 
@@ -108,6 +109,41 @@ For example, with `timezone: America/Los_Angeles`:
     | 1 2 ** *  | 1        | 2020-11-01 02:01:00 -0800 PST |
     |            | 2        | 2020-11-02 02:01:00 -0800 PST |
     |            | 3        | 2020-11-03 02:01:00 -0800 PST |
+
+#### Skip forward (missing schedule)
+
+You can use `when` to schedule once per day, even if the time you want is in a daylight saving skip forward period where it would otherwise be scheduled twice.
+
+An example 02:30:00 schedule
+
+```yaml
+schedules:
+  - 30 2 * * *
+  - 0 3 * * *
+when: "{{= cronworkflow.lastScheduledTime == nil || (now() - cronworkflow.lastScheduledTime).Seconds() > 3600 }}"
+```
+
+The 3:00 run of the schedule will not be scheduled every day of the year except on the day when the clock leaps forward over 2:30.
+The `when` expression prevents this workflow from running more than once an hour.
+In that case the 3:00 run will run, as 2:30 was skipped over.
+
+!!! Warning "Can run at 3:00"
+ If you create this CronWorkflow between the desired time and 3:00 it will run at 3:00 as it has never run before.
+
+#### Skip backwards (duplication)
+
+You can use `when` to schedule once per day, even if the time you want is in a daylight saving skip backwards period where it would otherwise not be scheduled.
+
+An example 01:30:00 schedule
+
+```yaml
+schedules:
+  - 30 1 * * *
+when: "{{= cronworkflow.lastScheduledTime == nil || (now() - cronworkflow.lastScheduledTime).Seconds() > 7200 }}"
+```
+
+This will schedule at the first 01:30 on a skip backwards change.
+The second will not run because of the `when` expression, which prevents this workflow running more often than once every 2 hours..
 
 ### Automatically Stopping a `CronWorkflow`
 
