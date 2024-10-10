@@ -12,11 +12,11 @@ Client libraries often handle common tasks such as authentication for you.
 The following client libraries are auto-generated using [OpenAPI Generator](https://github.com/OpenAPITools/openapi-generator-cli).
 Please expect very minimal support from the Argo team.
 
-| Language | Client Library                                                                                      | Examples/Docs                                                                                 |
-|----------|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| Golang   | [`apiclient.go`](https://github.com/argoproj/argo-workflows/blob/main/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/main/cmd/argo/commands/submit.go) |
-| Java     | [Java](https://github.com/argoproj/argo-workflows/blob/main/sdks/java)                            |                                                                                               |
-| Python   | [Python](https://github.com/argoproj/argo-workflows/blob/main/sdks/python)                        |                                                                                               |
+| Language | Client Library                                                                                    | Examples/Docs                                                                                                         |
+|----------|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| Golang   | [`apiclient.go`](https://github.com/argoproj/argo-workflows/blob/main/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/main/cmd/argo/commands/submit.go)                           |
+| Java     | [Java](https://github.com/argoproj/argo-workflows/blob/main/sdks/java)                            |                                                                                                                       |
+| Python   | ⚠️ deprecated [Python](https://github.com/argoproj/argo-workflows/blob/main/sdks/python)           | Use one of the [community-maintained](#community-maintained-client-libraries) instead. Will be removed in version 3.7 |
 
 ## Community-maintained client libraries
 
