@@ -7,10 +7,11 @@ import './dropdown.scss';
 export interface DropDownProps {
     isMenu?: boolean;
     anchor: JSX.Element;
+    closeOnInsideClick?: boolean;
     children: ReactNode;
 }
 
-export function DropDown({isMenu, anchor, children}: DropDownProps) {
+export function DropDown({isMenu, anchor, closeOnInsideClick, children}: DropDownProps) {
     const [opened, setOpened] = useState(false);
     const [left, setLeft] = useState(0);
     const [top, setTop] = useState(0);
@@ -56,7 +57,7 @@ export function DropDown({isMenu, anchor, children}: DropDownProps) {
 
     function close(event: MouseEvent) {
         // Doesn't close when clicked inside the portal area
-        if (contentEl.contains(event.target as Node) || anchorEl.contains(event.target as Node)) {
+        if (!closeOnInsideClick && (contentEl.contains(event.target as Node) || anchorEl.contains(event.target as Node))) {
             return;
         }
 

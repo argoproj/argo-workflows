@@ -39,7 +39,19 @@ func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName st
 		clauses = append(clauses, db.Raw("namespace = ?", options.Namespace))
 	}
 	if options.Name != "" {
-		clauses = append(clauses, db.Raw("name = ?", options.Name))
+		nameFilter := options.NameFilter
+		if nameFilter == "" {
+			nameFilter = "Exact"
+		}
+		if nameFilter == "Exact" {
+			clauses = append(clauses, db.Raw("name = ?", options.Name))
+		}
+		if nameFilter == "Contains" {
+			clauses = append(clauses, db.Raw("name like ?", "%"+options.Name+"%"))
+		}
+		if nameFilter == "Prefix" {
+			clauses = append(clauses, db.Raw("name like ?", options.Name+"%"))
+		}
 	}
 	if options.NamePrefix != "" {
 		clauses = append(clauses, db.Raw("name like ?", options.NamePrefix+"%"))

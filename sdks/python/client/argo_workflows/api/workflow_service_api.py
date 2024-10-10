@@ -351,6 +351,7 @@ class WorkflowServiceApi(object):
                     'list_options_continue',
                     'list_options_send_initial_events',
                     'fields',
+                    'name_filter',
                 ],
                 'required': [
                     'namespace',
@@ -392,6 +393,8 @@ class WorkflowServiceApi(object):
                         (bool,),
                     'fields':
                         (str,),
+                    'name_filter':
+                        (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -406,6 +409,7 @@ class WorkflowServiceApi(object):
                     'list_options_continue': 'listOptions.continue',
                     'list_options_send_initial_events': 'listOptions.sendInitialEvents',
                     'fields': 'fields',
+                    'name_filter': 'nameFilter',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -420,6 +424,7 @@ class WorkflowServiceApi(object):
                     'list_options_continue': 'query',
                     'list_options_send_initial_events': 'query',
                     'fields': 'query',
+                    'name_filter': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -1752,6 +1757,7 @@ class WorkflowServiceApi(object):
             list_options_continue (str): The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.. [optional]
             list_options_send_initial_events (bool): `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \"Bookmark\" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan   is interpreted as \"data at least as new as the provided `resourceVersion`\"   and the bookmark event is send when the state is synced   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.   If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - `resourceVersionMatch` set to any other value or unset   Invalid error is returned.  Defaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward compatibility reasons) and to false otherwise. +optional. [optional]
             fields (str): Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".. [optional]
+            name_filter (str): Filter type used for name filtering. Exact | Contains | Prefix. Default to Exact.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

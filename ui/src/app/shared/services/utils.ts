@@ -1,3 +1,4 @@
+import {NameFilterKeys} from '../../workflows/components/workflow-filters/workflow-filters';
 import {Pagination} from '../pagination';
 
 export function queryParams(filter: {
@@ -5,6 +6,7 @@ export function queryParams(filter: {
     name?: string;
     namePrefix?: string;
     namePattern?: string;
+    nameFilter?: NameFilterKeys;
     phases?: Array<string>;
     labels?: Array<string>;
     createdAfter?: Date;
@@ -34,6 +36,9 @@ export function queryParams(filter: {
     }
     if (filter.namePattern) {
         queryParams.push(`namePattern=${filter.namePattern}`);
+    }
+    if (filter.nameFilter) {
+        queryParams.push(`nameFilter=${filter.nameFilter}`);
     }
     if (filter.resourceVersion) {
         queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);

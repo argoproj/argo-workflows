@@ -133,6 +133,45 @@ func TestStoreOperation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 5)
 	})
+	t.Run("TestListWorkflows name", func(t *testing.T) {
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "Exact", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=flow"})
+		require.NoError(t, err)
+		assert.Empty(t, wfList.Items)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "Exact", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-1"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-1"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+	})
+	t.Run("TestListWorkflows namePrefix", func(t *testing.T) {
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "Prefix", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=flow"})
+		require.NoError(t, err)
+		assert.Empty(t, wfList.Items)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "Prefix", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 5)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "Prefix", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-1"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+	})
+	t.Run("TestListWorkflows namePattern", func(t *testing.T) {
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "Contains", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=non-existing-pattern"})
+		require.NoError(t, err)
+		assert.Empty(t, wfList.Items)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "Contains", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=flow"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 5)
+
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "Contains", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-1"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+	})
 	t.Run("TestCountWorkflows", func(t *testing.T) {
 		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
 		require.NoError(t, err)
