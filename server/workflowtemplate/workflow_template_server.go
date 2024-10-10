@@ -29,10 +29,10 @@ type WorkflowTemplateServer struct {
 
 func NewWorkflowTemplateServer(instanceIDService instanceid.Service, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore) workflowtemplatepkg.WorkflowTemplateServiceServer {
 	if wftmplStore == nil {
-		wftmplStore = NewWfClientStore()
+		wftmplStore = NewWorkflowTemplateClientStore()
 	}
 	if cwftmplStore == nil {
-		cwftmplStore = clusterworkflowtemplate.NewCwfClientStore()
+		cwftmplStore = clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
 	}
 	return &WorkflowTemplateServer{instanceIDService, wftmplStore, cwftmplStore}
 }

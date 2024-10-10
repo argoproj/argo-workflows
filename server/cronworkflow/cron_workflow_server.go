@@ -31,10 +31,10 @@ type cronWorkflowServiceServer struct {
 // NewCronWorkflowServer returns a new cronWorkflowServiceServer
 func NewCronWorkflowServer(instanceIDService instanceid.Service, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore) cronworkflowpkg.CronWorkflowServiceServer {
 	if wftmplStore == nil {
-		wftmplStore = workflowtemplate.NewWfClientStore()
+		wftmplStore = workflowtemplate.NewWorkflowTemplateClientStore()
 	}
 	if cwftmplStore == nil {
-		cwftmplStore = clusterworkflowtemplate.NewCwfClientStore()
+		cwftmplStore = clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
 	}
 	return &cronWorkflowServiceServer{instanceIDService, wftmplStore, cwftmplStore}
 }
