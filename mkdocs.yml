@@ -248,6 +248,7 @@ nav:
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
+          - deprecations.md
           - workflow-executors.md
           - workflow-restrictions.md
           - sidecar-injection.md

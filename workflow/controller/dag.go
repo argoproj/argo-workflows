@@ -454,7 +454,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 		// Release acquired lock completed task.
 		if processedTmpl != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 		}
 
 		scope, err := woc.buildLocalScopeFromTask(dagCtx, task)

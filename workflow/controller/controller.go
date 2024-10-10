@@ -49,6 +49,8 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
 	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
+	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
+	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
@@ -230,6 +232,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 			WorkflowCondition: wfc.getWorkflowConditionMetrics,
 			IsLeader:          wfc.IsLeader,
 		})
+	deprecation.Initialize(wfc.metrics.Metrics.DeprecatedFeature)
 
 	if err != nil {
 		return nil, err
@@ -431,7 +434,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(wfList.Items)
+	wfc.syncManager.Initialize(ctx, wfList.Items)
 
 	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
@@ -888,6 +891,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		woc.persistUpdates(ctx)
 		return true
 	}
+	ctx = wfctx.InjectObjectMeta(ctx, &woc.wf.ObjectMeta)
 	startTime := time.Now()
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(ctx, time.Since(startTime).Seconds())
@@ -1413,7 +1417,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.Config {
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
 		Secure:       wfc.Config.MetricsConfig.GetSecure(true),
 		Modifiers:    modifiers,
-		Temporality:  wfc.Config.MetricsConfig.Temporality,
+		Temporality:  wfc.Config.MetricsConfig.GetTemporality(),
 	}
 	return &metricsConfig
 }

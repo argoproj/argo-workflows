@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"time"
 
+	metricsdk "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -288,11 +290,26 @@ type MetricsConfig struct {
 	Temporality MetricsTemporality `json:"temporality,omitempty"`
 }
 
-func (mc MetricsConfig) GetSecure(defaultValue bool) bool {
+func (mc *MetricsConfig) GetSecure(defaultValue bool) bool {
 	if mc.Secure != nil {
 		return *mc.Secure
 	}
 	return defaultValue
+}
+
+func (mc *MetricsConfig) GetTemporality() metricsdk.TemporalitySelector {
+	switch mc.Temporality {
+	case MetricsTemporalityCumulative:
+		return func(metricsdk.InstrumentKind) metricdata.Temporality {
+			return metricdata.CumulativeTemporality
+		}
+	case MetricsTemporalityDelta:
+		return func(metricsdk.InstrumentKind) metricdata.Temporality {
+			return metricdata.DeltaTemporality
+		}
+	default:
+		return metricsdk.DefaultTemporalitySelector
+	}
 }
 
 type WorkflowRestrictions struct {
