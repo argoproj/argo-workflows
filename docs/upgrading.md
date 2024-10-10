@@ -31,6 +31,7 @@ The following are new metrics:
 
 * `cronworkflows_concurrencypolicy_triggered`
 * `cronworkflows_triggered_total`
+* `deprecated_feature`
 * `is_leader`
 * `k8s_request_duration`
 * `pod_pending_count`
