@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,8 +28,7 @@ func TestDisablePrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	go m.RunPrometheusServer(ctx, false)
-	time.Sleep(1 * time.Second) // to confirm that the server doesn't start, even if we wait
+	m.RunPrometheusServer(ctx, false)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
 	if resp != nil {
 		defer resp.Body.Close()
@@ -38,6 +38,7 @@ func TestDisablePrometheusServer(t *testing.T) {
 }
 
 func TestPrometheusServer(t *testing.T) {
+	var wg sync.WaitGroup
 	config := Config{
 		Enabled: true,
 		Path:    DefaultPrometheusServerPath,
@@ -47,7 +48,11 @@ func TestPrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	go m.RunPrometheusServer(ctx, false)
+	wg.Add(1)
+	go func() {
+		m.RunPrometheusServer(ctx, false)
+		wg.Done()
+	}()
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
 	require.NoError(t, err)
@@ -61,11 +66,12 @@ func TestPrometheusServer(t *testing.T) {
 	bodyString := string(bodyBytes)
 	assert.NotEmpty(t, bodyString)
 
-	cancel()                    // Explicit cancel as sometimes in github CI port 9090 is still busy
-	time.Sleep(1 * time.Second) // Wait for prometheus server
+	cancel() // cancel and wait for server shutdown to prevent port conflicts with subsequent tests
+	wg.Wait()
 }
 
 func TestDummyPrometheusServer(t *testing.T) {
+	var wg sync.WaitGroup
 	config := Config{
 		Enabled: true,
 		Path:    DefaultPrometheusServerPath,
@@ -76,7 +82,11 @@ func TestDummyPrometheusServer(t *testing.T) {
 	defer cancel()
 	m, err := NewMetrics(ctx, testScopeName, testScopeName, &config)
 	require.NoError(t, err)
-	go m.RunPrometheusServer(ctx, true)
+	wg.Add(1)
+	go func() {
+		m.RunPrometheusServer(ctx, true)
+		wg.Done()
+	}()
 	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultPrometheusServerPort, DefaultPrometheusServerPath))
 	require.NoError(t, err)
@@ -91,6 +101,6 @@ func TestDummyPrometheusServer(t *testing.T) {
 
 	assert.Empty(t, bodyString) // expect the dummy metrics server to provide no metrics responses
 
-	cancel()                    // Explicit cancel as sometimes in github CI port 9090 is still busy
-	time.Sleep(1 * time.Second) // Wait for prometheus server
+	cancel() // cancel and wait for server shutdown to prevent port conflicts with subsequent tests
+	wg.Wait()
 }
