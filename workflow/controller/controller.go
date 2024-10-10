@@ -380,7 +380,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 }
 
 func (wfc *WorkflowController) RunPrometheusServer(ctx context.Context, isDummy bool) {
-	go wfc.metrics.RunPrometheusServer(ctx, isDummy)
+	wfc.metrics.RunPrometheusServer(ctx, isDummy)
 }
 
 // Create and the Synchronization Manager
