@@ -1981,11 +1981,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, msg)
 			}
 			woc.log.Infof("Could not acquire lock named: %s", failedLockName)
-			return woc.markNodeWaitingForLock(node.Name, failedLockName)
+			return woc.markNodeWaitingForLock(node.Name, failedLockName, msg)
 		} else {
 			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
-				node, err = woc.markNodeWaitingForLock(node.Name, "")
+				node, err = woc.markNodeWaitingForLock(node.Name, "", "")
 				if err != nil {
 					woc.log.WithField("node.Name", node.Name).WithField("lockName", "").Error("markNodeWaitingForLock returned err")
 					return nil, err
@@ -2740,7 +2740,7 @@ func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.Nod
 }
 
 // markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
-func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string, message string) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		return node, err
@@ -2756,6 +2756,10 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 		node.Message = ""
 	} else {
 		node.SynchronizationStatus.Waiting = lockName
+	}
+
+	if len(message) > 0 {
+		node.Message = message
 	}
 
 	woc.wf.Status.Nodes.Set(node.ID, *node)
