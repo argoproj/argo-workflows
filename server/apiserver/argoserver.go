@@ -278,6 +278,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	grpcL := tcpm.Match(cmux.Any())
 
 	wftmplStore.Run(as.stopCh)
+	cwftmplInformer.Run(as.stopCh)
 	go eventServer.Run(as.stopCh)
 	go workflowServer.Run(as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
