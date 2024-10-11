@@ -43,6 +43,7 @@ import {SuspendInputs} from './suspend-inputs';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 import './workflow-details.scss';
+import {RetryWorkflowNode} from '../retry-workflow-node-panel';
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
@@ -102,6 +103,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
+    const [showRetryNode, setShowRetryNode] = useState<boolean>();
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const sidePanelRef = useRef<HTMLDivElement>(null);
     const [workflow, setWorkflow] = useState<Workflow>();
@@ -528,11 +530,29 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                     transition: isSidePanelAnimating ? `width ${ANIMATION_MS}ms` : 'unset',
                                     width: isSidePanelExpanded ? `${sidePanelWidth}px` : 0
                                 }}>
-                                <button className='workflow-details__step-info-close' onClick={() => setNodeId(null)}>
+                                <button
+                                    className='workflow-details__step-info-close'
+                                    onClick={() => {
+                                        if (showRetryNode) {
+                                            setShowRetryNode(false);
+                                        } else {
+                                            setNodeId(null);
+                                        }
+                                    }}>
                                     <i className='argo-icon-close' />
                                 </button>
+
                                 <div className='workflow-details__step-info-drag-handle' {...sidePanelDragHandleProps} />
-                                {selectedNode && (
+                                {selectedNode && showRetryNode && (
+                                    <RetryWorkflowNode
+                                        nodeId={selectedNode.id}
+                                        workflow={workflow}
+                                        isArchived={isArchivedWorkflow(workflow)}
+                                        isWorkflowInCluster={isWorkflowInCluster(workflow)}
+                                        onRetrySuccess={() => setShowRetryNode(false)}
+                                    />
+                                )}
+                                {selectedNode && !showRetryNode && (
                                     <WorkflowNodeInfo
                                         node={selectedNode}
                                         onTabSelected={setNodePanelView}
@@ -542,6 +562,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
+                                        onRetryNode={() => setShowRetryNode(true)}
                                         archived={archived}
                                         onResume={() => renderResumePopup()}
                                     />

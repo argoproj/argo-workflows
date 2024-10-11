@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -134,9 +135,15 @@ func NewRootCommand() *cobra.Command {
 				}
 
 				// for controlling the dummy metrics server
+				var wg sync.WaitGroup
 				dummyCtx, dummyCancel := context.WithCancel(context.Background())
 				defer dummyCancel()
-				go wfController.RunPrometheusServer(dummyCtx, true)
+
+				wg.Add(1)
+				go func() {
+					wfController.RunPrometheusServer(dummyCtx, true)
+					wg.Done()
+				}()
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -150,12 +157,18 @@ func NewRootCommand() *cobra.Command {
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()
+							wg.Wait()
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
-							go wfController.RunPrometheusServer(ctx, false)
+							wg.Add(1)
+							go func() {
+								wfController.RunPrometheusServer(ctx, false)
+								wg.Done()
+							}()
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info("stopped leading")
 							cancel()
+							wg.Wait()
 							go wfController.RunPrometheusServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {
