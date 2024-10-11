@@ -26,7 +26,7 @@ type ClusterWorkflowTemplateServer struct {
 
 func NewClusterWorkflowTemplateServer(instanceID instanceid.Service, cwftmplStore servertypes.ClusterWorkflowTemplateStore) clusterwftmplpkg.ClusterWorkflowTemplateServiceServer {
 	if cwftmplStore == nil {
-		cwftmplStore = NewCwfClientStore()
+		cwftmplStore = NewClusterWorkflowTemplateClientStore()
 	}
 	return &ClusterWorkflowTemplateServer{instanceID, cwftmplStore}
 }

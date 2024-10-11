@@ -9,14 +9,14 @@ import (
 
 // Store is a wrapper around informer
 // if
-type WfClientStore struct {
+type WorkflowTemplateClientStore struct {
 }
 
-func NewWfClientStore() *WfClientStore {
-	return &WfClientStore{}
+func NewWorkflowTemplateClientStore() *WorkflowTemplateClientStore {
+	return &WorkflowTemplateClientStore{}
 }
 
-func (wcs *WfClientStore) Getter(ctx context.Context, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
+func (wcs *WorkflowTemplateClientStore) Getter(ctx context.Context, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
 	wfClient := auth.GetWfClient(ctx)
 	return templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 }

@@ -9,14 +9,14 @@ import (
 
 // Store is a wrapper around informer
 // if
-type CwfClientStore struct {
+type ClusterWorkflowTemplateClientStore struct {
 }
 
-func NewCwfClientStore() *CwfClientStore {
-	return &CwfClientStore{}
+func NewClusterWorkflowTemplateClientStore() *ClusterWorkflowTemplateClientStore {
+	return &ClusterWorkflowTemplateClientStore{}
 }
 
-func (wcs *CwfClientStore) Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter {
+func (wcs *ClusterWorkflowTemplateClientStore) Getter(ctx context.Context) templateresolution.ClusterWorkflowTemplateGetter {
 	wfClient := auth.GetWfClient(ctx)
 	return templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 }

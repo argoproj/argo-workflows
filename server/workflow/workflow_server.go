@@ -66,10 +66,10 @@ var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 // NewWorkflowServer returns a new WorkflowServer
 func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, namespace *string) *workflowServer {
 	if wftmplStore == nil {
-		wftmplStore = workflowtemplate.NewWfClientStore()
+		wftmplStore = workflowtemplate.NewWorkflowTemplateClientStore()
 	}
 	if cwftmplStore == nil {
-		cwftmplStore = clusterworkflowtemplate.NewCwfClientStore()
+		cwftmplStore = clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
 	}
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,

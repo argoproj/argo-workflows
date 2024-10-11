@@ -43,8 +43,6 @@ func NewInformer(restConfig *rest.Config) (*Informer, error) {
 // Start informer in separate go-routine and block until cache sync
 func (cwti *Informer) Run(stopCh <-chan struct{}) {
 
-	cwti.informer.Informer()
-
 	go cwti.informer.Informer().Run(stopCh)
 
 	if !cache.WaitForCacheSync(
