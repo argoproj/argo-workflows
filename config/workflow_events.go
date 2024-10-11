@@ -1,7 +1,7 @@
 package config
 
 type WorkflowEvents struct {
-	Enabled   *bool `json:"enabled,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 func (e WorkflowEvents) IsEnabled() bool {
