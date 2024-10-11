@@ -104,7 +104,7 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
         """IoArgoprojWorkflowV1alpha1StopStrategy - a model defined in OpenAPI
 
         Args:
-            expression (str): Expression is an expression that stops scheduling workflows when true. Use the `cronworkflow` variables `failed` or `succeeded` to access the number of failed or successful child workflows. v3.6 and after
+            expression (str): v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -189,7 +189,7 @@ class IoArgoprojWorkflowV1alpha1StopStrategy(ModelNormal):
         """IoArgoprojWorkflowV1alpha1StopStrategy - a model defined in OpenAPI
 
         Args:
-            expression (str): Expression is an expression that stops scheduling workflows when true. Use the `cronworkflow` variables `failed` or `succeeded` to access the number of failed or successful child workflows. v3.6 and after
+            expression (str): v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

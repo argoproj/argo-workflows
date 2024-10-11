@@ -1999,7 +1999,7 @@ StopStrategy defines if the CronWorkflow should stop scheduling based on an expr
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`expression`|`string`|Expression is an expression that stops scheduling workflows when true. Use the `cronworkflow` variables `failed` or `succeeded` to access the number of failed or successful child workflows. v3.6 and after|
+|`expression`|`string`|v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.|
 
 ## Artifact
 

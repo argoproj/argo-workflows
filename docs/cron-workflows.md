@@ -39,7 +39,7 @@ In the above example it would be similar to `test-cron-wf-tj6fe`.
 
 You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotations`.
 
-### `CronWorkflow` Spec
+### `CronWorkflow` Options
 
 | Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
@@ -51,8 +51,7 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 | `startingDeadlineSeconds`    | `0`                    | Seconds after [the last scheduled time](#crash-recovery) during which a missed `Workflow` will still be run. |
 | `successfulJobsHistoryLimit` | `3`                    | Number of successful `Workflows` to persist |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` to persist |
-| `stopStrategy`               | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on an expression |
-| `stopStrategy.expression`    | None                   | v3.6 and after: an expression which if present must evaluate to false for the workflow to be created |
+| `stopStrategy.expression`    | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on an expression, which if present must evaluate to false for the workflow to be created |
 
 ### Cron Schedule Syntax
 
@@ -115,7 +114,7 @@ For example, with `timezone: America/Los_Angeles`:
 > v3.6 and after
 
 You can configure a `CronWorkflow` to automatically stop based on an [expression](variables.md#expression) with `stopStrategy.condition`.
-You can use the [variables](variables.md#stopstrategy) `failed` and `succeeded`.
+You can use the [variables](variables.md#cronworkflows) `cronworkflow.failed` and `cronworkflow.succeede2d`.
 
 For example, if you want to stop scheduling new workflows after one success:
 
@@ -135,10 +134,10 @@ stopStrategy:
 !!! Warning "Scheduling vs. Completions"
     Depending on the time it takes to schedule and run a workflow, the number of completions can exceed the configured maximum.
 
-    For example, if you configure the `CronWorkflow` to schedule every minute (`* * * * *`) and stop after one success (`succeeded >= 1`).
+    For example, if you configure the `CronWorkflow` to schedule every minute (`* * * * *`) and stop after one success (`cronworkflow.succeeded >= 1`).
     If the `Workflow` takes 90 seconds to run, the `CronWorkflow` will actually stop after two completions.
     This is because when the stopping condition is achieved, there is _already_ another `Workflow` running.
-    For that reason, prefer conditions like `succeeded >= 1` over `succeeded == 1`.
+    For that reason, prefer conditions like `cronworkflow.succeeded >= 1` over `cronworkflow.succeeded == 1`.
 <!-- markdownlint-enable MD046 -->
 
 ## Managing `CronWorkflow`
