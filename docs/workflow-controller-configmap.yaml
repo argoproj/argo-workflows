@@ -41,6 +41,13 @@ data:
   nodeEvents: |
     enabled: true
 
+  # Whether or not to emit events on workflow completion. These can take a up a lot of space in
+  # k8s (typically etcd) resulting in errors when trying to create new events:
+  # "Unable to create audit event: etcdserver: mvcc: database space exceeded"
+  # This config item allows you to disable this.
+  workflowEvents: |
+    enabled: true
+
   # uncomment following lines if workflow controller runs in a different k8s cluster with the
   # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
   # kubeconfig secret
