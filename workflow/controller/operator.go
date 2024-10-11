@@ -2110,7 +2110,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		retryParentNode = processedRetryParentNode
 		childNodeIDs, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 
-
 		// The retry node might have completed by now.
 		if retryParentNode.Phase.Fulfilled() || (lastChildNode != nil && !lastChildNode.Phase.Fulfilled() && lastChildNode.IsDaemoned()) {
 			// If retry node has completed, set the output of the last child node to its output.
@@ -2455,32 +2454,21 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
-// check if node has any children who are daemoned
-func (woc *wfOperationCtx) nodeHasDaemonChildren(node *wfv1.NodeStatus) bool {
+// check if all of the nodes children are fulffilled
+func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
+	if len(node.Children) == 0 {
+		return node.Fulfilled()
+	}
 	for _, childID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childID)
 		if err != nil {
 			continue
 		}
-		if childNode.IsDaemoned() {
-			return true
+		if !woc.childrenFulfilled(childNode) {
+			return false
 		}
 	}
-	return false
-}
-
-// check if node has any children who are daemoned and pending
-func (woc *wfOperationCtx) nodeHasPendingDaemonChildren(node *wfv1.NodeStatus) bool {
-	for _, childID := range node.Children {
-		childNode, err := woc.wf.Status.Nodes.Get(childID)
-		if err != nil {
-			continue
-		}
-		if childNode.IsDaemoned() && childNode.Phase == wfv1.NodePending {
-			return true
-		}
-	}
-	return false
+	return true
 }
 
 func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) (*wfv1.Template, error) {
