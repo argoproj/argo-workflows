@@ -12,9 +12,7 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
@@ -30,12 +28,6 @@ type cronWorkflowServiceServer struct {
 
 // NewCronWorkflowServer returns a new cronWorkflowServiceServer
 func NewCronWorkflowServer(instanceIDService instanceid.Service, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore) cronworkflowpkg.CronWorkflowServiceServer {
-	if wftmplStore == nil {
-		wftmplStore = workflowtemplate.NewWorkflowTemplateClientStore()
-	}
-	if cwftmplStore == nil {
-		cwftmplStore = clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	}
 	return &cronWorkflowServiceServer{instanceIDService, wftmplStore, cwftmplStore}
 }
 
