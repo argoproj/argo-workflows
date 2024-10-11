@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -162,7 +163,6 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 	log.Infof("Start loading input artifacts...")
 	for _, art := range we.Template.Inputs.Artifacts {
-
 		log.Infof("Downloading artifact: %s", art.Name)
 
 		if !art.HasLocationOrKey() {
@@ -174,14 +174,6 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			}
 		}
 		err := art.CleanPath()
-		if err != nil {
-			return err
-		}
-		driverArt, err := we.newDriverArt(&art)
-		if err != nil {
-			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
-		}
-		artDriver, err := we.InitDriver(ctx, driverArt)
 		if err != nil {
 			return err
 		}
@@ -204,18 +196,84 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		// the file is a tarball or not. If it is, it is first extracted then renamed to
 		// the desired location. If not, it is simply renamed to the location.
 		tempArtPath := artPath + ".tmp"
+
 		// Ensure parent directory exist, create if missing
 		tempArtDir := filepath.Dir(tempArtPath)
 		if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
 			return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
 		}
-		err = artDriver.Load(driverArt, tempArtPath)
-		if err != nil {
-			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
-				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
-				continue
+
+		proceed := true
+		gitLoopCount := 0
+		if art.Git != nil {
+			// if git artifact, try s3 first
+			for {
+				if gitLoopCount >= 3 || !proceed {
+					break
+				}
+				proceed = true
+				branch := "master"
+				if art.Git.Branch != "" {
+					branch = art.Git.Branch
+				}
+				repoString := art.Git.Repo[strings.LastIndex(art.Git.Repo, ":")+1:]
+				repoStringArray := strings.Split(strings.Replace(repoString, ".git", "", -1), "/")
+				repoString = repoStringArray[len(repoStringArray)-2] + "/" + repoStringArray[len(repoStringArray)-1]
+				s3Key := "git-artifacts/workflow/" + we.workflow + "/" + repoString + "/" + branch
+
+				artS3 := wfv1.Artifact{
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{
+							Key: s3Key,
+						},
+					},
+				}
+				log.Info(artS3)
+				driverArt, err := we.newDriverArt(&artS3)
+				if err != nil {
+					log.Warn(err)
+				} else {
+					artDriver, err := we.InitDriver(ctx, driverArt)
+					if err != nil {
+						log.Warn(err)
+					} else {
+						err = artDriver.Load(driverArt, tempArtPath)
+						if err != nil {
+							if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
+								log.Infof("Skipping optional input artifact that was not found: %s", artS3.Name)
+								continue
+							}
+							log.Warn(err)
+						} else {
+							proceed = false
+						}
+					}
+				}
+				baseDelay := 1 * time.Second
+				secRetry := math.Pow(2, float64(gitLoopCount))
+				delay := time.Duration(secRetry) * baseDelay
+				time.Sleep(delay)
+				gitLoopCount++
 			}
-			return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
+		}
+		if proceed {
+			// other artifact
+			driverArt, err := we.newDriverArt(&art)
+			if err != nil {
+				return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
+			}
+			artDriver, err := we.InitDriver(ctx, driverArt)
+			if err != nil {
+				return err
+			}
+			err = artDriver.Load(driverArt, tempArtPath)
+			if err != nil {
+				if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
+					log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
+					continue
+				}
+				return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
+			}
 		}
 
 		isTar := false

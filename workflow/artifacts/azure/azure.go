@@ -121,16 +121,19 @@ func (azblobDriver *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 		}
 		isEmptyFile = true
 	} else if !bloberror.HasCode(origErr, bloberror.BlobNotFound) {
+		_ = os.Remove(path)
 		return fmt.Errorf("unable to download blob %s: %s", artifact.Azure.Blob, origErr)
 	}
 
 	isDir, err := azblobDriver.IsDirectory(artifact)
 	if err != nil {
+		_ = os.Remove(path)
 		return fmt.Errorf("unable to determine if %s is a directory: %s", artifact.Azure.Blob, err)
 	}
 
 	// It's not a directory and the file doesn't exist, Return the original NoSuchKey error.
 	if !isDir && !isEmptyFile {
+		_ = os.Remove(path)
 		return argoerrors.New(argoerrors.CodeNotFound, origErr.Error())
 	}
 
