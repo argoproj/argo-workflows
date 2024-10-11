@@ -1015,7 +1015,7 @@ func consumeDAG(n *node, resetFunc resetFn) (*node, error) {
 	return consumeTill(n, wfv1.NodeTypeDAG, resetFunc, true)
 }
 
-func consumePod(n *node, deleteAllContainers bool, resetFunc resetFn, addToDelete deleteFn) (*node, error) {
+func consumePod(n *node, resetFunc resetFn, addToDelete deleteFn) (*node, error) {
 	// this sets to reset but resets are overriden by deletes in the final FormulateRetryWorkflow logic.
 	curr, err := consumeTill(n, wfv1.NodeTypePod, resetFunc, true)
 	if err != nil {
@@ -1106,7 +1106,7 @@ func resetPath(isOnExitNode bool, onExitNodeName string, allNodes []*node, toNod
 		case wfv1.NodeTypeSkipped:
 			// ignore -> doesn't make sense to reach this
 		case wfv1.NodeTypeSuspend:
-			// ignore
+			addToReset(curr.n.ID, false)
 		case wfv1.NodeTypeHTTP:
 			// ignore
 		case wfv1.NodeTypePlugin:
@@ -1126,7 +1126,7 @@ func resetPath(isOnExitNode bool, onExitNodeName string, allNodes []*node, toNod
 		err = nil
 		switch mustFind {
 		case wfv1.NodeTypePod:
-			curr, err = consumePod(curr, true, addToReset, addToDelete)
+			curr, err = consumePod(curr, addToReset, addToDelete)
 		case wfv1.NodeTypeSteps:
 			curr, err = consumeSteps(curr, addToReset)
 		case wfv1.NodeTypeStepGroup:
@@ -1162,6 +1162,13 @@ func setUnion[T comparable](m1 map[T]bool, m2 map[T]bool) map[T]bool {
 	return res
 }
 
+func shouldRetryFailedType(nodeTyp wfv1.NodeType) bool {
+	if nodeTyp == wfv1.NodeTypePod || nodeTyp == wfv1.NodeTypeContainer {
+		return true
+	}
+	return false
+}
+
 // FormulateRetryWorkflow attempts to retry a workflow
 // The logic is as follows:
 // create a DAG
@@ -1191,11 +1198,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 
 	failed := make(map[string]bool)
-	for nodeID, node := range wf.Status.Nodes {
-		if node.Phase.FailedOrError() {
-			failed[nodeID] = true
-		}
-	}
+	// for nodeID, node := range wf.Status.Nodes {
+	// 	if node.Phase.FailedOrError() && shouldRetryFailedType(node.Type) {
+	// 		failed[nodeID] = true
+	// 	}
+	// }
 
 	deleteNodes, err := getNodeIDsToResetNoChildren(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
