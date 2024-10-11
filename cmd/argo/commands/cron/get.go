@@ -34,7 +34,7 @@ func NewGetCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				printCronWorkflow(cronWf, output.String())
+				printCronWorkflow(ctx, cronWf, output.String())
 			}
 			return nil
 		},

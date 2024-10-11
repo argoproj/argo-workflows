@@ -265,6 +265,23 @@ Suppressed runs due to `concurrencyPolicy: Forbid` will not be counted.
 | `name`     | ⚠️ The name of the CronWorkflow |
 | `namespace` | The namespace of the CronWorkflow |
 
+#### `deprecated_feature`
+
+A counter which goes up when a feature which is [deprecated](deprecations.md) is used.
+🚨 This counter may go up much more than once for a single use of the feature.
+
+| attribute   | explanation                                 |
+|-------------|---------------------------------------------|
+| `feature`   | The name of the feature used                |
+| `namespace` | The namespace of the item using the feature |
+
+`feature` will be one of:
+
+- [`cronworkflow schedule`](deprecations.md#cronworkflow_schedule)
+- [`synchronization mutex`](deprecations.md#synchronization_mutex)
+- [`synchronization semaphore`](deprecations.md#synchronization_semaphore)
+- [`workflow podpriority`](deprecations.md#workflow_podpriority)
+
 #### `gauge`
 
 A gauge of the number of workflows currently in the cluster in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.

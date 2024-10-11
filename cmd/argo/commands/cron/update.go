@@ -90,7 +90,7 @@ func updateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliUp
 		if err != nil {
 			return fmt.Errorf("Failed to update workflow template: %v", err)
 		}
-		fmt.Print(getCronWorkflowGet(updated))
+		fmt.Print(getCronWorkflowGet(ctx, updated))
 	}
 	return nil
 }

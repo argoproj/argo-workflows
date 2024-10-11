@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -53,7 +54,7 @@ func NewListCommand() *cobra.Command {
 			}
 			switch listArgs.output.String() {
 			case "", "wide":
-				printTable(cronWfList.Items, &listArgs)
+				printTable(ctx, cronWfList.Items, &listArgs)
 			case "name":
 				for _, cronWf := range cronWfList.Items {
 					fmt.Println(cronWf.ObjectMeta.Name)
@@ -70,7 +71,7 @@ func NewListCommand() *cobra.Command {
 	return command
 }
 
-func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
+func printTable(ctx context.Context, wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
 		_, _ = fmt.Fprint(w, "NAMESPACE\t")
@@ -88,7 +89,7 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 			cleanLastScheduledTime = "N/A"
 		}
 		var cleanNextScheduledTime string
-		if next, err := GetNextRuntime(&cwf); err == nil {
+		if next, err := GetNextRuntime(ctx, &cwf); err == nil {
 			cleanNextScheduledTime = humanize.RelativeDurationShort(next, time.Now())
 		} else {
 			cleanNextScheduledTime = "N/A"
