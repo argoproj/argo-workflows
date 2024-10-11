@@ -5,11 +5,6 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.6
 
-### JSON templating fix
-
-When accessing a structure or array from json structure in a `jsonpath` expression you could end up getting a golang representation of the structure in error.
-This will now return the json representation as hoped - see #12909.
-
 ### Fixed Server `--basehref` inconsistency
 
 For consistency, the Server now uses `--base-href` and `ARGO_BASE_HREF`.
@@ -83,6 +78,11 @@ Custom metrics, as defined by a workflow, could be defined as one type (say coun
 
 The Prometheus `/metrics` endpoint now has TLS enabled by default.
 To disable this set `metricsConfig.secure` to `false`.
+
+### JSON templating fix
+
+When returning a map or array in an expression, you would get a Golang representation.
+This now returns plain JSON.
 
 ## Upgrading to v3.5
 
