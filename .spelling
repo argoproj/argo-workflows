@@ -28,6 +28,7 @@ Alibaba
 Ang
 Anthos
 Approvers
+ARGO_TEMPLATE
 ArgoLabs
 Artifactory
 BlackRock
@@ -64,6 +65,7 @@ Homebrew
 IAM-based
 IPs
 InitContainer
+inputs.parameters
 InsideBoard
 Invocators
 Istio
