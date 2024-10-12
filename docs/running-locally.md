@@ -169,9 +169,6 @@ To start Argo in [encrypted mode](./tls.md#encrypted), use `SECURE=true`, which 
 make start SECURE=true UI_SECURE=true
 ```
 
-Combining `UI_SECURE=true` and `PROFILE=sso` currently requires manually changing the `redirectUrl` here:
-https://github.com/argoproj/argo-workflows/blob/29ea3518a30b2b605290d0ba38f95bfb75a2901f/manifests/quick-start/sso/overlays/workflow-controller-configmap.yaml#L15
-
 ### Running E2E tests locally
 
 Start up Argo Workflows using the following:
