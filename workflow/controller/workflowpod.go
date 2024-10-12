@@ -297,7 +297,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
-	if os.Getenv("ARGO_TEMPLATE_WITH_INPUTS") == "false" {
+	if os.Getenv("ARGO_TEMPLATE_WITH_INPUTS_PARAMETERS") == "false" {
 		tmplWithoutInputs := tmpl.DeepCopy()
 		// Preserve Inputs.Artifacts and clear other inputs
 		var artifacts []wfv1.Artifact
