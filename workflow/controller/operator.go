@@ -968,17 +968,20 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
-	if lastChildNode.IsDaemoned() && !lastChildNode.Phase.Fulfilled() {
+	if lastChildNode.IsDaemoned() {
 		node.Daemoned = ptr.To(true)
-		return node, true, nil
 	}
 
 	if !lastChildNode.Phase.Fulfilled() {
 		// last child node is still running.
+		node = woc.markNodePhase(node.Name, lastChildNode.Phase)
+		if lastChildNode.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
+			node.Daemoned = ptr.To(true)
+		}
 		return node, true, nil
 	}
 
-	if (!lastChildNode.FailedOrError() && !lastChildNode.IsDaemoned()) || (lastChildNode.IsDaemoned() && !lastChildNode.Phase.Fulfilled()) {
+	if !lastChildNode.FailedOrError() {
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
 		woc.wf.Status.Nodes.Set(node.ID, *node)
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
@@ -2111,7 +2114,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		childNodeIDs, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 
 		// The retry node might have completed by now.
-		if retryParentNode.Phase.Fulfilled() || (lastChildNode != nil && !lastChildNode.Phase.Fulfilled() && lastChildNode.IsDaemoned()) {
+		if woc.childrenFulfilled(retryParentNode) {
 			// If retry node has completed, set the output of the last child node to its output.
 			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
 			if lastChildNode != nil {
@@ -2251,6 +2254,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
+			}
+		}
+
+		if !node.Phase.Fulfilled() {
+			retryNode = woc.markNodePhase(retryNodeName, node.Phase)
+			if node.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
+				retryNode.Daemoned = ptr.To(true)
 			}
 		}
 		node = retryNode
