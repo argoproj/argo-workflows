@@ -23,12 +23,12 @@
 5xx
 8Ki
 90m
+ARGO_TEMPLATE
 Alexandre
 Alibaba
 Ang
 Anthos
 Approvers
-ARGO_TEMPLATE
 ArgoLabs
 Artifactory
 BlackRock
@@ -65,7 +65,6 @@ Homebrew
 IAM-based
 IPs
 InitContainer
-inputs.parameters
 InsideBoard
 Invocators
 Istio
@@ -167,6 +166,7 @@ govaluate
 gzipped
 i.e.
 idempotence
+inputs.parameters
 instantiator
 instantiators
 jenkins
