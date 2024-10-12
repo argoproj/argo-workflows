@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: daemon-retry-
+  generateName: steps-daemon-retry-
 spec:
   entrypoint: main
 

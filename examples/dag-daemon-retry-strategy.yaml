@@ -1,16 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: daemon-retry-
+  generateName: dag-daemon-retry-
 spec:
   entrypoint: main
 
   templates:
   - name: main
-    steps:
-    - - name: server
+    dag:
+      tasks:
+      - name: server
         template: server
-    - - name: client
+      - name: client
+        depends: server
         template: client
         arguments:
           parameters:
