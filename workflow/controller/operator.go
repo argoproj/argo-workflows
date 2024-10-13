@@ -2113,10 +2113,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		retryParentNode = processedRetryParentNode
 		childNodeIDs, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 
-		for i := 0; i < 2000000; i++ {
-			woc.log.Debugf("A.1: %t", woc.childrenFulfilled(retryParentNode))
-		}
-
 		// The retry node might have completed by now.
 		if retryParentNode.Fulfilled() && woc.childrenFulfilled(retryParentNode) ||
 			woc.childrenFulfilled(retryParentNode) && retryParentNode.IsDaemoned() { // if retry node is daemoned we want to check those explicitly
