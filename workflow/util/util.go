@@ -1106,7 +1106,7 @@ func resetPath(isOnExitNode bool, onExitNodeName string, allNodes []*node, toNod
 		case wfv1.NodeTypeSkipped:
 			// ignore -> doesn't make sense to reach this
 		case wfv1.NodeTypeSuspend:
-			addToReset(curr.n.ID, false)
+			// ignore
 		case wfv1.NodeTypeHTTP:
 			// ignore
 		case wfv1.NodeTypePlugin:
@@ -1161,12 +1161,44 @@ func setUnion[T comparable](m1 map[T]bool, m2 map[T]bool) map[T]bool {
 	}
 	return res
 }
-
 func shouldRetryFailedType(nodeTyp wfv1.NodeType) bool {
 	if nodeTyp == wfv1.NodeTypePod || nodeTyp == wfv1.NodeTypeContainer {
 		return true
 	}
 	return false
+}
+
+func dagSortedNodes(nodes []*node, rootNodeName string) []*node {
+	sortedNodes := make([]*node, 0)
+
+	if len(nodes) == 0 {
+		return sortedNodes
+	}
+
+	queue := make([]*node, 0)
+
+	for _, n := range nodes {
+		if n.n.Name == rootNodeName {
+			queue = append(queue, n)
+			break
+		}
+	}
+
+	if len(queue) != 1 {
+		panic("couldn't find root node")
+	}
+
+	for len(queue) > 0 {
+		curr := queue[0]
+		sortedNodes = append(sortedNodes, curr)
+		queue = queue[1:]
+
+		for i := range curr.children {
+			queue = append(queue, curr.children[i])
+		}
+	}
+
+	return sortedNodes
 }
 
 // FormulateRetryWorkflow attempts to retry a workflow
@@ -1198,19 +1230,19 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 
 	failed := make(map[string]bool)
-	// for nodeID, node := range wf.Status.Nodes {
-	// 	if node.Phase.FailedOrError() && shouldRetryFailedType(node.Type) {
-	// 		failed[nodeID] = true
-	// 	}
-	// }
+	for nodeID, node := range wf.Status.Nodes {
+		if node.Phase.FailedOrError() && shouldRetryFailedType(node.Type) {
+			failed[nodeID] = true
+		}
+	}
 
-	deleteNodes, err := getNodeIDsToResetNoChildren(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
+	deleteNodesMap, err := getNodeIDsToResetNoChildren(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	for failedNode := range failed {
-		deleteNodes[failedNode] = true
+		deleteNodesMap[failedNode] = true
 	}
 
 	nodes, err := newWorkflowsDag(wf)
@@ -1226,13 +1258,31 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		nodesMap[nodes[i].n.ID] = nodes[i]
 	}
 
-	for n := range deleteNodes {
-		currNode, ok := nodesMap[n]
-		if !ok {
-			return nil, nil, fmt.Errorf("bug in map handling logic, expected key %s not present in nodesMap", n)
+	nodes = dagSortedNodes(nodes, wf.Name)
+
+	deleteNodes := make([]*node, 0)
+
+	for i := range nodes {
+		if _, ok := deleteNodesMap[nodes[i].n.ID]; ok {
+			deleteNodes = append(deleteNodes, nodes[i])
+		}
+	}
+
+	// this is kind of complex
+	// we rely on deleteNodes being topologically sorted.
+	// this is done via a breadth first search on the dag via `dagSortedNodes`
+	// This is because nodes at the top take precedence over nodes at the bottom.
+	// if a failed node was declared to be scheduled for deletion, we should
+	// never execute resetPath on that node.
+	// we ensure this behaviour via calling resetPath in topological order.
+	for i := range deleteNodes {
+		currNode := deleteNodes[i]
+		shouldDelete := toDelete[currNode.n.ID]
+		if shouldDelete {
+			continue
 		}
 		isOnExitNode := strings.HasPrefix(currNode.n.Name, onExitNodeName)
-		pathToReset, pathToDelete, err := resetPath(isOnExitNode, onExitNodeName, nodes, n)
+		pathToReset, pathToDelete, err := resetPath(isOnExitNode, onExitNodeName, nodes, currNode.n.ID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1265,6 +1315,9 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		shouldDelete := toDelete[id] || strings.HasPrefix(n.Name, onExitNodeName)
 		if _, err := newWf.Status.Nodes.Get(id); err != nil && !shouldDelete {
 			newWf.Status.Nodes.Set(id, *n.DeepCopy())
+		}
+		if n.Name == wf.Name {
+			newWf.Status.Nodes.Set(id, resetNode(*n.DeepCopy()))
 		}
 	}
 	for id, oldWfNode := range wf.Status.Nodes {
