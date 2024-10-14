@@ -46,7 +46,9 @@ func cleanCRD(filename string) {
 	}
 }
 
-func removeCRDValidation(filename string) {
+// minimizeCRD is a workaround for https://github.com/kubernetes/kubernetes/issues/82292 that strips out large fields from CRDs.
+// Without this, deploying the CRDs under ./manifests/base/crds/minimal/ will lead to the error "Request entity too large: limit is 3145728"
+func minimizeCRD(filename string) {
 	data, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		panic(err)
@@ -56,6 +58,25 @@ func removeCRDValidation(filename string) {
 	if err != nil {
 		panic(err)
 	}
+	name := crd["metadata"].(obj)["name"].(string)
+	switch name {
+	// Only minimize CRDs that are too large
+	case "cronworkflows.argoproj.io", "clusterworkflowtemplates.argoproj.io", "workflows.argoproj.io", "workflowtemplates.argoproj.io", "workflowtasksets.argoproj.io":
+		crd = stripSpecAndStatusFields(crd)
+	}
+
+	data, err = yaml.Marshal(crd)
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(filename, data, 0o600)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// stripSpecAndStatusFields strips the "spec" and "status" fields from the CRD, as those are usually the largest.
+func stripSpecAndStatusFields(crd obj) obj {
 	spec := crd["spec"].(obj)
 	versions := spec["versions"].([]interface{})
 	version := versions[0].(obj)
@@ -65,12 +86,5 @@ func removeCRDValidation(filename string) {
 			properties[k] = obj{"type": "object", "x-kubernetes-preserve-unknown-fields": true, "x-kubernetes-map-type": "atomic"}
 		}
 	}
-	data, err = yaml.Marshal(crd)
-	if err != nil {
-		panic(err)
-	}
-	err = os.WriteFile(filename, data, 0o600)
-	if err != nil {
-		panic(err)
-	}
+	return crd
 }
