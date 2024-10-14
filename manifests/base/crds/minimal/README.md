@@ -1,3 +1,3 @@
 # Minimal CRDs
 
-These CRDs omit large fields as a workaround for [Large CRDs go over size limits (e.g. those with embedded podspecs)](https://github.com/kubernetes/kubernetes/issues/82292).
+These CRDs omit large fields as a workaround for [kubernetes/kubernetes#82292](https://github.com/kubernetes/kubernetes/issues/82292).

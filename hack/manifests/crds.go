@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -46,24 +47,41 @@ func cleanCRD(filename string) {
 	}
 }
 
-// minimizeCRD is a workaround for https://github.com/kubernetes/kubernetes/issues/82292 that strips out large fields from CRDs.
-// Without this, deploying the CRDs under ./manifests/base/crds/minimal/ will lead to the error "Request entity too large: limit is 3145728"
+// minimizeCRD is a workaround for two separate issues:
+// 1. "Request entity too large: limit is 3145728" errors due to https://github.com/kubernetes/kubernetes/issues/82292
+// 2. "spec.validation.openAPIV3Schema.properties[spec].properties[tasks].additionalProperties.properties[steps].items.items: Required value: must be specified" due to kubebuilder issues (https://github.com/argoproj/argo-workflows/pull/3809#discussion_r472383090)
 func minimizeCRD(filename string) {
 	data, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		panic(err)
 	}
+
+	shouldMinimize := false
+	if len(data) > 1024*1024 {
+		fmt.Printf("Minimizing %s due to CRD size (%d) exceeding 1MB\n", filename, len(data))
+		shouldMinimize = true
+	}
+
 	crd := make(obj)
 	err = yaml.Unmarshal(data, &crd)
 	if err != nil {
 		panic(err)
 	}
-	name := crd["metadata"].(obj)["name"].(string)
-	switch name {
-	// Only minimize CRDs that are too large
-	case "cronworkflows.argoproj.io", "clusterworkflowtemplates.argoproj.io", "workflows.argoproj.io", "workflowtemplates.argoproj.io", "workflowtasksets.argoproj.io":
-		crd = stripSpecAndStatusFields(crd)
+
+	if !shouldMinimize {
+		name := crd["metadata"].(obj)["name"].(string)
+		switch name {
+		case "cronworkflows.argoproj.io", "clusterworkflowtemplates.argoproj.io", "workflows.argoproj.io", "workflowtemplates.argoproj.io", "workflowtasksets.argoproj.io":
+			fmt.Printf("Minimizing %s due to kubebuilder issues\n", filename)
+			shouldMinimize = true
+		}
 	}
+
+	if !shouldMinimize {
+		return
+	}
+
+	crd = stripSpecAndStatusFields(crd)
 
 	data, err = yaml.Marshal(crd)
 	if err != nil {
