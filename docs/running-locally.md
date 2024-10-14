@@ -156,14 +156,14 @@ make start UI=true PROFILE=sso
 
 ## TLS
 
-By default, `make start` will start Argo in [plain text mode](./tls.md#plain-text).
+By default, `make start` will start Argo in [plain text mode](tls.md#plain-text).
 To simulate a TLS proxy in front of Argo, use `UI_SECURE=true` (which implies `UI=true`):
 
 ```bash
 make start UI_SECURE=true
 ```
 
-To start Argo in [encrypted mode](./tls.md#encrypted), use `SECURE=true`, which can be optionally combined with `UI_SECURE=true`:
+To start Argo in [encrypted mode](tls.md#encrypted), use `SECURE=true`, which can be optionally combined with `UI_SECURE=true`:
 
 ```bash
 make start SECURE=true UI_SECURE=true
@@ -223,31 +223,9 @@ If tests run slowly or time out, factory reset your Kubernetes cluster.
 
 ### Debugging using Visual Studio Code
 
-When using the Dev Container with VSCode, add the following launch configuration to `.vscode/launch.json`:
+When using the Dev Container with VSCode, use the `Attach to argo server` and/or `Attach to workflow controller` launch configurations to attach to the `argo` or `workflow-controller` processes, respectively.
 
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Attach to argo server",
-      "type": "go",
-      "request": "attach",
-      "mode": "local",
-      "processId": "argo"
-     },
-     {
-      "name": "Attach to workflow controller",
-      "type": "go",
-      "request": "attach",
-      "mode": "local",
-      "processId": "workflow-controller"
-     }
-  ]
-}
-```
-
-This will allow you to attach to the `argo` and/or `workflow-controller` processes and start a debug session, which you can use to inspect variables and set breakpoints.
+This will allow you to start a debug session, where you can inspect variables and set breakpoints.
 
 ## Committing
 

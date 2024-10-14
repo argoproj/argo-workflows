@@ -29,5 +29,29 @@
   "remoteEnv": {
     "PATH": "${containerEnv:PATH}:/home/vscode/go/bin",
     "GOPATH": "/home/vscode/go"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "launch": {
+          "configurations": [
+              {
+                  "name": "Attach to argo server",
+                  "type": "go",
+                  "request": "attach",
+                  "mode": "local",
+                  "processId": "argo"
+              },
+              {
+                  "name": "Attach to workflow controller",
+                  "type": "go",
+                  "request": "attach",
+                  "mode": "local",
+                  "processId": "workflow-controller"
+              }
+          ]
+        }
+      }
+    }
   }
 }
