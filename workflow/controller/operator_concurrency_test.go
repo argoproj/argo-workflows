@@ -582,7 +582,6 @@ spec:
         - - name: hello2
             template: whalesay
     - name: whalesay
-      daemon: true
       synchronization:
         semaphore:
           configMapKeyRef:

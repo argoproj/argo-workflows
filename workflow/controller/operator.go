@@ -130,7 +130,7 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 var (
-	maxOperationTime = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second)
+	maxOperationTime = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 1000*time.Second)
 )
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
