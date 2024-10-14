@@ -972,7 +972,7 @@ func consumeDAG(n *node, resetFunc resetFn) (*node, error) {
 }
 
 func consumePod(n *node, resetFunc resetFn, addToDelete deleteFn) (*node, error) {
-	// this sets to reset but resets are overriden by deletes in the final FormulateRetryWorkflow logic.
+	// this sets to reset but resets are overridden by deletes in the final FormulateRetryWorkflow logic.
 	curr, err := consumeTill(n, wfv1.NodeTypePod, resetFunc)
 	if err != nil {
 		return nil, err
