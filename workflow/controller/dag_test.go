@@ -3465,8 +3465,8 @@ spec:
   templates:
   - name: linuxExitHandler
     steps:
-    - - name: printExit
-        template: printExit
+    - - name: print-exit
+        template: print-exit
   - container:
       args:
       - echo
@@ -3475,7 +3475,7 @@ spec:
       - /argosay
       image: argoproj/argosay:v2
       name: ""
-    name: printExit
+    name: print-exit
   - container:
       args:
       - echo

@@ -604,6 +604,10 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 	if woc.execWf.Spec.ActiveDeadlineSeconds == nil {
 		return nil
+	} else {
+		for i := 0; i <= 2000000; i++ {
+			woc.log.Debugf("%d", *woc.execWf.Spec.ActiveDeadlineSeconds)
+		}
 	}
 	if woc.wf.Status.StartedAt.IsZero() {
 		return nil
