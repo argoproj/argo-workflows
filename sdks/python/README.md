@@ -2,7 +2,9 @@
 
 This is the Python SDK for Argo Workflows.
 
-⚠️ This SDK is deprecated and will be removed in version 3.7 of Argo Workflows. It is recommended that you migrate to using [hera](https://github.com/argoproj-labs/hera).
+> [!WARNING]
+> This SDK is deprecated and will be removed in version 3.7 of Argo Workflows.
+> We recommend migrating to [Hera](https://github.com/argoproj-labs/hera).
 
 ## Requirements
 
