@@ -2080,11 +2080,6 @@
     jest-diff "^26.0.0"
     pretty-format "^26.0.0"
 
-"@types/js-yaml@^4.0.9":
-  version "4.0.9"
-  resolved "https://registry.yarnpkg.com/@types/js-yaml/-/js-yaml-4.0.9.tgz#cd82382c4f902fed9691a2ed79ec68c5898af4c2"
-  integrity sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==
-
 "@types/json-schema@^7.0.12", "@types/json-schema@^7.0.5", "@types/json-schema@^7.0.8", "@types/json-schema@^7.0.9":
   version "7.0.15"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.15.tgz#596a1747233694d50f6ad8a7869fcb6f56cf5841"
@@ -10354,6 +10349,11 @@ yallist@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
   integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
+
+yaml@^2.5.1:
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.5.1.tgz#c9772aacf62cb7494a95b0c4f1fb065b563db130"
+  integrity sha512-bLQOjaX/ADgQ20isPJRvF0iRUHIxVhYvr53Of7wGcWlO2jvtUlH5m87DsmulFVxRpNLOnI4tB6p/oh8D7kpn9Q==
 
 yargs-parser@20.x:
   version "20.2.9"
