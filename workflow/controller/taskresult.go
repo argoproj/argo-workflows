@@ -14,6 +14,7 @@ import (
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndexInformer {
@@ -32,9 +33,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 		},
 		func(options *metav1.ListOptions) {
 			options.LabelSelector = labelSelector
-			// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
-			// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-			options.ResourceVersion = ""
+			util.CheckResourceVersion(options)
 		},
 	)
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
