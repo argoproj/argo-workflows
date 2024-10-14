@@ -840,7 +840,6 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*node, error) {
 	// create mapping from node to parent
 	// as well as creating temp mappings from nodeID to node
 	for _, wfNode := range wf.Status.Nodes {
-		wfNode := wfNode
 		n := node{}
 		n.n = &wfNode
 		nodes[wfNode.ID] = &n
@@ -850,7 +849,6 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*node, error) {
 	}
 
 	for _, wfNode := range wf.Status.Nodes {
-		wfNode := wfNode
 		parentWfNode, ok := parentsMap[wfNode.ID]
 		if !ok && wfNode.Name != wf.Name && !strings.HasPrefix(wfNode.Name, wf.ObjectMeta.Name+".onExit") {
 			return nil, fmt.Errorf("couldn't find parent node for %s", wfNode.ID)
@@ -1081,7 +1079,6 @@ func resetPath(isOnExitNode bool, onExitNodeName string, allNodes []*node, toNod
 			return nil, nil, fmt.Errorf("must find %s but reached the root node", mustFind)
 		}
 
-		err = nil
 		switch mustFind {
 		case wfv1.NodeTypePod:
 			curr, err = consumePod(curr, addToReset, addToDelete)
@@ -1150,10 +1147,7 @@ func dagSortedNodes(nodes []*node, rootNodeName string) []*node {
 		curr := queue[0]
 		sortedNodes = append(sortedNodes, curr)
 		queue = queue[1:]
-
-		for i := range curr.children {
-			queue = append(queue, curr.children[i])
-		}
+		queue = append(queue, curr.children...)
 	}
 
 	return sortedNodes

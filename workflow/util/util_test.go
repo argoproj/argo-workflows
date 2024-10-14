@@ -1859,8 +1859,8 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	// Retry top individual pod node
 	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step1", nil)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(wf.Status.Nodes))
-	assert.Equal(t, 6, len(podsToDelete))
+	assert.Len(t, wf.Status.Nodes, 1)
+	assert.Len(t, podsToDelete, 6)
 
 	// Retry top individual suspend node
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
@@ -1931,6 +1931,7 @@ func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	// Retry the second individual node (pod node) connecting to the second DAG in one of the branches
 	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2", nil)
+	require.NoError(t, err)
 	assert.Len(t, wf.Status.Nodes, 12)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
 	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
