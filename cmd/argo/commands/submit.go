@@ -24,7 +24,7 @@ func NewSubmitCommand() *cobra.Command {
 	var (
 		submitOpts     wfv1.SubmitOpts
 		parametersFile string
-		cliSubmitOpts  common.CliSubmitOpts
+		cliSubmitOpts  = common.NewCliSubmitOpts()
 		priority       int32
 		from           string
 	)
@@ -90,7 +90,7 @@ func NewSubmitCommand() *cobra.Command {
 		},
 	}
 	util.PopulateSubmitOpts(command, &submitOpts, &parametersFile, true)
-	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliSubmitOpts.Output, "output", "o", "Output format. "+cliSubmitOpts.Output.Usage())
 	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.Watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.Log, "log", false, "log the workflow until it completes")
@@ -150,7 +150,7 @@ func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 	}
 
 	if submitOpts.DryRun {
-		if cliOpts.Output == "" {
+		if cliOpts.Output.String() == "" {
 			return errors.New("--dry-run should have an output option")
 		}
 		if submitOpts.ServerDryRun {
@@ -159,7 +159,7 @@ func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 	}
 
 	if submitOpts.ServerDryRun {
-		if cliOpts.Output == "" {
+		if cliOpts.Output.String() == "" {
 			return errors.New("--server-dry-run should have an output option")
 		}
 	}

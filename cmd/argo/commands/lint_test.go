@@ -171,9 +171,7 @@ spec:
 		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
 		os.Stdin, err = os.Open(clusterWftmplPath)
 		require.NoError(t, err)
-		defer func() {
-			_ = os.Stdin.Close() // close previously opened path to avoid errors trying to remove the file.
-		}()
+		defer func() { _ = os.Stdin.Close() }() // close previously opened path to avoid errors trying to remove the file.
 
 		err = runLint(context.Background(), []string{workflowPath, wftmplPath, "-"}, true, nil, "pretty", true)
 
@@ -223,4 +221,65 @@ spec:
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
 	})
+
+	workflowMultiDocsPath := filepath.Join(subdir, "workflowMultiDocs.yaml")
+	err = os.WriteFile(workflowMultiDocsPath, []byte(`
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-template-local-arg-1
+spec:
+  templates:
+    - name: hello-world
+      inputs:
+        parameters:
+          - name: msg
+            value: 'hello world'
+      container:
+        image: busybox
+        command: [echo]
+        args: ['{{inputs.parameters.msg}}']
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-template-local-arg-2
+spec:
+  templates:
+    - name: hello-world
+      inputs:
+        parameters:
+          - name: msg
+            value: 'hello world'
+      container:
+        image: busybox
+        command: [echo]
+        args: ['{{inputs.parameters.msg}}']
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-local-arg-
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: hello-world-template-local-arg-2
+              template: hello-world
+`), 0644)
+	require.NoError(t, err)
+
+	t.Run("linting a workflow in multi-documents yaml", func(t *testing.T) {
+		defer func() { logrus.StandardLogger().ExitFunc = nil }()
+		var fatal bool
+		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
+		err = runLint(context.Background(), []string{workflowMultiDocsPath}, true, nil, "pretty", false)
+
+		require.NoError(t, err)
+		assert.False(t, fatal, "should not have exited")
+	})
+
 }

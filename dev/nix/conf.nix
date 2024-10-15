@@ -24,6 +24,7 @@ rec {
     LOGS = "true"; # same as CTRL - not acted upon
     UI = "true"; # same as CTRL
     API = "true"; # same as CTRL
+    UI_SECURE = "false";
     PLUGINS = "false";
   };
   controller = {
@@ -50,7 +51,10 @@ rec {
     args = "--loglevel ${env.LOG_LEVEL} server --namespaced=${env.NAMESPACED} --auth-mode ${env.AUTH_MODE} --secure=${env.SECURE} --x-frame-options=SAMEORIGIN";
   };
   ui = {
-    env = { };
+    env = {
+      ARGO_UI_SECURE = "${env.UI_SECURE}";
+      ARGO_SECURE = "${env.SECURE}";
+    };
     args = "--cwd ui start";
   };
 }

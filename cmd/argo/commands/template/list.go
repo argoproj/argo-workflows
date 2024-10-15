@@ -11,18 +11,19 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type listFlags struct {
-	allNamespaces bool   // --all-namespaces
-	output        string // --output
-	labels        string // --selector
+	allNamespaces bool                 // --all-namespaces
+	output        common.EnumFlagValue // --output
+	labels        string               // --selector
 }
 
 func NewListCommand() *cobra.Command {
-	var listArgs listFlags
+	var listArgs = listFlags{output: common.EnumFlagValue{AllowedValues: []string{"wide", "name"}}}
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list workflow templates",
@@ -53,7 +54,7 @@ func NewListCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			switch listArgs.output {
+			switch listArgs.output.String() {
 			case "", "wide":
 				printTable(wftmplList.Items, &listArgs)
 			case "name":
@@ -67,7 +68,7 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
-	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	command.Flags().VarP(&listArgs.output, "output", "o", "Output format. "+listArgs.output.Usage())
 	command.Flags().StringVarP(&listArgs.labels, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	return command
 }

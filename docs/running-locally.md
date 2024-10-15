@@ -154,6 +154,21 @@ To test SSO integration, use `PROFILE=sso`:
 make start UI=true PROFILE=sso
 ```
 
+## TLS
+
+By default, `make start` will start Argo in [plain text mode](tls.md#plain-text).
+To simulate a TLS proxy in front of Argo, use `UI_SECURE=true` (which implies `UI=true`):
+
+```bash
+make start UI_SECURE=true
+```
+
+To start Argo in [encrypted mode](tls.md#encrypted), use `SECURE=true`, which can be optionally combined with `UI_SECURE=true`:
+
+```bash
+make start SECURE=true UI_SECURE=true
+```
+
 ### Running E2E tests locally
 
 Start up Argo Workflows using the following:
@@ -228,7 +243,12 @@ Flags:
   -h, --help         help for db
 
 Use "db [command] --help" for more information about a command.
-```
+
+### Debugging using Visual Studio Code
+
+When using the Dev Container with VSCode, use the `Attach to argo server` and/or `Attach to workflow controller` launch configurations to attach to the `argo` or `workflow-controller` processes, respectively.
+
+This will allow you to start a debug session, where you can inspect variables and set breakpoints.
 
 ## Committing
 

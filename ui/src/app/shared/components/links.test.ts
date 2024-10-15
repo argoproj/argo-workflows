@@ -56,4 +56,19 @@ describe('process URL', () => {
 
         expect(processURL('https://logging?${workflow.annotations.logQuery}${workflow.annotations.additionalLogParams}', object)).toBe('https://logging?query=env:qa');
     });
+
+    test('workflows annotation.', () => {
+        const object = {
+            status: {},
+            workflow: {
+                metadata: {
+                    annotations: {
+                        'workflows.argoproj.io/pod-name-format': 'v2'
+                    }
+                }
+            }
+        };
+
+        expect(processURL('https://logging?${workflow.metadata.annotations.workflows.argoproj.io/pod-name-format}', object)).toBe('https://logging?v2');
+    });
 });

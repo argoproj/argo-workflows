@@ -4,11 +4,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 )
 
 func NewGetCommand() *cobra.Command {
-	var output string
+	var output = common.NewPrintWorkflowOutputValue("")
 
 	command := &cobra.Command{
 		Use:   "get CRON_WORKFLOW...",
@@ -33,12 +34,12 @@ func NewGetCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				printCronWorkflow(cronWf, output)
+				printCronWorkflow(ctx, cronWf, output.String())
 			}
 			return nil
 		},
 	}
 
-	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
+	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
 	return command
 }
