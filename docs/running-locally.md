@@ -243,6 +243,7 @@ Flags:
   -h, --help         help for db
 
 Use "db [command] --help" for more information about a command.
+```
 
 ### Debugging using Visual Studio Code
 
