@@ -474,9 +474,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 		created, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).Create(ctx, cm, metav1.CreateOptions{})
 		if err != nil {
-			return nil, err
+			if !apierr.IsAlreadyExists(err) {
+				return nil, err
+			}
+			woc.log.Infof("Configmap already exists: %s", cm.Name)
+		} else {
+			woc.log.Infof("Created configmap: %s", created.Name)
 		}
-		woc.log.Infof("Created configmap: %s", created.Name)
 
 		volumeConfig := apiv1.Volume{
 			Name: "argo-env-config",
