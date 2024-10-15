@@ -5,6 +5,15 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.6
 
+### Deprecations
+
+The following features are deprecated and will be removed in a future verison of argo-workflows:
+
+* The Python SDK is deprecated, we recommend migrating to [Hera](https://github.com/argoproj-labs/hera)
+* `schedule` in CronWorkflows, `podPriority`, `mutex` and `semaphore` in Workflows and WorkflowTemplates.
+
+For more information on how to migrate these see [deprecations](deprecations.md)
+
 ### Fixed Server `--basehref` inconsistency
 
 For consistency, the Server now uses `--base-href` and `ARGO_BASE_HREF`.
