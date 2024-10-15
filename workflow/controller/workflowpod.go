@@ -314,7 +314,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
-		{Name: common.EnvVarTemplate, Value: envVarTemplateValue},
 		{Name: common.EnvVarNodeID, Value: nodeID},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
@@ -341,6 +340,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	for i, c := range pod.Spec.InitContainers {
 		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTemplate, Value: envVarTemplateValue})
 		c.Env = append(c.Env, envVars...)
 		pod.Spec.InitContainers[i] = c
 	}
@@ -362,7 +362,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// only to check ArchiveLocation for now, since everything else should have been substituted
 	// earlier (i.e. in executeTemplate). But archive location is unique in that the variables
 	// are formulated from the configmap. We can expand this to other fields as necessary.
-	for _, c := range pod.Spec.Containers {
+	for _, c := range pod.Spec.InitContainers {
 		for _, e := range c.Env {
 			if e.Name == common.EnvVarTemplate {
 				err = json.Unmarshal([]byte(e.Value), tmpl)
@@ -441,14 +441,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	offloadEnvVarTemplate := false
-	for _, c := range pod.Spec.Containers {
-		if c.Name == common.MainContainerName {
-			for _, e := range c.Env {
-				if e.Name == common.EnvVarTemplate {
-					envVarTemplateValue = e.Value
-					if len(envVarTemplateValue) > maxEnvVarLen {
-						offloadEnvVarTemplate = true
-					}
+	for _, c := range pod.Spec.InitContainers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarTemplate {
+				envVarTemplateValue = e.Value
+				if len(envVarTemplateValue) > maxEnvVarLen {
+					offloadEnvVarTemplate = true
 				}
 			}
 		}
@@ -510,16 +508,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			}
 			c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
 			pod.Spec.InitContainers[i] = c
-		}
-		for i, c := range pod.Spec.Containers {
-			for j, e := range c.Env {
-				if e.Name == common.EnvVarTemplate {
-					e.Value = common.EnvVarTemplateOffloaded
-					c.Env[j] = e
-				}
-			}
-			c.VolumeMounts = append(c.VolumeMounts, volumeMountConfig)
-			pod.Spec.Containers[i] = c
 		}
 	}
 
