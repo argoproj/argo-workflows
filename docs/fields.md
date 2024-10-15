@@ -1994,12 +1994,12 @@ SynchronizationStatus stores the status of semaphore and mutex.
 
 ## StopStrategy
 
-v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`condition`|`string`|v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.|
+|`expression`|`string`|v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.|
 
 ## Artifact
 
@@ -2399,7 +2399,11 @@ Mutex holds Mutex configuration
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
+
 - [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 </details>
 
 ### Fields
@@ -3291,7 +3295,11 @@ MutexStatus contains which objects hold mutex locks, and which objects this work
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
+
 - [`synchronization-mutex-wf-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level-legacy.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
 </details>
 
 ### Fields

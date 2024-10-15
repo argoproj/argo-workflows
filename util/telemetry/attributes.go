@@ -13,6 +13,8 @@ const (
 	AttribCronWFName        string = `name`
 	AttribConcurrencyPolicy string = `concurrency_policy`
 
+	AttribDeprecatedFeature string = "feature"
+
 	AttribErrorCause string = "cause"
 
 	AttribLogLevel string = `level`

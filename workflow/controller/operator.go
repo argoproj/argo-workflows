@@ -250,7 +250,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
-		acquired, wfUpdate, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(woc.wf, "", woc.execWf.Spec.Synchronization)
+		acquired, wfUpdate, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(ctx, woc.wf, "", woc.execWf.Spec.Synchronization)
 		if err != nil {
 			woc.log.Warnf("Failed to acquire the lock %s", failedLockName)
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
@@ -1942,7 +1942,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if node != nil {
 		fulfilledNode := woc.handleNodeFulfilled(ctx, nodeName, node, processedTmpl)
 		if fulfilledNode != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
 		}
 		woc.log.Debugf("Executing node %s of %s is %s", nodeName, node.Type, node.Phase)
@@ -1972,7 +1972,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	unlockedNode := false
 
 	if processedTmpl.Synchronization != nil {
-		lockAcquired, wfUpdated, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
+		lockAcquired, wfUpdated, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(ctx, woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
@@ -1981,11 +1981,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, msg)
 			}
 			woc.log.Infof("Could not acquire lock named: %s", failedLockName)
-			return woc.markNodeWaitingForLock(node.Name, failedLockName)
+			return woc.markNodeWaitingForLock(node.Name, failedLockName, msg)
 		} else {
 			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
-				node, err = woc.markNodeWaitingForLock(node.Name, "")
+				node, err = woc.markNodeWaitingForLock(node.Name, "", "")
 				if err != nil {
 					woc.log.WithField("node.Name", node.Name).WithField("lockName", "").Error("markNodeWaitingForLock returned err")
 					return nil, err
@@ -2061,7 +2061,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if node != nil {
 		fulfilledNode := woc.handleNodeFulfilled(ctx, nodeName, node, processedTmpl)
 		if fulfilledNode != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
 		}
 		// Memoized nodes don't have StartedAt.
@@ -2120,7 +2120,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				}
 			}
 			if processedTmpl.Synchronization != nil {
-				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+				woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			}
 			_, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 			if lastChildNode != nil {
@@ -2210,13 +2210,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			}
 		}
 		if release {
-			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}
 	}
 
 	if node.Fulfilled() {
-		woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+		woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 	}
 
 	retrieveNode, err := woc.wf.GetNodeByName(node.Name)
@@ -2355,13 +2355,15 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		if _, ok := woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted]; !ok {
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "false"
 		}
-		switch phase {
-		case wfv1.WorkflowRunning:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowRunning", "Workflow Running")
-		case wfv1.WorkflowSucceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowSucceeded", "Workflow completed")
-		case wfv1.WorkflowFailed, wfv1.WorkflowError:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", message)
+		if woc.controller.Config.WorkflowEvents.IsEnabled() {
+			switch phase {
+			case wfv1.WorkflowRunning:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowRunning", "Workflow Running")
+			case wfv1.WorkflowSucceeded:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowSucceeded", "Workflow completed")
+			case wfv1.WorkflowFailed, wfv1.WorkflowError:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", message)
+			}
 		}
 	}
 	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
@@ -2740,7 +2742,7 @@ func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.Nod
 }
 
 // markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
-func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string, message string) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		return node, err
@@ -2756,6 +2758,10 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 		node.Message = ""
 	} else {
 		node.SynchronizationStatus.Waiting = lockName
+	}
+
+	if len(message) > 0 {
+		node.Message = message
 	}
 
 	woc.wf.Status.Nodes.Set(node.ID, *node)

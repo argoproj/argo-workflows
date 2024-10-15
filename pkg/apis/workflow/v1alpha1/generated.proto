@@ -1490,11 +1490,11 @@ message Sequence {
   optional string format = 4;
 }
 
-// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+// StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
 message StopStrategy {
-  // v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the
-  // variables `failed` or `succeeded` to access the number of failed or successful child workflows.
-  optional string condition = 1;
+  // v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables
+  // `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.
+  optional string expression = 1;
 }
 
 message Submit {

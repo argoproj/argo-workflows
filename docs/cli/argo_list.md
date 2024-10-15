@@ -48,7 +48,7 @@ argo list [flags]
   -h, --help                    help for list
       --no-headers              Don't print headers (default print headers).
       --older string            List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
-  -o, --output string           Output format. One of: name|wide|yaml|json
+  -o, --output string           Output format. One of: name|json|yaml|wide
       --prefix string           Filter workflows by prefix
       --resubmitted             Show resubmitted workflows
       --running                 Show running workflows. Mutually exclusive with --completed.

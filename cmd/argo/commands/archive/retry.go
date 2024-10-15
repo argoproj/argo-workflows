@@ -35,7 +35,7 @@ func (o *retryOps) hasSelector() bool {
 
 func NewRetryCommand() *cobra.Command {
 	var (
-		cliSubmitOpts common.CliSubmitOpts
+		cliSubmitOpts = common.NewCliSubmitOpts()
 		retryOpts     retryOps
 	)
 	command := &cobra.Command{
@@ -92,7 +92,7 @@ func NewRetryCommand() *cobra.Command {
 	}
 
 	command.Flags().StringArrayVarP(&cliSubmitOpts.Parameters, "parameter", "p", []string{}, "input parameter to override on the original workflow spec")
-	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliSubmitOpts.Output, "output", "o", "Output format. "+cliSubmitOpts.Output.Usage())
 	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is retried")
 	command.Flags().BoolVar(&cliSubmitOpts.Watch, "watch", false, "watch the workflow until it completes, only works when a single workflow is retried")
 	command.Flags().BoolVar(&cliSubmitOpts.Log, "log", false, "log the workflow until it completes")
@@ -146,7 +146,7 @@ func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowar
 		if err != nil {
 			return err
 		}
-		printWorkflow(lastRetried, cliSubmitOpts.Output)
+		printWorkflow(lastRetried, cliSubmitOpts.Output.String())
 	}
 	if len(retriedUids) == 1 {
 		// watch or wait when there is only one workflow retried
