@@ -38,9 +38,28 @@ var (
 			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
+	volumeDownwardArgo = apiv1.Volume{
+		Name: "argo-internal-downward",
+		VolumeSource: apiv1.VolumeSource{
+			DownwardAPI: &apiv1.DownwardAPIVolumeSource{
+				Items: []apiv1.DownwardAPIVolumeFile{
+					{
+						Path: common.DownwardMountCancelFilename,
+						FieldRef: &apiv1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.annotations['%s']", common.AnnotationKeyCancellation),
+						},
+					},
+				},
+			},
+		},
+	}
 	volumeMountVarArgo = apiv1.VolumeMount{
 		Name:      volumeVarArgo.Name,
 		MountPath: common.VarRunArgoPath,
+	}
+	volumeMountDownwardArgo = apiv1.VolumeMount{
+		Name:      volumeDownwardArgo.Name,
+		MountPath: common.DownwardMountPath,
 	}
 	volumeTmpDir = apiv1.Volume{
 		Name: "tmp-dir-argo",
@@ -421,6 +440,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary",
 				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat(),
 				"--"}, c.Command...)
+		} else {
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountDownwardArgo)
 		}
 		if c.Image == woc.controller.executorImage() {
 			// mount tmp dir to wait container
@@ -697,7 +718,7 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 		})
 	}
 
-	volumes = append(volumes, volumeVarArgo, volumeTmpDir)
+	volumes = append(volumes, volumeVarArgo, volumeTmpDir, volumeDownwardArgo)
 	volumes = append(volumes, tmpl.Volumes...)
 	return volumes
 }

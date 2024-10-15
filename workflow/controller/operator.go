@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
@@ -132,6 +133,21 @@ var (
 var (
 	maxOperationTime = envutil.LookupEnvDurationOr("MAX_OPERATION_TIME", 30*time.Second)
 )
+
+var replaceCancelPatchBytes []byte
+
+func init() {
+	var err error
+	cancelAnnotationPath := "/metadata/annotations/" + strings.Replace(common.AnnotationKeyCancellation, "/", "~1", 1)
+	replaceCancelPatchBytes, err = json.Marshal([]PatchOperation{{
+		Operation: "replace",
+		Path:      cancelAnnotationPath,
+		Value:     common.AnnotationCancellationValue,
+	}})
+	if err != nil {
+		log.Fatalf("failed to marshal replace cancel patch bytes: %v", err)
+	}
+}
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
@@ -242,6 +258,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	} else {
 		woc.log.Debug("Skipping artifact GC")
+	}
+
+	if woc.execWf.IsCancelled() {
+		if err := woc.cancelWorkflow(ctx); err != nil {
+			woc.log.WithError(err).Error("failed to cancel workflow")
+			return
+		}
 	}
 
 	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
@@ -395,6 +418,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		wfv1.NodeFailed:    wfv1.WorkflowFailed,
 		wfv1.NodeError:     wfv1.WorkflowError,
 		wfv1.NodeOmitted:   wfv1.WorkflowSucceeded,
+		wfv1.NodeCancelled: wfv1.WorkflowCancelled,
 	}[node.Phase]
 
 	woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
@@ -508,6 +532,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.markWorkflowFailed(ctx, workflowMessage)
 	case wfv1.WorkflowError:
 		woc.markWorkflowPhase(ctx, wfv1.WorkflowError, workflowMessage)
+	case wfv1.WorkflowCancelled:
+		woc.markWorkflowCancelled(ctx, "")
 	default:
 		// NOTE: we should never make it here because if the node was 'Running' we should have
 		// returned earlier.
@@ -1312,6 +1338,24 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 	return pods, nil
 }
 
+// cancelWorkflow cancels all running pods in the workflow, patch pod to cancel
+func (woc *wfOperationCtx) cancelWorkflow(ctx context.Context) error {
+	podList, err := woc.getAllWorkflowPods()
+	if err != nil {
+		return err
+	}
+	for i := range podList {
+		pod := podList[i]
+		if pod.Status.Phase == apiv1.PodFailed || pod.Status.Phase == apiv1.PodSucceeded {
+			continue
+		}
+		if _, err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Patch(ctx, pod.Name, types.JSONPatchType, replaceCancelPatchBytes, metav1.PatchOptions{}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	podSpecByte, err := json.Marshal(pod)
 	log := log.WithField("workflow", wfName).
@@ -1407,6 +1451,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		case c.State.Terminated != nil:
 			exitCode := int(c.State.Terminated.ExitCode)
 			message := fmt.Sprintf("%s (exit code %d): %s", c.State.Terminated.Reason, exitCode, c.State.Terminated.Message)
+			woc.log.Infof("pod exit code: %d", exitCode)
 			switch exitCode {
 			case 0:
 				woc.markNodePhase(ctrNodeName, wfv1.NodeSucceeded)
@@ -1414,6 +1459,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				// special emissary exit code indicating the emissary errors, rather than the sub-process failure,
 				// (unless the sub-process coincidentally exits with code 64 of course)
 				woc.markNodePhase(ctrNodeName, wfv1.NodeError, message)
+			case 143:
+				woc.markNodePhase(ctrNodeName, wfv1.NodeCancelled, message)
 			default:
 				woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, message)
 			}
@@ -1634,15 +1681,20 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 		case ctr.Name == common.InitContainerName:
 			return wfv1.NodeError, msg
 		case tmpl.IsMainContainerName(ctr.Name):
+			if t.ExitCode == 143 {
+				return wfv1.NodeCancelled, msg
+			}
 			return wfv1.NodeFailed, msg
 		case ctr.Name == common.WaitContainerName:
 			return wfv1.NodeError, msg
 		default:
-			if t.ExitCode == 137 || t.ExitCode == 143 {
+			if t.ExitCode == 137 {
 				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
 				// forcibly killed the container, which we ignore the error for.
 				// Java code 143 is a normal exit 128 + 15 https://github.com/elastic/elasticsearch/issues/31847
 				log.Infof("Ignoring %d exit code of container '%s'", t.ExitCode, ctr.Name)
+			} else if t.ExitCode == 143 {
+				return wfv1.NodeCancelled, msg
 			} else {
 				return wfv1.NodeFailed, msg
 			}
@@ -1892,6 +1944,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if err != nil {
 		// Will be initialized via woc.initializeNodeOrMarkError
 		woc.log.Warnf("Node was nil, will be initialized as type Skipped")
+	}
+	if woc.execWf.IsCancelled() {
+		woc.markNodePhase(nodeName, wfv1.NodeCancelled, "Workflow is cancelled")
 	}
 
 	woc.currentStackDepth++
@@ -2362,6 +2417,8 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowSucceeded", "Workflow completed")
 		case wfv1.WorkflowFailed, wfv1.WorkflowError:
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", message)
+		case wfv1.WorkflowCancelled:
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowCancelled", message)
 		}
 	}
 	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
@@ -2389,7 +2446,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	}
 
 	switch phase {
-	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
+	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError, wfv1.WorkflowCancelled:
 		woc.log.Info("Marking workflow completed")
 		woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
@@ -2476,6 +2533,10 @@ func (woc *wfOperationCtx) markWorkflowFailed(ctx context.Context, message strin
 
 func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
 	woc.markWorkflowPhase(ctx, wfv1.WorkflowError, err.Error())
+}
+
+func (woc *wfOperationCtx) markWorkflowCancelled(ctx context.Context, message string) {
+	woc.markWorkflowPhase(ctx, wfv1.WorkflowCancelled, message)
 }
 
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
@@ -2769,6 +2830,10 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
 func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
+	if woc.execWf.IsCancelled() {
+		woc.log.Infof("workflow is cancelled")
+		return ErrParallelismReached
+	}
 	if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
 		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.execWf.Spec.Parallelism)
 		return ErrParallelismReached
@@ -3986,7 +4051,7 @@ func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
 }
 
 func (woc *wfOperationCtx) ShouldSuspend() bool {
-	return woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend
+	return woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend && !woc.execWf.IsCancelled()
 }
 
 func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {

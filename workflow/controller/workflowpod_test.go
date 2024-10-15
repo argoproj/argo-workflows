@@ -294,7 +294,7 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[3].Name)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -320,7 +320,7 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[3].Name)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -729,10 +729,11 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		require.Len(t, pod.Spec.Volumes, 3)
+		require.Len(t, pod.Spec.Volumes, 4)
 		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
 		assert.Equal(t, "tmp-dir-argo", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, "argo-internal-downward", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
 
 		require.Len(t, pod.Spec.InitContainers, 1)
 		init := pod.Spec.InitContainers[0]
@@ -742,10 +743,11 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		containers := pod.Spec.Containers
 		require.Len(t, containers, 2)
 		wait := containers[0]
-		require.Len(t, wait.VolumeMounts, 3)
+		require.Len(t, wait.VolumeMounts, 4)
 		assert.Equal(t, "volume-name", wait.VolumeMounts[0].Name)
-		assert.Equal(t, "tmp-dir-argo", wait.VolumeMounts[1].Name)
-		assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
+		assert.Equal(t, "argo-internal-downward", wait.VolumeMounts[1].Name)
+		assert.Equal(t, "tmp-dir-argo", wait.VolumeMounts[2].Name)
+		assert.Equal(t, "var-run-argo", wait.VolumeMounts[3].Name)
 		main := containers[1]
 		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
 			"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
@@ -794,9 +796,9 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Len(t, pod.Spec.Volumes, 3)
-	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
+	assert.Len(t, pod.Spec.Volumes, 4)
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[3].PersistentVolumeClaim.ClaimName)
 	assert.Len(t, pod.Spec.Containers[1].VolumeMounts, 2)
 	assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
 }
