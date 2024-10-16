@@ -154,7 +154,7 @@ To test SSO integration, use `PROFILE=sso`:
 make start UI=true PROFILE=sso
 ```
 
-## TLS
+### TLS
 
 By default, `make start` will start Argo in [plain text mode](tls.md#plain-text).
 To simulate a TLS proxy in front of Argo, use `UI_SECURE=true` (which implies `UI=true`):
