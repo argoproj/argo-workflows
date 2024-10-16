@@ -110,7 +110,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	proceed, err := woc.enforceRuntimePolicy(ctx)
 	if err != nil {
-		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Concurrency policy error: %s", err))
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("run policy error: %s", err))
 		return
 	} else if !proceed {
 		return
@@ -139,7 +139,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.ObjectMeta.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
-	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
+	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
 	if err != nil {
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
@@ -215,10 +215,6 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 	if cron.Spec.When == "" {
 		return true, nil
 	}
-	cronBytes, err := json.Marshal(cron)
-	if err != nil {
-		return false, err
-	}
 
 	m := make(map[string]interface{})
 	addSetField := func(name string, value interface{}) {
@@ -237,7 +233,6 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 
 	annotationsStr, err := json.Marshal(&cron.Annotations)
 	if err != nil {
-		// We shouldn't hit this
 		return false, err
 	}
 
@@ -253,21 +248,18 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 
 	addSetField("lastScheduledTime", tm)
 
-	t, err := template.NewTemplate(string(cronBytes))
+	t, err := template.NewTemplate(string(cron.Spec.When))
 	if err != nil {
 		return false, err
 	}
 
-	newCronStr, err := t.Replace(m, false)
+	newWhenStr, err := t.Replace(m, false)
 	if err != nil {
 		return false, err
 	}
+	newCron := cron.DeepCopy()
+	newCron.Spec.When = newWhenStr
 
-	var newCron v1alpha1.CronWorkflow
-	err = json.Unmarshal([]byte(newCronStr), &newCron)
-	if err != nil {
-		return false, err
-	}
 	return shouldExecute(newCron.Spec.When)
 }
 
@@ -334,7 +326,7 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 }
 
 func (woc *cronWfOperationCtx) runOutstandingWorkflows(ctx context.Context) (bool, error) {
-	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -345,14 +337,14 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows(ctx context.Context) (boo
 	return false, nil
 }
 
-func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, error) {
+func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Context) (time.Time, error) {
 	// If the CronWorkflow schedule was just updated, then do not run any outstanding workflows.
 	if woc.cronWf.IsUsingNewSchedule() {
 		return time.Time{}, nil
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		for _, schedule := range woc.cronWf.Spec.GetSchedules() {
+		for _, schedule := range woc.cronWf.Spec.GetSchedules(ctx) {
 			var now time.Time
 			var cronSchedule cron.Schedule
 			if woc.cronWf.Spec.Timezone != "" {

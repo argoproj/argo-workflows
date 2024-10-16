@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artgc-artifact-not-written-
+  generateName: artgc-non-optional-artifact-not-written-
 spec:
   entrypoint: entrypoint
   artifactGC:
@@ -13,8 +13,8 @@ spec:
       steps:
       - - name: artifact-written
           template: artifact-written
-      - - name: artifact-not-written
-          template: artifact-not-written
+      - - name: some-artifacts-not-written
+          template: some-artifacts-not-written
     - name: artifact-written
       container:
         image: argoproj/argosay:v2
@@ -28,7 +28,7 @@ spec:
         artifacts:
           - name: present
             path: /tmp/present
-    - name: artifact-not-written
+    - name: some-artifacts-not-written
       container:
         image: argoproj/argosay:v2
         command:
@@ -36,8 +36,10 @@ spec:
           - -c
         args:
           - |
-            echo "intentionally not writing anything to disk"
+            echo "something" > /tmp/present
       outputs:
         artifacts:
           - name: notpresent
             path: /tmp/notpresent
+          - name: present
+            path: /tmp/present

@@ -28,6 +28,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -174,6 +175,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		logCtx.WithError(err).Error("malformed cron workflow: could not convert from unstructured")
 		return true
 	}
+	ctx = wfctx.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
 
 	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
 
@@ -195,7 +197,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	// The job is currently scheduled, remove it and re add it.
 	cc.cron.Delete(key.(string))
 
-	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone() {
+	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone(ctx) {
 		lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), schedule, cronWorkflowOperationCtx)
 		if err != nil {
 			logCtx.WithError(err).Error("could not schedule CronWorkflow")

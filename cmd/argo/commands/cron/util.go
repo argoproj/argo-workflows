@@ -1,22 +1,20 @@
 package cron
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
 	argoJson "github.com/argoproj/pkg/json"
 	"github.com/robfig/cron/v3"
-	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -25,10 +23,10 @@ import (
 
 // GetNextRuntime returns the next time the workflow should run in local time. It assumes the workflow-controller is in
 // UTC, but nevertheless returns the time in the local timezone.
-func GetNextRuntime(cwf *v1alpha1.CronWorkflow) (time.Time, error) {
+func GetNextRuntime(ctx context.Context, cwf *v1alpha1.CronWorkflow) (time.Time, error) {
 	var nextRunTime time.Time
 	now := time.Now().UTC()
-	for _, schedule := range cwf.Spec.GetSchedulesWithTimezone() {
+	for _, schedule := range cwf.Spec.GetSchedulesWithTimezone(ctx) {
 		cronSchedule, err := cron.ParseStandard(schedule)
 		if err != nil {
 			return time.Time{}, err
@@ -61,18 +59,6 @@ func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkf
 	return cronWorkflows
 }
 
-func checkArgs(cmd *cobra.Command, args []string, parametersFile string, submitOpts *v1alpha1.SubmitOpts) {
-	if len(args) == 0 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
-	}
-
-	if parametersFile != "" {
-		err := util.ReadParametersFile(parametersFile, submitOpts)
-		errors.CheckError(err)
-	}
-}
-
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
 	var cronWf wfv1.CronWorkflow
@@ -92,7 +78,7 @@ func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
 	return nil
 }
 
-func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
+func printCronWorkflow(ctx context.Context, wf *wfv1.CronWorkflow, outFmt string) {
 	switch outFmt {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -103,13 +89,13 @@ func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		fmt.Print(getCronWorkflowGet(wf))
+		fmt.Print(getCronWorkflowGet(ctx, wf))
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
 }
 
-func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
+func getCronWorkflowGet(ctx context.Context, cwf *wfv1.CronWorkflow) string {
 	const fmtStr = "%-30s %v\n"
 
 	out := ""
@@ -131,7 +117,7 @@ func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
 		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(cwf.Status.LastScheduledTime.Time))
 	}
 
-	next, err := GetNextRuntime(cwf)
+	next, err := GetNextRuntime(ctx, cwf)
 	if err == nil {
 		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next)+" (assumes workflow-controller is in UTC)")
 	}

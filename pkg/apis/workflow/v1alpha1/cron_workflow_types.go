@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -8,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v3/util/deprecation"
 )
 
 // CronWorkflow is the definition of a scheduled workflow resource
@@ -169,17 +171,17 @@ func (c *CronWorkflowSpec) getScheduleString(withTimezone bool) string {
 
 // GetSchedulesWithTimezone returns all schedules configured for the CronWorkflow with a timezone. It handles
 // both Spec.Schedules and Spec.Schedule for backwards compatibility
-func (c *CronWorkflowSpec) GetSchedulesWithTimezone() []string {
-	return c.getSchedules(true)
+func (c *CronWorkflowSpec) GetSchedulesWithTimezone(ctx context.Context) []string {
+	return c.getSchedules(ctx, true)
 }
 
 // GetSchedules returns all schedules configured for the CronWorkflow. It handles both Spec.Schedules
 // and Spec.Schedule for backwards compatibility
-func (c *CronWorkflowSpec) GetSchedules() []string {
-	return c.getSchedules(false)
+func (c *CronWorkflowSpec) GetSchedules(ctx context.Context) []string {
+	return c.getSchedules(ctx, false)
 }
 
-func (c *CronWorkflowSpec) getSchedules(withTimezone bool) []string {
+func (c *CronWorkflowSpec) getSchedules(ctx context.Context, withTimezone bool) []string {
 	var schedules []string
 	if c.Schedule != "" {
 		schedule := c.Schedule
@@ -187,6 +189,7 @@ func (c *CronWorkflowSpec) getSchedules(withTimezone bool) []string {
 			schedule = c.withTimezone(c.Schedule)
 		}
 		schedules = append(schedules, schedule)
+		deprecation.Record(ctx, deprecation.Schedule)
 	} else {
 		schedules = make([]string, len(c.Schedules))
 		for i, schedule := range c.Schedules {
