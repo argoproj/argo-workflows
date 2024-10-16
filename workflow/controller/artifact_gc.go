@@ -1,10 +1,14 @@
 package controller
 
 import (
+	"cmp"
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"sort"
+
+	"golang.org/x/exp/slices"
 
 	"golang.org/x/exp/maps"
 	corev1 "k8s.io/api/core/v1"
@@ -148,13 +152,14 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// We need to create a separate Pod for each set of Artifacts that require special permissions
-	// (i.e. Service Account and Pod Metadata)
+	// (i.e. Service Account, Pod Metadata, Environment variables, Volumes, and Volume Mounts)
 	// So first group artifacts that need to be deleted by permissions
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	groupedByPod := make(map[string]templatesToArtifacts)
 
-	// a mapping from the name we'll use for the Pod to the actual metadata and Service Account that need to be applied for that Pod
+	// a mapping from the name we'll use for the Pod to the actual metadata / Service Account / Environment variables /
+	// Volumes / Volume Mounts that need to be applied for that Pod
 	podNames := make(map[string]podInfo)
 
 	var podName string
@@ -236,10 +241,14 @@ type podInfo struct {
 	serviceAccount string
 	podMetadata    wfv1.Metadata
 	podSpecPatch   string
+	env            []corev1.EnvVar
+	volumes        []corev1.Volume
+	volumeMounts   []corev1.VolumeMount
 }
 
 // get Pod name
-// (we have a unique Pod for each Artifact GC Strategy and Service Account/Metadata requirement)
+// (we have a unique Pod for each Artifact GC Strategy and Service Account/Metadata/Environment/
+// Volume/Volume Mount requirement)
 func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podInfo podInfo) (string, error) {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(podInfo.serviceAccount))
@@ -259,6 +268,42 @@ func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podInf
 		annotationValue := podInfo.podMetadata.Annotations[annotation]
 		_, _ = h.Write([]byte(annotation))
 		_, _ = h.Write([]byte(annotationValue))
+	}
+
+	sortedEnvVars := make([]corev1.EnvVar, len(podInfo.env))
+	copy(sortedEnvVars, podInfo.env)
+	slices.SortFunc(sortedEnvVars, func(a, b corev1.EnvVar) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	for _, envVar := range sortedEnvVars {
+		_, _ = h.Write([]byte(envVar.Name))
+		_, _ = h.Write([]byte(envVar.Value))
+	}
+
+	sortedVolumes := make([]corev1.Volume, len(podInfo.volumes))
+	copy(sortedVolumes, podInfo.volumes)
+	slices.SortFunc(sortedVolumes, func(a, b corev1.Volume) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	for _, volume := range sortedVolumes {
+		volumeJson, err := json.Marshal(volume)
+		if err != nil {
+			return "", fmt.Errorf("can't marshal Volume %s to json: %v", volume.Name, err)
+		}
+		_, _ = h.Write(volumeJson)
+	}
+
+	sortedVolumeMounts := make([]corev1.VolumeMount, len(podInfo.volumeMounts))
+	copy(sortedVolumeMounts, podInfo.volumeMounts)
+	slices.SortFunc(sortedVolumeMounts, func(a, b corev1.VolumeMount) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	for _, volumeMount := range sortedVolumeMounts {
+		volumeMountJson, err := json.Marshal(volumeMount)
+		if err != nil {
+			return "", fmt.Errorf("can't marshal VolumeMount %s to json: %v", volumeMount.Name, err)
+		}
+		_, _ = h.Write(volumeMountJson)
 	}
 
 	abbreviatedName := ""
@@ -415,6 +460,13 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	}
 
 	volumes, volumeMounts := createSecretVolumesAndMountsFromArtifactLocations(artifactLocations)
+	volumes = append(volumes, podInfo.volumes...)
+	volumeMounts = append(volumeMounts, podInfo.volumeMounts...)
+
+	containerEnv := []corev1.EnvVar{
+		{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
+	}
+	containerEnv = append(containerEnv, podInfo.env...)
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -439,9 +491,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					Image:           woc.controller.executorImage(),
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Args:            []string{"artifact", "delete", "--loglevel", getExecutorLogLevel()},
-					Env: []corev1.EnvVar{
-						{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
-					},
+					Env:             containerEnv,
 					// if this pod is breached by an attacker we:
 					// * prevent installation of any new packages
 					// * modification of the file-system
@@ -718,6 +768,24 @@ func (woc *wfOperationCtx) updateArtifactGCPodInfo(artifactGC *wfv1.ArtifactGC, 
 		for annotationKey, annotationValue := range artifactGC.PodMetadata.Annotations {
 			podInfo.podMetadata.Annotations[annotationKey] = annotationValue
 		}
+	}
+	if artifactGC.Env != nil {
+		if len(artifactGC.Env) > 0 && podInfo.env == nil {
+			podInfo.env = make([]corev1.EnvVar, 0)
+		}
+		podInfo.env = append(podInfo.env, artifactGC.Env...)
+	}
+	if artifactGC.Volumes != nil {
+		if len(artifactGC.Volumes) > 0 && podInfo.volumes == nil {
+			podInfo.volumes = make([]corev1.Volume, 0)
+		}
+		podInfo.volumes = append(podInfo.volumes, artifactGC.Volumes...)
+	}
+	if artifactGC.VolumeMounts != nil {
+		if len(artifactGC.VolumeMounts) > 0 && podInfo.volumeMounts == nil {
+			podInfo.volumeMounts = make([]corev1.VolumeMount, 0)
+		}
+		podInfo.volumeMounts = append(podInfo.volumeMounts, artifactGC.VolumeMounts...)
 	}
 
 }

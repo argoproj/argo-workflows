@@ -504,11 +504,53 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"env": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
+									},
+								},
+							},
+						},
+					},
+					"volumes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Volume"),
+									},
+								},
+							},
+						},
+					},
+					"volumeMounts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.VolumeMount"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Volume", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -7464,6 +7506,48 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref common.Refere
 							Format:      "",
 						},
 					},
+					"env": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
+									},
+								},
+							},
+						},
+					},
+					"volumes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Volume"),
+									},
+								},
+							},
+						},
+					},
+					"volumeMounts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.VolumeMount"),
+									},
+								},
+							},
+						},
+					},
 					"forceFinalizerRemoval": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails",
@@ -7482,7 +7566,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref common.Refere
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Volume", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 

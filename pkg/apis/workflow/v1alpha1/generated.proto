@@ -111,6 +111,15 @@ message ArtifactGC {
 
   // ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion
   optional string serviceAccountName = 3;
+
+  // Env is an optional field for specifying environment variables that should be assigned to the Pod doing the deletion
+  repeated k8s.io.api.core.v1.EnvVar env = 4;
+
+  // Volumes is an optional field for specifying volumes that should be assigned to the Pod doing the deletion
+  repeated k8s.io.api.core.v1.Volume volumes = 5;
+
+  // VolumeMounts is an optional field for specifying volume mounts that should be assigned to the Pod doing the deletion
+  repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 6;
 }
 
 // ArtifactGCSpec specifies the Artifacts that need to be deleted
