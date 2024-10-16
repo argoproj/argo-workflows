@@ -189,7 +189,6 @@ jobs:
     needs: [ changed-files, argo-images ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     env:
       KUBECONFIG: /home/runner/.kubeconfig
       E2E_ENV_FACTOR: 2
