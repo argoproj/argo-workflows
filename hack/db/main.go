@@ -32,7 +32,7 @@ func main() {
 		session, err = createDBSession(dsn)
 		return
 	}
-	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "c", "postgres://postgres@localhost:5432/postgres", "DSN connection string. For MySQL, use 'mysql:password@tcp/argo'.")
+	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "d", "postgres://postgres@localhost:5432/postgres", "DSN connection string. For MySQL, use 'mysql:password@tcp/argo'.")
 	rootCmd.AddCommand(NewMigrateCommand())
 	rootCmd.AddCommand(NewFakeDataCommand())
 
@@ -57,14 +57,13 @@ func NewMigrateCommand() *cobra.Command {
 
 func NewFakeDataCommand() *cobra.Command {
 	var template string
-	var seed, rows, numClusters, numNamespaces int
+	var seed, rows int
+	var clusters, namespaces []string
 	fakeDataCmd := &cobra.Command{
 		Use:   "fake-archived-workflows",
 		Short: "Insert randomly-generated workflows into argo_archived_workflows, for testing purposes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rand.Seed(int64(seed))
-			clusters := randomStringArray(numClusters)
-			namespaces := randomStringArray(numNamespaces)
 			fmt.Printf("Using seed %d\nClusters: %v\nNamespaces: %v\n", seed, clusters, namespaces)
 
 			instanceIDService := instanceid.NewService("")
@@ -85,8 +84,8 @@ func NewFakeDataCommand() *cobra.Command {
 	fakeDataCmd.Flags().StringVar(&template, "template", "@workflow/controller/testdata/dag-exhausted-retries-xfail.yaml", "Workflow definition to use as a template")
 	fakeDataCmd.Flags().IntVar(&seed, "seed", rand.Int(), "Random number seed")
 	fakeDataCmd.Flags().IntVar(&rows, "rows", 10, "Number of rows to insert")
-	fakeDataCmd.Flags().IntVar(&numClusters, "clusters", 1, "Number of cluster names to autogenerate")
-	fakeDataCmd.Flags().IntVar(&numNamespaces, "namespaces", 5, "Number of namespaces to autogenerate")
+	fakeDataCmd.Flags().StringArrayVarP(&clusters, "clusters", "c", []string{"default"}, "Cluster name(s). If multiple given, each Workflow will be randomly assigned to one")
+	fakeDataCmd.Flags().StringArrayVarP(&namespaces, "namespaces", "n", []string{"argo"}, "Namespace(s). If multiple given, each Workflow will be randomly assigned to one")
 	return fakeDataCmd
 }
 
@@ -104,14 +103,6 @@ func createDBSession(dsn string) (db.Session, error) {
 		}
 		return mysqladp.Open(url)
 	}
-}
-
-func randomStringArray(length int) []string {
-	var result []string
-	for i := 0; i < length; i++ {
-		result = append(result, rand.String(rand.IntnRange(5, 20)))
-	}
-	return result
 }
 
 func randomPhase() wfv1.WorkflowPhase {
