@@ -1263,7 +1263,24 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			newWf.Status.Nodes.Set(id, *n.DeepCopy())
 		}
 		if n.Name == onExitNodeName {
-			deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, n, deletedPods, podsToDelete)
+			queue := list.New()
+			queue.PushBack(n)
+			for {
+				currNode := queue.Front()
+				if currNode == nil {
+					break
+				}
+				curr := currNode.Value.(wfv1.NodeStatus)
+				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, curr, deletedPods, podsToDelete)
+				for i := range curr.Children {
+					child, err := wf.Status.Nodes.Get(curr.Children[i])
+					if err != nil {
+						return nil, nil, err
+					}
+					queue.PushBack(child)
+				}
+				queue.Remove(currNode)
+			}
 		}
 		if n.Name == wf.Name && !shouldRetryFailedType(n.Type) {
 			newWf.Status.Nodes.Set(id, resetNode(*n.DeepCopy()))
