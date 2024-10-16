@@ -588,11 +588,22 @@ endif
 
 .PHONY: postgres-cli
 postgres-cli:
-	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
+	kubectl exec -ti svc/postgres -- psql -U postgres
+
+.PHONY: postgres-dump
+postgres-dump:
+	@mkdir -p db-dumps
+	kubectl exec svc/postgres -- pg_dump --clean -U postgres > "db-dumps/postgres-$(BUILD_DATE).sql"
 
 .PHONY: mysql-cli
 mysql-cli:
-	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
+	kubectl exec -ti svc/mysql -- mysql -u mysql -ppassword argo
+
+.PHONY: mysql-dump
+mysql-dump:
+	@mkdir -p db-dumps
+	kubectl exec svc/mysql -- mysqldump --no-tablespaces -u mysql -ppassword argo > "db-dumps/mysql-$(BUILD_DATE).sql"
+
 
 test-cli: ./dist/argo
 
