@@ -1,4 +1,5 @@
 import {GetUserInfoResponse, Info, Version} from '../../../models';
+import {uiUrl} from '../base';
 
 import requests from './requests';
 
@@ -9,7 +10,23 @@ export const InfoService = {
         if (info) {
             return info;
         }
-        info = requests.get(`api/v1/info`).then(res => res.body as Info);
+        info = requests.get(`api/v1/info`).then(res => {
+            const info = res.body as Info;
+            info.links = info.links.map(link => {
+                // relative UI links don't have a protocol so we're going
+                // to prefix it with the UI base URL
+                try {
+                    new URL(link.url);
+                    return link;
+                } catch {
+                    return {
+                        ...link,
+                        url: uiUrl(link.url)
+                    };
+                }
+            });
+            return info;
+        });
         return info;
     },
 
