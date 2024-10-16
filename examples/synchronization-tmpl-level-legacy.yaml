@@ -27,10 +27,14 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      semaphore:
+      semaphore: # deprecated: v3.5 and before
         configMapKeyRef:
           name: my-config
           key: template
+      # semaphores: # v3.6 and after
+      #   - configMapKeyRef:
+      #       name: my-config
+      #       key: template
     container:
       image: alpine:latest
       command: [sh, -c]
