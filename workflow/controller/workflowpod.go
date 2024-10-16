@@ -1082,7 +1082,7 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 			}
 			isConfigMapVolume := false
 			for _, vol := range pod.Spec.Volumes {
-				if vol.Name == mnt.Name && vol.ConfigMap != nil {
+				if vol.Name == mnt.Name && vol.ConfigMap != nil && vol.Name != "argo-env-config" {
 					isConfigMapVolume = true
 					break
 				}
