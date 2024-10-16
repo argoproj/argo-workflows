@@ -880,7 +880,7 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*node, error) {
 	return values, nil
 }
 
-func singularPath(onExitNodeName string, nodes []*node, toNode string) ([]*node, error) {
+func singularPath(nodes []*node, toNode string) ([]*node, error) {
 
 	if len(nodes) <= 0 {
 		return nil, fmt.Errorf("expected at least 1 node")
@@ -891,7 +891,7 @@ func singularPath(onExitNodeName string, nodes []*node, toNode string) ([]*node,
 		if nodes[i].n.ID == toNode {
 			leaf = nodes[i]
 		}
-		if nodes[i].parent == nil && !strings.HasPrefix(nodes[i].n.Name, onExitNodeName) {
+		if nodes[i].parent == nil {
 			root = nodes[i]
 		}
 	}
@@ -985,15 +985,8 @@ func consumePod(n *node, resetFunc resetFn, addToDelete deleteFn) (*node, error)
 	return curr, nil
 }
 
-func resetPath(isOnExitNode bool, onExitNodeName string, allNodes []*node, toNode string) (map[string]bool, map[string]bool, error) {
-	if isOnExitNode {
-		nodesToDelete := make(map[string]bool)
-		nodesToReset := make(map[string]bool)
-		nodesToDelete[toNode] = true
-		return nodesToReset, nodesToDelete, nil
-	}
-
-	nodes, err := singularPath(onExitNodeName, allNodes, toNode)
+func resetPath(allNodes []*node, toNode string) (map[string]bool, map[string]bool, error) {
+	nodes, err := singularPath(allNodes, toNode)
 
 	curr := nodes[len(nodes)-1]
 	if len(nodes) > 0 {
@@ -1123,6 +1116,7 @@ func shouldRetryFailedType(nodeTyp wfv1.NodeType) bool {
 	return false
 }
 
+// dagSortedNodes sorts the nodes based on the order they were created, omits onExitNode
 func dagSortedNodes(nodes []*node, rootNodeName string) []*node {
 	sortedNodes := make([]*node, 0)
 
@@ -1214,6 +1208,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	deleteNodes := make([]*node, 0)
 
+	// deleteNodes will not contain an exit node
 	for i := range nodes {
 		if _, ok := deleteNodesMap[nodes[i].n.ID]; ok {
 			deleteNodes = append(deleteNodes, nodes[i])
@@ -1233,8 +1228,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		if shouldDelete {
 			continue
 		}
-		isOnExitNode := strings.HasPrefix(currNode.n.Name, onExitNodeName)
-		pathToReset, pathToDelete, err := resetPath(isOnExitNode, onExitNodeName, nodes, currNode.n.ID)
+		pathToReset, pathToDelete, err := resetPath(nodes, currNode.n.ID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1268,7 +1262,10 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		if _, err := newWf.Status.Nodes.Get(id); err != nil && !shouldDelete {
 			newWf.Status.Nodes.Set(id, *n.DeepCopy())
 		}
-		if n.Name == wf.Name {
+		if n.Name == onExitNodeName {
+			deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, n, deletedPods, podsToDelete)
+		}
+		if n.Name == wf.Name && !shouldRetryFailedType(n.Type) {
 			newWf.Status.Nodes.Set(id, resetNode(*n.DeepCopy()))
 		}
 	}

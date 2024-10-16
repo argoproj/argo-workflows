@@ -2934,3 +2934,149 @@ func TestOnExitWorkflowRetry(t *testing.T) {
 	_ = podsToDelete
 
 }
+
+const onExitWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-10-14T09:21:14Z"
+  generation: 10
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: retry-workflow-with-failed-exit-handler
+  namespace: argo
+  resourceVersion: "13510"
+  uid: f72bf6f7-3d8c-4b31-893b-ef03d4718959
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: hello
+  onExit: exit-handler
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - echo hello
+      command:
+      - sh
+      - -c
+      image: alpine:3.18
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: hello
+    outputs: {}
+  - container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.18
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: exit-handler
+    outputs: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-10-14T09:21:27Z"
+  message: Error (exit code 1)
+  nodes:
+    retry-workflow-with-failed-exit-handler:
+      displayName: retry-workflow-with-failed-exit-handler
+      finishedAt: "2024-10-14T09:21:18Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: retry-workflow-with-failed-exit-handler
+      name: retry-workflow-with-failed-exit-handler
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: retry-workflow-with-failed-exit-handler/retry-workflow-with-failed-exit-handler/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-14T09:21:14Z"
+      templateName: hello
+      templateScope: local/retry-workflow-with-failed-exit-handler
+      type: Pod
+    retry-workflow-with-failed-exit-handler-512308683:
+      displayName: retry-workflow-with-failed-exit-handler.onExit
+      finishedAt: "2024-10-14T09:21:24Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: retry-workflow-with-failed-exit-handler-512308683
+      message: Error (exit code 1)
+      name: retry-workflow-with-failed-exit-handler.onExit
+      nodeFlag:
+        hooked: true
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: retry-workflow-with-failed-exit-handler/retry-workflow-with-failed-exit-handler-exit-handler-512308683/main.log
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-14T09:21:21Z"
+      templateName: exit-handler
+      templateScope: local/retry-workflow-with-failed-exit-handler
+      type: Pod
+  phase: Failed
+  progress: 1/2
+  resourcesDuration:
+    cpu: 0
+    memory: 4
+  startedAt: "2024-10-14T09:21:14Z"
+  taskResultsCompletionStatus:
+    retry-workflow-with-failed-exit-handler: true
+    retry-workflow-with-failed-exit-handler-512308683: true
+`
+
+func TestOnExitWorkflow(t *testing.T) {
+	require := require.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(onExitWorkflow)
+
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{})
+	require.NoError(err)
+	outYaml, err := yaml.Marshal(newWf)
+	os.WriteFile("./debug.yaml", outYaml, 0666)
+	require.NoError(err)
+	_ = newWf
+	_ = podsToDelete
+
+}
