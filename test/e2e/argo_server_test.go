@@ -1,5 +1,4 @@
 //go:build api
-// +build api
 
 package e2e
 
@@ -89,12 +88,11 @@ func (s *ArgoServerSuite) TestInfo() {
 
 func (s *ArgoServerSuite) TestVersion() {
 	s.Run("Version", func() {
-		s.e().GET("/api/v1/version").
+		resp := s.e().GET("/api/v1/version").
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.version").
-			NotNull()
+			Status(200)
+		resp.JSON().Path("$.version").NotNull()
+		resp.Header("Grpc-Metadata-Argo-Version").NotEmpty()
 	})
 }
 
@@ -133,7 +131,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
 	s.bearerToken = ""
 
 	data, err := os.ReadFile("testdata/github-webhook-payload.json")
-	assert.NoError(s.T(), err)
+	s.Require().NoError(err)
 
 	s.Given().
 		WorkflowTemplate(`
@@ -312,7 +310,7 @@ metadata:
 			func(t *testing.T, e []corev1.Event) {
 				assert.Equal(t, "argo", e[0].InvolvedObject.Namespace)
 				assert.Equal(t, "WorkflowEventBindingError", e[0].Reason)
-				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", e[0].Message)
+				assert.Contains(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF", e[0].Message)
 			},
 		)
 }
@@ -339,19 +337,25 @@ func (s *ArgoServerSuite) TestOauth() {
 
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
-	s.T().Run("Bearer", func(t *testing.T) {
+	s.Run("Bearer", func() {
 		s.bearerToken = "test-token"
 		defer func() { s.bearerToken = token }()
 		s.e().GET("/api/v1/workflows/argo").
 			Expect().
-			Status(401)
+			Status(401).
+			// Version header shouldn't be set on 401s for security, since that could be used by attackers to find vulnerable servers
+			Header("Grpc-Metadata-Argo-Version").
+			IsEmpty()
 	})
-	s.T().Run("Basic", func(t *testing.T) {
+	s.Run("Basic", func() {
 		s.username = "garbage"
 		defer func() { s.username = "" }()
 		s.e().GET("/api/v1/workflows/argo").
 			Expect().
-			Status(401)
+			Status(401).
+			// Version header shouldn't be set on 401s for security, since that could be used by attackers to find vulnerable servers
+			Header("Grpc-Metadata-Argo-Version").
+			IsEmpty()
 	})
 }
 
@@ -381,9 +385,9 @@ func (s *ArgoServerSuite) TestMultiCookieAuth() {
 func (s *ArgoServerSuite) createServiceAccount(name string) {
 	ctx := context.Background()
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
-	assert.NoError(s.T(), err)
+	s.Require().NoError(err)
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
-	assert.NoError(s.T(), err)
+	s.Require().NoError(err)
 	s.T().Cleanup(func() {
 		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
 		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
@@ -402,11 +406,11 @@ func (s *ArgoServerSuite) TestPermission() {
 	var roleName string
 	s.Run("LoadRoleYaml", func() {
 		obj, err := fixtures.LoadObject("@testdata/argo-server-test-role.yaml")
-		assert.NoError(s.T(), err)
+		s.Require().NoError(err)
 		role, _ := obj.(*rbacv1.Role)
 		roleName = role.Name
 		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(ctx, role, metav1.CreateOptions{})
-		assert.NoError(s.T(), err)
+		s.Require().NoError(err)
 	})
 	defer func() {
 		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(ctx, roleName, metav1.DeleteOptions{})
@@ -425,7 +429,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	}
 	s.Run("CreateRoleBinding", func() {
 		_, err := s.KubeClient.RbacV1().RoleBindings(nsName).Create(ctx, roleBinding, metav1.CreateOptions{})
-		assert.NoError(s.T(), err)
+		s.Require().NoError(err)
 	})
 	defer func() {
 		_ = s.KubeClient.RbacV1().RoleBindings(nsName).Delete(ctx, roleBindingName, metav1.DeleteOptions{})
@@ -439,22 +443,21 @@ func (s *ArgoServerSuite) TestPermission() {
 	var goodToken string
 	s.Run("GetGoodSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, goodSaName, metav1.GetOptions{})
-		if assert.NoError(s.T(), err) {
-			secretName := secrets.TokenNameForServiceAccount(sAccount)
-			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
-			assert.NoError(s.T(), err)
-			goodToken = string(secret.Data["token"])
-		}
+		s.Require().NoError(err)
+		secretName := secrets.TokenNameForServiceAccount(sAccount)
+		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
+		s.Require().NoError(err)
+		goodToken = string(secret.Data["token"])
 	})
 
 	// Get token of bad serviceaccount
 	var badToken string
 	s.Run("GetBadSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, badSaName, metav1.GetOptions{})
-		assert.NoError(s.T(), err)
+		s.Require().NoError(err)
 		secretName := secrets.TokenNameForServiceAccount(sAccount)
 		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
-		assert.NoError(s.T(), err)
+		s.Require().NoError(err)
 		badToken = string(secret.Data["token"])
 	})
 
@@ -753,7 +756,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
           "name": "run-workflow",
           "container": {
             "image": "argoproj/argosay:v2",
-            "args": ["sleep", "10s"]   
+            "args": ["sleep", "10s"]
           }
         }
       ],
@@ -1223,12 +1226,12 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (done bool)) {
 	t := s.T()
 	req, err := http.NewRequest("GET", baseUrl+url, nil)
-	assert.NoError(t, err)
+	s.Require().NoError(err)
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 	req.Close = true
 	resp, err := httpClient.Do(req)
-	assert.NoError(t, err)
+	s.Require().NoError(err)
 	defer func() {
 		if resp != nil && resp.Body != nil {
 			_ = resp.Body.Close()
@@ -1835,7 +1838,7 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 {
   "eventsource": {
     "metadata": {
-      "name": "test-event-source", 
+      "name": "test-event-source",
       "labels": {
         "workflows.argoproj.io/test": "true"
       }
@@ -1898,7 +1901,7 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 {
   "eventsource": {
     "metadata": {
-      "name": "test-event-source", 
+      "name": "test-event-source",
       "resourceVersion": "` + resourceVersion + `",
       "labels": {
         "workflows.argoproj.io/test": "true"

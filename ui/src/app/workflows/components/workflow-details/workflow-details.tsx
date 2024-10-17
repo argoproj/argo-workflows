@@ -1,11 +1,11 @@
-import {Page, SlidingPanel} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
-import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
-import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, Parameter, Workflow} from '../../../../models';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -17,7 +17,7 @@ import {useCollectEvent} from '../../../shared/use-collect-event';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
-import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {getPodName} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
@@ -43,6 +43,7 @@ import {SuspendInputs} from './suspend-inputs';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 import './workflow-details.scss';
+import {RetryWorkflowNode} from '../retry-workflow-node-panel';
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
@@ -94,21 +95,22 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     // boiler-plate
     const {navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
+    const namespace = match.params.namespace;
+    const name = match.params.name;
 
-    const [namespace] = useState(match.params.namespace);
-    const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [uid, setUid] = useState(queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
+    const [showRetryNode, setShowRetryNode] = useState<boolean>();
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const sidePanelRef = useRef<HTMLDivElement>(null);
     const [workflow, setWorkflow] = useState<Workflow>();
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
-    const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
-    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
+    const selectedNode = workflow?.status?.nodes?.[nodeId];
+    const selectedArtifact = workflow?.status && findArtifact(workflow.status, nodeId);
     const [selectedTemplateArtifactRepo, setSelectedTemplateArtifactRepo] = useState<ArtifactRepository>();
     const isSidePanelExpanded = !!(selectedNode || selectedArtifact);
     const isSidePanelAnimating = useTransition(isSidePanelExpanded, ANIMATION_MS + ANIMATION_BUFFER_MS);
@@ -197,9 +199,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                             popup
                                 .confirm('Confirm', () => <DeleteCheck isWfInDB={isArchivedWorkflow(workflow)} isWfInCluster={isWorkflowInCluster(workflow)} />)
                                 .then(async yes => {
-                                    if (!yes) {
-                                        return;
-                                    }
+                                    if (!yes) return;
 
                                     const allPromises = [];
                                     if (isWorkflowInCluster(workflow)) {
@@ -214,9 +214,6 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                     }
 
                                     navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                    // TODO: This is a temporary workaround so that the list of workflows
-                                    //  is correctly displayed. Workflow list page needs to be more responsive.
-                                    window.location.reload();
                                 });
                         } else if (workflowOperation.title === 'RESUBMIT') {
                             setSidePanel('resubmit');
@@ -224,16 +221,9 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                             setSidePanel('retry');
                         } else {
                             popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
-                                if (!yes) {
-                                    return;
-                                }
+                                if (!yes) return;
 
-                                workflowOperation
-                                    .action(workflow)
-                                    .then((wf: Workflow) => {
-                                        setName(wf.metadata.name);
-                                    })
-                                    .catch(setError);
+                                workflowOperation.action(workflow).catch(setError);
                             });
                         }
                     }
@@ -374,9 +364,10 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             e => {
                 if (e.type === 'DELETED') {
                     setUid(e.object.metadata.uid);
-                    setError(new Error('Workflow gone'));
-                    if (e.object.metadata.labels[archivalStatus]) {
+                    if (e.object.metadata.labels?.[archivalStatus]) {
                         e.object.metadata.labels[archivalStatus] = 'Persisted';
+                    } else {
+                        setError(new Error('Workflow gone'));
                     }
                     setWorkflow(e.object);
                 } else {
@@ -397,33 +388,30 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     // Get workflow
     useEffect(() => {
         (async () => {
-            let archivedWf: Workflow;
-            if (uid !== '') {
-                try {
-                    archivedWf = await services.workflows.getArchived(namespace, uid);
-                    setError(null);
-                } catch (err) {
-                    if (err.status !== 404) {
-                        setError(err);
-                    }
-                }
-            }
-
             try {
                 const wf = await services.workflows.get(namespace, name);
+                setUid(wf.metadata.uid);
+                setWorkflow(wf);
                 setError(null);
-                // If we find live workflow which has same uid, we use live workflow.
-                if (!archivedWf || archivedWf.metadata.uid === wf.metadata.uid) {
-                    setWorkflow(wf);
-                    setUid(wf.metadata.uid);
-                } else {
-                    setWorkflow(archivedWf);
-                }
+                return;
             } catch (err) {
-                if (archivedWf) {
-                    setWorkflow(archivedWf);
-                } else {
+                if (err.status !== 404 && uid === '') {
                     setError(err);
+                    return;
+                }
+
+                try {
+                    const archivedWf = await services.workflows.getArchived(namespace, uid);
+                    setWorkflow(archivedWf);
+                    setError(null);
+                    return;
+                } catch (archiveErr) {
+                    if (archiveErr.status === 500 && archiveErr.response.body.message === 'getting archived workflows not supported') {
+                        setError(err);
+                        return;
+                    }
+
+                    setError(archiveErr);
                 }
             }
         })();
@@ -481,26 +469,13 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     function renderResumePopup() {
         return popup.confirm('Confirm', renderSuspendNodeOptions).then(yes => {
-            if (!yes) {
-                return;
-            }
+            if (!yes) return;
 
             updateOutputParametersForNodeIfRequired().then(resumeNode).catch(setError);
         });
     }
 
-    function ensurePodName(wf: Workflow, node: NodeStatus, nodeID: string): string {
-        if (workflow && node) {
-            const annotations = workflow.metadata.annotations || {};
-            const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
-            const templateName = getTemplateNameFromNode(node);
-            return getPodName(wf.metadata.name, node.name, templateName, node.id, version);
-        }
-
-        return nodeID;
-    }
-
-    const podName = ensurePodName(workflow, selectedNode, nodeId);
+    const podName = workflow && selectedNode ? getPodName(workflow, selectedNode) : nodeId;
 
     const archived = isArchivedWorkflow(workflow);
 
@@ -555,11 +530,29 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                     transition: isSidePanelAnimating ? `width ${ANIMATION_MS}ms` : 'unset',
                                     width: isSidePanelExpanded ? `${sidePanelWidth}px` : 0
                                 }}>
-                                <button className='workflow-details__step-info-close' onClick={() => setNodeId(null)}>
+                                <button
+                                    className='workflow-details__step-info-close'
+                                    onClick={() => {
+                                        if (showRetryNode) {
+                                            setShowRetryNode(false);
+                                        } else {
+                                            setNodeId(null);
+                                        }
+                                    }}>
                                     <i className='argo-icon-close' />
                                 </button>
+
                                 <div className='workflow-details__step-info-drag-handle' {...sidePanelDragHandleProps} />
-                                {selectedNode && (
+                                {selectedNode && showRetryNode && (
+                                    <RetryWorkflowNode
+                                        nodeId={selectedNode.id}
+                                        workflow={workflow}
+                                        isArchived={isArchivedWorkflow(workflow)}
+                                        isWorkflowInCluster={isWorkflowInCluster(workflow)}
+                                        onRetrySuccess={() => setShowRetryNode(false)}
+                                    />
+                                )}
+                                {selectedNode && !showRetryNode && (
                                     <WorkflowNodeInfo
                                         node={selectedNode}
                                         onTabSelected={setNodePanelView}
@@ -569,6 +562,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
+                                        onRetryNode={() => setShowRetryNode(true)}
                                         archived={archived}
                                         onResume={() => renderResumePopup()}
                                     />
@@ -586,7 +580,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                         <WorkflowLogsViewer
                             workflow={workflow}
                             initialPodName={podName}
-                            nodeId={parsedSidePanel.nodeId}
+                            initialNodeId={parsedSidePanel.nodeId}
                             container={parsedSidePanel.container}
                             archived={isArchivedWorkflow(workflow)}
                         />

@@ -3,6 +3,12 @@ package cmd
 import (
 	"reflect"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
+	logtest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/assert"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestMakeParseLabels(t *testing.T) {
@@ -99,6 +105,53 @@ func TestIsURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsURL(tt.args); got != tt.want {
 				t.Errorf("IsURL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPrintVersionMismatchWarning(t *testing.T) {
+	tests := []struct {
+		name          string
+		clientVersion *wfv1.Version
+		serverVersion string
+		expectedLog   string
+	}{
+		{
+			name: "server version not set",
+			clientVersion: &wfv1.Version{
+				Version: "v3.1.0",
+				GitTag:  "v3.1.0",
+			},
+			serverVersion: "",
+		},
+		{
+			name: "client version is untagged",
+			clientVersion: &wfv1.Version{
+				Version: "v3.1.0",
+			},
+			serverVersion: "v3.1.1",
+		},
+		{
+			name: "version mismatch",
+			clientVersion: &wfv1.Version{
+				Version: "v3.1.0",
+				GitTag:  "v3.1.0",
+			},
+			serverVersion: "v3.1.1",
+			expectedLog:   "CLI version (v3.1.0) does not match server version (v3.1.1). This can lead to unexpected behavior.",
+		},
+	}
+	hook := &logtest.Hook{}
+	log.AddHook(hook)
+	defer log.StandardLogger().ReplaceHooks(nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			PrintVersionMismatchWarning(*tt.clientVersion, tt.serverVersion)
+			if tt.expectedLog != "" {
+				assert.Equal(t, tt.expectedLog, hook.LastEntry().Message)
+			} else {
+				assert.Nil(t, hook.LastEntry())
 			}
 		})
 	}

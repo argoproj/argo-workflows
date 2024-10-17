@@ -1,5 +1,9 @@
-import {Layout, Notifications, NotificationsManager, NotificationType, Popup, PopupManager, PopupProps} from 'argo-ui';
 import * as H from 'history';
+import {Layout} from 'argo-ui/src/components/layout/layout';
+import {NotificationsManager} from 'argo-ui/src/components/notifications/notification-manager';
+import {Notifications, NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
+import {Popup, PopupProps} from 'argo-ui/src/components/popup/popup';
 
 import * as React from 'react';
 import {useEffect, useState} from 'react';
@@ -20,7 +24,7 @@ import {uiUrl} from './shared/base';
 import {ChatButton} from './shared/components/chat-button';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
-import {Utils} from './shared/utils';
+import * as nsUtils from './shared/namespaces';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
@@ -55,21 +59,21 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
             type: NotificationType.Error
         });
     };
-    Utils.onNamespaceChange = setNamespace;
+    nsUtils.setOnNamespaceChange(setNamespace);
     useEffect(() => {
         const sub = popupManager.popupProps.subscribe(setPopupProps);
         return () => sub.unsubscribe();
     }, [popupManager]);
     useEffect(() => {
         services.info.getUserInfo().then(userInfo => {
-            Utils.userNamespace = userInfo.serviceAccountNamespace;
-            setNamespace(Utils.currentNamespace);
+            nsUtils.setUserNamespace(userInfo.serviceAccountNamespace);
+            setNamespace(nsUtils.getCurrentNamespace());
         });
         services.info
             .getInfo()
             .then(info => {
-                Utils.managedNamespace = info.managedNamespace;
-                setNamespace(Utils.currentNamespace);
+                nsUtils.setManagedNamespace(info.managedNamespace);
+                setNamespace(nsUtils.getCurrentNamespace());
                 setModals(info.modals);
                 setNavBarBackgroundColor(info.navColor);
             })
@@ -78,7 +82,8 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
             .catch(setError);
     }, []);
 
-    const namespaceSuffix = Utils.managedNamespace ? '' : '/' + namespace;
+    const managedNamespace = nsUtils.getManagedNamespace();
+    const namespaceSuffix = managedNamespace ? '' : '/' + (namespace || '');
     return (
         <>
             {popupProps && <Popup {...popupProps} />}
@@ -175,7 +180,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                                 <Route exact={true} strict={true} path={apiDocsUrl} component={apiDocs.component} />
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
                                 <Route exact={true} strict={true} path={loginUrl} component={login.component} />
-                                {Utils.managedNamespace && <Redirect to={workflowsUrl} />}
+                                {managedNamespace && <Redirect to={workflowsUrl} />}
                                 {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
                             </Switch>
                         </ErrorBoundary>

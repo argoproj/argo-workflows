@@ -57,7 +57,11 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(args wfv1.Arguments, prefix s
 	}
 	if outputs != nil {
 		for _, param := range outputs.Parameters {
-			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
+			value := ""
+			if param.Value != nil {
+				value = param.Value.String()
+			}
+			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), value)
 		}
 		for _, arts := range outputs.Artifacts {
 			scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, arts.Name), arts)

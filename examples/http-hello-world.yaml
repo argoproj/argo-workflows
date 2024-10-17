@@ -22,8 +22,8 @@ spec:
             continueOn:
               failed: true
             arguments:
-              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-  
+              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/thisisnotahash/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
+
     - name: http
       inputs:
         parameters:
@@ -31,4 +31,3 @@ spec:
       http:
        # url: http://dummy.restapiexample.com/api/v1/employees
        url: "{{inputs.parameters.url}}"
-      

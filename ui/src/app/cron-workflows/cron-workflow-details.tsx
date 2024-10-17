@@ -1,4 +1,6 @@
-import {NotificationType, Page, SlidingPanel} from 'argo-ui';
+import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
@@ -15,12 +17,12 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
+import {useEditableObject} from '../shared/use-editable-object';
 import {WidgetGallery} from '../widgets/widget-gallery';
-import {WorkflowsRow} from '../workflows/components/workflows-row/workflows-row';
+import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
 import '../workflows/components/workflow-details/workflow-details.scss';
-import './cron-workflow-details.scss';
 
 export function CronWorkflowDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
@@ -34,8 +36,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
 
-    const [cronWorkflow, setCronWorkflow] = useState<CronWorkflow>();
-    const [edited, setEdited] = useState(false);
+    const [cronWorkflow, edited, setCronWorkflow, resetCronWorkflow] = useEditableObject<CronWorkflow>();
     const [error, setError] = useState<Error>();
 
     useEffect(
@@ -62,13 +63,10 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     useEffect(() => {
         services.cronWorkflows
             .get(name, namespace)
-            .then(setCronWorkflow)
-            .then(() => setEdited(false))
+            .then(resetCronWorkflow)
             .then(() => setError(null))
             .catch(setError);
     }, [namespace, name]);
-
-    useEffect(() => setEdited(true), [cronWorkflow]);
 
     useEffect(() => {
         (async () => {
@@ -90,8 +88,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                   action: () =>
                       services.cronWorkflows
                           .suspend(name, namespace)
-                          .then(setCronWorkflow)
-                          .then(() => setEdited(false))
+                          .then(resetCronWorkflow)
                           .then(() => setError(null))
                           .catch(setError),
                   disabled: !cronWorkflow || edited
@@ -102,8 +99,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                   action: () =>
                       services.cronWorkflows
                           .resume(name, namespace)
-                          .then(setCronWorkflow)
-                          .then(() => setEdited(false))
+                          .then(resetCronWorkflow)
                           .then(() => setError(null))
                           .catch(setError),
                   disabled: !cronWorkflow || !cronWorkflow.spec.suspend || edited
@@ -141,10 +137,9 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                                 cronWorkflow.metadata.namespace
                             )
                         )
-                        .then(setCronWorkflow)
+                        .then(resetCronWorkflow)
                         .then(() => notifications.show({content: 'Updated', type: NotificationType.Success}))
                         .then(() => setError(null))
-                        .then(() => setEdited(false))
                         .catch(setError);
                 }
             },
@@ -224,33 +219,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                             <p> You can create new cron workflows here or using the CLI. </p>
                         </ZeroState>
                     ) : (
-                        <div className='argo-table-list workflows-cron-list'>
-                            <div className='row argo-table-list__head'>
-                                <div className='columns small-1 workflows-list__status' />
-                                <div className='row small-11'>
-                                    <div className='columns small-2'>NAME</div>
-                                    <div className='columns small-1'>NAMESPACE</div>
-                                    <div className='columns small-1'>STARTED</div>
-                                    <div className='columns small-1'>FINISHED</div>
-                                    <div className='columns small-1'>DURATION</div>
-                                    <div className='columns small-1'>PROGRESS</div>
-                                    <div className='columns small-2'>MESSAGE</div>
-                                    <div className='columns small-1'>DETAILS</div>
-                                    <div className='columns small-1'>ARCHIVED</div>
-                                    {(columns || []).map(col => {
-                                        return (
-                                            <div className='columns small-1' key={col.key}>
-                                                {col.name}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            {/* checkboxes are not visible and are unused on this page */}
-                            {workflows.map(wf => {
-                                return <WorkflowsRow workflow={wf} key={wf.metadata.uid} checked={false} columns={columns} onChange={null} select={null} />;
-                            })}
-                        </div>
+                        <WorkflowDetailsList workflows={workflows} columns={columns} />
                     )}
                 </>
             </>

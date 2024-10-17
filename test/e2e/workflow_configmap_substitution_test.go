@@ -1,5 +1,4 @@
 //go:build functional
-// +build functional
 
 package e2e
 
@@ -195,7 +194,6 @@ metadata:
   label:
     workflows.argoproj.io/test: "true"
 spec:
-  serviceAccountName: argo
   entrypoint: whalesay
   arguments:
     parameters:

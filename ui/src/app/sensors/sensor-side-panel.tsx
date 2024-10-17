@@ -1,6 +1,8 @@
-import {SlidingPanel, Tabs} from 'argo-ui';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
+import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
 import {useState} from 'react';
+
 import {Sensor} from '../../models';
 import {Node} from '../shared/components/graph/types';
 import {EventsPanel} from '../workflows/components/events-panel';

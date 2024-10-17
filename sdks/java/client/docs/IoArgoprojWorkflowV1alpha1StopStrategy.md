@@ -2,13 +2,13 @@
 
 # IoArgoprojWorkflowV1alpha1StopStrategy
 
-StopStrategy defines if the cron workflow will stop being triggered once a certain condition has been reached, involving a number of runs of the workflow
+StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**condition** | **String** | Condition defines a condition that stops scheduling workflows when evaluates to true. Use the keywords &#x60;failed&#x60; or &#x60;succeeded&#x60; to access the number of failed or successful child workflows. | 
+**expression** | **String** | v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables &#x60;cronworkflow&#x60;.&#x60;failed&#x60; or &#x60;cronworkflow&#x60;.&#x60;succeeded&#x60; to access the number of failed or successful child workflows. | 
 
 
 

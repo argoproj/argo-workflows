@@ -9,7 +9,7 @@ import {ExampleManifests} from '../../shared/components/example-manifests';
 import {UploadButton} from '../../shared/components/upload-button';
 import {exampleWorkflow} from '../../shared/examples';
 import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
+import * as nsUtils from '../../shared/namespaces';
 import {SubmitWorkflowPanel} from './submit-workflow-panel';
 import {WorkflowEditor} from './workflow-editor';
 
@@ -31,30 +31,28 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
     }, [namespace]);
 
     useEffect(() => {
-        switch (stage) {
-            case 'full-editor':
-                if (workflowTemplate) {
-                    setWorkflow({
-                        metadata: {
-                            generateName: workflowTemplate.metadata.name + '-',
-                            namespace,
-                            labels: {
-                                'workflows.argoproj.io/workflow-template': workflowTemplate.metadata.name,
-                                'submit-from-ui': 'true'
-                            }
-                        },
-                        spec: {
-                            arguments: workflowTemplate.spec.arguments,
-                            workflowTemplateRef: {
-                                name: workflowTemplate.metadata.name
-                            }
-                        }
-                    });
-                } else {
-                    setWorkflow(exampleWorkflow(Utils.getNamespaceWithDefault(namespace)));
-                }
-                break;
+        if (stage !== 'full-editor') return;
+        if (!workflowTemplate) {
+            setWorkflow(exampleWorkflow(nsUtils.getNamespaceWithDefault(namespace)));
+            return;
         }
+
+        setWorkflow({
+            metadata: {
+                generateName: workflowTemplate.metadata.name + '-',
+                namespace,
+                labels: {
+                    'workflows.argoproj.io/workflow-template': workflowTemplate.metadata.name,
+                    'submit-from-ui': 'true'
+                }
+            },
+            spec: {
+                arguments: workflowTemplate.spec.arguments,
+                workflowTemplateRef: {
+                    name: workflowTemplate.metadata.name
+                }
+            }
+        });
     }, [stage]);
 
     useEffect(() => {
@@ -108,7 +106,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                             icon='plus'
                             onClick={async () => {
                                 try {
-                                    const newWorkflow = await services.workflows.create(workflow, Utils.getNamespaceWithDefault(workflow.metadata.namespace));
+                                    const newWorkflow = await services.workflows.create(workflow, nsUtils.getNamespaceWithDefault(workflow.metadata.namespace));
                                     onCreate(newWorkflow);
                                 } catch (err) {
                                     setError(err);

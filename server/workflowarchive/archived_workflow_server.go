@@ -6,9 +6,6 @@ import (
 	"os"
 	"regexp"
 	"sort"
-	"strconv"
-	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -23,6 +20,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
@@ -31,117 +29,53 @@ import (
 const disableValueListRetrievalKeyPattern = "DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN"
 
 type archivedWorkflowServer struct {
-	wfArchive sqldb.WorkflowArchive
+	wfArchive             sqldb.WorkflowArchive
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	hydrator              hydrator.Interface
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
-func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) workflowarchivepkg.ArchivedWorkflowServiceServer {
-	return &archivedWorkflowServer{wfArchive: wfArchive}
+func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowarchivepkg.ArchivedWorkflowServiceServer {
+	return &archivedWorkflowServer{wfArchive, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
 }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
-	options := req.ListOptions
-	namePrefix := req.NamePrefix
-	if options == nil {
-		options = &metav1.ListOptions{}
-	}
-	if options.Continue == "" {
-		options.Continue = "0"
-	}
-	limit := int(options.Limit)
 
-	offset, err := strconv.Atoi(options.Continue)
+	options, err := sutils.BuildListOptions(*req.ListOptions, req.Namespace, req.NamePrefix, "")
 	if err != nil {
-		// no need to use sutils here
-		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
-	}
-	if offset < 0 {
-		// no need to use sutils here
-		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
-	}
-
-	// namespace is now specified as its own query parameter
-	// note that for backward compatibility, the field selector 'metadata.namespace' is also supported for now
-	namespace := req.Namespace // optional
-	name := ""
-	minStartedAt := time.Time{}
-	maxStartedAt := time.Time{}
-	showRemainingItemCount := false
-	for _, selector := range strings.Split(options.FieldSelector, ",") {
-		if len(selector) == 0 {
-			continue
-		}
-		if strings.HasPrefix(selector, "metadata.namespace=") {
-			// for backward compatibility, the field selector 'metadata.namespace' is supported for now despite the addition
-			// of the new 'namespace' query parameter, which is what the UI uses
-			fieldSelectedNamespace := strings.TrimPrefix(selector, "metadata.namespace=")
-			switch namespace {
-			case "":
-				namespace = fieldSelectedNamespace
-			case fieldSelectedNamespace:
-				break
-			default:
-				return nil, status.Errorf(codes.InvalidArgument,
-					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
-			}
-		} else if strings.HasPrefix(selector, "metadata.name=") {
-			name = strings.TrimPrefix(selector, "metadata.name=")
-		} else if strings.HasPrefix(selector, "spec.startedAt>") {
-			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
-			if err != nil {
-				// startedAt is populated by us, it should therefore be valid.
-				return nil, sutils.ToStatusError(err, codes.Internal)
-			}
-		} else if strings.HasPrefix(selector, "spec.startedAt<") {
-			maxStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt<"))
-			if err != nil {
-				// no need to use sutils here
-				return nil, sutils.ToStatusError(err, codes.Internal)
-			}
-		} else if strings.HasPrefix(selector, "ext.showRemainingItemCount") {
-			showRemainingItemCount, err = strconv.ParseBool(strings.TrimPrefix(selector, "ext.showRemainingItemCount="))
-			if err != nil {
-				// populated by us, it should therefore be valid.
-				return nil, sutils.ToStatusError(err, codes.Internal)
-			}
-		} else {
-			return nil, sutils.ToStatusError(fmt.Errorf("unsupported requirement %s", selector), codes.InvalidArgument)
-		}
-	}
-	requirements, err := labels.ParseToRequirements(options.LabelSelector)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		return nil, err
 	}
 
 	// verify if we have permission to list Workflows
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "")
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", namespace, namespace))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", options.Namespace, options.Namespace))
 	}
 
+	limit := options.Limit
+	offset := options.Offset
 	// When the zero value is passed, we should treat this as returning all results
 	// to align ourselves with the behavior of the `List` endpoints in the Kubernetes API
 	loadAll := limit == 0
-	limitWithMore := 0
 
 	if !loadAll {
 		// Attempt to load 1 more record than we actually need as an easy way to determine whether or not more
 		// records exist than we're currently requesting
-		limitWithMore = limit + 1
+		options.Limit += 1
 	}
 
-	items, err := w.wfArchive.ListWorkflows(namespace, name, namePrefix, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
+	items, err := w.wfArchive.ListWorkflows(options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
 	meta := metav1.ListMeta{}
 
-	if showRemainingItemCount && !loadAll {
-		total, err := w.wfArchive.CountWorkflows(namespace, name, namePrefix, minStartedAt, maxStartedAt, requirements)
+	if options.ShowRemainingItemCount && !loadAll {
+		total, err := w.wfArchive.CountWorkflows(options)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -282,6 +216,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	oriUid := wf.UID
 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
@@ -299,11 +234,29 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 			}
 		}
 
+		log.WithFields(log.Fields{"Dehydrate workflow uid=": wf.UID}).Info("RetryArchivedWorkflow")
+		// If the Workflow needs to be dehydrated in order to capture and retain all of the previous state for the subsequent workflow, then do so
+		err = w.hydrator.Dehydrate(wf)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+
 		wf.ObjectMeta.ResourceVersion = ""
 		wf.ObjectMeta.UID = ""
 		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+		// if the Workflow was dehydrated before, we need to capture and maintain its previous state for the new Workflow
+		if !w.hydrator.IsHydrated(wf) {
+			offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(oriUid), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
+			_, err = w.offloadNodeStatusRepo.Save(string(result.UID), wf.Namespace, offloadedNodes)
+			if err != nil {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
 		}
 
 		return result, nil

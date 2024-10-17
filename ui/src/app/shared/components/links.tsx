@@ -1,6 +1,7 @@
 import {ObjectMeta} from 'argo-ui/src/models/kubernetes';
 import {useEffect, useState} from 'react';
 import * as React from 'react';
+
 import {Link, Workflow} from '../../../models';
 import {services} from '../services';
 import {Button} from './button';
@@ -22,12 +23,25 @@ function addEpochTimestamp(jsonObject: {metadata: ObjectMeta; workflow?: Workflo
     jsonObject.status.finishedAtEpoch = toEpoch(jsonObject.status.finishedAt);
 }
 
+function splitWithMetadataKnowledge(replaceable: string) {
+    const parts = replaceable.split('.');
+    if (replaceable.startsWith('workflow.metadata.labels') || replaceable.startsWith('workflow.metadata.annotations')) {
+        // Take the first 3 parts, then join the rest
+        const result = parts.slice(0, 3);
+        result.push(parts.slice(3).join('.'));
+
+        return result;
+    }
+    return parts;
+}
+
 export function processURL(urlExpression: string, jsonObject: any) {
     addEpochTimestamp(jsonObject);
     /* replace ${} from input url with corresponding elements from object
     only return null for known variables, otherwise empty string*/
     return urlExpression.replace(/\${[^}]*}/g, x => {
-        const parts = x.replace(/(\$%7B|%7D|\${|})/g, '').split('.');
+        const replaced = x.replace(/(\$%7B|%7D|\${|})/g, '');
+        const parts = splitWithMetadataKnowledge(replaced);
         const emptyVal = parts[0] === 'workflow' ? '' : null;
         const res = parts.reduce((p: any, c: string) => (p && p[c]) || emptyVal, jsonObject);
         return res;

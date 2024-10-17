@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
@@ -365,7 +365,7 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
-			wf.Spec.Suspend = pointer.Bool(true)
+			wf.Spec.Suspend = ptr.To(true)
 			_, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 			if apierr.IsConflict(err) {
 				return false, nil
@@ -454,7 +454,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	nodeFields := fields.Set{
 		"displayName":  node.DisplayName,
-		"templateName": node.TemplateName,
+		"templateName": GetTemplateFromNode(node),
 		"phase":        string(node.Phase),
 		"name":         node.Name,
 		"id":           node.ID,
@@ -733,6 +733,9 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
+		} else if newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(wf, node, make(map[string]bool)) {
+			newWF.Status.Nodes.Delete(newNode.ID)
+			continue
 		} else {
 			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
@@ -971,7 +974,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
-				if isDescendantNodeSucceeded(wf, node, nodeIDsToReset) {
+				if node.Type != wfv1.NodeTypeRetry && isDescendantNodeSucceeded(wf, node, nodeIDsToReset) {
 					log.Debugf("Node %s remains as is since it has succeed child nodes.", node.Name)
 					newWF.Status.Nodes.Set(node.ID, node)
 					continue
@@ -985,13 +988,6 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
 			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
-		}
-
-		if node.Name == wf.ObjectMeta.Name {
-			log.Debugf("Reset root node: %s", node.Name)
-			newNode := node.DeepCopy()
-			newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
-			continue
 		}
 	}
 
@@ -1249,44 +1245,32 @@ func ConvertYAMLToJSON(str string) (string, error) {
 	return str, nil
 }
 
-// PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
-func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
-	wfPatch, err := ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
-	if err != nil {
-		return "", err
-	}
-	tmplPatch, err := ConvertYAMLToJSON(tmpl.PodSpecPatch)
-	if err != nil {
-		return "", err
-	}
-	data, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
-	return string(data), err
-}
-
-func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYaml string) (*apiv1.PodSpec, error) {
+func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*apiv1.PodSpec, error) {
 	podSpecJson, err := json.Marshal(podSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
 	}
 
-	// must convert to json because PodSpec has only json tags
-	podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
-	if err != nil {
-		return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
-	}
+	for _, podSpecPatchYaml := range podSpecPatchYamls {
+		// must convert to json because PodSpec has only json tags
+		podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
+		}
 
-	// validate the patch to be a PodSpec
-	if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
-		return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
-	}
+		// validate the patch to be a PodSpec
+		if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
+		}
 
-	modJson, err := strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
-	if err != nil {
-		return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		podSpecJson, err = strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		}
 	}
 
 	var newPodSpec apiv1.PodSpec
-	err = json.Unmarshal(modJson, &newPodSpec)
+	err = json.Unmarshal(podSpecJson, &newPodSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 	}

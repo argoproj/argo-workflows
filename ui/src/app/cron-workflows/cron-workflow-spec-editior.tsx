@@ -1,4 +1,5 @@
-import {Checkbox, Select} from 'argo-ui';
+import {Checkbox} from 'argo-ui/src/components/checkbox';
+import {Select} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
 
 import {ConcurrencyPolicy, CronWorkflowSpec} from '../../models';
@@ -11,9 +12,9 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
         <div className='white-box'>
             <div className='white-box__details'>
                 <div className='row white-box__details-row'>
-                    <div className='columns small-3'>Schedule</div>
+                    <div className='columns small-3'>Schedules</div>
                     <div className='columns small-9'>
-                        {spec.schedule != '' ? (
+                        {(spec.schedule ?? '') != '' ? (
                             <>
                                 <TextInput value={spec.schedule} onChange={schedule => onChange({...spec, schedule})} />
                                 <ScheduleValidator schedule={spec.schedule} />

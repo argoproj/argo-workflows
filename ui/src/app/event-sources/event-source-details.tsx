@@ -1,5 +1,7 @@
-import {NotificationType, Page} from 'argo-ui';
-import {SlidingPanel, Tabs} from 'argo-ui/src/index';
+import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
+import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
@@ -14,6 +16,7 @@ import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
+import {useEditableObject} from '../shared/use-editable-object';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceEditor} from './event-source-editor';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
@@ -50,9 +53,8 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
         [namespace, name, tab, selectedNode]
     );
 
-    const [edited, setEdited] = useState(false);
     const [error, setError] = useState<Error>();
-    const [eventSource, setEventSource] = useState<EventSource>();
+    const [eventSource, edited, setEventSource, resetEventSource] = useEditableObject<EventSource>();
 
     const selected = (() => {
         if (!selectedNode) {
@@ -67,16 +69,13 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
         (async () => {
             try {
                 const newEventSource = await services.eventSource.get(name, namespace);
-                setEventSource(newEventSource);
-                setEdited(false); // set back to false
+                resetEventSource(newEventSource);
                 setError(null);
             } catch (err) {
                 setError(err);
             }
         })();
     }, [name, namespace]);
-
-    useEffect(() => setEdited(true), [eventSource]);
 
     useCollectEvent('openedEventSourceDetails');
 
@@ -98,14 +97,13 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
                             action: () =>
                                 services.eventSource
                                     .update(eventSource, name, namespace)
-                                    .then(setEventSource)
+                                    .then(resetEventSource)
                                     .then(() =>
                                         notifications.show({
                                             content: 'Updated',
                                             type: NotificationType.Success
                                         })
                                     )
-                                    .then(() => setEdited(false))
                                     .then(() => setError(null))
                                     .catch(setError)
                         },

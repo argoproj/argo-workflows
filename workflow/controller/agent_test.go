@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -36,14 +37,14 @@ spec:
               failed: true
             arguments:
               parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-  
+
     - name: http
       inputs:
         parameters:
           - name: url
       http:
        url: "{{inputs.parameters.url}}"
-      
+
 `)
 	ctx := context.Background()
 	var ts wfv1.WorkflowTaskSet
@@ -93,7 +94,7 @@ status:
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
@@ -103,7 +104,7 @@ status:
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
@@ -119,7 +120,7 @@ status:
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
 		for _, ts := range tslist.Items {
@@ -129,7 +130,7 @@ status:
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)
 		for _, pod := range pods.Items {
@@ -147,7 +148,7 @@ func TestAssessAgentPodStatus(t *testing.T) {
 			Status: apiv1.PodStatus{Phase: apiv1.PodFailed},
 		}
 		nodeStatus, msg := assessAgentPodStatus(pod1)
-		assert.Equal(t, wfv1.WorkflowFailed, nodeStatus)
+		assert.Equal(t, wfv1.NodeFailed, nodeStatus)
 		assert.Equal(t, "", msg)
 	})
 	t.Run("Running", func(t *testing.T) {
@@ -156,7 +157,7 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		}
 
 		nodeStatus, msg := assessAgentPodStatus(pod1)
-		assert.Equal(t, wfv1.WorkflowPhase(""), nodeStatus)
+		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
 		assert.Equal(t, "", msg)
 	})
 	t.Run("Success", func(t *testing.T) {
@@ -164,7 +165,7 @@ func TestAssessAgentPodStatus(t *testing.T) {
 			Status: apiv1.PodStatus{Phase: apiv1.PodSucceeded},
 		}
 		nodeStatus, msg := assessAgentPodStatus(pod1)
-		assert.Equal(t, wfv1.WorkflowPhase(""), nodeStatus)
+		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
 		assert.Equal(t, "", msg)
 	})
 

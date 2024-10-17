@@ -2,7 +2,6 @@ package estimation
 
 import (
 	"fmt"
-	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -29,12 +29,19 @@ type estimatorFactory struct {
 
 var _ EstimatorFactory = &estimatorFactory{}
 
+var (
+	skipWorkflowDurationEstimation = env.LookupEnvStringOr("SKIP_WORKFLOW_DURATION_ESTIMATION", "false")
+)
+
 func NewEstimatorFactory(wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) EstimatorFactory {
 	return &estimatorFactory{wfInformer, hydrator, wfArchive}
 }
 
 func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 	defaultEstimator := &estimator{wf: wf}
+	if skipWorkflowDurationEstimation == "true" {
+		return defaultEstimator, nil
+	}
 	for labelName, indexName := range map[string]string{
 		common.LabelKeyWorkflowTemplate:        indexes.WorkflowTemplateIndex,
 		common.LabelKeyClusterWorkflowTemplate: indexes.ClusterWorkflowTemplateIndex,
@@ -72,17 +79,15 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 				return &estimator{wf, newestWf}, nil
 			}
 			// we failed to find a base-line in the live set, so we now look in the archive
-			requirements, err := labels.ParseToRequirements(common.LabelKeyPhase + "=" + string(wfv1.NodeSucceeded) + "," + labelName + "=" + labelValue)
+			requirements, err := labels.ParseToRequirements(labelName + "=" + labelValue)
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-			workflows, err := f.wfArchive.ListWorkflows(wf.Namespace, "", "", time.Time{}, time.Time{}, requirements, 1, 0)
+			baselineWF, err := f.wfArchive.GetWorkflowForEstimator(wf.Namespace, requirements)
 			if err != nil {
-				return defaultEstimator, fmt.Errorf("failed to list archived workflows: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to get archived workflow for estimator: %v", err)
 			}
-			if len(workflows) > 0 {
-				return &estimator{wf, &workflows[0]}, nil
-			}
+			return &estimator{wf, baselineWF}, nil
 		}
 	}
 	return defaultEstimator, nil

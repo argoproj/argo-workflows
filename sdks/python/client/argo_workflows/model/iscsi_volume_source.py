@@ -130,9 +130,9 @@ class ISCSIVolumeSource(ModelNormal):
         """ISCSIVolumeSource - a model defined in OpenAPI
 
         Args:
-            iqn (str): Target iSCSI Qualified Name.
-            lun (int): iSCSI Target Lun number.
-            target_portal (str): iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).
+            iqn (str): iqn is the target iSCSI Qualified Name.
+            lun (int): lun represents iSCSI Target Lun number.
+            target_portal (str): targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -165,13 +165,13 @@ class ISCSIVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            chap_auth_discovery (bool): whether support iSCSI Discovery CHAP authentication. [optional]  # noqa: E501
-            chap_auth_session (bool): whether support iSCSI Session CHAP authentication. [optional]  # noqa: E501
-            fs_type (str): Filesystem type of the volume that you want to mount. Tip: Ensure that the filesystem type is supported by the host operating system. Examples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified. More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi. [optional]  # noqa: E501
-            initiator_name (str): Custom iSCSI Initiator Name. If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface <target portal>:<volume name> will be created for the connection.. [optional]  # noqa: E501
-            iscsi_interface (str): iSCSI Interface Name that uses an iSCSI transport. Defaults to 'default' (tcp).. [optional]  # noqa: E501
-            portals ([str]): iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).. [optional]  # noqa: E501
-            read_only (bool): ReadOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false.. [optional]  # noqa: E501
+            chap_auth_discovery (bool): chapAuthDiscovery defines whether support iSCSI Discovery CHAP authentication. [optional]  # noqa: E501
+            chap_auth_session (bool): chapAuthSession defines whether support iSCSI Session CHAP authentication. [optional]  # noqa: E501
+            fs_type (str): fsType is the filesystem type of the volume that you want to mount. Tip: Ensure that the filesystem type is supported by the host operating system. Examples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified. More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi. [optional]  # noqa: E501
+            initiator_name (str): initiatorName is the custom iSCSI Initiator Name. If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface <target portal>:<volume name> will be created for the connection.. [optional]  # noqa: E501
+            iscsi_interface (str): iscsiInterface is the interface Name that uses an iSCSI transport. Defaults to 'default' (tcp).. [optional]  # noqa: E501
+            portals ([str]): portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).. [optional]  # noqa: E501
+            read_only (bool): readOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false.. [optional]  # noqa: E501
             secret_ref (LocalObjectReference): [optional]  # noqa: E501
         """
 
@@ -227,9 +227,9 @@ class ISCSIVolumeSource(ModelNormal):
         """ISCSIVolumeSource - a model defined in OpenAPI
 
         Args:
-            iqn (str): Target iSCSI Qualified Name.
-            lun (int): iSCSI Target Lun number.
-            target_portal (str): iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).
+            iqn (str): iqn is the target iSCSI Qualified Name.
+            lun (int): lun represents iSCSI Target Lun number.
+            target_portal (str): targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -262,13 +262,13 @@ class ISCSIVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            chap_auth_discovery (bool): whether support iSCSI Discovery CHAP authentication. [optional]  # noqa: E501
-            chap_auth_session (bool): whether support iSCSI Session CHAP authentication. [optional]  # noqa: E501
-            fs_type (str): Filesystem type of the volume that you want to mount. Tip: Ensure that the filesystem type is supported by the host operating system. Examples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified. More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi. [optional]  # noqa: E501
-            initiator_name (str): Custom iSCSI Initiator Name. If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface <target portal>:<volume name> will be created for the connection.. [optional]  # noqa: E501
-            iscsi_interface (str): iSCSI Interface Name that uses an iSCSI transport. Defaults to 'default' (tcp).. [optional]  # noqa: E501
-            portals ([str]): iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).. [optional]  # noqa: E501
-            read_only (bool): ReadOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false.. [optional]  # noqa: E501
+            chap_auth_discovery (bool): chapAuthDiscovery defines whether support iSCSI Discovery CHAP authentication. [optional]  # noqa: E501
+            chap_auth_session (bool): chapAuthSession defines whether support iSCSI Session CHAP authentication. [optional]  # noqa: E501
+            fs_type (str): fsType is the filesystem type of the volume that you want to mount. Tip: Ensure that the filesystem type is supported by the host operating system. Examples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified. More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi. [optional]  # noqa: E501
+            initiator_name (str): initiatorName is the custom iSCSI Initiator Name. If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface <target portal>:<volume name> will be created for the connection.. [optional]  # noqa: E501
+            iscsi_interface (str): iscsiInterface is the interface Name that uses an iSCSI transport. Defaults to 'default' (tcp).. [optional]  # noqa: E501
+            portals ([str]): portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).. [optional]  # noqa: E501
+            read_only (bool): readOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false.. [optional]  # noqa: E501
             secret_ref (LocalObjectReference): [optional]  # noqa: E501
         """
 

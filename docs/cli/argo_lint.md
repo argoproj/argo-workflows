@@ -24,6 +24,7 @@ argo lint FILE... [flags]
 ```
   -h, --help            help for lint
       --kinds strings   Which kinds will be linted. Can be: workflows|workflowtemplates|cronworkflows|clusterworkflowtemplates (default [all])
+      --no-color        Disable colorized output
       --offline         perform offline linting. For resources referencing other resources, the references will be resolved from the provided args
   -o, --output string   Linting results output format. One of: pretty|simple (default "pretty")
       --strict          Perform strict workflow validation (default true)
@@ -32,7 +33,7 @@ argo lint FILE... [flags]
 ### Options inherited from parent commands
 
 ```
-      --argo-base-href string          Path to use with HTTP client due to BASE_HREF. Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation

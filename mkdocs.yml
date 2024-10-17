@@ -32,6 +32,7 @@ markdown_extensions:
   - admonition
   - md_in_html
   - pymdownx.details
+  - pymdownx.snippets
   - pymdownx.superfences:
       custom_fences:
         # support mermaid diagrams per https://squidfunk.github.io/mkdocs-material/reference/diagrams/#configuration
@@ -248,10 +249,12 @@ nav:
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
+          - deprecations.md
           - workflow-executors.md
           - workflow-restrictions.md
           - sidecar-injection.md
           - service-account-secrets.md
+          - parallelism.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md

@@ -93,7 +93,7 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 					ObjectMeta: *metadata,
 				}
 				version := util.GetWorkflowPodNameVersion(wf)
-				podName := util.GeneratePodName(t.wf.Name, n.Name, n.TemplateName, n.ID, version)
+				podName := util.GeneratePodName(t.wf.Name, n.Name, util.GetTemplateFromNode(*n), n.ID, version)
 
 				var err error
 				ctx := context.Background()

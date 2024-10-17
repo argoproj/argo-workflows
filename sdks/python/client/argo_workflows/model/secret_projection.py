@@ -144,9 +144,9 @@ class SecretProjection(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            items ([KeyToPath]): If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.. [optional]  # noqa: E501
-            name (str): Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names. [optional]  # noqa: E501
-            optional (bool): Specify whether the Secret or its key must be defined. [optional]  # noqa: E501
+            items ([KeyToPath]): items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.. [optional]  # noqa: E501
+            name (str): Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names. [optional]  # noqa: E501
+            optional (bool): optional field specify whether the Secret or its key must be defined. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,9 +228,9 @@ class SecretProjection(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            items ([KeyToPath]): If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.. [optional]  # noqa: E501
-            name (str): Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names. [optional]  # noqa: E501
-            optional (bool): Specify whether the Secret or its key must be defined. [optional]  # noqa: E501
+            items ([KeyToPath]): items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.. [optional]  # noqa: E501
+            name (str): Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names. [optional]  # noqa: E501
+            optional (bool): optional field specify whether the Secret or its key must be defined. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

@@ -9,15 +9,16 @@ argo template list [flags]
 ### Options
 
 ```
-  -A, --all-namespaces   Show workflows from all namespaces
-  -h, --help             help for list
-  -o, --output string    Output format. One of: wide|name
+  -A, --all-namespaces    Show workflows from all namespaces
+  -h, --help              help for list
+  -o, --output string     Output format. One of: wide|name
+  -l, --selector string   Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --argo-base-href string          Path to use with HTTP client due to BASE_HREF. Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation

@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
-
-import {Autocomplete} from 'argo-ui';
+import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
 import {Observable} from 'rxjs';
 import {map, publishReplay, refCount} from 'rxjs/operators';
+
 import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
-import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import debounce from '../../../shared/debounce';
 import {Button} from '../../../shared/components/button';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
@@ -25,7 +25,7 @@ const timezones = Intl.supportedValuesOf('timeZone');
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
-    nodeId?: string;
+    initialNodeId?: string;
     initialPodName: string;
     container: string;
     archived: boolean;
@@ -74,11 +74,8 @@ function parseAndTransform(formattedString: string, timeZone: string) {
     }
 }
 
-export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
+export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) {
     const storage = new ScopedLocalStorage('workflow-logs-viewer');
-    const storedJsonFields = storage.getItem('jsonFields', {
-        values: []
-    } as SelectedJsonFields);
 
     const {popup} = useContext(Context);
     const [podName, setPodName] = useState(initialPodName || '');
@@ -87,16 +84,22 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
     const [error, setError] = useState<Error>();
     const [loaded, setLoaded] = useState(false);
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
+    const [selectedJsonFields, setSelectedJsonFields] = useState<SelectedJsonFields>(() => {
+        return storage.getItem<SelectedJsonFields>('jsonFields', {values: []});
+    });
+
+    function setDebouncedGrep(value: string) {
+        debounce(() => setGrep(value), 1000)[0]();
+    }
+
     // timezone used for ui rendering only
     const [uiTimezone, setUITimezone] = useState<string>(DEFAULT_TZ);
     // timezone used for timezone formatting
     const [timezone, setTimezone] = useLocalStorage<string>(TZ_LOCALSTORAGE_KEY, DEFAULT_TZ);
-
     // update the UI everytime the timezone changes
     useEffect(() => {
         setUITimezone(timezone);
     }, [timezone]);
-    const [selectedJsonFields, setSelectedJsonFields] = useState<SelectedJsonFields>(storedJsonFields);
 
     useEffect(() => {
         setError(null);
@@ -150,33 +153,23 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
         return () => subscription.unsubscribe();
     }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived, selectedJsonFields, timezone]);
 
-    // filter allows us to introduce a short delay, before we actually change grep
-    const [logFilter, setLogFilter] = useState('');
-    useEffect(() => {
-        const x = setTimeout(() => setGrep(logFilter), 1000);
-        return () => clearTimeout(x);
-    }, [logFilter]);
-
-    const annotations = workflow.metadata.annotations || {};
-    const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
-
     // map pod names to corresponding node IDs
     const podNamesToNodeIDs = new Map<string, string>();
-
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
             .map(targetNode => {
                 const {name, id, displayName} = targetNode;
-                const templateName = getTemplateNameFromNode(targetNode);
-                const targetPodName = getPodName(workflow.metadata.name, name, templateName, id, podNameVersion);
+                const targetPodName = getPodName(workflow, targetNode);
                 podNamesToNodeIDs.set(targetPodName, id);
                 return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
             })
     );
 
+    // default to the node id of the pod
+    const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
     const node = workflow.status.nodes[nodeId];
-    const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
+    const templates = execSpec(workflow).templates.filter(t => !node || t.name === getTemplateNameFromNode(node));
 
     const containers = [
         ...new Set(
@@ -250,8 +243,7 @@ export function WorkflowLogsViewer({workflow, nodeId, initialPodName, container,
                 </Button>
                 <span className='fa-pull-right'>
                     <div className='log-menu'>
-                        <i className='fa fa-filter' />{' '}
-                        <input type='search' defaultValue={logFilter} onChange={v => setLogFilter(v.target.value)} placeholder='Filter (regexp)...' />
+                        <i className='fa fa-filter' /> <input type='search' defaultValue={grep} onChange={v => setDebouncedGrep(v.target.value)} placeholder='Filter (regexp)...' />
                         <i className='fa fa-globe' />{' '}
                         <Autocomplete
                             items={filteredTimezones}
