@@ -189,6 +189,9 @@ jobs:
     needs: [ changed-files, argo-images ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-latest
+    # These tests usually finish in ~25m, but occasionally they take much longer due to resource
+    # contention on the runner, which we have no control over.
+    timeout-minutes: 60
     env:
       KUBECONFIG: /home/runner/.kubeconfig
       E2E_ENV_FACTOR: 2
