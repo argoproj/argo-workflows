@@ -44,7 +44,6 @@ func NewInformer(restConfig *rest.Config, managedNamespace string) (*Informer, e
 
 // Start informer in separate go-routine and block until cache sync
 func (wti *Informer) Run(stopCh <-chan struct{}) {
-
 	go wti.informer.Informer().Run(stopCh)
 
 	if !cache.WaitForCacheSync(
