@@ -9,6 +9,7 @@ import {Pagination} from '../pagination';
 import {queryParams} from './utils';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
+import {NameFilterKeys} from '../../workflows/components/workflow-filters/workflow-filters';
 
 function isString(value: any): value is string {
     return typeof value === 'string';
@@ -51,9 +52,11 @@ export const WorkflowsService = {
             'items.status.estimatedDuration',
             'items.status.progress',
             'items.spec.suspend'
-        ]
+        ],
+        name?: string,
+        nameFilter?: NameFilterKeys
     ) {
-        const params = queryParams({phases, labels, pagination});
+        const params = queryParams({phases, labels, pagination, name, nameFilter});
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     },
