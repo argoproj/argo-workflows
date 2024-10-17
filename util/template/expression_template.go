@@ -54,13 +54,17 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
+	if err != nil {
+		fmt.Println("failed to compile:", err)
+	}
 	if err != nil && !allowUnresolved {
 		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	result, err := expr.Run(program, env)
 	if (err != nil || result == nil) && allowUnresolved {
 		//  <nil> result is also un-resolved, and any error can be unresolved
-		log.WithError(err).Debug("Result and error are unresolved")
+		log.WithError(err).Infof("Result and error are unresolved: result=%v", result)
+		fmt.Println("", err)
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 	if err != nil {
