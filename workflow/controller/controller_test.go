@@ -1191,7 +1191,7 @@ spec:
 	assert.Empty(t, pods.Items)
 }
 
-func TestPodCleaupPatch(t *testing.T) {
+func TestPodCleanupPatch(t *testing.T) {
 	wfc := &WorkflowController{}
 
 	pod := &apiv1.Pod{
