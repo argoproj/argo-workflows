@@ -88,6 +88,11 @@ Custom metrics, as defined by a workflow, could be defined as one type (say coun
 The Prometheus `/metrics` endpoint now has TLS enabled by default.
 To disable this set `metricsConfig.secure` to `false`.
 
+### JSON templating fix
+
+When returning a map or array in an expression, you would get a Golang representation.
+This now returns plain JSON.
+
 ## Upgrading to v3.5
 
 There are no known breaking changes in this release.
