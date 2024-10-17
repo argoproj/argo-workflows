@@ -2355,13 +2355,15 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		if _, ok := woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted]; !ok {
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "false"
 		}
-		switch phase {
-		case wfv1.WorkflowRunning:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowRunning", "Workflow Running")
-		case wfv1.WorkflowSucceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowSucceeded", "Workflow completed")
-		case wfv1.WorkflowFailed, wfv1.WorkflowError:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", message)
+		if woc.controller.Config.WorkflowEvents.IsEnabled() {
+			switch phase {
+			case wfv1.WorkflowRunning:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowRunning", "Workflow Running")
+			case wfv1.WorkflowSucceeded:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowSucceeded", "Workflow completed")
+			case wfv1.WorkflowFailed, wfv1.WorkflowError:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", message)
+			}
 		}
 	}
 	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
