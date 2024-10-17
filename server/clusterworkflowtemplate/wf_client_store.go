@@ -8,7 +8,6 @@ import (
 )
 
 // Store is a wrapper around informer
-// if
 type ClusterWorkflowTemplateClientStore struct {
 }
 
