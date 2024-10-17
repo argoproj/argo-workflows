@@ -43,10 +43,10 @@ spec:
                 type: integer
               stopStrategy:
                 properties:
-                  condition:
+                  expression:
                     type: string
                 required:
-                - condition
+                - expression
                 type: object
               successfulJobsHistoryLimit:
                 format: int32

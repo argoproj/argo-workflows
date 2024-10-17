@@ -115,7 +115,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 starting_deadline_seconds=1,
                 stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
-                    condition="condition_example",
+                    expression="expression_example",
                 ),
                 successful_jobs_history_limit=1,
                 suspend=True,
@@ -11684,7 +11684,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 starting_deadline_seconds=1,
                 stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
-                    condition="condition_example",
+                    expression="expression_example",
                 ),
                 successful_jobs_history_limit=1,
                 suspend=True,
@@ -23340,7 +23340,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 ],
                 starting_deadline_seconds=1,
                 stop_strategy=IoArgoprojWorkflowV1alpha1StopStrategy(
-                    condition="condition_example",
+                    expression="expression_example",
                 ),
                 successful_jobs_history_limit=1,
                 suspend=True,

@@ -35,6 +35,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
+const (
+	variablePrefix string = `cronworkflow`
+)
+
 type cronWfOperationCtx struct {
 	// CronWorkflow is the CronWorkflow to be run
 	name            string
@@ -213,44 +217,19 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 		return true, nil
 	}
 
-	m := make(map[string]interface{})
-	addSetField := func(name string, value interface{}) {
-		m[fmt.Sprintf("cronworkflow.%s", name)] = value
-	}
-
-	addSetField("name", cron.Name)
-	addSetField("namespace", cron.Namespace)
-	addSetField("labels", cron.Labels)
-	addSetField("annotations", cron.Labels)
-
-	labelsStr, err := json.Marshal(&cron.Labels)
-	if err != nil {
-		return false, err
-	}
-
-	annotationsStr, err := json.Marshal(&cron.Annotations)
-	if err != nil {
-		return false, err
-	}
-
-	addSetField("annotations.json", annotationsStr)
-	addSetField("labels.json", labelsStr)
-
-	var tm *time.Time
-	tm = nil
-
-	if cron.Status.LastScheduledTime != nil {
-		tm = &cron.Status.LastScheduledTime.Time
-	}
-
-	addSetField("lastScheduledTime", tm)
-
 	t, err := template.NewTemplate(string(cron.Spec.When))
 	if err != nil {
 		return false, err
 	}
-
-	newWhenStr, err := t.Replace(m, false)
+	env := make(map[string]interface{})
+	addSetField := func(name string, value interface{}) {
+		env[fmt.Sprintf("%s.%s", variablePrefix, name)] = value
+	}
+	err = expressionEnv(cron, addSetField)
+	if err != nil {
+		return false, err
+	}
+	newWhenStr, err := t.Replace(env, false)
 	if err != nil {
 		return false, err
 	}
@@ -524,17 +503,57 @@ func (woc *cronWfOperationCtx) updateWfPhaseCounter(phase v1alpha1.WorkflowPhase
 	}
 }
 
+func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, value interface{})) error {
+	addSetField("name", cron.Name)
+	addSetField("namespace", cron.Namespace)
+	addSetField("labels", cron.Labels)
+	addSetField("annotations", cron.Labels)
+	addSetField("failed", cron.Status.Failed)
+	addSetField("succeeded", cron.Status.Succeeded)
+
+	labelsStr, err := json.Marshal(&cron.Labels)
+	if err != nil {
+		return err
+	}
+
+	annotationsStr, err := json.Marshal(&cron.Annotations)
+	if err != nil {
+		return err
+	}
+
+	addSetField("annotations.json", annotationsStr)
+	addSetField("labels.json", labelsStr)
+
+	var tm *time.Time
+	tm = nil
+
+	if cron.Status.LastScheduledTime != nil {
+		tm = &cron.Status.LastScheduledTime.Time
+	}
+
+	addSetField("lastScheduledTime", tm)
+
+	return nil
+}
+
 func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
 	if woc.cronWf.Spec.StopStrategy == nil {
 		return false, nil
 	}
-	env := map[string]any{
-		"failed":    woc.cronWf.Status.Failed,
-		"succeeded": woc.cronWf.Status.Succeeded,
+	prefixedEnv := make(map[string]interface{})
+	addSetField := func(name string, value interface{}) {
+		prefixedEnv[name] = value
 	}
-	suspend, err := argoexpr.EvalBool(woc.cronWf.Spec.StopStrategy.Condition, env)
+	env := make(map[string]interface{})
+	env[variablePrefix] = prefixedEnv
+	err := expressionEnv(woc.cronWf, addSetField)
 	if err != nil {
-		return false, fmt.Errorf("failed to evaluate expression: %w", err)
+		return false, err
+	}
+
+	suspend, err := argoexpr.EvalBool(woc.cronWf.Spec.StopStrategy.Expression, env)
+	if err != nil {
+		return false, fmt.Errorf("failed to evaluate stop expression: %w", err)
 	}
 	return suspend, nil
 }
