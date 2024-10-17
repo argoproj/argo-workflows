@@ -14,7 +14,8 @@ See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on break
 * [#12024](https://github.com/argoproj/argo-workflows/pull/12024): You will be able to see live logs from pods if retrieval of logs from archived workflows fails and the pod logs are available.
 * [#12674](https://github.com/argoproj/argo-workflows/pull/12674): CronWorkflows and WorkflowTemplates now display their title and descriptions in the list view.
 * [#12199](https://github.com/argoproj/argo-workflows/pull/12199): You can specify HTTP headers to use to detect IP addresses using the `IP_KEY_FUNC_HEADERS` environment variable. This is used in the rate limiter.
-* [#13695](https://github.com/argoproj/argo-workflows/pull/12953): You can now retry a single node from a workflow, even if the workflow succeeded
+* [#13695](https://github.com/argoproj/argo-workflows/pull/13695): You can now retry a single node from a workflow, even if the workflow succeeded.
+* [#13610](https://github.com/argoproj/argo-workflows/pull/13610): You can now filter with prefixes and patterns in the workflow list.
 
 ## Metrics
 
