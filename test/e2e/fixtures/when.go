@@ -522,6 +522,29 @@ func (w *When) DeleteConfigMap(name string) *When {
 	return w
 }
 
+func (w *When) DeletePod(name string) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	fmt.Printf("deleting pod %s\n", name)
+	err := w.kubeClient.CoreV1().Pods(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) DeleteNodePod(name string) *When {
+	w.t.Helper()
+	node, err := w.wf.GetNodeByName(name)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	fmt.Printf("deleting pod %s from node %s\n", "", name)
+	w.DeletePod(node.ID)
+
+	return w
+}
+
 func (w *When) PodsQuota(podLimit int) *When {
 	w.t.Helper()
 	ctx := context.Background()
