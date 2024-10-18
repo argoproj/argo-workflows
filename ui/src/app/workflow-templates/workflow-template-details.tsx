@@ -142,6 +142,7 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                             kind='WorkflowTemplate'
                             namespace={namespace}
                             name={name}
+                            history={history}
                             entrypoint={template.spec.entrypoint}
                             templates={template.spec.templates || []}
                             workflowParameters={template.spec.arguments.parameters || []}
