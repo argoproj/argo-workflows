@@ -640,7 +640,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 		panic(err)
 	}
 	namespaceAll := metav1.NamespaceAll
-	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, &namespaceAll)
+	server := NewWorkflowServer(instanceIdSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, nil, &namespaceAll)
 	return server, ctx
 }
 

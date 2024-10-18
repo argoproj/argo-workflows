@@ -39,7 +39,7 @@ func (o OfflineWorkflowTemplateServiceClient) DeleteWorkflowTemplate(ctx context
 }
 
 func (o OfflineWorkflowTemplateServiceClient) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
-	err := validate.ValidateWorkflowTemplate(o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.Template, validate.ValidateOpts{Lint: true})
+	err := validate.ValidateWorkflowTemplate(o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, err
 	}
