@@ -5,6 +5,8 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.6
 
+A list of [new features in 3.6](features-3.6.md).
+
 ### Deprecations
 
 The following features are deprecated and will be removed in a future verison of Argo Workflows:
