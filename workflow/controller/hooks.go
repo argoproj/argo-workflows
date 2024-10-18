@@ -81,7 +81,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info("Running hooks")
 			resolvedArgs := hook.Arguments
 			var err error
-			if !resolvedArgs.IsEmpty() && outputs != nil {
+			if !resolvedArgs.IsEmpty() {
 				resolvedArgs, err = woc.resolveExitTmplArgument(hook.Arguments, prefix, outputs, scope)
 				if err != nil {
 					return false, err
