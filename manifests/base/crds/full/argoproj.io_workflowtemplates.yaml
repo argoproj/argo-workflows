@@ -2004,6 +2004,8 @@ spec:
                     type: object
                   backoff:
                     properties:
+                      cap:
+                        type: string
                       duration:
                         type: string
                       factor:
@@ -9157,6 +9159,8 @@ spec:
                         type: object
                       backoff:
                         properties:
+                          cap:
+                            type: string
                           duration:
                             type: string
                           factor:
@@ -18454,6 +18458,8 @@ spec:
                           type: object
                         backoff:
                           properties:
+                            cap:
+                              type: string
                             duration:
                               type: string
                             factor:
