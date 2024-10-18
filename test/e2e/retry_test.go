@@ -236,45 +236,45 @@ func (s *RetryTestSuite) TestRetryDaemonContainer() {
 	s.Given().
 		Workflow(`
 metadata:
-	name: test-stepsdaemonretry-strategy
+  name: test-stepsdaemonretry-strategy
 spec:
-	entrypoint: main
-	templates:
-	- name: main
-	steps:
-	- - name: server
-		template: server
-	- - name: client
-		template: client
-		arguments:
-			parameters:
-			- name: server-ip
-			value: "{{steps.server.ip}}"
-		withSequence:
-			count: "10"
-	- name: server
-	retryStrategy:
-		limit: "10"
-	daemon: true
-	container:
-		image: nginx:1.13
-		readinessProbe:
-		httpGet:
-			path: /
-			port: 80
-		initialDelaySeconds: 2
-		timeoutSeconds: 1
-	- name: client
-	inputs:
-		parameters:
-		- name: server-ip
-	synchronization:
-		mutex:
-		name: client-{{workflow.uid}}
-	container:
-		image: appropriate/curl:latest
-		command: ["/bin/sh", "-c"]
-		args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]
+  entrypoint: main
+  templates:
+  - name: main
+  steps:
+  - - name: server
+    template: server
+  - - name: client
+    template: client
+    arguments:
+      parameters:
+      - name: server-ip
+      value: "{{steps.server.ip}}"
+    withSequence:
+      count: "10"
+  - name: server
+  retryStrategy:
+    limit: "10"
+  daemon: true
+  container:
+    image: nginx:1.13
+    readinessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 2
+    timeoutSeconds: 1
+  - name: client
+  inputs:
+    parameters:
+    - name: server-ip
+  synchronization:
+    mutex:
+    name: client-{{workflow.uid}}
+  container:
+    image: appropriate/curl:latest
+    command: ["/bin/sh", "-c"]
+    args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]
 `).
 		When().
 		SubmitWorkflow().
