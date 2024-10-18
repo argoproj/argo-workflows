@@ -27,6 +27,7 @@ type Client interface {
 
 type Opts struct {
 	ArgoServerOpts ArgoServerOpts
+	ArgoKubeOpts   ArgoKubeOpts
 	InstanceID     string
 	AuthSupplier   func() string
 	// DEPRECATED: use `ClientConfigSupplier`
@@ -84,7 +85,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
 
-		ctx, client, err := newArgoKubeClient(opts.GetContext(), opts.ClientConfig, instanceid.NewService(opts.InstanceID))
+		ctx, client, err := newArgoKubeClient(opts.GetContext(), opts.ArgoKubeOpts, opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 		return ctx, client, err
 	}
 }
