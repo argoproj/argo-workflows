@@ -1206,33 +1206,33 @@ func TestPodCleaupPatch(t *testing.T) {
 
 	// pod finalizer enabled, patch label
 	patch, err := wfc.getPodCleanupPatch(pod, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expected := `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
 	assert.JSONEq(t, expected, string(patch))
 
 	// pod finalizer enabled, do not patch label
 	patch, err = wfc.getPodCleanupPatch(pod, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
 	assert.JSONEq(t, expected, string(patch))
 
 	// pod finalizer enabled, do not patch label, nil/empty finalizers
 	podWithNilFinalizers := &apiv1.Pod{}
 	patch, err = wfc.getPodCleanupPatch(podWithNilFinalizers, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, patch)
 
 	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
 
 	// pod finalizer disabled, patch both
 	patch, err = wfc.getPodCleanupPatch(pod, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expected = `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`
 	assert.JSONEq(t, expected, string(patch))
 
 	// pod finalizer disabled, do not patch label
 	patch, err = wfc.getPodCleanupPatch(pod, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, patch)
 }
 
