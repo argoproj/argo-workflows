@@ -109,7 +109,7 @@ func (wfc *WorkflowController) executorImage() string {
 	if v := wfc.Config.GetExecutor().Image; v != "" {
 		return v
 	}
-	return fmt.Sprintf("quay.io/argoproj/argoexec:" + argo.ImageTag())
+	return fmt.Sprintf("quay.io/argoproj/argoexec:%s", argo.ImageTag())
 }
 
 func (wfc *WorkflowController) executorLogFormat() string {

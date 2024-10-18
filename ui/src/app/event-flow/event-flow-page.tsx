@@ -1,4 +1,6 @@
-import {Page, SlidingPanel, Tabs} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
+import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import {useContext, useEffect, useState} from 'react';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
@@ -26,7 +28,7 @@ import {ListWatch} from '../shared/list-watch';
 import {RetryObservable} from '../shared/retry-observable';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {buildGraph} from './build-graph';
@@ -41,7 +43,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
     const [showWorkflows, setShowWorkflows] = useState(queryParams.get('showWorkflows') !== 'false');
     const [expanded, setExpanded] = useState(queryParams.get('expanded') === 'true');
@@ -62,7 +64,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
     useEffect(
         () =>
             history.push(
-                historyUrl('event-flow' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('event-flow' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     showFlow,
                     showWorkflows,

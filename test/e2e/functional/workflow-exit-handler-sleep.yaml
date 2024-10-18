@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-exit-handler-sleep
+spec:
+  entrypoint: argosay-template
+  onExit: exit-handler
+  templates:
+  - name: argosay-template
+    container:
+      image: argoproj/argosay:v2
+      args: ["echo", "hello-world"]
+  - name: sleep
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "600"]
+  - name: exit-handler
+    steps:
+      - - name: exit-handler-task
+          template: sleep

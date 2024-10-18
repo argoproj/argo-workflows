@@ -8,8 +8,8 @@ func NewArchiveCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "archive",
 		Short: "manage the workflow archive",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.HelpFunc()(cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
 		},
 	}
 

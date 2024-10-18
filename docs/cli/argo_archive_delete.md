@@ -6,6 +6,14 @@ delete a workflow in the archive
 argo archive delete UID... [flags]
 ```
 
+### Examples
+
+```
+# Delete an archived workflow by its UID:
+  argo archive delete abc123-def456-ghi789-jkl012
+
+```
+
 ### Options
 
 ```
@@ -15,7 +23,7 @@ argo archive delete UID... [flags]
 ### Options inherited from parent commands
 
 ```
-      --argo-base-href string          Path to use with HTTP client due to BASE_HREF. Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          Path to use with HTTP client due to Base HREF. Defaults to the ARGO_BASE_HREF environment variable.
       --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation

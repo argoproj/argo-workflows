@@ -6,6 +6,9 @@ spec:
   entrypoint: dag
   templates:
     - name: dag
+      retryStrategy:
+        limit: 2
+        retryPolicy: OnError
       dag:
         failFast: false
         tasks:

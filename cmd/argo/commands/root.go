@@ -19,6 +19,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/executorplugin"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 )
 
 const (
@@ -84,12 +85,12 @@ Use the same configuration as GRPC mode, but also set:
 
 	ARGO_HTTP1=true
 
-If your server is behind an ingress with a path (you'll be running "argo server --basehref /...) or "BASE_HREF=/... argo server"):
+If your server is behind an ingress with a path (running "argo server --base-href /argo" or "ARGO_BASE_HREF=/argo argo server"):
 
 	ARGO_BASE_HREF=/argo
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.HelpFunc()(cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
 		},
 	}
 
@@ -125,6 +126,9 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	var logLevel string
 	var glogLevel int
 	var verbose bool
+	command.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+		cmdutil.PrintVersionMismatchWarning(argo.GetVersion(), grpcutil.LastSeenServerVersion)
+	}
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if verbose {
 			logLevel = "debug"

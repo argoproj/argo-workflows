@@ -95,27 +95,8 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 		}
 		logCtx.WithField("err", err).Info("Ignoring duplicate key error")
 	}
-
-	logCtx.Debug("Nodes offloaded, cleaning up old offloads")
-
-	// This might fail, which kind of fine (maybe a bug).
-	// It might not delete all records, which is also fine, as we always key on resource version.
-	// We also want to keep enough around so that we can service watches.
-	rs, err := wdc.session.SQL().
-		DeleteFrom(wdc.tableName).
-		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(db.Cond{"uid": uid}).
-		And(db.Cond{"version <>": version}).
-		And(wdc.oldOffload()).
-		Exec()
-	if err != nil {
-		return "", err
-	}
-	rowsAffected, err := rs.RowsAffected()
-	if err != nil {
-		return "", err
-	}
-	logCtx.WithField("rowsAffected", rowsAffected).Debug("Deleted offloaded nodes")
+	// Don't need to clean up the old records here, we have a scheduled cleanup mechanism.
+	// If we clean them up here, when we update, if there is an update conflict, we will not be able to go back.
 	return version, nil
 }
 

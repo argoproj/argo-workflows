@@ -1,4 +1,4 @@
-import {Page} from 'argo-ui/src/index';
+import {Page} from 'argo-ui/src/components/page/page';
 import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 import * as React from 'react';
@@ -15,7 +15,7 @@ import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {ReportFilters} from './reports-filters';
 import {workflowsToChartData} from './workflows-to-chart-data';
 
@@ -31,7 +31,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
-    const [namespace, setNamespace] = useState<string>(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [labels, setLabels] = useState((queryParams.get('labels') || '').split(',').filter(v => v !== ''));
     // internal state
     const [charts, setCharts] = useState<Chart[]>();
@@ -39,7 +39,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
 
     // save history
     useEffect(() => {
-        history.push(historyUrl('reports' + (Utils.managedNamespace ? '' : '/{namespace}'), {namespace, labels: labels.join(',')}));
+        history.push(historyUrl('reports' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, labels: labels.join(',')}));
     }, [namespace, labels]);
 
     async function onChange(newNamespace: string, newLabels: string[]) {

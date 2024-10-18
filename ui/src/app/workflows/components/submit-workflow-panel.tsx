@@ -1,12 +1,13 @@
-import {Select} from 'argo-ui';
-import React, {useMemo, useState} from 'react';
+import {Select} from 'argo-ui/src/components/select/select';
+import React, {useContext, useMemo, useState} from 'react';
+
 import {Parameter, Template} from '../../../models';
+import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
-import {ParametersInput} from '../../shared/components/parameters-input';
+import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {services} from '../../shared/services';
-import {Utils} from '../../shared/utils';
 
 interface Props {
     kind: string;
@@ -26,6 +27,7 @@ const defaultTemplate: Template = {
 };
 
 export function SubmitWorkflowPanel(props: Props) {
+    const {navigation} = useContext(Context);
     const [entrypoint, setEntrypoint] = useState(workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
@@ -50,12 +52,12 @@ export function SubmitWorkflowPanel(props: Props) {
             const submitted = await services.workflows.submit(props.kind, props.name, props.namespace, {
                 entryPoint: entrypoint === workflowEntrypoint ? null : entrypoint,
                 parameters: [
-                    ...workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p)),
-                    ...parameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p))
+                    ...workflowParameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p)),
+                    ...parameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p))
                 ],
                 labels: labels.join(',')
             });
-            document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
+            navigation.goto(uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`));
         } catch (err) {
             setError(err);
             setIsSubmitting(false);

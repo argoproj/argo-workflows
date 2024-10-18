@@ -8,9 +8,10 @@ import (
 	"github.com/jcmturner/gokrb5/v8/config"
 )
 
-func createHDFSClient(addresses []string, user string, krbOptions *KrbOptions) (*hdfs.Client, error) {
+func createHDFSClient(addresses []string, user string, dataTransferProtection string, krbOptions *KrbOptions) (*hdfs.Client, error) {
 	options := hdfs.ClientOptions{
-		Addresses: addresses,
+		Addresses:              addresses,
+		DataTransferProtection: dataTransferProtection,
 	}
 
 	if krbOptions != nil {

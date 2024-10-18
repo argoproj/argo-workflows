@@ -23,12 +23,31 @@ func IgnoreContainerNotFoundErr(err error) error {
 	return err
 }
 
+// IsTransientErr reports whether the error is transient and logs it.
 func IsTransientErr(err error) bool {
+	isTransient := IsTransientErrQuiet(err)
+	if !isTransient {
+		log.Warnf("Non-transient error: %v", err)
+	}
+	return isTransient
+}
+
+// IsTransientErrQuiet reports whether the error is transient and logs only if it is.
+func IsTransientErrQuiet(err error) bool {
+	isTransient := isTransientErr(err)
+	if isTransient {
+		log.Infof("Transient error: %v", err)
+	}
+	return isTransient
+}
+
+// isTransientErr reports whether the error is transient.
+func isTransientErr(err error) bool {
 	if err == nil {
 		return false
 	}
 	err = argoerrs.Cause(err)
-	isTransient := isExceededQuotaErr(err) ||
+	return isExceededQuotaErr(err) ||
 		apierr.IsTooManyRequests(err) ||
 		isResourceQuotaConflictErr(err) ||
 		isResourceQuotaTimeoutErr(err) ||
@@ -37,13 +56,8 @@ func IsTransientErr(err error) bool {
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||
 		matchTransientErrPattern(err) ||
-		errors.Is(err, NewErrTransient(""))
-	if isTransient {
-		log.Infof("Transient error: %v", err)
-	} else {
-		log.Warnf("Non-transient error: %v", err)
-	}
-	return isTransient
+		errors.Is(err, NewErrTransient("")) ||
+		isTransientSqbErr(err)
 }
 
 func matchTransientErrPattern(err error) bool {
@@ -111,6 +125,9 @@ func isTransientNetworkErr(err error) bool {
 	} else if strings.Contains(errorString, "connect: connection refused") {
 		// If err is connection refused, retry.
 		return true
+	} else if strings.Contains(errorString, "invalid connection") {
+		// If err is invalid connection, retry.
+		return true
 	}
 
 	return false
@@ -122,4 +139,8 @@ func generateErrorString(err error) string {
 		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
 	}
 	return errorString
+}
+
+func isTransientSqbErr(err error) bool {
+	return strings.Contains(err.Error(), "upper: no more rows in")
 }

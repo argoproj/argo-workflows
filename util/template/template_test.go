@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type SimpleValue struct {
@@ -13,12 +14,12 @@ type SimpleValue struct {
 
 func processTemplate(t *testing.T, tmpl SimpleValue, replaceMap map[string]string) SimpleValue {
 	tmplBytes, err := json.Marshal(tmpl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	r, err := Replace(string(tmplBytes), replaceMap, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	var newTmpl SimpleValue
 	err = json.Unmarshal([]byte(r), &newTmpl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return newTmpl
 }
 
@@ -65,4 +66,25 @@ func Test_Template_Replace(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("ExpressionWithJsonPath", func(t *testing.T) {
+		testCases := map[string]struct {
+			input, want string
+		}{
+			"ExprNumArrayOutput":      {input: `{{=jsonpath('{"employees": [{"name": "Baris", "age":43, "friends": ["Mo", "Jai"]}, {"name": "Mo", "age": 42, "friends": ["Baris", "Jai"]}, {"name": "Jai", "age" :44, "friends": ["Baris", "Mo"]}]}', '$.employees[*].name')}}`, want: "[\"Baris\",\"Mo\",\"Jai\"]"},
+			"ExprStringArrayOutput":   {input: `{{=jsonpath('{"employees": [{"name": "Baris", "age":43, "friends": ["Mo", "Jai"]}, {"name": "Mo", "age": 42, "friends": ["Baris", "Jai"]}, {"name": "Jai", "age" :44, "friends": ["Baris", "Mo"]}]}', '$.employees[0].friends')}}`, want: "[\"Mo\",\"Jai\"]"},
+			"ExprSimpleObjectOutput":  {input: `{{=jsonpath('{"employees": [{"name": "Baris", "age":43},{"name": "Mo", "age": 42}, {"name": "Jai", "age" :44}]}', '$.employees[0]')}}`, want: "{\"age\":43,\"name\":\"Baris\"}"},
+			"ExprObjectArrayOutput":   {input: `{{=jsonpath('{"employees": [{"name": "Baris", "age":43},{"name": "Mo", "age": 42}, {"name": "Jai", "age" :44}]}', '$')}}`, want: "{\"employees\":[{\"age\":43,\"name\":\"Baris\"},{\"age\":42,\"name\":\"Mo\"},{\"age\":44,\"name\":\"Jai\"}]}"},
+			"ExprArrayInObjectOutput": {input: `{{=jsonpath('{"employees": [{"name": "Baris", "age":43, "friends": ["Mo", "Jai"]}, {"name": "Mo", "age": 42, "friends": ["Baris", "Jai"]}, {"name": "Jai", "age" :44, "friends": ["Baris", "Mo"]}]}', '$.employees[0]')}}`, want: "{\"age\":43,\"friends\":[\"Mo\",\"Jai\"],\"name\":\"Baris\"}"},
+		}
+
+		for name, tc := range testCases {
+			t.Run(name, func(t *testing.T) {
+				tmpl := SimpleValue{Value: tc.input}
+				newTmpl := processTemplate(t, tmpl, map[string]string{})
+				assert.Equal(t, tc.want, newTmpl.Value)
+			})
+		}
+	})
+
 }

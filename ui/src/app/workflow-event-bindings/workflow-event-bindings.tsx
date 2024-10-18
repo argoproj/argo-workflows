@@ -1,4 +1,5 @@
-import {Page, SlidingPanel} from 'argo-ui';
+import {Page} from 'argo-ui/src/components/page/page';
+import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
@@ -19,7 +20,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
 import {useQueryParams} from '../shared/use-query-params';
-import {Utils} from '../shared/utils';
+import * as nsUtils from '../shared/namespaces';
 import {ID} from './id';
 
 const introductionText = (
@@ -36,7 +37,7 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [selectedWorkflowEventBinding, setSelectedWorkflowEventBinding] = useState(queryParams.get('selectedWorkflowEventBinding'));
 
     useEffect(
@@ -49,7 +50,7 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
     useEffect(
         () =>
             history.push(
-                historyUrl('workflow-event-bindings' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('workflow-event-bindings' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                     namespace,
                     selectedWorkflowEventBinding
                 })

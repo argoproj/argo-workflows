@@ -28,6 +28,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -71,7 +72,7 @@ func init() {
 	log.WithField("cronSyncPeriod", cronSyncPeriod).Info("cron config")
 }
 
-func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics,
+func NewCronController(ctx context.Context, wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics,
 	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
@@ -81,7 +82,7 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cron:                 newCronFacade(),
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
-		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
 		wftmplInformer:       wftmplInformer,
@@ -172,10 +173,11 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		logCtx.WithError(err).Error("malformed cron workflow: could not convert from unstructured")
 		return true
 	}
+	ctx = wfctx.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
 
 	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
 
-	err = cronWorkflowOperationCtx.validateCronWorkflow()
+	err = cronWorkflowOperationCtx.validateCronWorkflow(ctx)
 	if err != nil {
 		logCtx.WithError(err).Error("invalid cron workflow")
 		return true
@@ -193,7 +195,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	// The job is currently scheduled, remove it and re add it.
 	cc.cron.Delete(key.(string))
 
-	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone() {
+	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone(ctx) {
 		lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), schedule, cronWorkflowOperationCtx)
 		if err != nil {
 			logCtx.WithError(err).Error("could not schedule CronWorkflow")

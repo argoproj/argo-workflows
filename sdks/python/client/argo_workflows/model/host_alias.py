@@ -81,8 +81,8 @@ class HostAlias(ModelNormal):
                 and the value is attribute type.
         """
         return {
-            'hostnames': ([str],),  # noqa: E501
             'ip': (str,),  # noqa: E501
+            'hostnames': ([str],),  # noqa: E501
         }
 
     @cached_property
@@ -91,8 +91,8 @@ class HostAlias(ModelNormal):
 
 
     attribute_map = {
-        'hostnames': 'hostnames',  # noqa: E501
         'ip': 'ip',  # noqa: E501
+        'hostnames': 'hostnames',  # noqa: E501
     }
 
     read_only_vars = {
@@ -102,8 +102,11 @@ class HostAlias(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, ip, *args, **kwargs):  # noqa: E501
         """HostAlias - a model defined in OpenAPI
+
+        Args:
+            ip (str): IP address of the host file entry.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -137,7 +140,6 @@ class HostAlias(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             hostnames ([str]): Hostnames for the above IP address.. [optional]  # noqa: E501
-            ip (str): IP address of the host file entry.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -165,6 +167,7 @@ class HostAlias(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.ip = ip
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -185,8 +188,11 @@ class HostAlias(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, *args, **kwargs):  # noqa: E501
+    def __init__(self, ip, *args, **kwargs):  # noqa: E501
         """HostAlias - a model defined in OpenAPI
+
+        Args:
+            ip (str): IP address of the host file entry.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -220,7 +226,6 @@ class HostAlias(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             hostnames ([str]): Hostnames for the above IP address.. [optional]  # noqa: E501
-            ip (str): IP address of the host file entry.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -246,6 +251,7 @@ class HostAlias(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.ip = ip
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

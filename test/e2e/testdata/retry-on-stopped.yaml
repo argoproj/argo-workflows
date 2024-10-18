@@ -29,6 +29,7 @@ spec:
     - name: stop
       container:
         image: quay.io/argoproj/argocli:latest
+        imagePullPolicy: Never
         args:
           - stop
           - -l

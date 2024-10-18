@@ -16,7 +16,10 @@ export function PrettySchedule({schedule}: {schedule: string}) {
     try {
         if (schedule.split(' ').length >= 6) {
             throw new Error('cron schedules must consist of 5 values only');
+        } else if (schedule.startsWith('@every')) {
+            return null;
         }
+
         const pretty = x.toString(schedule);
         return <span title={pretty}>{pretty}</span>;
     } catch (e) {
