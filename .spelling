@@ -23,7 +23,6 @@
 5xx
 8Ki
 90m
-ARGO_TEMPLATE
 Alexandre
 Alibaba
 Ang
@@ -166,7 +165,6 @@ govaluate
 gzipped
 i.e.
 idempotence
-inputs.parameters
 instantiator
 instantiators
 jenkins
