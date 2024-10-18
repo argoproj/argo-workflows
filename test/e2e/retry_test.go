@@ -236,10 +236,9 @@ func (s *RetryTestSuite) TestRetryDaemonContainer() {
 	s.Given().
 		Workflow(`
 metadata:
-	name: steps-daemon-retry
+	name: test-stepsdaemonretry-strategy
 spec:
 	entrypoint: main
-
 	templates:
 	- name: main
 	steps:
@@ -253,7 +252,6 @@ spec:
 			value: "{{steps.server.ip}}"
 		withSequence:
 			count: "10"
-
 	- name: server
 	retryStrategy:
 		limit: "10"
@@ -266,7 +264,6 @@ spec:
 			port: 80
 		initialDelaySeconds: 2
 		timeoutSeconds: 1
-
 	- name: client
 	inputs:
 		parameters:
