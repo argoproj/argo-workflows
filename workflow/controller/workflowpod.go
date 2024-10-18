@@ -185,7 +185,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		},
 	}
 
-	if os.Getenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") == "true" {
+	if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" {
 		pod.ObjectMeta.Finalizers = append(pod.ObjectMeta.Finalizers, common.FinalizerPodStatus)
 	}
 
