@@ -1,5 +1,5 @@
 import {Select} from 'argo-ui/src/components/select/select';
-import React, {useContext, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
 
 import {Parameter, Template} from '../../../models';
 import {Context} from '../../shared/context';
@@ -8,6 +8,8 @@ import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {services} from '../../shared/services';
+import {getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
+import {History} from 'history';
 
 interface Props {
     kind: string;
@@ -16,6 +18,7 @@ interface Props {
     entrypoint: string;
     templates: Template[];
     workflowParameters: Parameter[];
+    history: History;
 }
 
 const workflowEntrypoint = '<default>';
@@ -28,12 +31,22 @@ const defaultTemplate: Template = {
 
 export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
-    const [entrypoint, setEntrypoint] = useState(workflowEntrypoint);
+    const [entrypoint, setEntrypoint] = useState(props.entrypoint || workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
     const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
+        // Get the user arguments from the query params
+        const updatedParams = workflowParameters.map(param => ({
+            name: param.name,
+            value: templatePropertiesInQuery[param.name] || param.value
+        }));
+        setWorkflowParameters(updatedParams);
+    }, [props.history, setWorkflowParameters]);
 
     const templates = useMemo(() => {
         return [defaultTemplate].concat(props.templates);
