@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	extwfv1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type tolerantWorkflowTemplateInformer struct {
@@ -22,9 +23,7 @@ type tolerantWorkflowTemplateInformer struct {
 // a drop-in replacement for `extwfv1.WorkflowTemplateInformer` that ignores malformed resources
 func NewTolerantWorkflowTemplateInformer(dynamicInterface dynamic.Interface, defaultResync time.Duration, namespace string) extwfv1.WorkflowTemplateInformer {
 	return &tolerantWorkflowTemplateInformer{delegate: dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicInterface, defaultResync, namespace, func(options *metav1.ListOptions) {
-		// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
-		// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-		options.ResourceVersion = ""
+		util.CheckResourceVersion(options)
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural})}
 }
 
