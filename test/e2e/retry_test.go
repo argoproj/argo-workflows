@@ -232,6 +232,68 @@ spec:
 		})
 }
 
+func (s *RetryTestSuite) TestRetryDaemonContainer() {
+	s.Given().
+		Workflow(`
+metadata:
+	name: steps-daemon-retry
+spec:
+	entrypoint: main
+
+	templates:
+	- name: main
+	steps:
+	- - name: server
+		template: server
+	- - name: client
+		template: client
+		arguments:
+			parameters:
+			- name: server-ip
+			value: "{{steps.server.ip}}"
+		withSequence:
+			count: "10"
+
+	- name: server
+	retryStrategy:
+		limit: "10"
+	daemon: true
+	container:
+		image: nginx:1.13
+		readinessProbe:
+		httpGet:
+			path: /
+			port: 80
+		initialDelaySeconds: 2
+		timeoutSeconds: 1
+
+	- name: client
+	inputs:
+		parameters:
+		- name: server-ip
+	synchronization:
+		mutex:
+		name: client-{{workflow.uid}}
+	container:
+		image: appropriate/curl:latest
+		command: ["/bin/sh", "-c"]
+		args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(func(wf *wfv1.Workflow) (bool, string) {
+			return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				return node.GetTemplateName() == "client" && node.Phase == wfv1.NodeSucceeded
+			}), "waiting for at least one client to succeed"
+		}).DeleteNodePod("steps-daemon-retry.server(0)").
+		Wait(10 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			_, err := status.Nodes.FindByName("steps-daemon-retry.server(1)")
+			assert.Nil(t, err)
+		})
+}
+
 func TestRetrySuite(t *testing.T) {
 	suite.Run(t, new(RetryTestSuite))
 }
