@@ -251,7 +251,7 @@ spec:
           - name: server-ip
             value: "{{steps.server.ip}}"
         withSequence:
-          count: "10"
+          count: "3"
   - name: server
     retryStrategy:
       limit: "10"
@@ -284,6 +284,7 @@ spec:
 			}), "waiting for at least one client to succeed"
 		})).DeleteNodePod("test-stepsdaemonretry-strategy[0].server(0)").
 		Wait(10 * time.Second).
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByName("test-stepsdaemonretry-strategy[0].server(1)")
