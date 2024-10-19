@@ -274,7 +274,7 @@ spec:
     container:
       image: appropriate/curl:latest
       command: ["/bin/sh", "-c"]
-      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]
+      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && sleep 10"]
 `).
 		When().
 		SubmitWorkflow().

@@ -527,7 +527,11 @@ func (w *When) DeletePod(name string) *When {
 	w.t.Helper()
 	ctx := context.Background()
 	fmt.Printf("deleting pod %s\n", name)
-	err := w.kubeClient.CoreV1().Pods(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	_, err := w.kubeClient.CoreV1().Pods(Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		w.t.Fatalf("pod %s not found", name)
+	}
+	err = w.kubeClient.CoreV1().Pods(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
