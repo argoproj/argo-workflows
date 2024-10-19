@@ -264,7 +264,7 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 		// add indexes for list archived workflow performance. #8836
 		ansiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (startedat)`),
 		ansiSQLChange(`create index argo_archived_workflows_labels_i1 on argo_archived_workflows_labels (name,value)`),
-		// PostgreSQL only: convert argo_archived_workflows.workflow column to JSONB for performance. #13601
+		// PostgreSQL only: convert argo_archived_workflows.workflow column to JSONB for performance and consistency with MySQL. #13779
 		ternary(dbType == MySQL,
 			noop{},
 			ansiSQLChange(`alter table argo_archived_workflows alter column workflow set data type jsonb using workflow::jsonb`),
