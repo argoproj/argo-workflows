@@ -210,7 +210,8 @@ spec:
       args: ["-c", "echo hi & sleep 15 && echo bye"]
 `).
 		When().
-		WaitForWorkflow(fixtures.ToBeCompleted).
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("daemoned(1)")
