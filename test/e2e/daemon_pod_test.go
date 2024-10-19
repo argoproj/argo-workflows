@@ -202,7 +202,7 @@ spec:
     container:
       image: argoproj/argosay:v2
       command: ["bash"]
-      args: ["-c", "sleep 5 && exit 1"]
+      args: ["-c", "sleep 10 && exit 1"]
   - name: whale-tmpl
     container:
       image: argoproj/argosay:v2
@@ -214,9 +214,12 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			node := status.Nodes.FindByDisplayName("daemoned(1)")
-			require.NotNil(t, node)
-			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			failedNode := status.Nodes.FindByDisplayName("daemoned(0)")
+			succeededNode := status.Nodes.FindByDisplayName("daemoned(1)")
+			require.NotNil(t, failedNode)
+			require.NotNil(t, succeededNode)
+			assert.Equal(t, wfv1.NodeFailed, failedNode.Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, succeededNode.Phase)
 			assert.Equal(t, status.Phase, wfv1.WorkflowSucceeded)
 		})
 }
