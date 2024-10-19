@@ -220,7 +220,7 @@ spec:
 			require.NotNil(t, succeededNode)
 			assert.Equal(t, wfv1.NodeFailed, failedNode.Phase)
 			assert.Equal(t, wfv1.NodeSucceeded, succeededNode.Phase)
-			assert.Equal(t, status.Phase, wfv1.WorkflowSucceeded)
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 
