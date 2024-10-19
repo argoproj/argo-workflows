@@ -320,6 +320,23 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 		simplifiedTmpl.Container.VolumeMounts = filteredVolumeMounts
 	}
+	if simplifiedTmpl.Script != nil && simplifiedTmpl.Script.VolumeMounts != nil {
+		var filteredVolumeMountsScript []apiv1.VolumeMount
+		for _, mnt := range simplifiedTmpl.Script.VolumeMounts {
+			isConfigMapVolumeScript := false
+			for _, vol := range pod.Spec.Volumes {
+				if vol.Name == mnt.Name && vol.ConfigMap != nil && vol.Name != "argo-env-config" {
+					isConfigMapVolumeScript = true
+					break
+				}
+			}
+			if isConfigMapVolumeScript {
+				continue
+			}
+			filteredVolumeMountsScript = append(filteredVolumeMountsScript, mnt)
+		}
+		simplifiedTmpl.Script.VolumeMounts = filteredVolumeMountsScript
+	}
 
 	envVarTemplateValue := wfv1.MustMarshallJSON(simplifiedTmpl)
 
