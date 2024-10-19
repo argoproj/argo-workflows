@@ -286,7 +286,7 @@ spec:
 		Wait(10 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			node := status.Nodes.FindByName("steps-daemon-retry.server(1)")
+			node := status.Nodes.FindByName("test-stepsdaemonretry-strategy[0].server(1)")
 			assert.NotNil(t, node)
 		})
 }
