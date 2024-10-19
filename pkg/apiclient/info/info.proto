@@ -22,6 +22,10 @@ message GetVersionRequest {
 }
 
 message GetUserInfoRequest {
+  // The namespace in which to look for a service account.
+  // Only used when SSO RBAC namespace delegation is enabled.
+  // Defaults to the installation namespace.
+  string namespace = 1;
 }
 
 message GetUserInfoResponse {
