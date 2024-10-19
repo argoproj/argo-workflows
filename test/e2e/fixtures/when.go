@@ -21,6 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type When struct {
@@ -540,7 +541,8 @@ func (w *When) DeleteNodePod(name string) *When {
 		w.t.Fatal(err)
 	}
 	fmt.Printf("deleting pod %s from node %s\n", "", name)
-	w.DeletePod(node.ID)
+	podName := util.GeneratePodName(w.wf.Name, name, node.GetTemplateName(), node.ID, util.GetWorkflowPodNameVersion(w.wf))
+	w.DeletePod(podName)
 
 	return w
 }
