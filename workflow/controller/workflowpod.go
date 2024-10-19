@@ -304,7 +304,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// simplify template by clearing useless volumemounts related to user configmaps ie somecode.py
 	if simplifiedTmpl.Container != nil && simplifiedTmpl.Container.VolumeMounts != nil {
-	    var filteredVolumeMounts []v1.VolumeMount
+	    var filteredVolumeMounts []apiv1.VolumeMount
 	    for _, mnt := range simplifiedTmpl.Container.VolumeMounts {
 	        isConfigMapVolume := false
 	        for _, vol := range pod.Spec.Volumes {
