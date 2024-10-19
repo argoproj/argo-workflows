@@ -293,7 +293,8 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                         {execSpec(workflow).podGC.deleteDelayDuration ? `after ${execSpec(workflow).podGC.deleteDelayDuration}` : 'immediately'} on completion.
                     </>
                 )}{' '}
-                Logs may not appear for pods that are deleted unless you have <a href="https://argo-workflows.readthedocs.io/en/latest/configure-archive-logs">archive logs</a> enabled.{' '}
+                Logs may not appear for pods that are deleted unless you have <a href="https://argo-workflows.readthedocs.io/en/latest/configure-archive-logs">archive logs</a>{' '}
+                enabled.{' '}
                 {podName ? (
                     <Links
                         object={{
