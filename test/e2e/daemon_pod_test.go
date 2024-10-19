@@ -212,7 +212,7 @@ spec:
 		When().
 		SubmitWorkflow().
 		Then().
-		WaitForWorkflow(fixtures.Succeeded).
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("daemoned(1)")
 			require.NotNil(t, node)
