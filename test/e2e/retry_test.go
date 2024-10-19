@@ -278,11 +278,11 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(func(wf *wfv1.Workflow) (bool, string) {
+		WaitForWorkflow((fixtures.Condition)(func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 				return node.GetTemplateName() == "client" && node.Phase == wfv1.NodeSucceeded
 			}), "waiting for at least one client to succeed"
-		}).DeleteNodePod("steps-daemon-retry.server(0)").
+		})).DeleteNodePod("steps-daemon-retry.server(0)").
 		Wait(10 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
