@@ -301,6 +301,26 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	simplifiedTmpl.Inputs = wfv1.Inputs{
 		Artifacts: simplifiedTmpl.Inputs.Artifacts,
 	}
+
+	// simplify template by clearing useless volumemounts related to user configmaps ie somecode.py
+	if simplifiedTmpl.Container != nil && simplifiedTmpl.Container.VolumeMounts != nil {
+	    var filteredVolumeMounts []v1.VolumeMount
+	    for _, mnt := range simplifiedTmpl.Container.VolumeMounts {
+	        isConfigMapVolume := false
+	        for _, vol := range pod.Spec.Volumes {
+	            if vol.Name == mnt.Name && vol.ConfigMap != nil && vol.Name != "argo-env-config" {
+	                isConfigMapVolume = true
+	                break
+	            }
+	        }
+	        if isConfigMapVolume {
+	            continue
+	        }
+	        filteredVolumeMounts = append(filteredVolumeMounts, mnt)
+	    }
+	    simplifiedTmpl.Container.VolumeMounts = filteredVolumeMounts
+	}
+
 	envVarTemplateValue := wfv1.MustMarshallJSON(simplifiedTmpl)
 
 	// Add standard environment variables, making pod spec larger
