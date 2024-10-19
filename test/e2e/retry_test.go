@@ -249,7 +249,7 @@ spec:
         arguments:
           parameters:
           - name: server-ip
-          value: "{{steps.server.ip}}"
+            value: "{{steps.server.ip}}"
         withSequence:
           count: "10"
   - name: server
