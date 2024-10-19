@@ -64,7 +64,7 @@ spec:
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			// Ensure that the workflow ran for less than 10 seconds
-			// assert.Less(t, status.FinishedAt.Sub(status.StartedAt.Time), time.Duration(10*fixtures.EnvFactor)*time.Second)
+			assert.Less(t, status.FinishedAt.Sub(status.StartedAt.Time), time.Duration(10*fixtures.EnvFactor)*time.Second)
 
 			var finishedTimes []time.Time
 			var startTimes []time.Time
