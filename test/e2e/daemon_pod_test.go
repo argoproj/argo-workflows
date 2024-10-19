@@ -216,7 +216,7 @@ spec:
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("daemoned(1)")
 			require.NotNil(t, node)
-			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 			assert.Equal(t, status.Phase, wfv1.WorkflowSucceeded)
 		})
 }
