@@ -19,9 +19,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-// type RetryTestSuite struct {
-// 	fixtures.E2ESuite
-// }
+type RetryTestSuite struct {
+	fixtures.E2ESuite
+}
 
 // func (s *RetryTestSuite) TestRetryLimit() {
 // 	s.Given().
