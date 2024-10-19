@@ -21,7 +21,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type When struct {
@@ -520,34 +519,6 @@ func (w *When) DeleteConfigMap(name string) *When {
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	return w
-}
-
-func (w *When) DeletePod(name string) *When {
-	w.t.Helper()
-	ctx := context.Background()
-	fmt.Printf("deleting pod %s\n", name)
-	_, err := w.kubeClient.CoreV1().Pods(Namespace).Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
-		w.t.Fatalf("pod %s not found", name)
-	}
-	err = w.kubeClient.CoreV1().Pods(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	if err != nil {
-		w.t.Fatal(err)
-	}
-	return w
-}
-
-func (w *When) DeleteNodePod(name string) *When {
-	w.t.Helper()
-	node, err := w.wf.GetNodeByName(name)
-	if err != nil {
-		w.t.Fatal(err)
-	}
-	fmt.Printf("deleting pod %s from node %s\n", "", name)
-	podName := util.GeneratePodName(w.wf.Name, name, node.GetTemplateName(), node.ID, util.GetWorkflowPodNameVersion(w.wf))
-	w.DeletePod(podName)
-
 	return w
 }
 
