@@ -817,11 +817,12 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{})
 	retries := wfv1.RetryStrategy{}
-	retries.Limit = intstrutil.ParsePtr("2")
+	retries.Limit = intstrutil.ParsePtr("3")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	retries.Backoff = &wfv1.Backoff{
 		Duration: "5m",
 		Factor:   intstrutil.ParsePtr("2"),
+		Cap:      "11m",
 	}
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -862,6 +863,21 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.NoError(err)
 	require.LessOrEqual(backoff, 600)
 	require.Less(595, backoff)
+
+	woc.initializeNode(nodeName+"(2)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeError, &wfv1.NodeFlag{Retried: true})
+	woc.addChildNode(nodeName, nodeName+"(2)")
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(err)
+
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
+	require.NoError(err)
+	require.Equal(wfv1.NodeRunning, n.Phase)
+
+	// Third backoff should be limited to 660 seconds by the Cap.
+	backoff, err = parseRetryMessage(n.Message)
+	require.NoError(err)
+	require.LessOrEqual(backoff, 660)
+	require.Less(655, backoff)
 
 	// Mark lastChild as successful.
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
