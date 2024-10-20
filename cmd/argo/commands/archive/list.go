@@ -21,6 +21,7 @@ func NewListCommand() *cobra.Command {
 		selector  string
 		output    = common.NewPrintWorkflowOutputValue("wide")
 		chunkSize int64
+		prefix  string
 	)
 	command := &cobra.Command{
 		Use:   "list",
@@ -47,7 +48,7 @@ func NewListCommand() *cobra.Command {
 				return err
 			}
 			namespace := client.Namespace()
-			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, selector, chunkSize)
+			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, selector, chunkSize, prefix)
 			if err != nil {
 				return err
 			}
@@ -55,12 +56,13 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
+	command.Flags().StringVar(&prefix, "prefix", "", "Filter workflows by prefix")
 	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().Int64VarP(&chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	return command
 }
 
-func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, namespace string, labelSelector string, chunkSize int64) (wfv1.Workflows, error) {
+func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, namespace string, labelSelector string, chunkSize int64, prefix string) (wfv1.Workflows, error) {
 	listOpts := &metav1.ListOptions{
 		LabelSelector: labelSelector,
 		Limit:         chunkSize,
@@ -68,7 +70,7 @@ func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg
 	var workflows wfv1.Workflows
 	for {
 		log.WithField("listOpts", listOpts).Debug()
-		resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: namespace, ListOptions: listOpts})
+		resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: namespace, ListOptions: listOpts, NamePrefix: prefix})
 		if err != nil {
 			return nil, err
 		}
