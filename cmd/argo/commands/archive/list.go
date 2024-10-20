@@ -21,7 +21,7 @@ func NewListCommand() *cobra.Command {
 		selector  string
 		output    = common.NewPrintWorkflowOutputValue("wide")
 		chunkSize int64
-		prefix  string
+		prefix    string
 	)
 	command := &cobra.Command{
 		Use:   "list",
