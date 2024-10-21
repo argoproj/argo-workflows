@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, {useMemo, useState} from 'react';
 
 import {ArtifactRepositoryRefStatus, NODE_PHASE, NodeStatus} from '../../../../models';
 import {nodeArtifacts} from '../../../shared/artifacts';
@@ -18,11 +18,17 @@ export interface WorkflowDagRenderOptions {
 interface WorkflowDagProps {
     workflowName: string;
     artifactRepositoryRef?: ArtifactRepositoryRefStatus;
-    nodes: {[nodeId: string]: NodeStatus};
+    nodes: Record<string, NodeStatus>;
     selectedNodeId?: string;
     nodeSize?: number;
     hideOptions?: boolean;
-    nodeClicked?: (nodeId: string) => any;
+    nodeClicked?: (nodeId: string) => void;
+}
+
+interface PrepareNode {
+    nodeName: string;
+    children: string[];
+    parent: string;
 }
 
 function progress(n: NodeStatus) {
@@ -48,94 +54,89 @@ function nodeLabel(n: NodeStatus) {
     };
 }
 
-const classNames = (() => {
-    const v: {[label: string]: boolean} = {
-        Artifact: true,
-        Suspended: true,
-        Collapsed: true
-    };
-    Object.entries(NODE_PHASE).forEach(([, label]) => (v[label] = true));
-    return v;
-})();
+const classNames = {
+    Artifact: true,
+    Suspended: true,
+    Collapsed: true,
+    ...Object.entries(NODE_PHASE).reduce((acc, [, value]) => ({...acc, [value]: true}), {})
+};
 
-export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
-    private graph: Graph;
+export function WorkflowDag(props: WorkflowDagProps) {
+    const artifactRepository = props.artifactRepositoryRef?.artifactRepository || {};
+    const tags: Record<string, boolean> = Object.values(props.nodes || {}).reduce((acc, node) => ({...acc, [getNodeLabelTemplateName(node)]: true}), {});
 
-    constructor(props: Readonly<WorkflowDagProps>) {
-        super(props);
-        this.state = {
-            expandNodes: new Set(),
-            showArtifacts: localStorage.getItem('showArtifacts') !== 'false'
-        };
-    }
+    const [expandNodes, setExpandNodes] = useState(new Set<string>());
+    const [showArtifacts, setShowArtifacts] = useState(localStorage.getItem('showArtifacts') !== 'false');
 
-    private get artifactRepository() {
-        return this.props.artifactRepositoryRef?.artifactRepository || {};
-    }
+    const graph = useMemo(() => {
+        const newGraph = new Graph();
+        const {edges, nodes} = newGraph;
 
-    public render() {
-        this.prepareGraph();
-
-        const tags: {[key: string]: boolean} = {};
-        Object.values(this.props.nodes || {}).forEach(n => (tags[getNodeLabelTemplateName(n)] = true));
-
-        return (
-            <GraphPanel
-                storageScope='workflow-dag'
-                graph={this.graph}
-                nodeGenresTitle={'Node Type'}
-                nodeGenres={genres}
-                nodeClassNamesTitle={'Node Phase'}
-                nodeClassNames={classNames}
-                nodeTagsTitle={'Template'}
-                nodeTags={tags}
-                nodeSize={this.props.nodeSize || 32}
-                defaultIconShape='circle'
-                hideNodeTypes={true}
-                hideOptions={this.props.hideOptions}
-                selectedNode={this.props.selectedNodeId}
-                onNodeSelect={id => this.selectNode(id)}
-                options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
-            />
-        );
-    }
-
-    private saveOptions(newChanges: WorkflowDagRenderOptions) {
-        localStorage.setItem('showArtifacts', newChanges.showArtifacts ? 'true' : 'false');
-        this.setState(newChanges);
-    }
-
-    private getNode(nodeId: string): NodeStatus {
-        const node: NodeStatus = this.props.nodes[nodeId];
-        if (!node) {
-            return null;
-        }
-        return node;
-    }
-
-    private prepareGraph() {
-        this.graph = new Graph();
-        const edges = this.graph.edges;
-        const nodes = this.graph.nodes;
-
-        interface PrepareNode {
-            nodeName: string;
-            children: string[];
-            parent: string;
+        if (!props.nodes) {
+            return newGraph;
         }
 
-        if (!this.props.nodes) {
-            return;
+        const allNodes = props.nodes;
+
+        // Traverse the workflow from the root node
+        traverse({
+            nodeName: props.workflowName,
+            parent: '',
+            children: getChildren(props.workflowName)
+        });
+
+        const onExitHandlerNode = Object.values(allNodes).find(node => node.name === `${props.workflowName}.onExit`);
+        if (onExitHandlerNode) {
+            getOutboundNodes(props.workflowName).forEach(v => {
+                const exitHandler = allNodes[onExitHandlerNode.id];
+                nodes.set(onExitHandlerNode.id, nodeLabel(exitHandler));
+                if (nodes.has(v)) {
+                    edges.set({v, w: onExitHandlerNode.id}, {});
+                }
+            });
+            // Traverse the onExit tree starting from the onExit node itself
+            traverse({
+                nodeName: onExitHandlerNode.id,
+                parent: '',
+                children: getChildren(onExitHandlerNode.id)
+            });
         }
 
-        const allNodes = this.props.nodes;
-        const getChildren = (nodeId: string): string[] => {
+        if (showArtifacts) {
+            Object.values(props.nodes || {})
+                .filter(node => nodes.has(node.id))
+                .forEach(node => {
+                    nodeArtifacts(node, artifactRepository)
+                        .filter(({name}) => !name.endsWith('-logs'))
+                        // only show files or directories
+                        .filter(({filename, key}) => filename.includes('.') || key.endsWith('/'))
+                        .forEach(a => {
+                            nodes.set(a.urn, {
+                                genre: 'Artifact',
+                                label: a.filename,
+                                icon: icons.Artifact,
+                                classNames: 'Artifact'
+                            });
+                            const input = a.artifactNameDiscriminator === 'input';
+                            edges.set(
+                                {v: input ? a.urn : node.id, w: input ? node.id : a.urn},
+                                {
+                                    label: a.name,
+                                    classNames: 'related'
+                                }
+                            );
+                        });
+                });
+        }
+
+        function getChildren(nodeId: string): string[] {
             if (!allNodes[nodeId] || !allNodes[nodeId].children) {
                 return [];
             }
             return allNodes[nodeId].children.filter(child => allNodes[child]);
-        };
-        const pushChildren = (nodeId: string, isExpanded: boolean, queue: PrepareNode[]): void => {
+        }
+
+        function pushChildren(nodeId: string, isExpanded: boolean, queue: PrepareNode[]): void {
             const children: string[] = getChildren(nodeId);
             if (!children) {
                 return;
@@ -172,9 +173,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     })
                 );
             }
-        };
+        }
 
-        const traverse = (root: PrepareNode): void => {
+        function traverse(root: PrepareNode): void {
             const queue: PrepareNode[] = [root];
             const consideredChildren: Set<string> = new Set<string>();
             let previousCollapsed: string = '';
@@ -199,7 +200,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 if (!child) {
                     continue;
                 }
-                const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
+                const isExpanded = expandNodes.has('*') || expandNodes.has(item.nodeName);
 
                 nodes.set(item.nodeName, nodeLabel(child));
                 edges.set({v: item.parent, w: item.nodeName}, {});
@@ -210,103 +211,83 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 }
                 consideredChildren.add(item.nodeName);
 
-                const node: NodeStatus = this.props.nodes[item.nodeName];
+                const node = getNode(item.nodeName);
                 if (!node) {
                     continue;
                 }
 
                 pushChildren(node.id, isExpanded, queue);
             }
-        };
-
-        const workflowRoot: PrepareNode = {
-            nodeName: this.props.workflowName,
-            parent: '',
-            children: getChildren(this.props.workflowName)
-        };
-
-        // Traverse the workflow from the root node
-        traverse(workflowRoot);
-
-        const onExitHandlerNodeId = Object.values(allNodes).find(nodeId => nodeId.name === `${this.props.workflowName}.onExit`);
-        if (onExitHandlerNodeId) {
-            this.getOutboundNodes(this.props.workflowName).forEach(v => {
-                const exitHandler = allNodes[onExitHandlerNodeId.id];
-                nodes.set(onExitHandlerNodeId.id, nodeLabel(exitHandler));
-                if (nodes.has(v)) {
-                    edges.set({v, w: onExitHandlerNodeId.id}, {});
-                }
-            });
-            const onExitRoot: PrepareNode = {
-                nodeName: onExitHandlerNodeId.id,
-                parent: '',
-                children: getChildren(onExitHandlerNodeId.id)
-            };
-            // Traverse the onExit tree starting from the onExit node itself
-            traverse(onExitRoot);
         }
 
-        if (this.state.showArtifacts) {
-            Object.values(this.props.nodes || {})
-                .filter(node => nodes.has(node.id))
-                .forEach(node => {
-                    nodeArtifacts(node, this.artifactRepository)
-                        .filter(({name}) => !name.endsWith('-logs'))
-                        // only show files or directories
-                        .filter(({filename, key}) => filename.includes('.') || key.endsWith('/'))
-                        .forEach(a => {
-                            nodes.set(a.urn, {
-                                genre: 'Artifact',
-                                label: a.filename,
-                                icon: icons.Artifact,
-                                classNames: 'Artifact'
-                            });
-                            const input = a.artifactNameDiscriminator === 'input';
-                            edges.set(
-                                {v: input ? a.urn : node.id, w: input ? node.id : a.urn},
-                                {
-                                    label: a.name,
-                                    classNames: 'related'
-                                }
-                            );
-                        });
-                });
-        }
+        return newGraph;
+    }, [props.nodes, expandNodes, showArtifacts]);
+
+    function getNode(nodeId: string) {
+        return props.nodes[nodeId];
     }
 
-    private selectNode(nodeId: string) {
-        if (isCollapsedNode(nodeId)) {
-            this.expandNode(nodeId);
-        } else {
-            return this.props.nodeClicked && this.props.nodeClicked(nodeId);
-        }
-    }
-
-    private expandNode(nodeId: string) {
+    function expandNode(nodeId: string) {
         if (isCollapsedNode(getNodeParent(nodeId))) {
-            this.expandNode(getNodeParent(nodeId));
+            expandNode(getNodeParent(nodeId));
         } else {
-            this.setState({expandNodes: new Set(this.state.expandNodes).add(getNodeParent(nodeId))});
+            setExpandNodes(new Set(expandNodes).add(getNodeParent(nodeId)));
         }
     }
 
-    private getOutboundNodes(nodeID: string): string[] {
-        const node = this.getNode(nodeID);
-        if (node === null || node === undefined) {
+    function getOutboundNodes(nodeID: string): string[] {
+        const node = getNode(nodeID);
+        if (!node) {
             return [];
         }
-        if (node?.type === 'Pod' || node?.type === 'Skipped') {
+        if (node.type === 'Pod' || node.type === 'Skipped') {
             return [node.id];
         }
-        let outbound = Array<string>();
+        let outbound: string[];
         for (const outboundNodeID of node.outboundNodes || []) {
-            const outNode = this.getNode(outboundNodeID);
+            const outNode = getNode(outboundNodeID);
             if (outNode?.type === 'Pod') {
                 outbound.push(outboundNodeID);
             } else {
-                outbound = outbound.concat(this.getOutboundNodes(outboundNodeID));
+                outbound = outbound.concat(getOutboundNodes(outboundNodeID));
             }
         }
         return outbound;
     }
+
+    return (
+        <GraphPanel
+            storageScope='workflow-dag'
+            graph={graph}
+            nodeGenresTitle={'Node Type'}
+            nodeGenres={genres}
+            nodeClassNamesTitle={'Node Phase'}
+            nodeClassNames={classNames}
+            nodeTagsTitle={'Template'}
+            nodeTags={tags}
+            nodeSize={props.nodeSize || 32}
+            defaultIconShape='circle'
+            hideNodeTypes={true}
+            hideOptions={props.hideOptions}
+            selectedNode={props.selectedNodeId}
+            onNodeSelect={nodeId => {
+                if (isCollapsedNode(nodeId)) {
+                    expandNode(nodeId);
+                } else {
+                    return props?.nodeClicked(nodeId);
+                }
+            }}
+            options={
+                <WorkflowDagRenderOptionsPanel
+                    expandNodes={expandNodes}
+                    showArtifacts={showArtifacts}
+                    onChange={newOptions => {
+                        localStorage.setItem('showArtifacts', newOptions.showArtifacts ? 'true' : 'false');
+                        setExpandNodes(newOptions.expandNodes);
+                        setShowArtifacts(newOptions.showArtifacts);
+                    }}
+                />
+            }
+        />
+    );
 }
