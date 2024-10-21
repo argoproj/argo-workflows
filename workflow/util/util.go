@@ -940,40 +940,85 @@ func getChildren(n *node) map[string]bool {
 
 type resetFn func(string, bool)
 type deleteFn func(string, bool)
+type tillFn func(*node) (bool, bool)
 
-func consumeTill(n *node, nodeType wfv1.NodeType, resetFunc resetFn) (*node, error) {
+func getTillFnNodeType(nodeType wfv1.NodeType) tillFn {
+	return func(n *node) (bool, bool) {
+		return n.n.Type == nodeType, true
+	}
+}
+
+func consumeTill(n *node, should tillFn, resetFunc resetFn) (*node, error) {
 	curr := n
 	for {
 		if curr == nil {
-			return nil, fmt.Errorf("expected type %s but ran out of nodes to explore", nodeType)
+			return nil, fmt.Errorf("was seeking node but ran out of nodes to explore")
 		}
 
-		if curr.n.Type == nodeType {
-			resetFunc(curr.n.ID, true)
+		if foundNode, shouldReset := should(curr); foundNode {
+			if shouldReset {
+				resetFunc(curr.n.ID, true)
+			}
 			return curr, nil
 		}
 		curr = curr.parent
 	}
 }
 
+func getTillBoundaryFn(boundaryID string) tillFn {
+	return func(n *node) (bool, bool) {
+		return n.n.ID == boundaryID, n.n.BoundaryID != ""
+	}
+}
+
+func consumeBoundaries(n *node, resetFunc resetFn) (*node, error) {
+	curr := n
+	for {
+		if curr == nil {
+			return curr, nil
+		}
+		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeStepGroup {
+			resetFunc(curr.parent.n.ID, true)
+		}
+		seekingBoundaryID := curr.n.BoundaryID
+		if seekingBoundaryID == "" {
+			return curr.parent, nil
+		}
+		var err error
+		curr, err = consumeTill(curr, getTillBoundaryFn(seekingBoundaryID), resetFunc)
+		if err != nil {
+			return nil, err
+		}
+	}
+}
+
 func consumeStepGroup(n *node, resetFunc resetFn) (*node, error) {
-	return consumeTill(n, wfv1.NodeTypeStepGroup, resetFunc)
+	return consumeTill(n, getTillFnNodeType(wfv1.NodeTypeStepGroup), resetFunc)
 }
 
 func consumeSteps(n *node, resetFunc resetFn) (*node, error) {
-	return consumeTill(n, wfv1.NodeTypeSteps, resetFunc)
+	n, err := consumeTill(n, getTillFnNodeType(wfv1.NodeTypeSteps), resetFunc)
+	if err != nil {
+		return nil, err
+	}
+	return consumeBoundaries(n, resetFunc)
 }
+
 func consumeTaskGroup(n *node, resetFunc resetFn) (*node, error) {
-	return consumeTill(n, wfv1.NodeTypeTaskGroup, resetFunc)
+	return consumeTill(n, getTillFnNodeType(wfv1.NodeTypeTaskGroup), resetFunc)
 }
 
 func consumeDAG(n *node, resetFunc resetFn) (*node, error) {
-	return consumeTill(n, wfv1.NodeTypeDAG, resetFunc)
+	n, err := consumeTill(n, getTillFnNodeType(wfv1.NodeTypeDAG), resetFunc)
+	if err != nil {
+		return nil, err
+	}
+	return consumeBoundaries(n, resetFunc)
 }
 
 func consumePod(n *node, resetFunc resetFn, addToDelete deleteFn) (*node, error) {
 	// this sets to reset but resets are overridden by deletes in the final FormulateRetryWorkflow logic.
-	curr, err := consumeTill(n, wfv1.NodeTypePod, resetFunc)
+	curr, err := consumeTill(n, getTillFnNodeType(wfv1.NodeTypePod), resetFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -1029,6 +1074,7 @@ func resetPath(allNodes []*node, toNode string) (map[string]bool, map[string]boo
 		mustFind = wfv1.NodeTypePod
 	}
 
+	findBoundaries := false
 	for {
 
 		if curr == nil {
@@ -1042,11 +1088,13 @@ func resetPath(allNodes []*node, toNode string) (map[string]bool, map[string]boo
 			//ignore
 		case wfv1.NodeTypeSteps:
 			addToReset(curr.n.ID, false)
+			findBoundaries = true
 		case wfv1.NodeTypeStepGroup:
 			addToReset(curr.n.ID, false)
 			mustFind = wfv1.NodeTypeSteps
 		case wfv1.NodeTypeDAG:
 			addToReset(curr.n.ID, false)
+			findBoundaries = true
 		case wfv1.NodeTypeTaskGroup:
 			addToReset(curr.n.ID, false)
 			mustFind = wfv1.NodeTypeDAG
@@ -1062,14 +1110,23 @@ func resetPath(allNodes []*node, toNode string) (map[string]bool, map[string]boo
 			addToReset(curr.n.ID, false)
 		}
 
-		curr = curr.parent
-
-		if mustFind == "" {
+		if mustFind == "" && !findBoundaries {
+			curr = curr.parent
 			continue
 		}
 
 		if curr == nil {
+			// TODO: fix error msg
 			return nil, nil, fmt.Errorf("must find %s but reached the root node", mustFind)
+		}
+
+		if findBoundaries {
+			curr, err = consumeBoundaries(curr, addToReset)
+			if err != nil {
+				return nil, nil, err
+			}
+			findBoundaries = false
+			continue
 		}
 
 		switch mustFind {

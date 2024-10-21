@@ -3073,8 +3073,733 @@ func TestOnExitWorkflow(t *testing.T) {
 
 	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{})
 	require.NoError(err)
-	outYaml, err := yaml.Marshal(newWf)
-	os.WriteFile("./debug.yaml", outYaml, 0666)
+	_ = newWf
+	_ = podsToDelete
+
+}
+
+const nestedDAG = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2024-10-16T04:12:51Z"
+  generateName: dag-nested-
+  generation: 39
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+    workflows.argoproj.io/resubmitted-from-workflow: dag-nested-52l5t
+  name: dag-nested-zxlc2
+  namespace: argo
+  resourceVersion: "11348"
+  uid: 402ed1f0-0dbf-42fd-92b8-b7858ba2979c
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: diamond
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      command:
+      - echo
+      - '{{inputs.parameters.message}}'
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: echo
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: message
+            value: A
+        name: A
+        template: nested-diamond
+      - arguments:
+          parameters:
+          - name: message
+            value: B
+        depends: A
+        name: B
+        template: nested-diamond
+      - arguments:
+          parameters:
+          - name: message
+            value: C
+        depends: A
+        name: C
+        template: nested-diamond
+      - arguments:
+          parameters:
+          - name: message
+            value: D
+        depends: B && C
+        name: D
+        template: nested-diamond
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}A'
+        name: A
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}B'
+        depends: A
+        name: B
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}C'
+        depends: A
+        name: C
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}D'
+        depends: B && C
+        name: D
+        template: echo
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: nested-diamond
+    outputs: {}
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2024-10-16T04:13:49Z"
+  nodes:
+    dag-nested-zxlc2:
+      children:
+      - dag-nested-zxlc2-1970677234
+      displayName: dag-nested-zxlc2
+      finishedAt: "2024-10-16T04:13:49Z"
+      id: dag-nested-zxlc2
+      name: dag-nested-zxlc2
+      outboundNodes:
+      - dag-nested-zxlc2-644277987
+      phase: Succeeded
+      progress: 16/16
+      resourcesDuration:
+        cpu: 0
+        memory: 30
+      startedAt: "2024-10-16T04:12:51Z"
+      templateName: diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-644277987:
+      boundaryID: dag-nested-zxlc2-1920344377
+      displayName: D
+      finishedAt: "2024-10-16T04:13:46Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-644277987
+      inputs:
+        parameters:
+        - name: message
+          value: DD
+      name: dag-nested-zxlc2.D.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-644277987/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:43Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-694610844:
+      boundaryID: dag-nested-zxlc2-1920344377
+      children:
+      - dag-nested-zxlc2-744943701
+      - dag-nested-zxlc2-728166082
+      displayName: A
+      finishedAt: "2024-10-16T04:13:33Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-694610844
+      inputs:
+        parameters:
+        - name: message
+          value: DA
+      name: dag-nested-zxlc2.D.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-694610844/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 1
+      startedAt: "2024-10-16T04:13:30Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-725087280:
+      boundaryID: dag-nested-zxlc2-1970677234
+      children:
+      - dag-nested-zxlc2-1953899615
+      - dag-nested-zxlc2-1937121996
+      displayName: D
+      finishedAt: "2024-10-16T04:13:07Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-725087280
+      inputs:
+        parameters:
+        - name: message
+          value: AD
+      name: dag-nested-zxlc2.A.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-725087280/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:03Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-728166082:
+      boundaryID: dag-nested-zxlc2-1920344377
+      children:
+      - dag-nested-zxlc2-644277987
+      displayName: C
+      finishedAt: "2024-10-16T04:13:40Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-728166082
+      inputs:
+        parameters:
+        - name: message
+          value: DC
+      name: dag-nested-zxlc2.D.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-728166082/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:36Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-744943701:
+      boundaryID: dag-nested-zxlc2-1920344377
+      children:
+      - dag-nested-zxlc2-644277987
+      displayName: B
+      finishedAt: "2024-10-16T04:13:40Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-744943701
+      inputs:
+        parameters:
+        - name: message
+          value: DB
+      name: dag-nested-zxlc2.D.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-744943701/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:36Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-808975375:
+      boundaryID: dag-nested-zxlc2-1970677234
+      children:
+      - dag-nested-zxlc2-825752994
+      - dag-nested-zxlc2-842530613
+      displayName: A
+      finishedAt: "2024-10-16T04:12:54Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-808975375
+      inputs:
+        parameters:
+        - name: message
+          value: AA
+      name: dag-nested-zxlc2.A.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-808975375/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 1
+      startedAt: "2024-10-16T04:12:51Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-825752994:
+      boundaryID: dag-nested-zxlc2-1970677234
+      children:
+      - dag-nested-zxlc2-725087280
+      displayName: B
+      finishedAt: "2024-10-16T04:13:00Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-825752994
+      inputs:
+        parameters:
+        - name: message
+          value: AB
+      name: dag-nested-zxlc2.A.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-825752994/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:12:57Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-842530613:
+      boundaryID: dag-nested-zxlc2-1970677234
+      children:
+      - dag-nested-zxlc2-725087280
+      displayName: C
+      finishedAt: "2024-10-16T04:13:00Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-842530613
+      inputs:
+        parameters:
+        - name: message
+          value: AC
+      name: dag-nested-zxlc2.A.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-842530613/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:12:57Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-903321510:
+      boundaryID: dag-nested-zxlc2-1937121996
+      children:
+      - dag-nested-zxlc2-1920344377
+      displayName: D
+      finishedAt: "2024-10-16T04:13:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-903321510
+      inputs:
+        parameters:
+        - name: message
+          value: CD
+      name: dag-nested-zxlc2.C.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-903321510/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:23Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-936876748:
+      boundaryID: dag-nested-zxlc2-1937121996
+      children:
+      - dag-nested-zxlc2-903321510
+      displayName: B
+      finishedAt: "2024-10-16T04:13:20Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-936876748
+      inputs:
+        parameters:
+        - name: message
+          value: CB
+      name: dag-nested-zxlc2.C.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-936876748/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:16Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-953654367:
+      boundaryID: dag-nested-zxlc2-1937121996
+      children:
+      - dag-nested-zxlc2-903321510
+      displayName: C
+      finishedAt: "2024-10-16T04:13:20Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-953654367
+      inputs:
+        parameters:
+        - name: message
+          value: CC
+      name: dag-nested-zxlc2.C.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-953654367/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:16Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-987209605:
+      boundaryID: dag-nested-zxlc2-1937121996
+      children:
+      - dag-nested-zxlc2-936876748
+      - dag-nested-zxlc2-953654367
+      displayName: A
+      finishedAt: "2024-10-16T04:13:13Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-987209605
+      inputs:
+        parameters:
+        - name: message
+          value: CA
+      name: dag-nested-zxlc2.C.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-987209605/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:10Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-1920344377:
+      boundaryID: dag-nested-zxlc2
+      children:
+      - dag-nested-zxlc2-694610844
+      displayName: D
+      finishedAt: "2024-10-16T04:13:49Z"
+      id: dag-nested-zxlc2-1920344377
+      inputs:
+        parameters:
+        - name: message
+          value: D
+      name: dag-nested-zxlc2.D
+      outboundNodes:
+      - dag-nested-zxlc2-644277987
+      phase: Succeeded
+      progress: 4/4
+      resourcesDuration:
+        cpu: 0
+        memory: 7
+      startedAt: "2024-10-16T04:13:30Z"
+      templateName: nested-diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-1937121996:
+      boundaryID: dag-nested-zxlc2
+      children:
+      - dag-nested-zxlc2-987209605
+      displayName: C
+      finishedAt: "2024-10-16T04:13:30Z"
+      id: dag-nested-zxlc2-1937121996
+      inputs:
+        parameters:
+        - name: message
+          value: C
+      name: dag-nested-zxlc2.C
+      outboundNodes:
+      - dag-nested-zxlc2-903321510
+      phase: Succeeded
+      progress: 8/8
+      resourcesDuration:
+        cpu: 0
+        memory: 15
+      startedAt: "2024-10-16T04:13:10Z"
+      templateName: nested-diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-1953899615:
+      boundaryID: dag-nested-zxlc2
+      children:
+      - dag-nested-zxlc2-3753141766
+      displayName: B
+      finishedAt: "2024-10-16T04:13:30Z"
+      id: dag-nested-zxlc2-1953899615
+      inputs:
+        parameters:
+        - name: message
+          value: B
+      name: dag-nested-zxlc2.B
+      outboundNodes:
+      - dag-nested-zxlc2-3837029861
+      phase: Succeeded
+      progress: 8/8
+      resourcesDuration:
+        cpu: 0
+        memory: 15
+      startedAt: "2024-10-16T04:13:10Z"
+      templateName: nested-diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-1970677234:
+      boundaryID: dag-nested-zxlc2
+      children:
+      - dag-nested-zxlc2-808975375
+      displayName: A
+      finishedAt: "2024-10-16T04:13:10Z"
+      id: dag-nested-zxlc2-1970677234
+      inputs:
+        parameters:
+        - name: message
+          value: A
+      name: dag-nested-zxlc2.A
+      outboundNodes:
+      - dag-nested-zxlc2-725087280
+      phase: Succeeded
+      progress: 16/16
+      resourcesDuration:
+        cpu: 0
+        memory: 30
+      startedAt: "2024-10-16T04:12:51Z"
+      templateName: nested-diamond
+      templateScope: local/dag-nested-zxlc2
+      type: DAG
+    dag-nested-zxlc2-3719586528:
+      boundaryID: dag-nested-zxlc2-1953899615
+      children:
+      - dag-nested-zxlc2-3837029861
+      displayName: C
+      finishedAt: "2024-10-16T04:13:20Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-3719586528
+      inputs:
+        parameters:
+        - name: message
+          value: BC
+      name: dag-nested-zxlc2.B.C
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-3719586528/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:16Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-3736364147:
+      boundaryID: dag-nested-zxlc2-1953899615
+      children:
+      - dag-nested-zxlc2-3837029861
+      displayName: B
+      finishedAt: "2024-10-16T04:13:20Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-3736364147
+      inputs:
+        parameters:
+        - name: message
+          value: BB
+      name: dag-nested-zxlc2.B.B
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-3736364147/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:16Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-3753141766:
+      boundaryID: dag-nested-zxlc2-1953899615
+      children:
+      - dag-nested-zxlc2-3736364147
+      - dag-nested-zxlc2-3719586528
+      displayName: A
+      finishedAt: "2024-10-16T04:13:13Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-3753141766
+      inputs:
+        parameters:
+        - name: message
+          value: BA
+      name: dag-nested-zxlc2.B.A
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-3753141766/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:10Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+    dag-nested-zxlc2-3837029861:
+      boundaryID: dag-nested-zxlc2-1953899615
+      children:
+      - dag-nested-zxlc2-1920344377
+      displayName: D
+      finishedAt: "2024-10-16T04:13:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-nested-zxlc2-3837029861
+      inputs:
+        parameters:
+        - name: message
+          value: BD
+      name: dag-nested-zxlc2.B.D
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-nested-zxlc2/dag-nested-zxlc2-echo-3837029861/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 2
+      startedAt: "2024-10-16T04:13:23Z"
+      templateName: echo
+      templateScope: local/dag-nested-zxlc2
+      type: Pod
+  phase: Succeeded
+  progress: 16/16
+  resourcesDuration:
+    cpu: 0
+    memory: 30
+  startedAt: "2024-10-16T04:12:51Z"
+  taskResultsCompletionStatus:
+    dag-nested-zxlc2-644277987: true
+    dag-nested-zxlc2-694610844: true
+    dag-nested-zxlc2-725087280: true
+    dag-nested-zxlc2-728166082: true
+    dag-nested-zxlc2-744943701: true
+    dag-nested-zxlc2-808975375: true
+    dag-nested-zxlc2-825752994: true
+    dag-nested-zxlc2-842530613: true
+    dag-nested-zxlc2-903321510: true
+    dag-nested-zxlc2-936876748: true
+    dag-nested-zxlc2-953654367: true
+    dag-nested-zxlc2-987209605: true
+    dag-nested-zxlc2-3719586528: true
+    dag-nested-zxlc2-3736364147: true
+    dag-nested-zxlc2-3753141766: true
+    dag-nested-zxlc2-3837029861: true
+
+`
+
+func TestNestedDAG(t *testing.T) {
+	require := require.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(nestedDAG)
+
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
 	require.NoError(err)
 	_ = newWf
 	_ = podsToDelete
