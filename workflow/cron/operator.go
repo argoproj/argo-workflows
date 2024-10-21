@@ -320,27 +320,13 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Conte
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		for _, schedule := range woc.cronWf.Spec.GetSchedules(ctx) {
+		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone(ctx) {
 			var now time.Time
 			var cronSchedule cron.Schedule
-			if woc.cronWf.Spec.Timezone != "" {
-				loc, err := time.LoadLocation(woc.cronWf.Spec.Timezone)
-				if err != nil {
-					return time.Time{}, fmt.Errorf("invalid timezone '%s': %s", woc.cronWf.Spec.Timezone, err)
-				}
-				now = time.Now().In(loc)
-
-				cronSchedule, err = cron.ParseStandard(schedule)
-				if err != nil {
-					return time.Time{}, fmt.Errorf("unable to form timezone schedule '%s': %s", schedule, err)
-				}
-			} else {
-				var err error
-				now = time.Now()
-				cronSchedule, err = cron.ParseStandard(schedule)
-				if err != nil {
-					return time.Time{}, err
-				}
+			now = time.Now()
+			cronSchedule, err := cron.ParseStandard(schedule)
+			if err != nil {
+				return time.Time{}, err
 			}
 
 			var missedExecutionTime time.Time
