@@ -150,4 +150,9 @@ status:
 	throttler.Remove("default/c")
 	assert.Equal(t, "default/d", queuedKey)
 	assert.True(t, throttler.Admit("default/d"))
+
+	throttler.Add("default/e", 0, time.Now())
+	assert.False(t, throttler.Admit("default/e"))
+	throttler.RemoveParallelismLimit("default/d")
+	assert.True(t, throttler.Admit("default/e"))
 }
