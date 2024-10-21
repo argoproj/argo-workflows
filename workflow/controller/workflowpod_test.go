@@ -1920,7 +1920,7 @@ func TestPodExists(t *testing.T) {
 }
 
 func TestPodFinalizerExits(t *testing.T) {
-	t.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "true")
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
 	cancel, controller := newController()
 	defer cancel()
 
@@ -1938,7 +1938,7 @@ func TestPodFinalizerExits(t *testing.T) {
 }
 
 func TestPodFinalizerDoesNotExist(t *testing.T) {
-	t.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "false")
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
 	cancel, controller := newController()
 	defer cancel()
 
