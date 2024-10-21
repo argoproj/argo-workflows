@@ -1115,11 +1115,6 @@ func resetPath(allNodes []*node, toNode string) (map[string]bool, map[string]boo
 			continue
 		}
 
-		if curr == nil {
-			// TODO: fix error msg
-			return nil, nil, fmt.Errorf("must find %s but reached the root node", mustFind)
-		}
-
 		if findBoundaries {
 			curr, err = consumeBoundaries(curr, addToReset)
 			if err != nil {
@@ -1209,10 +1204,8 @@ func dagSortedNodes(nodes []*node, rootNodeName string) []*node {
 // create a DAG
 // topological sort
 // iterate through all must delete nodes: iterator $node
-// mustDelete = setIntersection(mustDelete, sortedNodes[$node.index:-1])
 // obtain singular path to each $node
 // reset all "reset points" to $node
-
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 
 	switch wf.Status.Phase {
@@ -1232,18 +1225,17 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		return nil, nil, err
 	}
 
-	failed := make(map[string]bool)
-	for nodeID, node := range wf.Status.Nodes {
-		if node.Phase.FailedOrError() && shouldRetryFailedType(node.Type) {
-			failed[nodeID] = true
-		}
-	}
-
 	deleteNodesMap, err := getNodeIDsToResetNoChildren(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	failed := make(map[string]bool)
+	for nodeID, node := range wf.Status.Nodes {
+		if node.Phase.FailedOrError() && shouldRetryFailedType(node.Type) && !isDescendantNodeSucceeded(wf, node, deleteNodesMap) {
+			failed[nodeID] = true
+		}
+	}
 	for failedNode := range failed {
 		deleteNodesMap[failedNode] = true
 	}

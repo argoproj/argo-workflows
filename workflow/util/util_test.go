@@ -1286,9 +1286,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		require.Len(t, wf.Status.Nodes, 2)
+		require.Len(t, wf.Status.Nodes, 4)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
-		assert.Len(t, podsToDelete, 3)
+		assert.Len(t, podsToDelete, 1)
 	})
 
 	t.Run("Retry continue on failed workflow with restartSuccessful and nodeFieldSelector", func(t *testing.T) {
