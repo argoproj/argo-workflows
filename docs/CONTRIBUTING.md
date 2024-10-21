@@ -108,6 +108,19 @@ Anybody can review a PR.
 If you are in a [designated role](#roles), add yourself as an "Assignee" to a PR if you plan to lead the review.
 If you are a Reviewer or below, then once you have approved a PR, request a review from one or more Approvers and above.
 
+#### Timeliness
+
+PR authors and reviewers are expected to respond to change requests in PRs in a reasonable time frame.
+If an author or reviewer is on vacation or will otherwise be unavailable, this should be communicated on the PR.
+
+##### PR Author Timeliness
+
+If a PR appears stalled because of no activity for 10 business days by the author, another person may request to take over the PR.
+This should be indicated on the original PR with a comment tagging the author to inquire about their plan to finish the PR.
+Maintainers may use reasonable judgment to reassign the PR to a new contributor if no plan is provided by the author.
+A PR which has been stalled for 3 months may be taken over immediately without requiring this approval process.
+**IMPORTANT:** If a PR is taken over and uses any code from the previous PR, the original author must be credited using `Co-authored-by` on the commits.
+
 #### Triaging Bugs
 
 New bugs need to be triaged to identify the highest priority ones.
