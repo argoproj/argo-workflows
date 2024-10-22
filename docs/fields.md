@@ -3515,6 +3515,7 @@ GitArtifact is the location of an git artifact
 |`disableSubmodules`|`boolean`|DisableSubmodules disables submodules during git clone|
 |`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
 |`insecureIgnoreHostKey`|`boolean`|InsecureIgnoreHostKey disables SSH strict host key checking during git clone|
+|`insecureSkipTLS`|`boolean`|InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
 |`repo`|`string`|Repo is the git repository|
 |`revision`|`string`|Revision is the git commit, tag, branch to checkout|

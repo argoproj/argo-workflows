@@ -703,6 +703,9 @@ message GitArtifact {
 
   // Branch is the branch to fetch when `SingleBranch` is enabled
   optional string branch = 11;
+
+  // InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections
+  optional bool insecureSkipTLS = 12;
 }
 
 // HDFSArtifact is the location of an HDFS artifact
