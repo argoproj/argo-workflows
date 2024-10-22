@@ -254,6 +254,10 @@ const (
 	ArgoProgressPath = VarRunArgoPath + "/progress"
 
 	ConfigMapName = "workflow-controller-configmap"
+
+	// DefaultPageSize is the limit value of the request to the k8s apiserver.
+	// Aligned with client-go default: https://github.com/kubernetes/client-go/blob/ee1a5aaf793a9ace9c433f5fb26a19058ed5f37c/tools/pager/pager.go#L31
+	DefaultPageSize = 500
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
