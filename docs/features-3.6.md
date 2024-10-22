@@ -1,6 +1,8 @@
 # New features
 
 This is a concise list of new features.
+For a more detailed list, see the [3.6 blog post](https://blog.argoproj.io/argo-workflows-3-6-aa037cd782be).
+
 See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on breaking changes and deprecations.
 
 ## UI
@@ -16,6 +18,8 @@ See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on break
 * [#12199](https://github.com/argoproj/argo-workflows/pull/12199): You can specify HTTP headers to use to detect IP addresses using the `IP_KEY_FUNC_HEADERS` environment variable. This is used in the rate limiter.
 * [#13695](https://github.com/argoproj/argo-workflows/pull/13695): You can now retry a single node from a workflow, even if the workflow succeeded.
 * [#13610](https://github.com/argoproj/argo-workflows/pull/13610): You can now filter with prefixes and patterns in the workflow list.
+* [#13494](https://github.com/argoproj/argo-workflows/pull/13494): URLs are now linkified in workflow node info
+* [#13511](https://github.com/argoproj/argo-workflows/pull/13511): You can now group nodes based on `templateRef` and see invoking template name instead of the execution order DAG.
 
 ## Metrics
 
@@ -34,7 +38,7 @@ See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on break
 * [#11927](https://github.com/argoproj/argo-workflows/pull/11927): There is a new `retries` variable available in metrics describing the number of retries.
 * [#11857](https://github.com/argoproj/argo-workflows/pull/11857): Pod missing metrics will be emitted before pods are created
 
-## Controller
+## General
 
 * [#13358](https://github.com/argoproj/argo-workflows/pull/13358): You can use multiple mutexes and semaphores in the same workflow or template, and use both type of lock at the same time
 * [#13419](https://github.com/argoproj/argo-workflows/pull/13419): The controller uses a queue when archiving workflows to improve memory management when archiving a large number of workflows at once
@@ -53,14 +57,13 @@ See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on break
 * [#12842](https://github.com/argoproj/argo-workflows/pull/12842): You can now template the `name` and `template` in a `templateRef`. This allows for fully data driven workflow DAGs.
 * [#13194](https://github.com/argoproj/argo-workflows/pull/13194): The expr library has been upgraded providing some new functions in expressions.
 * [#13746](https://github.com/argoproj/argo-workflows/pull/13746): Configuration option to avoid sending kubernetes Events for workflows.
-* [#13742](https://github.com/argoproj/argo-workflows/pull/13742): `ARGO_TEMPLATE` environment variable can be configured not to contain input parameters to reduce storage usage.
 * [#13745](https://github.com/argoproj/argo-workflows/pull/13745): Added an option to skip workflow duration estimation because it can be expensive.
 
-## Cron Workflows
+## CronwWorkflows
 
 * [#12616](https://github.com/argoproj/argo-workflows/pull/12616): You can now specify multiple cron schedules on a single CronWorkflow.
-* [#12305](https://github.com/argoproj/argo-workflows/pull/12305): You can also use a stop strategy on Cron Workflows to stop them running any more workflows after a set of conditions occur such as too many errors.
-* [#13474](https://github.com/argoproj/argo-workflows/pull/13474): Cron Workflows also now have a when expression to further tune which occurrences of the workflow will run and which may be skipped
+* [#12305](https://github.com/argoproj/argo-workflows/pull/12305): You can also use a stop strategy on CronWorkflows to stop them running any more workflows after a set of conditions occur such as too many errors.
+* [#13474](https://github.com/argoproj/argo-workflows/pull/13474): CronWorkflows also now have a when expression to further tune which occurrences of the workflow will run and which may be skipped
 
 ## CLI
 
