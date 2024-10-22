@@ -404,6 +404,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -722,6 +723,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -1398,6 +1400,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "fetch_example",
                             ],
                             insecure_ignore_host_key=True,
+                            insecure_skip_tls=True,
                             password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -2255,6 +2258,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -2543,6 +2547,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -2853,6 +2858,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3441,6 +3447,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3771,6 +3778,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -4062,6 +4070,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -4960,6 +4969,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -5244,6 +5254,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -6200,6 +6211,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -7057,6 +7069,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -7345,6 +7358,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -7655,6 +7669,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8243,6 +8258,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8573,6 +8589,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8864,6 +8881,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -9762,6 +9780,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -10046,6 +10065,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -11891,6 +11911,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -12209,6 +12230,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -12885,6 +12907,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "fetch_example",
                             ],
                             insecure_ignore_host_key=True,
+                            insecure_skip_tls=True,
                             password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -13742,6 +13765,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -14030,6 +14054,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -14340,6 +14365,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -14928,6 +14954,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -15258,6 +15285,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -15549,6 +15577,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -16447,6 +16476,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -16731,6 +16761,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -17687,6 +17718,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -18544,6 +18576,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -18832,6 +18865,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -19142,6 +19176,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -19730,6 +19765,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -20060,6 +20096,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -20351,6 +20388,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -21249,6 +21287,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -21533,6 +21572,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -23284,6 +23324,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -23602,6 +23643,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -24278,6 +24320,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 "fetch_example",
                             ],
                             insecure_ignore_host_key=True,
+                            insecure_skip_tls=True,
                             password_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -25135,6 +25178,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -25423,6 +25467,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -25733,6 +25778,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -26321,6 +26367,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -26651,6 +26698,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -26942,6 +26990,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "fetch_example",
                                     ],
                                     insecure_ignore_host_key=True,
+                                    insecure_skip_tls=True,
                                     password_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -27840,6 +27889,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     "fetch_example",
                                                 ],
                                                 insecure_ignore_host_key=True,
+                                                insecure_skip_tls=True,
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -28124,6 +28174,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             "fetch_example",
                                                         ],
                                                         insecure_ignore_host_key=True,
+                                                        insecure_skip_tls=True,
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -29080,6 +29131,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "fetch_example",
                                 ],
                                 insecure_ignore_host_key=True,
+                                insecure_skip_tls=True,
                                 password_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -29937,6 +29989,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -30225,6 +30278,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -30535,6 +30589,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -31123,6 +31178,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -31453,6 +31509,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -31744,6 +31801,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             "fetch_example",
                                         ],
                                         insecure_ignore_host_key=True,
+                                        insecure_skip_tls=True,
                                         password_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -32642,6 +32700,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         "fetch_example",
                                                     ],
                                                     insecure_ignore_host_key=True,
+                                                    insecure_skip_tls=True,
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -32926,6 +32985,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 "fetch_example",
                                                             ],
                                                             insecure_ignore_host_key=True,
+                                                            insecure_skip_tls=True,
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",

@@ -5276,6 +5276,10 @@
           "description": "InsecureIgnoreHostKey disables SSH strict host key checking during git clone",
           "type": "boolean"
         },
+        "insecureSkipTLS": {
+          "description": "InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections",
+          "type": "boolean"
+        },
         "passwordSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "PasswordSecret is the secret selector to the repository password"

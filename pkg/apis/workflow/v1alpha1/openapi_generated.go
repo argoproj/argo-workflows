@@ -2908,6 +2908,13 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"insecureSkipTLS": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"repo"},
 			},

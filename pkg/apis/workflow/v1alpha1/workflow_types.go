@@ -2616,6 +2616,9 @@ type GitArtifact struct {
 
 	// Branch is the branch to fetch when `SingleBranch` is enabled
 	Branch string `json:"branch,omitempty" protobuf:"bytes,11,opt,name=branch"`
+
+	// InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections
+	InsecureSkipTLS bool `json:"insecureSkipTLS,omitempty" protobuf:"varint,12,opt,name=insecureSkipTLS"`
 }
 
 func (g *GitArtifact) HasLocation() bool {
