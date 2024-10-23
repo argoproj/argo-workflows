@@ -1309,3 +1309,80 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
+
+func TestParallelismWithMutex(t *testing.T) {
+	for tt, f := range map[string]func(controller *WorkflowController){
+		"Parallelism": func(x *WorkflowController) {
+			x.Config.Parallelism = 2
+		},
+	} {
+		t.Run(tt, func(t *testing.T) {
+			cancel, controller := newController(
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-mutex-wf-0
+  namespace: ns-0
+spec:
+  entrypoint: main
+  synchronization:
+    mutex:
+      name: workflow
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-mutex-wf-1
+  namespace: ns-0
+spec:
+  entrypoint: main
+  synchronization:
+    mutex:
+      name: workflow
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-2
+  namespace: ns-0
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+				f,
+			)
+			defer cancel()
+			ctx := context.Background()
+			assert.True(t, controller.processNextItem(ctx))
+			assert.True(t, controller.processNextItem(ctx))
+			assert.True(t, controller.processNextItem(ctx))
+
+			expectNamespacedWorkflow(ctx, controller, "ns-0", "my-mutex-wf-0", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+					assert.Equal(t, "", wf.Status.Message)
+				}
+			})
+			expectNamespacedWorkflow(ctx, controller, "ns-0", "my-mutex-wf-1", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+					assert.Equal(t, "Waiting for ns-0/Mutex/workflow lock. Lock status: 0/1", wf.Status.Message)
+				}
+			})
+			expectNamespacedWorkflow(ctx, controller, "ns-0", "my-wf-2", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+					assert.Equal(t, "", wf.Status.Message)
+				}
+			})
+		})
+	}
+}
