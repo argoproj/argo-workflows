@@ -1374,6 +1374,17 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived)
 
+	s.Run("ListWithoutListOptions", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(2)
+	})
+
 	for _, tt := range []struct {
 		name     string
 		selector string
