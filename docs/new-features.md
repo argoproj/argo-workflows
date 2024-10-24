@@ -72,7 +72,7 @@ See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on break
 * [#13128](https://github.com/argoproj/argo-workflows/pull/13128): The CLI will now generate shell completions for the [fish shell](https://fishshell.com/)
 * [#12977](https://github.com/argoproj/argo-workflows/pull/12977): We also build and ship the CLI complied for [Risc-V](https://riscv.org/)
 * [#12953](https://github.com/argoproj/argo-workflows/pull/12953): The lint command supports a `--no-color` flag
-* [#13695](https://github.com/argoproj/argo-workflows/pull/12953): The `--output` flag is now validated
+* [#13695](https://github.com/argoproj/argo-workflows/pull/13695): The `--output` flag is now validated
 
 ## Build and Development
 
