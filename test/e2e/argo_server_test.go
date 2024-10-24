@@ -1382,7 +1382,7 @@ spec:
 			Path("$.items").
 			Array().
 			Length().
-			IsEqual(2)
+			IsEqual(3)
 	})
 
 	for _, tt := range []struct {
