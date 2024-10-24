@@ -27,6 +27,8 @@ extra:
   analytics:
     provider: google
     property: G-5Z1VTPDL73
+extra_javascript:
+  - assets/js/extra.js
 markdown_extensions:
   - codehilite
   - admonition
