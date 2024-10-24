@@ -8,20 +8,36 @@ function postLoad() {
 
 // remove version from GH link so as not to mislead readers that that version is the version of the docs they're on
 function removeGHVersion() {
-  const ghVersion = document.querySelector('.md-source__fact--version'); // https://github.com/squidfunk/mkdocs-material/blob/198a6801fcf687ecb4d22e5c493fdf80427bdd33/src/templates/assets/javascripts/templates/source/index.tsx#L41
-  if (ghVersion) ghVersion.remove();
+  // Selector: https://github.com/squidfunk/mkdocs-material/blob/198a6801fcf687ecb4d22e5c493fdf80427bdd33/src/templates/assets/javascripts/templates/source/index.tsx#L41
+  // Used in Header (https://github.com/squidfunk/mkdocs-material/blob/198a6801fcf687ecb4d22e5c493fdf80427bdd33/src/templates/partials/header.html#L106) and SideNav (https://github.com/squidfunk/mkdocs-material/blob/198a6801fcf687ecb4d22e5c493fdf80427bdd33/src/templates/partials/nav.html#L58)
+  document.querySelectorAll('.md-source__fact--version').forEach(removeGHVersionElem);
+}
+
+function removeGHVersionElem(ghVersion) {
+  ghVersion.remove();
+}
+
+function addVersionToLogo() {
+  // Selectors: Header (https://github.com/squidfunk/mkdocs-material/blob/198a6801fcf687ecb4d22e5c493fdf80427bdd33/src/templates/partials/header.html#L42) and SideNav (https://github.com/squidfunk/mkdocs-material/blob/198a6801fcf687ecb4d22e5c493fdf80427bdd33/src/templates/partials/nav.html#L46)
+  document.querySelectorAll('.md-logo').forEach(addVersionToLogoElem);
 }
 
 // add version underneath logo
-function addVersionToLogo() {
-  const logo = document.querySelector('.md-logo'); // https://github.com/squidfunk/mkdocs-material/blob/198a6801fcf687ecb4d22e5c493fdf80427bdd33/src/templates/partials/header.html#L42
-  if (!logo) return;
+function addVersionToLogoElem(logo, index) {
+  const isSideNav = index == 1; // 0 is header, 1 is sidenav
 
   // append a span with text content containing the minor version
   const versionSpan = document.createElement('span');
   versionSpan.appendChild(document.createTextNode(getMinorVersionFromUrl()));
+  versionSpan.style.fontSize = '12px'; // small but not tiny
+  if (isSideNav) {
+    versionSpan.style.position = 'absolute';
+    versionSpan.style.top = '20%'; // align with the argonaut logo's "ears" (top of text starts at 20%)
+    versionSpan.style.left = '65px'; // logo is 48 x 48 plus a margin; rough eyeballed calculation
+  }
   logo.appendChild(versionSpan);
-  // modify the style a bit to account for the new text
+
+  // modify the parent's style a bit to account for the new text
   logo.style.textAlign = 'center';
   logo.style.marginBottom = '.1rem'; // shrink bottom margin a bit from original .2rem (https://github.com/squidfunk/mkdocs-material/blob/198a6801fcf687ecb4d22e5c493fdf80427bdd33/src/templates/assets/stylesheets/main/components/_header.scss#L104)
 }
