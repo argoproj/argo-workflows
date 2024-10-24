@@ -482,7 +482,9 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 	}
 
 	if objectCount > 1 {
-		return nil, false, fmt.Errorf("expected < 2 pods, got %d - this is a bug", len(objs))
+		return nil, false, fmt.Errorf("expected 1 pod, got %d. This can happen when multiple workflow-controller "+
+			"pods are running and both reconciling this Workflow. Check your Argo Workflows installation for a rogue "+
+			"workflow-controller. Otherwise, this is a bug", len(objs))
 	}
 
 	if existing, ok := objs[0].(*apiv1.Pod); ok {
