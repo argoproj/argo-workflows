@@ -40,8 +40,12 @@ func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatus
 }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
+	listOption := metav1.ListOptions{}
+	if req.ListOptions != nil {
+		listOption = *req.ListOptions
+	}
 
-	options, err := sutils.BuildListOptions(*req.ListOptions, req.Namespace, req.NamePrefix, "")
+	options, err := sutils.BuildListOptions(listOption, req.Namespace, req.NamePrefix, "")
 	if err != nil {
 		return nil, err
 	}
