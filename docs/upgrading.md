@@ -28,6 +28,15 @@ Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
 
 For the Emissary executor to work properly, you must set up RBAC. See [workflow RBAC](workflow-rbac.md)
 
+### Archived Workflows on PostgreSQL
+
+This upgrade will transform an archived workflow column from type `json` to type `jsonb`.
+This will take some time if you have a lot of archived workflows.
+This requires PostgreSQL version 9.4 or higher.
+
+You can perform this modification prior to upgrading with `alter table argo_archived_workflows alter column workflow set data type jsonb using workflow::jsonb`.
+This is considered safe to do whilst running version 3.5 as the column types are compatible.
+
 ### Metrics changes
 
 You can now retrieve metrics using the OpenTelemetry Protocol using the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/), and this is the recommended mechanism.
@@ -92,6 +101,11 @@ To disable this set `metricsConfig.secure` to `false`.
 
 When returning a map or array in an expression, you would get a Golang representation.
 This now returns plain JSON.
+
+### `ARGO_TEMPLATE` removed from main container
+
+The environment variable `ARGO_TEMPLATE` which is an internal implementation detail is no longer available inside the `main` container of your workflow pods.
+This is documented here as we are aware that some users of Argo Workflows use this.
 
 ## Upgrading to v3.5
 
