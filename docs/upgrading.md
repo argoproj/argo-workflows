@@ -5,7 +5,7 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.6
 
-See also the list of [new features in 3.6](features-3.6.md).
+See also the list of [new features in 3.6](new-features.md).
 
 ### Deprecations
 

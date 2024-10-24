@@ -18,7 +18,7 @@ See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on break
 * [#12199](https://github.com/argoproj/argo-workflows/pull/12199): You can specify HTTP headers to use to detect IP addresses using the `IP_KEY_FUNC_HEADERS` environment variable. This is used in the rate limiter.
 * [#13695](https://github.com/argoproj/argo-workflows/pull/13695): You can now retry a single node from a workflow, even if the workflow succeeded.
 * [#13610](https://github.com/argoproj/argo-workflows/pull/13610): You can now filter with prefixes and patterns in the workflow list.
-* [#13494](https://github.com/argoproj/argo-workflows/pull/13494): URLs are now linkified in workflow node info
+* [#13494](https://github.com/argoproj/argo-workflows/pull/13494): URLs are now clickable links in workflow node info
 * [#13511](https://github.com/argoproj/argo-workflows/pull/13511): You can now group nodes based on `templateRef` and see invoking template name instead of the execution order DAG.
 
 ## Metrics
@@ -59,7 +59,7 @@ See [the upgrade notes](upgrading.md#upgrading_to_v3.6) for information on break
 * [#13746](https://github.com/argoproj/argo-workflows/pull/13746): Configuration option to avoid sending kubernetes Events for workflows.
 * [#13745](https://github.com/argoproj/argo-workflows/pull/13745): Added an option to skip workflow duration estimation because it can be expensive.
 
-## CronwWorkflows
+## CronWorkflows
 
 * [#12616](https://github.com/argoproj/argo-workflows/pull/12616): You can now specify multiple cron schedules on a single CronWorkflow.
 * [#12305](https://github.com/argoproj/argo-workflows/pull/12305): You can also use a stop strategy on CronWorkflows to stop them running any more workflows after a set of conditions occur such as too many errors.
