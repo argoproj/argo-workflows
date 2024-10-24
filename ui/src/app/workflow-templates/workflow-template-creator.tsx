@@ -7,8 +7,8 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {UploadButton} from '../shared/components/upload-button';
 import {exampleWorkflowTemplate} from '../shared/examples';
-import {services} from '../shared/services';
 import * as nsUtils from '../shared/namespaces';
+import {services} from '../shared/services';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
 export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) {

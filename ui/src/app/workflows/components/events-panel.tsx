@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {map} from 'rxjs/operators';
+
 import {Event} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Notice} from '../../shared/components/notice';

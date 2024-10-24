@@ -1,4 +1,5 @@
 import {map} from 'rxjs/operators';
+
 import {EventSource, EventSourceList, EventSourceWatchEvent, LogEntry} from '../../../models/event-source';
 import requests from './requests';
 

@@ -10,10 +10,10 @@ import {ConditionsPanel} from '../../shared/conditions-panel';
 import {Consumer} from '../../shared/context';
 import {wfDuration} from '../../shared/duration';
 import {ResourcesDuration} from '../../shared/resources-duration';
+import {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 import {WorkflowCreatorInfo} from './workflow-creator-info/workflow-creator-info';
 import {WorkflowFrom} from './workflow-from';
 import {WorkflowLabels} from './workflow-labels/workflow-labels';
-import {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>

@@ -13,21 +13,21 @@ import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
 import {PaginationPanel} from '../shared/components/pagination-panel';
 import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
-import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
+import * as nsUtils from '../shared/namespaces';
 import {Pagination, parseLimit} from '../shared/pagination';
 import {ScopedLocalStorage} from '../shared/scoped-local-storage';
 import {services} from '../shared/services';
+import {useCollectEvent} from '../shared/use-collect-event';
 import {useQueryParams} from '../shared/use-query-params';
-import * as nsUtils from '../shared/namespaces';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {WorkflowTemplateCreator} from './workflow-template-creator';
 import {WorkflowTemplateFilters} from './workflow-template-filters';
 
 import './workflow-template-list.scss';
-import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-templates/'>Learn more</a>;
 

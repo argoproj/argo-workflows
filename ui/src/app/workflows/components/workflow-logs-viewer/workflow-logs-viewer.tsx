@@ -1,21 +1,21 @@
+import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
-import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
 import {Observable} from 'rxjs';
 import {map, publishReplay, refCount} from 'rxjs/operators';
 
 import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
-import debounce from '../../../shared/debounce';
 import {Button} from '../../../shared/components/button';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
 import {Context} from '../../../shared/context';
-import {useLocalStorage} from '../../../shared/use-local-storage';
+import debounce from '../../../shared/debounce';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
+import {useLocalStorage} from '../../../shared/use-local-storage';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 import {extractJsonValue, JsonLogsFieldSelector, SelectedJsonFields} from './json-logs-field-selector';
 

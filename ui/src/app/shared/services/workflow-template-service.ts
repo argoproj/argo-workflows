@@ -1,7 +1,7 @@
 import * as models from '../../../models';
 import {Pagination} from '../pagination';
-import {queryParams} from './utils';
 import requests from './requests';
+import {queryParams} from './utils';
 
 export const WorkflowTemplateService = {
     create(template: models.WorkflowTemplate, namespace: string) {

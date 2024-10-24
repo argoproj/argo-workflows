@@ -1,5 +1,4 @@
 import {GetUserInfoResponse, Info, Version} from '../../../models';
-
 import requests from './requests';
 
 let info: Promise<Info>; // we cache this globally rather than in localStorage so it is request once per page refresh

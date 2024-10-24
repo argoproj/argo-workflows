@@ -1,7 +1,7 @@
+import classNames from 'classnames';
 import * as React from 'react';
 import {useMemo} from 'react';
 import DatePicker from 'react-datepicker';
-import classNames from 'classnames';
 
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -9,11 +9,11 @@ import * as models from '../../../../models';
 import {WorkflowPhase} from '../../../../models';
 import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbox-filter';
 import {DataLoaderDropdown} from '../../../shared/components/data-loader-dropdown';
+import {DropDown} from '../../../shared/components/dropdown/dropdown';
+import {InputFilter} from '../../../shared/components/input-filter';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 import {services} from '../../../shared/services';
-import {InputFilter} from '../../../shared/components/input-filter';
-import {DropDown} from '../../../shared/components/dropdown/dropdown';
 
 import './workflow-filters.scss';
 

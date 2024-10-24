@@ -1,7 +1,6 @@
+import type {LogsViewerProps} from 'argo-ui/src/components/logs-viewer/logs-viewer';
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-
-import type {LogsViewerProps} from 'argo-ui/src/components/logs-viewer/logs-viewer';
 
 import {Loading} from '../../../shared/components/loading';
 

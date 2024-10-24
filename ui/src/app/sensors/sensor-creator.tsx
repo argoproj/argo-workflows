@@ -6,8 +6,8 @@ import {Button} from '../shared/components/button';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {UploadButton} from '../shared/components/upload-button';
 import {exampleSensor} from '../shared/examples';
-import {services} from '../shared/services';
 import * as nsUtils from '../shared/namespaces';
+import {services} from '../shared/services';
 import {SensorEditor} from './sensor-editor';
 
 export function SensorCreator({namespace, onCreate}: {namespace: string; onCreate: (sensor: Sensor) => void}) {

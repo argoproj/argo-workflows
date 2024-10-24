@@ -4,10 +4,10 @@ import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
-import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {historyUrl} from '../shared/history';
 import * as nsUtils from '../shared/namespaces';
+import {useCollectEvent} from '../shared/use-collect-event';
 
 export function PluginList({match, history}: RouteComponentProps<any>) {
     // state for URL and query parameters

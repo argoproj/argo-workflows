@@ -1,13 +1,13 @@
-import * as H from 'history';
 import {Layout} from 'argo-ui/src/components/layout/layout';
 import {NotificationsManager} from 'argo-ui/src/components/notifications/notification-manager';
 import {Notifications, NotificationType} from 'argo-ui/src/components/notifications/notifications';
-import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
 import {Popup, PopupProps} from 'argo-ui/src/components/popup/popup';
-
+import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
+import * as H from 'history';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Redirect, Route, Router, Switch} from 'react-router';
+
 import {Version} from '../models';
 import apiDocs from './api-docs';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
@@ -23,8 +23,8 @@ import sensors from './sensors';
 import {uiUrl} from './shared/base';
 import {ChatButton} from './shared/components/chat-button';
 import ErrorBoundary from './shared/components/error-boundary';
-import {services} from './shared/services';
 import * as nsUtils from './shared/namespaces';
+import {services} from './shared/services';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';

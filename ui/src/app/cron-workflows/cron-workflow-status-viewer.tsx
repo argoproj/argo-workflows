@@ -4,9 +4,9 @@ import * as React from 'react';
 import {CronWorkflowSpec, CronWorkflowStatus} from '../../models';
 import {Timestamp} from '../shared/components/timestamp';
 import {ConditionsPanel} from '../shared/conditions-panel';
+import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {WorkflowLink} from '../workflows/components/workflow-link';
 import {PrettySchedule} from './pretty-schedule';
-import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec; status: CronWorkflowStatus}) {
     if (status === null) {
