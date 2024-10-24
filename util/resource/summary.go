@@ -8,13 +8,17 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
+func unixEpoch() time.Time {
+	return time.Unix(0, 0).UTC()
+}
+
 type Summary struct {
 	ResourceList   corev1.ResourceList
 	ContainerState corev1.ContainerState
 }
 
 func (s Summary) age() time.Duration {
-	if s.ContainerState.Terminated != nil {
+	if s.ContainerState.Terminated != nil && s.ContainerState.Terminated.StartedAt.Time != unixEpoch() {
 		return s.ContainerState.Terminated.FinishedAt.Time.Sub(s.ContainerState.Terminated.StartedAt.Time)
 	} else {
 		return 0
