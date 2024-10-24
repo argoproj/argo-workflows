@@ -32,7 +32,7 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
                     </a>{' '}
                     have many more scheduling options including multiple schedules, a `when` expression and stopping strategies
                 </li>
-                <li>OSS artifacts are more versatile, supporting directories, deletion and streaming</li>
+                <li>OSS artifacts are more versatile, supporting directories, deletion, and streaming</li>
                 <li>Many UI updates including execution history of CronWorkflows</li>
                 <li>A number of improvements to performance and memory management</li>
             </ul>
