@@ -1,12 +1,11 @@
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {TimestampSwitch} from '../../../shared/components/timestamp';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 import {WorkflowsRow} from '../../../workflows/components/workflows-row/workflows-row';
 
 import './workflow-details-list.scss';
-
-import {TimestampSwitch} from '../../../shared/components/timestamp';
-import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
 interface WorkflowDetailsList {
     workflows: models.Workflow[];

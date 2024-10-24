@@ -17,11 +17,10 @@ import {Footnote} from '../shared/footnote';
 import {services} from '../shared/services';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {useQueryParams} from '../shared/use-query-params';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {ClusterWorkflowTemplateCreator} from './cluster-workflow-template-creator';
 
 import './cluster-workflow-template-list.scss';
-
-import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 export function ClusterWorkflowTemplateList({history, location}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);

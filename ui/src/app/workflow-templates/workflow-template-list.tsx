@@ -23,12 +23,11 @@ import {ScopedLocalStorage} from '../shared/scoped-local-storage';
 import {services} from '../shared/services';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {useQueryParams} from '../shared/use-query-params';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {WorkflowTemplateCreator} from './workflow-template-creator';
 import {WorkflowTemplateFilters} from './workflow-template-filters';
 
 import './workflow-template-list.scss';
-
-import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-templates/'>Learn more</a>;
 

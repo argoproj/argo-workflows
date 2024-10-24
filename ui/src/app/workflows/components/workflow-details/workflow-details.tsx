@@ -29,6 +29,7 @@ import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {EventsPanel} from '../events-panel';
 import {ResubmitWorkflowPanel} from '../resubmit-workflow-panel';
+import {RetryWorkflowNode} from '../retry-workflow-node-panel';
 import {RetryWorkflowPanel} from '../retry-workflow-panel';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowLogsViewer} from '../workflow-logs-viewer/workflow-logs-viewer';
@@ -43,8 +44,6 @@ import {SuspendInputs} from './suspend-inputs';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 import './workflow-details.scss';
-
-import {RetryWorkflowNode} from '../retry-workflow-node-panel';
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
