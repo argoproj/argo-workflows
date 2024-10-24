@@ -6,20 +6,20 @@ import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import * as models from '../../models';
-import {WorkflowTemplate, Workflow} from '../../models';
+import {Workflow, WorkflowTemplate} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
-import {useEditableObject} from '../shared/use-editable-object';
-import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
+import {useCollectEvent} from '../shared/use-collect-event';
+import {useEditableObject} from '../shared/use-editable-object';
 import {useQueryParams} from '../shared/use-query-params';
 import {WidgetGallery} from '../widgets/widget-gallery';
-import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
+import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
 export function WorkflowTemplateDetails({history, location, match}: RouteComponentProps<any>) {

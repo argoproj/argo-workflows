@@ -1,4 +1,5 @@
 import * as dagre from 'dagre';
+
 import {Graph, Node} from './types';
 
 const minSize = 1;

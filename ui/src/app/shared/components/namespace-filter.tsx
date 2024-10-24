@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import * as nsUtils from '../namespaces';
 import {InputFilter} from './input-filter';
 

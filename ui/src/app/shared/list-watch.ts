@@ -1,5 +1,6 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import {Observable} from 'rxjs';
+
 import {RetryWatch} from './retry-watch';
 
 interface Resource {

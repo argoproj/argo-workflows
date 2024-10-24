@@ -15,18 +15,18 @@ import {Node} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
 import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
-import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
-import {services} from '../shared/services';
-import {useQueryParams} from '../shared/use-query-params';
 import * as nsUtils from '../shared/namespaces';
+import {services} from '../shared/services';
+import {useCollectEvent} from '../shared/use-collect-event';
+import {useQueryParams} from '../shared/use-query-params';
+import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceCreator} from './event-source-creator';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
-import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/event_source/'>Learn more</a>;
 

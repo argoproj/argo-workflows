@@ -11,15 +11,16 @@ import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
 import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
-import {useCollectEvent} from '../shared/use-collect-event';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
-import {useQueryParams} from '../shared/use-query-params';
 import {Footnote} from '../shared/footnote';
 import {services} from '../shared/services';
+import {useCollectEvent} from '../shared/use-collect-event';
+import {useQueryParams} from '../shared/use-query-params';
 import {ClusterWorkflowTemplateCreator} from './cluster-workflow-template-creator';
 
 import './cluster-workflow-template-list.scss';
+
 import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 
 export function ClusterWorkflowTemplateList({history, location}: RouteComponentProps<any>) {

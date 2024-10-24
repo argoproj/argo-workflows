@@ -3,9 +3,9 @@ import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import React, {useState} from 'react';
 
 import {Parameter, RetryOpts, Workflow} from '../../../models';
+import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
 import {services} from '../../shared/services';
-import {ErrorNotice} from '../../shared/components/error-notice';
 
 interface Props {
     nodeId: string;

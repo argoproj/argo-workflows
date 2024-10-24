@@ -2,11 +2,11 @@ import {Select} from 'argo-ui/src/components/select/select';
 import React, {useContext, useMemo, useState} from 'react';
 
 import {Parameter, Template} from '../../../models';
-import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
+import {Context} from '../../shared/context';
 import {services} from '../../shared/services';
 
 interface Props {

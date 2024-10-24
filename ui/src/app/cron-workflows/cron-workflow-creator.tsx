@@ -7,8 +7,8 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {UploadButton} from '../shared/components/upload-button';
 import {exampleCronWorkflow} from '../shared/examples';
-import {services} from '../shared/services';
 import * as nsUtils from '../shared/namespaces';
+import {services} from '../shared/services';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
 export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) {

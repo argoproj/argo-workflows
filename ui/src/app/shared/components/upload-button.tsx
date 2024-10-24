@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import {parse} from './object-parser';
 
 export function UploadButton<T>(props: {onUpload: (value: T) => void; onError: (error: Error) => void}) {

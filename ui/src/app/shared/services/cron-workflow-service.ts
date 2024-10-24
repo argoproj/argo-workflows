@@ -1,6 +1,6 @@
 import {CronWorkflow, CronWorkflowList} from '../../../models';
-import {queryParams} from './utils';
 import requests from './requests';
+import {queryParams} from './utils';
 
 export const CronWorkflowService = {
     create(cronWorkflow: CronWorkflow, namespace: string) {

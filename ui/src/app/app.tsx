@@ -1,8 +1,8 @@
-import {createBrowserHistory} from 'history';
-import * as React from 'react';
 import {NavigationManager} from 'argo-ui/src/components/navigation';
 import {NotificationsManager} from 'argo-ui/src/components/notifications/notification-manager';
 import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
+import {createBrowserHistory} from 'history';
+import * as React from 'react';
 
 import 'argo-ui/src/styles/main.scss';
 

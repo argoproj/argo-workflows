@@ -1,15 +1,16 @@
 import {EMPTY, from, Observable, of} from 'rxjs';
 import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
+
 import * as models from '../../../models';
 import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
 import {ResubmitOpts, RetryOpts} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
+import {NameFilterKeys} from '../../workflows/components/workflow-filters/workflow-filters';
 import {uiUrl} from '../base';
 import {Pagination} from '../pagination';
-import {queryParams} from './utils';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
-import {NameFilterKeys} from '../../workflows/components/workflow-filters/workflow-filters';
+import {queryParams} from './utils';
 
 function isString(value: any): value is string {
     return typeof value === 'string';

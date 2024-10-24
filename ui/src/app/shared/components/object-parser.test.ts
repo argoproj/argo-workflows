@@ -1,5 +1,5 @@
-import {parse, stringify} from './object-parser';
 import {exampleWorkflowTemplate} from '../examples';
+import {parse, stringify} from './object-parser';
 
 describe('parse', () => {
     it('handles a valid JSON string', () => {

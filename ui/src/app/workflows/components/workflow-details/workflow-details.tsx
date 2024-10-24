@@ -13,7 +13,6 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {openLinkWithKey, processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
-import {useCollectEvent} from '../../../shared/use-collect-event';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -21,6 +20,7 @@ import {getPodName} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {useCollectEvent} from '../../../shared/use-collect-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {useResizableWidth} from '../../../shared/use-resizable-width';
 import {useTransition} from '../../../shared/use-transition';
@@ -43,6 +43,7 @@ import {SuspendInputs} from './suspend-inputs';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 import './workflow-details.scss';
+
 import {RetryWorkflowNode} from '../retry-workflow-node-panel';
 
 function parseSidePanelParam(param: string) {
