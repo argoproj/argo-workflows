@@ -28,7 +28,7 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
                 </li>
                 <li>
                     <a href='https://argo-workflows.readthedocs.io/en/release-3.5/cron-workflows?utm_source=argo-ui' target='_blank' rel='noreferrer'>
-                        Cron Workflows
+                        CronWorkflows
                     </a>{' '}
                     have many more scheduling options including multiple schedules, a `when` expression and stopping strategies
                 </li>
