@@ -30,7 +30,7 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
                     <a href='https://argo-workflows.readthedocs.io/en/release-3.5/cron-workflows?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         CronWorkflows
                     </a>{' '}
-                    have many more scheduling options including multiple schedules, a `when` expression and stopping strategies
+                    have many more scheduling options including multiple schedules, a <code>when</code> expression, and a <code>stopStrategy</code> expression
                 </li>
                 <li>OSS artifacts are more versatile, supporting directories, deletion, and streaming</li>
                 <li>Many UI updates including execution history of CronWorkflows</li>
