@@ -5,13 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/resource"
-
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -1190,6 +1189,51 @@ spec:
 	pods, err := listPods(woc)
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
+}
+
+func TestPodCleanupPatch(t *testing.T) {
+	wfc := &WorkflowController{}
+
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:          map[string]string{common.LabelKeyCompleted: "false"},
+			Finalizers:      []string{common.FinalizerPodStatus},
+			ResourceVersion: "123456",
+		},
+	}
+
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
+
+	// pod finalizer enabled, patch label
+	patch, err := wfc.getPodCleanupPatch(pod, true)
+	require.NoError(t, err)
+	expected := `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
+	assert.JSONEq(t, expected, string(patch))
+
+	// pod finalizer enabled, do not patch label
+	patch, err = wfc.getPodCleanupPatch(pod, false)
+	require.NoError(t, err)
+	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
+	assert.JSONEq(t, expected, string(patch))
+
+	// pod finalizer enabled, do not patch label, nil/empty finalizers
+	podWithNilFinalizers := &apiv1.Pod{}
+	patch, err = wfc.getPodCleanupPatch(podWithNilFinalizers, false)
+	require.NoError(t, err)
+	assert.Nil(t, patch)
+
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
+
+	// pod finalizer disabled, patch both
+	patch, err = wfc.getPodCleanupPatch(pod, true)
+	require.NoError(t, err)
+	expected = `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`
+	assert.JSONEq(t, expected, string(patch))
+
+	// pod finalizer disabled, do not patch label
+	patch, err = wfc.getPodCleanupPatch(pod, false)
+	require.NoError(t, err)
+	assert.Nil(t, patch)
 }
 
 func TestPendingPodWhenTerminate(t *testing.T) {

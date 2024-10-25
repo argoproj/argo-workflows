@@ -26,6 +26,9 @@ type Config struct {
 	// NodeEvents configures how node events are emitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
 
+	// WorkflowEvents configures how workflow events are emitted
+	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitempty"`
+
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
 
