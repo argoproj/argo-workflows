@@ -2409,11 +2409,6 @@ func (n NodeStatus) IsExitNode() bool {
 	return strings.HasSuffix(n.DisplayName, ".onExit")
 }
 
-// IsPodDeleted returns whether node is error with pod deleted.
-func (n NodeStatus) IsPodDeleted() bool {
-	return n.Phase == NodeError && n.Message == "pod deleted"
-}
-
 func (n NodeStatus) Succeeded() bool {
 	return n.Phase == NodeSucceeded
 }
