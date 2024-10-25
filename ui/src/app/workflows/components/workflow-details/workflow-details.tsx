@@ -43,7 +43,6 @@ import {SuspendInputs} from './suspend-inputs';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 import './workflow-details.scss';
-import {RetryWorkflowNode} from '../retry-workflow-node-panel';
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
