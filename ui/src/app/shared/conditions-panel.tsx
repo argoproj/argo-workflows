@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import {Condition, ConditionType} from '../../models';
 import {ErrorIcon, WarningIcon} from './components/fa-icons';
 

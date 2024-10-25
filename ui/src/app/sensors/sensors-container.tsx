@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {Route, RouteComponentProps, Switch} from 'react-router';
+
 import {SensorDetails} from './sensor-details';
 import {SensorList} from './sensor-list';
 

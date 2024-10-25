@@ -1,4 +1,5 @@
 import {map} from 'rxjs/operators';
+
 import {LogEntry, Sensor, SensorList, SensorWatchEvent} from '../../../models/sensor';
 import requests from './requests';
 

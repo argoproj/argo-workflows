@@ -12,6 +12,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
+import {TimestampSwitch} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -21,16 +22,14 @@ import {Pagination, parseLimit} from '../../../shared/pagination';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {useCollectEvent} from '../../../shared/use-collect-event';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowCreator} from '../workflow-creator';
-import type {NameFilterKeys} from '../workflow-filters/workflow-filters';
-import {NAME_FILTER_KEYS, WorkflowFilters} from '../workflow-filters/workflow-filters';
+import {NAME_FILTER_KEYS, WorkflowFilters, type NameFilterKeys} from '../workflow-filters/workflow-filters';
 import {WorkflowsRow} from '../workflows-row/workflows-row';
 import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflows-summary-container';
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
-import {TimestampSwitch} from '../../../shared/components/timestamp';
-import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 import './workflows-list.scss';
 
 interface WorkflowListRenderOptions {

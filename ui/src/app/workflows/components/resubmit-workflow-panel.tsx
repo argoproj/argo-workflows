@@ -2,10 +2,10 @@ import {Checkbox} from 'argo-ui/src/components/checkbox';
 import React, {useContext, useState} from 'react';
 
 import {Parameter, ResubmitOpts, Workflow} from '../../../models';
-import {Context} from '../../shared/context';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
+import {Context} from '../../shared/context';
 import {services} from '../../shared/services';
 
 interface Props {

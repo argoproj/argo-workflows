@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import {TextInput} from './text-input';
 
 export const NumberInput = ({onChange, value, placeholder, readOnly}: {value: number; onChange: (value: number) => void; readOnly?: boolean; placeholder?: string}) =>

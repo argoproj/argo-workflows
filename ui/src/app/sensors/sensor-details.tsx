@@ -10,12 +10,12 @@ import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Node} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
-import {useCollectEvent} from '../shared/use-collect-event';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import {services} from '../shared/services';
-import {useQueryParams} from '../shared/use-query-params';
+import {useCollectEvent} from '../shared/use-collect-event';
 import {useEditableObject} from '../shared/use-editable-object';
+import {useQueryParams} from '../shared/use-query-params';
 import {SensorEditor} from './sensor-editor';
 import {SensorSidePanel} from './sensor-side-panel';
 
