@@ -6,9 +6,9 @@
         "src"
     ],
     "scripts": {
-        "build": "rm -Rf dist && NODE_ENV=production webpack --mode production --config ./src/app/webpack.config.js",
-        "start": "webpack-dev-server --config ./src/app/webpack.config.js",
-        "lint": "eslint --fix ./src/app && tsc --noEmit",
+        "build": "rm -Rf dist && NODE_ENV=production webpack --mode production",
+        "start": "webpack-dev-server",
+        "lint": "eslint --fix ./src && tsc --noEmit",
         "test": "jest",
         "deduplicate": "yarn-deduplicate -s fewer yarn.lock"
     },
