@@ -47,7 +47,7 @@ export function RetryWorkflowPanel(props: Props) {
 
     return (
         <>
-            <h4>Retry Workflow</h4>
+            <h4>Retry {props.nodeId ? 'Node' : 'Workflow'}</h4>
             <h5>
                 {props.workflow.metadata.namespace}/{props.workflow.metadata.name}
                 {props.nodeId ? `/${props.nodeId}` : ''}
