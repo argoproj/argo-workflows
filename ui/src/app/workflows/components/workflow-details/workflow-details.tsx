@@ -102,7 +102,6 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
-    const [showRetryNodePanel, setShowRetryNodePanel] = useState<boolean>();
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const sidePanelRef = useRef<HTMLDivElement>(null);
     const [workflow, setWorkflow] = useState<Workflow>();
@@ -529,21 +528,12 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                     transition: isSidePanelAnimating ? `width ${ANIMATION_MS}ms` : 'unset',
                                     width: isSidePanelExpanded ? `${sidePanelWidth}px` : 0
                                 }}>
-                                <button className='workflow-details__step-info-close' onClick={() => (showRetryNodePanel ? setShowRetryNodePanel(false) : setNodeId(null))}>
+                                <button className='workflow-details__step-info-close' onClick={() => setNodeId(null)}>
                                     <i className='argo-icon-close' />
                                 </button>
 
                                 <div className='workflow-details__step-info-drag-handle' {...sidePanelDragHandleProps} />
-                                {selectedNode && showRetryNodePanel && (
-                                    <RetryWorkflowPanel
-                                        nodeId={selectedNode.id}
-                                        workflow={workflow}
-                                        isArchived={isArchivedWorkflow(workflow)}
-                                        isWorkflowInCluster={isWorkflowInCluster(workflow)}
-                                        onRetrySuccess={() => setShowRetryNodePanel(false)}
-                                    />
-                                )}
-                                {selectedNode && !showRetryNodePanel && (
+                                {selectedNode && (
                                     <WorkflowNodeInfo
                                         node={selectedNode}
                                         onTabSelected={setNodePanelView}
@@ -553,7 +543,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
-                                        onRetryNode={() => setShowRetryNodePanel(true)}
+                                        onRetryNode={() => setSidePanel(`retry:${nodeId}`)}
                                         archived={archived}
                                         onResume={() => renderResumePopup()}
                                     />
@@ -582,6 +572,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} isArchived={isArchivedWorkflow(workflow)} />}
                     {parsedSidePanel.type === 'retry' && (
                         <RetryWorkflowPanel
+                            nodeId={selectedNode?.id}
                             workflow={workflow}
                             isArchived={isArchivedWorkflow(workflow)}
                             isWorkflowInCluster={isWorkflowInCluster(workflow)}
