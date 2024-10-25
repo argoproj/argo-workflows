@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "outDir": "./dist/",
+        "outDir": "./../dist/app",
         "sourceMap": true,
         "noImplicitAny": true,
         "isolatedModules": true, // for compatibility with esbuild

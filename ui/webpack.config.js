@@ -22,7 +22,7 @@ const config = {
     },
     output: {
         filename: '[name].[contenthash].js',
-        path: __dirname + '/../../dist/app'
+        path: __dirname + '/dist/app'
     },
 
     devtool: isProd ? 'source-map' : 'eval',
@@ -70,7 +70,7 @@ const config = {
                 version: process.env.VERSION || 'latest'
             })
         }),
-        new HtmlWebpackPlugin({template: 'src/app/index.html'}),
+        new HtmlWebpackPlugin({template: 'src/index.html'}),
         new CopyWebpackPlugin({
             patterns: [
                 {
