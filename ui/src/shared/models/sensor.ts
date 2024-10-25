@@ -14,16 +14,16 @@ export interface Sensor {
             template?: {
                 name: string;
                 conditions?: string;
-                argoWorkflow?: {};
-                awsLambda?: {};
-                custom?: {};
-                http?: {};
-                k8s?: {};
-                log?: {};
-                kafka?: {};
-                nats?: {};
-                openWhisk?: {};
-                slack?: {};
+                argoWorkflow?: any;
+                awsLambda?: any;
+                custom?: any;
+                http?: any;
+                k8s?: any;
+                log?: any;
+                kafka?: any;
+                nats?: any;
+                openWhisk?: any;
+                slack?: any;
             };
         }[];
     };

@@ -139,7 +139,7 @@ export interface Artifact {
     s3?: S3Artifact;
     azure?: AzureArtifact;
     archive?: {
-        none?: {};
+        none?: any;
     };
     artifactGC?: {
         strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
@@ -483,7 +483,7 @@ export interface Template {
     /**
      * Suspend template
      */
-    suspend?: {};
+    suspend?: any;
 
     /**
      * Template is the name of the template which is used as the base of this template.
