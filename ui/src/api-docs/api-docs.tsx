@@ -15,10 +15,18 @@ export function ApiDocs() {
             }}>
             <ZeroState title='Swagger'>
                 <p>
-                    Download the <a download={uiUrl('assets/openapi-spec/swagger.json')}>Open API / Swagger spec</a>.
+                    Download the{' '}
+                    <a href={uiUrl('assets/openapi-spec/swagger.json')} download>
+                        Open API / Swagger spec
+                    </a>
+                    .
                 </p>
                 <p>
-                    Download the <a download={uiUrl('assets/jsonschema/schema.json')}>JSON schema</a>.
+                    Download the{' '}
+                    <a href={uiUrl('assets/jsonschema/schema.json')} download>
+                        JSON schema
+                    </a>
+                    .
                 </p>
                 <p>
                     View the interactive Swagger UI{' '}
