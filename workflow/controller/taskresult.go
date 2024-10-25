@@ -84,8 +84,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		if err != nil {
 			continue
 		}
+
 		// Mark task result as completed if it has no chance to be completed.
-		if label == "false" && old.IsPodDeleted() {
+		if label == "false" && !woc.nodePodExist(*old) {
 			if recentlyDeleted(old) {
 				woc.log.WithField("nodeID", nodeID).Debug("Wait for marking task result as completed because pod is recently deleted.")
 				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
