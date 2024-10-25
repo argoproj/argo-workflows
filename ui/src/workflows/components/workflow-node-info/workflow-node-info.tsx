@@ -62,12 +62,12 @@ interface Props {
     links: models.Link[];
     archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
-    onShowEvents?: () => void;
-    onShowYaml?: (nodeId: string) => any;
-    onTabSelected?: (tabSelected: string) => void;
+    onShowEvents: () => void;
+    onShowYaml: (nodeId: string) => any;
+    onTabSelected: (tabSelected: string) => void;
     selectedTabKey?: string;
-    onResume?: () => void;
-    onRetryNode?: () => void;
+    onResume: () => void;
+    onRetryNode: () => void;
 }
 
 const AttributeRow = (attr: {title: string; value: string | React.JSX.Element}) => (
@@ -182,32 +182,32 @@ function WorkflowNodeSummary(props: Props) {
                 {<AttributeRows attributes={attributes} />}
             </div>
             <div>
-                {props.node.type === 'Suspend' && props.onResume && (
-                    <Button icon='play' onClick={() => props.onResume()}>
+                {props.node.type === 'Suspend' && (
+                    <Button icon='play' onClick={props.onResume}>
                         RESUME
                     </Button>
                 )}{' '}
-                {props.node.type !== 'Container' && props.onShowYaml && (
+                {props.node.type !== 'Container' && (
                     <Button icon='file-code' onClick={() => props.onShowYaml(props.node.id)}>
                         MANIFEST
                     </Button>
                 )}{' '}
-                {props.onRetryNode && ['Succeeded', 'Failed'].includes(props.node.phase) && (
-                    <Button icon='undo-alt' onClick={() => props.onRetryNode()}>
+                {['Succeeded', 'Failed'].includes(props.node.phase) && (
+                    <Button icon='undo-alt' onClick={props.onRetryNode}>
                         RETRY NODE
                     </Button>
                 )}{' '}
-                {props.node.type === 'Pod' && props.onShowContainerLogs && (
+                {props.node.type === 'Pod' && (
                     <Button onClick={() => showLogs()} icon='bars'>
                         LOGS
                     </Button>
                 )}{' '}
-                {props.node.type === 'Pod' && props.onShowEvents && (
-                    <Button icon='bell' onClick={() => props.onShowEvents()}>
+                {props.node.type === 'Pod' && (
+                    <Button icon='bell' onClick={props.onShowEvents}>
                         EVENTS
                     </Button>
                 )}{' '}
-                {props.node.type === 'Container' && props.onShowContainerLogs && (
+                {props.node.type === 'Container' && (
                     <Button
                         icon='bars'
                         onClick={() =>
