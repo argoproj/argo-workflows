@@ -1,11 +1,7 @@
 import * as React from 'react';
-<<<<<<< HEAD:ui/src/app/shared/conditions-panel.tsx
 
-import {Condition, ConditionType} from '../../models';
-=======
-import {Condition, ConditionType} from './models';
->>>>>>> dc1ee2772 (refactor(ui): flatten `ui/src/app` dir):ui/src/shared/conditions-panel.tsx
 import {ErrorIcon, WarningIcon} from './components/fa-icons';
+import {Condition, ConditionType} from './models';
 
 interface Props {
     conditions: Condition[];
