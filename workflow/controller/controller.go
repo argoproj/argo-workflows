@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	gosync "sync"
 	"syscall"
@@ -15,7 +16,6 @@ import (
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/exp/slices"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -53,7 +53,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -546,7 +545,9 @@ func (wfc *WorkflowController) getPodCleanupPatch(pod *apiv1.Pod, labelPodComple
 
 	finalizerEnabled := os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true"
 	if finalizerEnabled && pod.Finalizers != nil {
-		finalizers := slice.RemoveString(pod.Finalizers, common.FinalizerPodStatus)
+		finalizers := slices.Clone(pod.Finalizers)
+		finalizers = slices.DeleteFunc(finalizers,
+			func(s string) bool { return s == common.FinalizerPodStatus })
 		if len(finalizers) != len(pod.Finalizers) {
 			un.SetFinalizers(finalizers)
 			un.SetResourceVersion(pod.ObjectMeta.ResourceVersion)
@@ -1108,7 +1109,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						log.WithError(err).Error("Failed to list pods")
 					}
 					for _, p := range podList.Items {
-						if slice.ContainsString(p.Finalizers, common.FinalizerPodStatus) {
+						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
 							wfc.queuePodForCleanup(p.Namespace, p.Name, removeFinalizer)
 						}
 					}
