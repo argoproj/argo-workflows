@@ -1,18 +1,22 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"regexp"
 
+	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	ssh2 "github.com/go-git/go-git/v5/plumbing/transport/ssh"
+
+	"github.com/google/go-github/v29/github"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 
@@ -29,6 +33,14 @@ type ArtifactDriver struct {
 	InsecureIgnoreHostKey bool
 	InsecureSkipTLS       bool
 	DisableSubmodules     bool
+	GitHubApp             *GitHubApp
+}
+
+type GitHubApp struct {
+	InstallationID int64
+	PrivateKey     []byte
+	ID             int64
+	BaseURL        string
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -66,6 +78,26 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		}
 		return func() { _ = os.Remove(privateKeyFile.Name()) }, auth, nil
+	}
+
+	if g.GitHubApp != nil {
+		// Authenticate as a GitHub App
+		transport, err := ghinstallation.NewAppsTransportKeyFromFile(github.DefaultTransport, g.GitHubApp.ID, g.GitHubApp.PrivateKey)
+		if err != nil {
+			log.Fatalf("Failed to create Apps transport: %v", err)
+		}
+
+		client := github.NewClient(&github.Client{Transport: transport})
+
+		// Generate the Installation Access Token
+		token, _, err := client.Apps.CreateInstallationToken(context.Background(), g.GitHubApp.InstallationID, nil)
+		if err != nil {
+			log.Fatalf("Failed to create installation token: %v", err)
+		}
+		return func() {}, &http.BasicAuth{
+			Username: "x-access-token",
+			Password: token,
+		}, nil
 	}
 	if g.Username != "" || g.Password != "" {
 		return func() {}, &http.BasicAuth{Username: g.Username, Password: g.Password}, nil
