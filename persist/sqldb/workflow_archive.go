@@ -157,33 +157,49 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
-	var cteSelector, selectQuery db.Selector
 	var baseSelector = r.session.SQL().Select("name", "namespace", "uid", "phase", "startedat", "finishedat")
 
 	switch r.dbType {
 	case MySQL:
-		cteSelector = baseSelector.Columns(
-			db.Raw("coalesce(workflow->'$.metadata', '{}') as metadata"),
-			db.Raw("coalesce(workflow->'$.status', '{}') as status"),
-			db.Raw("workflow->>'$.spec.suspend' as suspend"),
-		)
-		selectQuery = baseSelector.Columns(
-			db.Raw("coalesce(metadata->'$.labels', '{}') as labels"),
-			db.Raw("coalesce(metadata->'$.annotations', '{}') as annotations"),
-			db.Raw("coalesce(status->>'$.progress', '') as progress"),
-			db.Raw("coalesce(metadata->>'$.creationTimestamp', '') as creationtimestamp"),
-			"suspend",
-			db.Raw("coalesce(status->>'$.message', '') as message"),
-			db.Raw("coalesce(status->>'$.estimatedDuration', '0') as estimatedduration"),
-			db.Raw("coalesce(status->'$.resourcesDuration', '{}') as resourcesduration"),
-		)
+		selectQuery := baseSelector.
+			Columns(
+				db.Raw("coalesce(workflow->'$.metadata.labels', '{}') as labels"),
+				db.Raw("coalesce(workflow->'$.metadata.annotations', '{}') as annotations"),
+				db.Raw("coalesce(workflow->>'$.status.progress', '') as progress"),
+				db.Raw("coalesce(workflow->>'$.metadata.creationTimestamp', '') as creationtimestamp"),
+				db.Raw("workflow->>'$.spec.suspend'"),
+				db.Raw("coalesce(workflow->>'$.status.message', '') as message"),
+				db.Raw("coalesce(workflow->>'$.status.estimatedDuration', '0') as estimatedduration"),
+				db.Raw("coalesce(workflow->'$.status.resourcesDuration', '{}') as resourcesduration"),
+			).
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID())
+
+		selectQuery, err := BuildArchivedWorkflowSelector(selectQuery, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+		if err != nil {
+			return nil, err
+		}
+
+		err = selectQuery.All(&archivedWfs)
+		if err != nil {
+			return nil, err
+		}
 	case Postgres:
-		cteSelector = baseSelector.Columns(
-			db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
-			db.Raw("coalesce(workflow->'status', '{}') as status"),
-			db.Raw("workflow->'spec'->>'suspend' as suspend"),
-		)
-		selectQuery = baseSelector.Columns(
+		cteSelector := baseSelector.
+			Columns(
+				db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
+				db.Raw("coalesce(workflow->'status', '{}') as status"),
+				db.Raw("workflow->'spec'->>'suspend' as suspend"),
+			).
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID())
+
+		cteSelector, err := BuildArchivedWorkflowSelector(cteSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+		if err != nil {
+			return nil, err
+		}
+
+		selectQuery := baseSelector.Columns(
 			db.Raw("coalesce(metadata->>'labels', '{}') as labels"),
 			db.Raw("coalesce(metadata->>'annotations', '{}') as annotations"),
 			db.Raw("coalesce(status->>'progress', '') as progress"),
@@ -193,24 +209,15 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 			db.Raw("coalesce(status->>'estimatedDuration', '0') as estimatedduration"),
 			db.Raw("coalesce(status->>'resourcesDuration', '{}') as resourcesduration"),
 		)
+
+		err = r.session.SQL().
+			Iterator("WITH workflows AS ? ?", cteSelector, selectQuery.From("workflows")).
+			All(&archivedWfs)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unsupported db type %s", r.dbType)
-	}
-
-	cteSelector = cteSelector.
-		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID())
-
-	cteSelector, err := BuildArchivedWorkflowSelector(cteSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
-	if err != nil {
-		return nil, err
-	}
-
-	err = r.session.SQL().
-		Iterator("WITH workflows AS ? ?", cteSelector, selectQuery.From("workflows")).
-		All(&archivedWfs)
-	if err != nil {
-		return nil, err
 	}
 
 	wfs := make(wfv1.Workflows, len(archivedWfs))
