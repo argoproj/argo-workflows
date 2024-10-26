@@ -185,6 +185,8 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 			return nil, err
 		}
 	case Postgres:
+		// Use a common table expression to reduce detoast overhead for the "workflow" column:
+		// https://github.com/argoproj/argo-workflows/issues/13601#issuecomment-2420499551
 		cteSelector := baseSelector.
 			Columns(
 				db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
