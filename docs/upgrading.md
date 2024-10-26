@@ -42,7 +42,7 @@ If this is the case for you, and minimizing downtime is important, you have a fe
 
 1. If you don't actually need the archived workflows anymore, simply delete them with `delete from argo_archived_workflows` and the migration will complete almost instantly.
 2. Using a variation of [Altering a Postgres Column with Minimal Downtime](https://making.lyst.com/2020/05/26/altering-a-postgres-column-with-minimal-downtime/), it's possible to manually perform this migration with nearly no downtime. This is a two-step process;
-    1. Before the migration, run the following queries to create a temporary `workflowjsonb` column and populate it with the existing data. This is safe to do whilst running version 3.5 because the column types are compatible.
+    1. Before the upgrade, run the following queries to create a temporary `workflowjsonb` column and populate it with the existing data. This is safe to do whilst running version 3.5 because the column types are compatible.
 
          ```sql
          -- Add temporary workflowjsonb column
@@ -64,7 +64,7 @@ If this is the case for you, and minimizing downtime is important, you have a fe
          UPDATE argo_archived_workflows SET workflowjsonb = workflow WHERE workflowjsonb IS NULL;
          ```
 
-    2. Once the above has completed and you're ready to proceed with the migration, run the following queries before starting the controller:
+    2. Once the above has completed and you're ready to proceed with the upgrade, run the following queries before starting the controller:
 
          ```sql
          BEGIN;
@@ -77,7 +77,7 @@ If this is the case for you, and minimizing downtime is important, you have a fe
          ```
 
 3. Version 3.6 retains compatibility with workflows stored as type `json`.
-  Therefore, it's currently safe to bypass the migration by running `update schema_history set schema_version=60`.
+  Therefore, it's currently safe to [skip the migration](workflow-archive.md#automatic-database-migration) by setting `skipMigration: true`.
   This should only be used as an emergency stop-gap, as future versions may drop support for `json` without notice.
 
 ### Metrics changes
