@@ -1629,7 +1629,7 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 		if t.Message != "" {
 			msg = fmt.Sprintf("%s: %s", msg, t.Message)
 		}
-		msg = fmt.Sprintf("%s in %s", msg, ctr.Name)
+		msg = fmt.Sprintf("%s: %s", ctr.Name, msg)
 
 		switch {
 		case ctr.Name == common.InitContainerName:
