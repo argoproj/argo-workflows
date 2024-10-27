@@ -165,6 +165,48 @@ func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
 		})
 }
 
+func (s *ResourceTemplateSuite) TestResourceTemplateAutomountServiceAccountTokenDisabled() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-automountservicetoken-disabled-
+spec:
+  serviceAccountName: argo
+  automountServiceAccountToken: false
+  executor:
+    serviceAccountName: argo
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        setOwnerReference: true
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: k8s-wf-resource-
+          spec:
+            entrypoint: main
+            templates:
+              - name: main
+                container:
+                  image: argoproj/argosay:v2
+                  command: ["/argosay"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func (s *ResourceTemplateSuite) TestResourceTemplateFailed() {
 	s.Given().
 		Workflow("@testdata/resource-templates/failed.yaml").
