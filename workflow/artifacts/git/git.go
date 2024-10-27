@@ -26,6 +26,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
+const (
+	DefaultGithubUrl = "https://api.github.com"
+)
+
 // ArtifactDriver is the artifact driver for a git repo
 type ArtifactDriver struct {
 	Username              string
@@ -89,6 +93,8 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 
 		if g.GithubApp.BaseURL != "" {
 			transport.BaseURL = g.GithubApp.BaseURL
+		} else {
+			transport.BaseURL = DefaultGithubUrl
 		}
 
 		var client *github.Client

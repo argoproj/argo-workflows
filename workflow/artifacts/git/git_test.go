@@ -48,6 +48,13 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 			require.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/private-test-repo.git"}))
 			assert.FileExists(t, path+"/README.md")
 		})
+		t.Run("GithubApp", func(t *testing.T) {
+			privateKey, err := os.ReadFile(homedir.HomeDir() + "/.ssh/id_rsa")
+			require.NoError(t, err)
+
+			driver := &ArtifactDriver{GithubApp: &GithubApp{InstallationID: 123, PrivateKey: []byte(privateKey), ID: 456, BaseURL: "https://api.github.com"}}
+			require.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/private-test-repo.git"}))
+		})
 	})
 	t.Run("PublicRepo", func(t *testing.T) {
 		driver := &ArtifactDriver{}
