@@ -82,10 +82,9 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 	}
 
 	if g.GithubApp != nil {
-		// Authenticate as a GitHub App
 		transport, err := ghinstallation.New(nethttp.DefaultTransport, g.GithubApp.ID, g.GithubApp.InstallationID, g.GithubApp.PrivateKey)
 		if err != nil {
-			log.Fatalf("Failed to create github app transport: %v", err)
+			return nil, nil, fmt.Errorf("failed to create transport: %w", err)
 		}
 
 		if g.GithubApp.BaseURL != "" {
@@ -97,10 +96,9 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 		httpClient := nethttp.Client{Transport: transport}
 		client = github.NewClient(&httpClient)
 
-		// Generate the Installation Access Token
 		token, _, err := client.Apps.CreateInstallationToken(context.Background(), g.GithubApp.InstallationID, nil)
 		if err != nil {
-			log.Fatalf("Failed to create installation token: %v", err)
+			return nil, nil, fmt.Errorf("failed to create installation token: %w", err)
 		}
 		return func() {}, &http.BasicAuth{
 			Username: "x-access-token",
