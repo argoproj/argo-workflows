@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	nethttp "net/http"
 	"os"
 	"regexp"
 
@@ -33,10 +34,10 @@ type ArtifactDriver struct {
 	InsecureIgnoreHostKey bool
 	InsecureSkipTLS       bool
 	DisableSubmodules     bool
-	GitHubApp             *GitHubApp
+	GithubApp             *GithubApp
 }
 
-type GitHubApp struct {
+type GithubApp struct {
 	InstallationID int64
 	PrivateKey     []byte
 	ID             int64
@@ -80,23 +81,30 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 		return func() { _ = os.Remove(privateKeyFile.Name()) }, auth, nil
 	}
 
-	if g.GitHubApp != nil {
+	if g.GithubApp != nil {
 		// Authenticate as a GitHub App
-		transport, err := ghinstallation.NewAppsTransportKeyFromFile(github.DefaultTransport, g.GitHubApp.ID, g.GitHubApp.PrivateKey)
+		transport, err := ghinstallation.New(nethttp.DefaultTransport, g.GithubApp.ID, g.GithubApp.InstallationID, g.GithubApp.PrivateKey)
 		if err != nil {
-			log.Fatalf("Failed to create Apps transport: %v", err)
+			log.Fatalf("Failed to create github app transport: %v", err)
 		}
 
-		client := github.NewClient(&github.Client{Transport: transport})
+		if g.GithubApp.BaseURL != "" {
+			transport.BaseURL = g.GithubApp.BaseURL
+		}
+
+		var client *github.Client
+
+		httpClient := nethttp.Client{Transport: transport}
+		client = github.NewClient(&httpClient)
 
 		// Generate the Installation Access Token
-		token, _, err := client.Apps.CreateInstallationToken(context.Background(), g.GitHubApp.InstallationID, nil)
+		token, _, err := client.Apps.CreateInstallationToken(context.Background(), g.GithubApp.InstallationID, nil)
 		if err != nil {
 			log.Fatalf("Failed to create installation token: %v", err)
 		}
 		return func() {}, &http.BasicAuth{
 			Username: "x-access-token",
-			Password: token,
+			Password: token.GetToken(),
 		}, nil
 	}
 	if g.Username != "" || g.Password != "" {
