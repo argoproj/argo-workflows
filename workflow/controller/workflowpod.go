@@ -224,22 +224,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// container's PID and root filesystem.
 	pod.Spec.Containers = append(pod.Spec.Containers, mainCtrs...)
 
-	// Configure service account token volume for the main container when AutomountServiceAccountToken is disabled
-	if (woc.execWf.Spec.AutomountServiceAccountToken != nil && !*woc.execWf.Spec.AutomountServiceAccountToken) ||
-		(tmpl.AutomountServiceAccountToken != nil && !*tmpl.AutomountServiceAccountToken) {
-		for i, c := range pod.Spec.Containers {
-			if c.Name == common.WaitContainerName {
-				continue
-			}
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      common.ServiceAccountTokenVolumeName,
-				MountPath: common.ServiceAccountTokenMountPath,
-				ReadOnly:  true,
-			})
-			pod.Spec.Containers[i] = c
-		}
-	}
-
 	// Configuring default container to be used with commands like "kubectl exec/logs".
 	// Select "main" container if it's available. In other case use the last container (can happen when pod created from ContainerSet).
 	defaultContainer := pod.Spec.Containers[len(pod.Spec.Containers)-1].Name
