@@ -2278,9 +2278,7 @@ func TestDagConversion(t *testing.T) {
 			numNilParent++
 		}
 	}
-
 	assert.Equal(1, numNilParent)
-
 }
 
 const dagDiamondRetry = `apiVersion: argoproj.io/v1alpha1
@@ -3800,8 +3798,8 @@ func TestNestedDAG(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(nestedDAG)
 
 	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
+
 	require.NoError(err)
 	_ = newWf
 	_ = podsToDelete
-
 }
