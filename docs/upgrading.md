@@ -93,6 +93,10 @@ To disable this set `metricsConfig.secure` to `false`.
 When returning a map or array in an expression, you would get a Golang representation.
 This now returns plain JSON.
 
+### Container name in error messages
+
+Error messages are prefixed with container name, you may need to adjust your `lastRetry.message` expressions or `TRANSIENT_ERROR_PATTERN` variable. See [Conditional retries](retries.md)
+
 ## Upgrading to v3.5
 
 There are no known breaking changes in this release.
