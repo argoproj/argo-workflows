@@ -55,7 +55,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 }
 
 func recentlyDeleted(node *wfv1.NodeStatus) bool {
-	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 10*time.Second)
+	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
@@ -84,8 +84,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		if err != nil {
 			continue
 		}
+
 		// Mark task result as completed if it has no chance to be completed.
-		if label == "false" && old.IsPodDeleted() {
+		if label == "false" && old.Completed() && !woc.nodePodExist(*old) {
 			if recentlyDeleted(old) {
 				woc.log.WithField("nodeID", nodeID).Debug("Wait for marking task result as completed because pod is recently deleted.")
 				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
@@ -93,10 +94,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 				// workflow will not update for 20m. Requeuing here prevents that happening.
 				woc.requeue()
 				continue
-			} else {
-				woc.log.WithField("nodeID", nodeID).Info("Marking task result as completed because pod has been deleted for a while.")
-				woc.wf.Status.MarkTaskResultComplete(nodeID)
 			}
+			woc.log.WithField("nodeID", nodeID).Info("Marking task result as completed because pod has been deleted for a while.")
+			woc.wf.Status.MarkTaskResultComplete(nodeID)
 		}
 		newNode := old.DeepCopy()
 		if result.Outputs.HasOutputs() {
