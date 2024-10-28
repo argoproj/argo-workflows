@@ -55,7 +55,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 }
 
 func recentlyDeleted(node *wfv1.NodeStatus) bool {
-	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 10*time.Second)
+	return time.Since(node.StartedAt.Time) >= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
@@ -94,10 +94,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 				// workflow will not update for 20m. Requeuing here prevents that happening.
 				woc.requeue()
 				continue
-			} else {
-				woc.log.WithField("nodeID", nodeID).Info("Marking task result as completed because pod has been deleted for a while.")
-				woc.wf.Status.MarkTaskResultComplete(nodeID)
 			}
+			woc.log.WithField("nodeID", nodeID).Info("Marking task result as completed because pod has been deleted for a while.")
+			woc.wf.Status.MarkTaskResultComplete(nodeID)
 		}
 		newNode := old.DeepCopy()
 		if result.Outputs.HasOutputs() {
