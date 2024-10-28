@@ -55,7 +55,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 }
 
 func recentlyDeleted(node *wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
+	return time.Since(node.FinishedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
@@ -86,7 +86,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		}
 
 		// Mark task result as completed if it has no chance to be completed.
-		if label == "false" && !woc.nodePodExist(*old) {
+		if label == "false" && old.Completed() && !woc.nodePodExist(*old) {
 			if recentlyDeleted(old) {
 				woc.log.WithField("nodeID", nodeID).Debug("Wait for marking task result as completed because pod is recently deleted.")
 				// If the pod was deleted, then it is possible that the controller never get another informer message about it.
