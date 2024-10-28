@@ -106,7 +106,8 @@ This now returns plain JSON.
 
 ### Added container name to workflow node error messages
 
-Error messages are prefixed with container name, you may need to adjust your `lastRetry.message` expressions or `TRANSIENT_ERROR_PATTERN` variable. See [Conditional retries](retries.md)
+Workflow node error messages are now prefixed with the container name.
+If you are using [Conditional Retries](retries.md#conditional-retries), you may need to adjust your usage of `lastRetry.message` expressions or the `TRANSIENT_ERROR_PATTERN` environment variable.
 
 ### `ARGO_TEMPLATE` removed from main container
 
