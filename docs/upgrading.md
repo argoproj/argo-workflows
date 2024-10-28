@@ -5,6 +5,8 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.6
 
+See also the list of [new features in 3.6](new-features.md).
+
 ### Deprecations
 
 The following features are deprecated and will be removed in a future verison of Argo Workflows:
@@ -27,6 +29,15 @@ Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
 ### Legacy insecure pod patch fallback removed. ([#13100](https://github.com/argoproj/argo-workflows/pull/13100))
 
 For the Emissary executor to work properly, you must set up RBAC. See [workflow RBAC](workflow-rbac.md)
+
+### Archived Workflows on PostgreSQL
+
+This upgrade will transform an archived workflow column from type `json` to type `jsonb`.
+This will take some time if you have a lot of archived workflows.
+This requires PostgreSQL version 9.4 or higher.
+
+You can perform this modification prior to upgrading with `alter table argo_archived_workflows alter column workflow set data type jsonb using workflow::jsonb`.
+This is considered safe to do whilst running version 3.5 as the column types are compatible.
 
 ### Metrics changes
 
@@ -96,6 +107,11 @@ This now returns plain JSON.
 ### Container name in error messages
 
 Error messages are prefixed with container name, you may need to adjust your `lastRetry.message` expressions or `TRANSIENT_ERROR_PATTERN` variable. See [Conditional retries](retries.md)
+
+### `ARGO_TEMPLATE` removed from main container
+
+The environment variable `ARGO_TEMPLATE` which is an internal implementation detail is no longer available inside the `main` container of your workflow pods.
+This is documented here as we are aware that some users of Argo Workflows use this.
 
 ## Upgrading to v3.5
 

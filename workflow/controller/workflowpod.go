@@ -185,7 +185,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		},
 	}
 
-	if os.Getenv("ARGO_POD_STATUS_CAPTURE_FINALIZER") == "true" {
+	if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" {
 		pod.ObjectMeta.Finalizers = append(pod.ObjectMeta.Finalizers, common.FinalizerPodStatus)
 	}
 
@@ -223,22 +223,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// wait container to start before the main, so that it always has the chance to see the main
 	// container's PID and root filesystem.
 	pod.Spec.Containers = append(pod.Spec.Containers, mainCtrs...)
-
-	// Configure service account token volume for the main container when AutomountServiceAccountToken is disabled
-	if (woc.execWf.Spec.AutomountServiceAccountToken != nil && !*woc.execWf.Spec.AutomountServiceAccountToken) ||
-		(tmpl.AutomountServiceAccountToken != nil && !*tmpl.AutomountServiceAccountToken) {
-		for i, c := range pod.Spec.Containers {
-			if c.Name == common.WaitContainerName {
-				continue
-			}
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      common.ServiceAccountTokenVolumeName,
-				MountPath: common.ServiceAccountTokenMountPath,
-				ReadOnly:  true,
-			})
-			pod.Spec.Containers[i] = c
-		}
-	}
 
 	// Configuring default container to be used with commands like "kubectl exec/logs".
 	// Select "main" container if it's available. In other case use the last container (can happen when pod created from ContainerSet).
@@ -566,7 +550,9 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 	}
 
 	if objectCount > 1 {
-		return nil, false, fmt.Errorf("expected < 2 pods, got %d - this is a bug", len(objs))
+		return nil, false, fmt.Errorf("expected 1 pod, got %d. This can happen when multiple workflow-controller "+
+			"pods are running and both reconciling this Workflow. Check your Argo Workflows installation for a rogue "+
+			"workflow-controller. Otherwise, this is a bug", len(objs))
 	}
 
 	if existing, ok := objs[0].(*apiv1.Pod); ok {

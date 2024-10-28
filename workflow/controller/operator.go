@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime/debug"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -50,7 +51,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	argoruntime "github.com/argoproj/argo-workflows/v3/util/runtime"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -1770,7 +1770,8 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			x.Finalizers = slice.RemoveString(x.Finalizers, "kubernetes.io/pvc-protection")
+			x.Finalizers = slices.DeleteFunc(x.Finalizers,
+				func(s string) bool { return s == "kubernetes.io/pvc-protection" })
 			_, err = pvcClient.Update(ctx, x, metav1.UpdateOptions{})
 			if err != nil {
 				return err
@@ -2654,7 +2655,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	}
 
 	podName := woc.getPodName(node.Name, wfutil.GetTemplateFromNode(*node))
-	return woc.controller.getPodFromCache(woc.wf.GetNamespace(), podName)
+	return woc.controller.getPod(woc.wf.GetNamespace(), podName)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {

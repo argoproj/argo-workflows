@@ -38,6 +38,7 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 GOTEST                ?= go test -v -p 20
+ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 
 # should we build the static files?
 ifneq (,$(filter $(MAKECMDGOALS),codegen lint test docs start))
@@ -619,8 +620,10 @@ test-%-sdk:
 	make --directory sdks/$* install test -B
 
 Test%:
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,corefunctional,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
 
+Benchmark%:
+	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -bench .
 
 # clean
 
