@@ -2254,12 +2254,38 @@ func TestStepsRetryWorkflow(t *testing.T) {
 	require := require.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(stepsRetryFormulate)
 	selectorStr := "id=steps-4k5vn-2627784879"
-	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
 
+	running := map[string]bool{
+		"steps-4k5vn-4053927188": true,
+		"steps-4k5vn":            true,
+	}
+
+	deleted := map[string]bool{
+		"steps-4k5vn-2627784879": true,
+	}
+
+	succeeded := make(map[string]bool)
+
+	for _, node := range wf.Status.Nodes {
+		_, inRunning := running[node.ID]
+		_, inDeleted := deleted[node.ID]
+		if !inRunning && !inDeleted {
+			succeeded[node.ID] = true
+		}
+	}
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
 	require.NoError(err)
-	_ = assert
-	_ = newWf
-	_ = podsToDelete
+	assert.Len(podsToDelete, 1)
+	assert.Len(newWf.Status.Nodes, 5)
+
+	for _, node := range newWf.Status.Nodes {
+		if _, ok := running[node.ID]; ok {
+			assert.Equal(wfv1.NodeRunning, node.Phase)
+		}
+		if _, ok := succeeded[node.ID]; ok {
+			assert.Equal(wfv1.NodeSucceeded, node.Phase)
+		}
+	}
 
 }
 
@@ -2523,13 +2549,38 @@ func TestDAGDiamondRetryWorkflow(t *testing.T) {
 	require := require.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(dagDiamondRetry)
 	selectorStr := "id=dag-diamond-82q7s-1260209596"
+
+	running := map[string]bool{
+		"dag-diamond-82q7s": true,
+	}
+
+	deleted := map[string]bool{
+		"dag-diamond-82q7s-1226654358": true,
+	}
+
+	succeeded := make(map[string]bool)
+
+	for _, node := range wf.Status.Nodes {
+		_, inRunning := running[node.ID]
+		_, inDeleted := deleted[node.ID]
+		if !inRunning && !inDeleted {
+			succeeded[node.ID] = true
+		}
+	}
 	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
 
 	require.NoError(err)
-	_ = assert
-	_ = newWf
-	_ = podsToDelete
+	assert.Len(podsToDelete, 2)
+	assert.Len(newWf.Status.Nodes, 3)
 
+	for _, node := range newWf.Status.Nodes {
+		if _, ok := running[node.ID]; ok {
+			assert.Equal(wfv1.NodeRunning, node.Phase)
+		}
+		if _, ok := succeeded[node.ID]; ok {
+			assert.Equal(wfv1.NodeSucceeded, node.Phase)
+		}
+	}
 }
 
 const onExitWorkflowRetry = `apiVersion: argoproj.io/v1alpha1
@@ -2923,13 +2974,39 @@ func TestOnExitWorkflowRetry(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(onExitWorkflowRetry)
+	running := map[string]bool{
+		"work-avoidance-trkkq-21464344": true,
+		"work-avoidance-trkkq":          true,
+	}
+	deleted := map[string]bool{
+		"work-avoidance-trkkq-1461956272": true,
+		"work-avoidance-trkkq-4183398008": true,
+	}
+
+	succeeded := make(map[string]bool)
+
+	for _, node := range wf.Status.Nodes {
+		_, inRunning := running[node.ID]
+		_, inDeleted := deleted[node.ID]
+		if !inRunning && !inDeleted {
+			succeeded[node.ID] = true
+		}
+	}
+
 	selectorStr := "id=work-avoidance-trkkq-4183398008"
 	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, selectorStr, []string{})
-
 	require.NoError(err)
-	_ = assert
-	_ = newWf
-	_ = podsToDelete
+	assert.Len(newWf.Status.Nodes, 6)
+	assert.Len(podsToDelete, 2)
+
+	for _, node := range newWf.Status.Nodes {
+		if _, ok := running[node.ID]; ok {
+			assert.Equal(wfv1.NodeRunning, node.Phase)
+		}
+		if _, ok := succeeded[node.ID]; ok {
+			assert.Equal(wfv1.NodeSucceeded, node.Phase)
+		}
+	}
 
 }
 
@@ -3067,12 +3144,14 @@ status:
 
 func TestOnExitWorkflow(t *testing.T) {
 	require := require.New(t)
+	assert := assert.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(onExitWorkflow)
 
 	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{})
 	require.NoError(err)
-	_ = newWf
-	_ = podsToDelete
+	assert.Len(podsToDelete, 1)
+	assert.Len(newWf.Status.Nodes, 1)
+	assert.Equal(wfv1.NodeSucceeded, newWf.Status.Nodes["retry-workflow-with-failed-exit-handler"].Phase)
 
 }
 
@@ -3795,11 +3874,40 @@ status:
 
 func TestNestedDAG(t *testing.T) {
 	require := require.New(t)
+	assert := assert.New(t)
 	wf := wfv1.MustUnmarshalWorkflow(nestedDAG)
 
-	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
+	running := map[string]bool{
+		"dag-nested-zxlc2-1920344377":  true,
+		"dag-nested-zxlc2-1970677234 ": true,
+		"dag-nested-zxlc2":             true,
+	}
+	deleted := map[string]bool{
+		"dag-nested-zxlc2-744943701": true,
+		"dag-nested-zxlc2-644277987": true,
+	}
 
+	succeeded := map[string]bool{}
+
+	for _, node := range wf.Status.Nodes {
+		_, inRunning := running[node.ID]
+		_, inDeleted := deleted[node.ID]
+		if !inRunning && !inDeleted {
+			succeeded[node.ID] = true
+		}
+	}
+
+	newWf, podsToDelete, err := FormulateRetryWorkflow(context.Background(), wf, true, "id=dag-nested-zxlc2-744943701", []string{})
 	require.NoError(err)
-	_ = newWf
-	_ = podsToDelete
+	assert.Len(podsToDelete, 2)
+
+	for _, node := range newWf.Status.Nodes {
+		if _, ok := running[node.ID]; ok {
+			assert.Equal(wfv1.NodeRunning, node.Phase)
+		}
+		if _, ok := succeeded[node.ID]; ok {
+			assert.Equal(wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+
 }
