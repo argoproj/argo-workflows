@@ -55,7 +55,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 }
 
 func recentlyDeleted(node *wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) >= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
+	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_DELETED_POD_DURATION", 2*time.Minute)
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
