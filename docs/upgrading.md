@@ -99,6 +99,11 @@ Custom metrics, as defined by a workflow, could be defined as one type (say coun
 The Prometheus `/metrics` endpoint now has TLS enabled by default.
 To disable this set `metricsConfig.secure` to `false`.
 
+### Removed Swagger UI
+
+The Swagger UI has been removed from the `/apidocs` page.
+It has been replaced with a link to the [Swagger UI in the versioned documentation](swagger.md) and download links for the OpenAPI spec and JSON schema.
+
 ### JSON templating fix
 
 When returning a map or array in an expression, you would get a Golang representation.
