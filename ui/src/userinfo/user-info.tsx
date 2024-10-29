@@ -7,8 +7,8 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
 import {Notice} from '../shared/components/notice';
 import {GetUserInfoResponse} from '../shared/models';
-import {services} from '../shared/services';
 import * as nsUtils from '../shared/namespaces';
+import {services} from '../shared/services';
 import {CliHelp} from './cli-help';
 
 export function UserInfo() {
