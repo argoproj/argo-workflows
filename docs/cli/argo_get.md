@@ -25,7 +25,7 @@ argo get WORKFLOW... [flags]
       --no-color                     Disable colorized output
       --no-utf8                      Use plain 7-bits ascii characters
       --node-field-selector string   selector of node to display, eg: --node-field-selector phase=abc
-  -o, --output string                Output format. One of: json|yaml|short|wide
+  -o, --output string                Output format. One of: name|json|yaml|short|wide
       --status string                Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)
 ```
 

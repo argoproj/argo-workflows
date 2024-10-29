@@ -88,12 +88,11 @@ func (s *ArgoServerSuite) TestInfo() {
 
 func (s *ArgoServerSuite) TestVersion() {
 	s.Run("Version", func() {
-		s.e().GET("/api/v1/version").
+		resp := s.e().GET("/api/v1/version").
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.version").
-			NotNull()
+			Status(200)
+		resp.JSON().Path("$.version").NotNull()
+		resp.Header("Grpc-Metadata-Argo-Version").NotEmpty()
 	})
 }
 
@@ -343,14 +342,20 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 		defer func() { s.bearerToken = token }()
 		s.e().GET("/api/v1/workflows/argo").
 			Expect().
-			Status(401)
+			Status(401).
+			// Version header shouldn't be set on 401s for security, since that could be used by attackers to find vulnerable servers
+			Header("Grpc-Metadata-Argo-Version").
+			IsEmpty()
 	})
 	s.Run("Basic", func() {
 		s.username = "garbage"
 		defer func() { s.username = "" }()
 		s.e().GET("/api/v1/workflows/argo").
 			Expect().
-			Status(401)
+			Status(401).
+			// Version header shouldn't be set on 401s for security, since that could be used by attackers to find vulnerable servers
+			Header("Grpc-Metadata-Argo-Version").
+			IsEmpty()
 	})
 }
 
@@ -1368,6 +1373,17 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived)
+
+	s.Run("ListWithoutListOptions", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(3)
+	})
 
 	for _, tt := range []struct {
 		name     string

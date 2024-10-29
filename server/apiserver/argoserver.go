@@ -305,6 +305,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.gatekeeper.UnaryServerInterceptor(),
 			grpcutil.RatelimitUnaryServerInterceptor(as.apiRateLimiter),
+			grpcutil.SetVersionHeaderUnaryServerInterceptor(argo.GetVersion()),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_prometheus.StreamServerInterceptor,
@@ -313,6 +314,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, workfl
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.gatekeeper.StreamServerInterceptor(),
 			grpcutil.RatelimitStreamServerInterceptor(as.apiRateLimiter),
+			grpcutil.SetVersionHeaderStreamServerInterceptor(argo.GetVersion()),
 		)),
 	}
 

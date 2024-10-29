@@ -35,6 +35,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
+const (
+	variablePrefix string = `cronworkflow`
+)
+
 type cronWfOperationCtx struct {
 	// CronWorkflow is the CronWorkflow to be run
 	name            string
@@ -89,7 +93,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	// If the cron workflow has a schedule that was just updated, update its annotation
 	if woc.cronWf.IsUsingNewSchedule() {
-		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
 	}
 
 	err := woc.validateCronWorkflow(ctx)
@@ -107,7 +111,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	proceed, err := woc.enforceRuntimePolicy(ctx)
 	if err != nil {
-		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Concurrency policy error: %s", err))
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("run policy error: %s", err))
 		return
 	} else if !proceed {
 		return
@@ -136,7 +140,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.ObjectMeta.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
-	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf)
+	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf)
 	if err != nil {
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
@@ -212,59 +216,26 @@ func evalWhen(cron *v1alpha1.CronWorkflow) (bool, error) {
 	if cron.Spec.When == "" {
 		return true, nil
 	}
-	cronBytes, err := json.Marshal(cron)
+
+	t, err := template.NewTemplate(string(cron.Spec.When))
 	if err != nil {
 		return false, err
 	}
-
-	m := make(map[string]interface{})
+	env := make(map[string]interface{})
 	addSetField := func(name string, value interface{}) {
-		m[fmt.Sprintf("cronworkflow.%s", name)] = value
+		env[fmt.Sprintf("%s.%s", variablePrefix, name)] = value
 	}
-
-	addSetField("name", cron.Name)
-	addSetField("namespace", cron.Namespace)
-	addSetField("labels", cron.Labels)
-	addSetField("annotations", cron.Labels)
-
-	labelsStr, err := json.Marshal(&cron.Labels)
+	err = expressionEnv(cron, addSetField)
 	if err != nil {
 		return false, err
 	}
-
-	annotationsStr, err := json.Marshal(&cron.Annotations)
-	if err != nil {
-		// We shouldn't hit this
-		return false, err
-	}
-
-	addSetField("annotations.json", annotationsStr)
-	addSetField("labels.json", labelsStr)
-
-	var tm *time.Time
-	tm = nil
-
-	if cron.Status.LastScheduledTime != nil {
-		tm = &cron.Status.LastScheduledTime.Time
-	}
-
-	addSetField("lastScheduledTime", tm)
-
-	t, err := template.NewTemplate(string(cronBytes))
+	newWhenStr, err := t.Replace(env, false)
 	if err != nil {
 		return false, err
 	}
+	newCron := cron.DeepCopy()
+	newCron.Spec.When = newWhenStr
 
-	newCronStr, err := t.Replace(m, false)
-	if err != nil {
-		return false, err
-	}
-
-	var newCron v1alpha1.CronWorkflow
-	err = json.Unmarshal([]byte(newCronStr), &newCron)
-	if err != nil {
-		return false, err
-	}
 	return shouldExecute(newCron.Spec.When)
 }
 
@@ -331,7 +302,7 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 }
 
 func (woc *cronWfOperationCtx) runOutstandingWorkflows(ctx context.Context) (bool, error) {
-	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -342,34 +313,20 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows(ctx context.Context) (boo
 	return false, nil
 }
 
-func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, error) {
+func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Context) (time.Time, error) {
 	// If the CronWorkflow schedule was just updated, then do not run any outstanding workflows.
 	if woc.cronWf.IsUsingNewSchedule() {
 		return time.Time{}, nil
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		for _, schedule := range woc.cronWf.Spec.GetSchedules() {
+		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone(ctx) {
 			var now time.Time
 			var cronSchedule cron.Schedule
-			if woc.cronWf.Spec.Timezone != "" {
-				loc, err := time.LoadLocation(woc.cronWf.Spec.Timezone)
-				if err != nil {
-					return time.Time{}, fmt.Errorf("invalid timezone '%s': %s", woc.cronWf.Spec.Timezone, err)
-				}
-				now = time.Now().In(loc)
-
-				cronSchedule, err = cron.ParseStandard(schedule)
-				if err != nil {
-					return time.Time{}, fmt.Errorf("unable to form timezone schedule '%s': %s", schedule, err)
-				}
-			} else {
-				var err error
-				now = time.Now()
-				cronSchedule, err = cron.ParseStandard(schedule)
-				if err != nil {
-					return time.Time{}, err
-				}
+			now = time.Now()
+			cronSchedule, err := cron.ParseStandard(schedule)
+			if err != nil {
+				return time.Time{}, err
 			}
 
 			var missedExecutionTime time.Time
@@ -532,17 +489,57 @@ func (woc *cronWfOperationCtx) updateWfPhaseCounter(phase v1alpha1.WorkflowPhase
 	}
 }
 
+func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, value interface{})) error {
+	addSetField("name", cron.Name)
+	addSetField("namespace", cron.Namespace)
+	addSetField("labels", cron.Labels)
+	addSetField("annotations", cron.Labels)
+	addSetField("failed", cron.Status.Failed)
+	addSetField("succeeded", cron.Status.Succeeded)
+
+	labelsStr, err := json.Marshal(&cron.Labels)
+	if err != nil {
+		return err
+	}
+
+	annotationsStr, err := json.Marshal(&cron.Annotations)
+	if err != nil {
+		return err
+	}
+
+	addSetField("annotations.json", annotationsStr)
+	addSetField("labels.json", labelsStr)
+
+	var tm *time.Time
+	tm = nil
+
+	if cron.Status.LastScheduledTime != nil {
+		tm = &cron.Status.LastScheduledTime.Time
+	}
+
+	addSetField("lastScheduledTime", tm)
+
+	return nil
+}
+
 func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
 	if woc.cronWf.Spec.StopStrategy == nil {
 		return false, nil
 	}
-	env := map[string]any{
-		"failed":    woc.cronWf.Status.Failed,
-		"succeeded": woc.cronWf.Status.Succeeded,
+	prefixedEnv := make(map[string]interface{})
+	addSetField := func(name string, value interface{}) {
+		prefixedEnv[name] = value
 	}
-	suspend, err := argoexpr.EvalBool(woc.cronWf.Spec.StopStrategy.Condition, env)
+	env := make(map[string]interface{})
+	env[variablePrefix] = prefixedEnv
+	err := expressionEnv(woc.cronWf, addSetField)
 	if err != nil {
-		return false, fmt.Errorf("failed to evaluate expression: %w", err)
+		return false, err
+	}
+
+	suspend, err := argoexpr.EvalBool(woc.cronWf.Spec.StopStrategy.Expression, env)
+	if err != nil {
+		return false, fmt.Errorf("failed to evaluate stop expression: %w", err)
 	}
 	return suspend, nil
 }

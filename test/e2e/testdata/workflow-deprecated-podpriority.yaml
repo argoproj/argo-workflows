@@ -1,0 +1,11 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: podpriority-deprecated-
+spec:
+  entrypoint: whalesay
+  podPriority: 9999
+  templates:
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2

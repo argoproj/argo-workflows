@@ -5,6 +5,17 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.6
 
+See also the list of [new features in 3.6](new-features.md).
+
+### Deprecations
+
+The following features are deprecated and will be removed in a future verison of Argo Workflows:
+
+* The Python SDK is deprecated, we recommend migrating to [Hera](https://github.com/argoproj-labs/hera)
+* `schedule` in CronWorkflows, `podPriority`, `mutex` and `semaphore` in Workflows and WorkflowTemplates.
+
+For more information on how to migrate these see [deprecations](deprecations.md)
+
 ### Fixed Server `--basehref` inconsistency
 
 For consistency, the Server now uses `--base-href` and `ARGO_BASE_HREF`.
@@ -19,6 +30,15 @@ Use `ARGO_ALLOWED_LINK_PROTOCOL` and `ARGO_BASE_HREF` instead.
 
 For the Emissary executor to work properly, you must set up RBAC. See [workflow RBAC](workflow-rbac.md)
 
+### Archived Workflows on PostgreSQL
+
+This upgrade will transform an archived workflow column from type `json` to type `jsonb`.
+This will take some time if you have a lot of archived workflows.
+This requires PostgreSQL version 9.4 or higher.
+
+You can perform this modification prior to upgrading with `alter table argo_archived_workflows alter column workflow set data type jsonb using workflow::jsonb`.
+This is considered safe to do whilst running version 3.5 as the column types are compatible.
+
 ### Metrics changes
 
 You can now retrieve metrics using the OpenTelemetry Protocol using the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/), and this is the recommended mechanism.
@@ -31,6 +51,7 @@ The following are new metrics:
 
 * `cronworkflows_concurrencypolicy_triggered`
 * `cronworkflows_triggered_total`
+* `deprecated_feature`
 * `is_leader`
 * `k8s_request_duration`
 * `pod_pending_count`
@@ -77,6 +98,16 @@ Custom metrics, as defined by a workflow, could be defined as one type (say coun
 
 The Prometheus `/metrics` endpoint now has TLS enabled by default.
 To disable this set `metricsConfig.secure` to `false`.
+
+### JSON templating fix
+
+When returning a map or array in an expression, you would get a Golang representation.
+This now returns plain JSON.
+
+### `ARGO_TEMPLATE` removed from main container
+
+The environment variable `ARGO_TEMPLATE` which is an internal implementation detail is no longer available inside the `main` container of your workflow pods.
+This is documented here as we are aware that some users of Argo Workflows use this.
 
 ## Upgrading to v3.5
 

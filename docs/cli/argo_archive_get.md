@@ -6,6 +6,17 @@ get a workflow in the archive
 argo archive get UID [flags]
 ```
 
+### Examples
+
+```
+# Get information about an archived workflow by its UID:
+  argo archive get abc123-def456-ghi789-jkl012
+
+# Get information about an archived workflow in YAML format:
+  argo archive get abc123-def456-ghi789-jkl012 -o yaml
+
+```
+
 ### Options
 
 ```

@@ -70,7 +70,7 @@ spec:
 			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
+				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
 				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
@@ -108,7 +108,7 @@ spec:
 			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
+				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
 				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
@@ -357,7 +357,7 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   stopStrategy:
-    condition: "succeeded >= 1"
+    expression: "cronworkflow.succeeded >= 1"
   workflowSpec:
     metadata:
       labels:
@@ -391,7 +391,7 @@ spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
   stopStrategy:
-    condition: "failed >= 1"
+    expression: "cronworkflow.failed >= 1"
   workflowSpec:
     metadata:
       labels:
@@ -446,7 +446,7 @@ spec:
 			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, cronWf.Spec.GetScheduleString(), cronWf.GetLatestSchedule())
+				assert.Equal(t, cronWf.Spec.GetScheduleWithTimezoneString(), cronWf.GetLatestSchedule())
 				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})

@@ -175,7 +175,7 @@ func (s *E2ESuite) DeleteResources() {
 
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
-		archive := s.Persistence.workflowArchive
+		archive := s.Persistence.WorkflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(utils.ListOptions{
