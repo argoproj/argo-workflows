@@ -32,6 +32,7 @@ markdown_extensions:
   - admonition
   - md_in_html
   - pymdownx.details
+  - pymdownx.snippets
   - pymdownx.superfences:
       custom_fences:
         # support mermaid diagrams per https://squidfunk.github.io/mkdocs-material/reference/diagrams/#configuration
@@ -236,6 +237,7 @@ nav:
       - installation.md
       - releases.md
       - upgrading.md
+      - new-features.md
       - security.md
       - Configuration:
           - managed-namespace.md

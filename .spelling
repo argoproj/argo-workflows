@@ -23,7 +23,6 @@
 5xx
 8Ki
 90m
-ARGO_TEMPLATE
 Alexandre
 Alibaba
 Ang
@@ -105,6 +104,7 @@ Ploomber
 Postgres
 PriorityClass
 RCs
+Risc-V
 Roadmap
 RoleBinding
 SDKs
@@ -166,7 +166,6 @@ govaluate
 gzipped
 i.e.
 idempotence
-inputs.parameters
 instantiator
 instantiators
 jenkins
@@ -213,6 +212,7 @@ stateful
 stderr
 symlinks
 temporality
+tolerations
 triaged
 un-reconciled
 v1

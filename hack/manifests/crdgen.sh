@@ -18,5 +18,5 @@ find manifests/base/crds/full -name 'argoproj.io*.yaml' | while read -r file; do
   minimal="manifests/base/crds/minimal/$(basename "$file")"
   echo "Creating minimal CRD file: ${minimal}"
   cp "$file" "$minimal"
-  go run ./hack/manifests removecrdvalidation "$minimal"
+  go run ./hack/manifests minimizecrd "$minimal"
 done
