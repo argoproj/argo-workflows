@@ -56,8 +56,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.state = {
             expandNodes: new Set(),
             showArtifacts: localStorage.getItem('showArtifacts') !== 'false',
-            showInvokingTemplateName: localStorage.getItem('showInvokingTemplateName') !== 'false',
-            showTemplateRefsGrouping: localStorage.getItem('showTemplateRefsGrouping') !== 'false'
+            showInvokingTemplateName: localStorage.getItem('showInvokingTemplateName') === 'true',
+            showTemplateRefsGrouping: localStorage.getItem('showTemplateRefsGrouping') === 'true'
         };
     }
 
