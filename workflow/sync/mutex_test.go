@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -73,8 +73,7 @@ spec:
     mutex:
       name: test
   templates:
-  -
-    container:
+  - container:
       args:
       - hello world
       command:
@@ -107,14 +106,15 @@ status:
     mutex:
       holding:
       - holder: synchronization-wf-level-xxs94
-        mutex: default/mutex/test
+        mutex: default/Mutex/test
 `
 
 func TestMutexLock(t *testing.T) {
+	ctx := context.Background()
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		syncManager := NewLockManager(syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(mutexwfstatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
@@ -122,157 +122,173 @@ func TestMutexLock(t *testing.T) {
 		ctx := context.Background()
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		concurrenyMgr.Initialize(wfList.Items)
-		assert.Len(t, concurrenyMgr.syncLockMap, 1)
+		syncManager.Initialize(ctx, wfList.Items)
+		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {
 		var nextWorkflow string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		syncManager := NewLockManager(syncLimitFunc, func(key string) {
 			nextWorkflow = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(mutexWf)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
-		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
-		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
-		assert.Equal(t, wf.Name, wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
+		require.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
+		assert.Equal(t, getHolderKey(wf, ""), wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		// Try to acquire again
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
 		assert.False(t, wfUpdate)
 
 		wf1.Name = "two"
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Mutex/test", failedLockName)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		wf2.Spec.Priority = pointer.Int32(5)
+		wf2.Spec.Priority = ptr.To(int32(5))
 		holderKey2 := getHolderKey(wf2, "")
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Mutex/test", failedLockName)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
 		wf3.Name = "four"
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", wf3.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf3, "", wf3.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Mutex/test", failedLockName)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		concurrenyMgr.Release(wf, "", wf.Spec.Synchronization)
+		syncManager.Release(ctx, wf, "", wf.Spec.Synchronization)
 		assert.Equal(t, holderKey2, nextWorkflow)
-		assert.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization)
 		assert.Empty(t, wf.Status.Synchronization.Mutex.Holding)
 
 		// Low priority workflow try to acquire the lock
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Mutex/test", failedLockName)
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
 		// High Priority workflow acquires the lock
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
-		assert.NotNil(t, wf2.Status.Synchronization)
-		assert.NotNil(t, wf2.Status.Synchronization.Mutex)
-		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
-		concurrenyMgr.ReleaseAll(wf2)
+		require.NotNil(t, wf2.Status.Synchronization)
+		require.NotNil(t, wf2.Status.Synchronization.Mutex)
+		assert.Equal(t, getHolderKey(wf2, ""), wf2.Status.Synchronization.Mutex.Holding[0].Holder)
+		syncManager.ReleaseAll(wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
 
 	t.Run("WfLevelMutexOthernamespace", func(t *testing.T) {
 		var nextWorkflow string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		syncManager := NewLockManager(syncLimitFunc, func(key string) {
 			nextWorkflow = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(mutexWfNamespaced)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
-		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
-		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
-		assert.Equal(t, wf.Name, wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
+		require.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
+		expected := getHolderKey(wf, "")
+		assert.Equal(t, expected, wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		// Try to acquire again
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.True(t, status)
+		assert.Empty(t, failedLockName)
 		assert.Empty(t, msg)
 		assert.False(t, wfUpdate)
 
 		wf1.Name = "two"
 		wf1.Namespace = "two"
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "other/Mutex/test", failedLockName)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
 		wf2.Namespace = "three"
-		wf2.Spec.Priority = pointer.Int32(5)
+		wf2.Spec.Priority = ptr.To(int32(5))
 		holderKey2 := getHolderKey(wf2, "")
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "other/Mutex/test", failedLockName)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
 		wf3.Name = "four"
 		wf3.Namespace = "four"
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", wf3.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf3, "", wf3.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "other/Mutex/test", failedLockName)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		concurrenyMgr.Release(wf, "", wf.Spec.Synchronization)
+		syncManager.Release(ctx, wf, "", wf.Spec.Synchronization)
 		assert.Equal(t, holderKey2, nextWorkflow)
-		assert.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization)
 		assert.Empty(t, wf.Status.Synchronization.Mutex.Holding)
 
 		// Low priority workflow try to acquire the lock
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "other/Mutex/test", failedLockName)
 		assert.False(t, status)
 		assert.False(t, wfUpdate)
 
 		// High Priority workflow acquires the lock
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
-		assert.NotNil(t, wf2.Status.Synchronization)
-		assert.NotNil(t, wf2.Status.Synchronization.Mutex)
-		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
-		concurrenyMgr.ReleaseAll(wf2)
+		require.NotNil(t, wf2.Status.Synchronization)
+		require.NotNil(t, wf2.Status.Synchronization.Mutex)
+		expected = getHolderKey(wf2, "")
+		assert.Equal(t, expected, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
+		syncManager.ReleaseAll(wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
 }
@@ -377,58 +393,66 @@ status:
 `
 
 func TestMutexTmplLevel(t *testing.T) {
+	ctx := context.Background()
 	kube := fake.NewSimpleClientset()
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		syncManager := NewLockManager(syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(mutexWfWithTmplLevel)
 		tmpl := wf.Spec.Templates[1]
 
-		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
-		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex)
-		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
+		expected := getHolderKey(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474")
+		assert.Equal(t, expected, wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		// Try to acquire again
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.True(t, wfUpdate)
+		assert.Equal(t, "default/Mutex/welcome", failedLockName)
 		assert.False(t, status)
 		assert.NotEmpty(t, msg)
 
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-1432992664", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "synchronization-tmpl-level-mutex-vjcdk-1432992664", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.Equal(t, "default/Mutex/welcome", failedLockName)
 		assert.False(t, wfUpdate)
 		assert.False(t, status)
 
-		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
-		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex)
+		expected = getHolderKey(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474")
+		assert.Equal(t, expected, wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		syncManager.Release(ctx, wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
 		assert.Empty(t, wf.Status.Synchronization.Mutex.Holding)
 
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
-		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex)
-		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-2216915482", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
+		expected = getHolderKey(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482")
+		assert.Equal(t, expected, wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		assert.NotEqual(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
-		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex)
+		syncManager.Release(ctx, wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization)
+		require.NotNil(t, wf.Status.Synchronization.Mutex)
 		assert.NotEmpty(t, wf.Status.Synchronization.Mutex.Holding)
 	})
 }

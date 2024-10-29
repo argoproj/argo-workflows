@@ -15,7 +15,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -511,7 +511,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 			},
 			KeyFormat: "path/in/bucket",
 		},
-		ArchiveLogs: pointer.Bool(true),
+		ArchiveLogs: ptr.To(true),
 	})
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -583,19 +583,19 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			if tt.workflowArchiveLog != "" {
 				workflowArchiveLog, _ := strconv.ParseBool(tt.workflowArchiveLog)
-				wf.Spec.ArchiveLogs = pointer.Bool(workflowArchiveLog)
+				wf.Spec.ArchiveLogs = ptr.To(workflowArchiveLog)
 			}
 			if tt.templateArchiveLog != "" {
 				templateArchiveLog, _ := strconv.ParseBool(tt.templateArchiveLog)
 				wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
-					ArchiveLogs: pointer.Bool(templateArchiveLog),
+					ArchiveLogs: ptr.To(templateArchiveLog),
 				}
 			}
 			cancel, controller := newController(wf)
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
-				ArchiveLogs: pointer.Bool(tt.controllerArchiveLog),
+				ArchiveLogs: ptr.To(tt.controllerArchiveLog),
 				S3: &wfv1.S3ArtifactRepository{
 					S3Bucket: wfv1.S3Bucket{
 						Bucket: "foo",
@@ -622,7 +622,6 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 		{Limit: 0, Burst: 1}: false,
 		{Limit: 1, Burst: 1}: false,
 	} {
-		limit := limit
 		t.Run(fmt.Sprintf("%v", limit), func(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			cancel, controller := newController(wf, func(c *WorkflowController) {
@@ -1249,7 +1248,94 @@ func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
 			break
 		}
 	}
+}
 
+func TestCreateSecretVolumesFromArtifactLocationsSessionToken(t *testing.T) {
+	ctx := context.Background()
+
+	cancel, controller := newControllerWithComplexDefaults()
+	defer cancel()
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.Templates[0].Inputs = wfv1.Inputs{
+		Artifacts: []wfv1.Artifact{
+			{
+				Name: "foo",
+				Path: "/tmp/file",
+				ArtifactLocation: wfv1.ArtifactLocation{
+					S3: &wfv1.S3Artifact{
+						Key: "/foo/key",
+					},
+				},
+				Archive: &wfv1.ArchiveStrategy{
+					None: &wfv1.NoneStrategy{},
+				},
+			},
+		},
+	}
+	woc := newWorkflowOperationCtx(wf, controller)
+	setArtifactRepository(woc.controller,
+		&wfv1.ArtifactRepository{
+			S3: &wfv1.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{
+					Bucket: "foo",
+					AccessKeySecret: &apiv1.SecretKeySelector{
+						LocalObjectReference: apiv1.LocalObjectReference{
+							Name: "accesskey",
+						},
+						Key: "access-key",
+					},
+					SecretKeySecret: &apiv1.SecretKeySelector{
+						LocalObjectReference: apiv1.LocalObjectReference{
+							Name: "secretkey",
+						},
+						Key: "secret-key",
+					},
+					SessionTokenSecret: &apiv1.SecretKeySelector{
+						LocalObjectReference: apiv1.LocalObjectReference{
+							Name: "sessiontoken",
+						},
+						Key: "session-token",
+					},
+				},
+			},
+		},
+	)
+
+	wantedKeysVolume := apiv1.Volume{
+		Name: "sessiontoken",
+		VolumeSource: apiv1.VolumeSource{
+			Secret: &apiv1.SecretVolumeSource{
+				SecretName: "sessiontoken",
+				Items: []apiv1.KeyToPath{
+					{
+						Key:  "session-token",
+						Path: "session-token",
+					},
+				},
+			},
+		},
+	}
+	wantedInitContainerVolumeMount := apiv1.VolumeMount{
+		Name:      "sessiontoken",
+		ReadOnly:  true,
+		MountPath: path.Join(common.SecretVolMountPath, "sessiontoken"),
+	}
+
+	err := woc.setExecWorkflow(ctx)
+	require.NoError(t, err)
+	woc.operate(ctx)
+
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	for i := 1; i < 5; i++ {
+		pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+		if pod != nil {
+			assert.Contains(t, pod.Spec.Volumes, wantedKeysVolume)
+			assert.Len(t, pod.Spec.InitContainers, 1)
+			assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, wantedInitContainerVolumeMount)
+			break
+		}
+	}
 }
 
 var helloWorldWfWithPatch = `
@@ -1375,7 +1461,7 @@ func TestPodSpecPatch(t *testing.T) {
 	woc = newWoc(*wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, pointer.Bool(true), pod.Spec.Containers[1].SecurityContext.RunAsNonRoot)
+	assert.Equal(t, ptr.To(true), pod.Spec.Containers[1].SecurityContext.RunAsNonRoot)
 	assert.Equal(t, apiv1.Capability("ALL"), pod.Spec.Containers[1].SecurityContext.Capabilities.Add[0])
 	assert.Equal(t, []apiv1.Capability(nil), pod.Spec.Containers[1].SecurityContext.Capabilities.Drop)
 
@@ -1834,7 +1920,7 @@ func TestPodExists(t *testing.T) {
 }
 
 func TestPodFinalizerExits(t *testing.T) {
-	t.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "true")
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
 	cancel, controller := newController()
 	defer cancel()
 
@@ -1852,7 +1938,7 @@ func TestPodFinalizerExits(t *testing.T) {
 }
 
 func TestPodFinalizerDoesNotExist(t *testing.T) {
-	t.Setenv("ARGO_POD_STATUS_CAPTURE_FINALIZER", "false")
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
 	cancel, controller := newController()
 	defer cancel()
 
@@ -1903,13 +1989,13 @@ func TestProgressEnvVars(t *testing.T) {
 		})
 	})
 
-	t.Run("setting patch tick duration to 0 disables self reporting progress but still exposes the ARGO_PROGRESS_FILE env var as a convenience.", func(t *testing.T) {
+	t.Run("setting patch tick duration to 0 disables self reporting progress.", func(t *testing.T) {
 		cancel, pod := setup(t, func(workflowController *WorkflowController) {
 			workflowController.progressPatchTickDuration = 0
 		})
 		defer cancel()
 
-		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+		assert.NotContains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
 			Name:  common.EnvVarProgressFile,
 			Value: common.ArgoProgressPath,
 		})
@@ -1923,13 +2009,13 @@ func TestProgressEnvVars(t *testing.T) {
 		})
 	})
 
-	t.Run("setting read file tick duration to 0 disables self reporting progress but still exposes the ARGO_PROGRESS_FILE env var as a convenience.", func(t *testing.T) {
+	t.Run("setting read file tick duration to 0 disables self reporting progress.", func(t *testing.T) {
 		cancel, pod := setup(t, func(workflowController *WorkflowController) {
 			workflowController.progressFileTickDuration = 0
 		})
 		defer cancel()
 
-		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+		assert.NotContains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
 			Name:  common.EnvVarProgressFile,
 			Value: common.ArgoProgressPath,
 		})

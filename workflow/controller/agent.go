@@ -11,12 +11,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -39,7 +40,7 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 		return err
 	}
 	// Check Pod is just created
-	if pod.Status.Phase != "" {
+	if pod != nil && pod.Status.Phase != "" {
 		woc.updateAgentPodStatus(pod)
 	}
 	return nil
@@ -217,7 +218,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ImagePullSecrets:             woc.execWf.Spec.ImagePullSecrets,
 			SecurityContext:              common.MinimalPodSC(),
 			ServiceAccountName:           serviceAccountName,
-			AutomountServiceAccountToken: pointer.Bool(false),
+			AutomountServiceAccountToken: ptr.To(false),
 			Volumes:                      podVolumes,
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
@@ -230,7 +231,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	tmpl := &wfv1.Template{}
-	woc.addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
+	woc.addSchedulingConstraints(ctx, pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
 	woc.addMetadata(pod, tmpl)
 	woc.addDNSConfig(pod)
 
@@ -256,6 +257,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
 				return existing, nil
 			}
+		}
+		if errorsutil.IsTransientErr(err) {
+			woc.requeue()
+			return created, nil
 		}
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}

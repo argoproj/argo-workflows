@@ -24,10 +24,6 @@ data:
   template: "2"  # Two instances of template can run at a given time in particular namespace
 ```
 
-!!! Warning
-    Each synchronization block may only refer to either a semaphore or a mutex.
-    If you specify both only the semaphore will be locked.
-
 ## Workflow-level Synchronization
 
 You can limit parallel execution of workflows by using the same synchronization reference.
@@ -36,44 +32,14 @@ In this example the synchronization key `workflow` is configured as limit `"1"`,
 
 Using a semaphore configured by a `ConfigMap`:
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: synchronization-wf-level-
-spec:
-  entrypoint: hello-world
-  synchronization:
-    semaphore:
-      configMapKeyRef:
-        name: my-config
-        key: workflow
-  templates:
-  - name: hello-world
-    container:
-      image: busybox
-      command: [echo]
-      args: ["hello world"]
+```yaml title="examples/synchronization-wf-level.yaml"
+--8<-- "examples/synchronization-wf-level.yaml:12"
 ```
 
 Using a mutex is equivalent to a limit `"1"` semaphore:
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: synchronization-wf-level-
-spec:
-  entrypoint: hello-world
-  synchronization:
-    mutex:
-      name: workflow
-  templates:
-  - name: hello-world
-    container:
-      image: busybox
-      command: [echo]
-      args: ["hello world"]
+```yaml title="examples/synchronization-mutex-wf-level.yaml"
+--8<-- "examples/synchronization-mutex-wf-level.yaml:3"
 ```
 
 ## Template-level Synchronization
@@ -85,72 +51,15 @@ This applies even when multiple steps or tasks within a workflow or different wo
 
 Using a semaphore configured by a `ConfigMap`:
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: synchronization-tmpl-level-
-spec:
-  entrypoint: synchronization-tmpl-level-example
-  templates:
-  - name: synchronization-tmpl-level-example
-    steps:
-    - - name: synchronization-acquire-lock
-        template: acquire-lock
-        arguments:
-          parameters:
-          - name: seconds
-            value: "{{item}}"
-        withParam: '["1","2","3","4","5"]'
-
-  - name: acquire-lock
-    synchronization:
-      semaphore:
-        configMapKeyRef:
-          name: my-config
-          key: template
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["sleep 10; echo acquired lock"]
+```yaml title="examples/synchronization-tmpl-level.yaml"
+--8<-- "examples/synchronization-tmpl-level.yaml:11"
 ```
 
 Using a mutex will limit to a single concurrent execution of the template:
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: synchronization-tmpl-level-
-spec:
-  entrypoint: synchronization-tmpl-level-example
-  templates:
-  - name: synchronization-tmpl-level-example
-    steps:
-    - - name: synchronization-acquire-lock
-        template: acquire-lock
-        arguments:
-          parameters:
-          - name: seconds
-            value: "{{item}}"
-        withParam: '["1","2","3","4","5"]'
-
-  - name: acquire-lock
-    synchronization:
-      mutex:
-        name: template
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["sleep 10; echo acquired lock"]
+```yaml title="examples/synchronization-mutex-tmpl-level.yaml"
+--8<-- "examples/synchronization-mutex-tmpl-level.yaml:3"
 ```
-
-Examples:
-
-1. [Workflow level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-wf-level.yaml)
-1. [Workflow level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
-1. [Step level semaphore](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-tmpl-level.yaml)
-1. [Step level mutex](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
 ## Queuing
 
@@ -161,6 +70,28 @@ The queue is first ordered by priority: a higher priority number is placed befor
 The queue is then ordered by `creationTimestamp`: older workflows are placed before newer workflows.
 
 Workflows can only acquire a lock if they are at the front of the queue for that lock.
+
+## Multiple locks
+
+> v3.6 and after
+
+You can specify multiple locks in a single workflow or template.
+
+```yaml
+synchronization:
+  mutexes:
+    - name: alpha
+    - name: beta
+  semaphores:
+    - configMapKeyRef:
+        key: foo
+        name: my-config
+    - configMapKeyRef:
+        key: bar
+        name: my-config
+```
+
+The workflow will block until all of these locks are available.
 
 ## Workflow-level parallelism
 
@@ -174,6 +105,9 @@ Examples:
 1. [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested-dag.yaml) restricts the number of dag tasks that can be run at any one time
 1. [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-nested-workflow.yaml) shows how parallelism is inherited by children
 1. [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parallelism-template-limit.yaml) shows how parallelism of looped templates is also restricted
+
+!!! Warning
+    If a Workflow is at the front of the queue and it needs to acquire multiple locks, all other Workflows that also need those same locks will wait. This applies even if the other Workflows only wish to acquire a subset of those locks.
 
 ## Other Parallelism support
 

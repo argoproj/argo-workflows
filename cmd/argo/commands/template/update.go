@@ -2,22 +2,22 @@ package template
 
 import (
 	"context"
-	"log"
-	"os"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 )
 
 type cliUpdateOpts struct {
-	output string // --output
-	strict bool   // --strict
+	output common.EnumFlagValue // --output
+	strict bool                 // --strict
 }
 
 func NewUpdateCommand() *cobra.Command {
-	var cliUpdateOpts cliUpdateOpts
+	var cliUpdateOpts = cliUpdateOpts{output: common.NewPrintWorkflowOutputValue("")}
 	command := &cobra.Command{
 		Use:   "update FILE1 FILE2...",
 		Short: "update a workflow template",
@@ -30,28 +30,27 @@ func NewUpdateCommand() *cobra.Command {
 # Update a Workflow Template with relaxed validation:
   argo template update FILE1 --strict false
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-
-			updateWorkflowTemplates(cmd.Context(), args, &cliUpdateOpts)
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return updateWorkflowTemplates(cmd.Context(), args, &cliUpdateOpts)
 		},
 	}
-	command.Flags().StringVarP(&cliUpdateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliUpdateOpts.output, "output", "o", "Output format. "+cliUpdateOpts.output.Usage())
 	command.Flags().BoolVar(&cliUpdateOpts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
 
-func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliUpdateOpts) {
+func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliUpdateOpts) error {
 	if cliOpts == nil {
 		cliOpts = &cliUpdateOpts{}
 	}
-	ctx, apiClient := client.NewAPIClient(ctx)
+	ctx, apiClient, err := client.NewAPIClient(ctx)
+	if err != nil {
+		return err
+	}
 	serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	workflowTemplates := generateWorkflowTemplates(filePaths, cliOpts.strict)
@@ -65,7 +64,7 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Namespace: wftmpl.Namespace,
 		})
 		if err != nil {
-			log.Fatalf("Failed to get existing workflow template %q to update: %v", wftmpl.Name, err)
+			return fmt.Errorf("Failed to get existing workflow template %q to update: %v", wftmpl.Name, err)
 		}
 		wftmpl.ResourceVersion = current.ResourceVersion
 		updated, err := serviceClient.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
@@ -73,8 +72,9 @@ func updateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *c
 			Template:  &wftmpl,
 		})
 		if err != nil {
-			log.Fatalf("Failed to update workflow template: %v", err)
+			return fmt.Errorf("Failed to update workflow template: %v", err)
 		}
-		printWorkflowTemplate(updated, cliOpts.output)
+		printWorkflowTemplate(updated, cliOpts.output.String())
 	}
+	return nil
 }

@@ -1092,17 +1092,17 @@ spec:
           configMap:
             name: cache-example-steps-simple
     `)
+	wf.Name = "example-steps-simple-gas12"
 	cancel, controller := newController(wf)
 	defer cancel()
 
 	ctx := context.Background()
-
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
 	holdingJobs := make(map[string]string)
 	for _, node := range woc.wf.Status.Nodes {
-		holdingJobs[node.ID] = node.DisplayName
+		holdingJobs[fmt.Sprintf("%s/%s/%s", wf.Namespace, wf.Name, node.ID)] = node.DisplayName
 	}
 
 	// Check initial status: job-1 acquired the lock
@@ -1118,7 +1118,7 @@ spec:
 	assert.True(t, job1AcquiredLock)
 
 	// Make job-1's pod succeed
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, func(pod *apiv1.Pod) {
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, func(pod *apiv1.Pod, _ *wfOperationCtx) {
 		if pod.ObjectMeta.Name == "job-1" {
 			pod.Status.Phase = apiv1.PodSucceeded
 		}

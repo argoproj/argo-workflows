@@ -184,6 +184,22 @@ Only available for `successCondition`
 | `response.body` | Response body (`string`) |
 | `response.headers` | Response headers (`map[string][]string`) |
 
+### CronWorkflows
+
+> v3.6 and after
+
+| Variable | Description|
+|----------|------------|
+| `cronworkflow.name` | Name of the CronWorkflow (`string`) |
+| `cronworkflow.namespace` | Namespace of the CronWorkflow (`string`) |
+| `cronworkflow.labels.<NAME>` | CronWorkflow labels (`string`) |
+| `cronworkflow.labels.json` | CronWorkflow labels as a JSON string (`string`) |
+| `cronworkflow.annotations.<NAME>` | CronWorkflow annotations (`string`) |
+| `cronworkflow.annotations.json` | CronWorkflow annotations as a JSON string (`string`) |
+| `cronworkflow.lastScheduledTime` | The time since this workflow was last scheduled, value is nil on first run (`*time.Time`) |
+| `cronworkflow.failed` | Counts how many times child workflows failed |
+| `cronworkflow.succeeded` | Counts how many times child workflows succeeded |
+
 ### `RetryStrategy`
 
 When using the `expression` field within `retryStrategy`, special variables are available.
@@ -275,17 +291,6 @@ For `Template`-level metrics:
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
 | `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
-
-### `stopStrategy`
-
-> v3.6 and after
-
-When using the `condition` field within the [`stopStrategy` of a `CronWorkflow`](cron-workflows.md#automatically-stopping-a-cronworkflow), special variables are available.
-
-| Variable | Description|
-|----------|------------|
-| `failed` | Counts how many times child workflows failed |
-| `succeeded` | Counts how many times child workflows succeeded |
 
 ### Knowing where you are
 

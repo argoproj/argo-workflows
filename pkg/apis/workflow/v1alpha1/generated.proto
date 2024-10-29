@@ -477,7 +477,7 @@ message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
 
-  // Schedule is a schedule to run the Workflow in Cron format
+  // Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules
   optional string schedule = 2;
 
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
@@ -505,8 +505,11 @@ message CronWorkflowSpec {
   // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
   optional StopStrategy stopStrategy = 10;
 
-  // Schedules is a list of schedules to run the Workflow in Cron format
+  // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
   repeated string schedules = 11;
+
+  // v3.6 and after: When is an expression that determines if a run should be scheduled.
+  optional string when = 12;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
@@ -700,6 +703,9 @@ message GitArtifact {
 
   // Branch is the branch to fetch when `SingleBranch` is enabled
   optional string branch = 11;
+
+  // InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections
+  optional bool insecureSkipTLS = 12;
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -1405,6 +1411,9 @@ message S3Bucket {
   // SecretKeySecret is the secret selector to the bucket's secret key
   optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 6;
 
+  // SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant
+  optional k8s.io.api.core.v1.SecretKeySelector sessionTokenSecret = 12;
+
   // RoleARN is the Amazon Resource Name (ARN) of the role to assume.
   optional string roleARN = 7;
 
@@ -1484,11 +1493,11 @@ message Sequence {
   optional string format = 4;
 }
 
-// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+// StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
 message StopStrategy {
-  // v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the
-  // variables `failed` or `succeeded` to access the number of failed or successful child workflows.
-  optional string condition = 1;
+  // v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables
+  // `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.
+  optional string expression = 1;
 }
 
 message Submit {
@@ -1555,11 +1564,17 @@ message SuspendTemplate {
 
 // Synchronization holds synchronization lock configuration
 message Synchronization {
-  // Semaphore holds the Semaphore configuration
+  // Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
   optional SemaphoreRef semaphore = 1;
 
-  // Mutex holds the Mutex lock details
+  // Mutex holds the Mutex lock details - deprecated, use mutexes instead
   optional Mutex mutex = 2;
+
+  // v3.6 and after: Semaphores holds the list of Semaphores configuration
+  repeated SemaphoreRef semaphores = 3;
+
+  // v3.6 and after: Mutexes holds the list of Mutex lock details
+  repeated Mutex mutexes = 4;
 }
 
 // SynchronizationStatus stores the status of semaphore and mutex.

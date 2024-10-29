@@ -9,13 +9,12 @@ import (
 	"reflect"
 	"regexp"
 	"runtime/debug"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -33,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -51,7 +50,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	argoruntime "github.com/argoproj/argo-workflows/v3/util/runtime"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -60,7 +59,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/progress"
-	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
@@ -252,9 +250,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
-		acquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, "", woc.execWf.Spec.Synchronization)
+		acquired, wfUpdate, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(ctx, woc.wf, "", woc.execWf.Spec.Synchronization)
 		if err != nil {
-			woc.log.Warn("Failed to acquire the lock")
+			woc.log.Warnf("Failed to acquire the lock %s", failedLockName)
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
 			return
 		}
@@ -501,7 +499,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			case wfv1.NodeFailed:
 				woc.markWorkflowFailed(ctx, onExitNode.Message)
 			default:
-				woc.markWorkflowError(ctx, fmt.Errorf(onExitNode.Message))
+				woc.markWorkflowError(ctx, fmt.Errorf("%s", onExitNode.Message))
 			}
 		} else {
 			woc.markWorkflowSuccess(ctx)
@@ -1375,7 +1373,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				}
 				// proceed to mark node as running and daemoned
 				new.Phase = wfv1.NodeRunning
-				new.Daemoned = pointer.Bool(true)
+				new.Daemoned = ptr.To(true)
 				if !old.IsDaemoned() {
 					woc.log.WithField("nodeId", old.ID).Info("Node became daemoned")
 				}
@@ -1427,35 +1425,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		new.PodIP = pod.Status.PodIP
 	}
 
-	// If `AnnotationKeyReportOutputsCompleted` is set, it means RBAC prevented WorkflowTaskResult from being written.
-	if x, ok := pod.Annotations[common.AnnotationKeyReportOutputsCompleted]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		resultName := woc.nodeID(pod)
-		if x == "true" {
-			woc.wf.Status.MarkTaskResultComplete(resultName)
-		} else {
-			woc.wf.Status.MarkTaskResultIncomplete(resultName)
-		}
-
-		// Get node outputs from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
-		if x, ok = pod.Annotations[common.AnnotationKeyOutputs]; ok {
-			if new.Outputs == nil {
-				new.Outputs = &wfv1.Outputs{}
-			}
-			if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
-				new.Phase = wfv1.NodeError
-				new.Message = err.Error()
-			}
-		}
-
-		// Get node progress from pod annotations instead if RBAC prevented WorkflowTaskResult from being written.
-		if x, ok = pod.Annotations[common.AnnotationKeyProgress]; ok {
-			if p, ok := wfv1.ParseProgress(x); ok {
-				new.Progress = p
-			}
-		}
-	}
-
 	new.HostNodeName = pod.Spec.NodeName
 
 	if !new.Progress.IsValid() {
@@ -1469,7 +1438,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if new.Outputs == nil {
 			new.Outputs = &wfv1.Outputs{}
 		}
-		new.Outputs.ExitCode = pointer.String(fmt.Sprint(*exitCode))
+		new.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
 	}
 
 	for _, c := range pod.Status.InitContainerStatuses {
@@ -1509,8 +1478,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.wf.Status.MarkTaskResultComplete(nodeID)
 	}
 
-	// if we are transitioning from Pending to a different state, clear out unchanged message
-	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && old.Message == new.Message {
+	// if we are transitioning from Pending to a different state (except Fail or Error), clear out unchanged message
+	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && new.Phase != wfv1.NodeFailed && new.Phase != wfv1.NodeError && old.Message == new.Message {
 		new.Message = ""
 	}
 
@@ -1538,7 +1507,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 func getExitCode(pod *apiv1.Pod) *int32 {
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.MainContainerName && c.State.Terminated != nil {
-			return pointer.Int32(c.State.Terminated.ExitCode)
+			return ptr.To(c.State.Terminated.ExitCode)
 		}
 	}
 	return nil
@@ -1800,7 +1769,8 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			x.Finalizers = slice.RemoveString(x.Finalizers, "kubernetes.io/pvc-protection")
+			x.Finalizers = slices.DeleteFunc(x.Finalizers,
+				func(s string) bool { return s == "kubernetes.io/pvc-protection" })
 			_, err = pvcClient.Update(ctx, x, metav1.UpdateOptions{})
 			if err != nil {
 				return err
@@ -1973,7 +1943,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if node != nil {
 		fulfilledNode := woc.handleNodeFulfilled(ctx, nodeName, node, processedTmpl)
 		if fulfilledNode != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
 		}
 		woc.log.Debugf("Executing node %s of %s is %s", nodeName, node.Type, node.Phase)
@@ -2003,7 +1973,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	unlockedNode := false
 
 	if processedTmpl.Synchronization != nil {
-		lockAcquired, wfUpdated, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
+		lockAcquired, wfUpdated, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(ctx, woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 		}
@@ -2011,18 +1981,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if node == nil {
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, msg)
 			}
-			lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
-			if err != nil {
-				// If an error were to be returned here, it would have been caught by TryAcquire. If it didn't, then it is
-				// unexpected behavior and is a bug.
-				panic("bug: GetLockName should not return an error after a call to TryAcquire")
-			}
-			woc.log.Infof("Could not acquire lock named: %s", lockName)
-			return woc.markNodeWaitingForLock(node.Name, lockName.EncodeName())
+			woc.log.Infof("Could not acquire lock named: %s", failedLockName)
+			return woc.markNodeWaitingForLock(node.Name, failedLockName, msg)
 		} else {
 			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
-				node, err = woc.markNodeWaitingForLock(node.Name, "")
+				node, err = woc.markNodeWaitingForLock(node.Name, "", "")
 				if err != nil {
 					woc.log.WithField("node.Name", node.Name).WithField("lockName", "").Error("markNodeWaitingForLock returned err")
 					return nil, err
@@ -2098,7 +2062,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if node != nil {
 		fulfilledNode := woc.handleNodeFulfilled(ctx, nodeName, node, processedTmpl)
 		if fulfilledNode != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			return fulfilledNode, nil
 		}
 		// Memoized nodes don't have StartedAt.
@@ -2157,7 +2121,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				}
 			}
 			if processedTmpl.Synchronization != nil {
-				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+				woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			}
 			_, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 			if lastChildNode != nil {
@@ -2247,13 +2211,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			}
 		}
 		if release {
-			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}
 	}
 
 	if node.Fulfilled() {
-		woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
+		woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 	}
 
 	retrieveNode, err := woc.wf.GetNodeByName(node.Name)
@@ -2392,13 +2356,15 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		if _, ok := woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted]; !ok {
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "false"
 		}
-		switch phase {
-		case wfv1.WorkflowRunning:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowRunning", "Workflow Running")
-		case wfv1.WorkflowSucceeded:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowSucceeded", "Workflow completed")
-		case wfv1.WorkflowFailed, wfv1.WorkflowError:
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", message)
+		if woc.controller.Config.WorkflowEvents.IsEnabled() {
+			switch phase {
+			case wfv1.WorkflowRunning:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowRunning", "Workflow Running")
+			case wfv1.WorkflowSucceeded:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowSucceeded", "Workflow completed")
+			case wfv1.WorkflowFailed, wfv1.WorkflowError:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", message)
+			}
 		}
 	}
 	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
@@ -2688,7 +2654,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	}
 
 	podName := woc.getPodName(node.Name, wfutil.GetTemplateFromNode(*node))
-	return woc.controller.getPodFromCache(woc.wf.GetNamespace(), podName)
+	return woc.controller.getPod(woc.wf.GetNamespace(), podName)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
@@ -2777,7 +2743,7 @@ func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.Nod
 }
 
 // markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
-func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string, message string) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		return node, err
@@ -2793,6 +2759,10 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 		node.Message = ""
 	} else {
 		node.SynchronizationStatus.Waiting = lockName
+	}
+
+	if len(message) > 0 {
+		node.Message = message
 	}
 
 	woc.wf.Status.Nodes.Set(node.ID, *node)
@@ -3550,7 +3520,7 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 }
 
 func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {
-	replaceMap := make(map[string]string)
+	replaceMap := make(map[string]interface{})
 	var newName string
 
 	switch item.GetType() {

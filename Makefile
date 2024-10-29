@@ -38,6 +38,7 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 GOTEST                ?= go test -v -p 20
+ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 
 # should we build the static files?
 ifneq (,$(filter $(MAKECMDGOALS),codegen lint test docs start))
@@ -50,11 +51,15 @@ endif
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
-UI                    ?= false # start the UI
+UI                    ?= false # start the UI with HTTP
+UI_SECURE             ?= false # start the UI with HTTPS
 API                   ?= $(UI) # start the Argo Server
 TASKS                 := controller
 ifeq ($(API),true)
 TASKS                 := controller server
+endif
+ifeq ($(UI_SECURE),true)
+TASKS                 := controller server ui
 endif
 ifeq ($(UI),true)
 TASKS                 := controller server ui
@@ -165,7 +170,7 @@ ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
 
-$(GOPATH)/bin/staticfiles:
+$(GOPATH)/bin/staticfiles: Makefile
 # update this in Nix when updating it here
 ifneq ($(USE_NIX), true)
 	go install bou.ke/staticfiles@dd04075
@@ -290,57 +295,59 @@ swagger: \
 	api/jsonschema/schema.json
 
 
-$(GOPATH)/bin/mockery:
+$(GOPATH)/bin/mockery: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/vektra/mockery/v2@v2.42.2
 endif
-$(GOPATH)/bin/controller-gen:
+$(GOPATH)/bin/controller-gen: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0
 endif
-$(GOPATH)/bin/go-to-protobuf:
+$(GOPATH)/bin/go-to-protobuf: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
+	# TODO: currently fails on v0.30.3 with
+	# Unable to clean package k8s.io.api.core.v1: remove /home/runner/go/pkg/mod/k8s.io/api@v0.30.3/core/v1/generated.proto: permission denied
 	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.21.5
 endif
-$(GOPATH)/src/github.com/gogo/protobuf:
+$(GOPATH)/src/github.com/gogo/protobuf: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	[ -e $(GOPATH)/src/github.com/gogo/protobuf ] || git clone --depth 1 https://github.com/gogo/protobuf.git -b v1.3.2 $(GOPATH)/src/github.com/gogo/protobuf
+	[ -e $@ ] || git clone --depth 1 https://github.com/gogo/protobuf.git -b v1.3.2 $@
 endif
-$(GOPATH)/bin/protoc-gen-gogo:
+$(GOPATH)/bin/protoc-gen-gogo: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
 endif
-$(GOPATH)/bin/protoc-gen-gogofast:
+$(GOPATH)/bin/protoc-gen-gogofast: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2
 endif
-$(GOPATH)/bin/protoc-gen-grpc-gateway:
+$(GOPATH)/bin/protoc-gen-grpc-gateway: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0
 endif
-$(GOPATH)/bin/protoc-gen-swagger:
+$(GOPATH)/bin/protoc-gen-swagger: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
 endif
-$(GOPATH)/bin/openapi-gen:
+$(GOPATH)/bin/openapi-gen: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20220124234850-424119656bbf
 endif
-$(GOPATH)/bin/swagger:
+$(GOPATH)/bin/swagger: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.31.0
 endif
-$(GOPATH)/bin/goimports:
+$(GOPATH)/bin/goimports: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install golang.org/x/tools/cmd/goimports@v0.1.7
@@ -352,7 +359,7 @@ ifeq ($(shell uname),Darwin)
 	brew install clang-format
 else
 	sudo apt update
-	sudo apt install clang-format
+	sudo apt install -y clang-format
 endif
 endif
 
@@ -443,8 +450,8 @@ dist/manifests/%: manifests/%
 
 # lint/test/etc
 
-$(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.59.1
+$(GOPATH)/bin/golangci-lint: Makefile
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -484,6 +491,9 @@ ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
 endif
+ifeq ($(UI_SECURE)$(PROFILE),truesso)
+	KUBE_NAMESPACE=$(KUBE_NAMESPACE) ./hack/update-sso-redirect-url.sh
+endif
 
 .PHONY: argosay
 argosay:
@@ -521,7 +531,7 @@ dist/argosay:
 	cp test/e2e/images/argosay/v2/argosay dist/
 
 .PHONY: kit
-kit:
+kit: Makefile
 ifeq ($(shell command -v kit),)
 ifeq ($(shell uname),Darwin)
 	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
@@ -561,7 +571,7 @@ endif
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) PROFILE=$(PROFILE) kit $(TASKS)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) ARGO_UI_SECURE=$(UI_SECURE) PROFILE=$(PROFILE) kit $(TASKS)
 endif
 
 .PHONY: wait
@@ -572,14 +582,29 @@ ifeq ($(API),true)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 endif
+ifeq ($(PROFILE),mysql)
+	# Wait for MySQL
+	until (: < /dev/tcp/localhost/3306) ; do sleep 10s ; done
+endif
 
 .PHONY: postgres-cli
 postgres-cli:
-	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
+	kubectl exec -ti svc/postgres -- psql -U postgres
+
+.PHONY: postgres-dump
+postgres-dump:
+	@mkdir -p db-dumps
+	kubectl exec svc/postgres -- pg_dump --clean -U postgres > "db-dumps/postgres-$(BUILD_DATE).sql"
 
 .PHONY: mysql-cli
 mysql-cli:
-	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
+	kubectl exec -ti svc/mysql -- mysql -u mysql -ppassword argo
+
+.PHONY: mysql-dump
+mysql-dump:
+	@mkdir -p db-dumps
+	kubectl exec svc/mysql -- mysqldump --no-tablespaces -u mysql -ppassword argo > "db-dumps/mysql-$(BUILD_DATE).sql"
+
 
 test-cli: ./dist/argo
 
@@ -595,8 +620,10 @@ test-%-sdk:
 	make --directory sdks/$* install test -B
 
 Test%:
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,corefunctional,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
 
+Benchmark%:
+	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -bench .
 
 # clean
 
@@ -622,7 +649,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 
 # generates many other files (listers, informers, client etc).
-pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(GOPATH)/bin/go-to-protobuf $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
@@ -635,9 +662,11 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	# Delete the link
 	[ -e ./v3 ] && rm -rf v3
 
-dist/kubernetes.swagger.json:
+dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
-	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.23.3/api/openapi-spec/swagger.json
+	# recurl will only fetch if the file doesn't exist, so delete it
+	rm -f $@
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.30.3/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor
@@ -682,7 +711,7 @@ docs/cli/argo.md: $(CLI_PKG_FILES) go.sum server/static/files.go hack/docs/cli.g
 
 # docs
 
-/usr/local/bin/mdspell:
+/usr/local/bin/mdspell: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	npm list -g markdown-spellcheck@1.3.1 > /dev/null || npm i -g markdown-spellcheck@1.3.1

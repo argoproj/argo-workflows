@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -25,7 +27,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -131,6 +132,13 @@ type VolumeClaimGCStrategy string
 const (
 	VolumeClaimGCOnCompletion VolumeClaimGCStrategy = "OnWorkflowCompletion"
 	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
+)
+
+type HoldingNameVersion int
+
+const (
+	HoldingNameV1 HoldingNameVersion = 1
+	HoldingNameV2 HoldingNameVersion = 2
 )
 
 // Workflow is the definition of a workflow resource
@@ -996,6 +1004,11 @@ func (a *Artifact) CleanPath() error {
 	// Any resolved path should always be within the /tmp/safe/ directory.
 	safeDir := ""
 	slashDotDotRe := regexp.MustCompile(fmt.Sprintf(`%c..$`, os.PathSeparator))
+	if runtime.GOOS == "windows" {
+		// windows PathSeparator is \ and needs escaping
+		slashDotDotRe = regexp.MustCompile(fmt.Sprintf(`\%c..$`, os.PathSeparator))
+	}
+
 	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
 	if strings.Contains(path, slashDotDotSlash) {
 		safeDir = path[:strings.Index(path, slashDotDotSlash)]
@@ -1635,10 +1648,14 @@ type TemplateRef struct {
 
 // Synchronization holds synchronization lock configuration
 type Synchronization struct {
-	// Semaphore holds the Semaphore configuration
+	// Semaphore holds the Semaphore configuration - deprecated, use semaphores instead
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Mutex holds the Mutex lock details
+	// Mutex holds the Mutex lock details - deprecated, use mutexes instead
 	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+	// v3.6 and after: Semaphores holds the list of Semaphores configuration
+	Semaphores []*SemaphoreRef `json:"semaphores,omitempty" protobuf:"bytes,3,opt,name=semaphores"`
+	// v3.6 and after: Mutexes holds the list of Mutex lock details
+	Mutexes []*Mutex `json:"mutexes,omitempty" protobuf:"bytes,4,opt,name=mutexes"`
 }
 
 func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector {
@@ -1646,23 +1663,6 @@ func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector
 		return s.Semaphore.ConfigMapKeyRef
 	}
 	return nil
-}
-
-type SynchronizationType string
-
-const (
-	SynchronizationTypeSemaphore SynchronizationType = "Semaphore"
-	SynchronizationTypeMutex     SynchronizationType = "Mutex"
-	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
-)
-
-func (s *Synchronization) GetType() SynchronizationType {
-	if s.Semaphore != nil {
-		return SynchronizationTypeSemaphore
-	} else if s.Mutex != nil {
-		return SynchronizationTypeMutex
-	}
-	return SynchronizationTypeUnknown
 }
 
 // SemaphoreRef is a reference of Semaphore
@@ -2409,11 +2409,6 @@ func (n NodeStatus) IsExitNode() bool {
 	return strings.HasSuffix(n.DisplayName, ".onExit")
 }
 
-// IsPodDeleted returns whether node is error with pod deleted.
-func (n NodeStatus) IsPodDeleted() bool {
-	return n.Phase == NodeError && n.Message == "pod deleted"
-}
-
 func (n NodeStatus) Succeeded() bool {
 	return n.Phase == NodeSucceeded
 }
@@ -2521,6 +2516,9 @@ type S3Bucket struct {
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,6,opt,name=secretKeySecret"`
 
+	// SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant
+	SessionTokenSecret *apiv1.SecretKeySelector `json:"sessionTokenSecret,omitempty" protobuf:"bytes,12,opt,name=sessionTokenSecret"`
+
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
 
@@ -2613,6 +2611,9 @@ type GitArtifact struct {
 
 	// Branch is the branch to fetch when `SingleBranch` is enabled
 	Branch string `json:"branch,omitempty" protobuf:"bytes,11,opt,name=branch"`
+
+	// InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections
+	InsecureSkipTLS bool `json:"insecureSkipTLS,omitempty" protobuf:"varint,12,opt,name=insecureSkipTLS"`
 }
 
 func (g *GitArtifact) HasLocation() bool {
@@ -3779,15 +3780,11 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 		return true
-	} else if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
+	} else if !slices.Contains(semaphoreHolding.Holders, holdingName) {
 		semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
 		ss.Holding[i] = semaphoreHolding
 		return true
@@ -3797,13 +3794,11 @@ func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolder
 
 func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
+
 	if i >= 0 {
-		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
+		semaphoreHolding.Holders = slices.DeleteFunc(semaphoreHolding.Holders,
+			func(x string) bool { return x == holdingName })
 		ss.Holding[i] = semaphoreHolding
 		return true
 	}
@@ -3872,13 +3867,17 @@ func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []s
 	return false
 }
 
+func CheckHolderKeyVersion(holderKey string) HoldingNameVersion {
+	items := strings.Split(holderKey, "/")
+	if len(items) == 2 || len(items) == 3 {
+		return HoldingNameV2
+	}
+	return HoldingNameV1
+}
+
 func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, mutexHolding := ms.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i < 0 {
 		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
 		return true
@@ -3892,11 +3891,7 @@ func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []
 
 func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
 	i, holder := ms.GetHolding(lockKey)
-	items := strings.Split(holderKey, "/")
-	if len(items) == 0 {
-		return false
-	}
-	holdingName := items[len(items)-1]
+	holdingName := holderKey
 	if i >= 0 && holder.Holder == holdingName {
 		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
 		return true
@@ -3911,6 +3906,14 @@ type SynchronizationStatus struct {
 	// Mutex stores this workflow's mutex holder details
 	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
+
+type SynchronizationType string
+
+const (
+	SynchronizationTypeSemaphore SynchronizationType = "Semaphore"
+	SynchronizationTypeMutex     SynchronizationType = "Mutex"
+	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
+)
 
 func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) SynchronizationAction {
 	switch syncType {

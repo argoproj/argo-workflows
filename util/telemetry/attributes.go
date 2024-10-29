@@ -10,7 +10,10 @@ const (
 	AttribBuildGitTreeState string = `git_treestate`
 	AttribBuildGitTag       string = `git_tag`
 
-	AttribCronWFName string = `name`
+	AttribCronWFName        string = `name`
+	AttribConcurrencyPolicy string = `concurrency_policy`
+
+	AttribDeprecatedFeature string = "feature"
 
 	AttribErrorCause string = "cause"
 

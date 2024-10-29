@@ -23,6 +23,7 @@ func New(ctx context.Context, serviceName, prometheusName string, config *teleme
 
 	err = m.Populate(ctx,
 		telemetry.AddVersion,
+		telemetry.AddDeprecationCounter,
 	)
 	if err != nil {
 		return nil, err
@@ -42,6 +43,7 @@ func New(ctx context.Context, serviceName, prometheusName string, config *teleme
 		addPodPendingCounter,
 		addWorkflowPhaseGauge,
 		addCronWfTriggerCounter,
+		addCronWfPolicyCounter,
 		addWorkflowPhaseCounter,
 		addWorkflowTemplateCounter,
 		addWorkflowTemplateHistogram,

@@ -27,7 +27,7 @@ import (
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -291,25 +291,17 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Equal(t, wfv1.Progress("0/100"), woc.wf.Status.Progress)
 	assert.Equal(t, wfv1.Progress("0/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
 	pod := woc.wf.Status.Nodes.FindByDisplayName("pod")
 	assert.Equal(t, wfv1.Progress("0/100"), pod.Progress)
 
-	// mock workflow uses legacy/insecure pod patch
-	makePodsPhase(ctx, woc, apiv1.PodRunning, withAnnotation(common.AnnotationKeyReportOutputsCompleted, "false"), withProgress("50/100"))
-	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate(ctx)
-
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	assert.Equal(t, wfv1.Progress("50/100"), woc.wf.Status.Progress)
-	assert.Equal(t, wfv1.Progress("50/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
-	pod = woc.wf.Status.Nodes.FindByDisplayName("pod")
-	assert.Equal(t, wfv1.Progress("50/100"), pod.Progress)
-
-	// mock workflow uses legacy/insecure pod patch
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withAnnotation(common.AnnotationKeyReportOutputsCompleted, "true"), withProgress("100/100"))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
@@ -1562,11 +1554,12 @@ func TestStepsRetriesVariable(t *testing.T) {
 func TestAssessNodeStatus(t *testing.T) {
 	const templateName = "whalesay"
 	tests := []struct {
-		name   string
-		pod    *apiv1.Pod
-		daemon bool
-		node   *wfv1.NodeStatus
-		want   wfv1.NodePhase
+		name        string
+		pod         *apiv1.Pod
+		daemon      bool
+		node        *wfv1.NodeStatus
+		wantPhase   wfv1.NodePhase
+		wantMessage string
 	}{{
 		name: "pod pending",
 		pod: &apiv1.Pod{
@@ -1574,8 +1567,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodPending,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodePending,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodePending,
+		wantMessage: "",
 	}, {
 		name: "pod succeeded",
 		pod: &apiv1.Pod{
@@ -1583,8 +1577,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodSucceeded,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeSucceeded,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "pod failed - daemoned",
 		pod: &apiv1.Pod{
@@ -1592,9 +1587,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodFailed,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName},
-		want:   wfv1.NodeSucceeded,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
@@ -1602,9 +1598,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeFailed},
-		want:   wfv1.NodeFailed,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeFailed},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "",
 	}, {
 		name: "daemon, pod running, node succeeded",
 		pod: &apiv1.Pod{
@@ -1612,9 +1609,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
-		want:   wfv1.NodeSucceeded,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "pod failed - not daemoned",
 		pod: &apiv1.Pod{
@@ -1623,8 +1621,20 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
+	}, {
+		name: "pod failed - transition from node pending",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "failed for some reason",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodePending, Message: "failed for some reason"},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
 	}, {
 		name: "pod failed - init container failed",
 		pod: &apiv1.Pod{
@@ -1649,8 +1659,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - init container failed but neither wait nor main containers are finished",
 		pod: &apiv1.Pod{
@@ -1675,8 +1686,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - init container with non-standard init container name failed but neither wait nor main containers are finished",
 		pod: &apiv1.Pod{
@@ -1705,8 +1717,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - wait container waiting but pod was set failed",
 		pod: &apiv1.Pod{
@@ -1731,8 +1744,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since wait contain waiting",
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
@@ -1740,13 +1754,15 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeRunning,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeRunning,
+		wantMessage: "",
 	}, {
-		name: "default",
-		pod:  &apiv1.Pod{},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeError,
+		name:        "default",
+		pod:         &apiv1.Pod{},
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeError,
+		wantMessage: "Unexpected pod phase for : ",
 	}}
 
 	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -1763,14 +1779,15 @@ func TestAssessNodeStatus(t *testing.T) {
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			got := woc.assessNodeStatus(context.TODO(), tt.pod, tt.node)
-			assert.Equal(t, tt.want, got.Phase)
+			assert.Equal(t, tt.wantPhase, got.Phase)
+			assert.Equal(t, tt.wantMessage, got.Message)
 		})
 	}
 }
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
 	tmpl := &wfv1.Template{}
-	for _, c := range pod.Spec.Containers {
+	for _, c := range pod.Spec.InitContainers {
 		for _, e := range c.Env {
 			if e.Name == common.EnvVarTemplate {
 				return tmpl, json.Unmarshal([]byte(e.Value), tmpl)
@@ -1800,7 +1817,7 @@ func TestGetPodTemplate(t *testing.T) {
 		name: "missing template",
 		pod: &apiv1.Pod{
 			Spec: apiv1.PodSpec{
-				Containers: []apiv1.Container{
+				InitContainers: []apiv1.Container{
 					{
 						Env: []apiv1.EnvVar{},
 					},
@@ -1812,7 +1829,7 @@ func TestGetPodTemplate(t *testing.T) {
 		name: "empty template",
 		pod: &apiv1.Pod{
 			Spec: apiv1.PodSpec{
-				Containers: []apiv1.Container{
+				InitContainers: []apiv1.Container{
 					{
 						Env: []apiv1.EnvVar{
 							{
@@ -1829,7 +1846,7 @@ func TestGetPodTemplate(t *testing.T) {
 		name: "simple template",
 		pod: &apiv1.Pod{
 			Spec: apiv1.PodSpec{
-				Containers: []apiv1.Container{
+				InitContainers: []apiv1.Container{
 					{
 						Env: []apiv1.EnvVar{
 							{
@@ -2267,7 +2284,6 @@ func TestSidecarResourceLimits(t *testing.T) {
 	require.NoError(t, err)
 	var waitCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
-		ctr := ctr
 		if ctr.Name == "wait" {
 			waitCtr = &ctr
 			break
@@ -4090,7 +4106,7 @@ spec:
 			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 			woc = newWorkflowOperationCtx(woc.wf, controller)
 			woc.operate(ctx)
-			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
+			assert.ElementsMatch(t, want, getEventsWithoutAnnotations(controller, len(want)))
 		})
 	}
 }
@@ -4186,18 +4202,27 @@ spec:
 			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 			woc = newWorkflowOperationCtx(woc.wf, controller)
 			woc.operate(ctx)
-			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
+			assert.ElementsMatch(t, want, getEventsWithoutAnnotations(controller, len(want)))
 		})
 	}
 }
 
-func getEvents(controller *WorkflowController, num int) []string {
+func getEventsWithoutAnnotations(controller *WorkflowController, num int) []string {
 	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
 	for i := 0; i < num; i++ {
-		events[i] = <-c
+		event := <-c
+		events[i] = truncateAnnotationsFromEvent(event)
 	}
 	return events
+}
+
+func truncateAnnotationsFromEvent(event string) string {
+	mapIndex := strings.Index(event, " map[")
+	if mapIndex != -1 {
+		return event[:mapIndex]
+	}
+	return event
 }
 
 func TestGetPodByNode(t *testing.T) {
@@ -6249,12 +6274,12 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 		Parameters: []wfv1.Parameter{
 			{Name: "hello", Value: wfv1.AnyStringPtr("foobar")},
 		},
-		ExitCode: pointer.String("0"),
+		ExitCode: ptr.To("0"),
 	}
 
 	ctx := context.Background()
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0), withAnnotation(common.AnnotationKeyReportOutputsCompleted, "true"), withOutputs(wfv1.MustMarshallJSON(sampleOutputs)))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0), withOutputs(sampleOutputs))
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 
@@ -6537,7 +6562,7 @@ spec:
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	// make all created pods as successful
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withAnnotation(common.AnnotationKeyReportOutputsCompleted, "true"), withOutputs(`{"parameters": [{"name": "my-param"}]}`))
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	// reconcile
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -7285,8 +7310,8 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		ctrs := pods.Items[0].Spec.Containers
 		assert.Len(t, ctrs, 2)
 		envs := ctrs[1].Env
-		assert.Len(t, envs, 8)
-		assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[3])
+		assert.Len(t, envs, 7)
+		assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[2])
 	})
 }
 
@@ -8466,6 +8491,10 @@ metadata:
   namespace: argo
 spec:
   entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: derived-mutex-name
+      value: welcome
   templates:
   - container:
       args:
@@ -8476,7 +8505,7 @@ spec:
     name: whalesay
     synchronization:
       mutex:
-        name: welcome
+        name: "{{ workflow.parameters.derived-mutex-name }}"
   ttlStrategy:
     secondsAfterCompletion: 600
 status:
@@ -8485,7 +8514,6 @@ status:
       displayName: hello-world-mpdht
       finishedAt: null
       id: hello-world-mpdht
-      message: 'Waiting for argo/Mutex/welcome lock. Lock status: 0/1 '
       name: hello-world-mpdht
       phase: Pending
       progress: 0/1
@@ -8512,16 +8540,23 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	_, _, _, err := controller.syncManager.TryAcquire(wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
+
+	// preempt lock
+	_, _, _, _, err := controller.syncManager.TryAcquire(ctx, wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Phase)
+	assert.Equal(t, "Waiting for argo/Mutex/welcome lock. Lock status: 0/1", woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Message)
+
+	woc.controller.syncManager.Release(ctx, wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
+	woc.operate(ctx)
+	assert.Equal(t, "", woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Message)
 }
 
-var wfGlopalArtifactNil = `apiVersion: argoproj.io/v1alpha1
+var wfGlobalArtifactNil = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: global-outputs-ttsfq
@@ -8591,7 +8626,7 @@ spec:
 `
 
 func TestWFGlobalArtifactNil(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfGlopalArtifactNil)
+	wf := wfv1.MustUnmarshalWorkflow(wfGlobalArtifactNil)
 	cancel, controller := newController(wf)
 	defer cancel()
 
@@ -8600,8 +8635,7 @@ func TestWFGlobalArtifactNil(t *testing.T) {
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod) {
-		pod.Annotations[common.AnnotationKeyOutputs] = string("{\"parameters\":[{\"name\":\"hello-param\",\"valueFrom\":{\"path\":\"/tmp/hello_world.txt\"},\"globalName\":\"my-global-param\"}],\"artifacts\":[{\"name\":\"hello-art\",\"path\":\"/tmp/hello_world.txt\",\"globalName\":\"my-global-art\"}]}")
+	makePodsPhase(ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod, _ *wfOperationCtx) {
 		pod.Status.ContainerStatuses = []apiv1.ContainerStatus{
 			{
 				Name: "main",
@@ -9337,7 +9371,6 @@ metadata:
 spec:
   arguments: {}
   entrypoint: main
-  serviceAccountName: argo
   templates:
   - inputs: {}
     metadata: {}
@@ -10911,7 +10944,7 @@ spec:
     serviceAccountName: default
   podSpecPatch: |
     terminationGracePeriodSeconds: 3
-  serviceAccountName: argo
+  serviceAccountName: default
   templates:
   - inputs: {}
     metadata: {}

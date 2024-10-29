@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"slices"
 	"sort"
 
 	"golang.org/x/exp/maps"
@@ -12,11 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -38,7 +38,7 @@ func (woc *wfOperationCtx) addArtifactGCFinalizer() {
 
 	// only do Artifact GC if we have a Finalizer for it (i.e. Artifact GC is configured for this Workflow
 	// and there's work left to do for it)
-	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
+	if !slices.Contains(woc.wf.Finalizers, common.FinalizerArtifactGC) {
 		if woc.wf.Status.ArtifactGCStatus.NotSpecified {
 			return // we already verified it's not required for this workflow
 		}
@@ -460,7 +460,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					VolumeMounts: volumeMounts,
 				},
 			},
-			AutomountServiceAccountToken: pointer.Bool(true),
+			AutomountServiceAccountToken: ptr.To(true),
 			RestartPolicy:                corev1.RestartPolicyNever,
 		},
 	}
@@ -549,7 +549,8 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 	}
 	if removeFinalizer {
 		woc.log.Infof("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", forceFinalizerRemoval)
-		woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
+		woc.wf.Finalizers = slices.DeleteFunc(woc.wf.Finalizers,
+			func(x string) bool { return x == common.FinalizerArtifactGC })
 		woc.updated = true
 	}
 	return nil
