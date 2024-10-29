@@ -92,12 +92,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         );
     }
 
-    private nodeLabel(n: NodeStatus, parent?: NodeStatus) {
+    private nodeLabel(n: NodeStatus) {
         const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
         let label = shortNodeName(n);
 
         if (this.state.showInvokingTemplateName) {
-            label = `${parent?.templateRef?.name ?? parent?.templateName ?? n.templateName}:${label}`;
+            label = n.templateName ? `${n.templateName}:${label}` : label;
         }
 
         return {
@@ -228,7 +228,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 }
                 const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
 
-                nodes.set(item.nodeName, this.nodeLabel(child, allNodes[item.parent]));
+                nodes.set(item.nodeName, this.nodeLabel(child));
                 edges.set({v: item.parent, w: item.nodeName}, {});
 
                 // If we have already considered the children of this node, don't consider them again
