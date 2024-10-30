@@ -96,10 +96,7 @@ func isTransientEtcdErr(err error) bool {
 
 func isTransientPodRejectedErr(err error) bool {
 	// This type of eviction happens before Pod could ever start
-	if strings.Contains(err.Error(), "Pod was rejected:") {
-		return true
-	}
-	return false
+	return strings.Contains(err.Error(), "Pod was rejected:")
 }
 
 func isTransientNetworkErr(err error) bool {
