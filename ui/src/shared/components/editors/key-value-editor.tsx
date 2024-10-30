@@ -7,7 +7,7 @@ interface KeyValues {
     [key: string]: string;
 }
 
-export function KeyValueEditor({onChange, keyValues, hide}: {keyValues: KeyValues; onChange: (value: KeyValues) => void; hide?: (key: string) => boolean}) {
+export function KeyValueEditor({onChange, keyValues = {}, hide}: {keyValues: KeyValues; onChange: (value: KeyValues) => void; hide?: (key: string) => boolean}) {
     const [name, setName] = useState('');
     const [value, setValue] = useState('');
 
@@ -62,7 +62,3 @@ export function KeyValueEditor({onChange, keyValues, hide}: {keyValues: KeyValue
         </>
     );
 }
-
-KeyValueEditor.defaultProps = {
-    keyValues: {}
-};
