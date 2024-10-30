@@ -32,12 +32,53 @@ For the Emissary executor to work properly, you must set up RBAC. See [workflow 
 
 ### Archived Workflows on PostgreSQL
 
-This upgrade will transform an archived workflow column from type `json` to type `jsonb`.
-This will take some time if you have a lot of archived workflows.
+To improve performance, this upgrade will automatically transform the column used to store archived workflows from type `json` to type `jsonb` on controller start-up.
 This requires PostgreSQL version 9.4 or higher.
 
-You can perform this modification prior to upgrading with `alter table argo_archived_workflows alter column workflow set data type jsonb using workflow::jsonb`.
-This is considered safe to do whilst running version 3.5 as the column types are compatible.
+The migration involves obtaining an [ACCESS EXCLUSIVE](https://www.postgresql.org/docs/current/explicit-locking.html) lock on the `argo_archived_wokflows` table, which blocks all reads and writes until it has finished.
+For the vast majority of users, we anticipate this will take less than a minute, but it could take much longer if you have a large number of workflows (100,000+), or the average workflow size is high (100KB+).
+**If you don't fall into one of those two categories, or if minimizing downtime isn't important to you, then you don't need to read any further.**
+Otherwise, you have a few options to keep downtime to a minimum:
+
+1. If you don't actually need the archived workflows anymore, simply delete them with `delete from argo_archived_workflows` and the migration will complete almost instantly.
+2. Using a variation of [Altering a Postgres Column with Minimal Downtime](https://making.lyst.com/2020/05/26/altering-a-postgres-column-with-minimal-downtime/), it's possible to manually perform this migration with nearly no downtime. This is a two-step process;
+    1. Before the upgrade, run the following queries to create a temporary `workflowjsonb` column and populate it with the existing data. This is safe to do whilst running version 3.5 because the column types are compatible.
+
+         ```sql
+         -- Add temporary workflowjsonb column
+         ALTER TABLE argo_archived_workflows ADD COLUMN workflowjsonb JSONB NULL;
+         
+         -- Add trigger to update workflowjsonb for each insert
+         CREATE OR REPLACE FUNCTION update_workflow_jsonb() RETURNS TRIGGER AS $BODY$
+         BEGIN
+             NEW.workflowjsonb=NEW.workflow;
+             RETURN NEW;
+         END
+         $BODY$ LANGUAGE PLPGSQL;
+         
+         CREATE TRIGGER argo_archived_workflows_update_workflow_jsonb
+         BEFORE INSERT ON argo_archived_workflows
+         FOR EACH ROW EXECUTE PROCEDURE update_workflow_jsonb();
+         
+         -- Backfill existing rows
+         UPDATE argo_archived_workflows SET workflowjsonb = workflow WHERE workflowjsonb IS NULL;
+         ```
+
+    2. Once the above has completed and you're ready to proceed with the upgrade, run the following queries before starting the controller:
+
+         ```sql
+         BEGIN;
+         LOCK TABLE argo_archived_workflows IN SHARE ROW EXCLUSIVE MODE;
+         DROP TRIGGER argo_archived_workflows_update_workflow_jsonb ON argo_archived_workflows;
+         ALTER TABLE argo_archived_workflows DROP COLUMN workflow;
+         ALTER TABLE argo_archived_workflows RENAME COLUMN workflowjsonb TO workflow;
+         ALTER TABLE argo_archived_workflows ADD CONSTRAINT workflow CHECK (workflow IS NOT NULL) NOT VALID;
+         COMMIT;
+         ```
+
+3. Version 3.6 retains compatibility with workflows stored as type `json`.
+  Therefore, it's currently safe to [skip the migration](workflow-archive.md#automatic-database-migration) by setting `skipMigration: true`.
+  This should only be used as an emergency stop-gap, as future versions may drop support for `json` without notice.
 
 ### Metrics changes
 
