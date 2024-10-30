@@ -21,6 +21,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
     const [stage, setStage] = useState<Stage>('choose-method');
     const [workflow, setWorkflow] = useState<Workflow>();
     const [error, setError] = useState<Error>();
+    const isFullEditorDisabled = process.env.UI_DISABLE_FULL_EDITOR === 'true';
 
     useEffect(() => {
         services.workflowTemplate
@@ -75,12 +76,16 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                             onChange={templateName => setWorkflowTemplate((workflowTemplates || []).find(template => template.metadata.name === templateName.title))}
                         />
                     </div>
-                    <p>Or:</p>
-                    <div style={{margin: 10, marginLeft: 20}}>
-                        <a onClick={() => setStage('full-editor')}>
-                            Edit using full workflow options <i className='fa fa-caret-right' />
-                        </a>
-                    </div>
+                    {!isFullEditorDisabled && (
+                        <>
+                            <p>Or:</p>
+                            <div style={{margin: 10, marginLeft: 20}}>
+                                <a onClick={() => setStage('full-editor')}>
+                                    Edit using full workflow options <i className='fa fa-caret-right' />
+                                </a>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
             {stage === 'submit-workflow' && workflowTemplate && (
@@ -93,12 +98,14 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                         templates={workflowTemplate.spec.templates || []}
                         workflowParameters={workflowTemplate.spec.arguments.parameters || []}
                     />
-                    <a onClick={() => setStage('full-editor')}>
-                        Edit using full workflow options <i className='fa fa-caret-right' />
-                    </a>
+                    {!isFullEditorDisabled && (
+                        <a onClick={() => setStage('full-editor')}>
+                            Edit using full workflow options <i className='fa fa-caret-right' />
+                        </a>
+                    )}
                 </>
             )}
-            {stage === 'full-editor' && workflow && (
+            {stage === 'full-editor' && workflow && !isFullEditorDisabled && (
                 <>
                     <div>
                         <UploadButton onUpload={setWorkflow} onError={setError} />
@@ -118,7 +125,7 @@ export function WorkflowCreator({namespace, onCreate}: {namespace: string; onCre
                     <ErrorNotice error={error} />
                     <WorkflowEditor template={workflow} onChange={setWorkflow} onError={setError} />
                     <div>
-                        <ExampleManifests />.
+                        <ExampleManifests />
                     </div>
                 </>
             )}
