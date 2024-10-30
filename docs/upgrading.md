@@ -37,7 +37,7 @@ This requires PostgreSQL version 9.4 or higher.
 
 The migration involves obtaining an [ACCESS EXCLUSIVE](https://www.postgresql.org/docs/current/explicit-locking.html) lock on the `argo_archived_wokflows` table, which blocks all reads and writes until it has finished.
 For the vast majority of users, we anticipate this will take less than a minute, but it could take much longer if you have a large number of workflows (100,000+), or the average workflow size is high (100KB+).
-If you don't fall into one of those two categories, or if minimizing downtime isn't important to you, then you don't need to read any further. 
+If you don't fall into one of those two categories, or if minimizing downtime isn't important to you, then you don't need to read any further.
 Otherwise, you have a few options to keep downtime to a minimum:
 
 1. If you don't actually need the archived workflows anymore, simply delete them with `delete from argo_archived_workflows` and the migration will complete almost instantly.
