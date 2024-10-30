@@ -32,13 +32,13 @@ For the Emissary executor to work properly, you must set up RBAC. See [workflow 
 
 ### Archived Workflows on PostgreSQL
 
-To improve performance, this upgrade will transform the column used to store archived workflows from type `json` to type `jsonb` on controller start-up.
+To improve performance, this upgrade will automatically transform the column used to store archived workflows from type `json` to type `jsonb` on controller start-up.
 This requires PostgreSQL version 9.4 or higher.
 
 The migration involves obtaining an [ACCESS EXCLUSIVE](https://www.postgresql.org/docs/current/explicit-locking.html) lock on the `argo_archived_wokflows` table, which blocks all reads and writes until it has finished.
 For the vast majority of users, we anticipate this will take less than a minute, but it could take much longer if you have a large number of workflows (100,000+), or the average workflow size is high (100KB+).
-
-If this is the case for you, and minimizing downtime is important, you have a few options:
+If you don't fall into one of those two categories, or if minimizing downtime isn't important to you, then you don't need to read any further. 
+Otherwise, you have a few options to keep downtime to a minimum:
 
 1. If you don't actually need the archived workflows anymore, simply delete them with `delete from argo_archived_workflows` and the migration will complete almost instantly.
 2. Using a variation of [Altering a Postgres Column with Minimal Downtime](https://making.lyst.com/2020/05/26/altering-a-postgres-column-with-minimal-downtime/), it's possible to manually perform this migration with nearly no downtime. This is a two-step process;
