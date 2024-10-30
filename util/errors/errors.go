@@ -55,6 +55,7 @@ func isTransientErr(err error) bool {
 		apierr.IsServerTimeout(err) ||
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||
+		isTransientPodRejectedErr(err) ||
 		matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient("")) ||
 		isTransientSqbErr(err)
@@ -88,6 +89,14 @@ func isTransientEtcdErr(err error) bool {
 	if strings.Contains(err.Error(), "etcdserver: leader changed") {
 		return true
 	} else if strings.Contains(err.Error(), "etcdserver: request timed out") {
+		return true
+	}
+	return false
+}
+
+func isTransientPodRejectedErr(err error) bool {
+	// This type of eviction happens before Pod could ever start
+	if strings.Contains(err.Error(), "Pod was rejected:") {
 		return true
 	}
 	return false
