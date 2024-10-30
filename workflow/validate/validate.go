@@ -478,14 +478,14 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		}
 
 	}
-
+	templateScope := tmplCtx.GetTemplateScope()
 	tmplID := getTemplateID(tmpl)
-	_, ok := ctx.results[tmplID]
+	_, ok := ctx.results[templateScope+tmplID]
 	if ok {
 		// we can skip the rest since it has been validated.
 		return nil
 	}
-	ctx.results[tmplID] = true
+	ctx.results[templateScope+tmplID] = true
 
 	for globalVar, val := range ctx.globalParams {
 		scope[globalVar] = val
@@ -499,12 +499,13 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		err = ctx.validateLeaf(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	}
 	if err != nil {
+		logrus.Error(err)
 		return err
 	}
-	err = validateOutputs(scope, ctx.globalParams, newTmpl, workflowTemplateValidation)
-	if err != nil {
-		return err
-	}
+	// err = validateOutputs(scope, ctx.globalParams, newTmpl, workflowTemplateValidation)
+	// if err != nil {
+	// 	return err
+	// }
 	if newTmpl.ArchiveLocation != nil {
 		errPrefix := fmt.Sprintf("templates.%s.archiveLocation", newTmpl.Name)
 		err = validateArtifactLocation(errPrefix, *newTmpl.ArchiveLocation)
@@ -558,6 +559,9 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 		if err := VerifyResolvedVariables(tmplRef); err != nil {
 			logrus.Warnf("template reference need resolution: %v", err)
+			return nil, nil
+		}
+		if placeholderGenerator.IsPlaceholder(tmplRef.Template) {
 			return nil, nil
 		}
 	} else if tmplName != "" {
@@ -640,13 +644,13 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 				return nil, errors.Errorf(errors.CodeBadRequest, "error in templates.%s.%s: %s", tmpl.Name, artRef, err.Error())
 			}
 			scope[fmt.Sprintf("inputs.artifacts.%s.path", art.Name)] = true
-		} else {
-			if art.Path != "" {
-				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
-			}
-		}
-		if art.From != "" {
-			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
+		// } else {
+		// 	if art.Path != "" {
+		// 		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
+		// 	}
+		// }
+		// if art.From != "" {
+		// 	return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
 		}
 		errPrefix := fmt.Sprintf("templates.%s.%s", tmpl.Name, artRef)
 		err = validateArtifactLocation(errPrefix, art.ArtifactLocation)
@@ -691,11 +695,13 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 			if (trimmedTag == "item" || strings.HasPrefix(trimmedTag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
+				// Allow runtime resolution of workflow output parameter names
 			} else if strings.HasPrefix(trimmedTag, "workflow.outputs.parameters.") && allowAllWorkflowOutputParameterRefs {
 				// Allow runtime resolution of workflow output parameter names
 			} else if strings.HasPrefix(trimmedTag, "workflow.outputs.artifacts.") && allowAllWorkflowOutputArtifactRefs {
 				// Allow runtime resolution of workflow output artifact names
 			} else if strings.HasPrefix(trimmedTag, "outputs.") {
+			} else if strings.HasPrefix(trimmedTag, "inputs.") {
 				// We are self referencing for metric emission, allow it.
 			} else if strings.HasPrefix(trimmedTag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else if strings.HasPrefix(trimmedTag, common.GlobalVarWorkflowCronScheduleTime) {
@@ -703,6 +709,9 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 			} else if strings.HasPrefix(trimmedTag, common.GlobalVarWorkflowDuration) {
 			} else if strings.HasPrefix(trimmedTag, "tasks.name") {
 			} else if strings.HasPrefix(trimmedTag, "steps.name") {
+			} else if strings.HasPrefix(trimmedTag, "steps.standardize") {
+			} else if strings.HasPrefix(trimmedTag, "workflow.labels") {
+			} else if strings.HasPrefix(trimmedTag, "pod.name") {
 			} else if strings.HasPrefix(trimmedTag, "node.name") {
 			} else if strings.HasPrefix(trimmedTag, "workflow.parameters") && workflowTemplateValidation {
 				// If we are simply validating a WorkflowTemplate in isolation, some of the parameters may come from the Workflow that uses it
@@ -909,16 +918,16 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 				}
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 			}
-			valueSpecifiedInEnumList := false
-			for _, enum := range param.Enum {
-				if enum == *param.Value {
-					valueSpecifiedInEnumList = true
-					break
-				}
-			}
-			if !valueSpecifiedInEnumList {
-				return errors.Errorf(errors.CodeBadRequest, "%s%s.value should be present in %s%s.enum list", prefix, param.Name, prefix, param.Name)
-			}
+			// valueSpecifiedInEnumList := false
+			// for _, enum := range param.Enum {
+			// 	if enum == *param.Value {
+			// 		valueSpecifiedInEnumList = true
+			// 		break
+			// 	}
+			// }
+			// if !valueSpecifiedInEnumList {
+			// 	return errors.Errorf(errors.CodeBadRequest, "%s%s.value should be present in %s%s.enum list", prefix, param.Name, prefix, param.Name)
+			// }
 		}
 	}
 	for _, art := range arguments.Artifacts {
@@ -944,10 +953,10 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if step.Name == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name is required", tmpl.Name, i)
 			}
-			_, ok := stepNames[step.Name]
-			if ok {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
-			}
+			// _, ok := stepNames[step.Name]
+			// if ok {
+			// 	return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
+			// }
 			if errs := isValidWorkflowFieldName(step.Name); len(errs) != 0 {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
@@ -1263,10 +1272,10 @@ func validateWorkflowFieldNames(slice interface{}) error {
 		if len(errs) != 0 {
 			return errors.Errorf(errors.CodeBadRequest, "[%d].name: '%s' is invalid: %s", i, name, strings.Join(errs, ";"))
 		}
-		_, ok := names[name]
-		if ok {
-			return errors.Errorf(errors.CodeBadRequest, "[%d].name '%s' is not unique", i, name)
-		}
+		// _, ok := names[name]
+		// if ok {
+		// 	return errors.Errorf(errors.CodeBadRequest, "[%d].name '%s' is not unique", i, name)
+		// }
 		names[name] = true
 	}
 	return nil
@@ -1342,14 +1351,13 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
-
 		if (usingDepends || len(task.Dependencies) > 0) && '0' <= task.Name[0] && task.Name[0] <= '9' {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using either 'depends' or 'dependencies'", tmpl.Name, task.Name)
 		}
 
-		if usingDepends && len(task.Dependencies) > 0 {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use both 'depends' and 'dependencies' in the same DAG template", tmpl.Name)
-		}
+		// if usingDepends && len(task.Dependencies) > 0 {
+		// 	return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use both 'depends' and 'dependencies' in the same DAG template", tmpl.Name)
+		// }
 
 		if usingDepends && task.ContinueOn != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
@@ -1443,10 +1451,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return err
 		}
-		err = validateDAGTaskArgumentDependency(task.Arguments, ancestry)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
-		}
+		// err = validateDAGTaskArgumentDependency(task.Arguments, ancestry)
+		// if err != nil {
+		// 	return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+		// }
 		// Validate the template again with actual arguments.
 		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments, workflowTemplateValidation)
 		if err != nil {

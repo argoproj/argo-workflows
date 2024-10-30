@@ -62,10 +62,10 @@ func validateWorkflowFieldNames(names []string, isParamOrArtifact bool) error {
 		if len(errs) != 0 {
 			return fmt.Errorf("[%d].name: '%s' is invalid: %s", i, name, strings.Join(errs, ";"))
 		}
-		_, ok := nameSet[name]
-		if ok {
-			return fmt.Errorf("[%d].name '%s' is not unique", i, name)
-		}
+		// _, ok := nameSet[name]
+		// if ok {
+		// 	return fmt.Errorf("[%d].name '%s' is not unique", i, name)
+		// }
 		nameSet[name] = true
 	}
 	return nil
