@@ -116,8 +116,11 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
                         </code>
                     </p>
                     <p>
-                        You&apos;ll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for
-                        &quot;EventService&quot;.
+                        You can also experiment with viewing the{' '}
+                        <a href='https://argo-workflows.readthedocs.io/en/latest/swagger/' target='_blank' rel='noreferrer'>
+                            graphical interface to the API
+                        </a>{' '}
+                        - look for &quot;EventService&quot;.
                     </p>
                     <p>{learnMore}</p>
                 </ZeroState>
