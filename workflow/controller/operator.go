@@ -3455,6 +3455,9 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		if time.Now().UTC().After(suspendDeadline) {
 			// Suspension is expired, node can be resumed
 			woc.log.Infof("auto resuming node %s", nodeName)
+			if err := wfutil.OverrideOutputParametersWithDefault(node.Outputs); err != nil {
+				return node, err
+			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return node, nil
 		}
