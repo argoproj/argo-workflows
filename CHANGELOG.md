@@ -1,5 +1,38 @@
 # Changelog
 
+## v3.6.0-rc4 (2024-10-31)
+
+Full Changelog: [v3.6.0-rc3...v3.6.0-rc4](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc3...v3.6.0-rc4)
+
+### Selected Changes
+
+* [b26ed4aa4](https://github.com/argoproj/argo-workflows/commit/b26ed4aa4dee395844531efa4a76a022183bec22) fix: use templateName where  possible else nothing (#13836)
+* [3bbec4ec6](https://github.com/argoproj/argo-workflows/commit/3bbec4ec6a7d78ef924a9a60256a411a35634bc0) refactor(deps)!: remove `swagger-ui-react` (#13818)
+* [3df51839e](https://github.com/argoproj/argo-workflows/commit/3df51839ef22acacf6712ae0c3775f2ea8a47012) refactor(ui): replace deprecated usage of `defaultProps` (#13822)
+* [39154fd42](https://github.com/argoproj/argo-workflows/commit/39154fd42f814d3d5745937cbfbe13ff2b6003c1) fix: don't print help for non-validation errors. Fixes #13826 (#13831)
+* [030afbcc8](https://github.com/argoproj/argo-workflows/commit/030afbcc85a70db9b669dcae96e17765160ee7b5) fix(ui): disable new graph filter options by default (#13835)
+* [eb23eb6b8](https://github.com/argoproj/argo-workflows/commit/eb23eb6b84a1ecf0826a4e16d6a2032fd0cb08b7) fix: mark taskresult complete when failed or error. Fixes #12993, Fixes #13533 (#13798)
+* [9f158ae0d](https://github.com/argoproj/argo-workflows/commit/9f158ae0d1ad93d1e8bede31086c742cfddbfc1e) refactor(ui): flatten `ui/src/app` dir  (#13815)
+* [3dfea6d5a](https://github.com/argoproj/argo-workflows/commit/3dfea6d5a9572c312b4479bd321c05fdad3d21a6) fix: don't mount SA token when `automountServiceAccountToken: false`. Fixes #12848 (#13820)
+* [1017c1dbe](https://github.com/argoproj/argo-workflows/commit/1017c1dbe2ccf3f0a59ae68f04d954dd92e69673) fix: correct nil pointer when listing wf archive without list options. Fixes #13804 (#13807)
+* [49ff7a44b](https://github.com/argoproj/argo-workflows/commit/49ff7a44ba307416282a1f5cd3b844d19bce7f88) fix: better error message for multiple workflow controllers running (#13760)
+* [b49e88e31](https://github.com/argoproj/argo-workflows/commit/b49e88e3178fc8183e5de7459ef6ae46985b0497) refactor: remove `util/slice` and use standard `slices` library (#13775)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Adrien Delannoy
+* Alan Clucas
+* Anton Gilgur
+* Darko Janjic
+* Greg Sheremeta
+* Isitha Subasinghe
+* Mason Malone
+* MinyiZ
+* dependabot[bot]
+* github-actions[bot]
+
+</details>
+
 ## v3.6.0-rc3 (2024-10-24)
 
 Full Changelog: [v3.6.0-rc2...v3.6.0-rc3](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc2...v3.6.0-rc3)
