@@ -892,6 +892,10 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		return nil, nil, err
 	}
 
+	if (len(nodeFieldSelector) > 0 && len(nodeIDsToReset) == 0) {
+		return nil, nil, errors.Errorf(errors.CodeBadRequest, "nodeFieldSelector did not match against any nodes")
+	}
+
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	deletedNodes := make(map[string]bool)
 	deletedPods := make(map[string]bool)
