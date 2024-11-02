@@ -113,7 +113,7 @@ spec:
 			return status.Name == "suspend-node-timeout-with-default-value[0].approve"
 		}, func(t *testing.T, status *wfv1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			assert.Equal(t, 1, len(status.Outputs.Parameters))
+			assert.Len(t, status.Outputs.Parameters, 1)
 			assert.Equal(t, "message", status.Outputs.Parameters[0].Name)
 			assert.Equal(t, wfv1.AnyStringPtr("default message"), status.Outputs.Parameters[0].Value)
 		}).
@@ -121,7 +121,7 @@ spec:
 			return status.Name == "suspend-node-timeout-with-default-value[1].release"
 		}, func(t *testing.T, status *wfv1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			assert.Equal(t, 1, len(status.Inputs.Parameters))
+			assert.Len(t, status.Inputs.Parameters, 1)
 			assert.Equal(t, "message", status.Inputs.Parameters[0].Name)
 			assert.Equal(t, wfv1.AnyStringPtr("default message"), status.Inputs.Parameters[0].Value)
 		})
