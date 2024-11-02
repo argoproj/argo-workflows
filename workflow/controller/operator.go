@@ -765,7 +765,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
 			return
 		}
-		if !apierr.IsConflict(err) {
+		// under load k8s may report unauthorized
+		if !apierr.IsConflict(err) && !apierr.IsUnauthorized(err) {
 			return
 		}
 		woc.log.Info("Re-applying updates on latest version and retrying update")
