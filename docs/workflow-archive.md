@@ -2,7 +2,7 @@
 
 > v2.5 and after
 
-If you want to keep completed workflows for a long time, you can use the workflow archive to save them in a Postgres or MySQL (>= 5.7.8) database.
+If you want to keep completed workflows for a long time, you can use the workflow archive to save them in a Postgres (>=9.4) or MySQL (>= 5.7.8) database.
 The workflow archive stores the status of the workflow, which pods have been executed, what was the result etc.
 The job logs of the workflow pods will not be archived.
 If you need to save the logs of the pods, you must setup an [artifact repository](artifact-repository-ref.md) according to [this doc](configure-artifact-repository.md).
@@ -17,7 +17,7 @@ To enable archiving of the workflows, you must configure database parameters in 
 
 Example:
 
-    persistence: 
+    persistence:
       archive: true
       postgresql:
         host: localhost
@@ -56,7 +56,7 @@ In this case you can delete all the above tables and restart the workflow-contro
 
 If you know what are you doing you also have an option to skip migration:
 
-    persistence: 
+    persistence:
       skipMigration: true
 
 ## Required database permissions
@@ -72,7 +72,7 @@ The default is forever.
 
 Example:
 
-    persistence: 
+    persistence:
       archiveTTL: 10d
 
 The `ARCHIVED_WORKFLOW_GC_PERIOD` variable defines the periodicity of running the garbage collection function.
@@ -86,7 +86,7 @@ Optionally you can set a unique name of your Kubernetes cluster. This name will 
 
 Example:
 
-    persistence: 
+    persistence:
       clusterName: dev-cluster
 
 ## Disabling Workflow Archive
@@ -95,5 +95,5 @@ To disable archiving of the workflows, set `archive:` to  `false` in the `persis
 
 Example:
 
-    persistence: 
+    persistence:
       archive: false

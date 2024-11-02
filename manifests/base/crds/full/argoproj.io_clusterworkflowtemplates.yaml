@@ -618,6 +618,8 @@ spec:
                               type: array
                             insecureIgnoreHostKey:
                               type: boolean
+                            insecureSkipTLS:
+                              type: boolean
                             passwordSecret:
                               properties:
                                 key:
@@ -1310,6 +1312,8 @@ spec:
                                       type: string
                                     type: array
                                   insecureIgnoreHostKey:
+                                    type: boolean
+                                  insecureSkipTLS:
                                     type: boolean
                                   passwordSecret:
                                     properties:
@@ -2708,6 +2712,8 @@ spec:
                               type: string
                             type: array
                           insecureIgnoreHostKey:
+                            type: boolean
+                          insecureSkipTLS:
                             type: boolean
                           passwordSecret:
                             properties:
@@ -4663,6 +4669,8 @@ spec:
                                             type: array
                                           insecureIgnoreHostKey:
                                             type: boolean
+                                          insecureSkipTLS:
+                                            type: boolean
                                           passwordSecret:
                                             properties:
                                               key:
@@ -5300,6 +5308,8 @@ spec:
                                                     type: string
                                                   type: array
                                                 insecureIgnoreHostKey:
+                                                  type: boolean
+                                                insecureSkipTLS:
                                                   type: boolean
                                                 passwordSecret:
                                                   properties:
@@ -5989,6 +5999,8 @@ spec:
                                       type: string
                                     type: array
                                   insecureIgnoreHostKey:
+                                    type: boolean
+                                  insecureSkipTLS:
                                     type: boolean
                                   passwordSecret:
                                     properties:
@@ -7320,6 +7332,8 @@ spec:
                                   type: array
                                 insecureIgnoreHostKey:
                                   type: boolean
+                                insecureSkipTLS:
+                                  type: boolean
                                 passwordSecret:
                                   properties:
                                     key:
@@ -8050,6 +8064,8 @@ spec:
                                   type: array
                                 insecureIgnoreHostKey:
                                   type: boolean
+                                insecureSkipTLS:
+                                  type: boolean
                                 passwordSecret:
                                   properties:
                                     key:
@@ -8698,6 +8714,8 @@ spec:
                                       type: string
                                     type: array
                                   insecureIgnoreHostKey:
+                                    type: boolean
+                                  insecureSkipTLS:
                                     type: boolean
                                   passwordSecret:
                                     properties:
@@ -11992,6 +12010,8 @@ spec:
                               type: array
                             insecureIgnoreHostKey:
                               type: boolean
+                            insecureSkipTLS:
+                              type: boolean
                             passwordSecret:
                               properties:
                                 key:
@@ -13946,6 +13966,8 @@ spec:
                                               type: array
                                             insecureIgnoreHostKey:
                                               type: boolean
+                                            insecureSkipTLS:
+                                              type: boolean
                                             passwordSecret:
                                               properties:
                                                 key:
@@ -14583,6 +14605,8 @@ spec:
                                                       type: string
                                                     type: array
                                                   insecureIgnoreHostKey:
+                                                    type: boolean
+                                                  insecureSkipTLS:
                                                     type: boolean
                                                   passwordSecret:
                                                     properties:
@@ -15272,6 +15296,8 @@ spec:
                                         type: string
                                       type: array
                                     insecureIgnoreHostKey:
+                                      type: boolean
+                                    insecureSkipTLS:
                                       type: boolean
                                     passwordSecret:
                                       properties:
@@ -16603,6 +16629,8 @@ spec:
                                     type: array
                                   insecureIgnoreHostKey:
                                     type: boolean
+                                  insecureSkipTLS:
+                                    type: boolean
                                   passwordSecret:
                                     properties:
                                       key:
@@ -17333,6 +17361,8 @@ spec:
                                     type: array
                                   insecureIgnoreHostKey:
                                     type: boolean
+                                  insecureSkipTLS:
+                                    type: boolean
                                   passwordSecret:
                                     properties:
                                       key:
@@ -17981,6 +18011,8 @@ spec:
                                         type: string
                                       type: array
                                     insecureIgnoreHostKey:
+                                      type: boolean
+                                    insecureSkipTLS:
                                       type: boolean
                                     passwordSecret:
                                       properties:

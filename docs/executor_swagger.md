@@ -1463,6 +1463,7 @@ PDs support ownership management and SELinux relabeling.
 | disableSubmodules | boolean| `bool` |  | | DisableSubmodules disables submodules during git clone |  |
 | fetch | []string| `[]string` |  | | Fetch specifies a number of refs that should be fetched before checkout |  |
 | insecureIgnoreHostKey | boolean| `bool` |  | | InsecureIgnoreHostKey disables SSH strict host key checking during git clone |  |
+| insecureSkipTLS | boolean| `bool` |  | | InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections |  |
 | passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | repo | string| `string` |  | | Repo is the git repository |  |
 | revision | string| `string` |  | | Revision is the git commit, tag, branch to checkout |  |
