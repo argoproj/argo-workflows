@@ -647,7 +647,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	}()
 	if err != nil {
 		logCtx.WithError(err).Warn("failed to clean-up pod")
-		if errorsutil.IsTransientErr(err) || apierr.IsConflict(err) {
+		if errorsutil.IsTransientErr(err) || apierr.IsConflict(err) || apierr.IsUnauthorized(err) {
 			wfc.podCleanupQueue.AddRateLimited(key)
 		}
 	}
