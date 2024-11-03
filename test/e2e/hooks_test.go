@@ -921,10 +921,10 @@ spec:
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).
-		Then().
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 			return strings.Contains(status.Name, ".hooks.succeed")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
