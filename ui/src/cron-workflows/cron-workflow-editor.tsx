@@ -34,7 +34,7 @@ export function CronWorkflowEditor({
                           {
                               key: 'status',
                               title: 'Status',
-                              content: <CronWorkflowStatusViewer spec={cronWorkflow.spec || {}} status={cronWorkflow.status} />
+                              content: <CronWorkflowStatusViewer spec={cronWorkflow.spec} status={cronWorkflow.status} />
                           }
                       ]
                     : []),
@@ -46,12 +46,12 @@ export function CronWorkflowEditor({
                 {
                     key: 'cron',
                     title: 'Cron',
-                    content: <CronWorkflowSpecEditor spec={cronWorkflow.spec || {}} onChange={spec => onChange({...cronWorkflow, spec})} />
+                    content: <CronWorkflowSpecEditor spec={cronWorkflow.spec} onChange={spec => onChange({...cronWorkflow, spec})} />
                 },
                 {
                     key: 'metadata',
                     title: 'MetaData',
-                    content: <MetadataEditor value={cronWorkflow.metadata || {}} onChange={metadata => onChange({...cronWorkflow, metadata})} />
+                    content: <MetadataEditor value={cronWorkflow.metadata} onChange={metadata => onChange({...cronWorkflow, metadata})} />
                 },
                 {
                     key: 'workflow',
@@ -59,7 +59,7 @@ export function CronWorkflowEditor({
                     content: (
                         <WorkflowParametersEditor
                             value={cronWorkflow.spec?.workflowSpec || {}}
-                            onChange={workflowSpec => onChange({...cronWorkflow, spec: {...(cronWorkflow.spec || {}), workflowSpec}})}
+                            onChange={workflowSpec => onChange({...cronWorkflow, spec: {...cronWorkflow.spec, workflowSpec}})}
                             onError={onError}
                         />
                     )
@@ -73,7 +73,7 @@ export function CronWorkflowEditor({
                             onChange={workflowMetadata =>
                                 onChange({
                                     ...cronWorkflow,
-                                    spec: {...(cronWorkflow.spec || {}), workflowMetadata}
+                                    spec: {...cronWorkflow.spec, workflowMetadata}
                                 })
                             }
                         />
