@@ -872,6 +872,66 @@ spec:
 		}))
 }
 
+func (s *HooksSuite) TestHooksWithArtifacts() {
+	var onExitNodeName string
+	(s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-hook-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: hello1   
+        template: parameterization
+        hooks:
+          success:
+            template: success-hook
+            expression: steps["hello1"].status == "Succeeded"
+            arguments:
+              artifacts:
+              - name: file_path
+                from: "{{steps.hello1.outputs.artifacts.result}}"
+
+  - name: parameterization
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import os
+        with open("foo.txt", "w") as f:
+            f.write("Hello")
+        os.rename('foo.txt', '/tmp/foo.txt')
+    outputs:
+      artifacts:
+      - name: result
+        path: /tmp/foo.txt
+
+  - name: success-hook
+    inputs:
+      artifacts:
+      - name: file_path
+        path: /tmp/file_path
+    script:
+      image: python:alpine3.6
+      command: [sh, -c]
+      source: |
+        echo "File Path: {{inputs.artifacts.file_path.path}}"
+`).When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return strings.Contains(status.Name, ".hooks.succeed")
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		}))
+}
+
 func TestHooksSuite(t *testing.T) {
 	suite.Run(t, new(HooksSuite))
 }
