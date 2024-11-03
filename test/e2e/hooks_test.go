@@ -872,9 +872,8 @@ spec:
 		}))
 }
 
-func (s *HooksSuite) TestHooksWithArtifacts() {
-	var onExitNodeName string
-	(s.Given().
+func (s *HooksSuite) TestHooksWithArtifactsInSteps() {
+	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -929,7 +928,7 @@ spec:
 			return strings.Contains(status.Name, ".hooks.succeed")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
-		}))
+		})
 }
 
 func TestHooksSuite(t *testing.T) {
