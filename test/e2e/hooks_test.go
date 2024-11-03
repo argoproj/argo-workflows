@@ -926,7 +926,7 @@ spec:
 			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).
 		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-			return strings.Contains(status.Name, ".hooks.succeed")
+			return strings.Contains(status.Name, ".hooks.success")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})
