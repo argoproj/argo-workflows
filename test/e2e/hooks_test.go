@@ -915,7 +915,7 @@ spec:
         path: /tmp/file_path
     script:
       image: python:alpine3.6
-      command: [sh, -c]
+      command: ["sh"]
       source: |
         echo "File Path: {{inputs.artifacts.file_path.path}}"
 `).When().
