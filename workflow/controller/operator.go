@@ -1392,6 +1392,23 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.controller.metrics.ChangePodPhase(ctx, string(new.Phase), pod.ObjectMeta.Namespace)
 	}
 
+	initContainerFailed := false
+	// if init container has failed then main container is not relevant
+	for _, c := range pod.Status.InitContainerStatuses {
+		if c.State.Terminated != nil && int(c.State.Terminated.ExitCode) != 0 {
+			new.Phase = wfv1.NodeFailed
+			woc.log.WithField("new.phase", new.Phase).Info("marking node as failed since init container has non-zero exit code")
+			if new.Outputs == nil {
+				new.Outputs = &wfv1.Outputs{}
+			}
+			if new.Outputs.ExitCode == nil {
+				new.Outputs.ExitCode = ptr.To(fmt.Sprint(int(c.State.Terminated.ExitCode)))
+			}
+			initContainerFailed = True
+			break
+		}
+	}
+
 	// if it's ContainerSetTemplate pod then the inner container names should match to some node names,
 	// in this case need to update nodes according to container status
 	for _, c := range pod.Status.ContainerStatuses {
@@ -1400,7 +1417,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			continue
 		}
 		switch {
-		case c.State.Waiting != nil:
+		case c.State.Waiting != nil && !initContainerFailed:
 			woc.markNodePhase(ctrNodeName, wfv1.NodePending)
 		case c.State.Running != nil:
 			woc.markNodePhase(ctrNodeName, wfv1.NodeRunning)
@@ -1434,18 +1451,12 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	// We capture the exit-code after we look for the task-result.
 	// All other outputs are set by the executor, only the exit-code is set by the controller.
 	// By waiting, we avoid breaking the race-condition check.
-	if exitCode := getExitCode(pod); exitCode != nil {
-		if new.Outputs == nil {
-			new.Outputs = &wfv1.Outputs{}
-		}
-		new.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
-	}
-
-	for _, c := range pod.Status.InitContainerStatuses {
-		if c.State.Terminated != nil && int(c.State.Terminated.ExitCode) != 0 {
-			new.Phase = wfv1.NodeFailed
-			woc.log.WithField("new.phase", new.Phase).Info("marking node as failed since init container has non-zero exit code")
-			break
+	if !initContainerFailed {
+		if exitCode := getExitCode(pod); exitCode != nil {
+			if new.Outputs == nil {
+				new.Outputs = &wfv1.Outputs{}
+			}
+			new.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
 		}
 	}
 
