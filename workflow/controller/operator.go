@@ -1404,7 +1404,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			if new.Outputs.ExitCode == nil {
 				new.Outputs.ExitCode = ptr.To(fmt.Sprint(int(c.State.Terminated.ExitCode)))
 			}
-			initContainerFailed = True
+			initContainerFailed = true
 			break
 		}
 	}
