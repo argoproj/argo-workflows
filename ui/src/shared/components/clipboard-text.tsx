@@ -22,7 +22,7 @@ export function ClipboardText({text}: {text: string}) {
                             if (navigator.clipboard && navigator.clipboard.writeText) {
                                 navigator.clipboard.writeText(text).catch(err => console.error('Clipboard write failed', err));
                             } else {
-                                var textArea = document.createElement('textarea');
+                                const textArea = document.createElement('textarea');
                                 textArea.value = text;
                                 document.body.appendChild(textArea);
                                 textArea.select();
