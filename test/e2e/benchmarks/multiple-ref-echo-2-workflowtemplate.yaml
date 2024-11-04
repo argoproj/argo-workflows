@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: echo-2
+  name: multiple-ref-echo-2
 spec:
   entrypoint: print-message
   templates:

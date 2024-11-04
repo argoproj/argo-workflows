@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: 20-echos
+  name: multiple-ref-main
 spec:
   entrypoint: start
   activeDeadlineSeconds: 1800
@@ -11,7 +11,7 @@ spec:
         tasks:
           - name: echo-1
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -19,7 +19,7 @@ spec:
                   value: echo-1
           - name: echo-2
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -27,7 +27,7 @@ spec:
                   value: echo-2
           - name: echo-3
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -35,7 +35,7 @@ spec:
                   value: echo-3
           - name: echo-4
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -43,7 +43,7 @@ spec:
                   value: echo-4
           - name: echo-5
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -51,7 +51,7 @@ spec:
                   value: echo-5
           - name: echo-6
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -59,7 +59,7 @@ spec:
                   value: echo-6
           - name: echo-7
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -67,7 +67,7 @@ spec:
                   value: echo-7
           - name: echo-8
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -75,7 +75,7 @@ spec:
                   value: echo-8
           - name: echo-9
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -83,7 +83,7 @@ spec:
                   value: echo-9
           - name: echo-10
             templateRef:
-              name: echo-1
+              name: multiple-ref-echo-1
               template: print-message
             arguments:
               parameters:
@@ -91,7 +91,7 @@ spec:
                   value: echo-10
           - name: echo-11
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -99,7 +99,7 @@ spec:
                   value: echo-11
           - name: echo-12
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -107,7 +107,7 @@ spec:
                   value: echo-12
           - name: echo-13
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -115,7 +115,7 @@ spec:
                   value: echo-13
           - name: echo-14
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -123,7 +123,7 @@ spec:
                   value: echo-14
           - name: echo-15
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -131,7 +131,7 @@ spec:
                   value: echo-15
           - name: echo-16
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -139,7 +139,7 @@ spec:
                   value: echo-16
           - name: echo-17
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -147,7 +147,7 @@ spec:
                   value: echo-17
           - name: echo-18
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -155,7 +155,7 @@ spec:
                   value: echo-18
           - name: echo-19
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
@@ -163,7 +163,7 @@ spec:
                   value: echo-19
           - name: echo-20
             templateRef:
-              name: echo-2
+              name: multiple-ref-echo-2
               template: print-message
             arguments:
               parameters:
