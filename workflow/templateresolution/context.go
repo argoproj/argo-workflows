@@ -12,9 +12,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
@@ -168,7 +168,7 @@ func (ctx *Context) GetTemplate(h wfv1.TemplateReferenceHolder) (*wfv1.Template,
 			return true, nil
 		})
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeInternal, "failed to get template from reference: %v", err)
+			return nil, errors.Errorf(errors.CodeInternal, err)
 		}
 		return tmpl, nil
 	}
@@ -187,7 +187,7 @@ func (ctx *Context) GetTemplate(h wfv1.TemplateReferenceHolder) (*wfv1.Template,
 			return true, nil
 		})
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeInternal, "failed to get template by name: %v", err)
+			return nil, errors.Errorf(errors.CodeInternal, err)
 		}
 		return tmpl, nil
 	}
