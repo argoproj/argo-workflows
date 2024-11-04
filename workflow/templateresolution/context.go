@@ -168,7 +168,7 @@ func (ctx *Context) GetTemplate(h wfv1.TemplateReferenceHolder) (*wfv1.Template,
 			return true, nil
 		})
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeInternal, err)
+			return nil, err
 		}
 		return tmpl, nil
 	}
@@ -187,7 +187,7 @@ func (ctx *Context) GetTemplate(h wfv1.TemplateReferenceHolder) (*wfv1.Template,
 			return true, nil
 		})
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeInternal, err)
+			return nil, err
 		}
 		return tmpl, nil
 	}
