@@ -384,7 +384,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	var x *entrypoint.Image
-	
+
 	for i, c := range pod.Spec.Containers {
 		if c.Name != common.WaitContainerName {
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
