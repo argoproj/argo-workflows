@@ -3,6 +3,7 @@ package logs
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"regexp"
 	"sync"
