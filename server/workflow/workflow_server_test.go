@@ -910,7 +910,7 @@ func TestPodLogs(t *testing.T) {
 		err := server.PodLogs(&workflowpkg.WorkflowLogRequest{
 			Name:       "hello-world-9tql2",
 			Namespace:  "workflows",
-			LogOptions: &corev1.PodLogOptions{Container: "main"},
+			LogOptions: &corev1.PodLogOptions{},
 		}, &testPodLogsServer{testServerStream{ctx}})
 		assert.NoError(t, err)
 	}()
