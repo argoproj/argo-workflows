@@ -3,7 +3,6 @@ package logs
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
 	"regexp"
 	"sync"
@@ -21,10 +20,6 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 	coreV1 := kubernetesClient.CoreV1()
 	if podLogOptions == nil {
 		podLogOptions = &corev1.PodLogOptions{}
-	}
-	// todo this should really check if the container name exists in the pod
-	if podLogOptions.Container == "" {
-		return fmt.Errorf("container name must be specified")
 	}
 	rx, err := regexp.Compile(grep)
 	if err != nil {
