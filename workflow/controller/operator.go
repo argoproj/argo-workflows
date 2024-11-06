@@ -3089,7 +3089,9 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 		node = lastChildNode
 	}
 
-	if node != nil {
+	if node == nil {
+		woc.log.Warn("node is nil in buildLocalScope")
+	} else {
 		if node.ID != "" {
 			key := fmt.Sprintf("%s.id", prefix)
 			scope.addParamToScope(key, node.ID)
