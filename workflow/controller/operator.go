@@ -3090,34 +3090,38 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 		node = lastChildNode
 	}
 
-	if node.ID != "" {
-		key := fmt.Sprintf("%s.id", prefix)
-		scope.addParamToScope(key, node.ID)
-	}
+	if node == nil {
+		woc.log.Warn("node is nil in buildLocalScope")
+	} else {
+		if node.ID != "" {
+			key := fmt.Sprintf("%s.id", prefix)
+			scope.addParamToScope(key, node.ID)
+		}
 
-	if !node.StartedAt.Time.IsZero() {
-		key := fmt.Sprintf("%s.startedAt", prefix)
-		scope.addParamToScope(key, node.StartedAt.Time.Format(time.RFC3339))
-	}
+		if !node.StartedAt.Time.IsZero() {
+			key := fmt.Sprintf("%s.startedAt", prefix)
+			scope.addParamToScope(key, node.StartedAt.Time.Format(time.RFC3339))
+		}
 
-	if !node.FinishedAt.Time.IsZero() {
-		key := fmt.Sprintf("%s.finishedAt", prefix)
-		scope.addParamToScope(key, node.FinishedAt.Time.Format(time.RFC3339))
-	}
+		if !node.FinishedAt.Time.IsZero() {
+			key := fmt.Sprintf("%s.finishedAt", prefix)
+			scope.addParamToScope(key, node.FinishedAt.Time.Format(time.RFC3339))
+		}
 
-	if node.PodIP != "" {
-		key := fmt.Sprintf("%s.ip", prefix)
-		scope.addParamToScope(key, node.PodIP)
+		if node.PodIP != "" {
+			key := fmt.Sprintf("%s.ip", prefix)
+			scope.addParamToScope(key, node.PodIP)
+		}
+		if node.Phase != "" {
+			key := fmt.Sprintf("%s.status", prefix)
+			scope.addParamToScope(key, string(node.Phase))
+		}
+		if node.HostNodeName != "" {
+			key := fmt.Sprintf("%s.hostNodeName", prefix)
+			scope.addParamToScope(key, string(node.HostNodeName))
+		}
+		woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 	}
-	if node.Phase != "" {
-		key := fmt.Sprintf("%s.status", prefix)
-		scope.addParamToScope(key, string(node.Phase))
-	}
-	if node.HostNodeName != "" {
-		key := fmt.Sprintf("%s.hostNodeName", prefix)
-		scope.addParamToScope(key, string(node.HostNodeName))
-	}
-	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 }
 
 func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
