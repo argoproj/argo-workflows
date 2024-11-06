@@ -106,8 +106,8 @@ github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuW
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/argoproj/argo-events v1.9.1 h1:X7Sp8Xrj6OlUtrHJyJLOt6flzRwOAsKUifnf/sLJDac=
 github.com/argoproj/argo-events v1.9.1/go.mod h1:yPwsLeU/Vp9nAEd4OBT8fOMEbIrmuvC4SIIqx5uJnxY=
-github.com/argoproj/pkg v0.13.7-0.20240704113442-a69fd34a8117 h1:iOmb5RDUnQ80ZLaBYCbfgNxMJ7qC0boM267nlzMyFjo=
-github.com/argoproj/pkg v0.13.7-0.20240704113442-a69fd34a8117/go.mod h1:mwXbiH0ojJzbstR8XV9Ha/dK4IHHTKfgkQi2Kz8Aq0Y=
+github.com/argoproj/pkg v0.13.7-0.20241030113248-90ea435c9ba8 h1:0FD08/01PXqtM93IrYIJFVh6zAk5UHB0AelB1X93Lds=
+github.com/argoproj/pkg v0.13.7-0.20241030113248-90ea435c9ba8/go.mod h1:Om+AdcFzxW2lZWppLx4OODroEi+fWAmcuT6VKaYMVMs=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/awalterschulze/gographviz v0.0.0-20200901124122-0eecad45bd71 h1:m3N1Fv5vE5IcxuTOGFGGV0grrVFHV8UY2SV0wSBXAC8=
