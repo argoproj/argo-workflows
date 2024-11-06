@@ -91,7 +91,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	// Azure DevOps requires multi_ack* capabilities which go-git does not currently support
 	// Workaround: removing these from UnsupportedCapabilities allows clones to work (see https://github.com/go-git/go-git/pull/613)
 	var newCaps []capability.Capability
-	if a.Repo && strings.Contains(a.Repo, "dev.azure.com") {
+	if strings.Contains(a.Repo, "dev.azure.com") {
 		for _, c := range transport.UnsupportedCapabilities {
 			if c == capability.MultiACK || c == capability.MultiACKDetailed {
 				continue
