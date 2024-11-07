@@ -18,8 +18,12 @@ spec:
       # evaluated to true, the step is considered failed. Likewise, if successCondition
       # is ever evaluated to true the step is considered successful. It uses kubernetes
       # label selection syntax and can be applied against any field of the resource
-      # (not just labels). Multiple AND conditions can be represented by comma
-      # delimited expressions. For more details, see:
+      # (not just labels).
+      # For successCondition: Multiple AND conditions can be represented by comma
+      # delimited expressions.
+      # For failureCondition: Multiple OR conditions can be represented by comma
+      # delimited expressions.
+      # For more details, see:
       # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
       successCondition: status.succeeded > 2
       failureCondition: status.failed > 1
