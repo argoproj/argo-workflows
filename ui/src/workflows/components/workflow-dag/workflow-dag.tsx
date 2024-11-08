@@ -100,7 +100,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             label = n.templateName ? `${n.templateName}:${label}` : label;
         }
 
-        let icon = n.memoizationStatus.hit ? icons['Memoized'] : icons[phase] || icons.Pending;
+        const icon = n.memoizationStatus.hit ? icons['Memoized'] : icons[phase] || icons.Pending;
 
         return {
             label,
