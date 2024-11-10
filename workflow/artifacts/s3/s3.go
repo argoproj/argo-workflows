@@ -102,6 +102,22 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 	if origErr == nil {
 		return true, nil
 	}
+	
+	if strings.Contains(origErr, "fileName is a directory.") {
+		// Handle directory case by checking if it's a valid directory
+		isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+		if err != nil {
+			return !isTransientS3Err(err), fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
+		}
+		if isDir {
+			// Proceed to get the directory contents if it's actually a directory
+			if err := s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
+				return !isTransientS3Err(err), fmt.Errorf("failed to get directory: %v", err)
+			}
+			return true, nil
+		}
+	}
+	
 	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
 		return !isTransientS3Err(origErr), fmt.Errorf("failed to get file: %v", origErr)
 	}
