@@ -103,7 +103,7 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 		return true, nil
 	}
 	
-	if strings.Contains(origErr, "fileName is a directory.") {
+	if strings.Contains(origErr.Error(), "fileName is a directory.") {
 		// Handle directory case by checking if it's a valid directory
 		isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
 		if err != nil {
