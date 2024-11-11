@@ -121,6 +121,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 
 // ConfigureDBSession configures the DB session
 func ConfigureDBSession(session db.Session, persistPool *config.ConnectionPool) db.Session {
+	session.LC().SetLevel(db.LogLevelError)
 	if persistPool != nil {
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
