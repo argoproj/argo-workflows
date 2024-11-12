@@ -3438,6 +3438,11 @@ func (in *ValueFrom) DeepCopyInto(out *ValueFrom) {
 		*out = new(v1.ConfigMapKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.SecretKeyRef != nil {
+		in, out := &in.SecretKeyRef, &out.SecretKeyRef
+		*out = new(v1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Default != nil {
 		in, out := &in.Default, &out.Default
 		*out = new(AnyString)

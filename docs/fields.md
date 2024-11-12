@@ -3721,6 +3721,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
+|`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|SecretKeyRef is secret selector for input parameter configuration|
 |`supplied`|[`SuppliedValueFrom`](#suppliedvaluefrom)|Supplied value to be filled in directly, either through the CLI, API, etc.|
 
 ## Counter
