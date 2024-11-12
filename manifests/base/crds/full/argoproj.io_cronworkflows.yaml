@@ -1121,6 +1121,19 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                secretKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      default: ""
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-map-type: atomic
                                 supplied:
                                   type: object
                               type: object
@@ -1816,6 +1829,19 @@ spec:
                                         type: string
                                       path:
                                         type: string
+                                      secretKeyRef:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            default: ""
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                        x-kubernetes-map-type: atomic
                                       supplied:
                                         type: object
                                     type: object
@@ -5184,6 +5210,19 @@ spec:
                                                 type: string
                                               path:
                                                 type: string
+                                              secretKeyRef:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                  optional:
+                                                    type: boolean
+                                                required:
+                                                - key
+                                                type: object
+                                                x-kubernetes-map-type: atomic
                                               supplied:
                                                 type: object
                                             type: object
@@ -5824,6 +5863,19 @@ spec:
                                                       type: string
                                                     path:
                                                       type: string
+                                                    secretKeyRef:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          default: ""
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                      x-kubernetes-map-type: atomic
                                                     supplied:
                                                       type: object
                                                   type: object
@@ -7852,6 +7904,19 @@ spec:
                                       type: string
                                     path:
                                       type: string
+                                    secretKeyRef:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          default: ""
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
                                     supplied:
                                       type: object
                                   type: object
@@ -8586,6 +8651,19 @@ spec:
                                       type: string
                                     path:
                                       type: string
+                                    secretKeyRef:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          default: ""
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
                                     supplied:
                                       type: object
                                   type: object
@@ -14523,6 +14601,19 @@ spec:
                                                   type: string
                                                 path:
                                                   type: string
+                                                secretKeyRef:
+                                                  properties:
+                                                    key:
+                                                      type: string
+                                                    name:
+                                                      default: ""
+                                                      type: string
+                                                    optional:
+                                                      type: boolean
+                                                  required:
+                                                  - key
+                                                  type: object
+                                                  x-kubernetes-map-type: atomic
                                                 supplied:
                                                   type: object
                                               type: object
@@ -15163,6 +15254,19 @@ spec:
                                                         type: string
                                                       path:
                                                         type: string
+                                                      secretKeyRef:
+                                                        properties:
+                                                          key:
+                                                            type: string
+                                                          name:
+                                                            default: ""
+                                                            type: string
+                                                          optional:
+                                                            type: boolean
+                                                        required:
+                                                        - key
+                                                        type: object
+                                                        x-kubernetes-map-type: atomic
                                                       supplied:
                                                         type: object
                                                     type: object
@@ -17191,6 +17295,19 @@ spec:
                                         type: string
                                       path:
                                         type: string
+                                      secretKeyRef:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            default: ""
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                        x-kubernetes-map-type: atomic
                                       supplied:
                                         type: object
                                     type: object
@@ -17925,6 +18042,19 @@ spec:
                                         type: string
                                       path:
                                         type: string
+                                      secretKeyRef:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            default: ""
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                        x-kubernetes-map-type: atomic
                                       supplied:
                                         type: object
                                     type: object

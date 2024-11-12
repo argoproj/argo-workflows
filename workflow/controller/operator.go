@@ -1947,7 +1947,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer(), woc.controller.secretInformer.GetIndexer())
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}

@@ -15,6 +15,7 @@ const (
 	WorkflowPhaseIndex           = "workflow.phase"
 	PodPhaseIndex                = "pod.phase"
 	ConfigMapLabelsIndex         = "configmap.labels"
+	SecretLabelsIndex            = "secret.labels"
 	ConditionsIndex              = "status.conditions"
 	SemaphoreConfigIndexName     = "bySemaphoreConfigMap"
 	UIDIndex                     = "uid"

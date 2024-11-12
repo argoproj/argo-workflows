@@ -4083,6 +4083,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 | jsonPath | string| `string` |  | | JSONPath of a resource to retrieve an output parameter value from in resource templates |  |
 | parameter | string| `string` |  | | Parameter reference to a step or dag task in which to retrieve an output parameter value from</br>(e.g. '{{steps.mystep.outputs.myparam}}') |  |
 | path | string| `string` |  | | Path in the container to retrieve an output parameter value from in container templates |  |
+| secretKeyRef | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | supplied | [SuppliedValueFrom](#supplied-value-from)| `SuppliedValueFrom` |  | |  |  |
 
 

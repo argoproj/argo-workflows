@@ -4804,6 +4804,8 @@ definitions:
             path:
                 description: Path in the container to retrieve an output parameter value from in container templates
                 type: string
+            secretKeyRef:
+                $ref: '#/definitions/SecretKeySelector'
             supplied:
                 $ref: '#/definitions/SuppliedValueFrom'
         type: object

@@ -237,13 +237,13 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
+	newTmpl, err := ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, rawArt.Data)
 
 	inputs.Artifacts = []wfv1.Artifact{inputArt}
-	newTmpl, err = ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil)
+	newTmpl, err = ProcessArgs(&tmpl, &inputs, globalParams, localParams, false, "", nil, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, inputRawArt.Data)
@@ -288,12 +288,12 @@ func TestOverridableTemplateInputParamsValue(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
@@ -346,12 +346,12 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	globalParams := map[string]string{paramName: "overrideValue"}
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)

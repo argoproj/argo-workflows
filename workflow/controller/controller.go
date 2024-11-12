@@ -126,6 +126,7 @@ type WorkflowController struct {
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
 	configMapInformer     cache.SharedIndexInformer
+	secretInformer        cache.SharedIndexInformer
 	wfQueue               workqueue.TypedRateLimitingInterface[string]
 	podCleanupQueue       workqueue.TypedRateLimitingInterface[string] // pods to be deleted or labelled depend on GC strategy
 	wfArchiveQueue        workqueue.TypedRateLimitingInterface[string]
@@ -317,6 +318,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.updateEstimatorFactory()
 
 	wfc.configMapInformer = wfc.newConfigMapInformer()
+	wfc.secretInformer = wfc.newSecretInformer()
 
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
@@ -333,6 +335,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
+	go wfc.secretInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
@@ -345,6 +348,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
 		wfc.configMapInformer.HasSynced,
+		wfc.secretInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
@@ -1367,6 +1371,15 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 			},
 		})
 	}
+	return indexInformer
+}
+
+func (wfc *WorkflowController) newSecretInformer() cache.SharedIndexInformer {
+	indexInformer := v1.NewFilteredSecretInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+		indexes.SecretLabelsIndex: indexes.SecretIndexFunc,
+	}, func(opts *metav1.ListOptions) {
+		opts.LabelSelector = common.LabelKeySecretType
+	})
 	return indexInformer
 }
 

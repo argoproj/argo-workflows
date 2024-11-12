@@ -7455,6 +7455,10 @@
           "description": "Path in the container to retrieve an output parameter value from in container templates",
           "type": "string"
         },
+        "secretKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "SecretKeyRef is secret selector for input parameter configuration"
+        },
         "supplied": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuppliedValueFrom",
           "description": "Supplied value to be filled in directly, either through the CLI, API, etc."
