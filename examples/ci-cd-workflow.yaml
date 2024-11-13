@@ -70,6 +70,7 @@
 #        password: abc..........xyz # Admin password
 #
 #   - Network Policy Traffic Configuration: Create a `NetworkPolicy` to allow traffic from the Argo namespace to the ArgoCD namespace for `argocd-server`.
+#
 
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
