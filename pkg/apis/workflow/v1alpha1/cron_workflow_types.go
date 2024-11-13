@@ -90,7 +90,7 @@ type CronWorkflowStatus struct {
 	Succeeded int64 `json:"succeeded" protobuf:"varint,4,rep,name=succeeded"`
 	// v3.6 and after: Failed counts how many times child workflows failed
 	Failed int64 `json:"failed" protobuf:"varint,5,rep,name=failed"`
-	// v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
+	// v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
 	Phase CronWorkflowPhase `json:"phase" protobuf:"varint,6,rep,name=phase"`
 }
 
