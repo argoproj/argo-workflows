@@ -261,8 +261,8 @@ type mockSecretStore struct {
 	getByKey func(key string) (interface{}, bool, error)
 }
 
-func (cs mockSecretStore) GetByKey(key string) (interface{}, bool, error) {
-	return cs.getByKey(key)
+func (ss mockSecretStore) GetByKey(key string) (interface{}, bool, error) {
+	return ss.getByKey(key)
 }
 
 func TestOverridableTemplateInputParamsValue(t *testing.T) {
