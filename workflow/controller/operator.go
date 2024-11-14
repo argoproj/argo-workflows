@@ -655,12 +655,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			} else {
 				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
-		} else if param.Value != nil {
-			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
-		} else {
-			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
-		}
-		if param.ValueFrom != nil && param.ValueFrom.SecretKeyRef != nil {
+		} else if param.ValueFrom != nil && param.ValueFrom.SecretKeyRef != nil {
 			secretValue, err := common.GetSecretValue(woc.controller.secretInformer.GetIndexer(), woc.wf.ObjectMeta.Namespace, param.ValueFrom.SecretKeyRef.Name, param.ValueFrom.SecretKeyRef.Key)
 			if err != nil {
 				if param.ValueFrom.Default != nil {
