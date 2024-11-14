@@ -452,6 +452,8 @@ spec:
 			Then().
 			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				assert.Equal(t, "workflow-template-cron", metadata.Labels[common.LabelKeyWorkflowTemplate])
+			})
+	})
 
 	s.Run("TestMultipleWithTimezone", func() {
 		s.Given().
