@@ -31,7 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.config_map_key_selector import ConfigMapKeySelector
+    from argo_workflows.model.secret_key_selector import SecretKeySelector
     globals()['ConfigMapKeySelector'] = ConfigMapKeySelector
+    globals()['SecretKeySelector'] = SecretKeySelector
 
 
 class IoArgoprojWorkflowV1alpha1ValueFrom(ModelNormal):
@@ -95,6 +97,7 @@ class IoArgoprojWorkflowV1alpha1ValueFrom(ModelNormal):
             'json_path': (str,),  # noqa: E501
             'parameter': (str,),  # noqa: E501
             'path': (str,),  # noqa: E501
+            'secret_key_ref': (SecretKeySelector,),  # noqa: E501
             'supplied': (bool, date, datetime, dict, float, int, list, str, none_type,),  # noqa: E501
         }
 
@@ -112,6 +115,7 @@ class IoArgoprojWorkflowV1alpha1ValueFrom(ModelNormal):
         'json_path': 'jsonPath',  # noqa: E501
         'parameter': 'parameter',  # noqa: E501
         'path': 'path',  # noqa: E501
+        'secret_key_ref': 'secretKeyRef',  # noqa: E501
         'supplied': 'supplied',  # noqa: E501
     }
 
@@ -164,6 +168,7 @@ class IoArgoprojWorkflowV1alpha1ValueFrom(ModelNormal):
             json_path (str): JSONPath of a resource to retrieve an output parameter value from in resource templates. [optional]  # noqa: E501
             parameter (str): Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}'). [optional]  # noqa: E501
             path (str): Path in the container to retrieve an output parameter value from in container templates. [optional]  # noqa: E501
+            secret_key_ref (SecretKeySelector): [optional]  # noqa: E501
             supplied (bool, date, datetime, dict, float, int, list, str, none_type): SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.. [optional]  # noqa: E501
         """
 
@@ -254,6 +259,7 @@ class IoArgoprojWorkflowV1alpha1ValueFrom(ModelNormal):
             json_path (str): JSONPath of a resource to retrieve an output parameter value from in resource templates. [optional]  # noqa: E501
             parameter (str): Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}'). [optional]  # noqa: E501
             path (str): Path in the container to retrieve an output parameter value from in container templates. [optional]  # noqa: E501
+            secret_key_ref (SecretKeySelector): [optional]  # noqa: E501
             supplied (bool, date, datetime, dict, float, int, list, str, none_type): SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.. [optional]  # noqa: E501
         """
 

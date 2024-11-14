@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **jsonPath** | **String** | JSONPath of a resource to retrieve an output parameter value from in resource templates |  [optional]
 **parameter** | **String** | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. &#39;{{steps.mystep.outputs.myparam}}&#39;) |  [optional]
 **path** | **String** | Path in the container to retrieve an output parameter value from in container templates |  [optional]
+**secretKeyRef** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **supplied** | **Object** | SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc. |  [optional]
 
 
