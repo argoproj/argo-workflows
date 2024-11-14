@@ -474,6 +474,31 @@ func TestParamWithValueFromConfigMapRef(t *testing.T) {
 	require.NoError(t, err)
 }
 
+var paramWithValueFromSecretRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        valueFrom:
+          secretKeyRef:
+            name: simple-config
+            key: msg
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestParamWithValueFromSecretRef(t *testing.T) {
+	err := validate(paramWithValueFromSecretRef)
+	require.NoError(t, err)
+}
+
 var paramWithoutValue = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

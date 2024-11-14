@@ -660,6 +660,23 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		} else {
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
+		if param.ValueFrom != nil && param.ValueFrom.SecretKeyRef != nil {
+			secretValue, err := common.GetSecretValue(woc.controller.secretInformer.GetIndexer(), woc.wf.ObjectMeta.Namespace, param.ValueFrom.SecretKeyRef.Name, param.ValueFrom.SecretKeyRef.Key)
+			if err != nil {
+				if param.ValueFrom.Default != nil {
+					woc.globalParams["workflow.parameters."+param.Name] = param.ValueFrom.Default.String()
+				} else {
+					return fmt.Errorf("failed to set global parameter %s from secret with name %s and key %s: %w",
+						param.Name, param.ValueFrom.SecretKeyRef.Name, param.ValueFrom.SecretKeyRef.Key, err)
+				}
+			} else {
+				woc.globalParams["workflow.parameters."+param.Name] = secretValue
+			}
+		} else if param.Value != nil {
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		} else {
+			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
+		}
 	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
