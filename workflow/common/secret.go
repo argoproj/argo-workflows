@@ -22,7 +22,7 @@ func GetSecretValue(secretStore SecretStore, namespace, name, key string) (strin
 		secret, ok := obj.(*apiv1.Secret)
 
 		if !ok {
-			return "", fmt.Errorf("unable to convert object %s to configmap when syncing Secrets", name)
+			return "", fmt.Errorf("unable to convert object %s to secret when syncing Secrets", name)
 		}
 		if secretType := secret.Labels[LabelKeySecretType]; secretType != LabelValueTypeSecretParameter {
 			return "", fmt.Errorf(
