@@ -90,13 +90,6 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 	}
 
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
-	if wf.Spec.WorkflowTemplateRef != nil {
-		if wf.Spec.WorkflowTemplateRef.ClusterScope {
-			wf.Labels[LabelKeyClusterWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
-		} else {
-			wf.Labels[LabelKeyWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
-		}
-	}
 	if cronWf.Spec.WorkflowMetadata != nil {
 		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
 			wf.Labels[key] = label
