@@ -1055,7 +1055,7 @@ spec:
 
 func TestDAGMissingParamValueInTask(t *testing.T) {
 	err := validate(dagMissingParamValueInTask)
-	require.ErrorContains(t, err, ".valueFrom only allows: default, configMapKeyRef and supplied")
+	require.ErrorContains(t, err, ".valueFrom only allows: default, configMapKeyRef, secretKeyRef and supplied")
 }
 
 var dagArgParamValueFromConfigMapInTask = `
@@ -1118,5 +1118,5 @@ spec:
 
 func TestFailDAGArgParamValueFromPathInTask(t *testing.T) {
 	err := validate(failDagArgParamValueFromPathInTask)
-	require.ErrorContains(t, err, "valueFrom only allows: default, configMapKeyRef and supplied")
+	require.ErrorContains(t, err, "valueFrom only allows: default, configMapKeyRef, secretKeyRef and supplied")
 }
