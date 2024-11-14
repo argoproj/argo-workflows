@@ -163,6 +163,9 @@ func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parame
 			}
 		}
 	} else {
+		if inParam.ValueFrom != nil && inParam.ValueFrom.SecretKeyRef != nil {
+			return nil
+		}
 		if inParam.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 		}
@@ -186,7 +189,7 @@ func substituteAndGetSecretValue(inParam *wfv1.Parameter, globalParams Parameter
 				return err
 			}
 
-			cmValue, err := GetSecretValue(secretStore, namespace, secretName, secretKey)
+			secretValue, err := GetSecretValue(secretStore, namespace, secretName, secretKey)
 			if err != nil {
 				if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
 					inParam.Value = inParam.ValueFrom.Default
@@ -194,7 +197,7 @@ func substituteAndGetSecretValue(inParam *wfv1.Parameter, globalParams Parameter
 					return errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from Secret: %s", inParam.Name, err)
 				}
 			} else {
-				inParam.Value = wfv1.AnyStringPtr(cmValue)
+				inParam.Value = wfv1.AnyStringPtr(secretValue)
 			}
 		}
 	} else {
