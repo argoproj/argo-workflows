@@ -201,6 +201,9 @@ func substituteAndGetSecretValue(inParam *wfv1.Parameter, globalParams Parameter
 			}
 		}
 	} else {
+		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
+			return nil
+		}
 		if inParam.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 		}
