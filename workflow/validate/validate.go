@@ -890,12 +890,12 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 		if param.ValueFrom != nil {
 			// check for valid valueFrom sub-parameters
 			// INFO: default needs to be accompanied by ConfigMapKeyRef.
-			if param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.Event == "" && param.ValueFrom.Supplied == nil {
-				return errors.Errorf(errors.CodeBadRequest, "%s%s.valueFrom only allows: default, configMapKeyRef and supplied", prefix, param.Name)
+			if param.ValueFrom.ConfigMapKeyRef == nil && param.ValueFrom.SecretKeyRef == nil && param.ValueFrom.Event == "" && param.ValueFrom.Supplied == nil {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.valueFrom only allows: default, configMapKeyRef, secretKeyRef and supplied", prefix, param.Name)
 			}
 			// check for invalid valueFrom sub-parameters
 			if param.ValueFrom.Path != "" || param.ValueFrom.JSONPath != "" || param.ValueFrom.Parameter != "" || param.ValueFrom.Expression != "" {
-				return errors.Errorf(errors.CodeBadRequest, "%s%s.valueFrom only allows: default, configMapKeyRef and supplied", prefix, param.Name)
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.valueFrom only allows: default, configMapKeyRef, secretKeyRef and supplied", prefix, param.Name)
 			}
 		}
 		// validate enum
