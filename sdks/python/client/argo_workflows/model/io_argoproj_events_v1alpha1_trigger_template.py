@@ -33,8 +33,10 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_argo_workflow_trigger import IoArgoprojEventsV1alpha1ArgoWorkflowTrigger
     from argo_workflows.model.io_argoproj_events_v1alpha1_aws_lambda_trigger import IoArgoprojEventsV1alpha1AWSLambdaTrigger
     from argo_workflows.model.io_argoproj_events_v1alpha1_azure_event_hubs_trigger import IoArgoprojEventsV1alpha1AzureEventHubsTrigger
+    from argo_workflows.model.io_argoproj_events_v1alpha1_azure_service_bus_trigger import IoArgoprojEventsV1alpha1AzureServiceBusTrigger
     from argo_workflows.model.io_argoproj_events_v1alpha1_conditions_reset_criteria import IoArgoprojEventsV1alpha1ConditionsResetCriteria
     from argo_workflows.model.io_argoproj_events_v1alpha1_custom_trigger import IoArgoprojEventsV1alpha1CustomTrigger
+    from argo_workflows.model.io_argoproj_events_v1alpha1_email_trigger import IoArgoprojEventsV1alpha1EmailTrigger
     from argo_workflows.model.io_argoproj_events_v1alpha1_http_trigger import IoArgoprojEventsV1alpha1HTTPTrigger
     from argo_workflows.model.io_argoproj_events_v1alpha1_kafka_trigger import IoArgoprojEventsV1alpha1KafkaTrigger
     from argo_workflows.model.io_argoproj_events_v1alpha1_log_trigger import IoArgoprojEventsV1alpha1LogTrigger
@@ -46,8 +48,10 @@ def lazy_import():
     globals()['IoArgoprojEventsV1alpha1AWSLambdaTrigger'] = IoArgoprojEventsV1alpha1AWSLambdaTrigger
     globals()['IoArgoprojEventsV1alpha1ArgoWorkflowTrigger'] = IoArgoprojEventsV1alpha1ArgoWorkflowTrigger
     globals()['IoArgoprojEventsV1alpha1AzureEventHubsTrigger'] = IoArgoprojEventsV1alpha1AzureEventHubsTrigger
+    globals()['IoArgoprojEventsV1alpha1AzureServiceBusTrigger'] = IoArgoprojEventsV1alpha1AzureServiceBusTrigger
     globals()['IoArgoprojEventsV1alpha1ConditionsResetCriteria'] = IoArgoprojEventsV1alpha1ConditionsResetCriteria
     globals()['IoArgoprojEventsV1alpha1CustomTrigger'] = IoArgoprojEventsV1alpha1CustomTrigger
+    globals()['IoArgoprojEventsV1alpha1EmailTrigger'] = IoArgoprojEventsV1alpha1EmailTrigger
     globals()['IoArgoprojEventsV1alpha1HTTPTrigger'] = IoArgoprojEventsV1alpha1HTTPTrigger
     globals()['IoArgoprojEventsV1alpha1KafkaTrigger'] = IoArgoprojEventsV1alpha1KafkaTrigger
     globals()['IoArgoprojEventsV1alpha1LogTrigger'] = IoArgoprojEventsV1alpha1LogTrigger
@@ -114,9 +118,11 @@ class IoArgoprojEventsV1alpha1TriggerTemplate(ModelNormal):
             'argo_workflow': (IoArgoprojEventsV1alpha1ArgoWorkflowTrigger,),  # noqa: E501
             'aws_lambda': (IoArgoprojEventsV1alpha1AWSLambdaTrigger,),  # noqa: E501
             'azure_event_hubs': (IoArgoprojEventsV1alpha1AzureEventHubsTrigger,),  # noqa: E501
+            'azure_service_bus': (IoArgoprojEventsV1alpha1AzureServiceBusTrigger,),  # noqa: E501
             'conditions': (str,),  # noqa: E501
             'conditions_reset': ([IoArgoprojEventsV1alpha1ConditionsResetCriteria],),  # noqa: E501
             'custom': (IoArgoprojEventsV1alpha1CustomTrigger,),  # noqa: E501
+            'email': (IoArgoprojEventsV1alpha1EmailTrigger,),  # noqa: E501
             'http': (IoArgoprojEventsV1alpha1HTTPTrigger,),  # noqa: E501
             'k8s': (IoArgoprojEventsV1alpha1StandardK8STrigger,),  # noqa: E501
             'kafka': (IoArgoprojEventsV1alpha1KafkaTrigger,),  # noqa: E501
@@ -137,9 +143,11 @@ class IoArgoprojEventsV1alpha1TriggerTemplate(ModelNormal):
         'argo_workflow': 'argoWorkflow',  # noqa: E501
         'aws_lambda': 'awsLambda',  # noqa: E501
         'azure_event_hubs': 'azureEventHubs',  # noqa: E501
+        'azure_service_bus': 'azureServiceBus',  # noqa: E501
         'conditions': 'conditions',  # noqa: E501
         'conditions_reset': 'conditionsReset',  # noqa: E501
         'custom': 'custom',  # noqa: E501
+        'email': 'email',  # noqa: E501
         'http': 'http',  # noqa: E501
         'k8s': 'k8s',  # noqa: E501
         'kafka': 'kafka',  # noqa: E501
@@ -195,9 +203,11 @@ class IoArgoprojEventsV1alpha1TriggerTemplate(ModelNormal):
             argo_workflow (IoArgoprojEventsV1alpha1ArgoWorkflowTrigger): [optional]  # noqa: E501
             aws_lambda (IoArgoprojEventsV1alpha1AWSLambdaTrigger): [optional]  # noqa: E501
             azure_event_hubs (IoArgoprojEventsV1alpha1AzureEventHubsTrigger): [optional]  # noqa: E501
+            azure_service_bus (IoArgoprojEventsV1alpha1AzureServiceBusTrigger): [optional]  # noqa: E501
             conditions (str): [optional]  # noqa: E501
             conditions_reset ([IoArgoprojEventsV1alpha1ConditionsResetCriteria]): [optional]  # noqa: E501
             custom (IoArgoprojEventsV1alpha1CustomTrigger): [optional]  # noqa: E501
+            email (IoArgoprojEventsV1alpha1EmailTrigger): [optional]  # noqa: E501
             http (IoArgoprojEventsV1alpha1HTTPTrigger): [optional]  # noqa: E501
             k8s (IoArgoprojEventsV1alpha1StandardK8STrigger): [optional]  # noqa: E501
             kafka (IoArgoprojEventsV1alpha1KafkaTrigger): [optional]  # noqa: E501
@@ -291,9 +301,11 @@ class IoArgoprojEventsV1alpha1TriggerTemplate(ModelNormal):
             argo_workflow (IoArgoprojEventsV1alpha1ArgoWorkflowTrigger): [optional]  # noqa: E501
             aws_lambda (IoArgoprojEventsV1alpha1AWSLambdaTrigger): [optional]  # noqa: E501
             azure_event_hubs (IoArgoprojEventsV1alpha1AzureEventHubsTrigger): [optional]  # noqa: E501
+            azure_service_bus (IoArgoprojEventsV1alpha1AzureServiceBusTrigger): [optional]  # noqa: E501
             conditions (str): [optional]  # noqa: E501
             conditions_reset ([IoArgoprojEventsV1alpha1ConditionsResetCriteria]): [optional]  # noqa: E501
             custom (IoArgoprojEventsV1alpha1CustomTrigger): [optional]  # noqa: E501
+            email (IoArgoprojEventsV1alpha1EmailTrigger): [optional]  # noqa: E501
             http (IoArgoprojEventsV1alpha1HTTPTrigger): [optional]  # noqa: E501
             k8s (IoArgoprojEventsV1alpha1StandardK8STrigger): [optional]  # noqa: E501
             kafka (IoArgoprojEventsV1alpha1KafkaTrigger): [optional]  # noqa: E501

@@ -10,23 +10,23 @@ spec:
   - name: hello-hello-hello
     steps:
     - - name: hello1
-        template: whalesay
+        template: print-message
         arguments:
           parameters:
           - name: message
             value: "hello1"
 
-  - name: whalesay
+  - name: print-message
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
+      image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.message}}"]
     metadata:
       annotations:
         iam.amazonaws.com/role: role-arn
       labels:
-        app: whalesay
+        app: print-message
         tier: demo

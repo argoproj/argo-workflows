@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -25,7 +26,7 @@ import (
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -56,6 +57,7 @@ type E2ESuite struct {
 	wfClient          v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
@@ -79,6 +81,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
+	s.wftsClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTaskSets(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	s.Persistence = newPersistence(s.KubeClient, s.Config)
 	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
@@ -160,7 +163,7 @@ func (s *E2ESuite) DeleteResources() {
 					s.CheckError(err)
 				}
 			}
-			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64Ptr(2)}, metav1.ListOptions{LabelSelector: l(r)}))
+			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(2))}, metav1.ListOptions{LabelSelector: l(r)}))
 			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
 			s.CheckError(err)
 			if len(ls.Items) == 0 {
@@ -172,10 +175,13 @@ func (s *E2ESuite) DeleteResources() {
 
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
-		archive := s.Persistence.workflowArchive
+		archive := s.Persistence.WorkflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
-		workflows, err := archive.ListWorkflows(Namespace, "", "", time.Time{}, time.Time{}, parse, 0, 0)
+		workflows, err := archive.ListWorkflows(utils.ListOptions{
+			Namespace:         Namespace,
+			LabelRequirements: parse,
+		})
 		s.CheckError(err)
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(string(w.UID))
@@ -232,6 +238,7 @@ func (s *E2ESuite) Given() *Given {
 		client:            s.wfClient,
 		wfebClient:        s.wfebClient,
 		wfTemplateClient:  s.wfTemplateClient,
+		wftsClient:        s.wftsClient,
 		cwfTemplateClient: s.cwfTemplateClient,
 		cronClient:        s.cronClient,
 		hydrator:          s.hydrator,

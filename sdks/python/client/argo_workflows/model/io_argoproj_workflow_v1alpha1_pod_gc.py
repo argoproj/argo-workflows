@@ -30,9 +30,7 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.duration import Duration
     from argo_workflows.model.label_selector import LabelSelector
-    globals()['Duration'] = Duration
     globals()['LabelSelector'] = LabelSelector
 
 
@@ -89,7 +87,7 @@ class IoArgoprojWorkflowV1alpha1PodGC(ModelNormal):
         """
         lazy_import()
         return {
-            'delete_delay_duration': (Duration,),  # noqa: E501
+            'delete_delay_duration': (str,),  # noqa: E501
             'label_selector': (LabelSelector,),  # noqa: E501
             'strategy': (str,),  # noqa: E501
         }
@@ -146,7 +144,7 @@ class IoArgoprojWorkflowV1alpha1PodGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            delete_delay_duration (Duration): [optional]  # noqa: E501
+            delete_delay_duration (str): DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.. [optional]  # noqa: E501
             label_selector (LabelSelector): [optional]  # noqa: E501
             strategy (str): Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". If unset, does not delete Pods. [optional]  # noqa: E501
         """
@@ -230,7 +228,7 @@ class IoArgoprojWorkflowV1alpha1PodGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            delete_delay_duration (Duration): [optional]  # noqa: E501
+            delete_delay_duration (str): DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.. [optional]  # noqa: E501
             label_selector (LabelSelector): [optional]  # noqa: E501
             strategy (str): Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". If unset, does not delete Pods. [optional]  # noqa: E501
         """

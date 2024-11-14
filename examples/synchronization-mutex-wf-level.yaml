@@ -5,13 +5,15 @@ kind: Workflow
 metadata:
   generateName: synchronization-wf-level-
 spec:
-  entrypoint: whalesay
+  entrypoint: hello-world
   synchronization:
-    mutex:
-      name:  test
+    mutexes: # v3.6 and after
+      - name:  test
+    # mutex: # deprecated: v3.5 and before
+    #  name:  test
   templates:
-    - name: whalesay
+    - name: hello-world
       container:
-        image: docker/whalesay:latest
-        command: [cowsay]
+        image: busybox
+        command: [echo]
         args: ["hello world"]

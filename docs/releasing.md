@@ -9,10 +9,10 @@ to work well with our versioned website.
 Then get a list of commits you may want to cherry-pick:
 
 ```bash
-./hack/cherry-pick.sh release-3.3 "fix" true
-./hack/cherry-pick.sh release-3.3 "chore(deps)" true
-./hack/cherry-pick.sh release-3.3 "build" true
-./hack/cherry-pick.sh release-3.3 "ci" true
+./hack/cherry-pick.sh release-3.3 "fix"
+./hack/cherry-pick.sh release-3.3 "chore(deps)"
+./hack/cherry-pick.sh release-3.3 "build"
+./hack/cherry-pick.sh release-3.3 "ci"
 ```
 
 To automatically cherry-pick, run the following:
@@ -62,6 +62,11 @@ you can approve it, enable auto-merge, and then run the following to force trigg
 git branch -D create-pull-request/changelog
 git fetch upstream
 git checkout --track upstream/create-pull-request/changelog
-git commit -s --allow-empty -m "docs: Force trigger CI"
+git commit -s --allow-empty -m "chore: Force trigger CI"
 git push upstream create-pull-request/changelog
 ```
+
+## Announce on Slack
+
+Once the changelog updates have been merged, you should announce on our Slack channels, [`#argo-workflows`](https://cloud-native.slack.com/archives/C01QW9QSSSK) and [`#argo-announcements`](https://cloud-native.slack.com/archives/C02165G1L48).
+See [previous](https://cloud-native.slack.com/archives/C02165G1L48/p1701112932434469) [announcements](https://cloud-native.slack.com/archives/C01QW9QSSSK/p1701112957127489) as examples of what to write in the patch announcement.

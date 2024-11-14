@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -33,6 +33,7 @@ type When struct {
 	client            v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
@@ -55,6 +56,10 @@ func (w *When) SubmitWorkflow() *When {
 		w.wf = wf
 	}
 	return w
+}
+
+func (w *When) GetWorkflow() *wfv1.Workflow {
+	return w.wf
 }
 
 func label(obj metav1.Object) {
@@ -209,6 +214,11 @@ var (
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning
 		}), "to have running pod"
 	}
+	ToHaveFailedPod Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeFailed
+		}), "to have failed pod"
+	}
 )
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
@@ -346,6 +356,7 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 				return w
 			}
 		}
+		time.Sleep(time.Second)
 	}
 }
 
@@ -414,7 +425,7 @@ func (w *When) WaitForPod(condition PodCondition) *When {
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
-		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: pointer.Int64(int64(timeout.Seconds()))},
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: ptr.To(int64(timeout.Seconds()))},
 	)
 	if err != nil {
 		w.t.Fatal(err)
@@ -621,6 +632,7 @@ func (w *When) Then() *Then {
 		wf:          w.wf,
 		cronWf:      w.cronWf,
 		client:      w.client,
+		wftsClient:  w.wftsClient,
 		cronClient:  w.cronClient,
 		hydrator:    w.hydrator,
 		kubeClient:  w.kubeClient,
@@ -634,6 +646,7 @@ func (w *When) Given() *Given {
 		client:            w.client,
 		wfebClient:        w.wfebClient,
 		wfTemplateClient:  w.wfTemplateClient,
+		wftsClient:        w.wftsClient,
 		cwfTemplateClient: w.cwfTemplateClient,
 		cronClient:        w.cronClient,
 		hydrator:          w.hydrator,

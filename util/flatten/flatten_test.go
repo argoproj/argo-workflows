@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 )
@@ -23,7 +23,7 @@ func Test_flatten(t *testing.T) {
 			Watch:               false,
 			AllowWatchBookmarks: true,
 			ResourceVersion:     "11",
-			TimeoutSeconds:      pointer.Int64Ptr(22),
+			TimeoutSeconds:      ptr.To(int64(22)),
 			Limit:               33,
 			Continue:            "44",
 		}}, map[string]string{

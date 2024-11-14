@@ -32,6 +32,7 @@ markdown_extensions:
   - admonition
   - md_in_html
   - pymdownx.details
+  - pymdownx.snippets
   - pymdownx.superfences:
       custom_fences:
         # support mermaid diagrams per https://squidfunk.github.io/mkdocs-material/reference/diagrams/#configuration
@@ -40,6 +41,12 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
       permalink: true
+plugins:
+  - redirects:
+      redirect_maps:
+        use-cases/webhdfs.md: webhdfs.md
+        manually-create-secrets.md: service-account-secrets.md
+  - search # re-include the default: https://www.mkdocs.org/user-guide/configuration/#plugins,
 validation:
   omitted_files: warn
   absolute_links: warn
@@ -131,6 +138,7 @@ nav:
           - workflow-of-workflows.md
           - workflow-notifications.md
           - work-avoidance.md
+          - webhdfs.md
       - UI Features:
           - artifact-visualization.md
           - widgets.md
@@ -164,7 +172,6 @@ nav:
           - use-cases/infrastructure-automation.md
           - use-cases/machine-learning.md
           - use-cases/stream-processing.md
-          - use-cases/webhdfs.md
           - use-cases/other.md # other should always be last
       - FAQ: faq.md
       - kubectl.md
@@ -188,6 +195,7 @@ nav:
           - argo cluster-template get: cli/argo_cluster-template_get.md
           - argo cluster-template lint: cli/argo_cluster-template_lint.md
           - argo cluster-template list: cli/argo_cluster-template_list.md
+          - argo cluster-template update: cli/argo_cluster-template_update.md
           - argo completion: cli/argo_completion.md
           - argo cp: cli/argo_cp.md
           - argo cron: cli/argo_cron.md
@@ -198,6 +206,7 @@ nav:
           - argo cron list: cli/argo_cron_list.md
           - argo cron resume: cli/argo_cron_resume.md
           - argo cron suspend: cli/argo_cron_suspend.md
+          - argo cron update: cli/argo_cron_update.md
           - argo delete: cli/argo_delete.md
           - argo executor-plugin: cli/argo_executor-plugin.md
           - argo executor-plugin build: cli/argo_executor-plugin_build.md
@@ -219,6 +228,7 @@ nav:
           - argo template get: cli/argo_template_get.md
           - argo template lint: cli/argo_template_lint.md
           - argo template list: cli/argo_template_list.md
+          - argo template update: cli/argo_template_update.md
           - argo terminate: cli/argo_terminate.md
           - argo version: cli/argo_version.md
           - argo wait: cli/argo_wait.md
@@ -227,6 +237,7 @@ nav:
       - installation.md
       - releases.md
       - upgrading.md
+      - new-features.md
       - security.md
       - Configuration:
           - managed-namespace.md
@@ -239,10 +250,12 @@ nav:
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
+          - deprecations.md
           - workflow-executors.md
           - workflow-restrictions.md
           - sidecar-injection.md
-          - manually-create-secrets.md
+          - service-account-secrets.md
+          - parallelism.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md

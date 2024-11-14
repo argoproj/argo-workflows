@@ -172,7 +172,7 @@ class IoArgoprojEventsV1alpha1KafkaEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            config (str): Yaml format Sarama config for Kafka connection. It follows the struct of sarama.Config. See https://github.com/Shopify/sarama/blob/main/config.go e.g.  consumer:   fetch:     min: 1 net:   MaxOpenRequests: 5  +optional. [optional]  # noqa: E501
+            config (str): Yaml format Sarama config for Kafka connection. It follows the struct of sarama.Config. See https://github.com/IBM/sarama/blob/main/config.go e.g.  consumer:   fetch:     min: 1 net:   MaxOpenRequests: 5  +optional. [optional]  # noqa: E501
             connection_backoff (IoArgoprojEventsV1alpha1Backoff): [optional]  # noqa: E501
             consumer_group (IoArgoprojEventsV1alpha1KafkaConsumerGroup): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
@@ -266,7 +266,7 @@ class IoArgoprojEventsV1alpha1KafkaEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            config (str): Yaml format Sarama config for Kafka connection. It follows the struct of sarama.Config. See https://github.com/Shopify/sarama/blob/main/config.go e.g.  consumer:   fetch:     min: 1 net:   MaxOpenRequests: 5  +optional. [optional]  # noqa: E501
+            config (str): Yaml format Sarama config for Kafka connection. It follows the struct of sarama.Config. See https://github.com/IBM/sarama/blob/main/config.go e.g.  consumer:   fetch:     min: 1 net:   MaxOpenRequests: 5  +optional. [optional]  # noqa: E501
             connection_backoff (IoArgoprojEventsV1alpha1Backoff): [optional]  # noqa: E501
             consumer_group (IoArgoprojEventsV1alpha1KafkaConsumerGroup): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501

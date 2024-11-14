@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  schedule: "5 5 5 * *"
+  concurrencyPolicy: "Replace"
+  startingDeadlineSeconds: 10
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 3
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+  # template main -> whalesay
+  workflowSpec:
+    entrypoint: whalesay
+    arguments:
+      parameters:
+        - name: message
+          value: "foo"
+    templates:
+      - name: whalesay
+        inputs:
+          parameters:
+            - name: message
+        container:
+          image: python:alpine3.6
+          command: [ "sh", -c ]
+          args: [ "echo {{inputs.parameters.message}}" ]

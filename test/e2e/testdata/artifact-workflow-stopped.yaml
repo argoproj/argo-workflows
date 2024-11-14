@@ -53,8 +53,9 @@ spec:
             done
     - name: workflow-stopper
       container:
-        image: argoproj/argocli:latest
-        args: 
+        image: quay.io/argoproj/argocli:latest
+        imagePullPolicy: Never
+        args:
           - stop
           - -l
           - workflows.argoproj.io/workflow=wf-stopped

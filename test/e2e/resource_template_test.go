@@ -1,5 +1,4 @@
 //go:build executor
-// +build executor
 
 package e2e
 
@@ -7,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -64,11 +64,9 @@ kind: Workflow
 metadata:
   generateName: k8s-resource-tmpl-with-pod-
 spec:
-  serviceAccount: argo
   entrypoint: main
   templates:
     - name: main
-      serviceAccountName: argo
       resource:
         action: create
         setOwnerReference: true
@@ -80,7 +78,6 @@ spec:
           metadata:
             generateName: k8s-pod-resource-
           spec:
-            serviceAccountName: argo
             containers:
             - name: argosay-container
               image: argoproj/argosay:v2
@@ -104,11 +101,9 @@ kind: Workflow
 metadata:
   generateName: k8s-resource-tmpl-with-artifact-
 spec:
-  serviceAccount: argo
   entrypoint: main
   templates:
     - name: main
-      serviceAccountName: argo
       inputs:
         artifacts:
         - name: manifest
@@ -120,7 +115,6 @@ spec:
               metadata:
                 generateName: k8s-pod-resource-
               spec:
-                serviceAccountName: argo
                 containers:
                 - name: argosay-container
                   image: argoproj/argosay:v2
@@ -152,16 +146,68 @@ func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			outputs := status.Nodes[md.Name].Outputs
-			if assert.NotNil(t, outputs) {
-				parameters := outputs.Parameters
-				if assert.Len(t, parameters, 2) {
-					assert.Equal(t, "my-pod", parameters[0].Value.String(), "metadata.name is capture for json")
-					assert.Equal(t, "my-pod", parameters[1].Value.String(), "metadata.name is capture for jq")
-				}
-			}
+			require.NotNil(t, outputs)
+			parameters := outputs.Parameters
+			require.Len(t, parameters, 2)
+			assert.Equal(t, "my-pod", parameters[0].Value.String(), "metadata.name is capture for json")
+			assert.Equal(t, "my-pod", parameters[1].Value.String(), "metadata.name is capture for jq")
 			for _, value := range status.TaskResultsCompletionStatus {
 				assert.True(t, value)
 			}
+		})
+}
+
+func (s *ResourceTemplateSuite) TestResourceTemplateAutomountServiceAccountTokenDisabled() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-automountservicetoken-disabled-
+spec:
+  serviceAccountName: argo
+  automountServiceAccountToken: false
+  executor:
+    serviceAccountName: argo
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        setOwnerReference: true
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: k8s-wf-resource-
+          spec:
+            entrypoint: main
+            templates:
+              - name: main
+                container:
+                  image: argoproj/argosay:v2
+                  command: ["/argosay"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
+func (s *ResourceTemplateSuite) TestResourceTemplateFailed() {
+	s.Given().
+		Workflow("@testdata/resource-templates/failed.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 		})
 }
 
