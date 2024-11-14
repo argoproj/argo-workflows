@@ -418,7 +418,6 @@ spec:
 	})
 
 	s.Run("TestCronWorkflowFromWorkflowTemplateHasLabel", func() {
-		s.T().Parallel()
 		s.Given().
 			WorkflowTemplate(`apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
