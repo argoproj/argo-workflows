@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **json_path** | **str** | JSONPath of a resource to retrieve an output parameter value from in resource templates | [optional] 
 **parameter** | **str** | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. &#39;{{steps.mystep.outputs.myparam}}&#39;) | [optional] 
 **path** | **str** | Path in the container to retrieve an output parameter value from in container templates | [optional] 
+**secret_key_ref** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **supplied** | **bool, date, datetime, dict, float, int, list, str, none_type** | SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc. | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
