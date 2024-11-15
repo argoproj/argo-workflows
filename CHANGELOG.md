@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.6.0 (2024-10-31)
+
+Full Changelog: [v3.6.0-rc4...v3.6.0](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc4...v3.6.0)
+
+### Selected Changes
+
+<details><summary><h3>Contributors</h3></summary>
+
+</details>
+
 ## v3.6.0-rc4 (2024-10-31)
 
 Full Changelog: [v3.6.0-rc3...v3.6.0-rc4](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc3...v3.6.0-rc4)
