@@ -11293,6 +11293,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     name="name_example",
                 ),
             ),
+            status=IoArgoprojWorkflowV1alpha1WorkflowTemplateStatus(
+                last_run_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
+            ),
         ),
     ) # IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest | 
 
@@ -22800,6 +22803,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     name="name_example",
                 ),
             ),
+            status=IoArgoprojWorkflowV1alpha1WorkflowTemplateStatus(
+                last_run_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
+            ),
         ),
     ) # IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest | 
 
@@ -34212,6 +34218,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     cluster_scope=True,
                     name="name_example",
                 ),
+            ),
+            status=IoArgoprojWorkflowV1alpha1WorkflowTemplateStatus(
+                last_run_at=dateutil_parser('1970-01-01T00:00:00.00Z'),
             ),
         ),
     ) # IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateUpdateRequest | 

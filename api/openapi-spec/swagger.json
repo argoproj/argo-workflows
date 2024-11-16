@@ -8469,6 +8469,9 @@
         },
         "spec": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateStatus"
         }
       }
     },
@@ -12254,6 +12257,9 @@
         },
         "spec": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateStatus"
         }
       }
     },
@@ -12326,6 +12332,16 @@
         "name": {
           "description": "Name is the resource name of the workflow template.",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTemplateStatus": {
+      "description": "WorkflowTemplateStatus contains overall status information about a WorkflowTemplate",
+      "type": "object",
+      "properties": {
+        "lastRunAt": {
+          "description": "Time at which this workflowtemplate last run",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       }
     },

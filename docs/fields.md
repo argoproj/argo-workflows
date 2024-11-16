@@ -435,6 +435,7 @@ WorkflowTemplate is the definition of a workflow template resource
 |`kind`|`string`|Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds|
 |`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
 |`spec`|[`WorkflowSpec`](#workflowspec)|_No description available_|
+|`status`|[`WorkflowTemplateStatus`](#workflowtemplatestatus)|_No description available_|
 
 ## WorkflowEventBinding
 
@@ -1316,6 +1317,15 @@ CronWorkflowStatus is the status of a CronWorkflow
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
 |`phase`|`string`|v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true|
 |`succeeded`|`integer`|v3.6 and after: Succeeded counts how many times child workflows succeeded|
+
+## WorkflowTemplateStatus
+
+WorkflowTemplateStatus contains overall status information about a WorkflowTemplate
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`lastRunAt`|[`Time`](#time)|Time at which this workflowtemplate last run|
 
 ## WorkflowEventBindingSpec
 

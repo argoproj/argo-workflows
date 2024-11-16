@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
@@ -18,6 +19,16 @@ func createWorkflowTemplate(wfClientset wfclientset.Interface, yamlStr string) e
 	ctx := context.Background()
 	wftmpl := unmarshalWftmpl(yamlStr)
 	_, err := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Create(ctx, wftmpl, metav1.CreateOptions{})
+	if err != nil && apierr.IsAlreadyExists(err) {
+		return nil
+	}
+	return err
+}
+
+func createClusterWorkflowTemplate(wfClientset wfclientset.Interface, yamlStr string) error {
+	ctx := context.Background()
+	cwftmpl := wfv1.MustUnmarshalClusterWorkflowTemplate(yamlStr)
+	_, err := wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(ctx, cwftmpl, metav1.CreateOptions{})
 	if err != nil && apierr.IsAlreadyExists(err) {
 		return nil
 	}
@@ -103,7 +114,7 @@ spec:
 func TestGetTemplateByName(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
 	tmpl, err := ctx.GetTemplateByName("whalesay")
 	require.NoError(t, err)
@@ -125,7 +136,7 @@ func TestGetTemplateFromRef(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
 	// Get the template of existing template reference.
 	tmplRef := wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}
@@ -156,7 +167,7 @@ func TestGetTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
 	// Get the template of existing template name.
 	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
@@ -186,7 +197,7 @@ func TestGetTemplate(t *testing.T) {
 func TestGetCurrentTemplateBase(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
 	// Get the template base of existing template name.
 	tmplBase := ctx.GetCurrentTemplateBase()
@@ -206,7 +217,7 @@ func TestWithTemplateHolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
 	var tmplGetter wfv1.TemplateHolder
 	// Get the template base of existing template name.
@@ -248,7 +259,7 @@ func TestResolveTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
 	// Get the template of template name.
 	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
@@ -321,7 +332,7 @@ func TestResolveTemplate(t *testing.T) {
 func TestWithTemplateBase(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
 	anotherWftmpl := unmarshalWftmpl(anotherWorkflowTemplateYaml)
 
@@ -335,7 +346,8 @@ func TestWithTemplateBase(t *testing.T) {
 func TestOnWorkflowTemplate(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientSet(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(),
+		wftmpl, nil)
 
 	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
 	require.NoError(t, err)
@@ -345,4 +357,56 @@ func TestOnWorkflowTemplate(t *testing.T) {
 	require.NoError(t, err)
 	tmpl := newCtx.tmplBase.GetTemplateByName("whalesay")
 	assert.NotNil(t, tmpl)
+}
+
+func TestUpdateTemplLastRun(t *testing.T) {
+	wfClientset := fakewfclientset.NewSimpleClientset()
+	wftmpl := unmarshalWftmpl(someWorkflowTemplateYaml)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
+
+	err := createWorkflowTemplate(wfClientset, someWorkflowTemplateYaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wftemplateName := "some-workflow-template"
+	templateClient := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(v1.NamespaceDefault)
+
+	err = ctx.updateTemplateStatus(context.TODO(), wftmpl.GetName())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wftmpl, err = templateClient.Get(context.Background(), wftemplateName, v1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	assert.NotEmpty(t, wftmpl.Status.LastRunAt)
+}
+
+func TestUpdateCtemplLastRun(t *testing.T) {
+	wfClientset := fakewfclientset.NewSimpleClientset()
+	cwftmpl := wfv1.MustUnmarshalClusterWorkflowTemplate(someWorkflowTemplateYaml)
+	ctx := NewContextWithClientSet(nil, nil, wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), cwftmpl, nil)
+
+	err := createClusterWorkflowTemplate(wfClientset, someWorkflowTemplateYaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wftemplateName := "some-workflow-template"
+	ctemplateClient := wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates()
+
+	err = ctx.updateCtemplateStatus(context.TODO(), cwftmpl.GetName())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cwftmpl, err = ctemplateClient.Get(context.Background(), wftemplateName, v1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	assert.NotEmpty(t, cwftmpl.Status.LastRunAt)
 }
