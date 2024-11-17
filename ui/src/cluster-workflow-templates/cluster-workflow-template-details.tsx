@@ -18,9 +18,9 @@ import {services} from '../shared/services';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {useEditableObject} from '../shared/use-editable-object';
 import {useQueryParams} from '../shared/use-query-params';
+import {WorkflowTemplateEditor} from '../workflow-templates/workflow-template-editor';
 import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
-import {ClusterWorkflowTemplateEditor} from './cluster-workflow-template-editor';
 
 import '../workflows/components/workflow-details/workflow-details.scss';
 
@@ -37,7 +37,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     const [columns, setColumns] = useState<models.Column[]>([]);
 
     const [error, setError] = useState<Error>();
-    const [template, edited, setTemplate, resetTemplate] = useEditableObject<ClusterWorkflowTemplate>();
+    const {object: template, setObject: setTemplate, resetObject: resetTemplate, serialization, edited, lang, setLang} = useEditableObject<ClusterWorkflowTemplate>();
 
     useEffect(
         useQueryParams(history, p => {
@@ -138,7 +138,16 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                 {!template ? (
                     <Loading />
                 ) : (
-                    <ClusterWorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />
+                    <WorkflowTemplateEditor
+                        template={template}
+                        serialization={serialization}
+                        lang={lang}
+                        onLangChange={setLang}
+                        onChange={setTemplate}
+                        onError={setError}
+                        onTabSelected={setTab}
+                        selectedTabKey={tab}
+                    />
                 )}
             </>
             {template && (

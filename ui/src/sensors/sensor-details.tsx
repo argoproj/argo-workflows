@@ -30,7 +30,7 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [name] = useState(match.params.name);
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
-    const [sensor, edited, setSensor, resetSensor] = useEditableObject<Sensor>();
+    const {object: sensor, setObject: setSensor, resetObject: resetSensor, serialization, edited, lang, setLang} = useEditableObject<Sensor>();
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
@@ -125,7 +125,20 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
             }}>
             <>
                 <ErrorNotice error={error} />
-                {!sensor ? <Loading /> : <SensorEditor sensor={sensor} onChange={setSensor} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />}
+                {!sensor ? (
+                    <Loading />
+                ) : (
+                    <SensorEditor
+                        sensor={sensor}
+                        serialization={serialization}
+                        lang={lang}
+                        onChange={setSensor}
+                        onLangChange={setLang}
+                        onError={setError}
+                        selectedTabKey={tab}
+                        onTabSelected={setTab}
+                    />
+                )}
             </>
             {!!selectedLogNode && (
                 <SensorSidePanel

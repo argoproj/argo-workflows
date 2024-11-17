@@ -1,5 +1,7 @@
 import YAML from 'yaml';
 
+export type Lang = 'json' | 'yaml';
+
 export function parse<T>(value: string): T {
     if (value.startsWith('{')) {
         return JSON.parse(value);
@@ -12,6 +14,6 @@ export function parse<T>(value: string): T {
     }) as T;
 }
 
-export function stringify<T>(value: T, type: string) {
-    return type === 'yaml' ? YAML.stringify(value, {aliasDuplicateObjects: false}) : JSON.stringify(value, null, '  ');
+export function stringify<T>(value: T, lang: Lang) {
+    return lang === 'yaml' ? YAML.stringify(value, {aliasDuplicateObjects: false}) : JSON.stringify(value, null, '  ');
 }
