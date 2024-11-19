@@ -21751,6 +21751,12 @@ spec:
                     type: string
                 type: object
             type: object
+          status:
+            properties:
+              lastRunAt:
+                format: date-time
+                type: string
+            type: object
         required:
         - metadata
         - spec

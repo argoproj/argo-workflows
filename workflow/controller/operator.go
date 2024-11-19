@@ -3677,7 +3677,11 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	} else {
 		clusterWorkflowTemplateGetter = &templateresolution.NullClusterWorkflowTemplateGetter{}
 	}
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), clusterWorkflowTemplateGetter, woc.execWf, woc.wf)
+
+	clientSet := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.controller.GetManagedNamespace())
+	cClientSet := woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates()
+	ctx := templateresolution.NewContextWithClientSet(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace),
+		clusterWorkflowTemplateGetter, clientSet, cClientSet, woc.execWf, woc.wf)
 
 	switch scope {
 	case wfv1.ResourceScopeNamespaced:

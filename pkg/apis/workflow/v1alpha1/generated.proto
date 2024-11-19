@@ -367,6 +367,8 @@ message ClusterWorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional WorkflowSpec spec = 2;
+
+  optional WorkflowTemplateStatus status = 3;
 }
 
 // ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
@@ -2267,6 +2269,8 @@ message WorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional WorkflowSpec spec = 2;
+
+  optional WorkflowTemplateStatus status = 3;
 }
 
 // WorkflowTemplateList is list of WorkflowTemplate resources
@@ -2284,6 +2288,12 @@ message WorkflowTemplateRef {
 
   // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
   optional bool clusterScope = 2;
+}
+
+// WorkflowTemplateStatus contains overall status information about a WorkflowTemplate
+message WorkflowTemplateStatus {
+  // Time at which this workflowtemplate last run
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastRunAt = 1;
 }
 
 // ZipStrategy will unzip zipped input artifacts

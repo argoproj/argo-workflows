@@ -774,8 +774,12 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	wftmplClient := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace)
+	cwftmplClient := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates()
+	templateresolution.SetWorkflowTemplateClient(wftmplClient, cwftmplClient)
+
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(cwftmplClient)
 
 	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
 	if err != nil {
