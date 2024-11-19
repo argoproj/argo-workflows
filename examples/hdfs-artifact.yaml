@@ -14,19 +14,19 @@ spec:
   - name: artifact-example
     steps:
     - - name: generate-artifact
-        template: whalesay
+        template: hello-world-to-file
     - - name: consume-artifact
-        template: print-message
+        template: print-message-from-hdfs
         arguments:
           artifacts:
           - name: message
             from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
 
-  - name: whalesay
+  - name: hello-world-to-file
     container:
-      image: docker/whalesay:latest
+      image: busybox
       command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+      args: ["echo hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
       - name: hello-art
@@ -38,6 +38,7 @@ spec:
           path: "/tmp/argo/foo"
           hdfsUser: root
           force: true
+          # dataTransferProtection: authentication
           # krbCCacheSecret:
           #   name: krb
           #   key: krb5cc_0
@@ -51,7 +52,7 @@ spec:
           #   key: krb5.conf
           # krbServicePrincipalName: hdfs/_HOST
 
-  - name: print-message
+  - name: print-message-from-hdfs
     inputs:
       artifacts:
       - name: message
@@ -63,6 +64,7 @@ spec:
           path: "/tmp/argo/foo"
           hdfsUser: root
           force: true
+          # dataTransferProtection: authentication
           # krbCCacheSecret:
           #   name: krb
           #   key: krb5cc_0

@@ -88,8 +88,8 @@ class IoArgoprojEventsV1alpha1SASLConfig(ModelNormal):
         lazy_import()
         return {
             'mechanism': (str,),  # noqa: E501
-            'password': (SecretKeySelector,),  # noqa: E501
-            'user': (SecretKeySelector,),  # noqa: E501
+            'password_secret': (SecretKeySelector,),  # noqa: E501
+            'user_secret': (SecretKeySelector,),  # noqa: E501
         }
 
     @cached_property
@@ -99,8 +99,8 @@ class IoArgoprojEventsV1alpha1SASLConfig(ModelNormal):
 
     attribute_map = {
         'mechanism': 'mechanism',  # noqa: E501
-        'password': 'password',  # noqa: E501
-        'user': 'user',  # noqa: E501
+        'password_secret': 'passwordSecret',  # noqa: E501
+        'user_secret': 'userSecret',  # noqa: E501
     }
 
     read_only_vars = {
@@ -145,8 +145,8 @@ class IoArgoprojEventsV1alpha1SASLConfig(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             mechanism (str): [optional]  # noqa: E501
-            password (SecretKeySelector): [optional]  # noqa: E501
-            user (SecretKeySelector): [optional]  # noqa: E501
+            password_secret (SecretKeySelector): [optional]  # noqa: E501
+            user_secret (SecretKeySelector): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -229,8 +229,8 @@ class IoArgoprojEventsV1alpha1SASLConfig(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             mechanism (str): [optional]  # noqa: E501
-            password (SecretKeySelector): [optional]  # noqa: E501
-            user (SecretKeySelector): [optional]  # noqa: E501
+            password_secret (SecretKeySelector): [optional]  # noqa: E501
+            user_secret (SecretKeySelector): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

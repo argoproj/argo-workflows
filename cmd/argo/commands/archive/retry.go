@@ -2,10 +2,9 @@ package archive
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -36,7 +35,7 @@ func (o *retryOps) hasSelector() bool {
 
 func NewRetryCommand() *cobra.Command {
 	var (
-		cliSubmitOpts common.CliSubmitOpts
+		cliSubmitOpts = common.NewCliSubmitOpts()
 		retryOpts     retryOps
 	)
 	command := &cobra.Command{
@@ -70,25 +69,30 @@ func NewRetryCommand() *cobra.Command {
 
   argo archive retry --log uid
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && !retryOpts.hasSelector() {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return errors.New("requires either selector or workflow")
 			}
-
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			archiveServiceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			retryOpts.namespace = client.Namespace()
 
-			err = retryArchivedWorkflows(ctx, archiveServiceClient, serviceClient, retryOpts, cliSubmitOpts, args)
-			errors.CheckError(err)
+			return retryArchivedWorkflows(ctx, archiveServiceClient, serviceClient, retryOpts, cliSubmitOpts, args)
 		},
 	}
 
 	command.Flags().StringArrayVarP(&cliSubmitOpts.Parameters, "parameter", "p", []string{}, "input parameter to override on the original workflow spec")
-	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliSubmitOpts.Output, "output", "o", "Output format. "+cliSubmitOpts.Output.Usage())
 	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is retried")
 	command.Flags().BoolVar(&cliSubmitOpts.Watch, "watch", false, "watch the workflow until it completes, only works when a single workflow is retried")
 	command.Flags().BoolVar(&cliSubmitOpts.Log, "log", false, "log the workflow until it completes")
@@ -99,7 +103,7 @@ func NewRetryCommand() *cobra.Command {
 	return command
 }
 
-// retryWorkflows retries workflows by given retryArgs or workflow names
+// retryArchivedWorkflows retries workflows by given retryArgs or workflow names
 func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowarchivepkg.ArchivedWorkflowServiceClient, serviceClient workflowpkg.WorkflowServiceClient, retryOpts retryOps, cliSubmitOpts common.CliSubmitOpts, args []string) error {
 	selector, err := fields.ParseSelector(retryOpts.nodeFieldSelector)
 	if err != nil {
@@ -142,11 +146,11 @@ func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowar
 		if err != nil {
 			return err
 		}
-		printWorkflow(lastRetried, cliSubmitOpts.Output)
+		printWorkflow(lastRetried, cliSubmitOpts.Output.String())
 	}
 	if len(retriedUids) == 1 {
 		// watch or wait when there is only one workflow retried
-		common.WaitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
+		return common.WaitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
 	}
 	return nil
 }

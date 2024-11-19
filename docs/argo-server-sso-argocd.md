@@ -54,6 +54,7 @@ data:
   dex.config: |
     # Setting staticClients allows Argo Workflows to use Argo CD's Dex installation for authentication
     staticClients:
+      # This is the OIDC client ID in plaintext
       - id: argo-workflows-sso
         name: Argo Workflow
         redirectURIs:
@@ -125,6 +126,7 @@ data:
        config:
          dex.config: |
            staticClients:
+           # This is the OIDC client ID in plaintext
            - id: argo-workflows-sso
              name: Argo Workflow
              redirectURIs:
@@ -136,9 +138,11 @@ data:
 
 ```yaml
      server:
-       extraArgs:
-         - --auth-mode=sso
+       # Chart version 0.39.0 and after
+       authModes:
+         - sso
        sso:
+         enabled: true
          issuer: https://argo-cd.mydomain.com/api/dex
          # sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)
          sessionExpiry: 240h

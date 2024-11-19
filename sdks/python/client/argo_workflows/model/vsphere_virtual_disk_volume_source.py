@@ -110,7 +110,7 @@ class VsphereVirtualDiskVolumeSource(ModelNormal):
         """VsphereVirtualDiskVolumeSource - a model defined in OpenAPI
 
         Args:
-            volume_path (str): Path that identifies vSphere volume vmdk
+            volume_path (str): volumePath is the path that identifies vSphere volume vmdk
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -143,9 +143,9 @@ class VsphereVirtualDiskVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_type (str): Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
-            storage_policy_id (str): Storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.. [optional]  # noqa: E501
-            storage_policy_name (str): Storage Policy Based Management (SPBM) profile name.. [optional]  # noqa: E501
+            fs_type (str): fsType is filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
+            storage_policy_id (str): storagePolicyID is the storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.. [optional]  # noqa: E501
+            storage_policy_name (str): storagePolicyName is the storage Policy Based Management (SPBM) profile name.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -198,7 +198,7 @@ class VsphereVirtualDiskVolumeSource(ModelNormal):
         """VsphereVirtualDiskVolumeSource - a model defined in OpenAPI
 
         Args:
-            volume_path (str): Path that identifies vSphere volume vmdk
+            volume_path (str): volumePath is the path that identifies vSphere volume vmdk
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -231,9 +231,9 @@ class VsphereVirtualDiskVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_type (str): Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
-            storage_policy_id (str): Storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.. [optional]  # noqa: E501
-            storage_policy_name (str): Storage Policy Based Management (SPBM) profile name.. [optional]  # noqa: E501
+            fs_type (str): fsType is filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
+            storage_policy_id (str): storagePolicyID is the storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.. [optional]  # noqa: E501
+            storage_policy_name (str): storagePolicyName is the storage Policy Based Management (SPBM) profile name.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

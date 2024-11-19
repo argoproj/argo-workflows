@@ -110,14 +110,14 @@ The precedence must be the lowest of all your service accounts.
 
 As of Kubernetes v1.24, secrets for a service account token are no longer automatically created.
 Therefore, service account secrets for SSO RBAC must be created manually.
-See [Manually create secrets](manually-create-secrets.md) for detailed instructions.
+See [Service Account Secrets](service-account-secrets.md) for detailed instructions.
 
 ## SSO RBAC Namespace Delegation
 
 > v3.3 and after
 
 You can optionally configure RBAC SSO per namespace.
-Typically, on organization has a Kubernetes cluster and a central team (the owner of the cluster) manages the cluster. Along with this, there are multiple namespaces which are owned by individual teams. This feature would help namespace owners to define RBAC for their own namespace.
+Typically, an organization has a Kubernetes cluster and a central team (the owner of the cluster) manages the cluster. Along with this, there are multiple namespaces which are owned by individual teams. This feature would help namespace owners to define RBAC for their own namespace.
 
 The feature is currently in beta.
 To enable the feature, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true` in your argo-server deployment.

@@ -55,7 +55,7 @@ flowchart LR
   onfailureNoExpr[OnFailure]
   onfailure[OnFailure AND Expression]
   version(Workflows version)
-  version-->|3.4 or ealier|onfailure
+  version-->|3.4 or earlier|onfailure
   always[Only Expression matters]
   version-->|3.5 or later|always
 ```

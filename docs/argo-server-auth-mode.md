@@ -1,15 +1,15 @@
 # Argo Server Auth Mode
 
-You can choose which kube config the Argo Server uses:
+You can configure how the Argo Server authenticates to Kubernetes:
 
-* `server` - in hosted mode, use the kube config of service account, in local mode, use your local kube config.
-* `client` - requires clients to provide their Kubernetes bearer token and use that.
-* [`sso`](./argo-server-sso.md) - since v2.9, use single sign-on, this will use the same service account as per "server" for RBAC. We expect to change this in the future so that the OAuth claims are mapped to service accounts.
+* `server`: In [hosted mode](argo-server.md#hosted-mode), use the Server's Service Account. In [local mode](argo-server.md#local-mode), use your local kube config.
+* `client`: Use the Kubernetes [bearer token of clients](access-token.md).
+* `sso`: Use [single sign-on](argo-server-sso.md). This will use the same SA as `server` for RBAC, unless you have enabled [SSO RBAC](argo-server-sso.md#sso-rbac)
 
-The server used to start with auth mode of "server" by default, but since v3.0 it defaults to the "client".
+For v3.0 and after, the default is `client`. Prior to v3.0, it was `server`.
 
-To change the server auth mode specify the list as multiple auth-mode flags:
+To configure the Server's auth modes, use one or multiple `--auth-mode` flags. For example:
 
 ```bash
-argo server --auth-mode=sso --auth-mode=...
+argo server --auth-mode=sso --auth-mode=client
 ```

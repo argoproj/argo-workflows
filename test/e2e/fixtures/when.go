@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -56,6 +56,10 @@ func (w *When) SubmitWorkflow() *When {
 		w.wf = wf
 	}
 	return w
+}
+
+func (w *When) GetWorkflow() *wfv1.Workflow {
+	return w.wf
 }
 
 func label(obj metav1.Object) {
@@ -210,6 +214,11 @@ var (
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning
 		}), "to have running pod"
 	}
+	ToHaveFailedPod Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeFailed
+		}), "to have failed pod"
+	}
 )
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
@@ -347,6 +356,7 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 				return w
 			}
 		}
+		time.Sleep(time.Second)
 	}
 }
 
@@ -415,7 +425,7 @@ func (w *When) WaitForPod(condition PodCondition) *When {
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
-		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: pointer.Int64(int64(timeout.Seconds()))},
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: ptr.To(int64(timeout.Seconds()))},
 	)
 	if err != nil {
 		w.t.Fatal(err)

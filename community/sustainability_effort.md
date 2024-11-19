@@ -54,12 +54,9 @@ If you'd like to participate, add yourself here in a PR.
 
 | Name                      | GitHub ID                                               |
 |---------------------------|---------------------------------------------------------|
-| Alan Clucas               | [`Joibel`](https://github.com/Joibel)                     |
-| Anton Gilgur              | [`agilgur5`](https://github.com/agilgur5)                 |
-| Isitha Subasinghe         | [`isubasinghe`](https://github.com/isubasinghe)           |
-| Jason Meridth             | [`jmeridth`](https://github.com/jmeridth)                 |
-| Julie Vogelman            | [`juliev0`](https://github.com/juliev0)                   |
-| Saravanan Balasubramanian | [`sarabala1979`](https://github.com/sarabala1979)         |
-| Shuangkun Tian            | [`shuangkun`](https://github.com/shuangkun)               |
-| Tianchu Zhao              | [`tczhao`](https://github.com/tczhao)                     |
-| Yuan Tang                 | [`terrytangyuan`](https://github.com/terrytangyuan)       |
+| Alan Clucas               | [`Joibel`](https://github.com/Joibel)                   |
+| Isitha Subasinghe         | [`isubasinghe`](https://github.com/isubasinghe)         |
+| Shuangkun Tian            | [`shuangkun`](https://github.com/shuangkun)             |
+| Tianchu Zhao              | [`tczhao`](https://github.com/tczhao)                   |
+| Yuan Tang                 | [`terrytangyuan`](https://github.com/terrytangyuan)     |
+| Mason Malone              | [`MasonM`](https://github.com/MasonM)                   |

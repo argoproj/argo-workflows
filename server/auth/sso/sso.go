@@ -185,7 +185,7 @@ func newSso(
 	}
 
 	var filterGroupsRegex []*regexp.Regexp
-	if c.FilterGroupsRegex != nil && len(c.FilterGroupsRegex) > 0 {
+	if len(c.FilterGroupsRegex) > 0 {
 		for _, regex := range c.FilterGroupsRegex {
 			compiledRegex, err := regexp.Compile(regex)
 			if err != nil {
@@ -288,7 +288,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	// Some SSO implementations (Okta) require a call to
 	// the OIDC user info path to get attributes like groups
 	if s.userInfoPath != "" {
-		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath)
+		groups, err = c.GetUserInfoGroups(s.httpClient, oauth2Token.AccessToken, s.issuer, s.userInfoPath)
 		if err != nil {
 			log.WithError(err).Errorf("failed to get groups claim from the given userInfoPath(%s)", s.userInfoPath)
 			w.WriteHeader(401)
@@ -297,7 +297,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// only return groups that match at least one of the regexes
-	if s.filterGroupsRegex != nil && len(s.filterGroupsRegex) > 0 {
+	if len(s.filterGroupsRegex) > 0 {
 		var filteredGroups []string
 		for _, group := range groups {
 			for _, regex := range s.filterGroupsRegex {

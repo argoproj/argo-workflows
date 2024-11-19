@@ -1,19 +1,20 @@
-//go:build !windows
-
 package v1alpha1
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestWorkflows(t *testing.T) {
@@ -32,7 +33,7 @@ func TestWorkflows(t *testing.T) {
 	})
 	t.Run("Filter", func(t *testing.T) {
 		assert.Len(t, wfs.Filter(func(wf Workflow) bool { return true }), 4)
-		assert.Len(t, wfs.Filter(func(wf Workflow) bool { return false }), 0)
+		assert.Empty(t, wfs.Filter(func(wf Workflow) bool { return false }))
 	})
 }
 
@@ -202,15 +203,13 @@ func TestArtifact_ValidatePath(t *testing.T) {
 	t.Run("empty path fails", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: ""}
 		err := a1.CleanPath()
-		assert.EqualError(t, err, "Artifact 'a1' did not specify a path")
+		require.EqualError(t, err, "Artifact 'a1' did not specify a path")
 		assert.Equal(t, "", a1.Path)
 	})
 
 	t.Run("directory traversal above safe base dir fails", func(t *testing.T) {
 		var assertPathError = func(err error) {
-			if assert.Error(t, err) {
-				assert.Contains(t, err.Error(), "Directory traversal is not permitted")
-			}
+			require.ErrorContains(t, err, "Directory traversal is not permitted")
 		}
 
 		a1 := Artifact{Name: "a1", Path: "/tmp/.."}
@@ -245,73 +244,80 @@ func TestArtifact_ValidatePath(t *testing.T) {
 	t.Run("directory traversal with no safe base dir succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: ".."}
 		err := a1.CleanPath()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "..", a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "../"}
 		err = a2.CleanPath()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "..", a2.Path)
 
 		a3 := Artifact{Name: "a3", Path: "../.."}
 		err = a3.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "../..", a3.Path)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join("..", ".."), a3.Path)
 
 		a4 := Artifact{Name: "a4", Path: "../etc/passwd"}
 		err = a4.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "../etc/passwd", a4.Path)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join("..", "etc", "passwd"), a4.Path)
 	})
 
 	t.Run("directory traversal ending within safe base dir succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp/../tmp/abcd"}
 		err := a1.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "/tmp/abcd", a1.Path)
+		require.NoError(t, err)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd")), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/subdir/../../tmp/subdir/abcd"}
 		err = a2.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "/tmp/subdir/abcd", a2.Path)
+		require.NoError(t, err)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "subdir", "abcd")), a2.Path)
 	})
 
 	t.Run("artifact path filenames are allowed to contain double dots", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp/..artifact.txt"}
 		err := a1.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "/tmp/..artifact.txt", a1.Path)
+		require.NoError(t, err)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "..artifact.txt")), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/artif..t.txt"}
 		err = a2.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "/tmp/artif..t.txt", a2.Path)
+		require.NoError(t, err)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "artif..t.txt")), a2.Path)
 	})
 
 	t.Run("normal artifact path succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp"}
 		err := a1.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "/tmp", a1.Path)
+		require.NoError(t, err)
+		assert.Equal(t, ensureRootPathSeparator("tmp"), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/"}
 		err = a2.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "/tmp", a2.Path)
+		require.NoError(t, err)
+		assert.Equal(t, ensureRootPathSeparator("tmp"), a2.Path)
 
 		a3 := Artifact{Name: "a3", Path: "/tmp/abcd/some-artifact.txt"}
 		err = a3.CleanPath()
-		assert.NoError(t, err)
-		assert.Equal(t, "/tmp/abcd/some-artifact.txt", a3.Path)
+		require.NoError(t, err)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd", "some-artifact.txt")), a3.Path)
 	})
+}
+
+func ensureRootPathSeparator(p string) string {
+	if p[0] == os.PathSeparator {
+		return p
+	}
+	return string(os.PathSeparator) + p
 }
 
 func TestArtifactLocation_IsArchiveLogs(t *testing.T) {
 	var l *ArtifactLocation
 	assert.False(t, l.IsArchiveLogs())
 	assert.False(t, (&ArtifactLocation{}).IsArchiveLogs())
-	assert.False(t, (&ArtifactLocation{ArchiveLogs: pointer.BoolPtr(false)}).IsArchiveLogs())
-	assert.True(t, (&ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}).IsArchiveLogs())
+	assert.False(t, (&ArtifactLocation{ArchiveLogs: ptr.To(false)}).IsArchiveLogs())
+	assert.True(t, (&ArtifactLocation{ArchiveLogs: ptr.To(true)}).IsArchiveLogs())
 }
 
 func TestArtifactLocation_HasLocation(t *testing.T) {
@@ -322,9 +328,9 @@ func TestArtifactLocation_HasLocation(t *testing.T) {
 func TestArtifactoryArtifact(t *testing.T) {
 	a := &ArtifactoryArtifact{URL: "http://my-host"}
 	assert.False(t, a.HasLocation())
-	assert.NoError(t, a.SetKey("my-key"))
+	require.NoError(t, a.SetKey("my-key"))
 	key, err := a.GetKey()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "http://my-host/my-key", a.URL)
 	assert.Equal(t, "/my-key", key, "has leading slash")
 }
@@ -332,35 +338,35 @@ func TestArtifactoryArtifact(t *testing.T) {
 func TestAzureArtifact(t *testing.T) {
 	a := &AzureArtifact{Blob: "my-blob", AzureBlobContainer: AzureBlobContainer{Endpoint: "my-endpoint", Container: "my-container"}}
 	assert.True(t, a.HasLocation())
-	assert.NoError(t, a.SetKey("my-blob"))
+	require.NoError(t, a.SetKey("my-blob"))
 	key, err := a.GetKey()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "my-blob", key)
 }
 
 func TestGitArtifact(t *testing.T) {
 	a := &GitArtifact{Repo: "my-repo"}
 	assert.True(t, a.HasLocation())
-	assert.Error(t, a.SetKey("my-key"))
+	require.Error(t, a.SetKey("my-key"))
 	_, err := a.GetKey()
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestGCSArtifact(t *testing.T) {
 	a := &GCSArtifact{Key: "my-key", GCSBucket: GCSBucket{Bucket: "my-bucket"}}
 	assert.True(t, a.HasLocation())
-	assert.NoError(t, a.SetKey("my-key"))
+	require.NoError(t, a.SetKey("my-key"))
 	key, err := a.GetKey()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "my-key", key)
 }
 
 func TestHDFSArtifact(t *testing.T) {
 	a := &HDFSArtifact{HDFSConfig: HDFSConfig{Addresses: []string{"my-address"}}}
 	assert.True(t, a.HasLocation())
-	assert.NoError(t, a.SetKey("my-key"))
+	require.NoError(t, a.SetKey("my-key"))
 	key, err := a.GetKey()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "my-key", a.Path)
 	assert.Equal(t, "my-key", key)
 }
@@ -368,9 +374,9 @@ func TestHDFSArtifact(t *testing.T) {
 func TestHTTPArtifact(t *testing.T) {
 	a := &HTTPArtifact{URL: "http://my-host"}
 	assert.True(t, a.HasLocation())
-	assert.NoError(t, a.SetKey("my-key"))
+	require.NoError(t, a.SetKey("my-key"))
 	key, err := a.GetKey()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "http://my-host/my-key", a.URL)
 	assert.Equal(t, "/my-key", key, "has leading slack")
 }
@@ -378,49 +384,49 @@ func TestHTTPArtifact(t *testing.T) {
 func TestOSSArtifact(t *testing.T) {
 	a := &OSSArtifact{Key: "my-key", OSSBucket: OSSBucket{Endpoint: "my-endpoint", Bucket: "my-bucket"}}
 	assert.True(t, a.HasLocation())
-	assert.NoError(t, a.SetKey("my-key"))
+	require.NoError(t, a.SetKey("my-key"))
 	key, err := a.GetKey()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "my-key", key)
 }
 
 func TestRawArtifact(t *testing.T) {
 	a := &RawArtifact{Data: "my-data"}
 	assert.True(t, a.HasLocation())
-	assert.Error(t, a.SetKey("my-key"))
+	require.Error(t, a.SetKey("my-key"))
 	_, err := a.GetKey()
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestS3Artifact(t *testing.T) {
 	a := &S3Artifact{Key: "my-key", S3Bucket: S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"}}
 	assert.True(t, a.HasLocation())
-	assert.NoError(t, a.SetKey("my-key"))
+	require.NoError(t, a.SetKey("my-key"))
 	key, err := a.GetKey()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "my-key", key)
 }
 
 func TestArtifactLocation_Relocate(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		var l *ArtifactLocation
-		assert.EqualError(t, l.Relocate(nil), "template artifact location not set")
-		assert.Error(t, l.Relocate(&ArtifactLocation{}))
-		assert.Error(t, (&ArtifactLocation{}).Relocate(nil))
-		assert.Error(t, (&ArtifactLocation{}).Relocate(&ArtifactLocation{}))
-		assert.Error(t, (&ArtifactLocation{}).Relocate(&ArtifactLocation{S3: &S3Artifact{}}))
-		assert.Error(t, (&ArtifactLocation{S3: &S3Artifact{}}).Relocate(&ArtifactLocation{}))
+		require.EqualError(t, l.Relocate(nil), "template artifact location not set")
+		require.Error(t, l.Relocate(&ArtifactLocation{}))
+		require.Error(t, (&ArtifactLocation{}).Relocate(nil))
+		require.Error(t, (&ArtifactLocation{}).Relocate(&ArtifactLocation{}))
+		require.Error(t, (&ArtifactLocation{}).Relocate(&ArtifactLocation{S3: &S3Artifact{}}))
+		require.Error(t, (&ArtifactLocation{S3: &S3Artifact{}}).Relocate(&ArtifactLocation{}))
 	})
 	t.Run("HasLocation", func(t *testing.T) {
 		l := &ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "my-bucket", Endpoint: "my-endpoint"}, Key: "my-key"}}
-		assert.NoError(t, l.Relocate(&ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "other-bucket"}}}))
+		require.NoError(t, l.Relocate(&ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "other-bucket"}}}))
 		assert.Equal(t, "my-endpoint", l.S3.Endpoint, "endpoint is unchanged")
 		assert.Equal(t, "my-bucket", l.S3.Bucket, "bucket is unchanged")
 		assert.Equal(t, "my-key", l.S3.Key, "key is unchanged")
 	})
 	t.Run("NotHasLocation", func(t *testing.T) {
 		l := &ArtifactLocation{S3: &S3Artifact{Key: "my-key"}}
-		assert.NoError(t, l.Relocate(&ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "my-bucket"}, Key: "other-key"}}))
+		require.NoError(t, l.Relocate(&ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "my-bucket"}, Key: "other-key"}}))
 		assert.Equal(t, "my-bucket", l.S3.Bucket, "bucket copied from argument")
 		assert.Equal(t, "my-key", l.S3.Key, "key is unchanged")
 	})
@@ -431,11 +437,11 @@ func TestArtifactLocation_Get(t *testing.T) {
 
 	v, err := l.Get()
 	assert.Nil(t, v)
-	assert.EqualError(t, err, "key unsupported: cannot get key for artifact location, because it is invalid")
+	require.EqualError(t, err, "key unsupported: cannot get key for artifact location, because it is invalid")
 
 	v, err = (&ArtifactLocation{}).Get()
 	assert.Nil(t, v)
-	assert.EqualError(t, err, "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
+	require.EqualError(t, err, "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/")
 
 	v, _ = (&ArtifactLocation{Azure: &AzureArtifact{}}).Get()
 	assert.IsType(t, &AzureArtifact{}, v)
@@ -465,51 +471,51 @@ func TestArtifactLocation_Get(t *testing.T) {
 func TestArtifactLocation_SetType(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.Error(t, l.SetType(nil))
+		require.Error(t, l.SetType(nil))
 	})
 	t.Run("Artifactory", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&ArtifactoryArtifact{}))
+		require.NoError(t, l.SetType(&ArtifactoryArtifact{}))
 		assert.NotNil(t, l.Artifactory)
 	})
 	t.Run("Azure", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&AzureArtifact{}))
+		require.NoError(t, l.SetType(&AzureArtifact{}))
 		assert.NotNil(t, l.Azure)
 	})
 	t.Run("GCS", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&GCSArtifact{}))
+		require.NoError(t, l.SetType(&GCSArtifact{}))
 		assert.NotNil(t, l.GCS)
 	})
 	t.Run("HDFS", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&HDFSArtifact{}))
+		require.NoError(t, l.SetType(&HDFSArtifact{}))
 		assert.NotNil(t, l.HDFS)
 	})
 	t.Run("HTTP", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&HTTPArtifact{}))
+		require.NoError(t, l.SetType(&HTTPArtifact{}))
 		assert.NotNil(t, l.HTTP)
 	})
 	t.Run("OSS", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&OSSArtifact{}))
+		require.NoError(t, l.SetType(&OSSArtifact{}))
 		assert.NotNil(t, l.OSS)
 	})
 	t.Run("Raw", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&RawArtifact{}))
+		require.NoError(t, l.SetType(&RawArtifact{}))
 		assert.NotNil(t, l.Raw)
 	})
 	t.Run("S3", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&S3Artifact{}))
+		require.NoError(t, l.SetType(&S3Artifact{}))
 		assert.NotNil(t, l.S3)
 	})
 	t.Run("Azure", func(t *testing.T) {
 		l := &ArtifactLocation{}
-		assert.NoError(t, l.SetType(&AzureArtifact{}))
+		require.NoError(t, l.SetType(&AzureArtifact{}))
 		assert.NotNil(t, l.Azure)
 	})
 }
@@ -519,75 +525,75 @@ func TestArtifactLocation_Key(t *testing.T) {
 		var l *ArtifactLocation
 		assert.False(t, l.HasKey())
 		_, err := l.GetKey()
-		assert.Error(t, err, "cannot get nil")
+		require.Error(t, err, "cannot get nil")
 		err = l.SetKey("my-file")
-		assert.Error(t, err, "cannot set nil")
+		require.Error(t, err, "cannot set nil")
 	})
 	t.Run("Empty", func(t *testing.T) {
 		// unlike nil, empty is actually invalid
 		l := &ArtifactLocation{}
 		assert.False(t, l.HasKey())
 		_, err := l.GetKey()
-		assert.Error(t, err, "cannot get empty")
+		require.Error(t, err, "cannot get empty")
 		err = l.SetKey("my-file")
-		assert.Error(t, err, "cannot set empty")
+		require.Error(t, err, "cannot set empty")
 	})
 	t.Run("Artifactory", func(t *testing.T) {
 		l := &ArtifactLocation{Artifactory: &ArtifactoryArtifact{URL: "http://my-host/my-dir?a=1"}}
 		err := l.AppendToKey("my-file")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "http://my-host/my-dir/my-file?a=1", l.Artifactory.URL, "appends to Artifactory path")
 	})
 	t.Run("Azure", func(t *testing.T) {
 		l := &ArtifactLocation{Azure: &AzureArtifact{Blob: "my-dir"}}
 		err := l.AppendToKey("my-file")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "my-dir/my-file", l.Azure.Blob, "appends to Azure Blob name")
 	})
 	t.Run("Git", func(t *testing.T) {
 		l := &ArtifactLocation{Git: &GitArtifact{}}
 		assert.False(t, l.HasKey())
 		_, err := l.GetKey()
-		assert.Error(t, err)
+		require.Error(t, err)
 		err = l.SetKey("my-file")
-		assert.Error(t, err, "cannot set Git key")
+		require.Error(t, err, "cannot set Git key")
 	})
 	t.Run("GCS", func(t *testing.T) {
 		l := &ArtifactLocation{GCS: &GCSArtifact{Key: "my-dir"}}
 		err := l.AppendToKey("my-file")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "my-dir/my-file", l.GCS.Key, "appends to GCS key")
 	})
 	t.Run("HDFS", func(t *testing.T) {
 		l := &ArtifactLocation{HDFS: &HDFSArtifact{Path: "my-path"}}
 		err := l.AppendToKey("my-file")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "my-path/my-file", l.HDFS.Path, "appends to HDFS path")
 	})
 	t.Run("HTTP", func(t *testing.T) {
 		l := &ArtifactLocation{HTTP: &HTTPArtifact{URL: "http://my-host/my-dir?a=1"}}
 		err := l.AppendToKey("my-file")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "http://my-host/my-dir/my-file?a=1", l.HTTP.URL, "appends to HTTP URL path")
 	})
 	t.Run("OSS", func(t *testing.T) {
 		l := &ArtifactLocation{OSS: &OSSArtifact{Key: "my-dir"}}
 		err := l.AppendToKey("my-file")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "my-dir/my-file", l.OSS.Key, "appends to OSS key")
 	})
 	t.Run("Raw", func(t *testing.T) {
 		l := &ArtifactLocation{Raw: &RawArtifact{}}
 		assert.False(t, l.HasKey())
 		_, err := l.GetKey()
-		assert.Error(t, err, "cannot get raw key")
+		require.Error(t, err, "cannot get raw key")
 		err = l.SetKey("my-file")
-		assert.Error(t, err, "cannot set raw key")
+		require.Error(t, err, "cannot set raw key")
 	})
 	t.Run("S3", func(t *testing.T) {
 		l := &ArtifactLocation{S3: &S3Artifact{Key: "my-dir"}}
 		err := l.AppendToKey("my-file")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "my-dir/my-file", l.S3.Key, "appends to S3 key")
 	})
 }
@@ -677,13 +683,13 @@ func TestPodGC_GetLabelSelector(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		var podGC *PodGC
 		selector, err := podGC.GetLabelSelector()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, labels.Nothing(), selector)
 	})
 	t.Run("Unspecified", func(t *testing.T) {
 		var podGC = &PodGC{}
 		selector, err := podGC.GetLabelSelector()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, labels.Everything(), selector)
 	})
 	t.Run("Specified", func(t *testing.T) {
@@ -694,7 +700,7 @@ func TestPodGC_GetLabelSelector(t *testing.T) {
 		}
 		var podGC = &PodGC{LabelSelector: labelSelector}
 		selector, err := podGC.GetLabelSelector()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "foo=bar", selector.String())
 	})
 }
@@ -717,9 +723,9 @@ func TestNodes_Children(t *testing.T) {
 	}
 	t.Run("Found", func(t *testing.T) {
 		ret := nodes.Children("node_0")
-		assert.Equal(t, len(ret), 2)
-		assert.Equal(t, ret["node_1"].Name, "node_1")
-		assert.Equal(t, ret["node_2"].Name, "node_2")
+		assert.Len(t, ret, 2)
+		assert.Equal(t, "node_1", ret["node_1"].Name)
+		assert.Equal(t, "node_2", ret["node_2"].Name)
 	})
 	t.Run("NotFound", func(t *testing.T) {
 		assert.Empty(t, nodes.Children("node_1"))
@@ -739,7 +745,7 @@ func TestNestedChildren(t *testing.T) {
 	}
 	t.Run("Get children", func(t *testing.T) {
 		statuses, err := nodes.NestedChildrenStatus("node_0")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		found := make(map[string]bool)
 		// parent is already assumed to be found
 		found["node_0"] = true
@@ -766,9 +772,9 @@ func TestNodes_Filter(t *testing.T) {
 	})
 	t.Run("Found", func(t *testing.T) {
 		n := nodes.Filter(func(x NodeStatus) bool { return x.Phase == NodeFailed })
-		assert.Equal(t, len(n), 2)
-		assert.Equal(t, n["node_1"].ID, "node_1")
-		assert.Equal(t, n["node_3"].ID, "node_3")
+		assert.Len(t, n, 2)
+		assert.Equal(t, "node_1", n["node_1"].ID)
+		assert.Equal(t, "node_3", n["node_3"].ID)
 	})
 }
 
@@ -783,8 +789,8 @@ func TestNodes_Map(t *testing.T) {
 	})
 	t.Run("Exist", func(t *testing.T) {
 		n := nodes.Map(func(x NodeStatus) interface{} { return x.HostNodeName })
-		assert.Equal(t, n["node_1"], "host_1")
-		assert.Equal(t, n["node_2"], "host_2")
+		assert.Equal(t, "host_1", n["node_1"])
+		assert.Equal(t, "host_2", n["node_2"])
 	})
 }
 
@@ -856,11 +862,11 @@ func TestCronWorkflowConditions(t *testing.T) {
 		Status:  metav1.ConditionTrue,
 	}
 
-	assert.Len(t, cwfCond, 0)
+	assert.Empty(t, cwfCond)
 	cwfCond.UpsertCondition(cond)
 	assert.Len(t, cwfCond, 1)
 	cwfCond.RemoveCondition(ConditionTypeSubmissionError)
-	assert.Len(t, cwfCond, 0)
+	assert.Empty(t, cwfCond)
 }
 
 func TestDisplayConditions(t *testing.T) {
@@ -893,11 +899,9 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			Buckets: []Amount{{"10"}, {"20"}, {"30"}},
 		},
 	}
-	stableDesc := metric.GetDesc()
+	stableDesc := metric.GetKey()
 	for i := 0; i < 10; i++ {
-		if !assert.Equal(t, stableDesc, metric.GetDesc()) {
-			break
-		}
+		require.Equal(t, stableDesc, metric.GetKey())
 	}
 }
 
@@ -1045,7 +1049,7 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	query.NodeId = "node-foobar"
 	queriedArtifactSearchResults = wf.SearchArtifacts(query)
 	assert.Nil(t, queriedArtifactSearchResults)
-	assert.Len(t, queriedArtifactSearchResults, 0)
+	assert.Empty(t, queriedArtifactSearchResults)
 
 	// template and artifact name
 	query = NewArtifactSearchQuery()
@@ -1073,7 +1077,7 @@ func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 }
 
 func TestGetTTLStrategy(t *testing.T) {
-	spec := WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
+	spec := WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(20))}}
 	ttl := spec.GetTTLStrategy()
 	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
 }
@@ -1081,11 +1085,11 @@ func TestGetTTLStrategy(t *testing.T) {
 func TestWfGetTTLStrategy(t *testing.T) {
 	wf := Workflow{}
 
-	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
+	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(20))}}
 	result := wf.GetTTLStrategy()
 	assert.Equal(t, int32(20), *result.SecondsAfterCompletion)
 
-	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(30)}
+	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(30))}
 	result = wf.GetTTLStrategy()
 	assert.Equal(t, int32(30), *result.SecondsAfterCompletion)
 }
@@ -1258,7 +1262,7 @@ func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
 		assert.False(t, x.SaveLogsAsArtifact())
 	})
 	t.Run("IsArchiveLogs", func(t *testing.T) {
-		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}}
+		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: ptr.To(true)}}
 		assert.True(t, x.SaveLogsAsArtifact())
 	})
 }
@@ -1277,7 +1281,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		Steps:     []ParallelSteps{steps},
 		Script:    &ScriptTemplate{Source: "test"},
 		Container: &corev1.Container{Name: "container"},
-		DAG:       &DAGTemplate{FailFast: pointer.BoolPtr(true)},
+		DAG:       &DAGTemplate{FailFast: ptr.To(true)},
 		Resource:  &ResourceTemplate{Action: "Create"},
 		Data:      &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{}}},
 		Suspend:   &SuspendTemplate{Duration: "10s"},
@@ -1302,7 +1306,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		assert.Nil(t, dagTmpl.Script)
 		assert.Nil(t, dagTmpl.Resource)
 		assert.Nil(t, dagTmpl.Data)
-		assert.Len(t, dagTmpl.Steps, 0)
+		assert.Empty(t, dagTmpl.Steps)
 		assert.Nil(t, dagTmpl.Container)
 		assert.Nil(t, dagTmpl.Suspend)
 	})
@@ -1314,7 +1318,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		assert.Nil(t, scriptTmpl.DAG)
 		assert.Nil(t, scriptTmpl.Resource)
 		assert.Nil(t, scriptTmpl.Data)
-		assert.Len(t, scriptTmpl.Steps, 0)
+		assert.Empty(t, scriptTmpl.Steps)
 		assert.Nil(t, scriptTmpl.Container)
 		assert.Nil(t, scriptTmpl.Suspend)
 	})
@@ -1326,7 +1330,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		assert.Nil(t, resourceTmpl.Script)
 		assert.Nil(t, resourceTmpl.DAG)
 		assert.Nil(t, resourceTmpl.Data)
-		assert.Len(t, resourceTmpl.Steps, 0)
+		assert.Empty(t, resourceTmpl.Steps)
 		assert.Nil(t, resourceTmpl.Container)
 		assert.Nil(t, resourceTmpl.Suspend)
 	})
@@ -1337,7 +1341,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		assert.Nil(t, containerTmpl.Script)
 		assert.Nil(t, containerTmpl.DAG)
 		assert.Nil(t, containerTmpl.Data)
-		assert.Len(t, containerTmpl.Steps, 0)
+		assert.Empty(t, containerTmpl.Steps)
 		assert.Nil(t, containerTmpl.Resource)
 		assert.Nil(t, containerTmpl.Suspend)
 	})
@@ -1348,7 +1352,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		assert.Nil(t, dataTmpl.Script)
 		assert.Nil(t, dataTmpl.DAG)
 		assert.Nil(t, dataTmpl.Container)
-		assert.Len(t, dataTmpl.Steps, 0)
+		assert.Empty(t, dataTmpl.Steps)
 		assert.Nil(t, dataTmpl.Resource)
 		assert.Nil(t, dataTmpl.Suspend)
 	})
@@ -1359,7 +1363,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		assert.Nil(t, suspendTmpl.Script)
 		assert.Nil(t, suspendTmpl.DAG)
 		assert.Nil(t, suspendTmpl.Container)
-		assert.Len(t, suspendTmpl.Steps, 0)
+		assert.Empty(t, suspendTmpl.Steps)
 		assert.Nil(t, suspendTmpl.Resource)
 		assert.Nil(t, suspendTmpl.Data)
 	})
@@ -1516,7 +1520,7 @@ func TestStepSpecGetExitHook(t *testing.T) {
 func TestTemplate_RetryStrategy(t *testing.T) {
 	tmpl := Template{}
 	strategy, err := tmpl.GetRetryStrategy()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, wait.Backoff{Steps: 1}, strategy)
 }
 
@@ -1540,7 +1544,7 @@ func TestGetExecSpec(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "stored-spec-template")
+	assert.Equal(t, "stored-spec-template", wf.GetExecSpec().Templates[0].Name)
 
 	wf = Workflow{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1554,11 +1558,11 @@ func TestGetExecSpec(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "spec-template")
+	assert.Equal(t, "spec-template", wf.GetExecSpec().Templates[0].Name)
 
 	wf.Status.StoredWorkflowSpec = nil
 
-	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "spec-template")
+	assert.Equal(t, "spec-template", wf.GetExecSpec().Templates[0].Name)
 }
 
 // Check that inline tasks and steps are properly recovered from the store
@@ -1633,16 +1637,16 @@ func TestInlineStore(t *testing.T) {
 			steptmpl2 := &wf.Spec.Templates[1].Steps[0].Steps[1]
 			stored, err := wf.SetStoredTemplate(scope, "dag-template", dagtmpl1, dagtmpl1.Inline)
 			assert.Equal(t, shouldStore, stored, "DAG template 1 should be stored for non local scopes")
-			assert.Nil(t, err, "SetStoredTemplate for DAG1 should not return an error")
+			require.NoError(t, err, "SetStoredTemplate for DAG1 should not return an error")
 			stored, err = wf.SetStoredTemplate(scope, "dag-template", dagtmpl2, dagtmpl2.Inline)
 			assert.Equal(t, shouldStore, stored, "DAG template 2 should be stored for non local scopes")
-			assert.Nil(t, err, "SetStoredTemplate for DAG2 should not return an error")
+			require.NoError(t, err, "SetStoredTemplate for DAG2 should not return an error")
 			stored, err = wf.SetStoredTemplate(scope, "step-template", steptmpl1, steptmpl1.Inline)
 			assert.Equal(t, shouldStore, stored, "Step template 1 should be stored for non local scopes")
-			assert.Nil(t, err, "SetStoredTemplate for Step 1 should not return an error")
+			require.NoError(t, err, "SetStoredTemplate for Step 1 should not return an error")
 			stored, err = wf.SetStoredTemplate(scope, "step-template", steptmpl2, steptmpl2.Inline)
 			assert.Equal(t, shouldStore, stored, "Step template 2 should be stored for non local scopes")
-			assert.Nil(t, err, "SetStoredTemplate for Step 2 should not return an error")
+			require.NoError(t, err, "SetStoredTemplate for Step 2 should not return an error")
 			// For cases where we can store we should be able to retrieve and check
 			if shouldStore {
 				dagretrieved1 := wf.GetStoredTemplate(scope, "dag-template", dagtmpl1)

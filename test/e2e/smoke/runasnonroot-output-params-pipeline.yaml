@@ -16,7 +16,7 @@ spec:
         - test test
         - /tmp/output-param.txt
       # Accessing output parameters requires special permissions for the
-      # executor. Presense of an output parameter here will test that these
+      # executor. Presence of an output parameter here will test that these
       # permissions are granted.
       outputs:
         parameters:
