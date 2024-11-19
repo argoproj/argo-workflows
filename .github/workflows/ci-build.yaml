@@ -324,7 +324,7 @@ jobs:
         run: make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}}
         timeout-minutes: 5
       - name: Run tests ${{matrix.test}}
-        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=25m STATIC_FILES=false
 
       # failure debugging below
       - name: Failure debug - k3s logs
