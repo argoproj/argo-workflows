@@ -2,7 +2,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
-import {RouteComponentProps, Link} from 'react-router-dom';
+import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -90,15 +90,11 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                                     <i className='fa fa-clone' />
                                 </div>
                                 <Link to={{pathname: uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}} className='columns small-5'>
-                                    <ClusterWorkflowTemplateMarkdown workflow={t} key={`${t.metadata.namespace}/${t.metadata.name}`} />
+                                    <ClusterWorkflowTemplateMarkdown workflow={t} key={`{t.metadata.namespace}/${t.metadata.name}`} />
                                 </Link>
                                 <div className='columns small-3'>
-                                    <Timestamp date={t.metadata.creationTimestamp} />
+                                    <Timestamp date={t.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
                                 </div>
-                            </div>
-                            <div className='columns small-5'>{t.metadata.name}</div>
-                            <div className='columns small-3'>
-                                <Timestamp date={t.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
                             </div>
                         </div>
                     ))}

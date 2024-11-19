@@ -146,7 +146,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                                     </div>
                                 </div>
                                 {templates.map(t => {
-                                    return <WorkflowTemplateRow workflow={t} key={`${t.metadata.namespace}/${t.metadata.name}`} />;
+                                    return <WorkflowTemplateRow workflow={t} displayISOFormat={storedDisplayISOFormat} key={`{t.metadata.namespace}/${t.metadata.name}`} />;
                                 })}
                             </div>
                             <Footnote>

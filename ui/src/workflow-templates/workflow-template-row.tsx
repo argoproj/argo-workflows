@@ -1,16 +1,17 @@
 import * as React from 'react';
 import {Link} from 'react-router-dom';
 
-import {WorkflowTemplate} from '../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../shared/annotations';
 import {uiUrl} from '../shared/base';
-import {Timestamp} from '../shared/components/timestamp';
 import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-markdown-gfm';
+import {Timestamp} from '../shared/components/timestamp';
+import {WorkflowTemplate} from '../shared/models';
 
 require('./workflow-template-row.scss');
 
 interface WorkflowTemplateRowProps {
     workflow: WorkflowTemplate;
+    displayISOFormat: boolean;
 }
 
 export function WorkflowTemplateRow(props: WorkflowTemplateRowProps) {
@@ -32,7 +33,7 @@ export function WorkflowTemplateRow(props: WorkflowTemplateRowProps) {
                 </Link>
                 <div className='columns small-3'>{wf.metadata.namespace}</div>
                 <div className='columns small-3'>
-                    <Timestamp date={wf.metadata.creationTimestamp} />
+                    <Timestamp date={wf.metadata.creationTimestamp} displayISOFormat={props.displayISOFormat} />
                 </div>
             </div>
         </div>

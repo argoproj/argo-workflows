@@ -154,7 +154,14 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                     </div>
                                 </div>
                                 {cronWorkflows.map(w => {
-                                    return <CronWorkflowRow workflow={w} key={`${w.metadata.namespace}/${w.metadata.name}`} />;
+                                    return (
+                                        <CronWorkflowRow
+                                            workflow={w}
+                                            displayISOFormatCreation={storedDisplayISOFormatCreation}
+                                            displayISOFormatNextScheduled={storedDisplayISOFormatNextScheduled}
+                                            key={`{w.metadata.namespace}/${w.metadata.name}`}
+                                        />
+                                    );
                                 })}
                             </div>
                             <Footnote>

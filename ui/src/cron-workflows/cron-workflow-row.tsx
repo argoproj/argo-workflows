@@ -2,18 +2,20 @@ import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
 import {Link} from 'react-router-dom';
 
-import {CronWorkflow, CronWorkflowSpec} from '../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../shared/annotations';
 import {uiUrl} from '../shared/base';
-import {getNextScheduledTime} from '../shared/cron';
 import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-markdown-gfm';
 import {Timestamp} from '../shared/components/timestamp';
+import {getNextScheduledTime} from '../shared/cron';
+import {CronWorkflow, CronWorkflowSpec} from '../shared/models';
 import {PrettySchedule} from './pretty-schedule';
 
 require('./cron-workflow-row.scss');
 
 interface CronWorkflowRowProps {
     workflow: CronWorkflow;
+    displayISOFormatCreation: boolean;
+    displayISOFormatNextScheduled: boolean;
 }
 
 export function CronWorkflowRow(props: CronWorkflowRowProps) {
@@ -28,7 +30,7 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
         <div className='cron-workflows-list__row-container'>
             <div className='row argo-table-list__row'>
                 <div className='columns small-1'>{wf.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
-                <Link to={{pathname: uiUrl(`cron-workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}} className='columns small-3'>
+                <Link to={{pathname: uiUrl(`cron-workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}} className='columns small-2'>
                     <div className='wf-rows-name'>{hasAnnotation ? <SuspenseReactMarkdownGfm markdown={markdown} /> : markdown}</div>
                 </Link>
                 <div className='columns small-2'>{wf.metadata.namespace}</div>
@@ -43,7 +45,7 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
                               </>
                           ))}
                 </div>
-                <div className='columns small-2'>
+                <div className='columns small-1'>
                     {wf.spec.schedule != '' ? (
                         <PrettySchedule schedule={wf.spec.schedule} />
                     ) : (
@@ -57,10 +59,16 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
                         </>
                     )}
                 </div>
-                <div className='columns small-1'>
-                    <Timestamp date={wf.metadata.creationTimestamp} />
+                <div className='columns small-2'>
+                    <Timestamp date={wf.metadata.creationTimestamp} displayISOFormat={props.displayISOFormatCreation} />
                 </div>
-                <div className='columns small-1'>{wf.spec.suspend ? '' : <Ticker intervalMs={1000}>{() => <Timestamp date={getCronNextScheduledTime(wf.spec)} />}</Ticker>}</div>
+                <div className='columns small-2'>
+                    {wf.spec.suspend ? (
+                        ''
+                    ) : (
+                        <Ticker intervalMs={1000}>{() => <Timestamp date={getCronNextScheduledTime(wf.spec)} displayISOFormat={props.displayISOFormatNextScheduled} />}</Ticker>
+                    )}
+                </div>
             </div>
         </div>
     );

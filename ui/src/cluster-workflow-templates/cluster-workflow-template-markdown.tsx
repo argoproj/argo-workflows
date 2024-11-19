@@ -1,8 +1,8 @@
 import * as React from 'react';
 
-import {ClusterWorkflowTemplate} from '../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../shared/annotations';
 import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-markdown-gfm';
+import {ClusterWorkflowTemplate} from '../shared/models';
 
 require('./cluster-workflow-template-markdown.scss');
 
