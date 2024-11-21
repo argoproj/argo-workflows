@@ -23,6 +23,8 @@ type Throttler interface {
 	Admit(key Key) bool
 	// Remove notifies throttler that item processing is no longer needed
 	Remove(key Key)
+	// Remove throttle limit on key
+	RemoveParallelismLimit(key Key)
 }
 
 type Key = string
@@ -38,12 +40,13 @@ var NamespaceBucket BucketFunc = func(key Key) BucketKey {
 }
 
 type throttler struct {
-	queue       QueueFunc
-	bucketFunc  BucketFunc
-	inProgress  buckets
-	pending     map[BucketKey]*priorityQueue
-	lock        *sync.Mutex
-	parallelism int
+	queue             QueueFunc
+	bucketFunc        BucketFunc
+	inProgress        buckets
+	inProgressNoLimit buckets
+	pending           map[BucketKey]*priorityQueue
+	lock              *sync.Mutex
+	parallelism       int
 }
 
 type bucket map[Key]bool
@@ -53,12 +56,13 @@ type buckets map[BucketKey]bucket
 // `queue` is invoked.
 func NewThrottler(parallelism int, bucketFunc BucketFunc, queue QueueFunc) Throttler {
 	return &throttler{
-		queue:       queue,
-		bucketFunc:  bucketFunc,
-		inProgress:  make(buckets),
-		pending:     make(map[BucketKey]*priorityQueue),
-		lock:        &sync.Mutex{},
-		parallelism: parallelism,
+		queue:             queue,
+		bucketFunc:        bucketFunc,
+		inProgress:        make(buckets),
+		inProgressNoLimit: make(buckets),
+		pending:           make(map[BucketKey]*priorityQueue),
+		lock:              &sync.Mutex{},
+		parallelism:       parallelism,
 	}
 }
 
@@ -106,6 +110,9 @@ func (t *throttler) Admit(key Key) bool {
 		return true
 	}
 	bucketKey := t.bucketFunc(key)
+	if x, ok := t.inProgressNoLimit[bucketKey]; ok && x[key] {
+		return true
+	}
 	if x, ok := t.inProgress[bucketKey]; ok && x[key] {
 		return true
 	}
@@ -117,12 +124,32 @@ func (t *throttler) Remove(key Key) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	bucketKey := t.bucketFunc(key)
+	if x, ok := t.inProgressNoLimit[bucketKey]; ok {
+		delete(x, key)
+	}
 	if x, ok := t.inProgress[bucketKey]; ok {
 		delete(x, key)
 	}
 	if x, ok := t.pending[bucketKey]; ok {
 		x.remove(key)
 	}
+	t.queueThrottled(bucketKey)
+}
+
+func (t *throttler) RemoveParallelismLimit(key Key) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	if t.parallelism == 0 {
+		return
+	}
+	bucketKey := t.bucketFunc(key)
+	if x, ok := t.inProgress[bucketKey]; ok {
+		delete(x, key)
+	}
+	if _, ok := t.inProgressNoLimit[bucketKey]; !ok {
+		t.inProgressNoLimit[bucketKey] = make(bucket)
+	}
+	t.inProgressNoLimit[bucketKey][key] = true
 	t.queueThrottled(bucketKey)
 }
 
