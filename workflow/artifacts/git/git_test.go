@@ -52,7 +52,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 			privateKey, err := os.ReadFile(homedir.HomeDir() + "/.ssh/id_rsa")
 			require.NoError(t, err)
 
-			driver := &ArtifactDriver{GithubApp: &GithubApp{InstallationID: 123, PrivateKey: []byte(privateKey), ID: 456, BaseURL: "https://api.github.com"}}
+			driver := &ArtifactDriver{GithubApp: &GithubApp{InstallationID: 123, PrivateKey: string(privateKey), ID: 456, BaseURL: "https://api.github.com"}}
 			require.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/private-test-repo.git"}))
 		})
 	})

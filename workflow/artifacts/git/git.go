@@ -86,7 +86,8 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 	}
 
 	if g.GithubApp != nil {
-		transport, err := ghinstallation.New(nethttp.DefaultTransport, g.GithubApp.ID, g.GithubApp.InstallationID, g.GithubApp.PrivateKey)
+		privateKey := []byte(g.GithubApp.PrivateKey)
+		transport, err := ghinstallation.New(nethttp.DefaultTransport, g.GithubApp.ID, g.GithubApp.InstallationID, privateKey)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create transport: %w", err)
 		}
