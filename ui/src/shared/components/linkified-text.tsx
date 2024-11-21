@@ -33,5 +33,5 @@ export default function LinkifiedText({text}: Props) {
         parts.push(<span key={'text-end'}>{text.slice(lastIndex)}</span>);
     }
 
-    return <>{parts}</>;
+    return <span>{parts}</span>;
 }
