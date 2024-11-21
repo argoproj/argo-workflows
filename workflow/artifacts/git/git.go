@@ -43,7 +43,7 @@ type ArtifactDriver struct {
 
 type GithubApp struct {
 	InstallationID int64
-	PrivateKey     []byte
+	PrivateKey     string
 	ID             int64
 	BaseURL        string
 }
