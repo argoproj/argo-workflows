@@ -15,7 +15,7 @@ import {GraphPanel} from '../shared/components/graph/graph-panel';
 import {Node} from '../shared/components/graph/types';
 import {Links} from '../shared/components/links';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
-import {ResourceEditor} from '../shared/components/resource-editor/resource-editor';
+import {SerializingObjectEditor} from '../shared/components/object-editor';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
@@ -317,7 +317,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
                                 {
                                     title: 'SUMMARY',
                                     key: 'summary',
-                                    content: <ResourceEditor kind={selected.kind} value={selected.value} />
+                                    content: <SerializingObjectEditor type={'io.argoproj.workflow.v1alpha1.' + selected.kind} value={selected.value} />
                                 },
                                 {
                                     title: 'LOGS',

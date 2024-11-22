@@ -54,7 +54,7 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
     );
 
     const [error, setError] = useState<Error>();
-    const [eventSource, edited, setEventSource, resetEventSource] = useEditableObject<EventSource>();
+    const {object: eventSource, setObject: setEventSource, resetObject: resetEventSource, serialization, edited, lang, setLang} = useEditableObject<EventSource>();
 
     const selected = (() => {
         if (!selectedNode) {
@@ -139,7 +139,16 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
                 {!eventSource ? (
                     <Loading />
                 ) : (
-                    <EventSourceEditor eventSource={eventSource} onChange={setEventSource} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />
+                    <EventSourceEditor
+                        eventSource={eventSource}
+                        serialization={serialization}
+                        lang={lang}
+                        onChange={setEventSource}
+                        onLangChange={setLang}
+                        onError={setError}
+                        onTabSelected={setTab}
+                        selectedTabKey={tab}
+                    />
                 )}
             </>
             <SlidingPanel isShown={!!selected} onClose={() => setSelectedNode(null)}>
