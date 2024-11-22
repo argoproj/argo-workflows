@@ -81,7 +81,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     useCollectEvent('openedCronWorkflowDetails');
 
     const suspendButton =
-        cronWorkflow && !cronWorkflow.spec.suspend
+        cronWorkflow && !cronWorkflow.spec?.suspend
             ? {
                   title: 'Suspend',
                   iconClassName: 'fa fa-pause',
@@ -102,7 +102,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                           .then(resetCronWorkflow)
                           .then(() => setError(null))
                           .catch(setError),
-                  disabled: !cronWorkflow || !cronWorkflow.spec.suspend || edited
+                  disabled: !cronWorkflow || !cronWorkflow.spec?.suspend || edited
               };
 
     const getItems = () => {

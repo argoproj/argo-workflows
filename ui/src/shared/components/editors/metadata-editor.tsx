@@ -11,19 +11,19 @@ export function MetadataEditor({onChange, value}: {value: kubernetes.ObjectMeta;
                 <div className='row white-box__details-row'>
                     <div className='columns small-4'>Name</div>
                     <div className='columns small-4'>
-                        <TextInput onChange={name => onChange({...value, name})} value={value.name} readOnly={!!value.creationTimestamp} />
+                        <TextInput onChange={name => onChange({...value, name})} value={value.name || ''} readOnly={!!value?.creationTimestamp} />
                     </div>
                 </div>
                 <div className='row white-box__details-row'>
                     <div className='columns small-4'>Generate Name</div>
                     <div className='columns small-4'>
-                        <TextInput onChange={generateName => onChange({...value, generateName})} value={value.generateName} readOnly={!!value.creationTimestamp} />
+                        <TextInput onChange={generateName => onChange({...value, generateName})} value={value.generateName || ''} readOnly={!!value?.creationTimestamp} />
                     </div>
                 </div>
                 <div className='row white-box__details-row'>
                     <div className='columns small-4'>Namespace</div>
                     <div className='columns small-4'>
-                        <TextInput onChange={namespace => onChange({...value, namespace})} value={value.namespace} readOnly={!!value.creationTimestamp} />
+                        <TextInput onChange={namespace => onChange({...value, namespace})} value={value.namespace || ''} readOnly={!!value?.creationTimestamp} />
                     </div>
                 </div>
             </div>

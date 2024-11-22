@@ -35,20 +35,20 @@ export function ClusterWorkflowTemplateEditor({
                 {
                     key: 'spec',
                     title: 'Spec',
-                    content: <WorkflowParametersEditor value={template.spec} onChange={spec => onChange({...template, spec})} onError={onError} />
+                    content: <WorkflowParametersEditor value={template.spec || {}} onChange={spec => onChange({...template, spec})} onError={onError} />
                 },
                 {
                     key: 'metadata',
                     title: 'MetaData',
-                    content: <MetadataEditor value={template.metadata} onChange={metadata => onChange({...template, metadata})} />
+                    content: <MetadataEditor value={template.metadata || {}} onChange={metadata => onChange({...template, metadata})} />
                 },
                 {
                     key: 'workflow-metadata',
                     title: 'Workflow MetaData',
                     content: (
                         <LabelsAndAnnotationsEditor
-                            value={template.spec.workflowMetadata}
-                            onChange={workflowMetadata => onChange({...template, spec: {...template.spec, workflowMetadata}})}
+                            value={template.spec?.workflowMetadata || {}}
+                            onChange={workflowMetadata => onChange({...template, spec: {...(template.spec || {}), workflowMetadata}})}
                         />
                     )
                 }

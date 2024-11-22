@@ -58,7 +58,7 @@ export function CronWorkflowEditor({
                     title: 'Workflow',
                     content: (
                         <WorkflowParametersEditor
-                            value={cronWorkflow.spec.workflowSpec}
+                            value={cronWorkflow.spec?.workflowSpec || {}}
                             onChange={workflowSpec => onChange({...cronWorkflow, spec: {...cronWorkflow.spec, workflowSpec}})}
                             onError={onError}
                         />
@@ -69,7 +69,7 @@ export function CronWorkflowEditor({
                     title: 'Workflow MetaData',
                     content: (
                         <LabelsAndAnnotationsEditor
-                            value={cronWorkflow.spec.workflowMetadata}
+                            value={cronWorkflow.spec?.workflowMetadata || {}}
                             onChange={workflowMetadata =>
                                 onChange({
                                     ...cronWorkflow,

@@ -20,11 +20,11 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                                 <ScheduleValidator schedule={spec.schedule} />
                             </>
                         ) : (
-                            spec.schedules.map((schedule, index) => (
+                            (spec.schedules ?? []).map((schedule, index) => (
                                 <>
                                     <TextInput
                                         value={schedule}
-                                        onChange={newSchedule => onChange({...spec, schedules: updateScheduleAtIndex(spec.schedules, index, newSchedule)})}
+                                        onChange={newSchedule => onChange({...spec, schedules: updateScheduleAtIndex(spec.schedules ?? [], index, newSchedule)})}
                                     />
                                     <ScheduleValidator schedule={schedule} />
                                 </>
