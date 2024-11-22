@@ -59,13 +59,21 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                             search: `?uid=${wf.metadata.uid}`
                         }}
                         className='columns small-2'>
-                        <div className='wf-rows-name'>{hasAnnotation ? <SuspenseReactMarkdownGfm markdown={markdown} /> : markdown}</div>
+                        {hasAnnotation ? (
+                            <div className='wf-rows-name'>
+                                <SuspenseReactMarkdownGfm markdown={markdown} />
+                            </div>
+                        ) : (
+                            <span>
+                                {markdown}
+                            </span>
+                        )}
                     </Link>
                     <div className='columns small-1'>{wf.metadata.namespace}</div>
-                    <div className={'columns small-1 ' + (props.displayISOFormatStart ? 'workflows-list__timestamp' : '')}>
+                    <div className={'columns small-1' + (props.displayISOFormatStart ? ' workflows-list__timestamp' : '')}>
                         <Timestamp date={wf.status.startedAt} displayISOFormat={props.displayISOFormatStart} />
                     </div>
-                    <div className={'columns small-1 ' + (props.displayISOFormatFinished ? 'workflows-list__timestamp' : '')}>
+                    <div className={'columns small-1' + (props.displayISOFormatFinished ? ' workflows-list__timestamp' : '')}>
                         <Timestamp date={wf.status.finishedAt} displayISOFormat={props.displayISOFormatFinished} />
                     </div>
                     <div className='columns small-1'>
