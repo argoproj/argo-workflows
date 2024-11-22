@@ -179,6 +179,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 
 	err = cronWorkflowOperationCtx.validateCronWorkflow(ctx)
 	if err != nil {
+		cc.eventRecorderManager.Get(un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Invalid", err.Error())
 		logCtx.WithError(err).Error("invalid cron workflow")
 		return true
 	}
