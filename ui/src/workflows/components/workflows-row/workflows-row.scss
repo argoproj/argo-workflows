@@ -1,8 +1,10 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
 .wf-rows-name {
-  line-height: 1.5em;
-  display: inline-block;
-  vertical-align: middle;
+  line-height: 2.5em;
   white-space: pre-line;
+  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.25em 0;
 }
