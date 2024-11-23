@@ -30,8 +30,8 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
     const [hideDrawer, setHideDrawer] = useState(true);
     const wf = props.workflow;
     // title + description vars
-    const title = wf.metadata.annotations?.[ANNOTATION_TITLE] ?? wf.metadata.name;
-    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${wf.metadata.annotations[ANNOTATION_DESCRIPTION]}`) || '';
+    const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${FormatMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
+    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${FormatMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
     const hasAnnotation = title !== wf.metadata.name && description !== '';
     const markdown = `${title}${description}`;
 
@@ -59,13 +59,13 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                             search: `?uid=${wf.metadata.uid}`
                         }}
                         className='columns small-2'>
-                        {hasAnnotation ? (
+                        {hasAnnotation || description.length ? (
                             <div className='wf-rows-name'>
                                 <SuspenseReactMarkdownGfm markdown={markdown} />
                             </div>
                         ) : (
                             <span>
-                                {markdown}
+                                <SuspenseReactMarkdownGfm markdown={markdown} />
                             </span>
                         )}
                     </Link>
@@ -130,4 +130,8 @@ function SuspenseReactMarkdownGfm(props: {markdown: string}) {
             <LazyReactMarkdownGfm markdown={props.markdown} />
         </React.Suspense>
     );
+}
+
+function FormatMarkdown(markdown: string) {
+    return markdown.replace(/\n|#|`{3}|>/g, ' ').trim()
 }
