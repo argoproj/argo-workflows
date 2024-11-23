@@ -133,5 +133,5 @@ function SuspenseReactMarkdownGfm(props: {markdown: string}) {
 }
 
 function FormatMarkdown(markdown: string) {
-    return markdown.replace(/\n|#|`{3}|>/g, ' ').trim()
+    return markdown.replace(/\n|#|`{3}|>/g, ' ').trim();
 }
