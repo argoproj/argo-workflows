@@ -3,44 +3,31 @@ import {useEffect, useRef, useState} from 'react';
 import MonacoEditor from 'react-monaco-editor';
 
 import {uiUrl} from '../base';
-import {ScopedLocalStorage} from '../scoped-local-storage';
+import {useEditableObject} from '../use-editable-object';
 import {Button} from './button';
-import {parse, stringify} from './object-parser';
+import type {Lang} from './object-parser';
 import {PhaseIcon} from './phase-icon';
 import {SuspenseMonacoEditor} from './suspense-monaco-editor';
 
 interface Props<T> {
     type?: string;
     value: T;
-    buttons?: React.ReactNode;
-    onChange?: (value: T) => void;
+    lang: Lang;
+    text: string;
+    onLangChange: (lang: Lang) => void;
+    onChange?: (value: string) => void;
 }
 
-const defaultLang = 'yaml';
-
-export function ObjectEditor<T>({type, value, buttons, onChange}: Props<T>) {
-    const storage = new ScopedLocalStorage('object-editor');
+export function ObjectEditor<T>({type, value, text, lang, onChange, onLangChange}: Props<T>) {
     const [error, setError] = useState<Error>();
-    const [lang, setLang] = useState<string>(storage.getItem('lang', defaultLang));
-    const [text, setText] = useState<string>(stringify(value, lang));
     const editor = useRef<MonacoEditor>(null);
 
-    useEffect(() => storage.setItem('lang', lang, defaultLang), [lang]);
-    useEffect(() => setText(stringify(value, lang)), [value]);
-    useEffect(() => setText(stringify(parse(text), lang)), [lang]);
     useEffect(() => {
-        if (!editor.current) {
+        if (!editor.current || text === editor.current.editor.getValue()) {
             return;
         }
-
-        // we ONLY want to change the text, if the normalized version has changed, this prevents white-space changes
-        // from resulting in a significant change
-        const editorText = stringify(parse(editor.current.editor.getValue()), lang);
-        const editorLang = editor.current.editor.getValue().startsWith('{') ? 'json' : 'yaml';
-        if (text !== editorText || lang !== editorLang) {
-            editor.current.editor.setValue(stringify(parse(text), lang));
-        }
-    }, [editor, text, lang]);
+        editor.current.editor.setValue(text);
+    }, [editor, text]);
 
     useEffect(() => {
         if (!type || lang !== 'json') {
@@ -83,7 +70,7 @@ export function ObjectEditor<T>({type, value, buttons, onChange}: Props<T>) {
     return (
         <>
             <div style={{paddingBottom: '1em'}}>
-                <Button outline={true} onClick={() => setLang(lang === 'yaml' ? 'json' : 'yaml')}>
+                <Button outline={true} onClick={() => onLangChange(lang === 'yaml' ? 'json' : 'yaml')}>
                     <span style={{fontWeight: lang === 'json' ? 'bold' : 'normal'}}>JSON</span>/<span style={{fontWeight: lang === 'yaml' ? 'bold' : 'normal'}}>YAML</span>
                 </Button>
 
@@ -109,7 +96,6 @@ export function ObjectEditor<T>({type, value, buttons, onChange}: Props<T>) {
                         {x}
                     </Button>
                 ))}
-                {buttons}
             </div>
             <div>
                 <SuspenseMonacoEditor
@@ -129,7 +115,7 @@ export function ObjectEditor<T>({type, value, buttons, onChange}: Props<T>) {
                     onChange={v => {
                         if (onChange) {
                             try {
-                                onChange(parse(v));
+                                onChange(v);
                                 setError(null);
                             } catch (e) {
                                 setError(e);
@@ -152,4 +138,10 @@ export function ObjectEditor<T>({type, value, buttons, onChange}: Props<T>) {
             )}
         </>
     );
+}
+
+/** Wrapper for ObjectEditor that automatically handles serializing/deserializing the object using useEditableObject() */
+export function SerializingObjectEditor<T>({type, value}: {type?: string; value: T}) {
+    const {object, setObject, serialization, lang, setLang} = useEditableObject<T>(value);
+    return <ObjectEditor type={type} value={object} text={serialization} lang={lang} onLangChange={setLang} onChange={setObject} />;
 }
