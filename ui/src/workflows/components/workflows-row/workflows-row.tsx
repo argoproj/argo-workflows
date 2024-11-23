@@ -30,8 +30,8 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
     const [hideDrawer, setHideDrawer] = useState(true);
     const wf = props.workflow;
     // title + description vars
-    const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${FormatMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
-    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${FormatMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
+    const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${EscapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
+    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${EscapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
     const hasAnnotation = title !== wf.metadata.name && description !== '';
     const markdown = `${title}${description}`;
 
@@ -132,6 +132,6 @@ function SuspenseReactMarkdownGfm(props: {markdown: string}) {
     );
 }
 
-function FormatMarkdown(markdown: string) {
-    return markdown.replace(/\n|#|`{3}|>/g, ' ').trim();
+function EscapeInvalidMarkdown(markdown: string) {
+    return markdown.replace(/\n/g, ' ').trim().replace(/`{3}/g, '').replace(/^#/g, '\\#').replace(/^>/g, '\\>');
 }
