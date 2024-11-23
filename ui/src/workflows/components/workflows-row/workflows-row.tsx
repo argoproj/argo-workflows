@@ -133,5 +133,11 @@ function SuspenseReactMarkdownGfm(props: {markdown: string}) {
 }
 
 function EscapeInvalidMarkdown(markdown: string) {
-    return markdown.replace(/\n/g, ' ').trim().replace(/`{3}/g, '').replace(/^#/g, '\\#').replace(/^>/g, '\\>');
+    return markdown
+        .replace(/([-*])\s(.*\n*)/g, '\\$1 $2')
+        .replace(/\n/g, ' ')
+        .trim()
+        .replace(/`{3}/g, '')
+        .replace(/^#/g, '\\#')
+        .replace(/^>/g, '\\>');
 }
