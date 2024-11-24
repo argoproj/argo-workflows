@@ -3,6 +3,7 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -138,6 +139,15 @@ func validateHooks(hooks wfv1.LifecycleHooks, hookBaseName string) error {
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
+	// TRANSIENT_ERROR_PATTERN will only validate workflow with name that matches pattern
+	pattern, _ := os.LookupEnv("WORKFLOW_VALIDATION_PATTERN")
+	if pattern != "" {
+		match, _ := regexp.MatchString(pattern, wf.Name)
+		if !match {
+			return nil
+		}
+	}
+
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
 	var wfSpecHolder wfv1.WorkflowSpecHolder
