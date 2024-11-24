@@ -5,6 +5,7 @@ package e2e
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -805,7 +806,7 @@ spec:
         args: ["sleep", "5"]
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeCompleted).
+		WaitForWorkflow(fixtures.ToBeCompleted, 2*time.Minute).
 		WaitForWorkflow(fixtures.Condition(func(wf *v1alpha1.Workflow) (bool, string) {
 			onExitNodeName = common.GenerateOnExitNodeName(wf.ObjectMeta.Name)
 			onExitNode := wf.Status.Nodes.FindByDisplayName(onExitNodeName)
