@@ -132,14 +132,19 @@ func overwriteWithArguments(argParam, inParam *wfv1.Parameter) {
 func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parameters, namespace string, configMapStore ConfigMapStore) error {
 	if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 		if configMapStore != nil {
+			replaceMap := make(map[string]string)
+			for k, v := range globalParams {
+				replaceMap[k] = v
+			}
+
 			// SubstituteParams is called only at the end of this method. To support parametrization of the configmap
 			// we need to perform a substitution here over the name and the key of the ConfigMapKeyRef.
-			cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
+			cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, replaceMap)
 			if err != nil {
 				log.WithError(err).Error("unable to substitute name for ConfigMapKeyRef")
 				return err
 			}
-			cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
+			cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, replaceMap)
 			if err != nil {
 				log.WithError(err).Error("unable to substitute key for ConfigMapKeyRef")
 				return err
@@ -218,21 +223,17 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	return SubstituteParams(newTmpl, globalParams, localParams)
 }
 
-// substituteConfigMapKeyRefParam check if ConfigMapKeyRef's key is a param and perform the substitution.
-func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string, error) {
-	if strings.HasPrefix(in, "{{") && strings.HasSuffix(in, "}}") {
-		k := strings.TrimSuffix(strings.TrimPrefix(in, "{{"), "}}")
-		k = strings.Trim(k, " ")
-
-		v, ok := globalParams[k]
-		if !ok {
-			err := errors.InternalError(fmt.Sprintf("parameter %s not found", k))
-			log.WithError(err).Error()
-			return "", err
-		}
-		return v, nil
+// substituteConfigMapKeyRefParam performs template substitution for ConfigMapKeyRef
+func substituteConfigMapKeyRefParam(in string, replaceMap map[string]string) (string, error) {
+	tmpl, err := template.NewTemplate(in)
+	if err != nil {
+		return "", err
 	}
-	return in, nil
+	replacedString, err := tmpl.Replace(replaceMap, false)
+	if err != nil {
+		return "", fmt.Errorf("failed to substitute configMapKeyRef: %w", err)
+	}
+	return replacedString, nil
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
