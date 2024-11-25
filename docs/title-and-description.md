@@ -60,15 +60,7 @@ metadata:
   annotations:
     workflows.argoproj.io/description: '`SuperDuperProject` PR #6529: Implement frobbing (aff39ee)'
 
-# 5. markdown title, multi-line markdown description with URL converted into an anchor link
-metadata:
-  annotations:
-    workflows.argoproj.io/title: '**Test Title**'
-    workflows.argoproj.io/description: |
-      `This is a simple hello world example.`
-      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
-
-# 6. markdown title, markdown description with a markdown link
+# 5. markdown title, markdown description with a markdown link
 metadata:
   annotations:
     workflows.argoproj.io/title: '**Build and test**'
@@ -91,9 +83,7 @@ metadata:
   name: my-cluster-workflow-template
   annotations:
     workflows.argoproj.io/title: '**Test Title**'
-    workflows.argoproj.io/description: |
-      `This is a simple hello world example.`
-      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
+    workflows.argoproj.io/description: `This is a simple hello world example.`
 ```
 
 The above manifest will render as a row like the below image:
@@ -112,9 +102,7 @@ metadata:
   name: my-cron-workflow
   annotations:
     workflows.argoproj.io/title: '**Test Title**'
-    workflows.argoproj.io/description: |
-      `This is a simple hello world example.`
-      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
+    workflows.argoproj.io/description: `This is a simple hello world example.`
 ```
 
 The above manifest will render as a row like the below image:
@@ -133,9 +121,7 @@ metadata:
   name: my-workflow-template
   annotations:
     workflows.argoproj.io/title: '**Test Title**'
-    workflows.argoproj.io/description: |
-      `This is a simple hello world example.`
-      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
+    workflows.argoproj.io/description: `This is a simple hello world example.`
 ```
 
 The above manifest will render as a row like the below image:
