@@ -6,7 +6,7 @@ import {uiUrl} from '../shared/base';
 import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-markdown-gfm';
 import {Timestamp} from '../shared/components/timestamp';
 import {WorkflowTemplate} from '../shared/models';
-import { escapeInvalidMarkdown } from '../workflows/utils';
+import {escapeInvalidMarkdown} from '../workflows/utils';
 
 require('./workflow-template-row.scss');
 
@@ -30,15 +30,15 @@ export function WorkflowTemplateRow(props: WorkflowTemplateRowProps) {
                     <i className='fa fa-clone' />
                 </div>
                 <Link to={{pathname: uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)}} className='columns small-5'>
-                {hasAnnotation || description.length ? (
-                    <div className='wf-rows-name'>
-                        <SuspenseReactMarkdownGfm markdown={markdown} />
-                    </div>
-                ) : (
-                    <span>
-                        <SuspenseReactMarkdownGfm markdown={markdown} />
-                    </span>
-                )}
+                    {hasAnnotation || description.length ? (
+                        <div className='wf-rows-name'>
+                            <SuspenseReactMarkdownGfm markdown={markdown} />
+                        </div>
+                    ) : (
+                        <span>
+                            <SuspenseReactMarkdownGfm markdown={markdown} />
+                        </span>
+                    )}
                 </Link>
                 <div className='columns small-3'>{wf.metadata.namespace}</div>
                 <div className='columns small-3'>

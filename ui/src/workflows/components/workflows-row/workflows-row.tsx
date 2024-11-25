@@ -12,8 +12,8 @@ import {Timestamp} from '../../../shared/components/timestamp';
 import {wfDuration} from '../../../shared/duration';
 import * as models from '../../../shared/models';
 import {isArchivedWorkflow, Workflow} from '../../../shared/models';
-import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 import {escapeInvalidMarkdown} from '../../utils';
+import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
 require('./workflows-row.scss');
 

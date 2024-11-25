@@ -8,8 +8,8 @@ import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-mark
 import {Timestamp} from '../shared/components/timestamp';
 import {getNextScheduledTime} from '../shared/cron';
 import {CronWorkflow, CronWorkflowSpec} from '../shared/models';
-import {PrettySchedule} from './pretty-schedule';
 import {escapeInvalidMarkdown} from '../workflows/utils';
+import {PrettySchedule} from './pretty-schedule';
 
 require('./cron-workflow-row.scss');
 
