@@ -44,12 +44,12 @@ type AgentExecutor struct {
 	RESTClient        rest.Interface
 	Namespace         string
 	consideredTasks   *sync.Map
-	plugins           []executorplugins.TemplateExecutor
+	plugins           map[string]executorplugins.TemplateExecutor
 }
 
 type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
+func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins map[string]executorplugins.TemplateExecutor) *AgentExecutor {
 	return &AgentExecutor{
 		log:               log.WithField("workflow", workflowName),
 		ClientSet:         clientSet,
@@ -369,8 +369,25 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Te
 		Template: &tmpl,
 	}
 	reply := &executorplugins.ExecuteTemplateReply{}
-	for _, plug := range ae.plugins {
-		if err := plug.ExecuteTemplate(ctx, args, reply); err != nil {
+	name, err := tmpl.Plugin.Name()
+	if err != nil {
+		return 0, err
+	}
+	if plugin, ok := ae.plugins[name]; ok {
+		if err = plugin.ExecuteTemplate(ctx, args, reply); err != nil {
+			return 0, err
+		} else if reply.Node != nil {
+			*result = *reply.Node
+			if reply.Node.Phase == wfv1.NodeSucceeded {
+				return 0, nil
+			}
+			return reply.GetRequeue(), nil
+		}
+		return 0, fmt.Errorf("plugin:'%s' could not execute the template", name)
+	}
+	// Try to execute template with each plugin, if specified plugin is not found.
+	for _, plugin := range ae.plugins {
+		if err = plugin.ExecuteTemplate(ctx, args, reply); err != nil {
 			return 0, err
 		} else if reply.Node != nil {
 			*result = *reply.Node
