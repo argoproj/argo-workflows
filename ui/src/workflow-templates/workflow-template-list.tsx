@@ -2,16 +2,15 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
+import {RouteComponentProps} from 'react-router-dom';
 
-import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../shared/annotations';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
 import {PaginationPanel} from '../shared/components/pagination-panel';
-import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
+import {TimestampSwitch} from '../shared/components/timestamp';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
@@ -26,6 +25,7 @@ import {useQueryParams} from '../shared/use-query-params';
 import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {WorkflowTemplateCreator} from './workflow-template-creator';
 import {WorkflowTemplateFilters} from './workflow-template-filters';
+import {WorkflowTemplateRow} from './workflow-template-row';
 
 import './workflow-template-list.scss';
 
@@ -145,24 +145,9 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
                                         CREATED <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
                                     </div>
                                 </div>
-                                {templates.map(t => (
-                                    <Link
-                                        className='row argo-table-list__row'
-                                        key={`${t.metadata.namespace}/${t.metadata.name}`}
-                                        to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
-                                        <div className='columns small-1'>
-                                            <i className='fa fa-clone' />
-                                        </div>
-                                        <div className='columns small-5'>
-                                            {t.metadata.annotations?.[ANNOTATION_TITLE] ?? t.metadata.name}
-                                            {t.metadata.annotations?.[ANNOTATION_DESCRIPTION] ? <p>{t.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
-                                        </div>
-                                        <div className='columns small-3'>{t.metadata.namespace}</div>
-                                        <div className='columns small-3'>
-                                            <Timestamp date={t.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
-                                        </div>
-                                    </Link>
-                                ))}
+                                {templates.map(t => {
+                                    return <WorkflowTemplateRow workflow={t} displayISOFormat={storedDisplayISOFormat} key={`{t.metadata.namespace}/${t.metadata.name}`} />;
+                                })}
                             </div>
                             <Footnote>
                                 <InfoIcon /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.

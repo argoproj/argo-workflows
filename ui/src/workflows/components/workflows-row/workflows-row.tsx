@@ -6,13 +6,14 @@ import {Link} from 'react-router-dom';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {DurationPanel} from '../../../shared/components/duration-panel';
-import {Loading} from '../../../shared/components/loading';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
+import {SuspenseReactMarkdownGfm} from '../../../shared/components/suspense-react-markdown-gfm';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {wfDuration} from '../../../shared/duration';
 import * as models from '../../../shared/models';
 import {isArchivedWorkflow, Workflow} from '../../../shared/models';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
+import {escapeInvalidMarkdown} from '../../utils';
 
 require('./workflows-row.scss');
 
@@ -30,8 +31,8 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
     const [hideDrawer, setHideDrawer] = useState(true);
     const wf = props.workflow;
     // title + description vars
-    const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${EscapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
-    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${EscapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
+    const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
+    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
     const hasAnnotation = title !== wf.metadata.name && description !== '';
     const markdown = `${title}${description}`;
 
@@ -117,27 +118,4 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
             </div>
         </div>
     );
-}
-
-// lazy load ReactMarkdown (and remark-gfm) as it is a large optional component (which can be split into a separate bundle)
-const LazyReactMarkdownGfm = React.lazy(() => {
-    return import(/* webpackChunkName: "react-markdown-plus-gfm" */ './react-markdown-gfm');
-});
-
-function SuspenseReactMarkdownGfm(props: {markdown: string}) {
-    return (
-        <React.Suspense fallback={<Loading />}>
-            <LazyReactMarkdownGfm markdown={props.markdown} />
-        </React.Suspense>
-    );
-}
-
-function EscapeInvalidMarkdown(markdown: string) {
-    return markdown
-        .replace(/([-*])\s(.*\n*)/g, '\\$1 $2')
-        .replace(/\n/g, ' ')
-        .trim()
-        .replace(/`{3}/g, '')
-        .replace(/^#/g, '\\#')
-        .replace(/^>/g, '\\>');
 }

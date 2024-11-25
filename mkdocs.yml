@@ -1,4 +1,5 @@
 site_name: Argo Workflows - The workflow engine for Kubernetes
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, https://argo-workflows.readthedocs.io/en/latest/] # https://docs.readthedocs.io/en/stable/canonical-urls.html#how-to-specify-the-canonical-url, https://www.mkdocs.org/user-guide/configuration/#environment-variables
 repo_url: https://github.com/argoproj/argo-workflows
 edit_uri: https://github.com/argoproj/argo-workflows/edit/main/docs
 strict: true
