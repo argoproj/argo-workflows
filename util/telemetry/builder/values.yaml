@@ -1,0 +1,406 @@
+attributes:
+  - name: BuildCompiler
+    displayName: compiler
+    description: "The compiler used. Example: `gc`"
+  - name: BuildDate
+    description: Build date
+  - name: BuildGitCommit
+    displayName: git_commit
+    description: The full Git SHA1 commit
+  - name: BuildGitTag
+    displayName: git_tag
+    description: "The Git tag or `untagged` if it was not tagged"
+  - name: BuildGitTreeState
+    displayName: git_tree_state
+    description: "Whether the Git tree was `dirty` or `clean` when built"
+  - name: BuildGoVersion
+    displayName: go_version
+    description: Version of Go used
+  - name: BuildPlatform
+    displayName: platform
+    description: "The [Go platform](https://go.dev/doc/install/source#environment) compiled for. Example: `linux/amd64`"
+  - name: BuildVersion
+    displayName: version
+    description: The version of Argo
+  - name: ConcurrencyPolicy
+    description: "The concurrency policy which was triggered, will be either `Forbid` or `Replace`"
+  - name: CronWFName
+    displayName: name
+    description: "⚠️ The name of the CronWorkflow"
+  - name: CronWFNamespace
+    displayName: namespace
+    description: "The namespace of the CronWorkflow"
+  - name: DeprecatedFeature
+    displayName: feature
+    description: The name of the feature used
+  - name: ErrorCause
+    displayName: cause
+    description: The cause of the error
+  - name: LogLevel
+    displayName: level
+    description: The log level of the message
+  - name: NodePhase
+    description: "The phase that the pod's node was in"
+  - name: PodNamespace
+    displayName: namespace
+    description: The namespace in which the pod is running
+  - name: PodPendingReason
+    displayName: reason
+    description: Summary of the kubernetes Reason for pending
+  - name: PodPhase
+    displayName: phase
+    description: The phase that the pod is in
+  - name: QueueName
+    description: The name of the queue
+  - name: RecentlyStarted
+    description: "Boolean: was this pod started recently"
+  - name: RequestCode
+    displayName: status_code
+    description: The HTTP status code of the response
+  - name: RequestKind
+    displayName: kind
+    description: "The kubernetes `kind` involved in the request such as `configmaps`"
+  - name: RequestVerb
+    displayName: verb
+    description: "The verb of the request, such as `Get` or `List`"
+  - name: TemplateCluster
+    displayName: cluster_scope
+    description: A boolean set true if this is a ClusterWorkflowTemplate
+  - name: TemplateName
+    displayName: name
+    description: "⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate."
+  - name: TemplateNamespace
+    displayName: namespace
+    description: The namespace from which the WorkflowTemplate is being used
+  - name: WorkerType
+    description: The type of queue
+  - name: WorkflowNamespace
+    displayName: namespace
+    description: The namespace in which the workflow is running
+  - name: WorkflowPhase
+    displayName: phase
+    description: The phase that the workflow has entered
+  - name: WorkflowStatus
+    displayName: status
+    description: "Boolean: `true` or `false`"
+  - name: WorkflowType
+    displayName: type
+    description: "The type of condition, currently only `PodRunning`"
+
+metrics:
+  - name: CronworkflowsConcurrencypolicyTriggered
+    description: A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running
+    attributes:
+      - name: CronWFName
+      - name: CronWFNamespace
+      - name: ConcurrencyPolicy
+    unit: "{cronworkflow}"
+    type: Int64Counter
+  - name: CronworkflowsTriggeredTotal
+    description: A counter of the total number of times a CronWorkflow has been triggered
+    extendedDescription: "Suppressed runs due to `concurrencyPolicy: Forbid` will not be counted."
+    attributes:
+      - name: CronWFName
+      - name: CronWFNamespace
+    unit: "{cronworkflow}"
+    type: Int64Counter
+  - name: DeprecatedFeature
+    description: "Incidents of deprecated feature being used"
+    extendedDescription: |
+      Deprecated features are [explained here](deprecations.md).
+      🚨 This counter may go up much more than once for a single use of the feature.
+    notes: |
+      `feature` will be one of:
+
+      - [`cronworkflow schedule`](deprecations.md#cronworkflow_schedule)
+      - [`synchronization mutex`](deprecations.md#synchronization_mutex)
+      - [`synchronization semaphore`](deprecations.md#synchronization_semaphore)
+      - [`workflow podpriority`](deprecations.md#workflow_podpriority)
+    attributes:
+      - name: DeprecatedFeature
+      - name: WorkflowNamespace
+        optional: true
+    unit: "{feature}"
+    type: Int64Counter
+  - name: ErrorCount
+    description: A counter of certain errors incurred by the controller by cause
+    notes: |
+      The currently tracked specific errors are
+
+      - `OperationPanic` - the controller called `panic()` on encountering a programming bug
+      - `CronWorkflowSubmissionError` - A CronWorkflow failed submission
+      - `CronWorkflowSpecError` - A CronWorkflow has an invalid specification
+    attributes:
+      - name: ErrorCause
+    unit: "{error}"
+    type: Int64Counter
+  - name: Gauge
+    description: A gauge of the number of workflows currently in the cluster in each phase
+    extendedDescription: |
+      The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them.
+      A workflow can be stuck in `Running` with pending pods for a long time.
+    attributes:
+      - name: WorkflowStatus
+    unit: "{workflow}"
+    type: Int64ObservableGauge
+  - name: IsLeader
+    description: Emits 1 if leader, 0 otherwise. Always 1 if leader election is disabled
+    extendedDescription: |
+      A gauge indicating if this Controller is the [leader](high-availability.md#workflow-controller).
+
+      - `1` if leader or in standalone mode via [`LEADER_ELECTION_DISABLE=true`](environment-variables.md#controller).
+      - `0` otherwise, indicating that this controller is a standby that is not currently running workflows.
+    unit: "{leader}"
+    type: Int64ObservableGauge
+  - name: K8sRequestDuration
+    description: A histogram recording the API requests sent to the Kubernetes API
+    notes: This contains all the information contained in `k8s_request_total` along with timings.
+    attributes:
+      - name: RequestKind
+      - name: RequestVerb
+      - name: RequestCode
+    unit: "s"
+    type: Float64Histogram
+    defaultBuckets: [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 60.0, 180.0]
+  - name: K8sRequestTotal
+    description: A counter of the number of API requests sent to the Kubernetes API
+    notes: This metric is calculable from `k8s_request_duration`, and it is suggested you just collect that metric instead.
+    attributes:
+      - name: RequestKind
+      - name: RequestVerb
+      - name: RequestCode
+    unit: "{request}"
+    type: Int64Counter
+  - name: LogMessages
+    description: "A count of log messages emitted by the controller by log level: `error`, `warn` and `info`"
+    attributes:
+      - name: LogLevel
+    unit: "{message}"
+    type: Int64Counter
+  - name: OperationDurationSeconds
+    description: A histogram of durations of operations
+    extendedDescription: |
+      An operation is a single workflow reconciliation loop within the workflow-controller.
+      It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
+    notes: The environment variables `OPERATION_DURATION_METRIC_BUCKET_COUNT` and `MAX_OPERATION_TIME` configure the bucket sizes for this metric, unless they are specified using an `histogramBuckets` modifier in the `metricsConfig` block.
+    unit: "s"
+    type: Float64Histogram
+  - name: PodMissing
+    description: "Incidents of pod missing"
+    extendedDescription: |
+      A counter of pods that were not seen - for example they are by being deleted by Kubernetes.
+      You should only see this under high load.
+    attributes:
+      - name: NodePhase
+      - name: RecentlyStarted
+    notes: "`recently_started` is controlled by the [environment variable](environment-variables.md) `RECENTLY_STARTED_POD_DURATION` and defaults to 10 seconds."
+    unit: "{pod}"
+    type: Int64Counter
+  - name: PodPendingCount
+    description: "Total number of pods that started pending by reason"
+    attributes:
+      - name: PodPendingReason
+      - name: PodNamespace
+    unit: "{pod}"
+    type: Int64Counter
+  - name: PodsGauge
+    description: A gauge of the number of workflow created pods currently in the cluster in each phase
+    extendedDescription: |
+      It is possible for a workflow to start, but no pods be running (for example cluster is too busy to run them).
+      This metric sheds light on actual work being done.
+    attributes:
+      - name: PodPhase
+    unit: "{pod}"
+    type: Int64ObservableGauge
+  - name: PodsTotalCount
+    description: "Total number of Pods that have entered each phase"
+    attributes:
+      - name: PodPhase
+      - name: PodNamespace
+    notes: |
+      This metric ignores the `PodInitializing` reason and does not count it.
+      The `reason` attribute is the value from the Reason message before the `:` in the message.
+      This is not directly controlled by the workflow controller, so it is possible for some pod pending states to be missed.
+    unit: "{pod}"
+    type: Int64ObservableGauge
+  - name: QueueAddsCount
+    description: A counter of additions to the work queues inside the controller
+    extendedDescription: The rate of this shows how busy that area of the controller is
+    notes: |
+      Queues:
+
+      - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+      - `pod_cleanup_queue`: pods which are queued for deletion
+      - `workflow_queue`: the queue of Workflow updates from the cluster
+      - `workflow_ttl_queue`: workflows which are queued for deletion due to age
+      - `workflow_archive_queue`: workflows which are queued for archiving
+
+      This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+    attributes:
+      - name: QueueName
+    unit: "{item}"
+    type: Int64Counter
+  - name: QueueDepthGauge
+    description: A gauge of the current depth of the queues
+    extendedDescription: If these get large then the workflow controller is not keeping up with the cluster.
+    notes: |
+      Queues:
+
+      - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+      - `pod_cleanup_queue`: pods which are queued for deletion
+      - `workflow_queue`: the queue of Workflow updates from the cluster
+      - `workflow_ttl_queue`: workflows which are queued for deletion due to age
+      - `workflow_archive_queue`: workflows which are queued for archiving
+
+      This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+    attributes:
+      - name: QueueName
+    unit: "{item}"
+    type: Int64UpDownCounter
+  - name: QueueDuration
+    description: A histogram of the time events in the queues are taking to be processed
+    notes: |
+      Queues:
+
+      - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+      - `pod_cleanup_queue`: pods which are queued for deletion
+      - `workflow_queue`: the queue of Workflow updates from the cluster
+      - `workflow_ttl_queue`: workflows which are queued for deletion due to age
+      - `workflow_archive_queue`: workflows which are queued for archiving
+
+      This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+    attributes:
+      - name: QueueName
+    unit: s
+    type: Float64Histogram
+    defaultBuckets: [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 60.0, 180.0]
+  - name: QueueLatency
+    description: A histogram of the time events in the queues are taking before they are processed
+    notes: |
+      Queues:
+
+      - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+      - `pod_cleanup_queue`: pods which are queued for deletion
+      - `workflow_queue`: the queue of Workflow updates from the cluster
+      - `workflow_ttl_queue`: workflows which are queued for deletion due to age
+      - `workflow_archive_queue`: workflows which are queued for archiving
+
+      This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+    attributes:
+      - name: QueueName
+    unit: s
+    type: Float64Histogram
+    defaultBuckets: [1.0, 5.0, 20.0, 60.0, 180.0]
+  - name: QueueLongestRunning
+    description: A gauge of the number of seconds that this queue's longest running processor has been running for
+    notes: |
+      Queues:
+
+      - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+      - `pod_cleanup_queue`: pods which are queued for deletion
+      - `workflow_queue`: the queue of Workflow updates from the cluster
+      - `workflow_ttl_queue`: workflows which are queued for deletion due to age
+      - `workflow_archive_queue`: workflows which are queued for archiving
+
+      This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+    attributes:
+      - name: QueueName
+    unit: s
+    type: Float64ObservableGauge
+  - name: QueueRetries
+    description: A counter of the number of times a message has been retried in the queue
+    notes: |
+      Queues:
+
+      - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+      - `pod_cleanup_queue`: pods which are queued for deletion
+      - `workflow_queue`: the queue of Workflow updates from the cluster
+      - `workflow_ttl_queue`: workflows which are queued for deletion due to age
+      - `workflow_archive_queue`: workflows which are queued for archiving
+
+      This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+    attributes:
+      - name: QueueName
+    unit: "{item}"
+    type: Int64Counter
+  - name: QueueUnfinishedWork
+    description: A gauge of the number of queue items that have not been processed yet
+    notes: |
+      Queues:
+
+      - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+      - `pod_cleanup_queue`: pods which are queued for deletion
+      - `workflow_queue`: the queue of Workflow updates from the cluster
+      - `workflow_ttl_queue`: workflows which are queued for deletion due to age
+      - `workflow_archive_queue`: workflows which are queued for archiving
+
+      This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+    attributes:
+      - name: QueueName
+    unit: "{item}"
+    type: Float64ObservableGauge
+  - name: TotalCount
+    description: A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace
+    attributes:
+      - name: WorkflowPhase
+      - name: WorkflowNamespace
+    unit: "{workflow}"
+    type: Int64Counter
+  - name: Version
+    description: "Build metadata for this Controller"
+    attributes:
+      - name: BuildVersion
+      - name: BuildPlatform
+      - name: BuildGoVersion
+      - name: BuildDate
+      - name: BuildCompiler
+      - name: BuildGitCommit
+      - name: BuildGitTreeState
+      - name: BuildGitTag
+    unit: "{unused}"
+    type: Int64Counter
+  - name: WorkersBusyCount
+    description: A gauge of queue workers that are busy
+    notes: |
+      Worker Types:
+
+      - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
+      - `pod_cleanup_queue`: pods which are queued for deletion
+      - `workflow_queue`: the queue of Workflow updates from the cluster
+      - `workflow_ttl_queue`: workflows which are queued for deletion due to age
+      - `workflow_archive_queue`: workflows which are queued for archiving
+
+      This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
+    attributes:
+      - name: WorkerType
+    unit: "{worker}"
+    type: Int64UpDownCounter
+  - name: WorkflowCondition
+    description: A gauge of the number of workflows with different conditions
+    extendedDescription: This will tell you the number of workflows with running pods.
+    attributes:
+      - name: WorkflowType
+      - name: WorkflowStatus
+    unit: "{workflow}"
+    type: Int64ObservableGauge
+  - name: WorkflowtemplateRuntime
+    description: A histogram of the runtime of workflows using `workflowTemplateRef` only
+    extendedDescription: |
+      Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
+      Records time between entering the `Running` phase and completion, so does not include any time in `Pending`.
+    attributes:
+      - name: TemplateName
+      - name: TemplateNamespace
+      - name: TemplateCluster
+    unit: s
+    type: Float64Histogram
+  - name: WorkflowtemplateTriggeredTotal
+    description: A counter of workflows using `workflowTemplateRef` only, as they enter each phase
+    extendedDescription: |
+      Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
+    attributes:
+      - name: TemplateName
+      - name: TemplateNamespace
+      - name: TemplateCluster
+    unit: "{workflow_template}"
+    type: Int64Counter
