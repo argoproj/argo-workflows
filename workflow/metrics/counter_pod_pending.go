@@ -7,17 +7,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
-const (
-	namePodPending = `pod_pending_count`
-)
-
 func addPodPendingCounter(_ context.Context, m *Metrics) error {
-	return m.CreateInstrument(telemetry.Int64Counter,
-		namePodPending,
-		"Total number of pods that started pending by reason",
-		"{pod}",
-		telemetry.WithAsBuiltIn(),
-	)
+	return m.CreateBuiltinInstrument(telemetry.InstrumentPodPendingCount)
 }
 
 func (m *Metrics) ChangePodPending(ctx context.Context, reason, namespace string) {
@@ -30,7 +21,7 @@ func (m *Metrics) ChangePodPending(ctx context.Context, reason, namespace string
 		// the pod_phase metric can cope with this being visible
 		return
 	default:
-		m.AddInt(ctx, namePodPending, 1, telemetry.InstAttribs{
+		m.AddInt(ctx, telemetry.InstrumentPodPendingCount.Name(), 1, telemetry.InstAttribs{
 			{Name: telemetry.AttribPodPendingReason, Value: splitReason[0]},
 			{Name: telemetry.AttribPodNamespace, Value: namespace},
 		})
