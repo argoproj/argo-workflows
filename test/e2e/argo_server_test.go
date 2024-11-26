@@ -64,6 +64,24 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			}
 		})
 }
+func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
+	return httpexpect.
+		WithConfig(httpexpect.Config{
+			BaseURL:  baseUrl,
+			Reporter: httpexpect.NewFatalReporter(b),
+			Printers: []httpexpect.Printer{
+				httpexpect.NewDebugPrinter(b, true),
+			},
+			Client: httpClient,
+		}).
+		Builder(func(req *httpexpect.Request) {
+			if s.username != "" {
+				req.WithBasicAuth(s.username, "garbage")
+			} else if s.bearerToken != "" {
+				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
+			}
+		})
+}
 
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
