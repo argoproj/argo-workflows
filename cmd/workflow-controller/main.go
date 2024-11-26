@@ -147,6 +147,7 @@ func NewRootCommand() *cobra.Command {
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()
+							time.Sleep(time.Second)
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers)
 							go wfController.RunMetricsServer(ctx, false)
 						},
