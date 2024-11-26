@@ -251,7 +251,7 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 
 // runGCcontroller runs the workflow garbage collector controller
 func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLWorkers int) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	gcCtrl := gccontroller.NewController(ctx, wfc.wfclientset, wfc.wfInformer, wfc.metrics, wfc.Config.RetentionPolicy)
 	err := gcCtrl.Run(ctx.Done(), workflowTTLWorkers)
@@ -261,7 +261,7 @@ func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLW
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkflowWorkers int) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer)
 	cronController.Run(ctx)
@@ -280,7 +280,7 @@ var indexers = cache.Indexers{
 
 // Run starts a Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	// init DB after leader election (if enabled)
 	if err := wfc.initDB(); err != nil {
@@ -326,7 +326,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
-		go wfc.runConfigMapWatcher(ctx.Done())
+		go wfc.runConfigMapWatcher(ctx, ctx.Done())
 	}
 
 	go wfc.wfInformer.Run(ctx.Done())
@@ -355,19 +355,19 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	for i := 0; i < podCleanupWorkers; i++ {
 		go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
 	}
-	go wfc.workflowGarbageCollector(ctx.Done())
-	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+	go wfc.workflowGarbageCollector(ctx, ctx.Done())
+	go wfc.archivedWorkflowGarbageCollector(ctx, ctx.Done())
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
 	go wfc.runCronController(ctx, cronWorkflowWorkers)
 
-	go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
+	go wait.Until(func() { wfc.syncManager.CheckWorkflowExistence(ctx) }, workflowExistenceCheckPeriod, ctx.Done())
 
 	for i := 0; i < wfWorkers; i++ {
-		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+		go wait.Until(func() { wfc.runWorker(ctx) }, time.Second, ctx.Done())
 	}
 	for i := 0; i < wfArchiveWorkers; i++ {
-		go wait.Until(wfc.runArchiveWorker, time.Second, ctx.Done())
+		go wait.Until(func() { wfc.runArchiveWorker(ctx) }, time.Second, ctx.Done())
 	}
 	if cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
@@ -436,10 +436,9 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	return nil
 }
 
-func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context, stopCh <-chan struct{}) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	ctx := context.Background()
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
@@ -688,8 +687,8 @@ func (wfc *WorkflowController) signalContainers(ctx context.Context, namespace s
 	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second, nil
 }
 
-func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (wfc *WorkflowController) workflowGarbageCollector(ctx context.Context, stopCh <-chan struct{}) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	periodicity := env.LookupEnvDurationOr("WORKFLOW_GC_PERIOD", 5*time.Minute)
 	log.WithField("periodicity", periodicity).Info("Performing periodic GC")
@@ -773,8 +772,8 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 	return nil
 }
 
-func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (wfc *WorkflowController) archivedWorkflowGarbageCollector(ctx context.Context, stopCh <-chan struct{}) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	periodicity := env.LookupEnvDurationOr("ARCHIVED_WORKFLOW_GC_PERIOD", 24*time.Hour)
 	if wfc.Config.Persistence == nil {
@@ -807,18 +806,16 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 	}
 }
 
-func (wfc *WorkflowController) runWorker() {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (wfc *WorkflowController) runWorker(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	ctx := context.Background()
 	for wfc.processNextItem(ctx) {
 	}
 }
 
-func (wfc *WorkflowController) runArchiveWorker() {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (wfc *WorkflowController) runArchiveWorker(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	ctx := context.Background()
 	for wfc.processNextArchiveItem(ctx) {
 	}
 }

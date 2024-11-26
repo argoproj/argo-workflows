@@ -92,7 +92,7 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 }
 
 func (cc *Controller) Run(ctx context.Context) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 	defer cc.cronWfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 	if cc.instanceId != "" {
@@ -136,7 +136,7 @@ func (cc *Controller) runCronWorker() {
 }
 
 func (cc *Controller) processNextCronItem(ctx context.Context) bool {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	key, quit := cc.cronWfQueue.Get()
 	if quit {
@@ -256,7 +256,7 @@ func isCompleted(wf v1.Object) bool {
 }
 
 func (cc *Controller) syncAll(ctx context.Context) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	log.Debug("Syncing all CronWorkflows")
 

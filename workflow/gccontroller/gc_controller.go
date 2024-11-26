@@ -79,10 +79,10 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {
-				controller.retentionEnqueue(new)
+				controller.retentionEnqueue(ctx, new)
 			},
 			AddFunc: func(obj interface{}) {
-				controller.retentionEnqueue(obj)
+				controller.retentionEnqueue(ctx, obj)
 			},
 		},
 	})
@@ -92,7 +92,7 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 	return controller
 }
 
-func (c *Controller) retentionEnqueue(obj interface{}) {
+func (c *Controller) retentionEnqueue(ctx context.Context, obj interface{}) {
 	// No need to queue the workflow if the retention policy is not set
 	if c.retentionPolicy == nil {
 		return
@@ -108,7 +108,7 @@ func (c *Controller) retentionEnqueue(obj interface{}) {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		c.orderedQueueLock.Lock()
 		heap.Push(c.orderedQueue[phase], un)
-		c.runGC(phase)
+		c.runGC(ctx, phase)
 		c.orderedQueueLock.Unlock()
 	}
 }
@@ -142,8 +142,8 @@ func (c *Controller) runWorker() {
 }
 
 // retentionGC queues workflows for deletion based upon the retention policy.
-func (c *Controller) runGC(phase wfv1.WorkflowPhase) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 	var maxWorkflows int
 	switch phase {
 	case wfv1.WorkflowSucceeded:
