@@ -1,4 +1,4 @@
-import {createInitialState, reducer} from './use-editable-object';
+import {createInitialState, reducer, setObjectActionCreator} from './use-editable-object';
 
 describe('createInitialState', () => {
     test('without object', () => {
@@ -59,8 +59,8 @@ describe('reducer', () => {
         });
     });
 
-    test('setObject with string', () => {
-        const newState = reducer(testState, {type: 'setObject', payload: 'a: 2'});
+    test('setObject with object and string', () => {
+        const newState = reducer(testState, {type: 'setObject', payload: {object: {a: 2}, serialization: 'a: 2'}});
         expect(newState).toEqual({
             object: {a: 2},
             serialization: 'a: 2',
@@ -70,25 +70,14 @@ describe('reducer', () => {
         });
     });
 
-    test('setObject with object', () => {
-        const newState = reducer(testState, {type: 'setObject', payload: {a: 2}});
+    test('setObject with only object', () => {
+        const newState = reducer(testState, {type: 'setObject', payload: {object: {a: 2}}});
         expect(newState).toEqual({
             object: {a: 2},
             serialization: 'a: 2\n',
             lang: 'yaml',
             initialSerialization: 'a: 1\n',
             edited: true
-        });
-    });
-
-    test('resetObject with string', () => {
-        const newState = reducer(testState, {type: 'resetObject', payload: 'a: 2'});
-        expect(newState).toEqual({
-            object: {a: 2},
-            serialization: 'a: 2',
-            lang: 'yaml',
-            initialSerialization: 'a: 2',
-            edited: false
         });
     });
 
@@ -101,5 +90,25 @@ describe('reducer', () => {
             initialSerialization: 'a: 2\n',
             edited: false
         });
+    });
+});
+
+describe('setObjectActionCreator', () => {
+    test('with object', () => {
+        expect(setObjectActionCreator({a: 2})).toEqual({
+            type: 'setObject',
+            payload: {object: {a: 2}}
+        });
+    });
+
+    test('with string', () => {
+        expect(setObjectActionCreator('a: 2')).toEqual({
+            type: 'setObject',
+            payload: {object: {a: 2}, serialization: 'a: 2'}
+        });
+    });
+
+    test("with string that can't be parsed", () => {
+        expect(() => setObjectActionCreator('@')).toThrow('Plain value cannot start with reserved character @');
     });
 });
