@@ -4,8 +4,8 @@ export function escapeInvalidMarkdown(markdown: string) {
         .replace(/\n/g, ' ')
         .trim()
         .replace(/`{3}/g, '')
-        .replace(/^#/g, '\\#')
-        .replace(/^>/g, '\\>');
+        .replace(/^#+/g, '')
+        .replace(/^>+/g, '');
 }
 
 export function shortNodeName(node: {name: string; displayName: string}): string {

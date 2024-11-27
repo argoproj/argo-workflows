@@ -113,7 +113,18 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                             </div>
                         );
                     })}
-                    {hideDrawer ? <span /> : <WorkflowDrawer name={wf.metadata.name} namespace={wf.metadata.namespace} onChange={props.onChange} />}
+                    {hideDrawer ? (
+                        <span />
+                    ) : (
+                        <WorkflowDrawer
+                            description={wf.metadata.annotations[ANNOTATION_DESCRIPTION]}
+                            hasAnnotation={hasAnnotation}
+                            name={wf.metadata.name}
+                            namespace={wf.metadata.namespace}
+                            onChange={props.onChange}
+                            title={wf.metadata.annotations[ANNOTATION_TITLE]}
+                        />
+                    )}
                 </div>
             </div>
         </div>

@@ -70,6 +70,23 @@ metadata:
 The above examples will render as rows like the below image:
 ![More Markdown Examples](assets/title-and-description-markdown-complex-workflow.png)
 
+The `title` and `description` annotations also support multi-line values. Longer values will be truncated in the workflow list view, but can be seen in the `DESCRIPTION` section when the workflow row is expanded to display the workflow drawer.
+
+Below is an example:
+
+```yaml
+# markdown title, multi-line markdown description with URL converted into an anchor link
+metadata:
+  annotations:
+    workflows.argoproj.io/title: '**Test Title**'
+    workflows.argoproj.io/description: |
+      `This is a simple hello world example.`
+      You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
+```
+
+The above example will render an expanded row like the below image:
+![Workflow Drawer Markdown Examples](assets/title-and-description-markdown-workflow-drawer.png)
+
 ### For `ClusterWorkflowTemplates`
 
 > v3.6 and after
