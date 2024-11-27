@@ -16,16 +16,11 @@ export function ClusterWorkflowTemplateMarkdown(props: ClusterWorkflowTemplateMa
     // title + description vars
     const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
     const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
-    const hasAnnotation = title !== wf.metadata.name && description !== '';
     const markdown = `${title}${description}`;
 
-    return hasAnnotation || description.length ? (
-        <div className='wf-rows-name'>
+    return (
+        <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
             <SuspenseReactMarkdownGfm markdown={markdown} />
         </div>
-    ) : (
-        <span>
-            <SuspenseReactMarkdownGfm markdown={markdown} />
-        </span>
     );
 }

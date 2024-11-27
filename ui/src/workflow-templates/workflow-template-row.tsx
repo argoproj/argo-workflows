@@ -20,7 +20,6 @@ export function WorkflowTemplateRow(props: WorkflowTemplateRowProps) {
     // title + description vars
     const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
     const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
-    const hasAnnotation = title !== wf.metadata.name && description !== '';
     const markdown = `${title}${description}`;
 
     return (
@@ -30,15 +29,9 @@ export function WorkflowTemplateRow(props: WorkflowTemplateRowProps) {
                     <i className='fa fa-clone' />
                 </div>
                 <Link to={{pathname: uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)}} className='columns small-5'>
-                    {hasAnnotation || description.length ? (
-                        <div className='wf-rows-name'>
-                            <SuspenseReactMarkdownGfm markdown={markdown} />
-                        </div>
-                    ) : (
-                        <span>
-                            <SuspenseReactMarkdownGfm markdown={markdown} />
-                        </span>
-                    )}
+                    <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
+                        <SuspenseReactMarkdownGfm markdown={markdown} />
+                    </div>
                 </Link>
                 <div className='columns small-3'>{wf.metadata.namespace}</div>
                 <div className='columns small-3'>

@@ -33,7 +33,7 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
     // title + description vars
     const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
     const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
-    const hasAnnotation = title !== wf.metadata.name && description !== '';
+    const hasAnnotation = title !== wf.metadata.name || description !== '';
     const markdown = `${title}${description}`;
 
     return (
@@ -60,15 +60,9 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                             search: `?uid=${wf.metadata.uid}`
                         }}
                         className='columns small-2'>
-                        {hasAnnotation || description.length ? (
-                            <div className='wf-rows-name'>
-                                <SuspenseReactMarkdownGfm markdown={markdown} />
-                            </div>
-                        ) : (
-                            <span>
-                                <SuspenseReactMarkdownGfm markdown={markdown} />
-                            </span>
-                        )}
+                        <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
+                            <SuspenseReactMarkdownGfm markdown={markdown} />
+                        </div>
                     </Link>
                     <div className='columns small-1'>{wf.metadata.namespace}</div>
                     <div className={'columns small-1' + (props.displayISOFormatStart ? ' workflows-list__timestamp' : '')}>

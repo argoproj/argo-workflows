@@ -24,7 +24,6 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
     // title + description vars
     const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
     const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
-    const hasAnnotation = title !== wf.metadata.name && description !== '';
     const markdown = `${title}${description}`;
 
     return (
@@ -32,15 +31,9 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
             <div className='row argo-table-list__row'>
                 <div className='columns small-1'>{wf.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
                 <Link to={{pathname: uiUrl(`cron-workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}} className='columns small-2'>
-                    {hasAnnotation || description.length ? (
-                        <div className='wf-rows-name'>
-                            <SuspenseReactMarkdownGfm markdown={markdown} />
-                        </div>
-                    ) : (
-                        <span>
-                            <SuspenseReactMarkdownGfm markdown={markdown} />
-                        </span>
-                    )}
+                    <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
+                        <SuspenseReactMarkdownGfm markdown={markdown} />
+                    </div>
                 </Link>
                 <div className='columns small-2'>{wf.metadata.namespace}</div>
                 <div className='columns small-1'>{wf.spec.timezone}</div>

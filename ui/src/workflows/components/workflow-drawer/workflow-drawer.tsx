@@ -52,9 +52,9 @@ export function WorkflowDrawer(props: WorkflowDrawerProps) {
                     <div className='workflow-drawer__section'>
                         <div className='workflow-drawer__title'>DESCRIPTION</div>
                         <div className='workflow-drawer__description'>
-                            <SuspenseReactMarkdownGfm markdown={props.title} />
+                            <SuspenseReactMarkdownGfm markdown={props.title} aria-valuetext={props.title} />
                             <div className='workflow-drawer__description--content'>
-                                <SuspenseReactMarkdownGfm markdown={props.description} />
+                                <SuspenseReactMarkdownGfm markdown={props.description} aria-valuetext={props.description} />
                             </div>
                         </div>
                     </div>
