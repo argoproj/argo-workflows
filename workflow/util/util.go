@@ -46,6 +46,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	unstructutil "github.com/argoproj/argo-workflows/v3/util/unstructured"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -488,7 +489,7 @@ type SetOperationValues struct {
 	OutputParameters map[string]string
 }
 
-func AddParamToGlobalScope(wf *wfv1.Workflow, log *log.Entry, param wfv1.Parameter) bool {
+func AddParamToGlobalScope(wf *wfv1.Workflow, log logging.Logger, param wfv1.Parameter) bool {
 	wfUpdated := false
 	if param.GlobalName == "" {
 		return wfUpdated
@@ -573,7 +574,8 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 									node.Outputs.Parameters[i].ValueFrom = nil
 									nodeUpdated = true
 									hit = true
-									AddParamToGlobalScope(wf, log.NewEntry(log.StandardLogger()), node.Outputs.Parameters[i])
+									log := logging.NewSlogLogger()
+									AddParamToGlobalScope(wf, log, node.Outputs.Parameters[i])
 									break
 								}
 							}

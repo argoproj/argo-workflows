@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/Knetic/govaluate"
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -187,7 +187,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
 		if err != nil {
-			woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+			woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
 			node.Phase = wfv1.NodeError
 		}
 	}
@@ -491,7 +491,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		go func(i int, step wfv1.WorkflowStep) {
 			defer wg.Done()
 			if err := resolveStepReferences(i, step, newStepGroup); err != nil {
-				woc.log.WithFields(log.Fields{"stepName": step.Name}).WithError(err).Error("Failed to resolve references")
+				woc.log.WithFields(logging.Fields{"stepName": step.Name}).WithError(err).Error("Failed to resolve references")
 				errCh <- err
 			}
 			<-parallelStepNum

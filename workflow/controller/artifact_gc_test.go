@@ -571,7 +571,7 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	// - Artifact.Deleted
 	// - Conditions
 
-	_, err := woc.processCompletedWorkflowArtifactGCTask(wfat, "OnWorkflowCompletion")
+	_, err := woc.processCompletedWorkflowArtifactGCTask(ctx, wfat, "OnWorkflowCompletion")
 	require.NoError(t, err)
 
 	for _, expectedArtifact := range []struct {

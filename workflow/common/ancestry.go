@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sort"
@@ -11,9 +12,9 @@ import (
 )
 
 type DagContext interface {
-	GetTask(taskName string) *wfv1.DAGTask
-	GetTaskDependencies(taskName string) []string
-	GetTaskFinishedAtTime(taskName string) time.Time
+	GetTask(ctx context.Context, taskName string) *wfv1.DAGTask
+	GetTaskDependencies(ctx context.Context, taskName string) []string
+	GetTaskFinishedAtTime(ctx context.Context, taskName string) time.Time
 }
 
 type TaskResult string
@@ -48,8 +49,8 @@ const (
 	DependencyTypeItems
 )
 
-func GetTaskDependencies(task *wfv1.DAGTask, ctx DagContext) (map[string]DependencyType, string) {
-	depends := getTaskDependsLogic(task, ctx)
+func GetTaskDependencies(ctx context.Context, task *wfv1.DAGTask, dctx DagContext) (map[string]DependencyType, string) {
+	depends := getTaskDependsLogic(ctx, task, dctx)
 	matches := taskNameRegex.FindAllStringSubmatchIndex(depends, -1)
 	var expansionMatches []expansionMatch
 	dependencies := make(map[string]DependencyType)
@@ -79,7 +80,7 @@ func GetTaskDependencies(task *wfv1.DAGTask, ctx DagContext) (map[string]Depende
 		return expansionMatches[i].start > expansionMatches[j].start
 	})
 	for _, match := range expansionMatches {
-		matchTask := ctx.GetTask(match.taskName)
+		matchTask := dctx.GetTask(ctx, match.taskName)
 		depends = depends[:match.start] + expandDependency(match.taskName, matchTask) + depends[match.end:]
 	}
 
@@ -106,7 +107,7 @@ func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
 	return nil
 }
 
-func getTaskDependsLogic(dagTask *wfv1.DAGTask, ctx DagContext) string {
+func getTaskDependsLogic(ctx context.Context, dagTask *wfv1.DAGTask, dctx DagContext) string {
 	if dagTask.Depends != "" {
 		return dagTask.Depends
 	}
@@ -114,7 +115,7 @@ func getTaskDependsLogic(dagTask *wfv1.DAGTask, ctx DagContext) string {
 	// For backwards compatibility, "dependencies: [A, B]" is equivalent to "depends: (A.Successful || A.Skipped || A.Daemoned)) && (B.Successful || B.Skipped || B.Daemoned)"
 	var dependencies []string
 	for _, dependency := range dagTask.Dependencies {
-		depTask := ctx.GetTask(dependency)
+		depTask := dctx.GetTask(ctx, dependency)
 		dependencies = append(dependencies, expandDependency(dependency, depTask))
 	}
 	return strings.Join(dependencies, " && ")
@@ -137,7 +138,7 @@ func expandDependency(depName string, depTask *wfv1.DAGTask) string {
 
 // GetTaskAncestry returns a list of taskNames which are ancestors of this task.
 // The list is ordered by the tasks finished time.
-func GetTaskAncestry(ctx DagContext, taskName string) []string {
+func GetTaskAncestry(ctx context.Context, dctx DagContext, taskName string) []string {
 	visited := make(map[string]time.Time)
 
 	var getAncestry func(currTask string)
@@ -145,12 +146,12 @@ func GetTaskAncestry(ctx DagContext, taskName string) []string {
 		if _, seen := visited[currTask]; seen {
 			return
 		}
-		for _, depTask := range ctx.GetTaskDependencies(currTask) {
+		for _, depTask := range dctx.GetTaskDependencies(ctx, currTask) {
 			getAncestry(depTask)
 		}
 		if currTask != taskName {
 			if _, ok := visited[currTask]; !ok {
-				visited[currTask] = ctx.GetTaskFinishedAtTime(currTask)
+				visited[currTask] = dctx.GetTaskFinishedAtTime(ctx, currTask)
 			}
 		}
 	}

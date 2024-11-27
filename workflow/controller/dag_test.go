@@ -256,9 +256,10 @@ func TestEvaluateDependsLogic(t *testing.T) {
 			},
 		},
 	}
+	ctx := context.Background()
 
 	// Task B should not proceed, task A is still running
-	execute, proceed, err := d.evaluateDependsLogic("B")
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
@@ -267,16 +268,16 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
 
 	// Task B and C should proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("B")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
-	execute, proceed, err = d.evaluateDependsLogic("C")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "C")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 	// Other tasks should not
-	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-1")
 	require.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
@@ -286,16 +287,16 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("C")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
 
 	// Tasks should-execute-1 and should-execute-2 should proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-1")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
-	execute, proceed, err = d.evaluateDependsLogic("should-execute-2")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-2")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 	// Task should-not-execute should proceed, but not execute
-	execute, proceed, err = d.evaluateDependsLogic("should-not-execute")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-not-execute")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
@@ -306,7 +307,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("should-not-execute")] = wfv1.NodeStatus{Phase: wfv1.NodeSkipped}
 
 	// Tasks should-execute-3 should proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("should-execute-3")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-3")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -362,9 +363,10 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 			},
 		},
 	}
+	ctx := context.Background()
 
 	// Task B should not proceed as task A is still running
-	execute, proceed, err := d.evaluateDependsLogic("B")
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
@@ -377,7 +379,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	}
 
 	// Task B should proceed, but not execute as none of the children have succeeded yet
-	execute, proceed, err = d.evaluateDependsLogic("B")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
@@ -386,7 +388,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("A-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
 
 	// Task B should now proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("B")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -400,7 +402,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("B-1")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
 
 	// Task C should proceed, but not execute as not all of B's children have failed yet
-	execute, proceed, err = d.evaluateDependsLogic("C")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "C")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
@@ -408,7 +410,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("B-2")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
 
 	// Task C should now proceed and execute as all of B's children have failed
-	execute, proceed, err = d.evaluateDependsLogic("C")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "C")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -443,9 +445,10 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 			},
 		},
 	}
+	ctx := context.Background()
 
 	// Task B should proceed and execute
-	execute, proceed, err := d.evaluateDependsLogic("B")
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -457,7 +460,7 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
 
 	// Task B should proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("B")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -492,8 +495,10 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
+
 	// Task B should proceed and execute
-	execute, proceed, err := d.evaluateDependsLogic("B")
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -537,12 +542,13 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 				},
 			},
 		}
+		ctx := context.Background()
 
-		execute, proceed, err := d.evaluateDependsLogic("Run")
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "Run")
 		require.NoError(t, err)
 		assert.True(t, proceed)
 		assert.True(t, execute)
-		execute, proceed, err = d.evaluateDependsLogic("NotRun")
+		execute, proceed, err = d.evaluateDependsLogic(ctx, "NotRun")
 		require.NoError(t, err)
 		assert.True(t, proceed)
 		assert.False(t, execute)

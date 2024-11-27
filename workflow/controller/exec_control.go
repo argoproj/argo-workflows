@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -14,7 +15,7 @@ import (
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending and running pods when workflow has reached it's deadline
-func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
+func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
 	if pod == nil {
 		return
 	}
@@ -24,7 +25,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	wfNodesLock.RUnlock()
 	if err != nil {
-		woc.log.Errorf("was unable to obtain node for %s", nodeID)
+		woc.log.Errorf(ctx, "was unable to obtain node for %s", nodeID)
 		return
 	}
 	// node is already completed
@@ -44,7 +45,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				woc.log.WithField("podName", pod.Name).
 					WithField("shutdownStrategy", woc.GetShutdownStrategy()).
-					Info("Terminating pod as part of workflow shutdown")
+					Info(ctx, "Terminating pod as part of workflow shutdown")
 				woc.controller.queuePodForCleanup(pod.Namespace, pod.Name, terminateContainers)
 				msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
 				woc.handleExecutionControlError(nodeID, wfNodesLock, msg)
@@ -59,7 +60,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			if !onExitPod {
 				woc.log.WithField("podName", pod.Name).
 					WithField(" workflowDeadline", woc.workflowDeadline).
-					Info("Terminating pod which has exceeded workflow deadline")
+					Info(ctx, "Terminating pod which has exceeded workflow deadline")
 				woc.controller.queuePodForCleanup(pod.Namespace, pod.Name, terminateContainers)
 				woc.handleExecutionControlError(nodeID, wfNodesLock, "Step exceeded its deadline")
 				return
@@ -69,7 +70,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 			woc.log.WithField("podName", pod.Name).
-				Info("Terminating on-exit pod")
+				Info(ctx, "Terminating on-exit pod")
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, terminateContainers)
 		}
 	}
@@ -82,7 +83,7 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Errorf("was not abble to obtain node for %s", nodeID)
+		woc.log.Errorf(ctx, "was not abble to obtain node for %s", nodeID)
 		return
 	}
 	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg)

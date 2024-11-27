@@ -1091,7 +1091,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 			needLocation = true
 		}
 	}
-	woc.log.WithField("needLocation", needLocation).Debug()
+	woc.log.WithField("needLocation", needLocation).Debug("")
 	if !needLocation {
 		return
 	}
