@@ -55,11 +55,14 @@ func AddHostnamesToAffinity(hostSelector string, hostNames []string, targetAffin
 		Values:   hostNames,
 	}
 
+	const affinityWeight = 50
+
 	sourceAffinity := &apiv1.Affinity{
 		NodeAffinity: &apiv1.NodeAffinity{
-			RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
-				NodeSelectorTerms: []apiv1.NodeSelectorTerm{
-					{
+			PreferredDuringSchedulingIgnoredDuringExecution: []apiv1.PreferredSchedulingTerm{
+				{
+					Weight: affinityWeight,
+					Preference: apiv1.NodeSelectorTerm{
 						MatchExpressions: []apiv1.NodeSelectorRequirement{
 							nodeSelectorRequirement,
 						},
@@ -79,43 +82,38 @@ func AddHostnamesToAffinity(hostSelector string, hostNames []string, targetAffin
 		return targetAffinity
 	}
 
-	targetExecution := targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
-	sourceExecution := sourceAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+	targetExecution := targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
 
 	if targetExecution == nil {
-		targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution =
-			sourceAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+		targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution =
+			sourceAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
 		return targetAffinity
 	}
 
-	if len(targetExecution.NodeSelectorTerms) == 0 {
-		targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms =
-			sourceAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms
+	if len(targetExecution) == 0 {
+		targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution =
+			sourceAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
 		return targetAffinity
 	}
 
 	// find if specific NodeSelectorTerm exists and append
-	for i := range targetExecution.NodeSelectorTerms {
-		if len(targetExecution.NodeSelectorTerms[i].MatchExpressions) == 0 {
-			targetExecution.NodeSelectorTerms[i].MatchExpressions =
-				append(targetExecution.NodeSelectorTerms[i].MatchExpressions, sourceExecution.NodeSelectorTerms[0].MatchExpressions[0])
-			return targetAffinity
-		}
-
-		for j := range targetExecution.NodeSelectorTerms[i].MatchExpressions {
-			if targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Key == hostSelector &&
-				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Operator == apiv1.NodeSelectorOpNotIn {
-				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values =
-					append(targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values, hostNames...)
-				targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values =
-					RemoveDuplicates(targetExecution.NodeSelectorTerms[i].MatchExpressions[j].Values)
-				return targetAffinity
+	for i := range targetExecution {
+		if targetExecution[i].Weight == affinityWeight {
+			for j := range targetExecution[i].Preference.MatchExpressions {
+				if targetExecution[i].Preference.MatchExpressions[j].Key == hostSelector &&
+					targetExecution[i].Preference.MatchExpressions[j].Operator == apiv1.NodeSelectorOpNotIn {
+					targetExecution[i].Preference.MatchExpressions[j].Values =
+						append(targetExecution[i].Preference.MatchExpressions[j].Values, hostNames...)
+					targetExecution[i].Preference.MatchExpressions[j].Values =
+						RemoveDuplicates(targetExecution[i].Preference.MatchExpressions[j].Values)
+					return targetAffinity
+				}
 			}
 		}
 	}
 
-	targetExecution.NodeSelectorTerms[0].MatchExpressions =
-		append(targetExecution.NodeSelectorTerms[0].MatchExpressions, nodeSelectorRequirement)
+	targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = 
+		append(targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution, sourceAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0])
 
 	return targetAffinity
 }
