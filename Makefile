@@ -621,7 +621,7 @@ clean:
 	go clean
 	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
-# Built telemetry files
+# Build telemetry files
 TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
 docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
 	@echo Rebuilding $@

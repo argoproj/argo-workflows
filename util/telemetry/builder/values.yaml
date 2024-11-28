@@ -29,7 +29,7 @@ attributes:
     description: "⚠️ The name of the CronWorkflow"
   - name: CronWFNamespace
     displayName: namespace
-    description: "The namespace of the CronWorkflow"
+    description: The namespace that the CronWorkflow is in
   - name: DeprecatedFeature
     displayName: feature
     description: The name of the feature used
@@ -43,7 +43,7 @@ attributes:
     description: "The phase that the pod's node was in"
   - name: PodNamespace
     displayName: namespace
-    description: The namespace in which the pod is running
+    description: The namespace that the pod is in
   - name: PodPendingReason
     displayName: reason
     description: Summary of the kubernetes Reason for pending
@@ -71,15 +71,15 @@ attributes:
     description: "⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate."
   - name: TemplateNamespace
     displayName: namespace
-    description: The namespace from which the WorkflowTemplate is being used
+    description: The namespace that the WorkflowTemplate is in
   - name: WorkerType
     description: The type of queue
   - name: WorkflowNamespace
     displayName: namespace
-    description: The namespace in which the workflow is running
+    description: The namespace that the Workflow is in
   - name: WorkflowPhase
     displayName: phase
-    description: The phase that the workflow has entered
+    description: The phase that the Workflow has entered
   - name: WorkflowStatus
     displayName: status
     description: "Boolean: `true` or `false`"
@@ -213,7 +213,7 @@ metrics:
     unit: "{pod}"
     type: Int64ObservableGauge
   - name: PodsTotalCount
-    description: "Total number of Pods that have entered each phase"
+    description: "Total number of pods that have entered each phase"
     attributes:
       - name: PodPhase
       - name: PodNamespace
