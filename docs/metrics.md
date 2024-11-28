@@ -251,7 +251,7 @@ A counter of the number of times a CronWorkflow has triggered its `concurrencyPo
 | attribute | explanation |
 |-----------|-------------|
 | `name` | ⚠️ The name of the CronWorkflow |
-| `namespace` | The namespace of the CronWorkflow |
+| `namespace` | The namespace that the CronWorkflow is in |
 | `concurrency_policy` | The concurrency policy which was triggered, will be either `Forbid` or `Replace` |
 
 #### `cronworkflows_triggered_total`
@@ -262,7 +262,7 @@ Suppressed runs due to `concurrencyPolicy: Forbid` will not be counted.
 | attribute | explanation |
 |-----------|-------------|
 | `name` | ⚠️ The name of the CronWorkflow |
-| `namespace` | The namespace of the CronWorkflow |
+| `namespace` | The namespace that the CronWorkflow is in |
 
 #### `deprecated_feature`
 
@@ -273,7 +273,7 @@ Deprecated features are [explained here](deprecations.md).
 | attribute | explanation |
 |-----------|-------------|
 | `feature` | The name of the feature used |
-| `namespace` | The namespace in which the workflow is running |
+| `namespace` | The namespace that the Workflow is in |
 
 `feature` will be one of:
 
@@ -379,7 +379,7 @@ Total number of pods that started pending by reason.
 | attribute | explanation |
 |-----------|-------------|
 | `reason` | Summary of the kubernetes Reason for pending |
-| `namespace` | The namespace in which the pod is running |
+| `namespace` | The namespace that the pod is in |
 
 #### `pods_gauge`
 
@@ -393,12 +393,12 @@ This metric sheds light on actual work being done.
 
 #### `pods_total_count`
 
-Total number of Pods that have entered each phase.
+Total number of pods that have entered each phase.
 
 | attribute | explanation |
 |-----------|-------------|
 | `phase` | The phase that the pod is in |
-| `namespace` | The namespace in which the pod is running |
+| `namespace` | The namespace that the pod is in |
 
 This metric ignores the `PodInitializing` reason and does not count it.
 The `reason` attribute is the value from the Reason message before the `:` in the message.
@@ -540,8 +540,8 @@ A counter of workflows that have entered each phase for tracking them through th
 
 | attribute | explanation |
 |-----------|-------------|
-| `phase` | The phase that the workflow has entered |
-| `namespace` | The namespace in which the workflow is running |
+| `phase` | The phase that the Workflow has entered |
+| `namespace` | The namespace that the Workflow is in |
 
 #### `version`
 
@@ -595,7 +595,7 @@ Records time between entering the `Running` phase and completion, so does not in
 | attribute | explanation |
 |-----------|-------------|
 | `name` | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
-| `namespace` | The namespace from which the WorkflowTemplate is being used |
+| `namespace` | The namespace that the WorkflowTemplate is in |
 | `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate |
 
 #### `workflowtemplate_triggered_total`
@@ -606,7 +606,7 @@ Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
 | attribute | explanation |
 |-----------|-------------|
 | `name` | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
-| `namespace` | The namespace from which the WorkflowTemplate is being used |
+| `namespace` | The namespace that the WorkflowTemplate is in |
 | `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate |
 
 <!-- Generated documentation END -->
