@@ -126,9 +126,9 @@ type WorkflowController struct {
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
 	configMapInformer     cache.SharedIndexInformer
-	wfQueue               workqueue.RateLimitingInterface
-	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
-	wfArchiveQueue        workqueue.RateLimitingInterface
+	wfQueue               workqueue.TypedRateLimitingInterface[string]
+	podCleanupQueue       workqueue.TypedRateLimitingInterface[string] // pods to be deleted or labelled depend on GC strategy
+	wfArchiveQueue        workqueue.TypedRateLimitingInterface[string]
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               db.Session
@@ -235,8 +235,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we create the queues
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, &fixedItemIntervalRateLimiter{}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
-	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
-	wfc.wfArchiveQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "workflow_archive_queue")
+	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "pod_cleanup_queue")
+	wfc.wfArchiveQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_archive_queue")
 
 	return &wfc, nil
 }
@@ -600,7 +600,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		wfc.podCleanupQueue.Done(key)
 	}()
 
-	namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
+	namespace, podName, action := parsePodCleanupKey(podCleanupKey(key))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
@@ -828,10 +828,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
-	wfc.workflowKeyLock.Lock(key.(string))
-	defer wfc.workflowKeyLock.Unlock(key.(string))
+	wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Unlock(key)
 
-	obj, ok := wfc.getWorkflowByKey(key.(string))
+	obj, ok := wfc.getWorkflowByKey(key)
 	if !ok {
 		return true
 	}
@@ -868,7 +868,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
-	if !(woc.GetShutdownStrategy().Enabled() && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key.(string)) {
+	if !(woc.GetShutdownStrategy().Enabled() && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
 		log.WithField("key", key).Info("Workflow processing has been postponed due to max parallelism limit")
 		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
@@ -881,7 +881,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	defer func() {
 		// must be done with woc
 		if !reconciliationNeeded(woc.wf) {
-			wfc.throttler.Remove(key.(string))
+			wfc.throttler.Remove(key)
 		}
 	}()
 
@@ -911,7 +911,7 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	}
 	defer wfc.wfArchiveQueue.Done(key)
 
-	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
+	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
 		return true
