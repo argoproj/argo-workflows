@@ -64,6 +64,24 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			}
 		})
 }
+func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
+	return httpexpect.
+		WithConfig(httpexpect.Config{
+			BaseURL:  baseUrl,
+			Reporter: httpexpect.NewFatalReporter(b),
+			Printers: []httpexpect.Printer{
+				httpexpect.NewDebugPrinter(b, true),
+			},
+			Client: httpClient,
+		}).
+		Builder(func(req *httpexpect.Request) {
+			if s.username != "" {
+				req.WithBasicAuth(s.username, "garbage")
+			} else if s.bearerToken != "" {
+				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
+			}
+		})
+}
 
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
@@ -1373,6 +1391,17 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived)
+
+	s.Run("ListWithoutListOptions", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(3)
+	})
 
 	for _, tt := range []struct {
 		name     string

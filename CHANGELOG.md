@@ -1,5 +1,48 @@
 # Changelog
 
+## v3.6.0 (2024-10-31)
+
+Full Changelog: [v3.6.0-rc4...v3.6.0](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc4...v3.6.0)
+
+### Selected Changes
+
+<details><summary><h3>Contributors</h3></summary>
+
+</details>
+
+## v3.6.0-rc4 (2024-10-31)
+
+Full Changelog: [v3.6.0-rc3...v3.6.0-rc4](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc3...v3.6.0-rc4)
+
+### Selected Changes
+
+* [b26ed4aa4](https://github.com/argoproj/argo-workflows/commit/b26ed4aa4dee395844531efa4a76a022183bec22) fix: use templateName where  possible else nothing (#13836)
+* [3bbec4ec6](https://github.com/argoproj/argo-workflows/commit/3bbec4ec6a7d78ef924a9a60256a411a35634bc0) refactor(deps)!: remove `swagger-ui-react` (#13818)
+* [3df51839e](https://github.com/argoproj/argo-workflows/commit/3df51839ef22acacf6712ae0c3775f2ea8a47012) refactor(ui): replace deprecated usage of `defaultProps` (#13822)
+* [39154fd42](https://github.com/argoproj/argo-workflows/commit/39154fd42f814d3d5745937cbfbe13ff2b6003c1) fix: don't print help for non-validation errors. Fixes #13826 (#13831)
+* [030afbcc8](https://github.com/argoproj/argo-workflows/commit/030afbcc85a70db9b669dcae96e17765160ee7b5) fix(ui): disable new graph filter options by default (#13835)
+* [eb23eb6b8](https://github.com/argoproj/argo-workflows/commit/eb23eb6b84a1ecf0826a4e16d6a2032fd0cb08b7) fix: mark taskresult complete when failed or error. Fixes #12993, Fixes #13533 (#13798)
+* [9f158ae0d](https://github.com/argoproj/argo-workflows/commit/9f158ae0d1ad93d1e8bede31086c742cfddbfc1e) refactor(ui): flatten `ui/src/app` dir  (#13815)
+* [3dfea6d5a](https://github.com/argoproj/argo-workflows/commit/3dfea6d5a9572c312b4479bd321c05fdad3d21a6) fix: don't mount SA token when `automountServiceAccountToken: false`. Fixes #12848 (#13820)
+* [1017c1dbe](https://github.com/argoproj/argo-workflows/commit/1017c1dbe2ccf3f0a59ae68f04d954dd92e69673) fix: correct nil pointer when listing wf archive without list options. Fixes #13804 (#13807)
+* [49ff7a44b](https://github.com/argoproj/argo-workflows/commit/49ff7a44ba307416282a1f5cd3b844d19bce7f88) fix: better error message for multiple workflow controllers running (#13760)
+* [b49e88e31](https://github.com/argoproj/argo-workflows/commit/b49e88e3178fc8183e5de7459ef6ae46985b0497) refactor: remove `util/slice` and use standard `slices` library (#13775)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Adrien Delannoy
+* Alan Clucas
+* Anton Gilgur
+* Darko Janjic
+* Greg Sheremeta
+* Isitha Subasinghe
+* Mason Malone
+* MinyiZ
+* dependabot[bot]
+* github-actions[bot]
+
+</details>
+
 ## v3.6.0-rc3 (2024-10-24)
 
 Full Changelog: [v3.6.0-rc2...v3.6.0-rc3](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc2...v3.6.0-rc3)
@@ -99,7 +142,7 @@ Full Changelog: [v3.6.0-rc1...v3.6.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.6.0-rc1 (2024-09-18)
 
-Full Changelog: [v3.5.11...v3.6.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.5.11...v3.6.0-rc1)
+Full Changelog: [v3.5.12...v3.6.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.5.12...v3.6.0-rc1)
 
 ### Selected Changes
 
@@ -631,6 +674,47 @@ Full Changelog: [v3.5.11...v3.6.0-rc1](https://github.com/argoproj/argo-workflow
 * ​Andrzej Ressel
 * 刘达
 * 名白
+
+</details>
+
+## v3.5.12 (2024-10-30)
+
+Full Changelog: [v3.5.11...v3.5.12](https://github.com/argoproj/argo-workflows/compare/v3.5.11...v3.5.12)
+
+### Selected Changes
+
+* [8fe8de2e1](https://github.com/argoproj/argo-workflows/commit/8fe8de2e16ec39a5477df17586a3d212ec63a4bd) fix: mark taskresult complete when failed or error. Fixes #12993, Fixes #13533 (#13798)
+* [70c58a6bc](https://github.com/argoproj/argo-workflows/commit/70c58a6bc9fa019adf8f54f4458d829dd147f7f6) fix: don't mount SA token when `automountServiceAccountToken: false`. Fixes #12848 (#13820)
+* [c68f5cea7](https://github.com/argoproj/argo-workflows/commit/c68f5cea7821728759c0921e449b11e8f0b05abb) fix: better error message for multiple workflow controllers running (#13760)
+* [5e4da8178](https://github.com/argoproj/argo-workflows/commit/5e4da8178da407e40762b7802f941cc4f01a31f8) fix(ui): clarify log deletion in log-viewer. Fixes #10993 (#13788)
+* [5524cc2ae](https://github.com/argoproj/argo-workflows/commit/5524cc2aee2f68f63b0a92df8b581073515fa51c) fix: only set `ARGO_PROGRESS_FILE` when needed. Partial fix for #13089 (#13743)
+* [1daeebb7a](https://github.com/argoproj/argo-workflows/commit/1daeebb7a4e0c63db3feb8b35584fda4b45a9d94) fix(controller): retry transient error on agent pod creation (#13655)
+* [816fe8448](https://github.com/argoproj/argo-workflows/commit/816fe8448713edc75dfae86a62f2c374db5fcedd) fix(ui): allow `links` to metadata with dots. Fixes #11741 (#13752)
+* [63991d371](https://github.com/argoproj/argo-workflows/commit/63991d3719ff4aa11f59142fc38576c04ca68132) fix(test): fix http-template test (#13737)
+* [64d6832e1](https://github.com/argoproj/argo-workflows/commit/64d6832e1c75e4123440f9ea5928fd2e97709239) fix(cli): handle multi-resource yaml in offline lint. Fixes #12137 (#13531)
+* [70cdcada9](https://github.com/argoproj/argo-workflows/commit/70cdcada91c5f35f49dc9491f306e57c24e5f38f) fix(emissary): signal SIGINT/SIGTERM in windows correctly (#13693)
+* [7826fa147](https://github.com/argoproj/argo-workflows/commit/7826fa147e427b756a0debdc34e80bfa9bc00e56) fix(test): windows tests fixes. Fixes #11994 (#12071)
+* [16d5d9d41](https://github.com/argoproj/argo-workflows/commit/16d5d9d416faf2b2a3d1c0ca4ff30246b301c11f) fix: skip clear message when node transition from pending to fail. Fixes #13200 (#13201)
+* [c8693f093](https://github.com/argoproj/argo-workflows/commit/c8693f093d5fa08d6a6aad1463692cd33d3c3c2b) fix: all written artifacts should be saved and garbage collected (#13678)
+* [5940b8bc1](https://github.com/argoproj/argo-workflows/commit/5940b8bc149522bfe4e8be3af717c0fa66122b90) fix: add `cronWorkflowWorkers` log. Fixes: #13681 (#13688)
+* [0f05e6438](https://github.com/argoproj/argo-workflows/commit/0f05e64383fc6afb26a510c5307a9afe7b828146) fix: add retry for invalid connection. Fixes #13578 (#13580)
+* [4e23c7d29](https://github.com/argoproj/argo-workflows/commit/4e23c7d296402cd6b805281f1243206cb2f30e43) fix(docs): remove accidental copy+paste from previous commit
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Anton Gilgur
+* Greg Sheremeta
+* Isitha Subasinghe
+* Julie Vogelman
+* Michael Weibel
+* MinyiZ
+* Tianchu Zhao
+* Yuping Fan
+* github-actions[bot]
+* shuangkun tian
+* tooptoop4
+* wayne
 
 </details>
 

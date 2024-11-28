@@ -55,7 +55,6 @@ If you'd like to participate, add yourself here in a PR.
 | Name                      | GitHub ID                                               |
 |---------------------------|---------------------------------------------------------|
 | Alan Clucas               | [`Joibel`](https://github.com/Joibel)                   |
-| Anton Gilgur              | [`agilgur5`](https://github.com/agilgur5)               |
 | Isitha Subasinghe         | [`isubasinghe`](https://github.com/isubasinghe)         |
 | Shuangkun Tian            | [`shuangkun`](https://github.com/shuangkun)             |
 | Tianchu Zhao              | [`tczhao`](https://github.com/tczhao)                   |
