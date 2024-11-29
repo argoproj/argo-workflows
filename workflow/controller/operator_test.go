@@ -3432,11 +3432,9 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
-	assert.Equal(t, []string{
-		"/var/run/argo/argoexec", "emissary",
-		"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+	assert.Equal(t, append(append([]string{"/var/run/argo/argoexec", "emissary"}, woc.getExecutorLogOpts()...),
 		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\"",
-	}, pods.Items[0].Spec.Containers[1].Command)
+	), pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -6516,6 +6514,7 @@ status:
   phase: Failed
   nodes:
     my-wf:
+      id: my-wf
       name: my-wf
       phase: Failed
 `)

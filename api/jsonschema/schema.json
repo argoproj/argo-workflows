@@ -4972,7 +4972,7 @@
           "description": "LastScheduleTime is the last time the CronWorkflow was scheduled"
         },
         "phase": {
-          "description": "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true",
+          "description": "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
           "type": "string"
         },
         "succeeded": {
@@ -6211,7 +6211,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "result": {
-          "description": "Result holds the result (stdout) of a script template",
+          "description": "Result holds the result (stdout) of a script or container template, or the response body of an HTTP template",
           "type": "string"
         }
       },

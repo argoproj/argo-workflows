@@ -529,7 +529,7 @@ message CronWorkflowStatus {
   // v3.6 and after: Failed counts how many times child workflows failed
   optional int64 failed = 5;
 
-  // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true
+  // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
   optional string phase = 6;
 }
 
@@ -1221,7 +1221,7 @@ message Outputs {
   // +patchMergeKey=name
   repeated Artifact artifacts = 2;
 
-  // Result holds the result (stdout) of a script template
+  // Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
   optional string result = 3;
 
   // ExitCode holds the exit code of a script template

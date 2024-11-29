@@ -150,6 +150,11 @@ It has been replaced with a link to the [Swagger UI in the versioned documentati
 When returning a map or array in an expression, you would get a Golang representation.
 This now returns plain JSON.
 
+### Added container name to workflow node error messages
+
+Workflow node error messages are now prefixed with the container name.
+If you are using [Conditional Retries](retries.md#conditional-retries), you may need to adjust your usage of `lastRetry.message` expressions or the `TRANSIENT_ERROR_PATTERN` environment variable.
+
 ### `ARGO_TEMPLATE` removed from main container
 
 The environment variable `ARGO_TEMPLATE` which is an internal implementation detail is no longer available inside the `main` container of your workflow pods.
