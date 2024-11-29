@@ -247,21 +247,19 @@ Metrics for the [Four Golden Signals](https://sre.google/sre-book/monitoring-dis
 #### `cronworkflows_concurrencypolicy_triggered`
 
 A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running.
-
-| attribute | explanation |
-|-----------|-------------|
-| `name` | ⚠️ The name of the CronWorkflow |
-| `namespace` | The namespace that the CronWorkflow is in |
+|      attribute       |                                   explanation                                    |
+|----------------------|----------------------------------------------------------------------------------|
+| `name`               | ⚠️ The name of the CronWorkflow                                                   |
+| `namespace`          | The namespace that the CronWorkflow is in                                        |
 | `concurrency_policy` | The concurrency policy which was triggered, will be either `Forbid` or `Replace` |
 
 #### `cronworkflows_triggered_total`
 
 A counter of the total number of times a CronWorkflow has been triggered.
 Suppressed runs due to `concurrencyPolicy: Forbid` will not be counted.
-
-| attribute | explanation |
-|-----------|-------------|
-| `name` | ⚠️ The name of the CronWorkflow |
+|  attribute  |                explanation                |
+|-------------|-------------------------------------------|
+| `name`      | ⚠️ The name of the CronWorkflow            |
 | `namespace` | The namespace that the CronWorkflow is in |
 
 #### `deprecated_feature`
@@ -269,10 +267,9 @@ Suppressed runs due to `concurrencyPolicy: Forbid` will not be counted.
 Incidents of deprecated feature being used.
 Deprecated features are [explained here](deprecations.md).
 🚨 This counter may go up much more than once for a single use of the feature.
-
-| attribute | explanation |
-|-----------|-------------|
-| `feature` | The name of the feature used |
+|  attribute  |              explanation              |
+|-------------|---------------------------------------|
+| `feature`   | The name of the feature used          |
 | `namespace` | The namespace that the Workflow is in |
 
 `feature` will be one of:
@@ -285,10 +282,9 @@ Deprecated features are [explained here](deprecations.md).
 #### `error_count`
 
 A counter of certain errors incurred by the controller by cause.
-
-| attribute | explanation |
-|-----------|-------------|
-| `cause` | The cause of the error |
+| attribute |      explanation       |
+|-----------|------------------------|
+| `cause`   | The cause of the error |
 
 The currently tracked specific errors are
 
@@ -301,10 +297,9 @@ The currently tracked specific errors are
 A gauge of the number of workflows currently in the cluster in each phase.
 The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them.
 A workflow can be stuck in `Running` with pending pods for a long time.
-
-| attribute | explanation |
-|-----------|-------------|
-| `status` | Boolean: `true` or `false` |
+| attribute |        explanation         |
+|-----------|----------------------------|
+| `status`  | Boolean: `true` or `false` |
 
 #### `is_leader`
 
@@ -313,18 +308,16 @@ A gauge indicating if this Controller is the [leader](high-availability.md#workf
 
 - `1` if leader or in standalone mode via [`LEADER_ELECTION_DISABLE=true`](environment-variables.md#controller).
 - `0` otherwise, indicating that this controller is a standby that is not currently running workflows.
-
 This metric has no attributes.
 
 #### `k8s_request_duration`
 
 A histogram recording the API requests sent to the Kubernetes API.
-
-| attribute | explanation |
-|-----------|-------------|
-| `kind` | The kubernetes `kind` involved in the request such as `configmaps` |
-| `verb` | The verb of the request, such as `Get` or `List` |
-| `status_code` | The HTTP status code of the response |
+|   attribute   |                            explanation                             |
+|---------------|--------------------------------------------------------------------|
+| `kind`        | The kubernetes `kind` involved in the request such as `configmaps` |
+| `verb`        | The verb of the request, such as `Get` or `List`                   |
+| `status_code` | The HTTP status code of the response                               |
 
 Default bucket sizes: 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 60, 180
 This contains all the information contained in `k8s_request_total` along with timings.
@@ -332,31 +325,27 @@ This contains all the information contained in `k8s_request_total` along with ti
 #### `k8s_request_total`
 
 A counter of the number of API requests sent to the Kubernetes API.
-
-| attribute | explanation |
-|-----------|-------------|
-| `kind` | The kubernetes `kind` involved in the request such as `configmaps` |
-| `verb` | The verb of the request, such as `Get` or `List` |
-| `status_code` | The HTTP status code of the response |
+|   attribute   |                            explanation                             |
+|---------------|--------------------------------------------------------------------|
+| `kind`        | The kubernetes `kind` involved in the request such as `configmaps` |
+| `verb`        | The verb of the request, such as `Get` or `List`                   |
+| `status_code` | The HTTP status code of the response                               |
 
 This metric is calculable from `k8s_request_duration`, and it is suggested you just collect that metric instead.
 
 #### `log_messages`
 
 A count of log messages emitted by the controller by log level: `error`, `warn` and `info`.
-
-| attribute | explanation |
-|-----------|-------------|
-| `level` | The log level of the message |
+| attribute |         explanation          |
+|-----------|------------------------------|
+| `level`   | The log level of the message |
 
 #### `operation_duration_seconds`
 
 A histogram of durations of operations.
 An operation is a single workflow reconciliation loop within the workflow-controller.
 It's the time for the controller to process a single workflow after it has been read from the cluster and is a measure of the performance of the controller affected by the complexity of the workflow.
-
 This metric has no attributes.
-
 The environment variables `OPERATION_DURATION_METRIC_BUCKET_COUNT` and `MAX_OPERATION_TIME` configure the bucket sizes for this metric, unless they are specified using an `histogramBuckets` modifier in the `metricsConfig` block.
 
 #### `pod_missing`
@@ -364,10 +353,9 @@ The environment variables `OPERATION_DURATION_METRIC_BUCKET_COUNT` and `MAX_OPER
 Incidents of pod missing.
 A counter of pods that were not seen - for example they are by being deleted by Kubernetes.
 You should only see this under high load.
-
-| attribute | explanation |
-|-----------|-------------|
-| `node_phase` | The phase that the pod's node was in |
+|     attribute      |              explanation               |
+|--------------------|----------------------------------------|
+| `node_phase`       | The phase that the pod's node was in   |
 | `recently_started` | Boolean: was this pod started recently |
 
 `recently_started` is controlled by the [environment variable](environment-variables.md) `RECENTLY_STARTED_POD_DURATION` and defaults to 10 seconds.
@@ -375,29 +363,26 @@ You should only see this under high load.
 #### `pod_pending_count`
 
 Total number of pods that started pending by reason.
-
-| attribute | explanation |
-|-----------|-------------|
-| `reason` | Summary of the kubernetes Reason for pending |
-| `namespace` | The namespace that the pod is in |
+|  attribute  |                 explanation                  |
+|-------------|----------------------------------------------|
+| `reason`    | Summary of the kubernetes Reason for pending |
+| `namespace` | The namespace that the pod is in             |
 
 #### `pods_gauge`
 
 A gauge of the number of workflow created pods currently in the cluster in each phase.
 It is possible for a workflow to start, but no pods be running (for example cluster is too busy to run them).
 This metric sheds light on actual work being done.
-
-| attribute | explanation |
-|-----------|-------------|
-| `phase` | The phase that the pod is in |
+| attribute |         explanation          |
+|-----------|------------------------------|
+| `phase`   | The phase that the pod is in |
 
 #### `pods_total_count`
 
 Total number of pods that have entered each phase.
-
-| attribute | explanation |
-|-----------|-------------|
-| `phase` | The phase that the pod is in |
+|  attribute  |           explanation            |
+|-------------|----------------------------------|
+| `phase`     | The phase that the pod is in     |
 | `namespace` | The namespace that the pod is in |
 
 This metric ignores the `PodInitializing` reason and does not count it.
@@ -408,9 +393,8 @@ This is not directly controlled by the workflow controller, so it is possible fo
 
 A counter of additions to the work queues inside the controller.
 The rate of this shows how busy that area of the controller is
-
-| attribute | explanation |
-|-----------|-------------|
+|  attribute   |      explanation      |
+|--------------|-----------------------|
 | `queue_name` | The name of the queue |
 
 Queues:
@@ -427,9 +411,8 @@ This and associated metrics are all directly sourced from the [client-go workque
 
 A gauge of the current depth of the queues.
 If these get large then the workflow controller is not keeping up with the cluster.
-
-| attribute | explanation |
-|-----------|-------------|
+|  attribute   |      explanation      |
+|--------------|-----------------------|
 | `queue_name` | The name of the queue |
 
 Queues:
@@ -445,9 +428,8 @@ This and associated metrics are all directly sourced from the [client-go workque
 #### `queue_duration`
 
 A histogram of the time events in the queues are taking to be processed.
-
-| attribute | explanation |
-|-----------|-------------|
+|  attribute   |      explanation      |
+|--------------|-----------------------|
 | `queue_name` | The name of the queue |
 
 Default bucket sizes: 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 60, 180
@@ -464,9 +446,8 @@ This and associated metrics are all directly sourced from the [client-go workque
 #### `queue_latency`
 
 A histogram of the time events in the queues are taking before they are processed.
-
-| attribute | explanation |
-|-----------|-------------|
+|  attribute   |      explanation      |
+|--------------|-----------------------|
 | `queue_name` | The name of the queue |
 
 Default bucket sizes: 1, 5, 20, 60, 180
@@ -483,9 +464,8 @@ This and associated metrics are all directly sourced from the [client-go workque
 #### `queue_longest_running`
 
 A gauge of the number of seconds that this queue's longest running processor has been running for.
-
-| attribute | explanation |
-|-----------|-------------|
+|  attribute   |      explanation      |
+|--------------|-----------------------|
 | `queue_name` | The name of the queue |
 
 Queues:
@@ -501,9 +481,8 @@ This and associated metrics are all directly sourced from the [client-go workque
 #### `queue_retries`
 
 A counter of the number of times a message has been retried in the queue.
-
-| attribute | explanation |
-|-----------|-------------|
+|  attribute   |      explanation      |
+|--------------|-----------------------|
 | `queue_name` | The name of the queue |
 
 Queues:
@@ -519,9 +498,8 @@ This and associated metrics are all directly sourced from the [client-go workque
 #### `queue_unfinished_work`
 
 A gauge of the number of queue items that have not been processed yet.
-
-| attribute | explanation |
-|-----------|-------------|
+|  attribute   |      explanation      |
+|--------------|-----------------------|
 | `queue_name` | The name of the queue |
 
 Queues:
@@ -537,33 +515,30 @@ This and associated metrics are all directly sourced from the [client-go workque
 #### `total_count`
 
 A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace.
-
-| attribute | explanation |
-|-----------|-------------|
-| `phase` | The phase that the Workflow has entered |
-| `namespace` | The namespace that the Workflow is in |
+|  attribute  |               explanation               |
+|-------------|-----------------------------------------|
+| `phase`     | The phase that the Workflow has entered |
+| `namespace` | The namespace that the Workflow is in   |
 
 #### `version`
 
 Build metadata for this Controller.
-
-| attribute | explanation |
-|-----------|-------------|
-| `version` | The version of Argo |
-| `platform` | The [Go platform](https://go.dev/doc/install/source#environment) compiled for. Example: `linux/amd64` |
-| `go_version` | Version of Go used |
-| `build_date` | Build date |
-| `compiler` | The compiler used. Example: `gc` |
-| `git_commit` | The full Git SHA1 commit |
-| `git_tree_state` | Whether the Git tree was `dirty` or `clean` when built |
-| `git_tag` | The Git tag or `untagged` if it was not tagged |
+|    attribute     |                                              explanation                                              |
+|------------------|-------------------------------------------------------------------------------------------------------|
+| `version`        | The version of Argo                                                                                   |
+| `platform`       | The [Go platform](https://go.dev/doc/install/source#environment) compiled for. Example: `linux/amd64` |
+| `go_version`     | Version of Go used                                                                                    |
+| `build_date`     | Build date                                                                                            |
+| `compiler`       | The compiler used. Example: `gc`                                                                      |
+| `git_commit`     | The full Git SHA1 commit                                                                              |
+| `git_tree_state` | Whether the Git tree was `dirty` or `clean` when built                                                |
+| `git_tag`        | The Git tag or `untagged` if it was not tagged                                                        |
 
 #### `workers_busy_count`
 
 A gauge of queue workers that are busy.
-
-| attribute | explanation |
-|-----------|-------------|
+|   attribute   |    explanation    |
+|---------------|-------------------|
 | `worker_type` | The type of queue |
 
 Worker Types:
@@ -580,35 +555,31 @@ This and associated metrics are all directly sourced from the [client-go workque
 
 A gauge of the number of workflows with different conditions.
 This will tell you the number of workflows with running pods.
-
-| attribute | explanation |
-|-----------|-------------|
-| `type` | The type of condition, currently only `PodRunning` |
-| `status` | Boolean: `true` or `false` |
+| attribute |                    explanation                     |
+|-----------|----------------------------------------------------|
+| `type`    | The type of condition, currently only `PodRunning` |
+| `status`  | Boolean: `true` or `false`                         |
 
 #### `workflowtemplate_runtime`
 
 A histogram of the runtime of workflows using `workflowTemplateRef` only.
 Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
 Records time between entering the `Running` phase and completion, so does not include any time in `Pending`.
-
-| attribute | explanation |
-|-----------|-------------|
-| `name` | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
-| `namespace` | The namespace that the WorkflowTemplate is in |
-| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate |
+|    attribute    |                         explanation                         |
+|-----------------|-------------------------------------------------------------|
+| `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
+| `namespace`     | The namespace that the WorkflowTemplate is in               |
+| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate     |
 
 #### `workflowtemplate_triggered_total`
 
 A counter of workflows using `workflowTemplateRef` only, as they enter each phase.
 Counts both WorkflowTemplate and ClusterWorkflowTemplate usage.
-
-| attribute | explanation |
-|-----------|-------------|
-| `name` | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
-| `namespace` | The namespace that the WorkflowTemplate is in |
-| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate |
-
+|    attribute    |                         explanation                         |
+|-----------------|-------------------------------------------------------------|
+| `name`          | ⚠️ The name of the WorkflowTemplate/ClusterWorkflowTemplate. |
+| `namespace`     | The namespace that the WorkflowTemplate is in               |
+| `cluster_scope` | A boolean set true if this is a ClusterWorkflowTemplate     |
 <!-- Generated documentation END -->
 
 ### Metric types

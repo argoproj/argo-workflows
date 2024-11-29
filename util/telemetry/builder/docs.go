@@ -3,9 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"slices"
 	"strings"
+
+	md "github.com/nao1215/markdown"
 )
 
 func createMetricsDocs(filename string, metrics *metricsList, attribs *attributesList) {
@@ -59,43 +62,49 @@ func createMetricsDocs(filename string, metrics *metricsList, attribs *attribute
 
 func metricsDocsLines(metrics *metricsList, attribs *attributesList) string {
 	var out bytes.Buffer
-	fmt.Fprintf(&out, "\n")
+	outWriter := io.Writer(&out)
+	markdown := md.NewMarkdown(outWriter)
 	for _, metric := range *metrics {
-		fmt.Fprintf(&out, "#### `%s`\n\n", metric.displayName())
-		fmt.Fprintf(&out, "%s.\n", metric.Description)
+		markdown.PlainText("")
+		markdown.H4(md.Code(metric.displayName()))
+		markdown.PlainText("")
+		markdown.PlainTextf("%s.", metric.Description)
 		if metric.ExtendedDescription != "" {
-			fmt.Fprintf(&out, "%s\n", strings.Trim(metric.ExtendedDescription, " \n\t\r"))
+			markdown.PlainText(strings.Trim(metric.ExtendedDescription, " \n\t\r"))
 		}
-		fmt.Fprintf(&out, "\n")
 
 		if len(metric.Attributes) > 0 {
-			fmt.Fprintf(&out, "| attribute | explanation |\n")
-			fmt.Fprintf(&out, "|-----------|-------------|\n")
+			rows := [][]string{}
 			for _, metricAttrib := range metric.Attributes {
 				if attrib := getAttribByName(metricAttrib.Name, attribs); attrib != nil {
 					// Failure should already be recorded as an error
-					fmt.Fprintf(&out, "| `%s` | %s |\n", attrib.displayName(), attrib.Description)
+					rows = append(rows, []string{md.Code(attrib.displayName()), attrib.Description})
 				}
 			}
-			fmt.Fprintf(&out, "\n")
+
+			markdown.CustomTable(md.TableSet{
+				Header: []string{"attribute", "explanation"},
+				Rows:   rows,
+			}, md.TableOptions{AutoWrapText: false},
+			)
 		} else {
-			fmt.Fprintf(&out, "This metric has no attributes.\n\n")
+			markdown.PlainText("This metric has no attributes.")
 		}
 		if len(metric.DefaultBuckets) > 0 {
-			fmt.Fprintf(&out, "Default bucket sizes: ")
+			buckets := ""
 			for i, bucket := range metric.DefaultBuckets {
 				if i != 0 {
-					fmt.Fprintf(&out, ", ")
+					buckets = fmt.Sprintf("%s, ", buckets)
 				}
-				fmt.Fprintf(&out, "%g", bucket)
+				buckets = fmt.Sprintf("%s%g", buckets, bucket)
 			}
-			fmt.Fprintf(&out, "\n")
+			markdown.PlainTextf("Default bucket sizes: %s", buckets)
 		}
 
 		if metric.Notes != "" {
-			fmt.Fprintf(&out, "%s\n", strings.Trim(metric.Notes, " \n\t\r"))
-			fmt.Fprintf(&out, "\n")
+			markdown.PlainText(strings.Trim(metric.Notes, " \n\t\r"))
 		}
 	}
+	markdown.Build()
 	return strings.TrimSuffix(out.String(), "\n")
 }
