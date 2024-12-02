@@ -31,6 +31,15 @@ func waitContainer(ctx context.Context) error {
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	bgCtx := context.Background()
 
+	if wfExecutor.Template.Resource != nil {
+		logArtifacts := wfExecutor.SaveLogs(bgCtx)
+		err := wfExecutor.ReportOutputs(bgCtx, logArtifacts)
+		if err != nil {
+			wfExecutor.AddError(err)
+		}
+		return wfExecutor.HasError()
+	}
+
 	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
 	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	defer stats.LogStats()
