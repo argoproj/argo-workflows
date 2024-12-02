@@ -174,10 +174,10 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	s.instanceIDService.With(&listOption)
 
 	options, err := sutils.BuildListOptions(listOption, req.Namespace, "", req.NameFilter)
-
 	if err != nil {
 		return nil, err
 	}
+
 	// verify if we have permission to list Workflows
 	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
 	if err != nil {
@@ -688,7 +688,6 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	req.Name = wf.Name
 
 	err = ws.SendHeader(metadata.MD{})
-
 	if err != nil {
 		return sutils.ToStatusError(err, codes.Internal)
 	}
@@ -710,20 +709,32 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 		log.Debugf("Resolved alias %s to workflow %s.\n", latestAlias, latest.Name)
 		return latest, nil
 	}
-	var err error
+
 	wf, origErr := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
+	// fallback to retrieve from archived workflows
 	if wf == nil || origErr != nil {
-		wf, err = s.wfArchive.GetWorkflow("", namespace, name)
+		allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, name)
 		if err != nil {
-			log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
-			// We only return the original error to preserve the original status code.
-			return nil, sutils.ToStatusError(origErr, codes.Internal)
+			return nil, getWorkflowOrigErr(origErr, err)
 		}
-		if wf == nil {
-			return nil, status.Error(codes.NotFound, "not found")
+		if !allowed {
+			err = status.Error(codes.PermissionDenied, "permission denied")
+			return nil, getWorkflowOrigErr(origErr, err)
+		}
+
+		wf, err = s.wfArchive.GetWorkflow("", namespace, name)
+		if wf == nil || err != nil {
+			return nil, getWorkflowOrigErr(origErr, err)
 		}
 	}
 	return wf, nil
+}
+
+// getWorkflowOrigErr only returns the original error to preserve the original status code
+// it logs out the new error
+func getWorkflowOrigErr(origErr error, err error) error {
+	log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
+	return sutils.ToStatusError(origErr, codes.Internal)
 }
 
 func (s *workflowServer) validateWorkflow(wf *wfv1.Workflow) error {
