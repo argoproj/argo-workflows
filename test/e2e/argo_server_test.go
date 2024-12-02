@@ -458,6 +458,9 @@ func (s *ArgoServerSuite) TestPermission() {
 		badToken = string(secret.Data["token"])
 	})
 
+	// fake / spoofed token
+	fakeToken := "faketoken"
+
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 
@@ -561,8 +564,8 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(200)
 	})
 
-	// we've now deleted the workflow, but it is still in the archive, testing the archive
-	// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
+	// we've now deleted the workflow, but it is still in the archive
+	// testing the archive after deleting it makes sure that we are not dependent on a live workflow resource for authorization
 
 	// Test list archived WFs with good token
 	s.Run("ListArchivedWFsGoodToken", func() {
@@ -602,7 +605,33 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(403)
 	})
 
+	// Test get wf w/ archive fallback with good token
+	s.bearerToken = goodToken
+	s.Run("GetWFsFallbackArchivedGoodToken", func() {
+		s.e().GET("/api/v1/workflows/"+uid).
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			Expect().
+			Status(200)
+	})
+
+	// Test get wf w/ archive fallback with bad token
+	s.bearerToken = badToken
+	s.Run("GetWFsFallbackArchivedBadToken", func() {
+		s.e().GET("/api/v1/workflows/" + uid).
+			Expect().
+			Status(403)
+	})
+
+	// Test get wf w/ archive fallback with fake token
+	s.bearerToken = fakeToken
+	s.Run("GetWFsFallbackArchivedFakeToken", func() {
+		s.e().GET("/api/v1/workflows/" + uid).
+			Expect().
+			Status(403)
+	})
+
 	// Test deleting archived wf with bad token
+	s.bearerToken = badToken
 	s.Run("DeleteArchivedWFsBadToken", func() {
 		s.e().DELETE("/api/v1/archived-workflows/" + uid).
 			Expect().
