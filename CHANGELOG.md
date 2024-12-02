@@ -1,5 +1,36 @@
 # Changelog
 
+## v3.6.2 (2024-12-02)
+
+Full Changelog: [v3.6.1...v3.6.2](https://github.com/argoproj/argo-workflows/compare/v3.6.1...v3.6.2)
+
+### Selected Changes
+
+* [741ab0ef7](https://github.com/argoproj/argo-workflows/commit/741ab0ef7b6432925e49882cb4294adccf5912ec) Merge commit from fork
+* [6d87a90c0](https://github.com/argoproj/argo-workflows/commit/6d87a90c0fed24614e5e97135beee0a387f8432c) fix(ui): handle parsing errors properly in object editor (#13931)
+* [ebed7f998](https://github.com/argoproj/argo-workflows/commit/ebed7f9983ad22fa06275ad64cb5588812dd0d36) refactor(deps): remove `moment` dep and usage (#12611)
+* [8a94f2ef0](https://github.com/argoproj/argo-workflows/commit/8a94f2ef0cd5efa4635bccd6ccfd6cebeea5be2c) fix: Set default value to output parameters if suspend node timeout. Fixes #12230 (#12960)
+* [1a3a5c233](https://github.com/argoproj/argo-workflows/commit/1a3a5c2335f66c487fe47d0797ae501b8f445ee0) fix: bump minio-go to version that supports eks pod identity #13800 (#13854)
+* [e721cfef2](https://github.com/argoproj/argo-workflows/commit/e721cfef2ea1b8b9fd43c5955c9183825fe98b80) fix: consistently set executor log options  (#12979)
+* [6371f9bfa](https://github.com/argoproj/argo-workflows/commit/6371f9bfade2ce3da4ea2a27a23855bd3435b387) chore(deps): bump github.com/golang-jwt/jwt/v4 from 4.5.0 to 4.5.1 in the go_modules group (#13865)
+* [591928b8c](https://github.com/argoproj/argo-workflows/commit/591928b8c836e0c323c67ccb1bd505df1508c14c) fix(ui): improve editor performance and fix Submit button. Fixes #13892 (#13915)
+* [8dd747317](https://github.com/argoproj/argo-workflows/commit/8dd7473170d87d8e24d9954df635615a24f742ad) fix(ui): Clickable URLs are messing up formatting in the UI (#13923)
+* [f85d05595](https://github.com/argoproj/argo-workflows/commit/f85d05595d6247de4887a90b99bddb27b50a342c) fix(ui): fix broken workflowtemplate submit button. Fixes #13892 (#13913)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Adrien Delannoy
+* Alan Clucas
+* Anton Gilgur
+* Blair Drummond
+* Carlos R.F.
+* Mason Malone
+* dependabot[bot]
+* instauro
+* jswxstw
+
+</details>
+
 ## v3.6.1 (2024-12-02)
 
 Full Changelog: [v3.6.0...v3.6.1](https://github.com/argoproj/argo-workflows/compare/v3.6.0...v3.6.1)
