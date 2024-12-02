@@ -13,19 +13,14 @@ type logMetric struct {
 }
 
 func addLogCounter(ctx context.Context, m *Metrics) error {
-	const nameLogMessages = `log_messages`
-	err := m.CreateInstrument(telemetry.Int64Counter,
-		nameLogMessages,
-		"Total number of log messages.",
-		"{message}",
-		telemetry.WithAsBuiltIn(),
-	)
+	err := m.CreateBuiltinInstrument(telemetry.InstrumentLogMessages)
+	name := telemetry.InstrumentLogMessages.Name()
 	lm := logMetric{
-		counter: m.AllInstruments[nameLogMessages],
+		counter: m.AllInstruments[name],
 	}
 	log.AddHook(lm)
 	for _, level := range lm.Levels() {
-		m.AddInt(ctx, nameLogMessages, 0, telemetry.InstAttribs{
+		m.AddInt(ctx, name, 0, telemetry.InstAttribs{
 			{Name: telemetry.AttribLogLevel, Value: level.String()},
 		})
 	}
