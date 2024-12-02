@@ -608,7 +608,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test get wf w/ archive fallback with good token
 	s.bearerToken = goodToken
 	s.Run("GetWFsFallbackArchivedGoodToken", func() {
-		s.e().GET("/api/v1/workflows/"+uid).
+		s.e().GET("/api/v1/workflows/"+nsName).
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 			Expect().
 			Status(200)
@@ -617,7 +617,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test get wf w/ archive fallback with bad token
 	s.bearerToken = badToken
 	s.Run("GetWFsFallbackArchivedBadToken", func() {
-		s.e().GET("/api/v1/workflows/" + uid).
+		s.e().GET("/api/v1/workflows/" + nsName).
 			Expect().
 			Status(403)
 	})
@@ -625,9 +625,9 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test get wf w/ archive fallback with fake token
 	s.bearerToken = fakeToken
 	s.Run("GetWFsFallbackArchivedFakeToken", func() {
-		s.e().GET("/api/v1/workflows/" + uid).
+		s.e().GET("/api/v1/workflows/" + nsName).
 			Expect().
-			Status(403)
+			Status(401)
 	})
 
 	// Test deleting archived wf with bad token
