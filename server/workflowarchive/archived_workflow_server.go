@@ -45,7 +45,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		listOptions = *req.ListOptions
 	}
 
-	options, err := sutils.BuildListOptions(listOptions, req.Namespace, req.NamePrefix, "")
+	options, err := sutils.BuildListOptions(listOptions, req.Namespace, req.NamePrefix, "", "", "")
 	if err != nil {
 		return nil, err
 	}
