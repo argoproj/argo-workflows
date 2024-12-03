@@ -2004,7 +2004,7 @@ Outputs hold parameters, artifacts, and results from a step
 |`artifacts`|`Array<`[`Artifact`](#artifact)`>`|Artifacts holds the list of output artifacts produced by a step|
 |`exitCode`|`string`|ExitCode holds the exit code of a script template|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters holds the list of output parameters produced by a step|
-|`result`|`string`|Result holds the result (stdout) of a script template|
+|`result`|`string`|Result holds the result (stdout) of a script or container template, or the response body of an HTTP template|
 
 ## SynchronizationStatus
 

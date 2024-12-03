@@ -2528,7 +2528,7 @@ definitions:
                     $ref: '#/definitions/Parameter'
                 type: array
             result:
-                description: Result holds the result (stdout) of a script template
+                description: Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
                 type: string
         type: object
     OwnerReference:

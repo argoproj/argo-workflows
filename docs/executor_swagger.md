@@ -2478,7 +2478,7 @@ save/load the directory appropriately.
 | artifacts | [Artifacts](#artifacts)| `Artifacts` |  | |  |  |
 | exitCode | string| `string` |  | | ExitCode holds the exit code of a script template |  |
 | parameters | [][Parameter](#parameter)| `[]*Parameter` |  | | Parameters holds the list of output parameters produced by a step</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
-| result | string| `string` |  | | Result holds the result (stdout) of a script template |  |
+| result | string| `string` |  | | Result holds the result (stdout) of a script or container template, or the response body of an HTTP template |  |
 
 
 
