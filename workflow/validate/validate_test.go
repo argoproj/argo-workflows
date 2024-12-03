@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -567,7 +569,7 @@ spec:
     - name: missing
   entrypoint: whalesay
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -3000,7 +3002,7 @@ metadata:
 spec:
   entrypoint: steps-timing
   templates:
-    
+
     - name: steps-timing
       steps:
         - - name: one
@@ -3015,12 +3017,12 @@ spec:
                   value: "{{steps.one.finishedAt}}"
                 - name: id
                   value: "{{steps.one.id}}"
-    
+
     - name: wait
       container:
         image: alpine:3.7
         command: [sleep, "5"]
-    
+
     - name: printer
       inputs:
         parameters:
@@ -3341,5 +3343,50 @@ func TestShouldCheckValidationToSpacedParameters(t *testing.T) {
 	// Do not allow leading or trailing spaces in parameters
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{  workflow.thisdoesnotexist  }}")
+	}
+}
+
+func TestSynchronization(t *testing.T) {
+	tests := []struct {
+		name            string
+		workflow        string
+		expectedSuccess bool
+	}{
+		{
+			workflow:        "@testdata/synchronization-valid-mutex.yaml",
+			expectedSuccess: true,
+		},
+		{
+			workflow:        "@testdata/synchronization-invalid-both.yaml",
+			expectedSuccess: false,
+		},
+		{
+			workflow:        "@testdata/synchronization-invalid-neither.yaml",
+			expectedSuccess: false,
+		},
+		{
+			workflow:        "@testdata/synchronization-tmpl-valid-mutex.yaml",
+			expectedSuccess: true,
+		},
+		{
+			workflow:        "@testdata/synchronization-tmpl-invalid-both.yaml",
+			expectedSuccess: false,
+		},
+		{
+			workflow:        "@testdata/synchronization-tmpl-invalid-neither.yaml",
+			expectedSuccess: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
+			err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+			if tt.expectedSuccess {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
 	}
 }

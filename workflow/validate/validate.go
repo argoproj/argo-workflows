@@ -136,6 +136,24 @@ func validateHooks(hooks wfv1.LifecycleHooks, hookBaseName string) error {
 	return nil
 }
 
+// validateSync takes a synchronization struct and validates that only one of mutex or semaphore is used.
+// using both in one block results in an error, otherwise nil
+func validateSync(sync *wfv1.Synchronization, errPrefix string) error {
+	// no synchronization is valid
+	if sync == nil {
+		return nil
+	}
+	// must be one or the other
+	if sync.Mutex != nil && sync.Semaphore != nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s", errPrefix, "Each synchronization block may only refer to either a semaphore or a mutex.")
+	}
+	// can't be something other than mutex or semaphore
+	if sync.Mutex == nil && sync.Semaphore == nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s", errPrefix, "A synchronization block must refer to either a semaphore or a mutex.")
+	}
+	return nil
+}
+
 // ValidateWorkflow accepts a workflow and performs validation against it.
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx := newTemplateValidationCtx(wf, opts)
@@ -253,6 +271,11 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		if err != nil {
 			return err
 		}
+	}
+
+	err = validateSync(wf.Spec.Synchronization, "spec.synchronization")
+	if err != nil {
+		return err
 	}
 
 	// Validate OnExit hooks
@@ -408,8 +431,12 @@ func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserC
 }
 
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, workflowTemplateValidation bool) error {
-
 	if err := validateTemplateType(tmpl); err != nil {
+		return err
+	}
+
+	err := validateSync(tmpl.Synchronization, fmt.Sprintf("templates.%s.synchronization", tmpl.Name))
+	if err != nil {
 		return err
 	}
 
