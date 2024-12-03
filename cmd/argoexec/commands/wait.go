@@ -32,6 +32,10 @@ func waitContainer(ctx context.Context) error {
 	bgCtx := context.Background()
 
 	if wfExecutor.Template.Resource != nil {
+		err := wfExecutor.Wait(ctx)
+		if err != nil {
+			wfExecutor.AddError(err)
+		}
 		wfExecutor.SaveLogs(bgCtx)
 		return wfExecutor.HasError()
 	}
