@@ -44,7 +44,7 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow("@testdata/steps_test/steps-with-param-and-global-param.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/steps_test/steps-with-params-and-global-param.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
