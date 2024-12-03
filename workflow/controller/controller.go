@@ -326,7 +326,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
-		go wfc.runConfigMapWatcher(ctx, ctx.Done())
+		go wfc.runConfigMapWatcher(ctx)
 	}
 
 	go wfc.wfInformer.Run(ctx.Done())
@@ -364,10 +364,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wait.Until(func() { wfc.syncManager.CheckWorkflowExistence(ctx) }, workflowExistenceCheckPeriod, ctx.Done())
 
 	for i := 0; i < wfWorkers; i++ {
-		go wait.Until(func() { wfc.runWorker(ctx) }, time.Second, ctx.Done())
+		go wait.UntilWithContext(ctx, wfc.runWorker, time.Second)
 	}
 	for i := 0; i < wfArchiveWorkers; i++ {
-		go wait.Until(func() { wfc.runArchiveWorker(ctx) }, time.Second, ctx.Done())
+		go wait.UntilWithContext(ctx, wfc.runArchiveWorker, time.Second)
 	}
 	if cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
@@ -436,7 +436,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	return nil
 }
 
-func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context, stopCh <-chan struct{}) {
+func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
@@ -463,7 +463,7 @@ func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context, stopCh <
 				wfc.UpdateConfig(ctx)
 			}
 			wfc.notifySemaphoreConfigUpdate(cm)
-		case <-stopCh:
+		case <-ctx.Done():
 			return
 		}
 	}
