@@ -799,7 +799,7 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 			return
 		case <-ticker.C:
 			log.Info("Performing archived workflow GC")
-			err := wfc.wfArchive.DeleteExpiredWorkflows(time.Duration(ttl))
+			err := wfc.wfArchive.DeleteExpiredWorkflows(time.Duration(ttl), wfc.Config.Persistence.KeepPrefixes)
 			if err != nil {
 				log.WithField("err", err).Error("Failed to delete archived workflows")
 			}
