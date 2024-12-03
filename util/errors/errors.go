@@ -26,7 +26,7 @@ func IgnoreContainerNotFoundErr(err error) error {
 // IsTransientErr reports whether the error is transient and logs it.
 func IsTransientErr(err error) bool {
 	isTransient := IsTransientErrQuiet(err)
-	if !isTransient {
+	if err != nil && !isTransient {
 		log.Warnf("Non-transient error: %v", err)
 	}
 	return isTransient
