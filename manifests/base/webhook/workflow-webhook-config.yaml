@@ -1,0 +1,28 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: workflow-validation-cfg
+webhooks:
+- name: workflowvalidatingwebhook.argoproj.io
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-workflow
+  admissionReviewVersions:
+  - v1
+  - v1beta1
+  rules:
+    - operations:
+      - CREATE
+      - UPDATE
+      apiGroups:
+      - "argoproj.io"
+      apiVersions:
+      - v1alpha1
+      resources:
+      - workflows
+      scope: Namespaced
+  failurePolicy: Fail
+  sideEffects: None

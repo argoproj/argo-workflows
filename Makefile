@@ -794,3 +794,20 @@ release-notes: /dev/null
 .PHONY: checksums
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
+
+kubebuilder:
+	curl -L -o kubebuilder "https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)" &&
+	chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
+
+scaffold-webhook:
+	kubebuilder create webhook --programmatic-validation --external-api-domain argoproj --external-api-path github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 --kind Workflow --version v1alpha1 --group argoproj.io
+
+ENVTEST_VERSION ?= release-0.19
+ENVTEST_K8S_VERSION ?= 1.31.0
+envtest:
+	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(ENVTEST_VERSION)
+
+test-webhook:
+	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(GOPATH) -p path)" go test $$(go list ./... | grep /internal/webhook/v1alpha1) -coverprofile cover.out
+
+generate:
