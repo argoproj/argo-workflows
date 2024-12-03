@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -415,6 +416,44 @@ spec:
 				assert.Equal(t, "true", cronWf.Labels[common.LabelKeyCronWorkflowCompleted])
 			})
 	})
+
+	s.Run("TestCronWorkflowFromWorkflowTemplateHasLabel", func() {
+		s.Given().
+			WorkflowTemplate(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-cron
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        command: [/argosay]`).
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-from-template
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 59
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    workflowTemplateRef:
+      name: workflow-template-cron`).
+			When().
+			CreateWorkflowTemplates().
+			CreateCronWorkflow().
+			SubmitWorkflowsFromCronWorkflows().
+			Wait(time.Minute).
+			Then().
+			ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				assert.Equal(t, "workflow-template-cron", metadata.Labels[common.LabelKeyWorkflowTemplate])
+			})
+	})
+
 	s.Run("TestMultipleWithTimezone", func() {
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
