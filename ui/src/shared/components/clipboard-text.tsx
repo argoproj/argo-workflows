@@ -19,7 +19,21 @@ export function ClipboardText({text}: {text: string}) {
                         className={'fa fa-clipboard'}
                         onClick={() => {
                             setJustClicked(true);
-                            navigator.clipboard.writeText(text);
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(text).catch(err => console.error('Clipboard write failed', err));
+                            } else {
+                                const textArea = document.createElement('textarea');
+                                textArea.value = text;
+                                document.body.appendChild(textArea);
+                                textArea.select();
+                                try {
+                                    document.execCommand('copy');
+                                    console.log('Fallback: Text copied to clipboard');
+                                } catch (err) {
+                                    console.error('Fallback: Unable to copy', err);
+                                }
+                                document.body.removeChild(textArea);
+                            }
                             setTimeout(() => setJustClicked(false), 2000);
                         }}
                     />
