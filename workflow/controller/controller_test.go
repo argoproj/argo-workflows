@@ -328,6 +328,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
 		wfc.configMapInformer = wfc.newConfigMapInformer()
+		wfc.secretInformer = wfc.newSecretInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 

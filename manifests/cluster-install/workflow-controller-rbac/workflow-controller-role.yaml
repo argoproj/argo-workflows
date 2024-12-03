@@ -17,4 +17,5 @@ rules:
       - secrets
     verbs:
       - get
+      - watch
 

@@ -163,6 +163,47 @@ func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parame
 			}
 		}
 	} else {
+		if inParam.ValueFrom != nil && inParam.ValueFrom.SecretKeyRef != nil {
+			return nil
+		}
+		if inParam.Value == nil {
+			return errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+		}
+	}
+	return nil
+}
+
+func substituteAndGetSecretValue(inParam *wfv1.Parameter, globalParams Parameters, namespace string, secretStore SecretStore) error {
+	if inParam.ValueFrom != nil && inParam.ValueFrom.SecretKeyRef != nil {
+		if secretStore != nil {
+			// SubstituteParams is called only at the end of this method. To support parametrization of the secret
+			// we need to perform a substitution here over the name and the key of the SecretKeyRef.
+			secretName, err := substituteSecretKeyRefParam(inParam.ValueFrom.SecretKeyRef.Name, globalParams)
+			if err != nil {
+				log.WithError(err).Error("unable to substitute name for SecretKeyRef")
+				return err
+			}
+			secretKey, err := substituteSecretKeyRefParam(inParam.ValueFrom.SecretKeyRef.Key, globalParams)
+			if err != nil {
+				log.WithError(err).Error("unable to substitute key for SecretKeyRef")
+				return err
+			}
+
+			secretValue, err := GetSecretValue(secretStore, namespace, secretName, secretKey)
+			if err != nil {
+				if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
+					inParam.Value = inParam.ValueFrom.Default
+				} else {
+					return errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from Secret: %s", inParam.Name, err)
+				}
+			} else {
+				inParam.Value = wfv1.AnyStringPtr(secretValue)
+			}
+		}
+	} else {
+		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
+			return nil
+		}
 		if inParam.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 		}
@@ -175,7 +216,7 @@ func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parame
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore, secretStore SecretStore) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -191,6 +232,12 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 
 		// substitute configmap string and get value from store
 		err := substituteAndGetConfigMapValue(&inParam, globalParams, namespace, configMapStore)
+		if err != nil {
+			return nil, err
+		}
+
+		// substitute secret string and get value from store
+		err = substituteAndGetSecretValue(&inParam, globalParams, namespace, secretStore)
 		if err != nil {
 			return nil, err
 		}
@@ -235,6 +282,23 @@ func substituteConfigMapKeyRefParam(in string, replaceMap map[string]interface{}
 		return "", fmt.Errorf("failed to substitute configMapKeyRef: %w", err)
 	}
 	return replacedString, nil
+}
+
+// substituteSecretKeyRefParam check if SecretKeyRef's key is a param and perform the substitution.
+func substituteSecretKeyRefParam(in string, globalParams Parameters) (string, error) {
+	if strings.HasPrefix(in, "{{") && strings.HasSuffix(in, "}}") {
+		k := strings.TrimSuffix(strings.TrimPrefix(in, "{{"), "}}")
+		k = strings.Trim(k, " ")
+
+		v, ok := globalParams[k]
+		if !ok {
+			err := errors.InternalError(fmt.Sprintf("parameter %s not found", k))
+			log.WithError(err).Error()
+			return "", err
+		}
+		return v, nil
+	}
+	return in, nil
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
