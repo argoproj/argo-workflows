@@ -755,7 +755,7 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
-	controller.archivedWorkflowGarbageCollector(context.Background(), make(chan struct{}))
+	controller.archivedWorkflowGarbageCollector(context.Background())
 }
 
 const wfWithTmplRef = `
