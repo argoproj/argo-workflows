@@ -111,7 +111,7 @@ func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowar
 	}
 	var wfs wfv1.Workflows
 	if retryOpts.hasSelector() {
-		wfs, err = listArchivedWorkflows(ctx, archiveServiceClient, retryOpts.fieldSelector, retryOpts.labelSelector, 0)
+		wfs, err = listArchivedWorkflows(ctx, archiveServiceClient, retryOpts.fieldSelector, retryOpts.labelSelector, 0, "")
 		if err != nil {
 			return err
 		}
