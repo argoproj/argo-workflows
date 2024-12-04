@@ -1445,6 +1445,12 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if c.State.Terminated != nil && int(c.State.Terminated.ExitCode) != 0 {
 			new.Phase = wfv1.NodeFailed
 			woc.log.WithField("new.phase", new.Phase).Info("marking node as failed since init container has non-zero exit code")
+			if new.Outputs == nil {
+				new.Outputs = &wfv1.Outputs{}
+			}
+			if new.Outputs.ExitCode == nil {
+				new.Outputs.ExitCode = ptr.To(fmt.Sprint(int(c.State.Terminated.ExitCode)))
+			}
 			break
 		}
 	}
