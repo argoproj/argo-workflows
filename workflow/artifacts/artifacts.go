@@ -187,6 +187,19 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			}
 			gitDriver.SSHPrivateKey = sshPrivateKeyBytes
 		}
+		if art.Git.GithubAppAuth != nil {
+			privateKeyBytes, err := ri.GetSecret(ctx, art.Git.GithubAppAuth.PrivateKeySecret.Name, art.Git.GithubAppAuth.PrivateKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			gitDriver.GithubApp = &git.GithubApp{
+				InstallationID: art.Git.GithubAppAuth.InstallationID,
+				PrivateKey:     privateKeyBytes,
+				ID:             art.Git.GithubAppAuth.AppID,
+				BaseURL:        art.Git.GithubAppAuth.BaseURL,
+			}
+
+		}
 
 		return &gitDriver, nil
 	}

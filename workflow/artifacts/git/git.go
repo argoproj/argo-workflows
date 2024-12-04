@@ -1,24 +1,33 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	nethttp "net/http"
 	"os"
 	"regexp"
 
+	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	ssh2 "github.com/go-git/go-git/v5/plumbing/transport/ssh"
+
+	"github.com/google/go-github/v29/github"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 
 	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+)
+
+const (
+	DefaultGithubUrl = "https://api.github.com"
 )
 
 // ArtifactDriver is the artifact driver for a git repo
@@ -29,6 +38,14 @@ type ArtifactDriver struct {
 	InsecureIgnoreHostKey bool
 	InsecureSkipTLS       bool
 	DisableSubmodules     bool
+	GithubApp             *GithubApp
+}
+
+type GithubApp struct {
+	InstallationID int64
+	PrivateKey     string
+	ID             int64
+	BaseURL        string
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -66,6 +83,34 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		}
 		return func() { _ = os.Remove(privateKeyFile.Name()) }, auth, nil
+	}
+
+	if g.GithubApp != nil {
+		privateKey := []byte(g.GithubApp.PrivateKey)
+		transport, err := ghinstallation.New(nethttp.DefaultTransport, g.GithubApp.ID, g.GithubApp.InstallationID, privateKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create transport: %w", err)
+		}
+
+		if g.GithubApp.BaseURL != "" {
+			transport.BaseURL = g.GithubApp.BaseURL
+		} else {
+			transport.BaseURL = DefaultGithubUrl
+		}
+
+		var client *github.Client
+
+		httpClient := nethttp.Client{Transport: transport}
+		client = github.NewClient(&httpClient)
+
+		token, _, err := client.Apps.CreateInstallationToken(context.Background(), g.GithubApp.InstallationID, nil)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create installation token: %w", err)
+		}
+		return func() {}, &http.BasicAuth{
+			Username: "x-access-token",
+			Password: token.GetToken(),
+		}, nil
 	}
 	if g.Username != "" || g.Password != "" {
 		return func() {}, &http.BasicAuth{Username: g.Username, Password: g.Password}, nil
