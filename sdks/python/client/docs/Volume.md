@@ -23,6 +23,7 @@ Name | Type | Description | Notes
 **git_repo** | [**GitRepoVolumeSource**](GitRepoVolumeSource.md) |  | [optional] 
 **glusterfs** | [**GlusterfsVolumeSource**](GlusterfsVolumeSource.md) |  | [optional] 
 **host_path** | [**HostPathVolumeSource**](HostPathVolumeSource.md) |  | [optional] 
+**image** | [**ImageVolumeSource**](ImageVolumeSource.md) |  | [optional] 
 **iscsi** | [**ISCSIVolumeSource**](ISCSIVolumeSource.md) |  | [optional] 
 **nfs** | [**NFSVolumeSource**](NFSVolumeSource.md) |  | [optional] 
 **persistent_volume_claim** | [**PersistentVolumeClaimVolumeSource**](PersistentVolumeClaimVolumeSource.md) |  | [optional] 

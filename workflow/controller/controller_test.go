@@ -312,9 +312,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.metrics, testExporter, _ = metrics.CreateDefaultTestMetrics()
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
-		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+		wfc.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.throttler = wfc.newThrottler()
-		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+		wfc.podCleanupQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
 
@@ -755,7 +755,7 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
-	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
+	controller.archivedWorkflowGarbageCollector(context.Background())
 }
 
 const wfWithTmplRef = `
