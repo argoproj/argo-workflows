@@ -1221,7 +1221,7 @@ message Outputs {
   // +patchMergeKey=name
   repeated Artifact artifacts = 2;
 
-  // Result holds the result (stdout) of a script template
+  // Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
   optional string result = 3;
 
   // ExitCode holds the exit code of a script template

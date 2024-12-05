@@ -1,5 +1,83 @@
 # Changelog
 
+## v3.6.2 (2024-12-02)
+
+Full Changelog: [v3.6.1...v3.6.2](https://github.com/argoproj/argo-workflows/compare/v3.6.1...v3.6.2)
+
+### Selected Changes
+
+* [741ab0ef7](https://github.com/argoproj/argo-workflows/commit/741ab0ef7b6432925e49882cb4294adccf5912ec) Merge commit from fork
+* [6d87a90c0](https://github.com/argoproj/argo-workflows/commit/6d87a90c0fed24614e5e97135beee0a387f8432c) fix(ui): handle parsing errors properly in object editor (#13931)
+* [ebed7f998](https://github.com/argoproj/argo-workflows/commit/ebed7f9983ad22fa06275ad64cb5588812dd0d36) refactor(deps): remove `moment` dep and usage (#12611)
+* [8a94f2ef0](https://github.com/argoproj/argo-workflows/commit/8a94f2ef0cd5efa4635bccd6ccfd6cebeea5be2c) fix: Set default value to output parameters if suspend node timeout. Fixes #12230 (#12960)
+* [1a3a5c233](https://github.com/argoproj/argo-workflows/commit/1a3a5c2335f66c487fe47d0797ae501b8f445ee0) fix: bump minio-go to version that supports eks pod identity #13800 (#13854)
+* [e721cfef2](https://github.com/argoproj/argo-workflows/commit/e721cfef2ea1b8b9fd43c5955c9183825fe98b80) fix: consistently set executor log options  (#12979)
+* [6371f9bfa](https://github.com/argoproj/argo-workflows/commit/6371f9bfade2ce3da4ea2a27a23855bd3435b387) chore(deps): bump github.com/golang-jwt/jwt/v4 from 4.5.0 to 4.5.1 in the go_modules group (#13865)
+* [591928b8c](https://github.com/argoproj/argo-workflows/commit/591928b8c836e0c323c67ccb1bd505df1508c14c) fix(ui): improve editor performance and fix Submit button. Fixes #13892 (#13915)
+* [8dd747317](https://github.com/argoproj/argo-workflows/commit/8dd7473170d87d8e24d9954df635615a24f742ad) fix(ui): Clickable URLs are messing up formatting in the UI (#13923)
+* [f85d05595](https://github.com/argoproj/argo-workflows/commit/f85d05595d6247de4887a90b99bddb27b50a342c) fix(ui): fix broken workflowtemplate submit button. Fixes #13892 (#13913)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Adrien Delannoy
+* Alan Clucas
+* Anton Gilgur
+* Blair Drummond
+* Carlos R.F.
+* Mason Malone
+* dependabot[bot]
+* instauro
+* jswxstw
+
+</details>
+
+## v3.6.1 (2024-12-02)
+
+Full Changelog: [v3.6.0...v3.6.1](https://github.com/argoproj/argo-workflows/compare/v3.6.0...v3.6.1)
+
+### Selected Changes
+
+* [82f69a56c](https://github.com/argoproj/argo-workflows/commit/82f69a56c0a2f9cf8120d6a34ae39315737e03c4) chore(deps): update nixpkgs to nixos-24.11 (#13914)
+* [1f304ba67](https://github.com/argoproj/argo-workflows/commit/1f304ba6780ee043ea5ecd74e06787bcba298f8f) feat: Move contextless log messages to debug logging - fixes #13918 (#13920)
+* [7d6d8f310](https://github.com/argoproj/argo-workflows/commit/7d6d8f310ce57ae515b1580aa40cd8399eb37746) fix: Skip execution control for agent pod during pod reconciliation. Fixes #12726 (#12732)
+* [fe8df345d](https://github.com/argoproj/argo-workflows/commit/fe8df345d316a869e99e7105cbc6df87bb539101) fix(ui): handle parsing errors properly in object editor (#13931)
+* [f22ae3b87](https://github.com/argoproj/argo-workflows/commit/f22ae3b87a6cf5c0b7131bb49da6dea097edee0e) perf: Add workflow template informer to server (#13672)
+* [db6206a22](https://github.com/argoproj/argo-workflows/commit/db6206a22271259c66344f7bcf77de551bf777de) feat: Allow markdown title and description in CronWorkflows, WorkflowTemplates, & ClusterWorkflowTemplates. Fixes #12644 (#12697)
+* [6b221f460](https://github.com/argoproj/argo-workflows/commit/6b221f460a5823cd0ada098f21ca5eb37797f2df) fix: don't log non-errors as "Non-transient error: <nil>". Fixes #13881 (#13917)
+* [f2159dcd8](https://github.com/argoproj/argo-workflows/commit/f2159dcd841c8168df6acaf7afa0c54d24293c84) fix: consistent variable substitution for `configMapKeyRef`. Fixes #13890 (#13921)
+* [1392ef516](https://github.com/argoproj/argo-workflows/commit/1392ef516fd69a2cae875d746c1155f940e4948c) fix(ui): improve editor performance and fix Submit button. Fixes #13892 (#13915)
+* [eb4f2456e](https://github.com/argoproj/argo-workflows/commit/eb4f2456e077d89324ea71ef5f5e92cdccd8157a) fix(ui): Clickable URLs are messing up formatting in the UI (#13923)
+* [497f33876](https://github.com/argoproj/argo-workflows/commit/497f338764b68d6f3607113bf7a451d57d1427c4) fix: correct retry logic (#13734)
+* [40e95a0f0](https://github.com/argoproj/argo-workflows/commit/40e95a0f0af9d5e38f218be2ad4c6aca1b933a7c) chore(deps): bump github.com/golang-jwt/jwt/v4 from 4.5.0 to 4.5.1 in the go_modules group (#13865)
+* [2fd548848](https://github.com/argoproj/argo-workflows/commit/2fd54884844bb76d760466027afa023c5bfd6b64) fix(ui): fix broken workflowtemplate submit button. Fixes #13892 (#13913)
+* [217b59868](https://github.com/argoproj/argo-workflows/commit/217b598684c6d0cb9384e8c649f8e73659c5f9e5) fix: consistently set executor log options  (#12979)
+* [f470fdab2](https://github.com/argoproj/argo-workflows/commit/f470fdab279a4e0f28c6e324f1a337dafb73ec13) feat: include container name in error message. Fixes #10007 (#13790)
+* [2f3d6a677](https://github.com/argoproj/argo-workflows/commit/2f3d6a6771bdeb7c144ba9f925c8f76c0f9dcd17) refactor(deps): remove `moment` dep and usage (#12611)
+* [5d893b161](https://github.com/argoproj/argo-workflows/commit/5d893b161bbe4833d578be9f6c0322849215c23f) fix: bump minio-go to version that supports eks pod identity #13800 (#13854)
+* [3df05eba8](https://github.com/argoproj/argo-workflows/commit/3df05eba8cd114c3b956c8dbe1d533f52216f136) fix: Set default value to output parameters if suspend node timeout. Fixes #12230 (#12960)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Adrien Delannoy
+* Alan Clucas
+* Anton Gilgur
+* Blair Drummond
+* Carlos R.F.
+* Isitha Subasinghe
+* Jakub Buczak
+* Kat
+* Mason Malone
+* William Van Hevelingen
+* dependabot[bot]
+* github-actions[bot]
+* instauro
+* jswxstw
+* panicboat
+* renovate[bot]
+* tooptoop4
+
+</details>
+
 ## v3.6.0 (2024-10-31)
 
 Full Changelog: [v3.6.0-rc4...v3.6.0](https://github.com/argoproj/argo-workflows/compare/v3.6.0-rc4...v3.6.0)
@@ -142,7 +220,7 @@ Full Changelog: [v3.6.0-rc1...v3.6.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.6.0-rc1 (2024-09-18)
 
-Full Changelog: [v3.5.12...v3.6.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.5.12...v3.6.0-rc1)
+Full Changelog: [v3.5.13...v3.6.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.5.13...v3.6.0-rc1)
 
 ### Selected Changes
 
@@ -674,6 +752,21 @@ Full Changelog: [v3.5.12...v3.6.0-rc1](https://github.com/argoproj/argo-workflow
 * ​Andrzej Ressel
 * 刘达
 * 名白
+
+</details>
+
+## v3.5.13 (2024-12-02)
+
+Full Changelog: [v3.5.12...v3.5.13](https://github.com/argoproj/argo-workflows/compare/v3.5.12...v3.5.13)
+
+### Selected Changes
+
+* [06c761b8c](https://github.com/argoproj/argo-workflows/commit/06c761b8cc993aa6ab60f8c35c3c95bb334f3da0) Merge commit from fork
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Anton Gilgur
 
 </details>
 
