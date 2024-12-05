@@ -148,7 +148,7 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	m, te, err := getSharedMetrics()
 	require.NoError(t, err)
 	attribs := attribute.NewSet(attribute.String(telemetry.AttribQueueName, "workflow_queue"))
-	wfQueue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	wfQueue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_queue")
 	defer wfQueue.ShutDown()
 
 	assert.NotNil(t, m.GetInstrument(nameWorkersQueueDepth))

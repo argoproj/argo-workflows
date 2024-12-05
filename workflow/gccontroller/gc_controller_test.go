@@ -352,7 +352,7 @@ func newTTLController(t *testing.T) *Controller {
 		wfclientset: wfclientset,
 		wfInformer:  wfInformer,
 		clock:       clock,
-		workqueue:   workqueue.NewDelayingQueue(),
+		workqueue:   workqueue.NewTypedDelayingQueueWithConfig[string](workqueue.TypedDelayingQueueConfig[string]{}),
 		metrics:     gcMetrics,
 	}
 }

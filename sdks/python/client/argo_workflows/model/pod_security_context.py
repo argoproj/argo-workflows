@@ -104,6 +104,7 @@ class PodSecurityContext(ModelNormal):
             'se_linux_options': (SELinuxOptions,),  # noqa: E501
             'seccomp_profile': (SeccompProfile,),  # noqa: E501
             'supplemental_groups': ([int],),  # noqa: E501
+            'supplemental_groups_policy': (str,),  # noqa: E501
             'sysctls': ([Sysctl],),  # noqa: E501
             'windows_options': (WindowsSecurityContextOptions,),  # noqa: E501
         }
@@ -123,6 +124,7 @@ class PodSecurityContext(ModelNormal):
         'se_linux_options': 'seLinuxOptions',  # noqa: E501
         'seccomp_profile': 'seccompProfile',  # noqa: E501
         'supplemental_groups': 'supplementalGroups',  # noqa: E501
+        'supplemental_groups_policy': 'supplementalGroupsPolicy',  # noqa: E501
         'sysctls': 'sysctls',  # noqa: E501
         'windows_options': 'windowsOptions',  # noqa: E501
     }
@@ -176,7 +178,8 @@ class PodSecurityContext(ModelNormal):
             run_as_user (int): The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             se_linux_options (SELinuxOptions): [optional]  # noqa: E501
             seccomp_profile (SeccompProfile): [optional]  # noqa: E501
-            supplemental_groups ([int]): A list of groups applied to the first process run in each container, in addition to the container's primary GID, the fsGroup (if specified), and group memberships defined in the container image for the uid of the container process. If unspecified, no additional groups are added to any container. Note that group memberships defined in the container image for the uid of the container process are still effective, even if they are not included in this list. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            supplemental_groups ([int]): A list of groups applied to the first process run in each container, in addition to the container's primary GID and fsGroup (if specified).  If the SupplementalGroupsPolicy feature is enabled, the supplementalGroupsPolicy field determines whether these are in addition to or instead of any group memberships defined in the container image. If unspecified, no additional groups are added, though group memberships defined in the container image may still be used, depending on the supplementalGroupsPolicy field. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            supplemental_groups_policy (str): Defines how supplemental groups of the first container processes are calculated. Valid values are \"Merge\" and \"Strict\". If not specified, \"Merge\" is used. (Alpha) Using the field requires the SupplementalGroupsPolicy feature gate to be enabled and the container runtime must implement support for this feature. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             sysctls ([Sysctl]): Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             windows_options (WindowsSecurityContextOptions): [optional]  # noqa: E501
         """
@@ -268,7 +271,8 @@ class PodSecurityContext(ModelNormal):
             run_as_user (int): The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             se_linux_options (SELinuxOptions): [optional]  # noqa: E501
             seccomp_profile (SeccompProfile): [optional]  # noqa: E501
-            supplemental_groups ([int]): A list of groups applied to the first process run in each container, in addition to the container's primary GID, the fsGroup (if specified), and group memberships defined in the container image for the uid of the container process. If unspecified, no additional groups are added to any container. Note that group memberships defined in the container image for the uid of the container process are still effective, even if they are not included in this list. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            supplemental_groups ([int]): A list of groups applied to the first process run in each container, in addition to the container's primary GID and fsGroup (if specified).  If the SupplementalGroupsPolicy feature is enabled, the supplementalGroupsPolicy field determines whether these are in addition to or instead of any group memberships defined in the container image. If unspecified, no additional groups are added, though group memberships defined in the container image may still be used, depending on the supplementalGroupsPolicy field. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            supplemental_groups_policy (str): Defines how supplemental groups of the first container processes are calculated. Valid values are \"Merge\" and \"Strict\". If not specified, \"Merge\" is used. (Alpha) Using the field requires the SupplementalGroupsPolicy feature gate to be enabled and the container runtime must implement support for this feature. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             sysctls ([Sysctl]): Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             windows_options (WindowsSecurityContextOptions): [optional]  # noqa: E501
         """

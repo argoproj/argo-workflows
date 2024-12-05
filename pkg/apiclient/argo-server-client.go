@@ -66,7 +66,7 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	if opts.Secure {
 		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
 	}
-	conn, err := grpc.Dial(opts.URL,
+	conn, err := grpc.NewClient(opts.URL,
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)),
 		creds,
 		grpc.WithUnaryInterceptor(grpcutil.GetVersionHeaderClientUnaryInterceptor),
