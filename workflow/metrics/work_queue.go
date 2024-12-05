@@ -26,7 +26,7 @@ const (
 var _ workqueue.MetricsProvider = &Metrics{}
 
 type workersBusyRateLimiterWorkQueue struct {
-	workqueue.RateLimitingInterface
+	workqueue.TypedRateLimitingInterface[string]
 	workerType string
 	busyGauge  *telemetry.Instrument
 	// Evil storage of context for compatibility with legacy interface to workqueue
@@ -128,12 +128,12 @@ func addWorkQueueMetrics(_ context.Context, m *Metrics) error {
 	return nil
 }
 
-func (m *Metrics) RateLimiterWithBusyWorkers(ctx context.Context, workQueue workqueue.RateLimiter, queueName string) workqueue.RateLimitingInterface {
+func (m *Metrics) RateLimiterWithBusyWorkers(ctx context.Context, workQueue workqueue.TypedRateLimiter[string], queueName string) workqueue.TypedRateLimitingInterface[string] {
 	queue := workersBusyRateLimiterWorkQueue{
-		RateLimitingInterface: workqueue.NewNamedRateLimitingQueue(workQueue, queueName),
-		workerType:            queueName,
-		busyGauge:             m.AllInstruments[nameWorkersBusy],
-		ctx:                   ctx,
+		TypedRateLimitingInterface: workqueue.NewTypedRateLimitingQueueWithConfig(workQueue, workqueue.TypedRateLimitingQueueConfig[string]{Name: queueName}),
+		workerType:                 queueName,
+		busyGauge:                  m.AllInstruments[nameWorkersBusy],
+		ctx:                        ctx,
 	}
 	queue.newWorker(ctx)
 	return queue
@@ -155,14 +155,14 @@ func (w *workersBusyRateLimiterWorkQueue) workerFree(ctx context.Context) {
 	w.busyGauge.AddInt(ctx, -1, w.attributes())
 }
 
-func (w workersBusyRateLimiterWorkQueue) Get() (interface{}, bool) {
-	item, shutdown := w.RateLimitingInterface.Get()
+func (w workersBusyRateLimiterWorkQueue) Get() (string, bool) {
+	item, shutdown := w.TypedRateLimitingInterface.Get()
 	w.workerBusy(w.ctx)
 	return item, shutdown
 }
 
-func (w workersBusyRateLimiterWorkQueue) Done(item interface{}) {
-	w.RateLimitingInterface.Done(item)
+func (w workersBusyRateLimiterWorkQueue) Done(item string) {
+	w.TypedRateLimitingInterface.Done(item)
 	w.workerFree(w.ctx)
 }
 

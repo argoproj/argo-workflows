@@ -47,8 +47,8 @@ func (sm *Manager) getWorkflowKey(key string) (string, error) {
 	return fmt.Sprintf("%s/%s", items[0], items[1]), nil
 }
 
-func (sm *Manager) CheckWorkflowExistence() {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	log.Debug("Check the workflow existence")
 	for _, lock := range sm.syncLockMap {
