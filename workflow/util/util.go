@@ -199,7 +199,7 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 		err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			var err error
 			runWf, err = wfIf.Create(ctx, wf, metav1.CreateOptions{})
-			return !errorsutil.IsTransientErr(err), nil
+			return !errorsutil.IsTransientErr(err), err
 		})
 		return runWf, err
 	}
