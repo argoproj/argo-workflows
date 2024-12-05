@@ -1496,11 +1496,11 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			WithField("new.message", new.Message).
 			WithField("old.progress", old.Progress).
 			WithField("new.progress", new.Progress).
-			Info("node changed")
+			Debug("node changed")
 		return new
 	}
 	woc.log.WithField("nodeID", old.ID).
-		Info("node unchanged")
+		Debug("node unchanged")
 	return nil
 }
 

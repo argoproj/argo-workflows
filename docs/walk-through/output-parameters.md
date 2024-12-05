@@ -47,9 +47,9 @@ DAG templates use the tasks prefix to refer to another task, for example `{{task
 
 ## `result` output parameter
 
-The `result` output parameter captures standard output.
+For script and container templates, the `result` output parameter captures up to 256 kb of the standard output.
+For HTTP templates, `result` captures the response body.
 It is accessible from the `outputs` map: `outputs.result`.
-Only 256 kb of the standard output stream will be captured.
 
 ### Scripts
 
@@ -59,3 +59,7 @@ Outputs of a `script` are assigned to standard output and captured in the `resul
 
 Container steps and tasks also have their standard output captured in the `result` parameter.
 Given a `task`, called `log-int`, `result` would then be accessible as `{{ tasks.log-int.outputs.result }}`. If using [steps](steps.md), substitute `tasks` for `steps`: `{{ steps.log-int.outputs.result }}`.
+
+### HTTP
+
+[HTTP templates](../http-template.md) capture the response body in the `result` parameter if the body is non-empty.
