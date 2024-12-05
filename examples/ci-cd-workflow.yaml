@@ -4,43 +4,15 @@
 #
 # 1. WorkflowEventBinding
 #
-#   - Setup Guide: WorkflowEventBinding setup instructions can be found here: https://argo-workflows.readthedocs.io/en/latest/events/
-#
-#   - Example WorkflowEventBinding:
-#             apiVersion: argoproj.io/v1alpha1
-#             kind: WorkflowEventBinding
-#             metadata:
-#               name: webhook-event-consumer
-#               namespace: argo
-#             spec:
-#               event:
-#                 selector: payload.repository.html_url != "" && payload.ref != "" && payload.pusher.name != "" && payload.pusher.email != "" && payload.repository.name != "" # Selector to evaluate properties and values within the payload - Ensures that the payload contains the required properties
-#               submit: # Workflow action when the event is triggered
-#                 workflowTemplateRef: # Reference to the WorkflowTemplate to trigger
-#                   name: ci-cd-workflow # Name of the WorkflowTemplate to trigger
-#                 arguments:
-#                   parameters: # Parameters to pass to the WorkflowTemplate
-#                     - name: repo # GitHub url
-#                       valueFrom:
-#                         event: payload.repository.html_url # i.e. https://github.com/argoproj/argo-workflows
-#                     - name: branch # GitHub ref branch
-#                       valueFrom:
-#                         event: payload.ref # i.e. refs/heads/main
-#                     - name: name # GitHub user name
-#                       valueFrom:
-#                         event: payload.pusher.name # i.e. wesleyscholl
-#                     - name: email # GitHub user email
-#                       valueFrom:
-#                         event: payload.pusher.email # i.e. 128409641+wesleyscholl@users.noreply.github.com
-#                     - name: path # GitHub repository name
-#                       valueFrom:
-#                         event: payload.repository.name # i.e. argo-workflows
-#
 #   - API Endpoint: `/api/v1/events/{namespace}/{discriminator}` to submit a `WorkflowTemplate` or `ClusterWorkflowTemplate`. The {discriminator} is optional.
 #
 #     Example: curl https://<deployed-argo-workflows-url>/api/v1/events/argo/ \
 #                   -H "Authorization: $ARGO_TOKEN" \
 #                   -d '{"repository":{"html_url":"https://github.com/argoproj/argo-workflows", "name": "argo-workflows"}, "ref": "refs/heads/main", "pusher":{"name": "wesleyscholl","email":"128409641+wesleyscholl@users.noreply.github.com"}}'
+#
+#   - Setup Guide: WorkflowEventBinding setup instructions can be found here: https://argo-workflows.readthedocs.io/en/latest/events/
+#
+#   - Example WorkflowEventBinding: Check the example at https://argo-workflows.readthedocs.io/en/latest/events/#submitting-a-workflow-from-a-workflow-template
 #
 #   Note: GitHub Webhooks do not support Bearer token authorization. Alternate configuration for GitHub, GitLab and Bitbucket can be found here: https://argo-workflows.readthedocs.io/en/latest/webhooks/
 #
