@@ -21,6 +21,7 @@ jobs:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - run: mkdir -p ui/dist/app/ && touch ui/dist/app/placeholder
       - name: Run Snyk to check for Go vulnerabilities
         uses: snyk/actions/golang@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
         with:
@@ -44,4 +45,3 @@ jobs:
         uses: snyk/actions/node@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
         with:
           args: --file=ui/package.json --severity-threshold=high
-
