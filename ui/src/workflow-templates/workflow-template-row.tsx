@@ -6,6 +6,7 @@ import {uiUrl} from '../shared/base';
 import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-markdown-gfm';
 import {Timestamp} from '../shared/components/timestamp';
 import {WorkflowTemplate} from '../shared/models';
+import {escapeInvalidMarkdown} from '../workflows/utils';
 
 require('./workflow-template-row.scss');
 
@@ -17,9 +18,8 @@ interface WorkflowTemplateRowProps {
 export function WorkflowTemplateRow(props: WorkflowTemplateRowProps) {
     const wf = props.workflow;
     // title + description vars
-    const title = wf.metadata.annotations?.[ANNOTATION_TITLE] ?? wf.metadata.name;
-    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${wf.metadata.annotations[ANNOTATION_DESCRIPTION]}`) || '';
-    const hasAnnotation = title !== wf.metadata.name || description !== '';
+    const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
+    const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
     const markdown = `${title}${description}`;
 
     return (
@@ -29,7 +29,9 @@ export function WorkflowTemplateRow(props: WorkflowTemplateRowProps) {
                     <i className='fa fa-clone' />
                 </div>
                 <Link to={{pathname: uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)}} className='columns small-5'>
-                    <div className='wf-rows-name'>{hasAnnotation ? <SuspenseReactMarkdownGfm markdown={markdown} /> : markdown}</div>
+                    <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
+                        <SuspenseReactMarkdownGfm markdown={markdown} />
+                    </div>
                 </Link>
                 <div className='columns small-3'>{wf.metadata.namespace}</div>
                 <div className='columns small-3'>
