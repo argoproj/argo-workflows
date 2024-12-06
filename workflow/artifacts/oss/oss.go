@@ -33,6 +33,7 @@ type ArtifactDriver struct {
 	SecretKey     string
 	SecurityToken string
 	UseSDKCreds   bool
+	Config        credentials.Config
 }
 
 var (
