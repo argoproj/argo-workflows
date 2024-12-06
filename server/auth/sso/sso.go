@@ -36,6 +36,11 @@ const (
 	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
 )
 
+// Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L14-L16
+// Used to check final redirects are not susceptible to open redirects.
+// Matches //, /\ and both of these with whitespace in between (eg / / or / \).
+var invalidRedirectRegex = regexp.MustCompile(`[/\\](?:[\s\v]*|\.{1,2})[/\\]`)
+
 //go:generate mockery --name=Interface
 
 type Interface interface {
@@ -219,7 +224,10 @@ func newSso(
 }
 
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	redirectUrl := r.URL.Query().Get("redirect")
+	finalRedirectUrl := r.URL.Query().Get("redirect")
+	if !isValidFinalRedirectUrl(finalRedirectUrl) {
+		finalRedirectUrl = s.baseHRef
+	}
 	state, err := pkgrand.RandString(10)
 	if err != nil {
 		log.WithError(err).Error("failed to create state")
@@ -228,7 +236,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
-		Value:    redirectUrl,
+		Value:    finalRedirectUrl,
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -340,18 +348,34 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 		Secure:   s.secure,
 	})
-	redirect := s.baseHRef
 
-	proto := "http"
-	if s.secure {
-		proto = "https"
-	}
-	prefix := fmt.Sprintf("%s://%s%s", proto, r.Host, s.baseHRef)
+	finalRedirectUrl := cookie.Value
+	if !isValidFinalRedirectUrl(cookie.Value) {
+		finalRedirectUrl = s.baseHRef
 
-	if strings.HasPrefix(cookie.Value, prefix) {
-		redirect = cookie.Value
 	}
-	http.Redirect(w, r, redirect, 302)
+	http.Redirect(w, r, finalRedirectUrl, http.StatusFound)
+}
+
+// isValidFinalRedirectUrl checks whether the final redirect URL is safe.
+//
+// We only allow path-absolute-URL strings (e.g. /foo/bar), as defined in the
+// WHATWG URL standard and RFC 3986:
+// https://url.spec.whatwg.org/#path-absolute-url-string
+// https://datatracker.ietf.org/doc/html/rfc3986#section-4.2
+//
+// It's not sufficient to only refer to RFC3986 for this validation logic
+// because modern browsers will convert back slashes (\) to forward slashes (/)
+// and will interprete percent-encoded bytes.
+//
+// We used to use absolute redirect URLs and would validate the scheme and host
+// match the request scheme and host, but this led to problems when Argo is
+// behind a TLS termination proxy, since the redirect URL would have the scheme
+// "https" while the request scheme would be "http"
+// (see https://github.com/argoproj/argo-workflows/issues/13031).
+func isValidFinalRedirectUrl(redirect string) bool {
+	// Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L47
+	return strings.HasPrefix(redirect, "/") && !strings.HasPrefix(redirect, "//") && !invalidRedirectRegex.MatchString(redirect)
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
