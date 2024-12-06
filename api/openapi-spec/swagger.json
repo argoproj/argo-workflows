@@ -10127,6 +10127,10 @@
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
           "type": "boolean"
         },
+        "credentialConfig": {
+          "description": "CredentialConfig specifies the credential configuration for OSS",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSCredentialConfig"
+        },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
           "type": "string"
@@ -10169,6 +10173,10 @@
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
           "type": "boolean"
         },
+        "credentialConfig": {
+          "description": "CredentialConfig specifies the credential configuration for OSS",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSCredentialConfig"
+        },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
           "type": "string"
@@ -10192,6 +10200,36 @@
         "useSDKCreds": {
           "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
           "type": "boolean"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.OSSCredentialConfig": {
+      "description": "OSSCredentialConfig specifies the credential configuration for OSS",
+      "type": "object",
+      "properties": {
+        "oIDCProviderArn": {
+          "description": "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
+          "type": "string"
+        },
+        "oIDCTokenFilePath": {
+          "description": "OidcTokenFile is the file path of the OIDC token.",
+          "type": "string"
+        },
+        "roleArn": {
+          "description": "RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.",
+          "type": "string"
+        },
+        "roleSessionName": {
+          "description": "RoleSessionName is the session name of the role to assume.",
+          "type": "string"
+        },
+        "sTSEndpoint": {
+          "description": "STSEndpoint is the endpoint of the STS service.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Type specifies the credential type.",
+          "type": "string"
         }
       }
     },

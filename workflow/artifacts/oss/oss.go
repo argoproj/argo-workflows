@@ -33,7 +33,7 @@ type ArtifactDriver struct {
 	SecretKey     string
 	SecurityToken string
 	UseSDKCreds   bool
-	Config        credentials.Config
+	Config        *CredentialsConfig
 }
 
 var (
@@ -45,6 +45,15 @@ var (
 	bucketLogFilePrefix    = "bucket-log-"
 	maxObjectSize          = int64(5 * 1024 * 1024 * 1024)
 )
+
+type CredentialsConfig struct {
+	Type              string
+	RoleArn           string
+	RoleSessionName   string
+	OIDCProviderArn   string
+	OIDCTokenFilePath string
+	STSEndpoint       string
+}
 
 type ossCredentials struct {
 	teaCred credentials.Credential
@@ -100,10 +109,22 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	if ossDriver.UseSDKCreds {
 		// using default provider chains in sdk to get credential
 		log.Infof("Using default sdk provider chains for OSS driver")
+		// if config is provided, do not need to install the ack-pod-identity-webhook component, otherwise
 		// need install ack-pod-identity-webhook in your cluster when using oidc provider for OSS drirver
 		// the mutating webhook will help to inject the required OIDC env variables and toke volume mount configuration
 		// please refer to https://www.alibabacloud.com/help/en/ack/product-overview/ack-pod-identity-webhook
-		cred, err := credentials.NewCredential(nil)
+		var config *credentials.Config
+		if ossDriver.Config != nil {
+			config = &credentials.Config{
+				Type:              tea.String(ossDriver.Config.Type),
+				RoleArn:           tea.String(ossDriver.Config.RoleArn),
+				OIDCProviderArn:   tea.String(ossDriver.Config.OIDCProviderArn),
+				OIDCTokenFilePath: tea.String(ossDriver.Config.OIDCTokenFilePath),
+				RoleSessionName:   tea.String(ossDriver.Config.RoleSessionName),
+				STSEndpoint:       tea.String(ossDriver.Config.STSEndpoint),
+			}
+		}
+		cred, err := credentials.NewCredential(config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create new OSS client: %w", err)
 		}

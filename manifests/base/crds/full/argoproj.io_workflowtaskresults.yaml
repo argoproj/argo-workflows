@@ -448,6 +448,21 @@ spec:
                           type: string
                         createBucketIfNotPresent:
                           type: boolean
+                        credentialConfig:
+                          properties:
+                            oIDCProviderArn:
+                              type: string
+                            oIDCTokenFilePath:
+                              type: string
+                            roleArn:
+                              type: string
+                            roleSessionName:
+                              type: string
+                            sTSEndpoint:
+                              type: string
+                            type:
+                              type: string
+                          type: object
                         endpoint:
                           type: string
                         key:

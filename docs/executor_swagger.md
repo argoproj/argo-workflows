@@ -2381,12 +2381,36 @@ save/load the directory appropriately.
 | accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
 | createBucketIfNotPresent | boolean| `bool` |  | | CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist |  |
+| credentialConfig | [OSSCredentialConfig](#o-s-s-credential-config)| `OSSCredentialConfig` |  | |  |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
 | key | string| `string` |  | | Key is the path in the bucket where the artifact resides |  |
 | lifecycleRule | [OSSLifecycleRule](#o-s-s-lifecycle-rule)| `OSSLifecycleRule` |  | |  |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | securityToken | string| `string` |  | | SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm |  |
 | useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
+
+
+
+### <span id="o-s-s-credential-config"></span> OSSCredentialConfig
+
+
+> OSSCredentialConfig specifies the credential configuration for OSS
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| oIDCProviderArn | string| `string` |  | | OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP. |  |
+| oIDCTokenFilePath | string| `string` |  | | OidcTokenFile is the file path of the OIDC token. |  |
+| roleArn | string| `string` |  | | RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume. |  |
+| roleSessionName | string| `string` |  | | RoleSessionName is the session name of the role to assume. |  |
+| sTSEndpoint | string| `string` |  | | STSEndpoint is the endpoint of the STS service. |  |
+| type | string| `string` |  | | Type specifies the credential type. |  |
 
 
 

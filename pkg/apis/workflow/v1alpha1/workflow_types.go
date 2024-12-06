@@ -2934,6 +2934,9 @@ type OSSBucket struct {
 
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
+
+	// CredentialConfig specifies the credential configuration for OSS
+	CredentialConfig *OSSCredentialConfig `json:"credentialConfig,omitempty" protobuf:"bytes,9,opt,name=credentialConfig"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -2951,6 +2954,27 @@ type OSSLifecycleRule struct {
 
 	// MarkDeletionAfterDays is the number of days before we delete objects in the bucket
 	MarkDeletionAfterDays int32 `json:"markDeletionAfterDays,omitempty" protobuf:"varint,2,opt,name=markDeletionAfterDays"`
+}
+
+// OSSCredentialConfig specifies the credential configuration for OSS
+type OSSCredentialConfig struct {
+	// Type specifies the credential type.
+	Type string `json:"type,omitempty" protobuf:"varint,1,opt,name=type"`
+
+	// OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.
+	OIDCProviderArn string `json:"oIDCProviderArn,omitempty" protobuf:"varint,2,opt,name=oIDCProviderArn"`
+
+	// OidcTokenFile is the file path of the OIDC token.
+	OIDCTokenFilePath string `json:"oIDCTokenFilePath,omitempty" protobuf:"varint,3,opt,name=oIDCTokenFilePath"`
+
+	// RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.
+	RoleArn string `json:"roleArn,omitempty" protobuf:"varint,4,opt,name=roleArn"`
+
+	// STSEndpoint is the endpoint of the STS service.
+	STSEndpoint string `json:"sTSEndpoint,omitempty" protobuf:"varint,5,opt,name=sTSEndpoint"`
+
+	// RoleSessionName is the session name of the role to assume.
+	RoleSessionName string `json:"roleSessionName,omitempty" protobuf:"varint,6,opt,name=roleSessionName"`
 }
 
 func (o *OSSArtifact) GetKey() (string, error) {

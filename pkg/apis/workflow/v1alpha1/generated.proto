@@ -1193,6 +1193,30 @@ message OSSBucket {
 
   // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
   optional bool useSDKCreds = 8;
+
+  // CredentialConfig specifies the credential configuration for OSS
+  optional OSSCredentialConfig credentialConfig = 9;
+}
+
+// OSSCredentialConfig specifies the credential configuration for OSS
+message OSSCredentialConfig {
+  // Type specifies the credential type.
+  optional string type = 1;
+
+  // OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.
+  optional string oIDCProviderArn = 2;
+
+  // OidcTokenFile is the file path of the OIDC token.
+  optional string oIDCTokenFilePath = 3;
+
+  // RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.
+  optional string roleArn = 4;
+
+  // STSEndpoint is the endpoint of the STS service.
+  optional string sTSEndpoint = 5;
+
+  // RoleSessionName is the session name of the role to assume.
+  optional string roleSessionName = 6;
 }
 
 // OSSLifecycleRule specifies how to manage bucket's lifecycle
