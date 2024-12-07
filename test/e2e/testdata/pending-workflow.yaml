@@ -11,4 +11,4 @@ spec:
         # too much to be scheduled
         resources:
           requests:
-            memory: 1000Gi
+            memory: 100000Gi

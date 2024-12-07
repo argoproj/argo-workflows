@@ -142,11 +142,11 @@ class FCVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_type (str): Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
-            lun (int): Optional: FC target lun number. [optional]  # noqa: E501
-            read_only (bool): Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
-            target_wwns ([str]): Optional: FC target worldwide names (WWNs). [optional]  # noqa: E501
-            wwids ([str]): Optional: FC volume world wide identifiers (wwids) Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.. [optional]  # noqa: E501
+            fs_type (str): fsType is the filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
+            lun (int): lun is Optional: FC target lun number. [optional]  # noqa: E501
+            read_only (bool): readOnly is Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
+            target_wwns ([str]): targetWWNs is Optional: FC target worldwide names (WWNs). [optional]  # noqa: E501
+            wwids ([str]): wwids Optional: FC volume world wide identifiers (wwids) Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,11 +228,11 @@ class FCVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_type (str): Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
-            lun (int): Optional: FC target lun number. [optional]  # noqa: E501
-            read_only (bool): Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
-            target_wwns ([str]): Optional: FC target worldwide names (WWNs). [optional]  # noqa: E501
-            wwids ([str]): Optional: FC volume world wide identifiers (wwids) Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.. [optional]  # noqa: E501
+            fs_type (str): fsType is the filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.. [optional]  # noqa: E501
+            lun (int): lun is Optional: FC target lun number. [optional]  # noqa: E501
+            read_only (bool): readOnly is Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
+            target_wwns ([str]): targetWWNs is Optional: FC target worldwide names (WWNs). [optional]  # noqa: E501
+            wwids ([str]): wwids Optional: FC volume world wide identifiers (wwids) Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

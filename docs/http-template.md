@@ -3,6 +3,7 @@
 > v3.2 and after
 
 `HTTP Template` is a type of template which can execute HTTP Requests.
+The body of the response is automatically exported into the `result` output parameter.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1

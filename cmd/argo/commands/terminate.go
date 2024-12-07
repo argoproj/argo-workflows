@@ -1,10 +1,9 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -63,13 +62,17 @@ func NewTerminateCommand() *cobra.Command {
 
   argo terminate --field-selector metadata.namespace=argo
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && !t.isList() {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return errors.New("requires either selector or workflow")
 			}
-
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			t.namespace = client.Namespace()
 
@@ -81,7 +84,9 @@ func NewTerminateCommand() *cobra.Command {
 					fields:    t.fields,
 					labels:    t.labels,
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				workflows = append(workflows, listed...)
 			} else {
 				workflows = t.convertToWorkflows(args)
@@ -97,9 +102,12 @@ func NewTerminateCommand() *cobra.Command {
 					Name:      w.Name,
 					Namespace: w.Namespace,
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				fmt.Printf("workflow %s terminated\n", wf.Name)
 			}
+			return nil
 		},
 	}
 

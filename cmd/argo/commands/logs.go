@@ -1,15 +1,13 @@
 package commands
 
 import (
-	"log"
-	"os"
+	"errors"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
@@ -54,47 +52,46 @@ func NewLogsCommand() *cobra.Command {
 # Print the logs of the latest workflow:
   argo logs @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		Args: cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			// parse all the args
-			workflow := ""
+			workflow := args[0]
 			podName := ""
 
-			switch len(args) {
-			case 1:
-				workflow = args[0]
-			case 2:
-				workflow = args[0]
+			if len(args) == 2 {
 				podName = args[1]
-			default:
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
 			}
 
 			if since > 0 && sinceTime != "" {
-				log.Fatal("--since-time and --since cannot be used together")
+				return errors.New("--since-time and --since cannot be used together")
 			}
 
 			if since > 0 {
-				logOptions.SinceSeconds = pointer.Int64(int64(since.Seconds()))
+				logOptions.SinceSeconds = ptr.To(int64(since.Seconds()))
 			}
 
 			if sinceTime != "" {
 				parsedTime, err := time.Parse(time.RFC3339, sinceTime)
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				sinceTime := metav1.NewTime(parsedTime)
 				logOptions.SinceTime = &sinceTime
 			}
 
 			if tailLines >= 0 {
-				logOptions.TailLines = pointer.Int64(tailLines)
+				logOptions.TailLines = ptr.To(tailLines)
 			}
 
 			// set-up
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			common.LogWorkflow(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions)
+			return common.LogWorkflow(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions)
 		},
 	}
 	command.Flags().StringVarP(&logOptions.Container, "container", "c", "main", "Print the logs of this container")

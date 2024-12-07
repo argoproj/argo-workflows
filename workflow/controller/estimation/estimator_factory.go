@@ -9,6 +9,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
@@ -28,12 +29,19 @@ type estimatorFactory struct {
 
 var _ EstimatorFactory = &estimatorFactory{}
 
+var (
+	skipWorkflowDurationEstimation = env.LookupEnvStringOr("SKIP_WORKFLOW_DURATION_ESTIMATION", "false")
+)
+
 func NewEstimatorFactory(wfInformer cache.SharedIndexInformer, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) EstimatorFactory {
 	return &estimatorFactory{wfInformer, hydrator, wfArchive}
 }
 
 func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 	defaultEstimator := &estimator{wf: wf}
+	if skipWorkflowDurationEstimation == "true" {
+		return defaultEstimator, nil
+	}
 	for labelName, indexName := range map[string]string{
 		common.LabelKeyWorkflowTemplate:        indexes.WorkflowTemplateIndex,
 		common.LabelKeyClusterWorkflowTemplate: indexes.ClusterWorkflowTemplateIndex,

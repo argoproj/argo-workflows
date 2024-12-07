@@ -1,0 +1,171 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: multiple-ref-main
+spec:
+  entrypoint: start
+  activeDeadlineSeconds: 1800
+  templates:
+    - name: start
+      dag:
+        tasks:
+          - name: echo-1
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-1
+          - name: echo-2
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-2
+          - name: echo-3
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-3
+          - name: echo-4
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-4
+          - name: echo-5
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-5
+          - name: echo-6
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-6
+          - name: echo-7
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-7
+          - name: echo-8
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-8
+          - name: echo-9
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-9
+          - name: echo-10
+            templateRef:
+              name: multiple-ref-echo-1
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-10
+          - name: echo-11
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-11
+          - name: echo-12
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-12
+          - name: echo-13
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-13
+          - name: echo-14
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-14
+          - name: echo-15
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-15
+          - name: echo-16
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-16
+          - name: echo-17
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-17
+          - name: echo-18
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-18
+          - name: echo-19
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-19
+          - name: echo-20
+            templateRef:
+              name: multiple-ref-echo-2
+              template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: echo-20

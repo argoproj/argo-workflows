@@ -64,11 +64,9 @@ kind: Workflow
 metadata:
   generateName: k8s-resource-tmpl-with-pod-
 spec:
-  serviceAccount: argo
   entrypoint: main
   templates:
     - name: main
-      serviceAccountName: argo
       resource:
         action: create
         setOwnerReference: true
@@ -80,7 +78,6 @@ spec:
           metadata:
             generateName: k8s-pod-resource-
           spec:
-            serviceAccountName: argo
             containers:
             - name: argosay-container
               image: argoproj/argosay:v2
@@ -104,11 +101,9 @@ kind: Workflow
 metadata:
   generateName: k8s-resource-tmpl-with-artifact-
 spec:
-  serviceAccount: argo
   entrypoint: main
   templates:
     - name: main
-      serviceAccountName: argo
       inputs:
         artifacts:
         - name: manifest
@@ -120,7 +115,6 @@ spec:
               metadata:
                 generateName: k8s-pod-resource-
               spec:
-                serviceAccountName: argo
                 containers:
                 - name: argosay-container
                   image: argoproj/argosay:v2
@@ -160,6 +154,48 @@ func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
 			for _, value := range status.TaskResultsCompletionStatus {
 				assert.True(t, value)
 			}
+		})
+}
+
+func (s *ResourceTemplateSuite) TestResourceTemplateAutomountServiceAccountTokenDisabled() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-automountservicetoken-disabled-
+spec:
+  serviceAccountName: argo
+  automountServiceAccountToken: false
+  executor:
+    serviceAccountName: argo
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        setOwnerReference: true
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: k8s-wf-resource-
+          spec:
+            entrypoint: main
+            templates:
+              - name: main
+                container:
+                  image: argoproj/argosay:v2
+                  command: ["/argosay"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 		})
 }
 

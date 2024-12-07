@@ -22,7 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
@@ -74,7 +74,7 @@ type response struct {
 }
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	taskWorkers := env.LookupEnvIntOr(common.EnvAgentTaskWorkers, 16)
 	requeueTime := env.LookupEnvDurationOr(common.EnvAgentPatchRate, 10*time.Second)
@@ -257,7 +257,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		return 0, err
 	}
 
-	outputs := wfv1.Outputs{Result: pointer.String(string(bodyBytes))}
+	outputs := wfv1.Outputs{Result: ptr.To(string(bodyBytes))}
 	phase := wfv1.NodeSucceeded
 	message := ""
 	if tmpl.HTTP.SuccessCondition == "" {

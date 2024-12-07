@@ -22,7 +22,7 @@ spec:
       value: original
   entrypoint: start
   onExit: end
-  serviceAccountName: argo
+  serviceAccountName: default
   workflowTemplateRef:
     name: workflow-template-submittable
 `
@@ -97,7 +97,7 @@ spec:
         name: message
         value: "hello world"
   onExit: whalesay-exit
-  serviceAccountName: argo
+  serviceAccountName: default
   templates: 
     - 
       container: 
@@ -185,7 +185,7 @@ spec:
         value: "hello world"
   entrypoint: whalesay
   onExit: whalesay-exit
-  serviceAccountName: argo
+  serviceAccountName: default
   templates: 
     - 
       container: 

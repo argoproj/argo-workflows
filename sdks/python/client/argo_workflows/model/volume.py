@@ -47,6 +47,7 @@ def lazy_import():
     from argo_workflows.model.git_repo_volume_source import GitRepoVolumeSource
     from argo_workflows.model.glusterfs_volume_source import GlusterfsVolumeSource
     from argo_workflows.model.host_path_volume_source import HostPathVolumeSource
+    from argo_workflows.model.image_volume_source import ImageVolumeSource
     from argo_workflows.model.iscsi_volume_source import ISCSIVolumeSource
     from argo_workflows.model.nfs_volume_source import NFSVolumeSource
     from argo_workflows.model.persistent_volume_claim_volume_source import PersistentVolumeClaimVolumeSource
@@ -77,6 +78,7 @@ def lazy_import():
     globals()['GlusterfsVolumeSource'] = GlusterfsVolumeSource
     globals()['HostPathVolumeSource'] = HostPathVolumeSource
     globals()['ISCSIVolumeSource'] = ISCSIVolumeSource
+    globals()['ImageVolumeSource'] = ImageVolumeSource
     globals()['NFSVolumeSource'] = NFSVolumeSource
     globals()['PersistentVolumeClaimVolumeSource'] = PersistentVolumeClaimVolumeSource
     globals()['PhotonPersistentDiskVolumeSource'] = PhotonPersistentDiskVolumeSource
@@ -161,6 +163,7 @@ class Volume(ModelNormal):
             'git_repo': (GitRepoVolumeSource,),  # noqa: E501
             'glusterfs': (GlusterfsVolumeSource,),  # noqa: E501
             'host_path': (HostPathVolumeSource,),  # noqa: E501
+            'image': (ImageVolumeSource,),  # noqa: E501
             'iscsi': (ISCSIVolumeSource,),  # noqa: E501
             'nfs': (NFSVolumeSource,),  # noqa: E501
             'persistent_volume_claim': (PersistentVolumeClaimVolumeSource,),  # noqa: E501
@@ -199,6 +202,7 @@ class Volume(ModelNormal):
         'git_repo': 'gitRepo',  # noqa: E501
         'glusterfs': 'glusterfs',  # noqa: E501
         'host_path': 'hostPath',  # noqa: E501
+        'image': 'image',  # noqa: E501
         'iscsi': 'iscsi',  # noqa: E501
         'nfs': 'nfs',  # noqa: E501
         'persistent_volume_claim': 'persistentVolumeClaim',  # noqa: E501
@@ -224,7 +228,7 @@ class Volume(ModelNormal):
         """Volume - a model defined in OpenAPI
 
         Args:
-            name (str): Volume's name. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+            name (str): name of the volume. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -274,6 +278,7 @@ class Volume(ModelNormal):
             git_repo (GitRepoVolumeSource): [optional]  # noqa: E501
             glusterfs (GlusterfsVolumeSource): [optional]  # noqa: E501
             host_path (HostPathVolumeSource): [optional]  # noqa: E501
+            image (ImageVolumeSource): [optional]  # noqa: E501
             iscsi (ISCSIVolumeSource): [optional]  # noqa: E501
             nfs (NFSVolumeSource): [optional]  # noqa: E501
             persistent_volume_claim (PersistentVolumeClaimVolumeSource): [optional]  # noqa: E501
@@ -338,7 +343,7 @@ class Volume(ModelNormal):
         """Volume - a model defined in OpenAPI
 
         Args:
-            name (str): Volume's name. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+            name (str): name of the volume. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -388,6 +393,7 @@ class Volume(ModelNormal):
             git_repo (GitRepoVolumeSource): [optional]  # noqa: E501
             glusterfs (GlusterfsVolumeSource): [optional]  # noqa: E501
             host_path (HostPathVolumeSource): [optional]  # noqa: E501
+            image (ImageVolumeSource): [optional]  # noqa: E501
             iscsi (ISCSIVolumeSource): [optional]  # noqa: E501
             nfs (NFSVolumeSource): [optional]  # noqa: E501
             persistent_volume_claim (PersistentVolumeClaimVolumeSource): [optional]  # noqa: E501

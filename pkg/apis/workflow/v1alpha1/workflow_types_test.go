@@ -1,9 +1,9 @@
-//go:build !windows
-
 package v1alpha1
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestWorkflows(t *testing.T) {
@@ -255,62 +255,69 @@ func TestArtifact_ValidatePath(t *testing.T) {
 		a3 := Artifact{Name: "a3", Path: "../.."}
 		err = a3.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "../..", a3.Path)
+		assert.Equal(t, filepath.Join("..", ".."), a3.Path)
 
 		a4 := Artifact{Name: "a4", Path: "../etc/passwd"}
 		err = a4.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "../etc/passwd", a4.Path)
+		assert.Equal(t, filepath.Join("..", "etc", "passwd"), a4.Path)
 	})
 
 	t.Run("directory traversal ending within safe base dir succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp/../tmp/abcd"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/abcd", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd")), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/subdir/../../tmp/subdir/abcd"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/subdir/abcd", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "subdir", "abcd")), a2.Path)
 	})
 
 	t.Run("artifact path filenames are allowed to contain double dots", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp/..artifact.txt"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/..artifact.txt", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "..artifact.txt")), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/artif..t.txt"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/artif..t.txt", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "artif..t.txt")), a2.Path)
 	})
 
 	t.Run("normal artifact path succeeds", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: "/tmp"}
 		err := a1.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp", a1.Path)
+		assert.Equal(t, ensureRootPathSeparator("tmp"), a1.Path)
 
 		a2 := Artifact{Name: "a2", Path: "/tmp/"}
 		err = a2.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp", a2.Path)
+		assert.Equal(t, ensureRootPathSeparator("tmp"), a2.Path)
 
 		a3 := Artifact{Name: "a3", Path: "/tmp/abcd/some-artifact.txt"}
 		err = a3.CleanPath()
 		require.NoError(t, err)
-		assert.Equal(t, "/tmp/abcd/some-artifact.txt", a3.Path)
+		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd", "some-artifact.txt")), a3.Path)
 	})
+}
+
+func ensureRootPathSeparator(p string) string {
+	if p[0] == os.PathSeparator {
+		return p
+	}
+	return string(os.PathSeparator) + p
 }
 
 func TestArtifactLocation_IsArchiveLogs(t *testing.T) {
 	var l *ArtifactLocation
 	assert.False(t, l.IsArchiveLogs())
 	assert.False(t, (&ArtifactLocation{}).IsArchiveLogs())
-	assert.False(t, (&ArtifactLocation{ArchiveLogs: pointer.Bool(false)}).IsArchiveLogs())
-	assert.True(t, (&ArtifactLocation{ArchiveLogs: pointer.Bool(true)}).IsArchiveLogs())
+	assert.False(t, (&ArtifactLocation{ArchiveLogs: ptr.To(false)}).IsArchiveLogs())
+	assert.True(t, (&ArtifactLocation{ArchiveLogs: ptr.To(true)}).IsArchiveLogs())
 }
 
 func TestArtifactLocation_HasLocation(t *testing.T) {
@@ -1070,7 +1077,7 @@ func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 }
 
 func TestGetTTLStrategy(t *testing.T) {
-	spec := WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32(20)}}
+	spec := WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(20))}}
 	ttl := spec.GetTTLStrategy()
 	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
 }
@@ -1078,11 +1085,11 @@ func TestGetTTLStrategy(t *testing.T) {
 func TestWfGetTTLStrategy(t *testing.T) {
 	wf := Workflow{}
 
-	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32(20)}}
+	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(20))}}
 	result := wf.GetTTLStrategy()
 	assert.Equal(t, int32(20), *result.SecondsAfterCompletion)
 
-	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: pointer.Int32(30)}
+	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(30))}
 	result = wf.GetTTLStrategy()
 	assert.Equal(t, int32(30), *result.SecondsAfterCompletion)
 }
@@ -1255,7 +1262,7 @@ func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
 		assert.False(t, x.SaveLogsAsArtifact())
 	})
 	t.Run("IsArchiveLogs", func(t *testing.T) {
-		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.Bool(true)}}
+		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: ptr.To(true)}}
 		assert.True(t, x.SaveLogsAsArtifact())
 	})
 }
@@ -1274,7 +1281,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		Steps:     []ParallelSteps{steps},
 		Script:    &ScriptTemplate{Source: "test"},
 		Container: &corev1.Container{Name: "container"},
-		DAG:       &DAGTemplate{FailFast: pointer.Bool(true)},
+		DAG:       &DAGTemplate{FailFast: ptr.To(true)},
 		Resource:  &ResourceTemplate{Action: "Create"},
 		Data:      &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{}}},
 		Suspend:   &SuspendTemplate{Duration: "10s"},

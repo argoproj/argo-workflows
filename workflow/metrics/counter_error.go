@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
 type ErrorCause string
@@ -14,30 +16,30 @@ const (
 )
 
 func addErrorCounter(ctx context.Context, m *Metrics) error {
-	err := m.createInstrument(int64Counter,
+	err := m.CreateInstrument(telemetry.Int64Counter,
 		nameErrorCount,
 		"Number of errors encountered by the controller by cause",
 		"{error}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 	if err != nil {
 		return err
 	}
 	// Initialise all values to zero
 	for _, cause := range []ErrorCause{ErrorCauseOperationPanic, ErrorCauseCronWorkflowSubmissionError, ErrorCauseCronWorkflowSpecError} {
-		m.addInt(ctx, nameErrorCount, 0, instAttribs{{name: labelErrorCause, value: string(cause)}})
+		m.AddInt(ctx, nameErrorCount, 0, telemetry.InstAttribs{{Name: telemetry.AttribErrorCause, Value: string(cause)}})
 	}
 	return nil
 }
 
 func (m *Metrics) OperationPanic(ctx context.Context) {
-	m.addInt(ctx, nameErrorCount, 1, instAttribs{{name: labelErrorCause, value: string(ErrorCauseOperationPanic)}})
+	m.AddInt(ctx, nameErrorCount, 1, telemetry.InstAttribs{{Name: telemetry.AttribErrorCause, Value: string(ErrorCauseOperationPanic)}})
 }
 
 func (m *Metrics) CronWorkflowSubmissionError(ctx context.Context) {
-	m.addInt(ctx, nameErrorCount, 1, instAttribs{{name: labelErrorCause, value: string(ErrorCauseCronWorkflowSubmissionError)}})
+	m.AddInt(ctx, nameErrorCount, 1, telemetry.InstAttribs{{Name: telemetry.AttribErrorCause, Value: string(ErrorCauseCronWorkflowSubmissionError)}})
 }
 
 func (m *Metrics) CronWorkflowSpecError(ctx context.Context) {
-	m.addInt(ctx, nameErrorCount, 1, instAttribs{{name: labelErrorCause, value: string(ErrorCauseCronWorkflowSpecError)}})
+	m.AddInt(ctx, nameErrorCount, 1, telemetry.InstAttribs{{Name: telemetry.AttribErrorCause, Value: string(ErrorCauseCronWorkflowSpecError)}})
 }

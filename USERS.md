@@ -158,6 +158,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Procore](https://www.procore.com)
 1. [Promaton](https://www.promaton.com/)
 1. [Prudential](https://www.prudential.com.sg/)
+1. [Pvotal Technologies](https://pvotal.tech/)
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [QuantumBlack](https://quantumblack.com/)
 1. [Raccoon Digital Marketing](https://raccoon.ag/)

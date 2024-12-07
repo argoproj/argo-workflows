@@ -81,6 +81,25 @@ func (s *SemaphoreSuite) TestSynchronizationTmplLevelMutexAndSemaphore() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
 }
 
+func (s *SemaphoreSuite) TestSynchronizationMultiple() {
+	s.Given().
+		Workflow("@functional/synchronization-multiple.yaml").
+		When().
+		CreateConfigMap("my-config", map[string]string{"workflow": "2"}, map[string]string{}).
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
+}
+
+// Legacy CRD entries: mutex and semaphore
+func (s *SemaphoreSuite) TestSynchronizationLegacyMutexAndSemaphore() {
+	s.Given().
+		Workflow("@functional/synchronization-legacy-mutex-semaphore.yaml").
+		When().
+		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
+}
+
 func TestSemaphoreSuite(t *testing.T) {
 	suite.Run(t, new(SemaphoreSuite))
 }

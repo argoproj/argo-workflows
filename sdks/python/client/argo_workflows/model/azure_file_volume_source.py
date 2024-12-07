@@ -108,8 +108,8 @@ class AzureFileVolumeSource(ModelNormal):
         """AzureFileVolumeSource - a model defined in OpenAPI
 
         Args:
-            secret_name (str): the name of secret that contains Azure Storage Account Name and Key
-            share_name (str): Share Name
+            secret_name (str): secretName is the  name of secret that contains Azure Storage Account Name and Key
+            share_name (str): shareName is the azure share Name
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -142,7 +142,7 @@ class AzureFileVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            read_only (bool): Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
+            read_only (bool): readOnly defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -196,8 +196,8 @@ class AzureFileVolumeSource(ModelNormal):
         """AzureFileVolumeSource - a model defined in OpenAPI
 
         Args:
-            secret_name (str): the name of secret that contains Azure Storage Account Name and Key
-            share_name (str): Share Name
+            secret_name (str): secretName is the  name of secret that contains Azure Storage Account Name and Key
+            share_name (str): shareName is the azure share Name
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -230,7 +230,7 @@ class AzureFileVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            read_only (bool): Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
+            read_only (bool): readOnly defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

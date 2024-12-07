@@ -163,15 +163,36 @@ func (r *workflowArchive) ListWorkflows(options sutils.ListOptions) (wfv1.Workfl
 		return nil, err
 	}
 
-	selector := r.session.SQL().
-		Select(selectQuery).
+	subSelector := r.session.SQL().
+		Select(db.Raw("uid")).
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID())
 
-	selector, err = BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+	subSelector, err = BuildArchivedWorkflowSelector(subSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
 	if err != nil {
 		return nil, err
 	}
+
+	if r.dbType == MySQL {
+		// workaround for mysql 42000 error (Unsupported subquery syntax):
+		//
+		//     Error 1235 (42000): This version of MySQL doesn't yet support 'LIMIT \u0026 IN/ALL/ANY/SOME subquery'
+		//
+		// more context:
+		// * https://dev.mysql.com/doc/refman/8.0/en/subquery-errors.html
+		// * https://dev.to/gkoniaris/limit-mysql-subquery-results-inside-a-where-in-clause-using-laravel-s-eloquent-orm-26en
+		subSelector = r.session.SQL().Select(db.Raw("*")).From(subSelector).As("x")
+	}
+
+	// why a subquery? the json unmarshal triggers for every row in the filter
+	// query. by filtering on uid first, we delay json parsing until a single
+	// row, speeding up the query(e.g. up to 257 times faster for some
+	// deployments).
+	//
+	// more context: https://github.com/argoproj/argo-workflows/pull/13566
+	selector := r.session.SQL().Select(selectQuery).From(archiveTableName).Where(
+		r.clusterManagedNamespaceAndInstanceID().And(db.Cond{"uid IN": subSelector}),
+	)
 
 	err = selector.All(&archivedWfs)
 	if err != nil {
@@ -431,7 +452,7 @@ func selectArchivedWorkflowQuery(t dbType) (*db.RawExpr, error) {
 	case MySQL:
 		return db.Raw("name, namespace, uid, phase, startedat, finishedat, coalesce(JSON_EXTRACT(workflow,'$.metadata.labels'), '{}') as labels,coalesce(JSON_EXTRACT(workflow,'$.metadata.annotations'), '{}') as annotations, coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.status.progress')), '') as progress, coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.metadata.creationTimestamp')), '') as creationtimestamp, JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.spec.suspend')) as suspend, coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.status.message')), '') as message, coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow,'$.status.estimatedDuration')), '0') as estimatedduration, coalesce(JSON_EXTRACT(workflow,'$.status.resourcesDuration'), '{}') as resourcesduration"), nil
 	case Postgres:
-		return db.Raw("name, namespace, uid, phase, startedat, finishedat, coalesce((workflow::json)->'metadata'->>'labels', '{}') as labels, coalesce((workflow::json)->'metadata'->>'annotations', '{}') as annotations, coalesce((workflow::json)->'status'->>'progress', '') as progress, coalesce((workflow::json)->'metadata'->>'creationTimestamp', '') as creationtimestamp, (workflow::json)->'spec'->>'suspend' as suspend, coalesce((workflow::json)->'status'->>'message', '') as message, coalesce((workflow::json)->'status'->>'estimatedDuration', '0') as estimatedduration, coalesce((workflow::json)->'status'->>'resourcesDuration', '{}') as resourcesduration"), nil
+		return db.Raw("name, namespace, uid, phase, startedat, finishedat, coalesce(workflow->'metadata'->>'labels', '{}') as labels, coalesce(workflow->'metadata'->>'annotations', '{}') as annotations, coalesce(workflow->'status'->>'progress', '') as progress, coalesce(workflow->'metadata'->>'creationTimestamp', '') as creationtimestamp, workflow->'spec'->>'suspend' as suspend, coalesce(workflow->'status'->>'message', '') as message, coalesce(workflow->'status'->>'estimatedDuration', '0') as estimatedduration, coalesce(workflow->'status'->>'resourcesDuration', '{}') as resourcesduration"), nil
 	}
 	return nil, fmt.Errorf("unsupported db type %s", t)
 }

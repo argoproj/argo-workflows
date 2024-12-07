@@ -15,6 +15,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -345,13 +346,13 @@ func newTTLController(t *testing.T) *Controller {
 	clock := testingclock.NewFakeClock(time.Now())
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
-	gcMetrics, err := metrics.New(context.Background(), metrics.TestScopeName, &metrics.Config{}, metrics.Callbacks{})
+	gcMetrics, err := metrics.New(context.Background(), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	return &Controller{
 		wfclientset: wfclientset,
 		wfInformer:  wfInformer,
 		clock:       clock,
-		workqueue:   workqueue.NewDelayingQueue(),
+		workqueue:   workqueue.TypedNewDelayingQueue[string](),
 		metrics:     gcMetrics,
 	}
 }

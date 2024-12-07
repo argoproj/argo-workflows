@@ -93,6 +93,7 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
             'disable_submodules': (bool,),  # noqa: E501
             'fetch': ([str],),  # noqa: E501
             'insecure_ignore_host_key': (bool,),  # noqa: E501
+            'insecure_skip_tls': (bool,),  # noqa: E501
             'password_secret': (SecretKeySelector,),  # noqa: E501
             'revision': (str,),  # noqa: E501
             'single_branch': (bool,),  # noqa: E501
@@ -112,6 +113,7 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
         'disable_submodules': 'disableSubmodules',  # noqa: E501
         'fetch': 'fetch',  # noqa: E501
         'insecure_ignore_host_key': 'insecureIgnoreHostKey',  # noqa: E501
+        'insecure_skip_tls': 'insecureSkipTLS',  # noqa: E501
         'password_secret': 'passwordSecret',  # noqa: E501
         'revision': 'revision',  # noqa: E501
         'single_branch': 'singleBranch',  # noqa: E501
@@ -168,6 +170,7 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
             disable_submodules (bool): DisableSubmodules disables submodules during git clone. [optional]  # noqa: E501
             fetch ([str]): Fetch specifies a number of refs that should be fetched before checkout. [optional]  # noqa: E501
             insecure_ignore_host_key (bool): InsecureIgnoreHostKey disables SSH strict host key checking during git clone. [optional]  # noqa: E501
+            insecure_skip_tls (bool): InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections. [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
             revision (str): Revision is the git commit, tag, branch to checkout. [optional]  # noqa: E501
             single_branch (bool): SingleBranch enables single branch clone, using the `branch` parameter. [optional]  # noqa: E501
@@ -263,6 +266,7 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
             disable_submodules (bool): DisableSubmodules disables submodules during git clone. [optional]  # noqa: E501
             fetch ([str]): Fetch specifies a number of refs that should be fetched before checkout. [optional]  # noqa: E501
             insecure_ignore_host_key (bool): InsecureIgnoreHostKey disables SSH strict host key checking during git clone. [optional]  # noqa: E501
+            insecure_skip_tls (bool): InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections. [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
             revision (str): Revision is the git commit, tag, branch to checkout. [optional]  # noqa: E501
             single_branch (bool): SingleBranch enables single branch clone, using the `branch` parameter. [optional]  # noqa: E501

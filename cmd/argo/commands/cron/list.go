@@ -1,37 +1,44 @@
 package cron
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"os"
 	"text/tabwriter"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type listFlags struct {
-	allNamespaces bool   // --all-namespaces
-	output        string // --output
-	labelSelector string // --selector
+	allNamespaces bool                 // --all-namespaces
+	output        common.EnumFlagValue // --output
+	labelSelector string               // --selector
 }
 
 func NewListCommand() *cobra.Command {
-	var listArgs listFlags
+	var listArgs = listFlags{
+		output: common.EnumFlagValue{AllowedValues: []string{"wide", "name"}},
+	}
 	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cron workflows",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = ""
@@ -42,31 +49,34 @@ func NewListCommand() *cobra.Command {
 				Namespace:   namespace,
 				ListOptions: &listOpts,
 			})
-			errors.CheckError(err)
-			switch listArgs.output {
+			if err != nil {
+				return err
+			}
+			switch listArgs.output.String() {
 			case "", "wide":
-				printTable(cronWfList.Items, &listArgs)
+				printTable(ctx, cronWfList.Items, &listArgs)
 			case "name":
 				for _, cronWf := range cronWfList.Items {
 					fmt.Println(cronWf.ObjectMeta.Name)
 				}
 			default:
-				log.Fatalf("Unknown output mode: %s", listArgs.output)
+				return fmt.Errorf("Unknown output mode: %s", listArgs.output.String())
 			}
+			return nil
 		},
 	}
 	command.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
-	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	command.Flags().VarP(&listArgs.output, "output", "o", "Output format. "+listArgs.output.Usage())
 	command.Flags().StringVarP(&listArgs.labelSelector, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.")
 	return command
 }
 
-func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
+func printTable(ctx context.Context, wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
 		_, _ = fmt.Fprint(w, "NAMESPACE\t")
 	}
-	_, _ = fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tNEXT RUN\tSCHEDULE\tTIMEZONE\tSUSPENDED")
+	_, _ = fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tNEXT RUN\tSCHEDULES\tTIMEZONE\tSUSPENDED")
 	_, _ = fmt.Fprint(w, "\n")
 	for _, cwf := range wfList {
 		if listArgs.allNamespaces {
@@ -79,7 +89,7 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 			cleanLastScheduledTime = "N/A"
 		}
 		var cleanNextScheduledTime string
-		if next, err := GetNextRuntime(&cwf); err == nil {
+		if next, err := GetNextRuntime(ctx, &cwf); err == nil {
 			cleanNextScheduledTime = humanize.RelativeDurationShort(next, time.Now())
 		} else {
 			cleanNextScheduledTime = "N/A"

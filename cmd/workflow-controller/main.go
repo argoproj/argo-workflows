@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
-	"github.com/argoproj/pkg/errors"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
@@ -70,7 +70,7 @@ func NewRootCommand() *cobra.Command {
 		Use:   CLIName,
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
-			defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+			defer runtimeutil.HandleCrashWithContext(context.Background(), runtimeutil.PanicHandlers...)
 
 			cli.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)
@@ -112,7 +112,9 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins)
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {
@@ -133,9 +135,15 @@ func NewRootCommand() *cobra.Command {
 				}
 
 				// for controlling the dummy metrics server
+				var wg sync.WaitGroup
 				dummyCtx, dummyCancel := context.WithCancel(context.Background())
 				defer dummyCancel()
-				go wfController.RunPrometheusServer(dummyCtx, true)
+
+				wg.Add(1)
+				go func() {
+					wfController.RunPrometheusServer(dummyCtx, true)
+					wg.Done()
+				}()
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -149,12 +157,18 @@ func NewRootCommand() *cobra.Command {
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
 							dummyCancel()
+							wg.Wait()
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
-							go wfController.RunPrometheusServer(ctx, false)
+							wg.Add(1)
+							go func() {
+								wfController.RunPrometheusServer(ctx, false)
+								wg.Done()
+							}()
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info("stopped leading")
 							cancel()
+							wg.Wait()
 							go wfController.RunPrometheusServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {

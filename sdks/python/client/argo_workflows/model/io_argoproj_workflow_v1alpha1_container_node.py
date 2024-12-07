@@ -31,6 +31,7 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.container_port import ContainerPort
+    from argo_workflows.model.container_resize_policy import ContainerResizePolicy
     from argo_workflows.model.env_from_source import EnvFromSource
     from argo_workflows.model.env_var import EnvVar
     from argo_workflows.model.lifecycle import Lifecycle
@@ -40,6 +41,7 @@ def lazy_import():
     from argo_workflows.model.volume_device import VolumeDevice
     from argo_workflows.model.volume_mount import VolumeMount
     globals()['ContainerPort'] = ContainerPort
+    globals()['ContainerResizePolicy'] = ContainerResizePolicy
     globals()['EnvFromSource'] = EnvFromSource
     globals()['EnvVar'] = EnvVar
     globals()['Lifecycle'] = Lifecycle
@@ -115,7 +117,9 @@ class IoArgoprojWorkflowV1alpha1ContainerNode(ModelNormal):
             'liveness_probe': (Probe,),  # noqa: E501
             'ports': ([ContainerPort],),  # noqa: E501
             'readiness_probe': (Probe,),  # noqa: E501
+            'resize_policy': ([ContainerResizePolicy],),  # noqa: E501
             'resources': (ResourceRequirements,),  # noqa: E501
+            'restart_policy': (str,),  # noqa: E501
             'security_context': (SecurityContext,),  # noqa: E501
             'startup_probe': (Probe,),  # noqa: E501
             'stdin': (bool,),  # noqa: E501
@@ -146,7 +150,9 @@ class IoArgoprojWorkflowV1alpha1ContainerNode(ModelNormal):
         'liveness_probe': 'livenessProbe',  # noqa: E501
         'ports': 'ports',  # noqa: E501
         'readiness_probe': 'readinessProbe',  # noqa: E501
+        'resize_policy': 'resizePolicy',  # noqa: E501
         'resources': 'resources',  # noqa: E501
+        'restart_policy': 'restartPolicy',  # noqa: E501
         'security_context': 'securityContext',  # noqa: E501
         'startup_probe': 'startupProbe',  # noqa: E501
         'stdin': 'stdin',  # noqa: E501
@@ -214,7 +220,9 @@ class IoArgoprojWorkflowV1alpha1ContainerNode(ModelNormal):
             liveness_probe (Probe): [optional]  # noqa: E501
             ports ([ContainerPort]): List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.. [optional]  # noqa: E501
             readiness_probe (Probe): [optional]  # noqa: E501
+            resize_policy ([ContainerResizePolicy]): Resources resize policy for the container.. [optional]  # noqa: E501
             resources (ResourceRequirements): [optional]  # noqa: E501
+            restart_policy (str): RestartPolicy defines the restart behavior of individual containers in a pod. This field may only be set for init containers, and the only allowed value is \"Always\". For non-init containers or when this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.. [optional]  # noqa: E501
             security_context (SecurityContext): [optional]  # noqa: E501
             startup_probe (Probe): [optional]  # noqa: E501
             stdin (bool): Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.. [optional]  # noqa: E501
@@ -321,7 +329,9 @@ class IoArgoprojWorkflowV1alpha1ContainerNode(ModelNormal):
             liveness_probe (Probe): [optional]  # noqa: E501
             ports ([ContainerPort]): List of ports to expose from the container. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Modifying this array with strategic merge patch may corrupt the data. For more information See https://github.com/kubernetes/kubernetes/issues/108255. Cannot be updated.. [optional]  # noqa: E501
             readiness_probe (Probe): [optional]  # noqa: E501
+            resize_policy ([ContainerResizePolicy]): Resources resize policy for the container.. [optional]  # noqa: E501
             resources (ResourceRequirements): [optional]  # noqa: E501
+            restart_policy (str): RestartPolicy defines the restart behavior of individual containers in a pod. This field may only be set for init containers, and the only allowed value is \"Always\". For non-init containers or when this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.. [optional]  # noqa: E501
             security_context (SecurityContext): [optional]  # noqa: E501
             startup_probe (Probe): [optional]  # noqa: E501
             stdin (bool): Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.. [optional]  # noqa: E501

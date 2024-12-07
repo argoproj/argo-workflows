@@ -55,11 +55,6 @@ class ContainerPort(ModelNormal):
     """
 
     allowed_values = {
-        ('protocol',): {
-            'SCTP': "SCTP",
-            'TCP': "TCP",
-            'UDP': "UDP",
-        },
     }
 
     validations = {
@@ -153,7 +148,7 @@ class ContainerPort(ModelNormal):
             host_ip (str): What host IP to bind the external port to.. [optional]  # noqa: E501
             host_port (int): Number of port to expose on the host. If specified, this must be a valid port number, 0 < x < 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.. [optional]  # noqa: E501
             name (str): If specified, this must be an IANA_SVC_NAME and unique within the pod. Each named port in a pod must have a unique name. Name for the port that can be referred to by services.. [optional]  # noqa: E501
-            protocol (str): Protocol for port. Must be UDP, TCP, or SCTP. Defaults to \"TCP\".  Possible enum values:  - `\"SCTP\"` is the SCTP protocol.  - `\"TCP\"` is the TCP protocol.  - `\"UDP\"` is the UDP protocol.. [optional]  # noqa: E501
+            protocol (str): Protocol for port. Must be UDP, TCP, or SCTP. Defaults to \"TCP\".. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -242,7 +237,7 @@ class ContainerPort(ModelNormal):
             host_ip (str): What host IP to bind the external port to.. [optional]  # noqa: E501
             host_port (int): Number of port to expose on the host. If specified, this must be a valid port number, 0 < x < 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.. [optional]  # noqa: E501
             name (str): If specified, this must be an IANA_SVC_NAME and unique within the pod. Each named port in a pod must have a unique name. Name for the port that can be referred to by services.. [optional]  # noqa: E501
-            protocol (str): Protocol for port. Must be UDP, TCP, or SCTP. Defaults to \"TCP\".  Possible enum values:  - `\"SCTP\"` is the SCTP protocol.  - `\"TCP\"` is the TCP protocol.  - `\"UDP\"` is the UDP protocol.. [optional]  # noqa: E501
+            protocol (str): Protocol for port. Must be UDP, TCP, or SCTP. Defaults to \"TCP\".. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

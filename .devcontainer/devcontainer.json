@@ -3,7 +3,7 @@
   "appPort": 8080,
   "features": {
     "ghcr.io/devcontainers/features/go:1": {
-      "version": "1.22"
+      "version": "1.23"
     },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"
@@ -11,7 +11,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/python:1": {}
   },
-  "forwardPorts": [9000, 9001, 9090, 2746, 8080, 5556, 6060, 9091, 3306, 5432, 10000],
+  "forwardPorts": [9000, 9001, 9090, 2746, 8080, 5556, 6060, 9091, 3306, 5432, 10000, 8000],
   "hostRequirements": {
     "cpus": 4
   },
@@ -29,5 +29,29 @@
   "remoteEnv": {
     "PATH": "${containerEnv:PATH}:/home/vscode/go/bin",
     "GOPATH": "/home/vscode/go"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "launch": {
+          "configurations": [
+              {
+                  "name": "Attach to argo server",
+                  "type": "go",
+                  "request": "attach",
+                  "mode": "local",
+                  "processId": "argo"
+              },
+              {
+                  "name": "Attach to workflow controller",
+                  "type": "go",
+                  "request": "attach",
+                  "mode": "local",
+                  "processId": "workflow-controller"
+              }
+          ]
+        }
+      }
+    }
   }
 }

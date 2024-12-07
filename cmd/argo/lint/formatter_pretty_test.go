@@ -1,9 +1,8 @@
-//go:build !windows
-
 package lint
 
 import (
 	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/TwiN/go-color"
@@ -41,6 +40,9 @@ func TestPrettyFormat(t *testing.T) {
 			Linted: true,
 		})
 		expected := "\x1b[4mtest1\x1b[0m:\n   \x1b[31m✖\x1b[0m some error\n   \x1b[31m✖\x1b[0m some error2\n\n"
+		if runtime.GOOS == "windows" {
+			expected = "test1:\n   ✖ some error\n   ✖ some error2\n\n"
+		}
 		assert.Equal(t, expected, msg)
 	})
 
@@ -53,6 +55,9 @@ func TestPrettyFormat(t *testing.T) {
 			Linted: true,
 		})
 		expected := "\x1b[4mtest2\x1b[0m:\n   \x1b[31m✖\x1b[0m some error\n\n"
+		if runtime.GOOS == "windows" {
+			expected = "test2:\n   ✖ some error\n\n"
+		}
 		assert.Equal(t, expected, msg)
 	})
 

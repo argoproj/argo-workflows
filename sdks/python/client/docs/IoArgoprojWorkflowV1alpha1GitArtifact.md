@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **disable_submodules** | **bool** | DisableSubmodules disables submodules during git clone | [optional] 
 **fetch** | **[str]** | Fetch specifies a number of refs that should be fetched before checkout | [optional] 
 **insecure_ignore_host_key** | **bool** | InsecureIgnoreHostKey disables SSH strict host key checking during git clone | [optional] 
+**insecure_skip_tls** | **bool** | InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections | [optional] 
 **password_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **revision** | **str** | Revision is the git commit, tag, branch to checkout | [optional] 
 **single_branch** | **bool** | SingleBranch enables single branch clone, using the &#x60;branch&#x60; parameter | [optional] 

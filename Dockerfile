@@ -3,7 +3,7 @@ ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.22-alpine3.19 as builder
+FROM golang:1.23-alpine3.19 as builder
 
 # libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \

@@ -64,6 +64,24 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			}
 		})
 }
+func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
+	return httpexpect.
+		WithConfig(httpexpect.Config{
+			BaseURL:  baseUrl,
+			Reporter: httpexpect.NewFatalReporter(b),
+			Printers: []httpexpect.Printer{
+				httpexpect.NewDebugPrinter(b, true),
+			},
+			Client: httpClient,
+		}).
+		Builder(func(req *httpexpect.Request) {
+			if s.username != "" {
+				req.WithBasicAuth(s.username, "garbage")
+			} else if s.bearerToken != "" {
+				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
+			}
+		})
+}
 
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
@@ -88,12 +106,11 @@ func (s *ArgoServerSuite) TestInfo() {
 
 func (s *ArgoServerSuite) TestVersion() {
 	s.Run("Version", func() {
-		s.e().GET("/api/v1/version").
+		resp := s.e().GET("/api/v1/version").
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.version").
-			NotNull()
+			Status(200)
+		resp.JSON().Path("$.version").NotNull()
+		resp.Header("Grpc-Metadata-Argo-Version").NotEmpty()
 	})
 }
 
@@ -338,19 +355,25 @@ func (s *ArgoServerSuite) TestOauth() {
 
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
-	s.T().Run("Bearer", func(t *testing.T) {
+	s.Run("Bearer", func() {
 		s.bearerToken = "test-token"
 		defer func() { s.bearerToken = token }()
 		s.e().GET("/api/v1/workflows/argo").
 			Expect().
-			Status(401)
+			Status(401).
+			// Version header shouldn't be set on 401s for security, since that could be used by attackers to find vulnerable servers
+			Header("Grpc-Metadata-Argo-Version").
+			IsEmpty()
 	})
-	s.T().Run("Basic", func(t *testing.T) {
+	s.Run("Basic", func() {
 		s.username = "garbage"
 		defer func() { s.username = "" }()
 		s.e().GET("/api/v1/workflows/argo").
 			Expect().
-			Status(401)
+			Status(401).
+			// Version header shouldn't be set on 401s for security, since that could be used by attackers to find vulnerable servers
+			Header("Grpc-Metadata-Argo-Version").
+			IsEmpty()
 	})
 }
 
@@ -456,6 +479,9 @@ func (s *ArgoServerSuite) TestPermission() {
 		badToken = string(secret.Data["token"])
 	})
 
+	// fake / spoofed token
+	fakeToken := "faketoken"
+
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 
@@ -559,8 +585,8 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(200)
 	})
 
-	// we've now deleted the workflow, but it is still in the archive, testing the archive
-	// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
+	// we've now deleted the workflow, but it is still in the archive
+	// testing the archive after deleting it makes sure that we are not dependent on a live workflow resource for authorization
 
 	// Test list archived WFs with good token
 	s.Run("ListArchivedWFsGoodToken", func() {
@@ -600,7 +626,33 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(403)
 	})
 
+	// Test get wf w/ archive fallback with good token
+	s.bearerToken = goodToken
+	s.Run("GetWFsFallbackArchivedGoodToken", func() {
+		s.e().GET("/api/v1/workflows/"+nsName).
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			Expect().
+			Status(200)
+	})
+
+	// Test get wf w/ archive fallback with bad token
+	s.bearerToken = badToken
+	s.Run("GetWFsFallbackArchivedBadToken", func() {
+		s.e().GET("/api/v1/workflows/" + nsName).
+			Expect().
+			Status(403)
+	})
+
+	// Test get wf w/ archive fallback with fake token
+	s.bearerToken = fakeToken
+	s.Run("GetWFsFallbackArchivedFakeToken", func() {
+		s.e().GET("/api/v1/workflows/" + nsName).
+			Expect().
+			Status(401)
+	})
+
 	// Test deleting archived wf with bad token
+	s.bearerToken = badToken
 	s.Run("DeleteArchivedWFsBadToken", func() {
 		s.e().DELETE("/api/v1/archived-workflows/" + uid).
 			Expect().
@@ -1368,6 +1420,17 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived)
+
+	s.Run("ListWithoutListOptions", func() {
+		s.e().GET("/api/v1/archived-workflows").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(3)
+	})
 
 	for _, tt := range []struct {
 		name     string

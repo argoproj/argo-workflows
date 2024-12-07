@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: mutex-deprecated-
+spec:
+  entrypoint: whalesay
+  synchronization:
+    mutex:
+      name: test-mutex
+  templates:
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2

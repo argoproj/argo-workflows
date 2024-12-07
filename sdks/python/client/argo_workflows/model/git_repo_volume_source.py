@@ -108,7 +108,7 @@ class GitRepoVolumeSource(ModelNormal):
         """GitRepoVolumeSource - a model defined in OpenAPI
 
         Args:
-            repository (str): Repository URL
+            repository (str): repository is the URL
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -141,8 +141,8 @@ class GitRepoVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            directory (str): Target directory name. Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the git repository.  Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.. [optional]  # noqa: E501
-            revision (str): Commit hash for the specified revision.. [optional]  # noqa: E501
+            directory (str): directory is the target directory name. Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the git repository.  Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.. [optional]  # noqa: E501
+            revision (str): revision is the commit hash for the specified revision.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -195,7 +195,7 @@ class GitRepoVolumeSource(ModelNormal):
         """GitRepoVolumeSource - a model defined in OpenAPI
 
         Args:
-            repository (str): Repository URL
+            repository (str): repository is the URL
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -228,8 +228,8 @@ class GitRepoVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            directory (str): Target directory name. Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the git repository.  Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.. [optional]  # noqa: E501
-            revision (str): Commit hash for the specified revision.. [optional]  # noqa: E501
+            directory (str): directory is the target directory name. Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the git repository.  Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.. [optional]  # noqa: E501
+            revision (str): revision is the commit hash for the specified revision.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

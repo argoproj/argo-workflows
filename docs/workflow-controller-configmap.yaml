@@ -41,6 +41,13 @@ data:
   nodeEvents: |
     enabled: true
 
+  # Whether or not to emit events on workflow status changes. These can take a up a lot of space in
+  # k8s (typically etcd), see nodeEvents above.
+  # This config item allows you to disable this.
+  # (since v3.6)
+  workflowEvents: |
+    enabled: true
+
   # uncomment following lines if workflow controller runs in a different k8s cluster with the
   # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
   # kubeconfig secret

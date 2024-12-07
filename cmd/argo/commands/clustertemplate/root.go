@@ -9,8 +9,8 @@ func NewClusterTemplateCommand() *cobra.Command {
 		Use:     "cluster-template",
 		Aliases: []string{"cwftmpl", "cwft"},
 		Short:   "manipulate cluster workflow templates",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.HelpFunc()(cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
 		},
 	}
 

@@ -136,7 +136,7 @@ class SecretEnvSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            name (str): Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names. [optional]  # noqa: E501
+            name (str): Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names. [optional]  # noqa: E501
             optional (bool): Specify whether the Secret must be defined. [optional]  # noqa: E501
         """
 
@@ -219,7 +219,7 @@ class SecretEnvSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            name (str): Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names. [optional]  # noqa: E501
+            name (str): Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names. [optional]  # noqa: E501
             optional (bool): Specify whether the Secret must be defined. [optional]  # noqa: E501
         """
 

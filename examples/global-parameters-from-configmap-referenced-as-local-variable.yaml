@@ -9,7 +9,6 @@ metadata:
       This example demonstrates how a global parameter from a ConfigMap can be referenced as a template local variable.
       Note that the "simple-parameters" ConfigMap (defined in `examples/configmaps/simple-parameters-configmap.yaml`) needs to be created first before submitting this workflow.
 spec:
-  serviceAccountName: argo
   entrypoint: print-message
   arguments:
     parameters:

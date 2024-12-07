@@ -3,6 +3,8 @@ package metrics
 import (
 	"context"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
 const (
@@ -10,14 +12,14 @@ const (
 )
 
 func addWorkflowTemplateHistogram(_ context.Context, m *Metrics) error {
-	return m.createInstrument(float64Histogram,
+	return m.CreateInstrument(telemetry.Float64Histogram,
 		nameWorkflowTemplateRuntime,
 		"Duration of workflow template runs run through workflowTemplateRefs",
 		"s",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 }
 
 func (m *Metrics) RecordWorkflowTemplateTime(ctx context.Context, duration time.Duration, name, namespace string, cluster bool) {
-	m.record(ctx, nameWorkflowTemplateRuntime, duration.Seconds(), templateLabels(name, namespace, cluster))
+	m.Record(ctx, nameWorkflowTemplateRuntime, duration.Seconds(), templateAttribs(name, namespace, cluster))
 }

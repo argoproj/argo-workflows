@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 type MockKC struct {
@@ -57,7 +57,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 				Name: "foo",
 			},
 			Spec: v1.PodSpec{
-				ShareProcessNamespace: pointer.Bool(true),
+				ShareProcessNamespace: ptr.To(true),
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{

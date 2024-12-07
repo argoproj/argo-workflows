@@ -3,7 +3,6 @@ package archive
 import (
 	"fmt"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
@@ -14,15 +13,23 @@ func NewListLabelKeyCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list-label-keys",
 		Short: "list workflows label keys in the archive",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			keys, err := serviceClient.ListArchivedWorkflowLabelKeys(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelKeysRequest{})
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			for _, str := range keys.Items {
 				fmt.Printf("%s\n", str)
 			}
+			return nil
 		},
 	}
 	return command

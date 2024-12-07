@@ -2527,11 +2527,6 @@ func (in *PodGC) DeepCopyInto(out *PodGC) {
 		*out = new(metav1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.DeleteDelayDuration != nil {
-		in, out := &in.DeleteDelayDuration, &out.DeleteDelayDuration
-		*out = new(metav1.Duration)
-		**out = **in
-	}
 	return
 }
 
@@ -2768,6 +2763,11 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 	}
 	if in.SecretKeySecret != nil {
 		in, out := &in.SecretKeySecret, &out.SecretKeySecret
+		*out = new(v1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.SessionTokenSecret != nil {
+		in, out := &in.SessionTokenSecret, &out.SessionTokenSecret
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
@@ -3054,6 +3054,28 @@ func (in *Synchronization) DeepCopyInto(out *Synchronization) {
 		in, out := &in.Mutex, &out.Mutex
 		*out = new(Mutex)
 		**out = **in
+	}
+	if in.Semaphores != nil {
+		in, out := &in.Semaphores, &out.Semaphores
+		*out = make([]*SemaphoreRef, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(SemaphoreRef)
+				(*in).DeepCopyInto(*out)
+			}
+		}
+	}
+	if in.Mutexes != nil {
+		in, out := &in.Mutexes, &out.Mutexes
+		*out = make([]*Mutex, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(Mutex)
+				**out = **in
+			}
+		}
 	}
 	return
 }

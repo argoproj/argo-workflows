@@ -9,7 +9,6 @@ metadata:
       This example demonstrates loading global parameter values from a ConfigMap.
       Note that the "simple-parameters" ConfigMap (defined in `examples/configmaps/simple-parameters-configmap.yaml`) needs to be created first before submitting this workflow.
 spec:
-  serviceAccountName: argo
   entrypoint: print-message
   # Parameters can also be passed via configmap reference.
   arguments:

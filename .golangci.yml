@@ -15,8 +15,8 @@ linters:
     - asasalint
     - bidichk
     - bodyclose
+    - copyloopvar
     - errcheck
-    - exportloopref
     - goimports
     # only minor issues
     # - errorlint
@@ -65,5 +65,3 @@ issues:
     - sdks
     - ui
     - vendor
-  exclude-files:
-    - server/static/files.go

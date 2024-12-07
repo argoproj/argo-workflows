@@ -4,6 +4,7 @@ import (
 	"context"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 )
 
 const (
@@ -40,17 +41,17 @@ func ConvertWorkflowPhase(inPhase wfv1.WorkflowPhase) MetricWorkflowPhase {
 }
 
 func addWorkflowPhaseCounter(_ context.Context, m *Metrics) error {
-	return m.createInstrument(int64Counter,
+	return m.CreateInstrument(telemetry.Int64Counter,
 		nameWorkflowPhaseCounter,
 		"Total number of workflows that have entered each phase",
 		"{workflow}",
-		withAsBuiltIn(),
+		telemetry.WithAsBuiltIn(),
 	)
 }
 
 func (m *Metrics) ChangeWorkflowPhase(ctx context.Context, phase MetricWorkflowPhase, namespace string) {
-	m.addInt(ctx, nameWorkflowPhaseCounter, 1, instAttribs{
-		{name: labelWorkflowPhase, value: string(phase)},
-		{name: labelWorkflowNamespace, value: namespace},
+	m.AddInt(ctx, nameWorkflowPhaseCounter, 1, telemetry.InstAttribs{
+		{Name: telemetry.AttribWorkflowPhase, Value: string(phase)},
+		{Name: telemetry.AttribWorkflowNamespace, Value: namespace},
 	})
 }

@@ -15,8 +15,11 @@ func Replace(s string, replaceMap map[string]string, allowUnresolved bool) (stri
 	if err != nil {
 		return "", err
 	}
-
-	replacedString, err := t.Replace(replaceMap, allowUnresolved)
+	interReplaceMap := make(map[string]interface{})
+	for k, v := range replaceMap {
+		interReplaceMap[k] = v
+	}
+	replacedString, err := t.Replace(interReplaceMap, allowUnresolved)
 	if err != nil {
 		return s, err
 	}
