@@ -30,8 +30,10 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_credentials_config import IoArgoprojWorkflowV1alpha1OSSCredentialsConfig
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_lifecycle_rule import IoArgoprojWorkflowV1alpha1OSSLifecycleRule
     from argo_workflows.model.secret_key_selector import SecretKeySelector
+    globals()['IoArgoprojWorkflowV1alpha1OSSCredentialsConfig'] = IoArgoprojWorkflowV1alpha1OSSCredentialsConfig
     globals()['IoArgoprojWorkflowV1alpha1OSSLifecycleRule'] = IoArgoprojWorkflowV1alpha1OSSLifecycleRule
     globals()['SecretKeySelector'] = SecretKeySelector
 
@@ -93,6 +95,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
             'access_key_secret': (SecretKeySelector,),  # noqa: E501
             'bucket': (str,),  # noqa: E501
             'create_bucket_if_not_present': (bool,),  # noqa: E501
+            'credentials_config': (IoArgoprojWorkflowV1alpha1OSSCredentialsConfig,),  # noqa: E501
             'endpoint': (str,),  # noqa: E501
             'lifecycle_rule': (IoArgoprojWorkflowV1alpha1OSSLifecycleRule,),  # noqa: E501
             'secret_key_secret': (SecretKeySelector,),  # noqa: E501
@@ -110,6 +113,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
         'access_key_secret': 'accessKeySecret',  # noqa: E501
         'bucket': 'bucket',  # noqa: E501
         'create_bucket_if_not_present': 'createBucketIfNotPresent',  # noqa: E501
+        'credentials_config': 'credentialsConfig',  # noqa: E501
         'endpoint': 'endpoint',  # noqa: E501
         'lifecycle_rule': 'lifecycleRule',  # noqa: E501
         'secret_key_secret': 'secretKeySecret',  # noqa: E501
@@ -164,6 +168,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
             access_key_secret (SecretKeySelector): [optional]  # noqa: E501
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
             create_bucket_if_not_present (bool): CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist. [optional]  # noqa: E501
+            credentials_config (IoArgoprojWorkflowV1alpha1OSSCredentialsConfig): [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
@@ -257,6 +262,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
             access_key_secret (SecretKeySelector): [optional]  # noqa: E501
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
             create_bucket_if_not_present (bool): CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist. [optional]  # noqa: E501
+            credentials_config (IoArgoprojWorkflowV1alpha1OSSCredentialsConfig): [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
