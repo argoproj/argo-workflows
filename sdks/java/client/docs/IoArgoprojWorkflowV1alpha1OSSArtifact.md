@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **accessKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **bucket** | **String** | Bucket is the name of the bucket |  [optional]
 **createBucketIfNotPresent** | **Boolean** | CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn&#39;t exist |  [optional]
+**credentialsConfig** | [**IoArgoprojWorkflowV1alpha1OSSCredentialsConfig**](IoArgoprojWorkflowV1alpha1OSSCredentialsConfig.md) |  |  [optional]
 **endpoint** | **String** | Endpoint is the hostname of the bucket endpoint |  [optional]
 **key** | **String** | Key is the path in the bucket where the artifact resides | 
 **lifecycleRule** | [**IoArgoprojWorkflowV1alpha1OSSLifecycleRule**](IoArgoprojWorkflowV1alpha1OSSLifecycleRule.md) |  |  [optional]

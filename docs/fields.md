@@ -3611,7 +3611,7 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
 |`bucket`|`string`|Bucket is the name of the bucket|
 |`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
-|`credentialConfig`|[`OSSCredentialConfig`](#osscredentialconfig)|CredentialConfig specifies the credential configuration for OSS|
+|`credentialsConfig`|[`OSSCredentialsConfig`](#osscredentialsconfig)|CredentialsConfig specifies the credential configuration for OSS|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
 |`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
@@ -4354,7 +4354,7 @@ OSSArtifactRepository defines the controller configuration for an OSS artifact r
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
 |`bucket`|`string`|Bucket is the name of the bucket|
 |`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
-|`credentialConfig`|[`OSSCredentialConfig`](#osscredentialconfig)|CredentialConfig specifies the credential configuration for OSS|
+|`credentialsConfig`|[`OSSCredentialsConfig`](#osscredentialsconfig)|CredentialsConfig specifies the credential configuration for OSS|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`keyFormat`|`string`|KeyFormat defines the format of how to store keys and can reference workflow variables.|
 |`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
@@ -4476,9 +4476,9 @@ Header indicate a key-value request header to be used when fetching artifacts ov
 |`name`|`string`|Name is the header name|
 |`value`|`string`|Value is the literal value to use for the header|
 
-## OSSCredentialConfig
+## OSSCredentialsConfig
 
-OSSCredentialConfig specifies the credential configuration for OSS
+OSSCredentialsConfig specifies the credential configuration for OSS
 
 ### Fields
 | Field Name | Field Type | Description   |

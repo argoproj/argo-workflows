@@ -105,7 +105,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact":                   schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifactRepository":         schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSBucket":                     schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialConfig":           schema_pkg_apis_workflow_v1alpha1_OSSCredentialConfig(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialsConfig":          schema_pkg_apis_workflow_v1alpha1_OSSCredentialsConfig(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule":              schema_pkg_apis_workflow_v1alpha1_OSSLifecycleRule(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Object":                        schema_pkg_apis_workflow_v1alpha1_Object(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs":                       schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
@@ -4534,10 +4534,10 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
-					"credentialConfig": {
+					"credentialsConfig": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CredentialConfig specifies the credential configuration for OSS",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialConfig"),
+							Description: "CredentialsConfig specifies the credential configuration for OSS",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialsConfig"),
 						},
 					},
 					"key": {
@@ -4553,7 +4553,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialsConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4617,10 +4617,10 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref common.Referenc
 							Format:      "",
 						},
 					},
-					"credentialConfig": {
+					"credentialsConfig": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CredentialConfig specifies the credential configuration for OSS",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialConfig"),
+							Description: "CredentialsConfig specifies the credential configuration for OSS",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialsConfig"),
 						},
 					},
 					"keyFormat": {
@@ -4634,7 +4634,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialsConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4698,25 +4698,25 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 							Format:      "",
 						},
 					},
-					"credentialConfig": {
+					"credentialsConfig": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CredentialConfig specifies the credential configuration for OSS",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialConfig"),
+							Description: "CredentialsConfig specifies the credential configuration for OSS",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialsConfig"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSCredentialsConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_OSSCredentialConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_workflow_v1alpha1_OSSCredentialsConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "OSSCredentialConfig specifies the credential configuration for OSS",
+				Description: "OSSCredentialsConfig specifies the credential configuration for OSS",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"type": {

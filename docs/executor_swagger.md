@@ -2381,7 +2381,7 @@ save/load the directory appropriately.
 | accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
 | createBucketIfNotPresent | boolean| `bool` |  | | CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist |  |
-| credentialConfig | [OSSCredentialConfig](#o-s-s-credential-config)| `OSSCredentialConfig` |  | |  |  |
+| credentialsConfig | [OSSCredentialsConfig](#o-s-s-credentials-config)| `OSSCredentialsConfig` |  | |  |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
 | key | string| `string` |  | | Key is the path in the bucket where the artifact resides |  |
 | lifecycleRule | [OSSLifecycleRule](#o-s-s-lifecycle-rule)| `OSSLifecycleRule` |  | |  |  |
@@ -2391,10 +2391,10 @@ save/load the directory appropriately.
 
 
 
-### <span id="o-s-s-credential-config"></span> OSSCredentialConfig
+### <span id="o-s-s-credentials-config"></span> OSSCredentialsConfig
 
 
-> OSSCredentialConfig specifies the credential configuration for OSS
+> OSSCredentialsConfig specifies the credential configuration for OSS
   
 
 

@@ -459,7 +459,7 @@ spec:
                                   type: string
                                 createBucketIfNotPresent:
                                   type: boolean
-                                credentialConfig:
+                                credentialsConfig:
                                   properties:
                                     oIDCProviderArn:
                                       type: string

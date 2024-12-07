@@ -2935,8 +2935,8 @@ type OSSBucket struct {
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 
-	// CredentialConfig specifies the credential configuration for OSS
-	CredentialConfig *OSSCredentialConfig `json:"credentialConfig,omitempty" protobuf:"bytes,9,opt,name=credentialConfig"`
+	// CredentialsConfig specifies the credential configuration for OSS
+	CredentialsConfig *OSSCredentialsConfig `json:"credentialsConfig,omitempty" protobuf:"bytes,9,opt,name=credentialsConfig"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -2956,8 +2956,8 @@ type OSSLifecycleRule struct {
 	MarkDeletionAfterDays int32 `json:"markDeletionAfterDays,omitempty" protobuf:"varint,2,opt,name=markDeletionAfterDays"`
 }
 
-// OSSCredentialConfig specifies the credential configuration for OSS
-type OSSCredentialConfig struct {
+// OSSCredentialsConfig specifies the credential configuration for OSS
+type OSSCredentialsConfig struct {
 	// Type specifies the credential type.
 	Type string `json:"type,omitempty" protobuf:"varint,1,opt,name=type"`
 

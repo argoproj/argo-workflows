@@ -6099,9 +6099,9 @@
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
           "type": "boolean"
         },
-        "credentialConfig": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSCredentialConfig",
-          "description": "CredentialConfig specifies the credential configuration for OSS"
+        "credentialsConfig": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSCredentialsConfig",
+          "description": "CredentialsConfig specifies the credential configuration for OSS"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
@@ -6148,9 +6148,9 @@
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
           "type": "boolean"
         },
-        "credentialConfig": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSCredentialConfig",
-          "description": "CredentialConfig specifies the credential configuration for OSS"
+        "credentialsConfig": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSCredentialsConfig",
+          "description": "CredentialsConfig specifies the credential configuration for OSS"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
@@ -6179,8 +6179,8 @@
       },
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.OSSCredentialConfig": {
-      "description": "OSSCredentialConfig specifies the credential configuration for OSS",
+    "io.argoproj.workflow.v1alpha1.OSSCredentialsConfig": {
+      "description": "OSSCredentialsConfig specifies the credential configuration for OSS",
       "properties": {
         "oIDCProviderArn": {
           "description": "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
