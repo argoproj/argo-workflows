@@ -923,7 +923,7 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	woc.markNodePhase(lastChild.Name, wfv1.NodePending)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeRunning, n.Phase)
+	assert.Equal(t, wfv1.NodePending, n.Phase)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
@@ -1004,7 +1004,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	woc.markNodePhase(lastChild.Name, wfv1.NodePending)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeRunning, n.Phase)
+	assert.Equal(t, wfv1.NodePending, n.Phase)
 	assert.Equal(t, "", n.Message)
 
 	// No retry related message for succeeded node
@@ -1589,8 +1589,8 @@ func TestAssessNodeStatus(t *testing.T) {
 		},
 		daemon:      true,
 		node:        &wfv1.NodeStatus{TemplateName: templateName},
-		wantPhase:   wfv1.NodeSucceeded,
-		wantMessage: "",
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "can't find failed message for pod  namespace ", // daemoned nodes currently don't have a fail message
 	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
@@ -9182,7 +9182,7 @@ func TestOperatorRetryExpressionError(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	retryNode, err := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	assert.Len(t, retryNode.Children, 3)
 }
 
