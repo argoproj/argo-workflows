@@ -15,3 +15,11 @@ func SetGLogLevel(glogLevel int) {
 	_ = flag.Set("logtostderr", "true")
 	_ = flag.Set("v", strconv.Itoa(glogLevel))
 }
+
+func GetGLogLevel() string {
+	f := flag.Lookup("v")
+	if f == nil {
+		return ""
+	}
+	return f.Value.String()
+}

@@ -26,7 +26,7 @@ jobs:
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
       lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -111,7 +111,7 @@ jobs:
     name: Unit Tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -157,7 +157,7 @@ jobs:
   argo-images:
     name: argo-images
     # needs: [ lint ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -188,7 +188,7 @@ jobs:
     name: E2E Tests
     needs: [ changed-files, argo-images ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # These tests usually finish in ~25m, but occasionally they take much longer due to resource
     # contention on the runner, which we have no control over.
     timeout-minutes: 60
@@ -230,15 +230,15 @@ jobs:
             profile: minimal
             use-api: true
           - test: test-executor
-            install_k3s_version: v1.28.13+k3s1
+            install_k3s_version: v1.29.10+k3s1
             profile: minimal
             use-api: false
           - test: test-corefunctional
-            install_k3s_version: v1.28.13+k3s1
+            install_k3s_version: v1.29.10+k3s1
             profile: minimal
             use-api: false
           - test: test-functional
-            install_k3s_version: v1.28.13+k3s1
+            install_k3s_version: v1.29.10+k3s1
             profile: minimal
             use-api: false
     steps:
@@ -273,7 +273,7 @@ jobs:
       - name: Install and start K3S
         run: |
           if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
-            export INSTALL_K3S_VERSION=v1.31.0+k3s1
+            export INSTALL_K3S_VERSION=v1.31.2+k3s1
           else
             export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
           fi
@@ -372,7 +372,7 @@ jobs:
     name: E2E Tests - Composite result
     needs: [ e2e-tests ]
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - run: |
           result="${{ needs.e2e-tests.result }}"
@@ -387,7 +387,7 @@ jobs:
     name: Codegen
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.codegen == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       GOPATH: /home/runner/go
@@ -424,7 +424,7 @@ jobs:
     name: Lint
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.lint == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
     env:
       GOPATH: /home/runner/go
@@ -446,7 +446,7 @@ jobs:
     name: UI
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 6
     env:
       NODE_OPTIONS: --max-old-space-size=4096

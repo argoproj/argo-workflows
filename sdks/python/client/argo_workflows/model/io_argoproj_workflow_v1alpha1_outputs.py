@@ -151,7 +151,7 @@ class IoArgoprojWorkflowV1alpha1Outputs(ModelNormal):
             artifacts ([IoArgoprojWorkflowV1alpha1Artifact]): Artifacts holds the list of output artifacts produced by a step. [optional]  # noqa: E501
             exit_code (str): ExitCode holds the exit code of a script template. [optional]  # noqa: E501
             parameters ([IoArgoprojWorkflowV1alpha1Parameter]): Parameters holds the list of output parameters produced by a step. [optional]  # noqa: E501
-            result (str): Result holds the result (stdout) of a script template. [optional]  # noqa: E501
+            result (str): Result holds the result (stdout) of a script or container template, or the response body of an HTTP template. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -236,7 +236,7 @@ class IoArgoprojWorkflowV1alpha1Outputs(ModelNormal):
             artifacts ([IoArgoprojWorkflowV1alpha1Artifact]): Artifacts holds the list of output artifacts produced by a step. [optional]  # noqa: E501
             exit_code (str): ExitCode holds the exit code of a script template. [optional]  # noqa: E501
             parameters ([IoArgoprojWorkflowV1alpha1Parameter]): Parameters holds the list of output parameters produced by a step. [optional]  # noqa: E501
-            result (str): Result holds the result (stdout) of a script template. [optional]  # noqa: E501
+            result (str): Result holds the result (stdout) of a script or container template, or the response body of an HTTP template. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
