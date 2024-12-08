@@ -58,6 +58,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/ui"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/json"
@@ -435,7 +436,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	})
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin).ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles)
 	return &httpServer
 }
 

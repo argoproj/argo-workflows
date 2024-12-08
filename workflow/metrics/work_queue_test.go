@@ -17,7 +17,7 @@ func TestMetricsWorkQueue(t *testing.T) {
 
 	attribsWT := attribute.NewSet(attribute.String(telemetry.AttribWorkerType, "test"))
 
-	queue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultControllerRateLimiter(), "test")
+	queue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "test")
 	defer queue.ShutDown()
 	val, err := te.GetInt64CounterValue(nameWorkersBusy, &attribsWT)
 	require.NoError(t, err)
