@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -912,6 +913,20 @@ func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestArchiveContainerTypeTmplLogs() {
+	s.Given().
+		Workflow("@testdata/archive-container-type-tmpl-logs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.Equal(t, "hello-world-logs", status.Nodes[meta.Name].Outputs.Artifacts[0].Name)
+			assert.Equal(t, fmt.Sprintf("%s/%s/hello-world.log", meta.Name, meta.Name), status.Nodes[meta.Name].Outputs.Artifacts[0].S3.Key)
+		})
 }
 
 func (s *FunctionalSuite) TestDataTransformation() {
