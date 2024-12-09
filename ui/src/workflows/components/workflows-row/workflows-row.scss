@@ -7,9 +7,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 0.25em 0;
-}
 
-.wf-rows-name > * {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  & > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
