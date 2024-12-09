@@ -1415,3 +1415,34 @@ func (s *FunctionalSuite) TestWorkflowExitHandlerCrashEnsureNodeIsPresent() {
 			assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
 		})
 }
+
+func (s *FunctionalSuite) TestWorkflowParallelismStepFailFast() {
+	s.Given().
+		Workflow("@expectedfailures/parallelism-step-fail-fast.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "template has failed or errored children and failFast enabled", status.Message)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("[0]").Phase)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("step1").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("step2").Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowParallelismDAGFailFast() {
+	s.Given().
+		Workflow("@expectedfailures/parallelism-dag-fail-fast.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "template has failed or errored children and failFast enabled", status.Message)
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("task1").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("task2").Phase)
+		})
+}
