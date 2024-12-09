@@ -11194,6 +11194,8 @@ spec:
               - '-c'
               - sleep 9000
             resources: {}
+            dependencies:
+              - main
   entrypoint: init
   arguments: {}
   ttlStrategy:
