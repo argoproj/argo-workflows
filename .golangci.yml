@@ -65,5 +65,3 @@ issues:
     - sdks
     - ui
     - vendor
-  exclude-files:
-    - server/static/files.go
