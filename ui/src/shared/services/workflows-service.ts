@@ -55,9 +55,11 @@ export const WorkflowsService = {
             'items.spec.suspend'
         ],
         name?: string,
-        nameFilter?: NameFilterKeys
+        nameFilter?: NameFilterKeys,
+        createdAfter?: Date,
+        finishedBefore?: Date
     ) {
-        const params = queryParams({phases, labels, pagination, name, nameFilter});
+        const params = queryParams({phases, labels, pagination, name, nameFilter, createdAfter, finishedBefore});
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     },

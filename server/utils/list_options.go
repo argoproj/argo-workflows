@@ -13,13 +13,14 @@ import (
 )
 
 type ListOptions struct {
-	Namespace, Name            string
-	NamePrefix, NameFilter     string
-	MinStartedAt, MaxStartedAt time.Time
-	LabelRequirements          labels.Requirements
-	Limit, Offset              int
-	ShowRemainingItemCount     bool
-	StartedAtAscending         bool
+	Namespace, Name              string
+	NamePrefix, NameFilter       string
+	MinStartedAt, MaxStartedAt   time.Time
+	CreatedAfter, FinishedBefore time.Time
+	LabelRequirements            labels.Requirements
+	Limit, Offset                int
+	ShowRemainingItemCount       bool
+	StartedAtAscending           bool
 }
 
 func (l ListOptions) WithLimit(limit int) ListOptions {
@@ -52,7 +53,7 @@ func (l ListOptions) WithStartedAtAscending(ascending bool) ListOptions {
 	return l
 }
 
-func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter string) (ListOptions, error) {
+func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, createdAfter, finishedBefore string) (ListOptions, error) {
 	if options.Continue == "" {
 		options.Continue = "0"
 	}
@@ -75,6 +76,21 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter str
 	name := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
+	createdAfterTime := time.Time{}
+	finishedBeforeTime := time.Time{}
+
+	if createdAfter != "" {
+		createdAfterTime, err = time.Parse(time.RFC3339, createdAfter)
+		if err != nil {
+			return ListOptions{}, ToStatusError(err, codes.Internal)
+		}
+	}
+	if finishedBefore != "" {
+		finishedBeforeTime, err = time.Parse(time.RFC3339, finishedBefore)
+		if err != nil {
+			return ListOptions{}, ToStatusError(err, codes.Internal)
+		}
+	}
 	showRemainingItemCount := false
 	for _, selector := range strings.Split(options.FieldSelector, ",") {
 		if len(selector) == 0 {
@@ -126,6 +142,8 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter str
 		Name:                   name,
 		NamePrefix:             namePrefix,
 		NameFilter:             nameFilter,
+		CreatedAfter:           createdAfterTime,
+		FinishedBefore:         finishedBeforeTime,
 		MinStartedAt:           minStartedAt,
 		MaxStartedAt:           maxStartedAt,
 		LabelRequirements:      requirements,
