@@ -196,6 +196,7 @@ type PersistConfig struct {
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
 	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
+	KeepPrefixes   []string          `json:"keepPrefixes,omitempty"`
 	ClusterName    string            `json:"clusterName,omitempty"`
 	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
