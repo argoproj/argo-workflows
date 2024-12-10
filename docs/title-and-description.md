@@ -89,7 +89,7 @@ The above example will render an expanded row like the below image:
 
 ### For `ClusterWorkflowTemplates`
 
-> v3.6 and after
+> v3.7 and after
 
 You can also add the `workflows.argoproj.io/title` and `workflows.argoproj.io/description` annotations with embedded markdown to a `ClusterWorkflowTemplate` to display in the list:
 
@@ -108,7 +108,7 @@ The above manifest will render as a row like the below image:
 
 ### For `CronWorkflows`
 
-> v3.6 and after
+> v3.7 and after
 
 You can also add the `workflows.argoproj.io/title` and `workflows.argoproj.io/description` annotations with embedded markdown to a `CronWorkflow` to display in the list:
 
@@ -127,7 +127,7 @@ The above manifest will render as a row like the below image:
 
 ### For `WorkflowTemplates`
 
-> v3.6 and after
+> v3.7 and after
 
 You can also add the `workflows.argoproj.io/title` and `workflows.argoproj.io/description` annotations with embedded markdown to a `WorkflowTemplate` to display in the list:
 
