@@ -6,9 +6,9 @@
         "src"
     ],
     "scripts": {
-        "build": "rm -Rf dist && NODE_ENV=production webpack --mode production --config ./src/app/webpack.config.js",
-        "start": "webpack-dev-server --config ./src/app/webpack.config.js",
-        "lint": "eslint --fix ./src/app && tsc --noEmit",
+        "build": "rm -Rf dist && NODE_ENV=production webpack --mode production",
+        "start": "webpack-dev-server",
+        "lint": "eslint --fix ./src && tsc --noEmit",
         "test": "jest",
         "deduplicate": "yarn-deduplicate -s fewer yarn.lock"
     },
@@ -16,7 +16,7 @@
         "node": ">=20"
     },
     "dependencies": {
-        "argo-ui": "git+https://github.com/argoproj/argo-ui.git#6de6bfedc0ec0625122dd5162371fc1932f8d428",
+        "argo-ui": "git+https://github.com/argoproj/argo-ui.git#54f36c723d9a0e5d3386689298cbb9c27767fa00",
         "chart.js": "^2.9.4",
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.5.1",
@@ -37,7 +37,6 @@
         "react-router-dom": "^4.2.2",
         "remark-gfm": "^3.0.0",
         "superagent": "^8.1.2",
-        "swagger-ui-react": "^5.17.12",
         "yaml": "^2.5.1"
     },
     "devDependencies": {
@@ -60,13 +59,12 @@
         "@types/react-helmet": "^6.1.11",
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^8.1.1",
-        "@types/swagger-ui-react": "^4.11.0",
         "@types/uuid": "^9.0.7",
         "@typescript-eslint/eslint-plugin": "^6.18.1",
         "@typescript-eslint/parser": "^6.10.0",
         "babel-jest": "^29.7.0",
         "copy-webpack-plugin": "^12.0.1",
-        "esbuild-loader": "^4.0.2",
+        "esbuild-loader": "^4.2.2",
         "eslint": "^8.56.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.1.3",

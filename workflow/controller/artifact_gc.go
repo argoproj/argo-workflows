@@ -438,7 +438,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					Name:            common.MainContainerName,
 					Image:           woc.controller.executorImage(),
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-					Args:            []string{"artifact", "delete", "--loglevel", getExecutorLogLevel()},
+					Args:            append([]string{"artifact", "delete"}, woc.getExecutorLogOpts()...),
 					Env: []corev1.EnvVar{
 						{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
 					},

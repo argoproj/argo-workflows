@@ -116,7 +116,7 @@ endif
 HACK_PKG_FILES_AS_PKGS ?= false
 ifeq ($(HACK_PKG_FILES_AS_PKGS),false)
 	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
-	CLI_PKG_FILES             := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	CLI_PKG_FILES             := $(shell [ -f ui/dist/app/index.html ] || (mkdir -p ui/dist/app && touch ui/dist/app/placeholder); go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
 	CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
 else
 # Building argoexec on windows cannot rebuild the openapi, we need to fall back to the old
@@ -166,25 +166,14 @@ endef
 cli: dist/argo
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
+ifeq ($(STATIC_FILES),true)
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
-
-$(GOPATH)/bin/staticfiles: Makefile
-# update this in Nix when updating it here
-ifneq ($(USE_NIX), true)
-	go install bou.ke/staticfiles@dd04075
-endif
-
-ifeq ($(STATIC_FILES),true)
-server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
-	# Pack UI into a Go file
-	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 else
-server/static/files.go:
-	# Building without static files
-	cp ./server/static/files.go.stub ./server/static/files.go
+	@mkdir -p ui/dist/app
+	touch ui/dist/app/index.html
 endif
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
@@ -199,16 +188,16 @@ dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argo-windows-%.gz: dist/argo-windows-%
 	gzip --force --keep dist/argo-windows-$*.exe
 
-dist/argo-windows-%: server/static/files.go $(CLI_PKG_FILES) go.sum
+dist/argo-windows-%: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: server/static/files.go $(CLI_PKG_FILES) go.sum
+dist/argo-%: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: server/static/files.go $(CLI_PKG_FILES) go.sum
+dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
@@ -304,7 +293,7 @@ endif
 $(GOPATH)/bin/controller-gen: Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
 endif
 $(GOPATH)/bin/go-to-protobuf: Makefile
 # update this in Nix when upgrading it here
@@ -455,7 +444,7 @@ $(GOPATH)/bin/golangci-lint: Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
 
 .PHONY: lint
-lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+lint: ui/dist/app/index.html $(GOPATH)/bin/golangci-lint
 	rm -Rf v3 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
@@ -472,7 +461,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go
+test: ui/dist/app/index.html
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 	# marker file, based on it's modification time, we know how long ago this target was run
@@ -667,7 +656,7 @@ dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.30.3/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.31.3/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor
@@ -703,11 +692,11 @@ go-diagrams/diagram.dot: ./hack/docs/diagram.go
 docs/assets/diagram.png: go-diagrams/diagram.dot
 	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
 
-docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docs/fields.go
+docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) ui/dist/app/index.html hack/docs/fields.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack/docs fields
 
 # generates several other files
-docs/cli/argo.md: $(CLI_PKG_FILES) go.sum server/static/files.go hack/docs/cli.go
+docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.go
 	go run ./hack/docs cli
 
 # docs

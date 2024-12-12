@@ -6,7 +6,7 @@ metadata:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
-      This workflow demonstrates running a parallel containers within a single pod.
+      This workflow demonstrates running parallel containers within a single pod.
     workflows.argoproj.io/version: ">= 3.1.0"
 spec:
   entrypoint: main
