@@ -1234,17 +1234,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (error, bool) 
 				woc.updated = true
 			}
 			woc.markNodeError(node.Name, errors.New("", "pod deleted"))
-			// Set pod's child(container) error if pod deleted
-			for _, childNodeID := range node.Children {
-				childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
-				if err != nil {
-					woc.log.Errorf("was unable to obtain node for %s", childNodeID)
-					continue
-				}
-				if childNode.Type == wfv1.NodeTypeContainer {
-					woc.markNodeError(childNode.Name, errors.New("", "container deleted"))
-				}
-			}
+			// Mark all its children(container) as deleted if pod deleted
+			woc.markAllContainersDeleted(node.ID)
 		}
 	}
 	return nil, !taskResultIncomplete
@@ -1260,6 +1251,28 @@ func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
 	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr("RECENTLY_STARTED_POD_DURATION", 10*time.Second)
+}
+
+// markAllContainersDeleted mark all its children(container) as deleted
+func (woc *wfOperationCtx) markAllContainersDeleted(nodeID string) {
+	node, err := woc.wf.Status.Nodes.Get(nodeID)
+	if err != nil {
+		woc.log.Errorf("was unable to obtain node for %s", nodeID)
+		return
+	}
+
+	for _, childNodeID := range node.Children {
+		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
+		if err != nil {
+			woc.log.Errorf("was unable to obtain node for %s", childNodeID)
+			continue
+		}
+		if childNode.Type == wfv1.NodeTypeContainer {
+			woc.markNodeError(childNode.Name, errors.New("", "container deleted"))
+			// Recursively mark successor node(container) as deleted
+			woc.markAllContainersDeleted(childNodeID)
+		}
+	}
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
