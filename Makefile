@@ -460,7 +460,7 @@ lint: ui/dist/app/index.html $(GOPATH)/bin/golangci-lint
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: ui/dist/app/index.html
+test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 	# marker file, based on it's modification time, we know how long ago this target was run
@@ -621,8 +621,21 @@ clean:
 	go clean
 	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
-# swagger
+# Build telemetry files
+TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
+docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+	@echo Rebuilding $@
+	go run ./util/telemetry/builder --metricsDocs $@
 
+util/telemetry/metrics_list.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+	@echo Rebuilding $@
+	go run ./util/telemetry/builder --metricsListGo $@
+
+util/telemetry/attributes.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+	@echo Rebuilding $@
+	go run ./util/telemetry/builder --attributesGo $@
+
+# swagger
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
@@ -707,7 +720,7 @@ ifneq ($(USE_NIX), true)
 endif
 
 .PHONY: docs-spellcheck
-docs-spellcheck: /usr/local/bin/mdspell
+docs-spellcheck: /usr/local/bin/mdspell docs/metrics.md
 	# check docs for spelling mistakes
 	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
@@ -732,7 +745,7 @@ endif
 
 
 .PHONY: docs-lint
-docs-lint: /usr/local/bin/markdownlint
+docs-lint: /usr/local/bin/markdownlint docs/metrics.md
 	# lint docs
 	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
 
