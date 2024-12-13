@@ -1,6 +1,6 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
@@ -11,16 +11,19 @@ import {useCollectEvent} from '../shared/use-collect-event';
 
 export function PluginList({match, history}: RouteComponentProps<any>) {
     // state for URL and query parameters
+    const isFirstRender = useRef(true);
     const [namespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('plugins' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                    namespace
-                })
-            ),
-        [namespace]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('plugins' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace
+            })
+        );
+    }, [namespace]);
     useCollectEvent('openedPlugins');
 
     return (
