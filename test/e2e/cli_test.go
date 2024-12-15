@@ -1500,7 +1500,7 @@ func (s *CLISuite) TestCronBackfillCommands() {
 			require.NoError(t, err)
 			assert.Contains(t, output, "There is no suitable scheduling time.")
 		})
-		s.Given().RunCli([]string{"cron", "backfill", "daily-job", "--start", "Wed, 21 Oct 2024 15:28:00 GMT", "--end", "Wed, 27 Oct 2024 15:28:00 GMT", "--argname", "date"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"cron", "backfill", "daily-job", "--start", "Wed, 21 Oct 2024 15:28:00 GMT", "--end", "Wed, 27 Oct 2024 15:28:00 GMT", "--argname", "date", "--parallel", "true"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
 			assert.Contains(t, output, "Backfill task for Cronworkflow daily-job")
 			assert.Contains(t, output, "Backfill Period :")
