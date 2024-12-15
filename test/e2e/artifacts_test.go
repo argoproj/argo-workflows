@@ -730,13 +730,9 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      steps:
-        - - name: a
-            template: wf1
-    - name: wf1
       resource:
         action: create
-        successCondition: status.phase == Test
+        successCondition: status.phase == Succeeded
         setOwnerReference: true
         manifest: |
           apiVersion: argoproj.io/v1alpha1
