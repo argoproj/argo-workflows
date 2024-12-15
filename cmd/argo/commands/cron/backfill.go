@@ -86,7 +86,13 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	}
 
 	ctx, apiClient, err := client.NewAPIClient(ctx)
+	if err != nil {
+		return err
+	}
 	cronClient, err := apiClient.NewCronWorkflowServiceClient()
+	if err != nil {
+		return err
+	}
 	wfClient := apiClient.NewWorkflowServiceClient()
 	req := cronworkflow.GetCronWorkflowRequest{
 		Name:      cronWFName,
