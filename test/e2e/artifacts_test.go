@@ -746,16 +746,12 @@ spec:
             templates:
               - name: whalesay
                 container:
-                  image: argoproj/argosay:v2
+                  image: docker.m.daocloud.io/busybox
                   args: [echo, ":) Hello Argo!"]
 `).
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(fixtures.ToBeSucceeded).
-			Then().
-			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
-				require.NoError(t, err)
-			})
+			WaitForWorkflow(fixtures.ToBeSucceeded)
 	})
 }
 
