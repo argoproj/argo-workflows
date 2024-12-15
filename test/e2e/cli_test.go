@@ -1508,6 +1508,7 @@ func (s *CLISuite) TestCronBackfillCommands() {
 			assert.Contains(t, output, "End Time : Wed, 27 Oct 2024 15:28:00 GMT")
 			assert.Contains(t, output, "Total Backfill Schedule: 6")
 		})
+		time.Sleep(60 * time.Second)
 	})
 }
 
