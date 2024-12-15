@@ -1484,6 +1484,33 @@ func (s *CLISuite) TestCronCommands() {
 	})
 }
 
+func (s *CLISuite) TestCronBackfillCommands() {
+	s.Run("Backfill", func() {
+		s.Given().RunCli([]string{"template", "create", "cron/cron-backfill-template.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Name:")
+			assert.Contains(t, output, "Namespace:")
+			assert.Contains(t, output, "Created:")
+		})
+		s.Given().RunCli([]string{"cron", "create", "cron/cron-daily-job.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Schedules:                     0 2 * * *")
+		})
+		s.Given().RunCli([]string{"cron", "backfill", "daily-job", "--start", "Wed, 21 Oct 2024 15:28:00 GMT", "--end", "Wed, 21 Oct 2024 16:28:00 GMT", "--argname", "date"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "There is no suitable scheduling time.")
+		})
+		s.Given().RunCli([]string{"cron", "backfill", "daily-job", "--start", "Wed, 21 Oct 2024 15:28:00 GMT", "--end", "Wed, 27 Oct 2024 15:28:00 GMT", "--argname", "date"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Backfill task for Cronworkflow daily-job")
+			assert.Contains(t, output, "Backfill Period :")
+			assert.Contains(t, output, "Start Time : Wed, 21 Oct 2024 15:28:00 GMT")
+			assert.Contains(t, output, "End Time : Wed, 27 Oct 2024 15:28:00 GMT")
+			assert.Contains(t, output, "Total Backfill Schedule: 6")
+		})
+	})
+}
+
 func (s *CLISuite) TestClusterTemplateCommands() {
 	s.Run("Create", func() {
 		s.Given().
