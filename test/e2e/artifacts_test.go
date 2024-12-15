@@ -725,7 +725,7 @@ func (s *ArtifactsSuite) TestResourceLog() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: resource-tmpl-wf
+  generateName: resource-tmpl-wf-
 spec:
   entrypoint: main
   templates:
