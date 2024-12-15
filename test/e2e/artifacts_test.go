@@ -718,6 +718,51 @@ func (s *ArtifactsSuite) TestMainLog() {
 	})
 }
 
+func (s *ArtifactsSuite) TestResourceLog() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resource-tmpl-wf
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            template: wf1
+    - name: wf1
+      resource:
+        action: create
+        successCondition: status.phase == Test
+        setOwnerReference: true
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: hello-world-
+            labels:
+              workflows.argoproj.io/test: "true"
+          spec:
+            entrypoint: whalesay
+            templates:
+              - name: whalesay
+                container:
+                  image: argoproj/argosay:v2
+                  args: [echo, ":) Hello Argo!"]
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+				require.NoError(t, err)
+			})
+	})
+}
+
 func (s *ArtifactsSuite) TestContainersetLogs() {
 	s.Run("Basic", func() {
 		s.Given().

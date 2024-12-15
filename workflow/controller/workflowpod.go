@@ -212,7 +212,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	if tmpl.GetType() != wfv1.TemplateTypeData {
+	if (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact()) {
 		// we do not need the wait container for data templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
