@@ -849,6 +849,13 @@ func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
+// ReportOutputsLogs updates the WorkflowTaskResult log fields
+func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context, artifacts []wfv1.Artifact) error {
+	var outputs wfv1.Outputs
+	outputs.Artifacts = artifacts
+	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &outputs})
+}
+
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
 	return retryutil.OnError(wait.Backoff{
 		Duration: time.Second,

@@ -34,7 +34,9 @@ func execResource(ctx context.Context, action string) error {
 
 	wfExecutor.InitializeOutput(bgCtx)
 	defer wfExecutor.HandleError(bgCtx)
-	defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+	if !wfExecutor.Template.SaveLogsAsArtifact() {
+		defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+	}
 	err := wfExecutor.StageFiles()
 	if err != nil {
 		wfExecutor.AddError(err)

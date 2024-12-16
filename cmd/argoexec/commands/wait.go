@@ -52,9 +52,7 @@ func waitContainer(ctx context.Context) error {
 		artifacts := wfv1.Artifacts{}
 		logArtifacts := wfExecutor.SaveLogs(bgCtx)
 		artifacts = append(artifacts, logArtifacts...)
-
-		// Try to upsert TaskResult. If it fails, we will try to update the Pod's Annotations
-		err = wfExecutor.ReportOutputs(bgCtx, artifacts)
+		err = wfExecutor.ReportOutputsLogs(bgCtx, artifacts)
 		if err != nil {
 			wfExecutor.AddError(err)
 		}

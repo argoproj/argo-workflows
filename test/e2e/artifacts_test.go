@@ -746,7 +746,8 @@ spec:
             templates:
               - name: whalesay
                 container:
-                  image: busybox
+                  image: argoproj/argosay:v2
+                  command: [sh, -c]
                   args: [echo, ":) Hello Argo!"]
 `).
 			When().
