@@ -2,6 +2,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: job
+  labels:
+    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: main
   arguments:
@@ -11,10 +13,14 @@ spec:
         value: yesterday
   templates:
     - name: main
+      metadata:
+        labels:
+          workflows.argoproj.io/test: "true"
       inputs:
         parameters:
           - name: date
       script:
+        imagePullPolicy: IfNotPresent
         image: busybox
         command:
           - sh
