@@ -3,22 +3,20 @@ package sqldb
 
 import (
 	"encoding/json"
-	"strconv"
 )
-
-type pair struct {
-	k string
-	v interface{}
-}
 
 func convertStrings(m map[string]interface{}) (map[string]interface{}, error) {
 	for k, v := range m {
 		switch v := v.(type) {
 		case string:
-			tmp := strconv.QuoteToASCII(v)
+			ms, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			tmp := string(ms)
 			tmp = tmp[1:]
 			tmp = tmp[:len(tmp)-1]
-			m[k] = tmp
+			m[k] = string(tmp)
 		case map[string]interface{}:
 			convertedInner, err := convertStrings(v)
 			if err != nil {

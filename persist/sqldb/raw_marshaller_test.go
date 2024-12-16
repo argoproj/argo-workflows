@@ -37,14 +37,14 @@ func TestStrings(t *testing.T) {
 
 	newMap, err := convertMap(s)
 	require.NoError(err)
-	assert.Contains(string(newMap["val"].(string)), "\\x00")
-	assert.Contains(string(newMap["val3"].(string)), "\\uc583")
+	assert.Contains(string(newMap["val"].(string)), "\\u0000")
+	assert.Contains(string(newMap["val3"].(string)), "\uc583")
 
 	innerMapI, ok := newMap["sstruct"]
 	require.True(ok)
 	innerMap, ok := innerMapI.(map[string]interface{})
 	require.True(ok)
-	assert.Contains(string((innerMap["val"]).(string)), "inner val \\uc589")
+	assert.Contains(string((innerMap["val"]).(string)), "inner val \uc589")
 
 	_, err = json.Marshal(newMap)
 	require.NoError(err)
