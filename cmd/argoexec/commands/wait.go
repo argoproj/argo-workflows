@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 )
@@ -31,15 +33,6 @@ func waitContainer(ctx context.Context) error {
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	bgCtx := context.Background()
 
-	if wfExecutor.Template.Resource != nil {
-		err := wfExecutor.Wait(ctx)
-		if err != nil {
-			wfExecutor.AddError(err)
-		}
-		wfExecutor.SaveLogs(bgCtx)
-		return wfExecutor.HasError()
-	}
-
 	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
 	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	defer stats.LogStats()
@@ -52,6 +45,20 @@ func waitContainer(ctx context.Context) error {
 	err := wfExecutor.Wait(ctx)
 	if err != nil {
 		wfExecutor.AddError(err)
+	}
+
+	if wfExecutor.Template.Resource != nil {
+		// Save log artifacts for resource template
+		artifacts := wfv1.Artifacts{}
+		logArtifacts := wfExecutor.SaveLogs(bgCtx)
+		artifacts = append(artifacts, logArtifacts...)
+
+		// Try to upsert TaskResult. If it fails, we will try to update the Pod's Annotations
+		err = wfExecutor.ReportOutputs(bgCtx, artifacts)
+		if err != nil {
+			wfExecutor.AddError(err)
+		}
+		return wfExecutor.HasError()
 	}
 
 	// Capture output script result
