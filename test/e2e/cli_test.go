@@ -445,7 +445,7 @@ func (s *CLISuite) TestRoot() {
 		})
 		s.Run("JSONOutput", func() {
 			s.Given().
-				RunCli([]string{"list", "-o", "json"}, func(t *testing.T, output string, err error) {
+				RunCli([]string{"list", "-o", "json", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 					require.NoError(t, err)
 					list := wfv1.Workflows{}
 					require.NoError(t, json.Unmarshal([]byte(output), &list))
@@ -454,7 +454,7 @@ func (s *CLISuite) TestRoot() {
 		})
 		s.Run("YAMLOutput", func() {
 			s.Given().
-				RunCli([]string{"list", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+				RunCli([]string{"list", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 					require.NoError(t, err)
 					list := wfv1.Workflows{}
 					require.NoError(t, yaml.UnmarshalStrict([]byte(output), &list))
