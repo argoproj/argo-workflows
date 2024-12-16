@@ -1488,9 +1488,6 @@ func (s *CLISuite) TestCronCommands() {
 			assert.Contains(t, output, "Schedules:                     * * * * *,*/2 * * * *")
 		})
 	})
-}
-
-func (s *CLISuite) TestCronBackfillCommands() {
 	s.Run("Backfill", func() {
 		s.Given().RunCli([]string{"template", "create", "cron/cron-backfill-template.yaml"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
