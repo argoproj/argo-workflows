@@ -1508,7 +1508,22 @@ func (s *CLISuite) TestCronBackfillCommands() {
 			assert.Contains(t, output, "End Time : Wed, 27 Oct 2024 15:28:00 GMT")
 			assert.Contains(t, output, "Total Backfill Schedule: 6")
 		})
-		time.Sleep(60 * time.Second)
+		s.Given().RunCli([]string{"watch", "@latest"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "2024-10-22 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-23 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-24 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-25 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-26 02:00:00 +0000 GMT")
+			assert.Contains(t, output, "2024-10-27 02:00:00 +0000 GMT")
+			require.Contains(t, output, "Status:              Succeeded")
+		})
+		s.Given().RunCli([]string{"cron", "delete", "daily-job"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
+		s.Given().RunCli([]string{"template", "delete", "job"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
 	})
 }
 
