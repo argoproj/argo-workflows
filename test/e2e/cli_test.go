@@ -1527,6 +1527,12 @@ func (s *CLISuite) TestCronBackfillCommands() {
 		s.Given().RunCli([]string{"template", "delete", "job"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
 		})
+		s.Given().RunCli([]string{"delete", "--prefix", "daily-job-backfill"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
+		s.Given().RunCli([]string{"delete", "--prefix", "backfill-wf"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
 	})
 }
 
