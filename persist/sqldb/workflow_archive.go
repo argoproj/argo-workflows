@@ -85,9 +85,19 @@ func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespa
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	logCtx := log.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
 	logCtx.Debug("Archiving workflow")
-	workflow, err := json.Marshal(wf)
-	if err != nil {
-		return err
+	var workflow []byte
+	var err error
+	if r.dbType == Postgres {
+		workflow, err = jsonMarshallRawStrings(wf)
+		if err != nil {
+			log.Errorf("was unable to marshal to json with raw strings: %s", err)
+			return err
+		}
+	} else {
+		workflow, err = json.Marshal(wf)
+		if err != nil {
+			return err
+		}
 	}
 	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
 		_, err := sess.
