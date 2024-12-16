@@ -1329,11 +1329,17 @@ func (s *CLISuite) TestCronCommands() {
 
 	// All files in this directory are CronWorkflows, expect success
 	s.Run("AllCron", func() {
+		s.Given().RunCli([]string{"template", "create", "cron/cron-backfill-template.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
 		s.Given().
 			RunCli([]string{"cron", "lint", "cron"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "no linting errors found!")
 			})
+		s.Given().RunCli([]string{"template", "delete", "job"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+		})
 	})
 
 	s.Run("Create", func() {
