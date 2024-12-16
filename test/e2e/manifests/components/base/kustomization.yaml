@@ -6,7 +6,6 @@ resources:
 
 patches:
 - path: argo-server-deployment.yaml
-- path: argo-server-cluster-workflow-template-rbac.yaml
 - path: workflow-controller-configmap.yaml
 - path: workflow-controller-deployment.yaml
 - path: workflow-controller-cluster-workflow-template-rbac.yaml
