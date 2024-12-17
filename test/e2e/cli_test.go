@@ -1521,15 +1521,6 @@ func (s *CLISuite) TestCronWorkflowsBackfillCommands() {
 			assert.Contains(t, output, "2024-10-24 02:00:00 +0000 GMT")
 			require.Contains(t, output, "Status:              Succeeded")
 		})
-		s.Given().RunCli([]string{"cron", "delete", "daily-job"}, func(t *testing.T, output string, err error) {
-			require.NoError(t, err)
-		})
-		s.Given().RunCli([]string{"template", "delete", "job"}, func(t *testing.T, output string, err error) {
-			require.NoError(t, err)
-		})
-		s.Given().RunCli([]string{"delete", "--prefix", "daily-job-backfill"}, func(t *testing.T, output string, err error) {
-			require.NoError(t, err)
-		})
 		s.Given().RunCli([]string{"delete", "--prefix", "backfill-wf"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
 		})
