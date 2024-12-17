@@ -141,7 +141,7 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	}
 	wfYamlStr := "apiVersion: argoproj.io/v1alpha1 \n" + string(yamlbyte)
 	if len(scheList) > 0 {
-		return CreateMonitorWf(ctx, wfYamlStr, client.Namespace(), scheList, wfClient, cliOps)
+		return CreateMonitorWf(ctx, wfYamlStr, client.Namespace(), cronWFName, scheList, wfClient, cliOps)
 	} else {
 		fmt.Print("There is no suitable scheduling time.")
 	}
@@ -196,10 +196,14 @@ var backfillWf = `{
 }
 `
 
-func CreateMonitorWf(ctx context.Context, wf, namespace string, scheTime []string, wfClient workflow.WorkflowServiceClient, cliOps backfillOpts) error {
+func CreateMonitorWf(ctx context.Context, wf, namespace, cronWFName string, scheTime []string, wfClient workflow.WorkflowServiceClient, cliOps backfillOpts) error {
 	const maxWfCount = 1000
 	var monitorWfObj v1alpha1.Workflow
 	err := json.Unmarshal([]byte(backfillWf), &monitorWfObj)
+	if monitorWfObj.ObjectMeta.Labels == nil {
+		monitorWfObj.ObjectMeta.Labels = make(map[string]string)
+	}
+	monitorWfObj.ObjectMeta.Labels[common.LabelKeyCronWorkflowBackfill] = cronWFName
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,9 @@ metadata:
     workflows.argoproj.io/test: "true"
 spec:
   entrypoint: main
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
   arguments:
     parameters:
       - name: date

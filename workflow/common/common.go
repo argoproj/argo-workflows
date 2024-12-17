@@ -98,6 +98,9 @@ const (
 	// LabelKeyCronWorkflowCompleted is a label applied to the cron workflow when the configured stopping condition is achieved
 	LabelKeyCronWorkflowCompleted = workflow.CronWorkflowFullName + "/completed"
 
+	// LabelKeyCronWorkflowBackfill is a label applied to the cron workflow when the workflow is created by backfill
+	LabelKeyCronWorkflowBackfill = workflow.WorkflowFullName + "/backfill"
+
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"

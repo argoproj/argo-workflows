@@ -40,7 +40,8 @@ import (
 
 const (
 	Namespace = "argo"
-	Label     = workflow.WorkflowFullName + "/test" // mark this workflow as a test
+	Label     = workflow.WorkflowFullName + "/test"     // mark this workflow as a test
+	Backfill  = workflow.WorkflowFullName + "/backfill" // clean backfill workflows
 )
 
 var timeoutBias = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
@@ -184,6 +185,17 @@ func (s *E2ESuite) DeleteResources() {
 		})
 		s.CheckError(err)
 		for _, w := range workflows {
+			err := archive.DeleteWorkflow(string(w.UID))
+			s.CheckError(err)
+		}
+		parse, err = labels.ParseToRequirements(Backfill)
+		s.CheckError(err)
+		backfillWorkflows, err := archive.ListWorkflows(utils.ListOptions{
+			Namespace:         Namespace,
+			LabelRequirements: parse,
+		})
+		s.CheckError(err)
+		for _, w := range backfillWorkflows {
 			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
 		}
