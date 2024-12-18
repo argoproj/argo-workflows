@@ -104,27 +104,19 @@ spec:
 
                     cd /work && echo 'Building Argo CLI...' && make cli STATIC_FILES=false # Change to the work directory, Build the Argo CLI
 
-        - - name: create-exec-image # Builds the Argo Exec image
+        - - name: build-images # Builds the Argo Exec and CLI images in parallel
             template: create-image
             arguments:
               parameters:
                 - name: path
                   value: "{{workflow.parameters.exec-path}}"
-                - name: image
-                  value: "{{workflow.parameters.image}}"
                 - name: tag
                   value: "{{workflow.parameters.tag}}"
-
-          - name: create-cli-image # Builds the Argo CLI image in parallel
-            template: create-image
-            arguments:
-              parameters:
-                - name: path
-                  value: "{{workflow.parameters.cli-path}}"
                 - name: image
-                  value: "{{workflow.parameters.image}}"
-                - name: tag
-                  value: "{{workflow.parameters.tag}}"
+                  value: "{{item}}"
+            withItems:
+              - argoexec
+              - argocli
 
         - - name: run-tests # Runs unit tests for Argo Workflows
             template: golang-step
@@ -278,10 +270,10 @@ spec:
           - "--local" # Local build
           - dockerfile=. # Dockerfile path
           - "--output" # Creates image with tag and pushes to registry
-          - >- # Image prefix, name and tag - e.g., quay.io/argoproj/argoexec:latest
+          - >- # Image prefix, name and tag - i.e. quay.io/argoproj/argoexec:latest
             type=image,name={{inputs.parameters.image}}{{inputs.parameters.path}}:{{inputs.parameters.tag}},push=true
           - "--opt" # Build options
-          - target={{inputs.parameters.path}} # Target path (e.g., argocli or argoexec)
+          - target={{inputs.parameters.path}} # Target path (i.e. argocli or argoexec)
         workingDir: /work/ # Working directory
         env:
           - name: BUILDKITD_FLAGS # Buildkit flags environment variable
@@ -598,7 +590,7 @@ spec:
       - name: repo
         value: https://github.com/argoproj/argo-workflows.git # Repository URL
       - name: branch
-        value: refs/heads/main # Branch name from the webhook payload (e.g., refs/heads/main, refs/heads/feature-branch)
+        value: refs/heads/main # Branch name from the webhook payload (i.e. refs/heads/main, refs/heads/feature-branch)
       - name: name
         value: wesleyscholl # GitHub username
       - name: email
