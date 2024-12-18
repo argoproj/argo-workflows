@@ -1,7 +1,7 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 
 import {uiUrl} from '../../../shared/base';
@@ -58,6 +58,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
+    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
         const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
@@ -126,6 +127,10 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     // save history and localStorage
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         // add empty selectedPhases + selectedLabels for forward-compat w/ old version: previous code relies on them existing, so if you move up a version and back down, it breaks
         const options = {selectedPhases: [], selectedLabels: []} as unknown as WorkflowListRenderOptions;
         options.phases = phases;
