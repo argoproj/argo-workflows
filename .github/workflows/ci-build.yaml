@@ -155,26 +155,31 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   build-binaries:
-    name: build-binaries
+    name: Build Binaries
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: controller
+          - target: cli
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version: "1.23"
           cache: true
-      - name: Build controller
-        run: make controller
-      - name: Build CLI
-        run: make cli
-      - name: Upload binaries
+      - name: Build
+        run: make ${{matrix.target}}
+      - name: Upload
         uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
         with:
-          name: binaries
+          name: ${{matrix.target}}
           path: dist
+          if-no-files-found: error
 
   argo-images:
     name: argo-images
@@ -320,10 +325,16 @@ jobs:
           set -eux
           docker load < /tmp/argoexec_image.tar/argoexec_image.tar
           docker load < /tmp/argocli_image.tar/argocli_image.tar
-      - name: Download binaries
+      - name: Download controller
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          name: binaries
+          name: controller
+          path: dist/
+      - name: Download CLI
+        if: ${{matrix.use-api}}
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: cli
           path: dist/
       - name: Set-up /etc/hosts
         run: |
