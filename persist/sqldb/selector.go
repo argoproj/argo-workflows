@@ -1,6 +1,8 @@
 package sqldb
 
 import (
+	"time"
+
 	"github.com/upper/db/v4"
 
 	"github.com/argoproj/argo-workflows/v3/server/utils"
@@ -52,6 +54,12 @@ func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName st
 		if nameFilter == "Prefix" {
 			clauses = append(clauses, db.Raw("name like ?", options.Name+"%"))
 		}
+	}
+	if !options.CreatedAfter.IsZero() {
+		clauses = append(clauses, db.Raw("json_extract(workflow, '$.metadata.creationTimestamp') >= ?", options.CreatedAfter.Format(time.RFC3339)))
+	}
+	if !options.FinishedBefore.IsZero() {
+		clauses = append(clauses, db.Raw("finishedat <= ?", options.FinishedBefore))
 	}
 	if options.NamePrefix != "" {
 		clauses = append(clauses, db.Raw("name like ?", options.NamePrefix+"%"))
