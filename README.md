@@ -8,6 +8,7 @@
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-argoproj-blue.svg?logo=linkedin)](https://www.linkedin.com/company/argoproj/)
 [![Release Version](https://img.shields.io/github/v/release/argoproj/argo-workflows?label=argo-workflows)](https://github.com/argoproj/argo-workflows/releases/latest)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/argo-workflows)](https://artifacthub.io/packages/helm/argo/argo-workflows)
+[![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Argo%20Workflows%20Guru-006BFF)](https://gurubase.io/g/argo-workflows)
 
 ## What is Argo Workflows?
 
