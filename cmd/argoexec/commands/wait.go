@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 )
@@ -49,10 +47,7 @@ func waitContainer(ctx context.Context) error {
 
 	if wfExecutor.Template.Resource != nil {
 		// Save log artifacts for resource template
-		artifacts := wfv1.Artifacts{}
-		logArtifacts := wfExecutor.SaveLogs(bgCtx)
-		artifacts = append(artifacts, logArtifacts...)
-		err = wfExecutor.ReportOutputsLogs(bgCtx, artifacts)
+		err = wfExecutor.ReportOutputsLogs(bgCtx)
 		if err != nil {
 			wfExecutor.AddError(err)
 		}

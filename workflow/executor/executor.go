@@ -850,8 +850,11 @@ func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.
 }
 
 // ReportOutputsLogs updates the WorkflowTaskResult log fields
-func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context, artifacts []wfv1.Artifact) error {
+func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
 	var outputs wfv1.Outputs
+	artifacts := wfv1.Artifacts{}
+	logArtifacts := we.SaveLogs(ctx)
+	artifacts = append(artifacts, logArtifacts...)
 	outputs.Artifacts = artifacts
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &outputs})
 }
