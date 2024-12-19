@@ -253,21 +253,8 @@ export const WorkflowsService = {
         const getLogsFromArtifact = () => this.getContainerLogsFromArtifact(workflow, nodeId, container, grep, archived);
         const getLogsFromCluster = () => this.getContainerLogsFromCluster(workflow, podName, container, grep);
 
-        // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely
-        // that the Workflow and associated pods have been deleted
-        if (archived) {
-            return getLogsFromArtifact();
-        }
-
-        // return archived log if main container is finished and has artifact
-        return from(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
-            switchMap(isPendingOrRunning => {
-                if (!isPendingOrRunning && hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
-                    return getLogsFromArtifact().pipe(catchError(getLogsFromCluster));
-                }
-                return getLogsFromCluster().pipe(catchError(getLogsFromArtifact));
-            })
-        );
+        // Try artifact logs first, fall back to cluster logs if artifact logs are unavailable
+        return getLogsFromArtifact().pipe(catchError(getLogsFromCluster));
     },
 
     getArtifactLogsPath(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
