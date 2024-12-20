@@ -87,6 +87,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -314,6 +316,8 @@ Workflow is the definition of a workflow resource
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
@@ -553,6 +557,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -772,6 +778,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
@@ -1006,6 +1014,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -1226,6 +1236,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -1376,6 +1388,8 @@ Arguments to a template
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -1491,6 +1505,8 @@ Arguments to a template
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
 
@@ -1654,6 +1670,8 @@ RetryStrategy provides controls on how to retry a workflow step
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-disable-failFast.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -1669,6 +1687,8 @@ RetryStrategy provides controls on how to retry a workflow step
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-with-steps.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 
@@ -1690,6 +1710,10 @@ Synchronization holds synchronization lock configuration
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -2013,6 +2037,10 @@ SynchronizationStatus stores the status of semaphore and mutex.
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
@@ -2226,6 +2254,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -2339,6 +2369,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
 
@@ -2467,6 +2499,10 @@ Mutex holds Mutex configuration
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
@@ -2570,6 +2606,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -2661,6 +2699,8 @@ _No description available_
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
@@ -2680,6 +2720,8 @@ _No description available_
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-nginx.yaml)
 
 - [`sidecar.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -2781,6 +2823,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -2903,6 +2947,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
 
@@ -3218,6 +3264,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
 
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
+
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps.yaml)
@@ -3362,6 +3410,10 @@ MutexStatus contains which objects hold mutex locks, and which objects this work
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`synchronization-mutex-tmpl-level-legacy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level-legacy.yaml)
 
@@ -3565,6 +3617,8 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
@@ -3584,6 +3638,8 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-nginx.yaml)
 
 - [`sidecar.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 </details>
@@ -3911,6 +3967,8 @@ ContainerSetRetryStrategy provides controls on how to retry a container set
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-disable-failFast.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -3926,6 +3984,8 @@ ContainerSetRetryStrategy provides controls on how to retry a container set
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-with-steps.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 
@@ -3964,6 +4024,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-continue-on-fail.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -4237,9 +4299,13 @@ Sequence expands a workflow step into numeric range
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
@@ -4779,6 +4845,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -4998,6 +5066,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
@@ -5321,6 +5391,8 @@ _No description available_
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cluster-workflow-template/clustertemplates.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-disable-failFast.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -5334,6 +5406,8 @@ _No description available_
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-with-steps.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 
@@ -5406,6 +5480,8 @@ A single application container that you want to run within a pod.
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-continue-on-fail.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
@@ -5596,6 +5672,8 @@ A single application container that you want to run within a pod.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
@@ -6385,6 +6463,8 @@ ImageVolumeSource represents a image volume resource.
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
@@ -6592,6 +6672,8 @@ ImageVolumeSource represents a image volume resource.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/step-level-timeout.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-inline-workflow.yaml)
 
@@ -6955,9 +7037,13 @@ HTTPGetAction describes an action based on HTTP Get requests.
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/daemon-step.yaml)
 
+- [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-task.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/influxdb-ci.yaml)
+
+- [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 </details>
 
 ### Fields
