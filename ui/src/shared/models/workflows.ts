@@ -941,7 +941,7 @@ export interface DAGTask {
     /**
      * Dependencies are name of other targets which this depends on
      */
-    dependencies?: string[];
+    depends?: string;
     onExit?: string;
     withItems?: any[];
     withParam?: string;
