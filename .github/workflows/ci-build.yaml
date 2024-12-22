@@ -154,6 +154,33 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  build-binaries:
+    name: Build Binaries
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: controller
+          - target: cli
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: "1.23"
+          cache: true
+      - name: Build
+        run: make ${{matrix.target}}
+      - name: Upload
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        with:
+          name: ${{matrix.target}}
+          path: dist
+          if-no-files-found: error
+
   argo-images:
     name: argo-images
     # needs: [ lint ]
@@ -186,7 +213,7 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
-    needs: [ changed-files, argo-images ]
+    needs: [ changed-files, argo-images, build-binaries ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-24.04
     # These tests usually finish in ~25m, but occasionally they take much longer due to resource
@@ -298,6 +325,17 @@ jobs:
           set -eux
           docker load < /tmp/argoexec_image.tar/argoexec_image.tar
           docker load < /tmp/argocli_image.tar/argocli_image.tar
+      - name: Download controller
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: controller
+          path: dist/
+      - name: Download CLI
+        if: ${{matrix.use-api}}
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: cli
+          path: dist/
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -307,11 +345,6 @@ jobs:
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
       - name: Install manifests
         run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
-      - name: Build controller
-        run: make controller kit STATIC_FILES=false
-      - name: Build CLI
-        run: make cli STATIC_FILES=false
-        if: ${{matrix.use-api}}
       - name: Start controller/API
         run: |
           make start PROFILE=${{matrix.profile}} \
