@@ -7,6 +7,7 @@ import {WorkflowParametersEditor} from '../shared/components/editors/workflow-pa
 import {ObjectEditor} from '../shared/components/object-editor';
 import type {Lang} from '../shared/components/object-parser';
 import {WorkflowTemplate} from '../shared/models';
+import {GraphViewer} from '../shared/components/editors/graph-viewer';
 
 export function WorkflowTemplateEditor({
     onChange,
@@ -67,7 +68,13 @@ export function WorkflowTemplateEditor({
                             onChange={workflowMetadata => onChange({...template, spec: {...template.spec, workflowMetadata}})}
                         />
                     )
+                },
+                {
+                    key: 'graph',
+                    title: 'Graph',
+                    content: <GraphViewer workflow={template} />
                 }
+
             ]}
         />
     );

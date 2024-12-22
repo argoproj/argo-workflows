@@ -2,11 +2,11 @@ import * as React from 'react';
 
 import {genres} from '../../../workflows/components/workflow-dag/genres';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
-import {DAGTask, Template, Workflow} from '../../models';
+import {DAGTask, Template, Workflow, WorkflowTemplate} from '../../models';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
 
-export function GraphViewer({workflow}: {workflow: Workflow}) {
+export function GraphViewer({workflow}: {workflow: Workflow | WorkflowTemplate}) {
     function populateGraphFromWorkflow(workflow: Workflow, name: string): Graph {
         const graph = new Graph();
 
