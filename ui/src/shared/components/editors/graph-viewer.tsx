@@ -12,16 +12,15 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
 
         const templates = workflow.spec.templates;
         const templateMap = new Map();
+        const templateLeafMap = new Map();
 
-        // Map templates by their names for quick lookup
         templates.forEach((template: Template) => {
             templateMap.set(template.name, template);
+            templateLeafMap.set(template.name, getLeafNodes(template));
         });
 
-        // Start with the entrypoint
         const entrypoint = workflow.spec.entrypoint;
 
-        // Recursive function to process a template
         function processTemplate(templateName: string, parentTaskName: string = null): Graph {
             const template = templateMap.get(templateName);
 
@@ -30,9 +29,7 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
                 return;
             }
 
-            // Check if the template is a DAG or a single pod
             if (template.dag) {
-                // Add a DAG node
                 graph.nodes.set(parentTaskName, {
                     label: parentTaskName,
                     genre: 'DAG',
@@ -41,25 +38,33 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
                     icon: 'clock'
                 });
 
-                // Process each task in the DAG
                 template.dag.tasks.forEach((task: DAGTask) => {
                     const taskName = parentTaskName ? `${parentTaskName}.${task.name}` : task.name;
 
-                    // Add the task node
                     graph.nodes.set(taskName, {
-                        label: taskName,
+                        label: task.name,
                         genre: templateMap.has(task.template) && templateMap.get(task.template).dag ? 'DAG' : 'Pod',
                         classNames: 'Pending',
                         progress: 0,
                         icon: 'clock'
                     });
 
-                    // Add edges based on "depends" field
                     if (task.depends) {
                         const dependencies = parseDepends(task.depends);
                         dependencies.forEach((dep: string) => {
-                            const dependentTaskName = parentTaskName ? `${parentTaskName}.${dep}` : dep;
-                            graph.edges.set({v: dependentTaskName, w: taskName}, {});
+                            const dependancyName = `${parentTaskName}.${dep}`;
+                            if (graph.nodes.get(dependancyName).genre !== 'DAG') {
+                                graph.edges.set({v: dependancyName, w: taskName}, {});
+                            } else {
+                                // Override edge to be from last element of DAG if dep is a DAG.
+                                const depTemplate = getTemplateNameFromTask(template.dag, dep);
+                                const templateLeafNodes = templateLeafMap.get(depTemplate);
+                                if (templateLeafNodes) {
+                                    templateLeafNodes.forEach((leaf: string) => {
+                                        graph.edges.set({v: `${dependancyName}.${leaf}`, w: taskName}, {});
+                                    });
+                                }
+                            }
                         });
                     } else {
                         // Add an edge from the parent template to the task
@@ -72,8 +77,6 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
                     }
                 });
             } else {
-                // If it's not a DAG, treat it as a Pod
-
                 // Edge case when workflow consists of only one template
                 if (templateMap.size === 1) {
                     templateName = parentTaskName;
@@ -88,7 +91,6 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
                     icon: 'clock'
                 });
 
-                // If there's a parent task, add an edge
                 if (parentTaskName) {
                     graph.edges.set({v: parentTaskName, w: templateName}, {});
                 }
@@ -97,10 +99,9 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
         processTemplate(entrypoint, name);
 
         return graph;
-
-        function parseDepends(dependsString: string) {
-            return dependsString.split(/&&|\|\|/).map(s => s.trim());
-        }
+    }
+    function parseDepends(dependsString: string) {
+        return dependsString.split(/&&|\|\|/).map(s => s.trim());
     }
 
     function generateNamePostfix(len: number): string {
@@ -113,6 +114,30 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
         return result;
     }
 
+    function getLeafNodes(template: Template) {
+        const allTaskNames = new Set<string>();
+        const dependentTaskNames = new Set<string>();
+
+        if (template.dag) {
+            template.dag.tasks.forEach((task: DAGTask) => {
+                allTaskNames.add(task.name);
+                if (task.depends) {
+                    const dependencies = parseDepends(task.depends);
+                    dependencies.forEach((dep: string) => {
+                        dependentTaskNames.add(dep);
+                    });
+                }
+            });
+        }
+        const independentTasks: string[] = Array.from(allTaskNames).filter(taskName => !dependentTaskNames.has(taskName));
+
+        return independentTasks ? independentTasks : null;
+    }
+
+    function getTemplateNameFromTask(dag: {tasks: {name: string; template: string}[]}, taskName: string): string | null {
+        const task = dag.tasks.find(t => t.name === taskName);
+        return task ? task.template : null;
+    }
     const state = {
         expandNodes: new Set(''),
         showArtifacts: localStorage.getItem('showArtifacts') !== 'false',
@@ -122,6 +147,7 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
 
     const name = workflow.metadata.name ?? `${workflow.metadata.generateName}${generateNamePostfix(5)}`;
     const graph = populateGraphFromWorkflow(workflow, name);
+
     return (
         <GraphPanel
             storageScope='workflow-dag'
@@ -129,13 +155,13 @@ export function GraphViewer({workflow}: {workflow: Workflow}) {
             nodeGenresTitle={'Node Type'}
             nodeGenres={genres}
             nodeClassNamesTitle={'Node Phase'}
-            nodeClassNames={{'': true, 'Pending': true, 'Ready': true, 'Running': true, 'Failed': true, 'Succeeded': true, 'Error': true}}
+            nodeClassNames={{Pending: true}}
             nodeTagsTitle={'Template'}
             nodeTags={{[name]: true}}
             nodeSize={64}
             defaultIconShape='circle'
             hideNodeTypes={true}
-            hideOptions={false}
+            hideOptions={true}
             options={<WorkflowDagRenderOptionsPanel {...state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
         />
     );
