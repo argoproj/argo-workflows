@@ -238,6 +238,9 @@ jobs:
           - test: test-api
             profile: mysql
             use-api: true
+          - test: test-api
+            profile: postgres
+            use-api: true
           - test: test-cli
             profile: mysql
             use-api: true
