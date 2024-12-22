@@ -1006,6 +1006,9 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
   workflowSpec:
     podGC:
       strategy: OnPodCompletion
