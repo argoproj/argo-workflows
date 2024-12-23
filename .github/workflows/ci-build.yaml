@@ -280,8 +280,6 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           printf "==> Available space after cleanup\n"
           df -h
-      - name: Install socat (needed by Kubernetes)
-        run: sudo apt-get -y install socat
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
@@ -300,6 +298,8 @@ jobs:
         with:
           python-version: '3.x'
           cache: pip
+      - name: Install socat (needed by Kubernetes) and kit
+        run: sudo apt-get -y install socat && make kit
       - name: Install and start K3S
         run: |
           if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
@@ -339,6 +339,8 @@ jobs:
         with:
           name: cli
           path: dist/
+      - name: Prepare binaries
+        run: chmod +x dist/* && make --touch dist/*
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -346,8 +348,6 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
-      - name: Install manifests
-        run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
       - name: Start controller/API
         run: |
           make start PROFILE=${{matrix.profile}} \
