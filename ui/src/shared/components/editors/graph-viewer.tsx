@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import {genres} from '../../../workflows/components/workflow-dag/genres';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
-import {DAGTask, Template, Workflow, WorkflowTemplate, CronWorkflow, ClusterWorkflowTemplate, WorkflowSpec} from '../../models';
+import {DAGTask, Template, Workflow, WorkflowTemplate, CronWorkflow, ClusterWorkflowTemplate} from '../../models';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
 import {services} from '../../services';
@@ -119,19 +119,20 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                         icon: 'clock'
                     });
 
-                    if (task.depends) {
-                        const dependencies = parseDepends(task.depends);
+                    if (task.depends || task.dependencies) {
+                        const dependencies = task.dependencies ? task.dependencies : parseDepends(task.depends);
+                        const dependencyLabel = task.depends ? task.depends : task.dependencies.join(' && ');
                         dependencies.forEach((dep: string) => {
                             const dependancyName = `${parentTaskName}.${dep}`;
                             if (graph.nodes.get(dependancyName).genre !== 'DAG') {
-                                graph.edges.set({v: dependancyName, w: taskName}, {});
+                                graph.edges.set({v: dependancyName, w: taskName}, {label: dependencyLabel});
                             } else {
                                 // Override edge to be from last element of DAG if dep is a DAG.
                                 const depTemplate = getTemplateNameFromTask(template.dag, dep);
                                 const templateLeafNodes = templateLeafMap.get(depTemplate);
                                 if (templateLeafNodes) {
                                     templateLeafNodes.forEach((leaf: string) => {
-                                        graph.edges.set({v: `${dependancyName}.${leaf}`, w: taskName}, {});
+                                        graph.edges.set({v: `${dependancyName}.${leaf}`, w: taskName}, {label: dependencyLabel});
                                     });
                                 }
                             }
@@ -169,8 +170,15 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
 
         return graph;
     }
-    function parseDepends(dependsString: string) {
-        return dependsString.split(/&&|\|\|/).map(s => s.trim());
+    function parseDepends(dependsString: string): string[] {
+        const taskNameRegex = /([a-zA-Z0-9-_]+)(?:\.[a-zA-Z]+)?/g;
+        const taskNames = new Set<string>();
+        let match;
+        while ((match = taskNameRegex.exec(dependsString)) !== null) {
+            taskNames.add(match[1]);
+        }
+
+        return Array.from(taskNames);
     }
 
     function generateNamePostfix(len: number): string {

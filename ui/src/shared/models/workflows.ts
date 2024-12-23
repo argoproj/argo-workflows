@@ -920,7 +920,7 @@ export interface Sequence {
     count?: number;
 }
 
-export interface DAGTask {
+export interface BaseDAGTask {
     name: string;
 
     /**
@@ -938,15 +938,23 @@ export interface DAGTask {
      */
     arguments?: Arguments;
 
-    /**
-     * Dependencies are name of other targets which this depends on
-     */
-    depends?: string;
     onExit?: string;
     withItems?: any[];
     withParam?: string;
     withSequence?: Sequence;
 }
+
+/**
+ * DAGTask interface allows either `depends` or `dependencies`, but not both.
+ */
+export type DAGTask = BaseDAGTask &
+    (
+        /**
+         * Dependencies are name of other targets which this depends on
+         */
+        | {depends?: string; dependencies?: never}
+        | {depends?: never; dependencies?: string[]}
+    );
 
 /**
  * WorkflowStep is a reference to a template to execute in a series of step
