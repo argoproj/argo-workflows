@@ -299,6 +299,10 @@ jobs:
           python-version: '3.x'
           cache: pip
       - name: Install socat (needed by Kubernetes) and kit
+        # socat is needed for "kubectl port-forward" to work when using cri-dockerd: https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46
+        # Both cri-o and containerd removed it as a dependency awhile ago, but that hasn't been ported to cri-dockerd.
+        # Running "make kit" isn't strictly necessary, since it would be installed automatically by "make start",
+        # but it's noisy and makes the logs for "Start controller/API" hard to follow.
         run: sudo apt-get -y install socat && make kit
       - name: Install and start K3S
         run: |
