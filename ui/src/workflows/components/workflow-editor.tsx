@@ -61,7 +61,7 @@ export function WorkflowEditor({
                 {
                     key: 'graph',
                     title: 'Graph',
-                    content: <GraphViewer workflow={workflow} />
+                    content: <GraphViewer workflowDefinition={workflow} />
                 }
             ]}
         />

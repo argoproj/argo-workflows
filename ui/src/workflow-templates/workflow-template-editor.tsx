@@ -72,7 +72,7 @@ export function WorkflowTemplateEditor({
                 {
                     key: 'graph',
                     title: 'Graph',
-                    content: <GraphViewer workflow={template} />
+                    content: <GraphViewer workflowDefinition={template} />
                 }
 
             ]}

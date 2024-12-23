@@ -2,11 +2,64 @@ import * as React from 'react';
 
 import {genres} from '../../../workflows/components/workflow-dag/genres';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
-import {DAGTask, Template, Workflow, WorkflowTemplate} from '../../models';
+import {DAGTask, Template, Workflow, WorkflowTemplate, CronWorkflow, ClusterWorkflowTemplate} from '../../models';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
+import {services} from '../../services';
+import {useEffect, useState} from 'react';
 
-export function GraphViewer({workflow}: {workflow: Workflow | WorkflowTemplate}) {
+export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate | CronWorkflow}) {
+    const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>(workflowDefinition);
+    const [isLoading, setIsLoading] = useState(true); // To track if data is still loading
+
+    useEffect(() => {
+        if (workflow.spec.workflowTemplateRef) {
+            setWorkflowFromRefrence(workflow.spec.workflowTemplateRef.name).then(() => {
+                setIsLoading(false);
+            });
+        } else {
+            setIsLoading(false);
+        }
+    }, [workflow]);
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
+
+    const state = {
+        expandNodes: new Set(''),
+        showArtifacts: false,
+        showInvokingTemplateName: false,
+        showTemplateRefsGrouping: false,
+    };
+
+    const name = workflow.metadata.name ?? `${workflow.metadata.generateName}${generateNamePostfix(5)}`;
+    const graph = populateGraphFromWorkflow(workflow, name);
+
+    return (
+        <GraphPanel
+            storageScope='workflow-dag'
+            graph={graph}
+            nodeGenresTitle={'Node Type'}
+            nodeGenres={genres}
+            nodeClassNamesTitle={'Node Phase'}
+            nodeClassNames={{Pending: true}}
+            nodeTagsTitle={'Template'}
+            nodeTags={{[name]: true}}
+            nodeSize={64}
+            defaultIconShape='circle'
+            hideNodeTypes={false}
+            hideOptions={true}
+            options={<WorkflowDagRenderOptionsPanel {...state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
+        />
+    );
+
+    function setWorkflowFromRefrence(name: string): Promise<void> {
+        return services.workflowTemplate.get(name, workflowDefinition.metadata.namespace).then((workflowTemplate) => {
+            setWorkflow(workflowTemplate);
+        });
+    }
+
     function populateGraphFromWorkflow(workflow: Workflow, name: string): Graph {
         const graph = new Graph();
 
@@ -21,6 +74,7 @@ export function GraphViewer({workflow}: {workflow: Workflow | WorkflowTemplate})
 
         const entrypoint = workflow.spec.entrypoint;
 
+
         function processTemplate(templateName: string, parentTaskName: string = null): Graph {
             const template = templateMap.get(templateName);
 
@@ -28,6 +82,7 @@ export function GraphViewer({workflow}: {workflow: Workflow | WorkflowTemplate})
                 console.error(`Template "${templateName}" not found.`);
                 return;
             }
+
 
             if (template.dag) {
                 graph.nodes.set(parentTaskName, {
@@ -138,31 +193,4 @@ export function GraphViewer({workflow}: {workflow: Workflow | WorkflowTemplate})
         const task = dag.tasks.find(t => t.name === taskName);
         return task ? task.template : null;
     }
-    const state = {
-        expandNodes: new Set(''),
-        showArtifacts: localStorage.getItem('showArtifacts') !== 'false',
-        showInvokingTemplateName: localStorage.getItem('showInvokingTemplateName') === 'true',
-        showTemplateRefsGrouping: localStorage.getItem('showTemplateRefsGrouping') === 'true'
-    };
-
-    const name = workflow.metadata.name ?? `${workflow.metadata.generateName}${generateNamePostfix(5)}`;
-    const graph = populateGraphFromWorkflow(workflow, name);
-
-    return (
-        <GraphPanel
-            storageScope='workflow-dag'
-            graph={graph}
-            nodeGenresTitle={'Node Type'}
-            nodeGenres={genres}
-            nodeClassNamesTitle={'Node Phase'}
-            nodeClassNames={{Pending: true}}
-            nodeTagsTitle={'Template'}
-            nodeTags={{[name]: true}}
-            nodeSize={64}
-            defaultIconShape='circle'
-            hideNodeTypes={true}
-            hideOptions={true}
-            options={<WorkflowDagRenderOptionsPanel {...state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
-        />
-    );
 }
