@@ -9,6 +9,7 @@ import type {Lang} from '../shared/components/object-parser';
 import {CronWorkflow} from '../shared/models';
 import {CronWorkflowSpecEditor} from './cron-workflow-spec-editior';
 import {CronWorkflowStatusViewer} from './cron-workflow-status-viewer';
+import {GraphViewer} from '../shared/components/editors/graph-viewer';
 
 export function CronWorkflowEditor({
     selectedTabKey,
@@ -38,12 +39,12 @@ export function CronWorkflowEditor({
             tabs={[
                 ...(cronWorkflow.status
                     ? [
-                          {
-                              key: 'status',
-                              title: 'Status',
-                              content: <CronWorkflowStatusViewer spec={cronWorkflow.spec} status={cronWorkflow.status} />
-                          }
-                      ]
+                        {
+                            key: 'status',
+                            title: 'Status',
+                            content: <CronWorkflowStatusViewer spec={cronWorkflow.spec} status={cronWorkflow.status} />
+                        }
+                    ]
                     : []),
                 {
                     key: 'manifest',
@@ -94,6 +95,11 @@ export function CronWorkflowEditor({
                             }
                         />
                     )
+                },
+                {
+                    key: 'graph',
+                    title: 'Graph',
+                    content: <GraphViewer workflowDefinition={cronWorkflow} />
                 }
             ]}
         />

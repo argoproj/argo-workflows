@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import {genres} from '../../../workflows/components/workflow-dag/genres';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
-import {DAGTask, Template, Workflow, WorkflowTemplate, CronWorkflow, ClusterWorkflowTemplate} from '../../models';
+import {DAGTask, Template, Workflow, WorkflowTemplate, CronWorkflow, ClusterWorkflowTemplate, WorkflowSpec} from '../../models';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
 import {services} from '../../services';
@@ -10,14 +10,20 @@ import {useEffect, useState} from 'react';
 
 export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate | CronWorkflow}) {
     const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>(workflowDefinition);
-    const [isLoading, setIsLoading] = useState(true); // To track if data is still loading
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (workflow.spec.workflowTemplateRef) {
-            setWorkflowFromRefrence(workflow.spec.workflowTemplateRef.name).then(() => {
+
+        if ("workflowTemplateRef" in workflowDefinition.spec) {
+            setWorkflowFromRefrence(workflowDefinition.spec.workflowTemplateRef.name).then(() => {
                 setIsLoading(false);
             });
-        } else {
+        } else if ("workflowSpec" in workflowDefinition.spec) {
+            const convertedCronWorkflow = convertFromCronWorkflow(workflowDefinition as CronWorkflow);
+            setWorkflow(convertedCronWorkflow);
+            setIsLoading(false);
+        }
+        else {
             setIsLoading(false);
         }
     }, [workflow]);
@@ -60,6 +66,15 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
         });
     }
 
+    function convertFromCronWorkflow(cronWorkflow: CronWorkflow): Workflow {
+        return {
+            apiVersion: "argoproj.io/v1alpha1",
+            kind: "Workflow",
+            metadata: cronWorkflow.metadata,
+            spec: cronWorkflow.spec.workflowSpec,
+        };
+    }
+
     function populateGraphFromWorkflow(workflow: Workflow, name: string): Graph {
         const graph = new Graph();
 
@@ -94,7 +109,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                 });
 
                 template.dag.tasks.forEach((task: DAGTask) => {
-                    const taskName = parentTaskName ? `${parentTaskName}.${task.name}` : task.name;
+                    const taskName = `${parentTaskName}.${task.name}`
 
                     graph.nodes.set(taskName, {
                         label: task.name,
@@ -122,7 +137,6 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                             }
                         });
                     } else {
-                        // Add an edge from the parent template to the task
                         graph.edges.set({v: parentTaskName, w: taskName}, {});
                     }
 
