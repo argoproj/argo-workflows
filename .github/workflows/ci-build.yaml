@@ -355,9 +355,8 @@ jobs:
             LOG_LEVEL=info \
             API=${{matrix.use-api}} \
             UI=false \
-            POD_STATUS_CAPTURE_FINALIZER=true > /tmp/argo.log 2>&1 &
-      - name: Wait for controller to be up
-        run: make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}}
+            POD_STATUS_CAPTURE_FINALIZER=true 2>&1 | tee /tmp/argo.log &
+          make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}}
         timeout-minutes: 5
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
