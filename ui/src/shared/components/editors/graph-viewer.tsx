@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import {genres} from '../../../workflows/components/workflow-dag/genres';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
-import {DAGTask, Template, Workflow, WorkflowTemplate, CronWorkflow, ClusterWorkflowTemplate} from '../../models';
+import {DAGTask, Template, Workflow, WorkflowTemplate, CronWorkflow, ClusterWorkflowTemplate, WorkflowStep} from '../../models';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
 import {services} from '../../services';
@@ -81,6 +81,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
         const templates = workflow.spec.templates;
         const templateMap = new Map();
         const templateLeafMap = new Map();
+        let previousSteps: string[] = []
 
         templates.forEach((template: Template) => {
             templateMap.set(template.name, template);
@@ -146,7 +147,55 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                         processTemplate(task.template, taskName);
                     }
                 });
-            } else {
+            } else if (template.steps) {
+                if (!graph.nodes.has(parentTaskName)) {
+
+                    graph.nodes.set(parentTaskName, {
+                        label: parentTaskName,
+                        genre: 'Steps',
+                        classNames: 'Pending',
+                        progress: 0,
+                        icon: 'clock'
+                    });
+                }
+                graph.edges.set({v: parentTaskName, w: `${parentTaskName}.0`}, {});
+
+                template.steps.forEach((stepGroup: WorkflowStep[], stepGroupIndex: number) => {
+                    const groupName = `${parentTaskName}.${stepGroupIndex}`
+                    graph.nodes.set(groupName, {
+                        label: `[${stepGroupIndex}]`,
+                        genre: 'StepGroup',
+                        classNames: 'Pending',
+                        progress: 0,
+                        icon: 'clock'
+                    });
+                    previousSteps.forEach((prevStep: string) => {
+                        graph.edges.set({v: prevStep, w: groupName}, {});
+                    });
+                    previousSteps = [];
+
+                    stepGroup.forEach((step: WorkflowStep) => {
+                        const stepName = `${groupName}.${step.name}`
+                        graph.nodes.set(stepName, {
+                            label: generateTaskLabel(step),
+                            genre: templateMap.has(step.template) && templateMap.get(step.template).steps ? 'Steps' : 'Pod',
+                            classNames: 'Pending',
+                            progress: 0,
+                            icon: 'clock'
+                        });
+                        graph.edges.set({v: groupName, w: stepName}, {});
+                        previousSteps.push(stepName)
+
+                        // Recursively process the step's template if it's a nested step
+                        if (templateMap.has(step.template) && templateMap.get(step.template).steps) {
+                            processTemplate(step.template, stepName);
+                        }
+                    });
+
+
+                });
+            }
+            else {
                 // Edge case when workflow consists of only one template
                 if (templateMap.size === 1) {
                     templateName = parentTaskName;
@@ -216,7 +265,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
         return task ? task.template : null;
     }
 
-    function generateTaskLabel(task: DAGTask) {
+    function generateTaskLabel(task: DAGTask | WorkflowStep) {
         let taskLabel = task.name;
 
         if (task.withItems) {
