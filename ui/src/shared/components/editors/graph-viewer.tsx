@@ -44,7 +44,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
 
     return (
         <GraphPanel
-            storageScope='workflow-dag'
+            storageScope='graph-viewer'
             graph={graph}
             nodeGenresTitle={'Node Type'}
             nodeGenres={genres}
@@ -55,7 +55,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
             nodeSize={64}
             defaultIconShape='circle'
             hideNodeTypes={false}
-            hideOptions={true}
+            hideOptions={false}
             options={<WorkflowDagRenderOptionsPanel {...state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
         />
     );
@@ -110,9 +110,9 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
 
                 template.dag.tasks.forEach((task: DAGTask) => {
                     const taskName = `${parentTaskName}.${task.name}`
-
+                    const taskLabel = generateTaskLabel(task)
                     graph.nodes.set(taskName, {
-                        label: task.name,
+                        label: taskLabel,
                         genre: templateMap.has(task.template) && templateMap.get(task.template).dag ? 'DAG' : 'Pod',
                         classNames: 'Pending',
                         progress: 0,
@@ -214,5 +214,19 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     function getTemplateNameFromTask(dag: {tasks: {name: string; template: string}[]}, taskName: string): string | null {
         const task = dag.tasks.find(t => t.name === taskName);
         return task ? task.template : null;
+    }
+
+    function generateTaskLabel(task: DAGTask) {
+        let taskLabel = task.name;
+
+        if (task.withItems) {
+            taskLabel += `\n{withItems: ${String(task.withItems)}}`;
+        } else if (task.withParam) {
+            taskLabel += `\n{withParam: ${String(task.withParam)}}`;
+        } else if (task.withSequence) {
+            taskLabel += `\n{withSequence: ${String(task.withSequence)}}`;
+        }
+
+        return taskLabel;
     }
 }
