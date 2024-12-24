@@ -99,8 +99,13 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 
 	tmpl := &wfv1.Template{}
-	envVarTemplateValue := os.Getenv(common.EnvVarTemplate)
-	if envVarTemplateValue == common.EnvVarTemplateOffloaded {
+	envVarTemplateValue, ok := os.LookupEnv(common.EnvVarTemplate)
+	// wait container reads template from the file written by init container, instead of from environment variable.
+	if !ok {
+		data, err := os.ReadFile(varRunArgo + "/template")
+		checkErr(err)
+		envVarTemplateValue = string(data)
+	} else if envVarTemplateValue == common.EnvVarTemplateOffloaded {
 		data, err := os.ReadFile(filepath.Join(common.EnvConfigMountPath, common.EnvVarTemplate))
 		checkErr(err)
 		envVarTemplateValue = string(data)

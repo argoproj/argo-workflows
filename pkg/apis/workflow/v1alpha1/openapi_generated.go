@@ -2384,7 +2384,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true",
+							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -2905,6 +2905,13 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 						SchemaProps: spec.SchemaProps{
 							Description: "Branch is the branch to fetch when `SingleBranch` is enabled",
 							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"insecureSkipTLS": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections",
+							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
@@ -4773,7 +4780,7 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 					},
 					"result": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Result holds the result (stdout) of a script template",
+							Description: "Result holds the result (stdout) of a script or container template, or the response body of an HTTP template",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5972,19 +5979,19 @@ func schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+				Description: "StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"condition": {
+					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Condition is an expression that stops scheduling workflows when true. Use the variables `failed` or `succeeded` to access the number of failed or successful child workflows.",
+							Description: "v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
-				Required: []string{"condition"},
+				Required: []string{"expression"},
 			},
 		},
 	}

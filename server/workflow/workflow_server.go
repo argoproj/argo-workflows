@@ -28,6 +28,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
 	argoutil "github.com/argoproj/argo-workflows/v3/util"
@@ -37,14 +38,14 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
 const (
-	latestAlias    = "@latest"
-	reSyncDuration = 20 * time.Minute
+	latestAlias                  = "@latest"
+	reSyncDuration               = 20 * time.Minute
+	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
 type workflowServer struct {
@@ -54,19 +55,23 @@ type workflowServer struct {
 	wfArchive             sqldb.WorkflowArchive
 	wfLister              store.WorkflowLister
 	wfReflector           *cache.Reflector
+	wftmplStore           servertypes.WorkflowTemplateStore
+	cwftmplStore          servertypes.ClusterWorkflowTemplateStore
 	wfDefaults            *wfv1.Workflow
 }
 
 var _ workflowpkg.WorkflowServiceServer = &workflowServer{}
 
 // NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wfDefaults *wfv1.Workflow, namespace *string) *workflowServer {
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) *workflowServer {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
 		hydrator:              hydrator.New(offloadNodeStatusRepo),
 		wfArchive:             wfArchive,
 		wfLister:              wfLister,
+		wftmplStore:           wftmplStore,
+		cwftmplStore:          cwftmplStore,
 		wfDefaults:            wfDefaults,
 	}
 	if wfStore != nil && namespace != nil {
@@ -104,8 +109,8 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	s.instanceIDService.Label(req.Workflow)
 	creator.Label(ctx, req.Workflow)
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
+	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
 	err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.ValidateOpts{})
 	if err != nil {
@@ -175,10 +180,11 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 	s.instanceIDService.With(&listOption)
 
-	options, err := sutils.BuildListOptions(listOption, req.Namespace, "")
+	options, err := sutils.BuildListOptions(listOption, req.Namespace, "", req.NameFilter)
 	if err != nil {
 		return nil, err
 	}
+
 	// verify if we have permission to list Workflows
 	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
 	if err != nil {
@@ -189,7 +195,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	var wfs wfv1.Workflows
-	liveWfCount, err := s.wfLister.CountWorkflows(ctx, req.Namespace, "", listOption)
+	liveWfCount, err := s.wfLister.CountWorkflows(ctx, req.Namespace, req.NameFilter, listOption)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -202,7 +208,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	// first fetch live workflows
 	liveWfList := &wfv1.WorkflowList{}
 	if liveWfCount > 0 && (options.Limit == 0 || options.Offset < int(liveWfCount)) {
-		liveWfList, err = s.wfLister.ListWorkflows(ctx, req.Namespace, "", listOption)
+		liveWfList, err = s.wfLister.ListWorkflows(ctx, req.Namespace, req.NameFilter, listOption)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -660,9 +666,8 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	if req.Workflow == nil {
 		return nil, fmt.Errorf("unable to get a workflow")
 	}
-	wfClient := auth.GetWfClient(ctx)
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
+	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 	s.instanceIDService.Label(req.Workflow)
 	creator.Label(ctx, req.Workflow)
 
@@ -689,7 +694,6 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	req.Name = wf.Name
 
 	err = ws.SendHeader(metadata.MD{})
-
 	if err != nil {
 		return sutils.ToStatusError(err, codes.Internal)
 	}
@@ -711,20 +715,32 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 		log.Debugf("Resolved alias %s to workflow %s.\n", latestAlias, latest.Name)
 		return latest, nil
 	}
-	var err error
+
 	wf, origErr := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
+	// fallback to retrieve from archived workflows
 	if wf == nil || origErr != nil {
-		wf, err = s.wfArchive.GetWorkflow("", namespace, name)
+		allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, name)
 		if err != nil {
-			log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
-			// We only return the original error to preserve the original status code.
-			return nil, sutils.ToStatusError(origErr, codes.Internal)
+			return nil, getWorkflowOrigErr(origErr, err)
 		}
-		if wf == nil {
-			return nil, status.Error(codes.NotFound, "not found")
+		if !allowed {
+			err = status.Error(codes.PermissionDenied, "permission denied")
+			return nil, getWorkflowOrigErr(origErr, err)
+		}
+
+		wf, err = s.wfArchive.GetWorkflow("", namespace, name)
+		if wf == nil || err != nil {
+			return nil, getWorkflowOrigErr(origErr, err)
 		}
 	}
 	return wf, nil
+}
+
+// getWorkflowOrigErr only returns the original error to preserve the original status code
+// it logs out the new error
+func getWorkflowOrigErr(origErr error, err error) error {
+	log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
+	return sutils.ToStatusError(origErr, codes.Internal)
 }
 
 func (s *workflowServer) validateWorkflow(wf *wfv1.Workflow) error {
@@ -775,8 +791,8 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)
+	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
 	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, s.wfDefaults, validate.ValidateOpts{Submit: true})
 	if err != nil {

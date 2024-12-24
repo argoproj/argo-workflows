@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -26,7 +27,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 // TemplateType is the type of a template
@@ -1479,7 +1479,7 @@ type Outputs struct {
 	// +patchMergeKey=name
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 
-	// Result holds the result (stdout) of a script template
+	// Result holds the result (stdout) of a script or container template, or the response body of an HTTP template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
 
 	// ExitCode holds the exit code of a script template
@@ -2409,11 +2409,6 @@ func (n NodeStatus) IsExitNode() bool {
 	return strings.HasSuffix(n.DisplayName, ".onExit")
 }
 
-// IsPodDeleted returns whether node is error with pod deleted.
-func (n NodeStatus) IsPodDeleted() bool {
-	return n.Phase == NodeError && n.Message == "pod deleted"
-}
-
 func (n NodeStatus) Succeeded() bool {
 	return n.Phase == NodeSucceeded
 }
@@ -2616,6 +2611,9 @@ type GitArtifact struct {
 
 	// Branch is the branch to fetch when `SingleBranch` is enabled
 	Branch string `json:"branch,omitempty" protobuf:"bytes,11,opt,name=branch"`
+
+	// InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections
+	InsecureSkipTLS bool `json:"insecureSkipTLS,omitempty" protobuf:"varint,12,opt,name=insecureSkipTLS"`
 }
 
 func (g *GitArtifact) HasLocation() bool {
@@ -3786,7 +3784,7 @@ func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolder
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 		return true
-	} else if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
+	} else if !slices.Contains(semaphoreHolding.Holders, holdingName) {
 		semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
 		ss.Holding[i] = semaphoreHolding
 		return true
@@ -3799,7 +3797,8 @@ func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
 	holdingName := holderKey
 
 	if i >= 0 {
-		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
+		semaphoreHolding.Holders = slices.DeleteFunc(semaphoreHolding.Holders,
+			func(x string) bool { return x == holdingName })
 		ss.Holding[i] = semaphoreHolding
 		return true
 	}

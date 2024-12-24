@@ -17,32 +17,32 @@ func TestMetricsWorkQueue(t *testing.T) {
 
 	attribsWT := attribute.NewSet(attribute.String(telemetry.AttribWorkerType, "test"))
 
-	queue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultControllerRateLimiter(), "test")
+	queue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "test")
 	defer queue.ShutDown()
-	val, err := te.GetInt64CounterValue(nameWorkersBusy, &attribsWT)
+	val, err := te.GetInt64CounterValue(telemetry.InstrumentWorkersBusyCount.Name(), &attribsWT)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 
 	attribsQN := attribute.NewSet(attribute.String(telemetry.AttribQueueName, "test"))
 	queue.Add("A")
-	val, err = te.GetInt64CounterValue(nameWorkersBusy, &attribsWT)
+	val, err = te.GetInt64CounterValue(telemetry.InstrumentWorkersBusyCount.Name(), &attribsWT)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 
-	val, err = te.GetInt64CounterValue(nameWorkersQueueDepth, &attribsQN)
+	val, err = te.GetInt64CounterValue(telemetry.InstrumentQueueDepthGauge.Name(), &attribsQN)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 
 	queue.Get()
-	val, err = te.GetInt64CounterValue(nameWorkersBusy, &attribsWT)
+	val, err = te.GetInt64CounterValue(telemetry.InstrumentWorkersBusyCount.Name(), &attribsWT)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
-	val, err = te.GetInt64CounterValue(nameWorkersQueueDepth, &attribsQN)
+	val, err = te.GetInt64CounterValue(telemetry.InstrumentQueueDepthGauge.Name(), &attribsQN)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 
 	queue.Done("A")
-	val, err = te.GetInt64CounterValue(nameWorkersBusy, &attribsWT)
+	val, err = te.GetInt64CounterValue(telemetry.InstrumentWorkersBusyCount.Name(), &attribsWT)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 }

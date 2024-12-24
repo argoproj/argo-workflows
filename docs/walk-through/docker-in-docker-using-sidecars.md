@@ -1,10 +1,13 @@
 # Docker-in-Docker Using Sidecars
 
-Note: It is increasingly unlikely that the below example will work for you on your version of Kubernetes. [Since Kubernetes 1.24, the dockershim has been unavailable as part of Kubernetes](https://kubernetes.io/blog/2022/02/17/dockershim-faq/), rendering Docker-in-Docker unworkable. It is recommended to seek alternative methods of building containers, such as [Kaniko](https://github.com/GoogleContainerTools/kaniko) or [Buildkit](https://github.com/moby/buildkit). A [Buildkit Workflow example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/buildkit-template.yaml) is available in the examples directory of the Argo Workflows repository.
+!!! Note "Alternatives"
+    Alternative methods of building containers, such as [Kaniko](https://github.com/GoogleContainerTools/kaniko) or [Buildkit](https://github.com/moby/buildkit) can be simpler and more secure.
+    See the [Buildkit template](https://github.com/argoproj/argo-workflows/main/examples/buildkit-template.yaml) as an example.
 
----
+You can use [sidecars](sidecars.md) to implement Docker-in-Docker (DIND).
+You can use DIND to run Docker commands inside a container, such as to build and push a container image.
 
-An application of sidecars is to implement Docker-in-Docker (DIND). DIND is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the `docker:dind` image to run a Docker daemon in a sidecar and give the main container access to the daemon.
+In the following example, use the `docker:dind` image to run a Docker daemon in a sidecar and give the main container access to the daemon:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1

@@ -1,9 +1,17 @@
 package static
 
 import (
+	"bytes"
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
+	"regexp"
 	"strings"
+	"time"
+
+	"github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v3/ui"
 )
 
 type FilesServer struct {
@@ -11,23 +19,16 @@ type FilesServer struct {
 	hsts            bool
 	xframeOpts      string
 	corsAllowOrigin string
+	staticAssets    embed.FS
 }
 
-func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string) *FilesServer {
-	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin}
+var baseHRefRegex = regexp.MustCompile(`<base href="(.*?)">`)
+
+func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string, staticAssets embed.FS) *FilesServer {
+	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin, staticAssets}
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
-	// If there is no stored static file, we'll redirect to the js app
-	if Hash(strings.TrimLeft(r.URL.Path, "/")) == "" {
-		r.URL.Path = "index.html"
-	}
-
-	if r.URL.Path == "index.html" {
-		// hack to prevent ServerHTTP from giving us gzipped content which we can do our search-and-replace on
-		r.Header.Del("Accept-Encoding")
-		w = &responseRewriter{ResponseWriter: w, old: []byte(`<base href="/">`), new: []byte(fmt.Sprintf(`<base href="%s">`, s.baseHRef))}
-	}
 
 	if s.xframeOpts != "" {
 		w.Header().Set("X-Frame-Options", s.xframeOpts)
@@ -50,6 +51,49 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 	}
 
-	// in my IDE (IntelliJ) the next line is red for some reason - but this is fine
-	ServeHTTP(w, r)
+	if r.URL.Path == "/" || !s.uiAssetExists(r.URL.Path) {
+		data, err := s.getIndexData()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		modTime, err := time.Parse(argo.GetVersion().BuildDate, time.RFC3339)
+		if err != nil {
+			modTime = time.Now()
+		}
+		http.ServeContent(w, r, "index.html", modTime, bytes.NewReader(data))
+	} else {
+		staticFS, _ := fs.Sub(s.staticAssets, ui.EMBED_PATH)
+		http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
+	}
+}
+
+func (s *FilesServer) getIndexData() ([]byte, error) {
+	data, err := s.staticAssets.ReadFile(ui.EMBED_PATH + "/index.html")
+	if err != nil {
+		return data, err
+	}
+	if s.baseHRef != "/" && s.baseHRef != "" {
+		data = []byte(replaceBaseHRef(string(data), fmt.Sprintf(`<base href="/%s/">`, strings.Trim(s.baseHRef, "/"))))
+	}
+
+	return data, nil
+}
+
+func (s *FilesServer) uiAssetExists(filename string) bool {
+	f, err := s.staticAssets.Open(ui.EMBED_PATH + filename)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	stat, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return !stat.IsDir()
+}
+
+func replaceBaseHRef(data string, replaceWith string) string {
+	return baseHRefRegex.ReplaceAllString(data, replaceWith)
 }
