@@ -2,6 +2,8 @@ import * as React from 'react';
 
 import {genres} from '../../../workflows/components/workflow-dag/genres';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
+import {WorkflowDagRenderOptions} from '../../../workflows/components/workflow-dag/workflow-dag';
+
 import {DAGTask, Template, Workflow, WorkflowTemplate, CronWorkflow, ClusterWorkflowTemplate, WorkflowStep} from '../../models';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
@@ -11,6 +13,12 @@ import {useEffect, useState} from 'react';
 export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate | CronWorkflow}) {
     const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>(workflowDefinition);
     const [isLoading, setIsLoading] = useState(true);
+    const [state, saveOptions] = useState<WorkflowDagRenderOptions>({
+        expandNodes: new Set(),
+        showArtifacts: false,
+        showInvokingTemplateName: false,
+        showTemplateRefsGrouping: false,
+    });
 
     useEffect(() => {
 
@@ -32,12 +40,6 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
         return <div>Loading...</div>;
     }
 
-    const state = {
-        expandNodes: new Set(''),
-        showArtifacts: false,
-        showInvokingTemplateName: false,
-        showTemplateRefsGrouping: false,
-    };
 
     const name = workflow.metadata.name ?? `${workflow.metadata.generateName}${generateNamePostfix(5)}`;
     const graph = populateGraphFromWorkflow(workflow, name);
@@ -56,7 +58,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
             defaultIconShape='circle'
             hideNodeTypes={false}
             hideOptions={false}
-            options={<WorkflowDagRenderOptionsPanel {...state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
+            options={<WorkflowDagRenderOptionsPanel {...state} onChange={workflowDagRenderOptions => saveOptions(workflowDagRenderOptions)} />}
         />
     );
 
