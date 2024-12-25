@@ -3,6 +3,8 @@ package apiclient
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,6 +38,7 @@ type Opts struct {
 	Offline              bool
 	OfflineFiles         []string
 	Context              context.Context
+	Proxy                func(*http.Request) (*url.URL, error)
 }
 
 func (o Opts) String() string {
@@ -74,7 +77,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
-		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
+		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client, opts.Proxy)
 	} else if opts.ArgoServerOpts.URL != "" {
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
