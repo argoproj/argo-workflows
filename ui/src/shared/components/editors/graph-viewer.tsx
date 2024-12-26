@@ -8,8 +8,6 @@ import {ClusterWorkflowTemplate, CronWorkflow, DAGTask, Template, Workflow, Work
 import {services} from '../../services';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
-import {services} from '../../services';
-import {useEffect, useState} from 'react';
 
 export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate | CronWorkflow}) {
     const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>(workflowDefinition);
@@ -39,7 +37,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
         return <div>Loading...</div>;
     }
 
-    const name = workflow.metadata.name ?? `${workflow.metadata.generateName}${generateNamePostfix(5)}`;
+    const name = workflow.metadata.name ? `${workflow.metadata.name}-${generateNamePostfix(5)}` : `${workflow.metadata.generateName}${generateNamePostfix(5)}`;
     const graph = populateGraphFromWorkflow(workflow, name);
 
     return (
@@ -61,17 +59,17 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     );
 
     function setWorkflowFromRefrence(name: string): Promise<void> {
-        return services.workflowTemplate.get(name, workflowDefinition.metadata.namespace).then((workflowTemplate) => {
+        return services.workflowTemplate.get(name, workflowDefinition.metadata.namespace).then(workflowTemplate => {
             setWorkflow(workflowTemplate);
         });
     }
 
     function convertFromCronWorkflow(cronWorkflow: CronWorkflow): Workflow {
         return {
-            apiVersion: "argoproj.io/v1alpha1",
-            kind: "Workflow",
+            apiVersion: 'argoproj.io/v1alpha1',
+            kind: 'Workflow',
             metadata: cronWorkflow.metadata,
-            spec: cronWorkflow.spec.workflowSpec,
+            spec: cronWorkflow.spec.workflowSpec
         };
     }
 
@@ -86,13 +84,11 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
         templates.forEach((template: Template) => {
             templateMap.set(template.name, template);
             templateLeafMap.set(template.name, getLeafNodes(template));
-
         });
 
         const entrypoint = workflow.spec.entrypoint;
 
-
-        function processTemplate(templateName: string, parentTaskName: string = null): Graph {
+        function processTemplate(templateName: string, parentNodeName: string = null): Graph {
             const template = templateMap.get(templateName);
 
             if (!template) {
@@ -100,10 +96,9 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                 return;
             }
 
-
             if (template.dag) {
-                graph.nodes.set(parentTaskName, {
-                    label: parentTaskName,
+                graph.nodes.set(parentNodeName, {
+                    label: getStringAfterDelimiter(parentNodeName),
                     genre: 'DAG',
                     classNames: 'Skipped',
                     progress: 0,
@@ -111,25 +106,36 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                 });
 
                 template.dag.tasks.forEach((task: DAGTask) => {
-                    const taskName = `${parentTaskName}.${task.name}`
-                    const taskLabel = generateTaskLabel(task)
-                    const retryStrategy = getRetryStrategy(task)
+                    const nodeName = `${parentNodeName}.${task.name}`;
+                    const retryNodeName = `${nodeName}.retry`;
+                    const taskGroupName = `${nodeName}.TaskGroup`;
+                    let nodeLabel = task.name;
+                    let newParentTaskName = parentNodeName;
+                    const retryStrategy = getRetryStrategy(task);
+                    const executionStrategy = getExecutionStrategy(task);
                     if (retryStrategy) {
-                        const retryNodeName = `${taskName}.retry`
                         graph.nodes.set(retryNodeName, {
-                            label: `${taskName}${retryStrategy}}`,
+                            label: nodeLabel,
                             genre: 'Retry',
                             classNames: 'Skipped',
                             progress: 0,
                             icon: 'clock'
                         });
+                    }
+                    if (executionStrategy) {
+                        graph.nodes.set(taskGroupName, {
+                            label: nodeLabel,
+                            genre: 'TaskGroup',
+                            classNames: 'Skipped',
+                            progress: 0,
+                            icon: 'clock'
+                        });
 
-                        graph.edges.set({v: parentTaskName, w: retryNodeName}, {});
-                        parentTaskName = retryNodeName
+                        nodeLabel = `${nodeLabel}${executionStrategy}`;
                     }
 
-                    graph.nodes.set(taskName, {
-                        label: taskLabel,
+                    graph.nodes.set(nodeName, {
+                        label: nodeLabel,
                         genre: getTaskGenre(task),
                         classNames: 'Skipped',
                         progress: 0,
@@ -140,45 +146,69 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                         const dependencies = task.dependencies ? task.dependencies : parseDepends(task.depends);
                         const dependencyLabel = task.depends ? task.depends : task.dependencies.join(' && ');
                         dependencies.forEach((dep: string) => {
-                            const dependancyName = `${parentTaskName}.${dep}`;
+                            let dependancyName = `${parentNodeName}.${dep}`;
                             if (graph.nodes.get(dependancyName).genre == 'Pod') {
-                                graph.edges.set({v: dependancyName, w: taskName}, {label: dependencyLabel});
+                                if (retryStrategy) {
+                                    graph.edges.set({v: dependancyName, w: retryNodeName}, {});
+                                    dependancyName = retryNodeName;
+                                }
+                                if (executionStrategy) {
+                                    graph.edges.set({v: dependancyName, w: taskGroupName}, {});
+                                    dependancyName = taskGroupName;
+                                }
+                                graph.edges.set({v: dependancyName, w: nodeName}, {label: dependencyLabel});
                             } else {
                                 // Override edge to be from last element of DAG if dep is a DAG.
                                 const depTemplate = getTemplateNameFromTask(template.dag, dep);
                                 const templateLeafNodes = templateLeafMap.get(depTemplate);
                                 if (templateLeafNodes) {
                                     templateLeafNodes.forEach((leaf: string) => {
-                                        graph.edges.set({v: `${dependancyName}.${leaf}`, w: taskName}, {label: dependencyLabel});
+                                        let leafNode = `${dependancyName}.${leaf}`;
+                                        if (retryStrategy) {
+                                            graph.edges.set({v: parentNodeName, w: retryNodeName}, {});
+                                            leafNode = retryNodeName;
+                                        }
+                                        if (executionStrategy) {
+                                            graph.edges.set({v: parentNodeName, w: taskGroupName}, {});
+                                            leafNode = taskGroupName;
+                                        }
+                                        graph.edges.set({v: leafNode, w: nodeName}, {label: dependencyLabel});
                                     });
                                 }
                             }
                         });
                     } else {
-                        graph.edges.set({v: parentTaskName, w: taskName}, {});
+                        if (retryStrategy) {
+                            graph.edges.set({v: parentNodeName, w: retryNodeName}, {});
+                            newParentTaskName = retryNodeName;
+                        }
+                        if (executionStrategy) {
+                            graph.edges.set({v: parentNodeName, w: taskGroupName}, {});
+                            newParentTaskName = taskGroupName;
+                        }
+                        graph.edges.set({v: newParentTaskName, w: nodeName}, {});
                     }
 
                     // Recursively process the task's template if it's a nested DAG
                     if (isTemplateNested(task)) {
-                        processTemplate(task.template, taskName);
+                        processTemplate(task.template, nodeName);
                     }
                     previousSteps = [];
                 });
             } else if (template.steps) {
-                if (!graph.nodes.has(parentTaskName)) {
-
-                    graph.nodes.set(parentTaskName, {
-                        label: parentTaskName,
+                if (!graph.nodes.has(parentNodeName)) {
+                    graph.nodes.set(parentNodeName, {
+                        label: parentNodeName,
                         genre: 'Steps',
                         classNames: 'Skipped',
                         progress: 0,
                         icon: 'clock'
                     });
                 }
-                graph.edges.set({v: parentTaskName, w: `${parentTaskName}.0`}, {});
+                graph.edges.set({v: parentNodeName, w: `${parentNodeName}.0`}, {});
 
                 template.steps.forEach((stepGroup: WorkflowStep[], stepGroupIndex: number) => {
-                    let groupName = `${parentTaskName}.${stepGroupIndex}`
+                    let groupName = `${parentNodeName}.${stepGroupIndex}`;
                     graph.nodes.set(groupName, {
                         label: `[${stepGroupIndex}]`,
                         genre: 'StepGroup',
@@ -192,12 +222,13 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     previousSteps = [];
 
                     stepGroup.forEach((step: WorkflowStep) => {
-                        const stepName = `${groupName}.${step.name}`
-                        const retryStrategy = getRetryStrategy(step)
+                        const nodeName = `${groupName}.${step.name}`;
+                        const nodeLabel = `${step.name}${getExecutionStrategy(step)}`;
+                        const retryStrategy = getRetryStrategy(step);
                         if (retryStrategy) {
-                            const retryNodeName = `${stepName}.retry`
+                            const retryNodeName = `${nodeName}.retry`;
                             graph.nodes.set(retryNodeName, {
-                                label: `${stepName}${retryStrategy}}}`,
+                                label: nodeLabel,
                                 genre: 'Retry',
                                 classNames: 'Skipped',
                                 progress: 0,
@@ -205,37 +236,33 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                             });
 
                             graph.edges.set({v: groupName, w: retryNodeName}, {});
-                            groupName = retryNodeName
+                            groupName = retryNodeName;
                         }
 
-
-                        graph.nodes.set(stepName, {
-                            label: generateTaskLabel(step),
+                        graph.nodes.set(nodeName, {
+                            label: nodeLabel,
                             genre: getTaskGenre(step),
                             classNames: 'Skipped',
                             progress: 0,
                             icon: 'clock'
                         });
-                        graph.edges.set({v: groupName, w: stepName}, {});
-                        previousSteps.push(stepName)
+                        graph.edges.set({v: groupName, w: nodeName}, {});
+                        previousSteps.push(nodeName);
 
                         // Recursively process the step's template if it's a nested step
                         if (isTemplateNested(step)) {
-                            processTemplate(step.template, stepName);
+                            processTemplate(step.template, nodeName);
                         }
                     });
-
-
                 });
-            }
-            else {
+            } else {
                 // Edge case when workflow consists of only one template
                 if (templateMap.size === 1) {
-                    templateName = parentTaskName;
-                    parentTaskName = '';
+                    templateName = parentNodeName;
+                    parentNodeName = '';
                 }
 
-                graph.edges.set({v: parentTaskName, w: templateName}, {});
+                graph.edges.set({v: parentNodeName, w: templateName}, {});
 
                 graph.nodes.set(templateName, {
                     label: templateName,
@@ -244,7 +271,6 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     progress: 0,
                     icon: 'clock'
                 });
-
             }
         }
         function getTaskGenre(task: DAGTask | WorkflowStep): 'Steps' | 'DAG' | 'Pod' {
@@ -304,7 +330,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     function getLeafNodes(template: Template) {
         const allTaskNames = new Set<string>();
         const dependentTaskNames = new Set<string>();
-        let independentTasks: string[] = []
+        let independentTasks: string[] = [];
 
         if (template.dag) {
             template.dag.tasks.forEach((task: DAGTask) => {
@@ -316,38 +342,43 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     });
                 }
             });
-            independentTasks = Array.from(allTaskNames).filter(taskName => !dependentTaskNames.has(taskName));
-        }
-        else if (template.steps) {
-            const lastStepGroupIdx = template.steps.length - 1
-            const lastStepGroup = template.steps[lastStepGroupIdx]
+            independentTasks = Array.from(allTaskNames).filter(nodeName => !dependentTaskNames.has(nodeName));
+        } else if (template.steps) {
+            const lastStepGroupIdx = template.steps.length - 1;
+            const lastStepGroup = template.steps[lastStepGroupIdx];
 
             lastStepGroup.forEach((step: WorkflowStep) => {
-                independentTasks.push(`${lastStepGroupIdx}.${step.name}`)
+                independentTasks.push(`${lastStepGroupIdx}.${step.name}`);
             });
         }
 
         return independentTasks ? independentTasks : null;
     }
 
-    function getTemplateNameFromTask(dag: {tasks: {name: string; template: string}[]}, taskName: string): string | null {
-        const task = dag.tasks.find(t => t.name === taskName);
+    function getTemplateNameFromTask(dag: {tasks: {name: string; template: string}[]}, nodeName: string): string | null {
+        const task = dag.tasks.find(t => t.name === nodeName);
         return task ? task.template : null;
     }
 
-    function generateTaskLabel(task: DAGTask | WorkflowStep) {
-        let taskLabel = task.name;
+    function getExecutionStrategy(task: DAGTask | WorkflowStep) {
+        let executionStrategy = '';
 
         if (task.withItems) {
-            taskLabel += `\n{withItems: ${String(task.withItems)}}`;
+            executionStrategy += `\n{withItems: ${String(task.withItems)}}`;
         } else if (task.withParam) {
-            taskLabel += `\n{withParam: ${String(task.withParam)}}`;
+            executionStrategy += `\n{withParam: ${String(task.withParam)}}`;
         } else if (task.withSequence) {
-            taskLabel += `\n{withSequence: ${String(task.withSequence)}}`;
+            executionStrategy += `\n{withSequence: ${String(task.withSequence)}}`;
         }
 
-        return taskLabel;
+        return executionStrategy;
     }
 
-
+    function getStringAfterDelimiter(input: string, delimiter: string = '.'): string {
+        const lastIndex = input.lastIndexOf(delimiter);
+        if (lastIndex === -1) {
+            return input;
+        }
+        return input.substring(lastIndex + 1);
+    }
 }
