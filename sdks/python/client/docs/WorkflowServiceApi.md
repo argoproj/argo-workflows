@@ -539,6 +539,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -858,6 +866,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -1532,6 +1548,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             bucket="bucket_example",
                             create_bucket_if_not_present=True,
+                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                role_arn="role_arn_example",
+                                role_session_name="role_session_name_example",
+                                s_ts_endpoint="s_ts_endpoint_example",
+                                type="type_example",
+                            ),
                             endpoint="endpoint_example",
                             key="key_example",
                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -2396,6 +2420,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 bucket="bucket_example",
                                                 create_bucket_if_not_present=True,
+                                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                                    role_arn="role_arn_example",
+                                                    role_session_name="role_session_name_example",
+                                                    s_ts_endpoint="s_ts_endpoint_example",
+                                                    type="type_example",
+                                                ),
                                                 endpoint="endpoint_example",
                                                 key="key_example",
                                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -2685,6 +2717,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         bucket="bucket_example",
                                                         create_bucket_if_not_present=True,
+                                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                                            role_arn="role_arn_example",
+                                                            role_session_name="role_session_name_example",
+                                                            s_ts_endpoint="s_ts_endpoint_example",
+                                                            type="type_example",
+                                                        ),
                                                         endpoint="endpoint_example",
                                                         key="key_example",
                                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -2996,6 +3036,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -3586,6 +3634,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -3917,6 +3973,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -4209,6 +4273,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -5111,6 +5183,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 bucket="bucket_example",
                                                 create_bucket_if_not_present=True,
+                                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                                    role_arn="role_arn_example",
+                                                    role_session_name="role_session_name_example",
+                                                    s_ts_endpoint="s_ts_endpoint_example",
+                                                    type="type_example",
+                                                ),
                                                 endpoint="endpoint_example",
                                                 key="key_example",
                                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -5396,6 +5476,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         bucket="bucket_example",
                                                         create_bucket_if_not_present=True,
+                                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                                            role_arn="role_arn_example",
+                                                            role_session_name="role_session_name_example",
+                                                            s_ts_endpoint="s_ts_endpoint_example",
+                                                            type="type_example",
+                                                        ),
                                                         endpoint="endpoint_example",
                                                         key="key_example",
                                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -6353,6 +6441,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -7217,6 +7313,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -7506,6 +7610,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -7817,6 +7929,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -8407,6 +8527,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -8738,6 +8866,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -9030,6 +9166,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -9932,6 +10076,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -10217,6 +10369,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -11415,6 +11575,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             bucket="bucket_example",
                             create_bucket_if_not_present=True,
+                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                role_arn="role_arn_example",
+                                role_session_name="role_session_name_example",
+                                s_ts_endpoint="s_ts_endpoint_example",
+                                type="type_example",
+                            ),
                             endpoint="endpoint_example",
                             key_format="key_format_example",
                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -11688,6 +11856,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -11981,6 +12157,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -12283,6 +12467,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -13172,6 +13364,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -14036,6 +14236,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -14325,6 +14533,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -14636,6 +14852,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -15226,6 +15450,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -15557,6 +15789,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -15849,6 +16089,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -16751,6 +16999,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -17036,6 +17292,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -18022,6 +18286,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -18341,6 +18613,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -19015,6 +19295,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -19879,6 +20167,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -20168,6 +20464,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -20479,6 +20783,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -21069,6 +21381,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -21400,6 +21720,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -21692,6 +22020,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -22594,6 +22930,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -22879,6 +23223,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -23836,6 +24188,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -24700,6 +25060,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         bucket="bucket_example",
                                                         create_bucket_if_not_present=True,
+                                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                                            role_arn="role_arn_example",
+                                                            role_session_name="role_session_name_example",
+                                                            s_ts_endpoint="s_ts_endpoint_example",
+                                                            type="type_example",
+                                                        ),
                                                         endpoint="endpoint_example",
                                                         key="key_example",
                                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -24989,6 +25357,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 ),
                                                                 bucket="bucket_example",
                                                                 create_bucket_if_not_present=True,
+                                                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                    role_arn="role_arn_example",
+                                                                    role_session_name="role_session_name_example",
+                                                                    s_ts_endpoint="s_ts_endpoint_example",
+                                                                    type="type_example",
+                                                                ),
                                                                 endpoint="endpoint_example",
                                                                 key="key_example",
                                                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -25300,6 +25676,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -25890,6 +26274,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -26221,6 +26613,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -26513,6 +26913,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -27415,6 +27823,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         bucket="bucket_example",
                                                         create_bucket_if_not_present=True,
+                                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                                            role_arn="role_arn_example",
+                                                            role_session_name="role_session_name_example",
+                                                            s_ts_endpoint="s_ts_endpoint_example",
+                                                            type="type_example",
+                                                        ),
                                                         endpoint="endpoint_example",
                                                         key="key_example",
                                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -27700,6 +28116,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 ),
                                                                 bucket="bucket_example",
                                                                 create_bucket_if_not_present=True,
+                                                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                    role_arn="role_arn_example",
+                                                                    role_session_name="role_session_name_example",
+                                                                    s_ts_endpoint="s_ts_endpoint_example",
+                                                                    type="type_example",
+                                                                ),
                                                                 endpoint="endpoint_example",
                                                                 key="key_example",
                                                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -29596,6 +30020,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -29915,6 +30347,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -30589,6 +31029,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             bucket="bucket_example",
                             create_bucket_if_not_present=True,
+                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                role_arn="role_arn_example",
+                                role_session_name="role_session_name_example",
+                                s_ts_endpoint="s_ts_endpoint_example",
+                                type="type_example",
+                            ),
                             endpoint="endpoint_example",
                             key="key_example",
                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -31453,6 +31901,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 bucket="bucket_example",
                                                 create_bucket_if_not_present=True,
+                                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                                    role_arn="role_arn_example",
+                                                    role_session_name="role_session_name_example",
+                                                    s_ts_endpoint="s_ts_endpoint_example",
+                                                    type="type_example",
+                                                ),
                                                 endpoint="endpoint_example",
                                                 key="key_example",
                                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -31742,6 +32198,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         bucket="bucket_example",
                                                         create_bucket_if_not_present=True,
+                                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                                            role_arn="role_arn_example",
+                                                            role_session_name="role_session_name_example",
+                                                            s_ts_endpoint="s_ts_endpoint_example",
+                                                            type="type_example",
+                                                        ),
                                                         endpoint="endpoint_example",
                                                         key="key_example",
                                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -32053,6 +32517,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -32643,6 +33115,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -32974,6 +33454,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -33266,6 +33754,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -34168,6 +34664,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 bucket="bucket_example",
                                                 create_bucket_if_not_present=True,
+                                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                                    role_arn="role_arn_example",
+                                                    role_session_name="role_session_name_example",
+                                                    s_ts_endpoint="s_ts_endpoint_example",
+                                                    type="type_example",
+                                                ),
                                                 endpoint="endpoint_example",
                                                 key="key_example",
                                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -34453,6 +34957,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         bucket="bucket_example",
                                                         create_bucket_if_not_present=True,
+                                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                                            role_arn="role_arn_example",
+                                                            role_session_name="role_session_name_example",
+                                                            s_ts_endpoint="s_ts_endpoint_example",
+                                                            type="type_example",
+                                                        ),
                                                         endpoint="endpoint_example",
                                                         key="key_example",
                                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -35410,6 +35922,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -36274,6 +36794,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -36563,6 +37091,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -36874,6 +37410,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -37464,6 +38008,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -37795,6 +38347,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -38087,6 +38647,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -38989,6 +39557,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -39274,6 +39850,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -40472,6 +41056,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             bucket="bucket_example",
                             create_bucket_if_not_present=True,
+                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                role_arn="role_arn_example",
+                                role_session_name="role_session_name_example",
+                                s_ts_endpoint="s_ts_endpoint_example",
+                                type="type_example",
+                            ),
                             endpoint="endpoint_example",
                             key_format="key_format_example",
                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -40745,6 +41337,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -41038,6 +41638,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -41340,6 +41948,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -42229,6 +42845,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -43093,6 +43717,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -43382,6 +44014,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -43693,6 +44333,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -44283,6 +44931,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -44614,6 +45270,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -44906,6 +45570,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -45808,6 +46480,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -46093,6 +46773,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -47079,6 +47767,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -47398,6 +48094,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -48072,6 +48776,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 bucket="bucket_example",
                                 create_bucket_if_not_present=True,
+                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                    role_arn="role_arn_example",
+                                    role_session_name="role_session_name_example",
+                                    s_ts_endpoint="s_ts_endpoint_example",
+                                    type="type_example",
+                                ),
                                 endpoint="endpoint_example",
                                 key="key_example",
                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -48936,6 +49648,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -49225,6 +49945,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -49536,6 +50264,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -50126,6 +50862,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -50457,6 +51201,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -50749,6 +51501,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         bucket="bucket_example",
                                         create_bucket_if_not_present=True,
+                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                            role_arn="role_arn_example",
+                                            role_session_name="role_session_name_example",
+                                            s_ts_endpoint="s_ts_endpoint_example",
+                                            type="type_example",
+                                        ),
                                         endpoint="endpoint_example",
                                         key="key_example",
                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -51651,6 +52411,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     bucket="bucket_example",
                                                     create_bucket_if_not_present=True,
+                                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                                        role_arn="role_arn_example",
+                                                        role_session_name="role_session_name_example",
+                                                        s_ts_endpoint="s_ts_endpoint_example",
+                                                        type="type_example",
+                                                    ),
                                                     endpoint="endpoint_example",
                                                     key="key_example",
                                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -51936,6 +52704,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             bucket="bucket_example",
                                                             create_bucket_if_not_present=True,
+                                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                role_arn="role_arn_example",
+                                                                role_session_name="role_session_name_example",
+                                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                                type="type_example",
+                                                            ),
                                                             endpoint="endpoint_example",
                                                             key="key_example",
                                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -52893,6 +53669,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     bucket="bucket_example",
                                     create_bucket_if_not_present=True,
+                                    credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                        o_idc_provider_arn="o_idc_provider_arn_example",
+                                        o_idc_token_file_path="o_idc_token_file_path_example",
+                                        role_arn="role_arn_example",
+                                        role_session_name="role_session_name_example",
+                                        s_ts_endpoint="s_ts_endpoint_example",
+                                        type="type_example",
+                                    ),
                                     endpoint="endpoint_example",
                                     key="key_example",
                                     lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -53757,6 +54541,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         bucket="bucket_example",
                                                         create_bucket_if_not_present=True,
+                                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                                            role_arn="role_arn_example",
+                                                            role_session_name="role_session_name_example",
+                                                            s_ts_endpoint="s_ts_endpoint_example",
+                                                            type="type_example",
+                                                        ),
                                                         endpoint="endpoint_example",
                                                         key="key_example",
                                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -54046,6 +54838,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 ),
                                                                 bucket="bucket_example",
                                                                 create_bucket_if_not_present=True,
+                                                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                    role_arn="role_arn_example",
+                                                                    role_session_name="role_session_name_example",
+                                                                    s_ts_endpoint="s_ts_endpoint_example",
+                                                                    type="type_example",
+                                                                ),
                                                                 endpoint="endpoint_example",
                                                                 key="key_example",
                                                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -54357,6 +55157,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -54947,6 +55755,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -55278,6 +56094,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -55570,6 +56394,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                             bucket="bucket_example",
                                             create_bucket_if_not_present=True,
+                                            credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                o_idc_provider_arn="o_idc_provider_arn_example",
+                                                o_idc_token_file_path="o_idc_token_file_path_example",
+                                                role_arn="role_arn_example",
+                                                role_session_name="role_session_name_example",
+                                                s_ts_endpoint="s_ts_endpoint_example",
+                                                type="type_example",
+                                            ),
                                             endpoint="endpoint_example",
                                             key="key_example",
                                             lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -56472,6 +57304,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         bucket="bucket_example",
                                                         create_bucket_if_not_present=True,
+                                                        credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                            o_idc_provider_arn="o_idc_provider_arn_example",
+                                                            o_idc_token_file_path="o_idc_token_file_path_example",
+                                                            role_arn="role_arn_example",
+                                                            role_session_name="role_session_name_example",
+                                                            s_ts_endpoint="s_ts_endpoint_example",
+                                                            type="type_example",
+                                                        ),
                                                         endpoint="endpoint_example",
                                                         key="key_example",
                                                         lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
@@ -56757,6 +57597,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 ),
                                                                 bucket="bucket_example",
                                                                 create_bucket_if_not_present=True,
+                                                                credentials_config=IoArgoprojWorkflowV1alpha1OSSCredentialsConfig(
+                                                                    o_idc_provider_arn="o_idc_provider_arn_example",
+                                                                    o_idc_token_file_path="o_idc_token_file_path_example",
+                                                                    role_arn="role_arn_example",
+                                                                    role_session_name="role_session_name_example",
+                                                                    s_ts_endpoint="s_ts_endpoint_example",
+                                                                    type="type_example",
+                                                                ),
                                                                 endpoint="endpoint_example",
                                                                 key="key_example",
                                                                 lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(

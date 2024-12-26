@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **access_key_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **bucket** | **str** | Bucket is the name of the bucket | [optional] 
 **create_bucket_if_not_present** | **bool** | CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn&#39;t exist | [optional] 
+**credentials_config** | [**IoArgoprojWorkflowV1alpha1OSSCredentialsConfig**](IoArgoprojWorkflowV1alpha1OSSCredentialsConfig.md) |  | [optional] 
 **endpoint** | **str** | Endpoint is the hostname of the bucket endpoint | [optional] 
 **lifecycle_rule** | [**IoArgoprojWorkflowV1alpha1OSSLifecycleRule**](IoArgoprojWorkflowV1alpha1OSSLifecycleRule.md) |  | [optional] 
 **secret_key_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
