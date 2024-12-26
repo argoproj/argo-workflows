@@ -8395,6 +8395,10 @@
       "description": "Backoff is a backoff strategy to use within retryStrategy",
       "type": "object",
       "properties": {
+        "cap": {
+          "description": "Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap",
+          "type": "string"
+        },
         "duration": {
           "description": "Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\")",
           "type": "string"
