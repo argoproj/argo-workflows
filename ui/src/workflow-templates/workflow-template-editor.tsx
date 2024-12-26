@@ -1,13 +1,13 @@
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
 
+import {GraphViewer} from '../shared/components/editors/graph-viewer';
 import {LabelsAndAnnotationsEditor} from '../shared/components/editors/labels-and-annotations-editor';
 import {MetadataEditor} from '../shared/components/editors/metadata-editor';
 import {WorkflowParametersEditor} from '../shared/components/editors/workflow-parameters-editor';
 import {ObjectEditor} from '../shared/components/object-editor';
 import type {Lang} from '../shared/components/object-parser';
 import {WorkflowTemplate} from '../shared/models';
-import {GraphViewer} from '../shared/components/editors/graph-viewer';
 
 export function WorkflowTemplateEditor({
     onChange,
@@ -74,7 +74,6 @@ export function WorkflowTemplateEditor({
                     title: 'Graph',
                     content: <GraphViewer workflowDefinition={template} />
                 }
-
             ]}
         />
     );

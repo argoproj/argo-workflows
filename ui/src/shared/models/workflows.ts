@@ -948,13 +948,10 @@ export interface BaseDAGTask {
  * DAGTask interface allows either `depends` or `dependencies`, but not both.
  */
 export type DAGTask = BaseDAGTask &
-    (
-        /**
-         * Dependencies are name of other targets which this depends on
-         */
-        | {depends?: string; dependencies?: never}
-        | {depends?: never; dependencies?: string[]}
-    );
+    /**
+     * Dependencies are name of other targets which this depends on
+     */
+    ({depends?: string; dependencies?: never} | {depends?: never; dependencies?: string[]});
 
 /**
  * WorkflowStep is a reference to a template to execute in a series of step
