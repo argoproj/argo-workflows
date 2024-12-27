@@ -108,41 +108,24 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
             }
 
             if (template.dag) {
-                graph.nodes.set(parentNodeName, {
-                    label: getStringAfterDelimiter(parentNodeName),
-                    genre: 'DAG',
-                    ...defaultNodeParams
-                });
-
+                createNode(parentNodeName, getStringAfterDelimiter(parentNodeName), 'DAG');
                 template.dag.tasks.forEach((task: DAGTask) => {
+                    let nodeLabel = task.name;
                     const nodeName = `${parentNodeName}.${task.name}`;
                     const retryNodeName = `${nodeName}.retry`;
                     const taskGroupName = `${nodeName}.TaskGroup`;
-                    let nodeLabel = task.name;
                     const retryStrategy = getRetryStrategy(task);
                     const executionStrategy = getExecutionStrategy(task);
+
                     if (retryStrategy) {
-                        graph.nodes.set(retryNodeName, {
-                            label: nodeLabel,
-                            genre: 'Retry',
-                            ...defaultNodeParams
-                        });
+                        createNode(retryNodeName, nodeLabel, 'Retry');
                     }
                     if (executionStrategy) {
-                        graph.nodes.set(taskGroupName, {
-                            label: nodeLabel,
-                            genre: 'TaskGroup',
-                            ...defaultNodeParams
-                        });
-
+                        createNode(taskGroupName, nodeLabel, 'TaskGroup');
                         nodeLabel = `${nodeLabel}${executionStrategy}`;
                     }
 
-                    graph.nodes.set(nodeName, {
-                        label: nodeLabel,
-                        genre: getTaskGenre(task),
-                        ...defaultNodeParams
-                    });
+                    createNode(nodeName, nodeLabel, getTaskGenre(task));
 
                     if (task.depends || task.dependencies) {
                         const dependencies = task.dependencies ? task.dependencies : parseDepends(task.depends);
@@ -151,14 +134,17 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                             let dependancyName = `${parentNodeName}.${dep}`;
                             if (graph.nodes.get(dependancyName).genre == 'Pod') {
                                 if (retryStrategy) {
-                                    graph.edges.set({v: dependancyName, w: retryNodeName}, {});
+                                    createEdge(dependancyName, retryNodeName);
                                     dependancyName = retryNodeName;
                                 }
                                 if (executionStrategy) {
-                                    graph.edges.set({v: dependancyName, w: taskGroupName}, {});
+                                    createEdge(dependancyName, taskGroupName)
+
+                                        ;
                                     dependancyName = taskGroupName;
                                 }
-                                graph.edges.set({v: dependancyName, w: nodeName}, {label: dependencyLabel});
+                                createEdge(dependancyName, nodeName, dependencyLabel)
+                                    ;
                             } else {
                                 // Override edge to be from last element of DAG if dep is a DAG.
                                 const depTemplate = getTemplateNameFromTask(template.dag, dep);
@@ -167,14 +153,14 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                                     templateLeafNodes.forEach((leaf: string) => {
                                         let leafNode = `${dependancyName}.${leaf}`;
                                         if (retryStrategy) {
-                                            graph.edges.set({v: parentNodeName, w: retryNodeName}, {});
+                                            createEdge(parentNodeName, retryNodeName);
                                             leafNode = retryNodeName;
                                         }
                                         if (executionStrategy) {
-                                            graph.edges.set({v: parentNodeName, w: taskGroupName}, {});
+                                            createEdge(parentNodeName, taskGroupName);
                                             leafNode = taskGroupName;
                                         }
-                                        graph.edges.set({v: leafNode, w: nodeName}, {label: dependencyLabel});
+                                        createEdge(leafNode, nodeName, dependencyLabel);
                                     });
                                 }
                             }
@@ -182,14 +168,14 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     } else {
                         let newParentTaskName = parentNodeName;
                         if (retryStrategy) {
-                            graph.edges.set({v: parentNodeName, w: retryNodeName}, {});
+                            createEdge(parentNodeName, retryNodeName);
                             newParentTaskName = retryNodeName;
                         }
                         if (executionStrategy) {
-                            graph.edges.set({v: parentNodeName, w: taskGroupName}, {});
+                            createEdge(parentNodeName, taskGroupName);
                             newParentTaskName = taskGroupName;
                         }
-                        graph.edges.set({v: newParentTaskName, w: nodeName}, {});
+                        createEdge(newParentTaskName, nodeName);
                     }
 
                     // Recursively process the task's template if it's a nested DAG
@@ -200,23 +186,15 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                 });
             } else if (template.steps) {
                 if (!graph.nodes.has(parentNodeName)) {
-                    graph.nodes.set(parentNodeName, {
-                        label: parentNodeName,
-                        genre: 'Steps',
-                        ...defaultNodeParams
-                    });
+                    createNode(parentNodeName, parentNodeName, 'Steps');
                 }
-                graph.edges.set({v: parentNodeName, w: `${parentNodeName}.0`}, {});
+                createEdge(parentNodeName, `${parentNodeName}.0`);
 
                 template.steps.forEach((stepGroup: WorkflowStep[], stepGroupIndex: number) => {
                     let groupName = `${parentNodeName}.${stepGroupIndex}`;
-                    graph.nodes.set(groupName, {
-                        label: `[${stepGroupIndex}]`,
-                        genre: 'StepGroup',
-                        ...defaultNodeParams
-                    });
+                    createNode(groupName, `[${stepGroupIndex}]`, 'StepGroup');
                     previousSteps.forEach((prevStep: string) => {
-                        graph.edges.set({v: prevStep, w: groupName}, {});
+                        createEdge(prevStep, groupName);
                     });
                     previousSteps = [];
 
@@ -226,44 +204,27 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                         const retryStrategy = getRetryStrategy(step);
                         if (retryStrategy) {
                             const retryNodeName = `${nodeName}.retry`;
-                            graph.nodes.set(retryNodeName, {
-                                label: nodeLabel,
-                                genre: 'Retry',
-                                ...defaultNodeParams
-                            });
-
-                            graph.edges.set({v: groupName, w: retryNodeName}, {});
+                            createNode(retryNodeName, nodeLabel, 'Retry');
+                            createEdge(groupName, retryNodeName);
                             groupName = retryNodeName;
                         }
 
-                        graph.nodes.set(nodeName, {
-                            label: nodeLabel,
-                            genre: getTaskGenre(step),
-                            ...defaultNodeParams
-                        });
-                        graph.edges.set({v: groupName, w: nodeName}, {});
+                        createNode(nodeName, nodeLabel, getTaskGenre(step));
+                        createEdge(groupName, nodeName);
                         previousSteps.push(nodeName);
 
-                        // Recursively process the step's template if it's a nested step
                         if (isTemplateNested(step)) {
                             processTemplate(step.template, nodeName);
                         }
                     });
                 });
             } else {
-                // Edge case when workflow consists of only one template
                 if (templateMap.size === 1) {
                     templateName = parentNodeName;
                     parentNodeName = '';
                 }
-
-                graph.edges.set({v: parentNodeName, w: templateName}, {});
-
-                graph.nodes.set(templateName, {
-                    label: templateName,
-                    genre: 'Pod',
-                    ...defaultNodeParams
-                });
+                createEdge(parentNodeName, templateName);
+                createNode(templateName, templateName, 'Pod');
             }
         }
         function getTaskGenre(task: DAGTask | WorkflowStep): 'Steps' | 'DAG' | 'Pod' {
@@ -293,8 +254,22 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     return `\n{retryStrategy: ${String(template.retryStrategy)}}`;
                 }
             }
-            return ''; // Return an empty string if retryStrategy is not available
+            return '';
         }
+
+        const createNode = (name: string, label: string, genre: string, params = defaultNodeParams) => {
+            graph.nodes.set(name, {
+                label,
+                genre,
+                ...params,
+            });
+        };
+
+        const createEdge = (from: string, to: string, label?: string) => {
+            const edgeData = label ? {'label': label} : {};
+            graph.edges.set({v: from, w: to}, edgeData);
+        };
+
         processTemplate(entrypoint, name);
 
         return graph;
