@@ -106,126 +106,133 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                 console.error(`Template "${templateName}" not found.`);
                 return;
             }
-
             if (template.dag) {
-                createNode(parentNodeName, getStringAfterDelimiter(parentNodeName), 'DAG');
-                template.dag.tasks.forEach((task: DAGTask) => {
-                    let nodeLabel = task.name;
-                    const nodeName = `${parentNodeName}.${task.name}`;
-                    const retryNodeName = `${nodeName}.retry`;
-                    const taskGroupName = `${nodeName}.TaskGroup`;
-                    const retryStrategy = getRetryStrategy(task);
-                    const executionStrategy = getExecutionStrategy(task);
+                processDAGTemplate(template, parentNodeName);
+            } else if (template.steps) {
+                processStepsTemplate(template, parentNodeName);
+            } else {
+                processPodTemplate(templateName, parentNodeName);
+            }
+        }
+        function processDAGTemplate(template: Template, parentNodeName: string) {
+            createNode(parentNodeName, getStringAfterDelimiter(parentNodeName), 'DAG');
+            template.dag.tasks.forEach((task: DAGTask) => {
+                let nodeLabel = task.name;
+                const nodeName = `${parentNodeName}.${task.name}`;
+                const retryNodeName = `${nodeName}.retry`;
+                const taskGroupName = `${nodeName}.TaskGroup`;
+                const retryStrategy = getRetryStrategy(task);
+                const executionStrategy = getExecutionStrategy(task);
 
+                if (retryStrategy) {
+                    createNode(retryNodeName, nodeLabel, 'Retry');
+                }
+                if (executionStrategy) {
+                    createNode(taskGroupName, nodeLabel, 'TaskGroup');
+                    nodeLabel = `${nodeLabel}${executionStrategy}`;
+                }
+
+                createNode(nodeName, nodeLabel, getTaskGenre(task));
+
+                if (task.depends || task.dependencies) {
+                    const dependencies = task.dependencies ? task.dependencies : parseDepends(task.depends);
+                    const dependencyLabel = task.depends ? task.depends : task.dependencies.join(' && ');
+                    dependencies.forEach((dep: string) => {
+                        let dependancyName = `${parentNodeName}.${dep}`;
+                        if (graph.nodes.get(dependancyName).genre == 'Pod') {
+                            if (retryStrategy) {
+                                createEdge(dependancyName, retryNodeName);
+                                dependancyName = retryNodeName;
+                            }
+                            if (executionStrategy) {
+                                createEdge(dependancyName, taskGroupName);
+                                dependancyName = taskGroupName;
+                            }
+                            createEdge(dependancyName, nodeName, dependencyLabel)
+                                ;
+                        } else {
+                            const depTemplate = getTemplateNameFromTask(template.dag, dep);
+                            const templateLeafNodes = templateLeafMap.get(depTemplate);
+                            if (templateLeafNodes) {
+                                templateLeafNodes.forEach((leaf: string) => {
+                                    let leafNode = `${dependancyName}.${leaf}`;
+                                    if (retryStrategy) {
+                                        createEdge(parentNodeName, retryNodeName);
+                                        leafNode = retryNodeName;
+                                    }
+                                    if (executionStrategy) {
+                                        createEdge(parentNodeName, taskGroupName);
+                                        leafNode = taskGroupName;
+                                    }
+                                    createEdge(leafNode, nodeName, dependencyLabel);
+                                });
+                            }
+                        }
+                    });
+                } else {
+                    let newParentTaskName = parentNodeName;
                     if (retryStrategy) {
-                        createNode(retryNodeName, nodeLabel, 'Retry');
+                        createEdge(parentNodeName, retryNodeName);
+                        newParentTaskName = retryNodeName;
                     }
                     if (executionStrategy) {
-                        createNode(taskGroupName, nodeLabel, 'TaskGroup');
-                        nodeLabel = `${nodeLabel}${executionStrategy}`;
+                        createEdge(parentNodeName, taskGroupName);
+                        newParentTaskName = taskGroupName;
                     }
-
-                    createNode(nodeName, nodeLabel, getTaskGenre(task));
-
-                    if (task.depends || task.dependencies) {
-                        const dependencies = task.dependencies ? task.dependencies : parseDepends(task.depends);
-                        const dependencyLabel = task.depends ? task.depends : task.dependencies.join(' && ');
-                        dependencies.forEach((dep: string) => {
-                            let dependancyName = `${parentNodeName}.${dep}`;
-                            if (graph.nodes.get(dependancyName).genre == 'Pod') {
-                                if (retryStrategy) {
-                                    createEdge(dependancyName, retryNodeName);
-                                    dependancyName = retryNodeName;
-                                }
-                                if (executionStrategy) {
-                                    createEdge(dependancyName, taskGroupName)
-
-                                        ;
-                                    dependancyName = taskGroupName;
-                                }
-                                createEdge(dependancyName, nodeName, dependencyLabel)
-                                    ;
-                            } else {
-                                // Override edge to be from last element of DAG if dep is a DAG.
-                                const depTemplate = getTemplateNameFromTask(template.dag, dep);
-                                const templateLeafNodes = templateLeafMap.get(depTemplate);
-                                if (templateLeafNodes) {
-                                    templateLeafNodes.forEach((leaf: string) => {
-                                        let leafNode = `${dependancyName}.${leaf}`;
-                                        if (retryStrategy) {
-                                            createEdge(parentNodeName, retryNodeName);
-                                            leafNode = retryNodeName;
-                                        }
-                                        if (executionStrategy) {
-                                            createEdge(parentNodeName, taskGroupName);
-                                            leafNode = taskGroupName;
-                                        }
-                                        createEdge(leafNode, nodeName, dependencyLabel);
-                                    });
-                                }
-                            }
-                        });
-                    } else {
-                        let newParentTaskName = parentNodeName;
-                        if (retryStrategy) {
-                            createEdge(parentNodeName, retryNodeName);
-                            newParentTaskName = retryNodeName;
-                        }
-                        if (executionStrategy) {
-                            createEdge(parentNodeName, taskGroupName);
-                            newParentTaskName = taskGroupName;
-                        }
-                        createEdge(newParentTaskName, nodeName);
-                    }
-
-                    // Recursively process the task's template if it's a nested DAG
-                    if (isTemplateNested(task)) {
-                        processTemplate(task.template, nodeName);
-                    }
-                    previousSteps = [];
-                });
-            } else if (template.steps) {
-                if (!graph.nodes.has(parentNodeName)) {
-                    createNode(parentNodeName, parentNodeName, 'Steps');
+                    createEdge(newParentTaskName, nodeName);
                 }
-                createEdge(parentNodeName, `${parentNodeName}.0`);
 
-                template.steps.forEach((stepGroup: WorkflowStep[], stepGroupIndex: number) => {
-                    let groupName = `${parentNodeName}.${stepGroupIndex}`;
-                    createNode(groupName, `[${stepGroupIndex}]`, 'StepGroup');
-                    previousSteps.forEach((prevStep: string) => {
-                        createEdge(prevStep, groupName);
-                    });
-                    previousSteps = [];
-
-                    stepGroup.forEach((step: WorkflowStep) => {
-                        const nodeName = `${groupName}.${step.name}`;
-                        const nodeLabel = `${step.name}${getExecutionStrategy(step)}`;
-                        const retryStrategy = getRetryStrategy(step);
-                        if (retryStrategy) {
-                            const retryNodeName = `${nodeName}.retry`;
-                            createNode(retryNodeName, nodeLabel, 'Retry');
-                            createEdge(groupName, retryNodeName);
-                            groupName = retryNodeName;
-                        }
-
-                        createNode(nodeName, nodeLabel, getTaskGenre(step));
-                        createEdge(groupName, nodeName);
-                        previousSteps.push(nodeName);
-
-                        if (isTemplateNested(step)) {
-                            processTemplate(step.template, nodeName);
-                        }
-                    });
-                });
-            } else {
-                if (templateMap.size === 1) {
-                    templateName = parentNodeName;
-                    parentNodeName = '';
+                if (isTemplateNested(task)) {
+                    processTemplate(task.template, nodeName);
                 }
-                createEdge(parentNodeName, templateName);
-                createNode(templateName, templateName, 'Pod');
+                previousSteps = [];
+            });
+        }
+
+        function processStepsTemplate(template: Template, parentNodeName: string) {
+            if (!graph.nodes.has(parentNodeName)) {
+                createNode(parentNodeName, parentNodeName, 'Steps');
             }
+            createEdge(parentNodeName, `${parentNodeName}.0`);
+
+            template.steps.forEach((stepGroup: WorkflowStep[], stepGroupIndex: number) => {
+                let groupName = `${parentNodeName}.${stepGroupIndex}`;
+                createNode(groupName, `[${stepGroupIndex}]`, 'StepGroup');
+                previousSteps.forEach((prevStep: string) => {
+                    createEdge(prevStep, groupName);
+                });
+                previousSteps = [];
+
+                stepGroup.forEach((step: WorkflowStep) => {
+                    const nodeName = `${groupName}.${step.name}`;
+                    const nodeLabel = `${step.name}${getExecutionStrategy(step)}`;
+                    const retryStrategy = getRetryStrategy(step);
+                    if (retryStrategy) {
+                        const retryNodeName = `${nodeName}.retry`;
+                        createNode(retryNodeName, nodeLabel, 'Retry');
+                        createEdge(groupName, retryNodeName);
+                        groupName = retryNodeName;
+                    }
+
+                    createNode(nodeName, nodeLabel, getTaskGenre(step));
+                    createEdge(groupName, nodeName);
+                    previousSteps.push(nodeName);
+
+                    if (isTemplateNested(step)) {
+                        processTemplate(step.template, nodeName);
+                    }
+                });
+            });
+        }
+
+        function processPodTemplate(templateName: string, parentNodeName: string) {
+            if (templateMap.size === 1) {
+                templateName = parentNodeName;
+                parentNodeName = '';
+            }
+            createEdge(parentNodeName, templateName);
+            createNode(templateName, templateName, 'Pod');
+
         }
         function getTaskGenre(task: DAGTask | WorkflowStep): 'Steps' | 'DAG' | 'Pod' {
             if (templateMap.has(task.template)) {
