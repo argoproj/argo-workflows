@@ -10,7 +10,6 @@ import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
 import {Icon} from '../icon';
 
-
 export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate | CronWorkflow}) {
     const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>(workflowDefinition);
     const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +26,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     } = {
         classNames: 'Skipped',
         progress: 0,
-        icon: 'clock',
+        icon: 'clock'
     };
 
     useEffect(() => {
@@ -231,7 +230,6 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
             }
             createEdge(parentNodeName, templateName);
             createNode(templateName, templateName, 'Pod');
-
         }
         function getTaskGenre(task: DAGTask | WorkflowStep): 'Steps' | 'DAG' | 'Pod' {
             if (templateMap.has(task.template)) {
@@ -267,12 +265,12 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
             graph.nodes.set(name, {
                 label,
                 genre,
-                ...params,
+                ...params
             });
         };
 
         const createEdge = (from: string, to: string, label?: string) => {
-            const edgeData = label ? {'label': label} : {};
+            const edgeData = label ? {label: label} : {};
             graph.edges.set({v: from, w: to}, edgeData);
         };
 
