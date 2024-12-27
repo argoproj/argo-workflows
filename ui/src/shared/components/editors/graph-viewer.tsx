@@ -8,6 +8,8 @@ import {ClusterWorkflowTemplate, CronWorkflow, DAGTask, Template, Workflow, Work
 import {services} from '../../services';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
+import {Icon} from '../icon';
+
 
 export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate | CronWorkflow}) {
     const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>(workflowDefinition);
@@ -18,13 +20,22 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
         showInvokingTemplateName: false,
         showTemplateRefsGrouping: false
     });
+    const defaultNodeParams: {
+        classNames: string;
+        progress: number;
+        icon: Icon;
+    } = {
+        classNames: 'Skipped',
+        progress: 0,
+        icon: 'clock',
+    };
 
     useEffect(() => {
-        if ('workflowTemplateRef' in workflowDefinition.spec) {
+        if ('workflowTemplateRef' in workflowDefinition.spec && isLoading) {
             setWorkflowFromRefrence(workflowDefinition.spec.workflowTemplateRef.name).then(() => {
                 setIsLoading(false);
             });
-        } else if ('workflowSpec' in workflowDefinition.spec) {
+        } else if ('workflowSpec' in workflowDefinition.spec && isLoading) {
             const convertedCronWorkflow = convertFromCronWorkflow(workflowDefinition as CronWorkflow);
             setWorkflow(convertedCronWorkflow);
             setIsLoading(false);
@@ -100,9 +111,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                 graph.nodes.set(parentNodeName, {
                     label: getStringAfterDelimiter(parentNodeName),
                     genre: 'DAG',
-                    classNames: 'Skipped',
-                    progress: 0,
-                    icon: 'clock'
+                    ...defaultNodeParams
                 });
 
                 template.dag.tasks.forEach((task: DAGTask) => {
@@ -110,25 +119,20 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     const retryNodeName = `${nodeName}.retry`;
                     const taskGroupName = `${nodeName}.TaskGroup`;
                     let nodeLabel = task.name;
-                    let newParentTaskName = parentNodeName;
                     const retryStrategy = getRetryStrategy(task);
                     const executionStrategy = getExecutionStrategy(task);
                     if (retryStrategy) {
                         graph.nodes.set(retryNodeName, {
                             label: nodeLabel,
                             genre: 'Retry',
-                            classNames: 'Skipped',
-                            progress: 0,
-                            icon: 'clock'
+                            ...defaultNodeParams
                         });
                     }
                     if (executionStrategy) {
                         graph.nodes.set(taskGroupName, {
                             label: nodeLabel,
                             genre: 'TaskGroup',
-                            classNames: 'Skipped',
-                            progress: 0,
-                            icon: 'clock'
+                            ...defaultNodeParams
                         });
 
                         nodeLabel = `${nodeLabel}${executionStrategy}`;
@@ -137,9 +141,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     graph.nodes.set(nodeName, {
                         label: nodeLabel,
                         genre: getTaskGenre(task),
-                        classNames: 'Skipped',
-                        progress: 0,
-                        icon: 'clock'
+                        ...defaultNodeParams
                     });
 
                     if (task.depends || task.dependencies) {
@@ -178,6 +180,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                             }
                         });
                     } else {
+                        let newParentTaskName = parentNodeName;
                         if (retryStrategy) {
                             graph.edges.set({v: parentNodeName, w: retryNodeName}, {});
                             newParentTaskName = retryNodeName;
@@ -200,9 +203,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     graph.nodes.set(parentNodeName, {
                         label: parentNodeName,
                         genre: 'Steps',
-                        classNames: 'Skipped',
-                        progress: 0,
-                        icon: 'clock'
+                        ...defaultNodeParams
                     });
                 }
                 graph.edges.set({v: parentNodeName, w: `${parentNodeName}.0`}, {});
@@ -212,9 +213,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     graph.nodes.set(groupName, {
                         label: `[${stepGroupIndex}]`,
                         genre: 'StepGroup',
-                        classNames: 'Skipped',
-                        progress: 0,
-                        icon: 'clock'
+                        ...defaultNodeParams
                     });
                     previousSteps.forEach((prevStep: string) => {
                         graph.edges.set({v: prevStep, w: groupName}, {});
@@ -230,9 +229,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                             graph.nodes.set(retryNodeName, {
                                 label: nodeLabel,
                                 genre: 'Retry',
-                                classNames: 'Skipped',
-                                progress: 0,
-                                icon: 'clock'
+                                ...defaultNodeParams
                             });
 
                             graph.edges.set({v: groupName, w: retryNodeName}, {});
@@ -242,9 +239,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                         graph.nodes.set(nodeName, {
                             label: nodeLabel,
                             genre: getTaskGenre(step),
-                            classNames: 'Skipped',
-                            progress: 0,
-                            icon: 'clock'
+                            ...defaultNodeParams
                         });
                         graph.edges.set({v: groupName, w: nodeName}, {});
                         previousSteps.push(nodeName);
@@ -267,9 +262,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                 graph.nodes.set(templateName, {
                     label: templateName,
                     genre: 'Pod',
-                    classNames: 'Skipped',
-                    progress: 0,
-                    icon: 'clock'
+                    ...defaultNodeParams
                 });
             }
         }
