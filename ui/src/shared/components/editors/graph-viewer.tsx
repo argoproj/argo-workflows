@@ -128,8 +128,8 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     createNode(retryNodeName, nodeLabel, 'Retry');
                 }
                 if (executionStrategy) {
-                    createNode(taskGroupName, nodeLabel, 'TaskGroup');
                     nodeLabel = `${nodeLabel}${executionStrategy}`;
+                    createNode(taskGroupName, nodeLabel, 'TaskGroup');
                 }
 
                 createNode(nodeName, nodeLabel, getTaskGenre(task));
