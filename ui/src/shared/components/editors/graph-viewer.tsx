@@ -148,8 +148,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                                 createEdge(dependancyName, taskGroupName);
                                 dependancyName = taskGroupName;
                             }
-                            createEdge(dependancyName, nodeName, dependencyLabel)
-                                ;
+                            createEdge(dependancyName, nodeName, dependencyLabel);
                         } else {
                             const depTemplate = getTemplateNameFromTask(template.dag, dep);
                             const templateLeafNodes = templateLeafMap.get(depTemplate);
