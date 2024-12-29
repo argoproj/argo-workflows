@@ -43,7 +43,7 @@ export function WorkflowArtifacts(props: Props) {
                 <div className='row header'>
                     <div className='columns download'>Download</div>
                     <div className='columns artifact-name'>Artifact Name</div>
-                    <div className='columns node-name'>Node Name</div>
+                    <div className='columns step-name'>Step Name</div>
                     <div className='columns path'>Path</div>
                     <div className='columns created-at'>Created at</div>
                 </div>
@@ -58,8 +58,8 @@ export function WorkflowArtifacts(props: Props) {
                         <div className='columns artifact-name'>
                             <span className='hoverable'>{artifact.name}</span>
                         </div>
-                        <div className='columns node-name'>
-                            <span className='hoverable'>{artifact.nodeName}</span>
+                        <div className='columns step-name'>
+                            <span className='hoverable'>{artifact.stepName}</span>
                         </div>
                         <div className='columns path'>
                             <span className='hoverable'>{artifact.path}</span>
