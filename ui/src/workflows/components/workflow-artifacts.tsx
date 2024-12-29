@@ -40,21 +40,34 @@ export function WorkflowArtifacts(props: Props) {
     return (
         <div className='white-box'>
             <div className='white-box__details'>
+                <div className='row header'>
+                    <div className='columns download'>Download</div>
+                    <div className='columns artifact-name'>Artifact Name</div>
+                    <div className='columns node-name'>Node Name</div>
+                    <div className='columns path'>Path</div>
+                    <div className='columns created-at'>Created at</div>
+                </div>
+
                 {artifacts.map(artifact => (
-                    <div className='row white-box__details-row' key={artifact.downloadUrl}>
-                        <div className='columns small-2'>
-                            <span>
-                                <a href={artifact.downloadUrl}>
-                                    {' '}
-                                    <i className='fa fa-download' />
-                                </a>{' '}
-                                {artifact.name}
-                            </span>
+                    <div className='row artifact-row' key={artifact.name}>
+                        <div className='columns download'>
+                            <a href={artifact.downloadUrl}>
+                                <i className='fa fa-download' />
+                            </a>
                         </div>
-                        <div className='columns small-4'>{artifact.stepName}</div>
-                        <div className='columns small-3'>{artifact.path}</div>
-                        <div className='columns small-3'>
-                            <Timestamp date={artifact.dateCreated} timestampKey={TIMESTAMP_KEYS.WORKFLOW_ARTIFACTS_CREATED} />
+                        <div className='columns artifact-name'>
+                            <span className='hoverable'>{artifact.name}</span>
+                        </div>
+                        <div className='columns node-name'>
+                            <span className='hoverable'>{artifact.nodeName}</span>
+                        </div>
+                        <div className='columns path'>
+                            <span className='hoverable'>{artifact.path}</span>
+                        </div>
+                        <div className='columns created-at'>
+                            <span className='hoverable'>
+                                <Timestamp date={artifact.dateCreated} timestampKey={TIMESTAMP_KEYS.WORKFLOW_NODE_ARTIFACT_CREATED} />
+                            </span>
                         </div>
                     </div>
                 ))}
