@@ -111,11 +111,11 @@ function WorkflowNodeSummary(props: Props) {
         },
         ...(props.node.message
             ? [
-                {
-                    title: 'MESSAGE',
-                    value: <span className='workflow-node-info__multi-line'>{props.node.message}</span>
-                }
-            ]
+                  {
+                      title: 'MESSAGE',
+                      value: <span className='workflow-node-info__multi-line'>{props.node.message}</span>
+                  }
+              ]
             : []),
         {title: 'START TIME', value: <DisplayWorkflowTime date={props.node.startedAt} timestampKey={TIMESTAMP_KEYS.WORKFLOW_NODE_STARTED} />},
         {title: 'END TIME', value: <DisplayWorkflowTime date={props.node.finishedAt} timestampKey={TIMESTAMP_KEYS.WORKFLOW_NODE_FINISHED} />},
@@ -131,19 +131,19 @@ function WorkflowNodeSummary(props: Props) {
                     rows={
                         props.node.memoizationStatus
                             ? [
-                                {
-                                    left: <div> KEY </div>,
-                                    right: <div> {props.node.memoizationStatus.key} </div>
-                                },
-                                {
-                                    left: <div> CACHE NAME </div>,
-                                    right: <div> {props.node.memoizationStatus.cacheName} </div>
-                                },
-                                {
-                                    left: <div> HIT? </div>,
-                                    right: <div> {props.node.memoizationStatus.hit ? 'YES' : 'NO'} </div>
-                                }
-                            ]
+                                  {
+                                      left: <div> KEY </div>,
+                                      right: <div> {props.node.memoizationStatus.key} </div>
+                                  },
+                                  {
+                                      left: <div> CACHE NAME </div>,
+                                      right: <div> {props.node.memoizationStatus.cacheName} </div>
+                                  },
+                                  {
+                                      left: <div> HIT? </div>,
+                                      right: <div> {props.node.memoizationStatus.hit ? 'YES' : 'NO'} </div>
+                                  }
+                              ]
                             : [{left: <div> N/A </div>, right: null}]
                     }
                 />
@@ -348,20 +348,20 @@ function WorkflowNodeContainer(props: {
         container.source
             ? {title: 'SOURCE', value: <pre className='workflow-node-info__multi-line'>{container.source}</pre>}
             : {
-                title: 'ARGS',
-                value: <pre className='workflow-node-info__multi-line'>{(container.args || []).map(maybeQuote).join(' ')}</pre>
-            },
+                  title: 'ARGS',
+                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).map(maybeQuote).join(' ')}</pre>
+              },
         hasEnv(container)
             ? {
-                title: 'ENV',
-                value: (
-                    <pre className='workflow-node-info__multi-line'>
-                        {(container.env || []).map(e => (
-                            <EnvVar key={e.name} env={e} />
-                        ))}
-                    </pre>
-                )
-            }
+                  title: 'ENV',
+                  value: (
+                      <pre className='workflow-node-info__multi-line'>
+                          {(container.env || []).map(e => (
+                              <EnvVar key={e.name} env={e} />
+                          ))}
+                      </pre>
+                  )
+              }
             : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];
     return (
@@ -495,22 +495,22 @@ export const WorkflowNodeInfo = (props: Props) => (
             ].concat(
                 props.node.type !== 'Container'
                     ? [
-                        {
-                            title: 'CONTAINERS',
-                            key: 'containers',
-                            content: <WorkflowNodeContainers {...props} />
-                        },
-                        {
-                            title: 'INPUTS/OUTPUTS',
-                            key: 'inputs-outputs',
-                            content: (
-                                <>
-                                    <WorkflowNodeInputs {...props} />
-                                    <WorkflowNodeOutputs {...props} />
-                                </>
-                            )
-                        }
-                    ]
+                          {
+                              title: 'CONTAINERS',
+                              key: 'containers',
+                              content: <WorkflowNodeContainers {...props} />
+                          },
+                          {
+                              title: 'INPUTS/OUTPUTS',
+                              key: 'inputs-outputs',
+                              content: (
+                                  <>
+                                      <WorkflowNodeInputs {...props} />
+                                      <WorkflowNodeOutputs {...props} />
+                                  </>
+                              )
+                          }
+                      ]
                     : []
             )}
         />
