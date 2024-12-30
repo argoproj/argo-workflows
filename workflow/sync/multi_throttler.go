@@ -5,8 +5,9 @@ import (
 	"sync"
 	"time"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"k8s.io/client-go/tools/cache"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 //go:generate mockery --name=Throttler
@@ -180,7 +181,6 @@ func (m *multiThrottler) queueThrottled() {
 		m.running[bestItem.key] = true
 		m.queue(bestItem.key)
 	}
-	return
 }
 
 type item struct {
