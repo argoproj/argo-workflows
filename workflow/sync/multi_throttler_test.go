@@ -14,7 +14,7 @@ import (
 )
 
 func TestMultiNoParallelismSamePriority(t *testing.T) {
-	throttler := NewMultiThrottler(0, make(map[string]int), 0, nil)
+	throttler := NewMultiThrottler(0, make(map[string]int), 0, func(Key) {})
 
 	throttler.Add("default/c", 0, time.Now().Add(2*time.Hour))
 	throttler.Add("default/b", 0, time.Now().Add(1*time.Hour))

@@ -688,7 +688,9 @@ func TestParallelism(t *testing.T) {
 	for tt, f := range map[string]func(controller *WorkflowController){
 		"Parallelism": func(x *WorkflowController) {
 			x.Config.Parallelism = 1
-			x.Config.NamespaceParallelism = 0
+		},
+		"NamespaceParallelism": func(x *WorkflowController) {
+			x.Config.NamespaceParallelism = 1
 		},
 	} {
 		t.Run(tt, func(t *testing.T) {

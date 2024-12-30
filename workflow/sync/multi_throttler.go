@@ -27,7 +27,7 @@ type Throttler interface {
 type Key = string
 type QueueFunc func(Key)
 
-// NewMultiThrottler creates a new multi throttler for throttling both namespace and global parallelism
+// NewMultiThrottler creates a new multi throttler for throttling both namespace and global parallelism, a parallelism value of zero disables throttling
 func NewMultiThrottler(parallelism int, namespaceParallelism map[string]int, namespaceParallelismDefault int, queue QueueFunc) Throttler {
 	return &multiThrottler{
 		queue:                       queue,
@@ -55,9 +55,6 @@ type multiThrottler struct {
 func (m *multiThrottler) Init(wfs []wfv1.Workflow) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if m.totalParallelism == 0 {
-		return nil
-	}
 
 	type keyNamespacePair struct {
 		key       string
@@ -76,16 +73,11 @@ func (m *multiThrottler) Init(wfs []wfv1.Workflow) error {
 		if err != nil {
 			return err
 		}
-		_, namespaceLimit := m.namespaceCount(namespace)
-		if namespaceLimit == 0 {
-			continue
-		}
 		pairs = append(pairs, keyNamespacePair{key: key, namespace: namespace})
 	}
 
 	for _, pair := range pairs {
 		m.running[pair.key] = true
-		m.totalParallelism++
 		m.namespaceCounts[pair.namespace] = m.namespaceCounts[pair.namespace] + 1
 	}
 	return nil
@@ -103,24 +95,16 @@ func (m *multiThrottler) namespaceCount(namespace string) (int, int) {
 
 func (m *multiThrottler) namespaceAllows(namespace string) bool {
 	count, limit := m.namespaceCount(namespace)
-	return count < limit
+	return count < limit || limit == 0
 }
 
 func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if m.totalParallelism == 0 {
-		return
-	}
 	namespace, _, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return
 	}
-	_, namespaceLimit := m.namespaceCount(namespace)
-	if namespaceLimit == 0 {
-		return
-	}
-
 	_, ok := m.pending[namespace]
 	if !ok {
 		m.pending[namespace] = &priorityQueue{itemByKey: make(map[string]*item)}
@@ -133,12 +117,6 @@ func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
 func (m *multiThrottler) Admit(key Key) bool {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-
-	namespace, _, _ := cache.SplitMetaNamespaceKey(key)
-	_, namespaceLimit := m.namespaceCount(namespace)
-	if m.totalParallelism == 0 || namespaceLimit == 0 {
-		return true
-	}
 
 	_, ok := m.running[key]
 	if ok {
@@ -161,7 +139,7 @@ func (m *multiThrottler) Remove(key Key) {
 }
 
 func (m *multiThrottler) queueThrottled() {
-	if m.totalParallelism != -1 && len(m.running) >= m.totalParallelism {
+	if m.totalParallelism != 0 && len(m.running) >= m.totalParallelism {
 		return
 	}
 	var bestItem *item
