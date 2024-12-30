@@ -439,7 +439,6 @@ function WorkflowNodeArtifacts(props: {workflow: Workflow; node: NodeStatus; arc
             {artifacts.length > 0 && (
                 <div className='white-box__details'>
                     <div className='row header'>
-                        <div className='columns download'>Download</div>
                         <div className='columns artifact-name'>Artifact Name</div>
                         <div className='columns node-name'>Node Name</div>
                         <div className='columns path'>Path</div>
@@ -448,12 +447,10 @@ function WorkflowNodeArtifacts(props: {workflow: Workflow; node: NodeStatus; arc
 
                     {artifacts.map(artifact => (
                         <div className='row artifact-row' key={artifact.name}>
-                            <div className='columns download'>
+                            <div className='columns artifact-name'>
                                 <a href={artifact.downloadUrl}>
                                     <i className='fa fa-download' />
                                 </a>
-                            </div>
-                            <div className='columns artifact-name'>
                                 <span className='hoverable'>{artifact.name}</span>
                             </div>
                             <div className='columns node-name'>

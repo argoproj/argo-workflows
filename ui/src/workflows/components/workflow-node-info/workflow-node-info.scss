@@ -134,4 +134,21 @@
             background-color: $argo-color-gray-3;
         }
     }
+
+    .artifact-row .columns.artifact-name {
+        display: flex;
+        align-items: center;
+        padding: 0;
+    }
+
+    .artifact-row .columns.artifact-name a {
+        margin-right: 1.0em;
+        text-decoration: none;
+    }
+
+    .artifact-row .columns.artifact-name .artifact-name-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
