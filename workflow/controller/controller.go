@@ -243,10 +243,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
 	f := func(key string) { wfc.wfQueue.AddRateLimited(key) }
-	return sync.ChainThrottler{
-		sync.NewThrottler(wfc.Config.Parallelism, sync.SingleBucket, f),
-		sync.NewThrottler(wfc.Config.NamespaceParallelism, sync.NamespaceBucket, f),
-	}
+	return sync.NewMultiThrottler(wfc.Config.Parallelism, make(map[string]int), wfc.Config.NamespaceParallelism, f)
 }
 
 // runGCcontroller runs the workflow garbage collector controller
