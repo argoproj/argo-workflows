@@ -66,6 +66,7 @@ var (
 	formatters = map[string]Formatter{
 		"pretty": formatterPretty{},
 		"simple": formatterSimple{},
+		"json":   formatterJson{},
 	}
 )
 
