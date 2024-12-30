@@ -13,4 +13,4 @@ spec:
       container:
         image: docker/whalesay
         command: [cowsay]
-        args: ['{{workflow.labels.arg-name}}', '{{workflow.annotations.arg-name}}']
+        args: ['{{workflow.labels.arg-name}}', '{{workflow.annotations.arg-name}}', '{{workflow.labels.default-label}}']
