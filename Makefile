@@ -541,11 +541,7 @@ endif
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
-ifeq ($(API),true)
-start: install controller kit cli
-else
-start: install controller kit
-endif
+start: kit
 else
 start: install kit
 endif
