@@ -515,21 +515,27 @@ message CronWorkflowSpec {
 // CronWorkflowStatus is the status of a CronWorkflow
 message CronWorkflowStatus {
   // Active is a list of active workflows stemming from this CronWorkflow
+  // +optional
   repeated k8s.io.api.core.v1.ObjectReference active = 1;
 
   // LastScheduleTime is the last time the CronWorkflow was scheduled
+  // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
 
   // Conditions is a list of conditions the CronWorkflow may have
+  // +optional
   repeated Condition conditions = 3;
 
   // v3.6 and after: Succeeded counts how many times child workflows succeeded
+  // +optional
   optional int64 succeeded = 4;
 
   // v3.6 and after: Failed counts how many times child workflows failed
+  // +optional
   optional int64 failed = 5;
 
   // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
+  // +optional
   optional string phase = 6;
 }
 
@@ -542,6 +548,7 @@ message DAGTask {
   optional string template = 2;
 
   // Inline is the template. Template must be empty if this is declared (and vice-versa).
+  // +kubebuilder:pruning:PreserveUnknownFields
   optional Template inline = 14;
 
   // Arguments are the parameter and artifact arguments to the template
@@ -554,6 +561,8 @@ message DAGTask {
   repeated string dependencies = 5;
 
   // WithItems expands a task into multiple parallel tasks from the items in the list
+  // +kubebuilder:validation:Schemaless
+  // +kubebuilder:pruning:PreserveUnknownFields
   repeated Item withItems = 6;
 
   // WithParam expands a task into multiple parallel tasks from the value in the parameter,
@@ -871,7 +880,6 @@ message Inputs {
 // The value of Item can be a map, string, bool, or number
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +kubebuilder:validation:Type=object
 message Item {
   optional bytes value = 1;
 }
@@ -1228,8 +1236,11 @@ message Outputs {
   optional string exitCode = 4;
 }
 
-// +kubebuilder:validation:Type=array
+// swagger:ignore
 message ParallelSteps {
+  // Note: the `json:"steps"` part exists to workaround kubebuilder limitations.
+  // There isn't actually a "steps" key in the JSON serialization; this is an anonymous list.
+  // See the custom Unmarshaller below and ./hack/manifests/crd.go
   repeated WorkflowStep steps = 1;
 }
 
@@ -1449,6 +1460,7 @@ message ScriptTemplate {
   optional k8s.io.api.core.v1.Container container = 1;
 
   // Source contains the source code of the script to execute
+  // +optional
   optional string source = 2;
 }
 
@@ -1658,6 +1670,7 @@ message Template {
   optional HTTP http = 42;
 
   // Plugin is a plugin template
+  // +kubebuilder:pruning:PreserveUnknownFields
   optional Plugin plugin = 43;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
@@ -2177,6 +2190,7 @@ message WorkflowStep {
   optional string template = 2;
 
   // Inline is the template. Template must be empty if this is declared (and vice-versa).
+  // +kubebuilder:pruning:PreserveUnknownFields
   optional Template inline = 13;
 
   // Arguments hold arguments to the template
@@ -2186,6 +2200,8 @@ message WorkflowStep {
   optional TemplateRef templateRef = 4;
 
   // WithItems expands a step into multiple parallel steps from the items in the list
+  // +kubebuilder:validation:Schemaless
+  // +kubebuilder:pruning:PreserveUnknownFields
   repeated Item withItems = 5;
 
   // WithParam expands a step into multiple parallel steps from the value in the parameter,
