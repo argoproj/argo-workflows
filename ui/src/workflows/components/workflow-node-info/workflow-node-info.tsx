@@ -11,14 +11,14 @@ import {InlineTable} from '../../../shared/components/inline-table/inline-table'
 import LinkifiedText from '../../../shared/components/linkified-text';
 import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
-import {Timestamp} from '../../../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../../../shared/components/timestamp';
 import * as models from '../../../shared/models';
 import {Artifact, NodeStatus, Workflow} from '../../../shared/models';
 import {getPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
-import {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
 import './workflow-node-info.scss';
 
@@ -412,6 +412,7 @@ function WorkflowNodeContainers(props: Props) {
 }
 
 function WorkflowNodeArtifacts(props: {workflow: Workflow; node: NodeStatus; archived: boolean; isInput: boolean; artifacts: Artifact[]}) {
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.WORKFLOW_NODE_ARTIFACT_CREATED);
     const artifacts =
         (props.artifacts &&
             props.artifacts.map(artifact =>
@@ -442,7 +443,7 @@ function WorkflowNodeArtifacts(props: {workflow: Workflow; node: NodeStatus; arc
                         <div className='columns artifact-name'>Artifact Name</div>
                         <div className='columns node-name'>Node Name</div>
                         <div className='columns path'>Path</div>
-                        <div className='columns created-at'>Created at</div>
+                        Created at <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
                     </div>
 
                     {artifacts.map(artifact => (
@@ -461,7 +462,7 @@ function WorkflowNodeArtifacts(props: {workflow: Workflow; node: NodeStatus; arc
                             </div>
                             <div className='columns created-at'>
                                 <span className='hoverable'>
-                                    <Timestamp date={artifact.dateCreated} timestampKey={TIMESTAMP_KEYS.WORKFLOW_NODE_ARTIFACT_CREATED} />
+                                    <Timestamp date={artifact.dateCreated} displayISOFormat={storedDisplayISOFormat} />
                                 </span>
                             </div>
                         </div>

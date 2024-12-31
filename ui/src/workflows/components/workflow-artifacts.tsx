@@ -1,9 +1,9 @@
 import * as React from 'react';
 
-import {Timestamp} from '../../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../../shared/components/timestamp';
 import * as models from '../../shared/models';
 import {services} from '../../shared/services';
-import {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 
 interface Props {
     workflow: models.Workflow;
@@ -12,6 +12,7 @@ interface Props {
 
 export function WorkflowArtifacts(props: Props) {
     const workflowStatusNodes = (props.workflow.status && props.workflow.status.nodes) || {};
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.WORKFLOW_NODE_ARTIFACT_CREATED);
     const artifacts =
         Object.keys(workflowStatusNodes)
             .map(nodeName => {
@@ -44,7 +45,9 @@ export function WorkflowArtifacts(props: Props) {
                     <div className='columns artifact-name'>Name</div>
                     <div className='columns step-name'>Step Name</div>
                     <div className='columns path'>Path</div>
-                    <div className='columns created-at'>Created at</div>
+                    <div className='columns created-at'>
+                        Created at <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                    </div>
                 </div>
 
                 {artifacts.map(artifact => (
@@ -63,7 +66,7 @@ export function WorkflowArtifacts(props: Props) {
                         </div>
                         <div className='columns created-at'>
                             <span className='hoverable'>
-                                <Timestamp date={artifact.dateCreated} timestampKey={TIMESTAMP_KEYS.WORKFLOW_NODE_ARTIFACT_CREATED} />
+                                <Timestamp date={artifact.dateCreated} displayISOFormat={storedDisplayISOFormat} />
                             </span>
                         </div>
                     </div>
