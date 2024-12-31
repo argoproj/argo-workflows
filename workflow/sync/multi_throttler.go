@@ -8,8 +8,9 @@ import (
 
 	"k8s.io/client-go/tools/cache"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 //go:generate mockery --name=Throttler
