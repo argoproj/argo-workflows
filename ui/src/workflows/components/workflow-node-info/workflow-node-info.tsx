@@ -443,7 +443,9 @@ function WorkflowNodeArtifacts(props: {workflow: Workflow; node: NodeStatus; arc
                         <div className='columns artifact-name'>Artifact Name</div>
                         <div className='columns node-name'>Node Name</div>
                         <div className='columns path'>Path</div>
-                        Created at <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                        <div className='columns created-at'>
+                            Created at <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                        </div>
                     </div>
 
                     {artifacts.map(artifact => (
