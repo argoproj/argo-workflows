@@ -145,6 +145,7 @@ func (m *multiThrottler) Remove(key Key) {
 		delete(m.running, key)
 		m.namespaceCounts[namespace] = m.namespaceCounts[namespace] - 1
 	}
+	m.pending[namespace].remove(key)
 	m.queueThrottled()
 }
 
