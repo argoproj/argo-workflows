@@ -242,7 +242,10 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	f := func(key string) { wfc.wfQueue.AddRateLimited(key) }
+	f := func(key string) {
+		log.Infof("[DEBUG] queued string %s", key)
+		wfc.wfQueue.Add(key)
+	}
 	return sync.NewMultiThrottler(wfc.Config.Parallelism, make(map[string]int), wfc.Config.NamespaceParallelism, f)
 }
 
@@ -479,6 +482,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 			log.Warnf("received object from indexer %s is not an unstructured", indexes.SemaphoreConfigIndexName)
 			continue
 		}
+		log.Infof("Adding workflow %s/%s", un.GetNamespace(), un.GetName())
 		wfc.wfQueue.AddRateLimited(fmt.Sprintf("%s/%s", un.GetNamespace(), un.GetName()))
 	}
 }

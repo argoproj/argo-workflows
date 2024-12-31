@@ -2,12 +2,14 @@ package sync
 
 import (
 	"container/heap"
+	"math/rand"
 	"sync"
 	"time"
 
 	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	log "github.com/sirupsen/logrus"
 )
 
 //go:generate mockery --name=Throttler
@@ -100,8 +102,11 @@ func (m *multiThrottler) namespaceAllows(namespace string) bool {
 }
 
 func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
+	id := rand.Int63()
+	log.Infof("[DEBUG][ADD] on instance %d", id)
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	defer log.Infof("[DEBUG][ADD]left instance %d", id)
 	namespace, _, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return
@@ -116,8 +121,11 @@ func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
 }
 
 func (m *multiThrottler) Admit(key Key) bool {
+	id := rand.Int63()
+	log.Infof("[DEBUG][ADMIT] on instance %d", id)
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	defer log.Infof("[DEBUG][ADMIT]left instance %d", id)
 
 	_, ok := m.running[key]
 	if ok {
