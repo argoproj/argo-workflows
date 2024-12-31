@@ -78,9 +78,8 @@
         background-color: $argo-color-gray-1;
         border-bottom: 1px solid $argo-color-gray-5;
         display: flex;
-        align-items: center;
         line-height: 1.2em;
-        padding: 4px 8px;
+        padding: 4px 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -97,10 +96,13 @@
             word-wrap: break-word;
             word-break: break-all;
             overflow-wrap: break-word;
+            text-align: left;
+            padding-left: 0;
 
             &:hover {
                 overflow: visible;
                 white-space: normal;
+
             }
         }
     }
@@ -129,26 +131,29 @@
         display: flex;
         border-bottom: 1px solid $argo-color-gray-5;
         padding: 8px 0;
+        text-align: left;
 
         &:hover {
             background-color: $argo-color-gray-3;
         }
-    }
 
-    .artifact-row .columns.artifact-name {
-        display: flex;
-        align-items: center;
-        padding: 0;
-    }
+        .columns {
+            padding-left: 0;
 
-    .artifact-row .columns.artifact-name a {
-        margin-right: 1.0em;
-        text-decoration: none;
-    }
+            &.artifact-name {
+                display: flex;
 
-    .artifact-row .columns.artifact-name .artifact-name-text {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+                a {
+                    margin-right: 1em;
+                    text-decoration: none;
+                }
+
+                .artifact-name-text {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+            }
+        }
     }
 }
