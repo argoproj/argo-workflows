@@ -41,7 +41,7 @@ export function WorkflowArtifacts(props: Props) {
         <div className='white-box'>
             <div className='white-box__details'>
                 <div className='row header'>
-                    <div className='columns artifact-name'>Artifact Name</div>
+                    <div className='columns artifact-name'>Name</div>
                     <div className='columns step-name'>Step Name</div>
                     <div className='columns path'>Path</div>
                     <div className='columns created-at'>Created at</div>
