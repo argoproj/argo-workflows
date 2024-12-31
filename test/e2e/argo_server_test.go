@@ -1375,7 +1375,8 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: argoproj/argosay:v2`).
+        image: argoproj/argosay:v2
+        args: [echo, "hello \\u0001F44D"]`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -1527,6 +1528,10 @@ spec:
 		j.
 			Path("$.metadata.name").
 			NotNull()
+		j.
+			Path("$.spec.templates[0].container.args[1]").
+			// make sure unicode escape wasn't mangled
+			IsEqual("hello \\u0001F44D")
 		j.
 			Path(fmt.Sprintf("$.metadata.labels[\"%s\"]", common.LabelKeyWorkflowArchivingStatus)).
 			IsEqual("Persisted")

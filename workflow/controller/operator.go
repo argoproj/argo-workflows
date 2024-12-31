@@ -3989,7 +3989,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		// Validate the execution wfSpec
 		err := waitutil.Backoff(retry.DefaultRetry,
 			func() (bool, error) {
-				validationErr := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+				validationErr := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
 				if validationErr != nil {
 					return !errorsutil.IsTransientErr(validationErr), validationErr
 				}
