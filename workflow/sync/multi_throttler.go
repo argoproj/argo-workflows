@@ -2,26 +2,13 @@ package sync
 
 import (
 	"container/heap"
-	"os"
 	"sync"
 	"time"
 
 	"k8s.io/client-go/tools/cache"
 
-	log "github.com/sirupsen/logrus"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
-
-var logg *log.Logger
-
-func init() {
-	logg = log.New()
-	f, err := os.OpenFile("./dump.txt", os.O_WRONLY|os.O_CREATE, 0666)
-	if err == nil {
-		logg.SetOutput(f)
-	}
-}
 
 //go:generate mockery --name=Throttler
 
@@ -36,7 +23,6 @@ type Throttler interface {
 	Admit(key Key) bool
 	// Remove notifies throttler that item processing is no longer needed
 	Remove(key Key)
-	Debug()
 }
 
 type Key = string
@@ -119,7 +105,6 @@ func (m *multiThrottler) namespaceAllows(namespace string) bool {
 func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	logg.Infof("[DEBUG][ADD] on key: %s", key)
 	namespace, _, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return
@@ -136,7 +121,6 @@ func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
 func (m *multiThrottler) Admit(key Key) bool {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	logg.Infof("[DEBUG][ADMIT] on key: %s", key)
 
 	_, ok := m.running[key]
 	if ok {
@@ -149,32 +133,11 @@ func (m *multiThrottler) Admit(key Key) bool {
 func (m *multiThrottler) Remove(key Key) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	logg.Infof("[DEBUG][REMOVE] on key: %s", key)
 
 	namespace, _, _ := cache.SplitMetaNamespaceKey(key)
 	delete(m.running, key)
 	m.pending[namespace].remove(key)
 	m.queueThrottled()
-}
-
-func (m *multiThrottler) Debug() {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	cnts := make(map[string]int)
-	logg.Infof("[DEBUG][CONSOLE] total parallelism: %d, total count: %d", m.totalParallelism, len(m.running))
-	log.Infof("[DEBUG][CONSOLE] total parallelism: %d, total count: %d", m.totalParallelism, len(m.running))
-
-	for key := range m.running {
-		logg.Infof("[DEBUG][RUNNING] %s", key)
-		log.Infof("[DEBUG][RUNNING] %s", key)
-		namespace, _, _ := cache.SplitMetaNamespaceKey(key)
-		cnts[namespace] = cnts[namespace] + 1
-	}
-
-	for n, cnt := range cnts {
-		logg.Infof("[DEBUG][NAMESPACE] %s\t%d", n, cnt)
-		log.Infof("[DEBUG][NAMESPACE] %s\t%d", n, cnt)
-	}
 }
 
 func (m *multiThrottler) queueThrottled() {
@@ -202,7 +165,6 @@ func (m *multiThrottler) queueThrottled() {
 			return
 		}
 		if !m.namespaceAllows(namespace) {
-			logg.Infof("[DEBUG][queueThrottled] %s was not allowed in namespace %s, count: %d", currItem.key, namespace, cnts[namespace])
 			continue
 		}
 		if bestItem == nil {
