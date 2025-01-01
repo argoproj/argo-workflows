@@ -13,6 +13,7 @@ import {Icon} from '../icon';
 export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate | CronWorkflow}) {
     const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>(workflowDefinition);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error>();
     const [state, saveOptions] = useState<WorkflowDagRenderOptions>({
         expandNodes: new Set(),
         showArtifacts: false,
@@ -32,7 +33,12 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     useEffect(() => {
         if ('workflowTemplateRef' in workflowDefinition.spec && isLoading) {
             setWorkflowFromRefrence(workflowDefinition.spec.workflowTemplateRef.name).then(() => {
+                setError(null);
                 setIsLoading(false);
+            }).catch(err => {
+                const explicitError = new Error(`${err.message}, no workflowTemplateRef "${workflowDefinition.spec.workflowTemplateRef.name}" found in workflowTemplates or clusterWorkflowTemplates`);
+                explicitError.stack = err.stack;
+                setError(explicitError);
             });
         } else if ('workflowSpec' in workflowDefinition.spec && isLoading) {
             const convertedCronWorkflow = convertFromCronWorkflow(workflowDefinition as CronWorkflow);
@@ -44,7 +50,8 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     }, [workflow]);
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        const currentState = error ? `${error.name}: ${error.message}` : 'Loading...';
+        return <div>{currentState}</div>;
     }
 
     const name = workflow.metadata.name ? `${workflow.metadata.name}-${generateNamePostfix(5)}` : `${workflow.metadata.generateName}${generateNamePostfix(5)}`;
@@ -69,9 +76,22 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     );
 
     function setWorkflowFromRefrence(name: string): Promise<void> {
-        return services.workflowTemplate.get(name, workflowDefinition.metadata.namespace).then(workflowTemplate => {
-            setWorkflow(workflowTemplate);
-        });
+        try {
+            return services.workflowTemplate.get(name, workflowDefinition.metadata.namespace).then(workflowTemplate => {
+                setWorkflow(workflowTemplate);
+            }).catch(() => {
+                return services.clusterWorkflowTemplate
+                    .get(name)
+                    .then(clusterWorkflowTemplate => {
+                        setWorkflow(clusterWorkflowTemplate);
+                    })
+                    .catch(err => {
+                        throw err;
+                    });
+            });
+        } catch (err) {
+            throw err;
+        }
     }
 
     function convertFromCronWorkflow(cronWorkflow: CronWorkflow): Workflow {
