@@ -152,9 +152,7 @@ func (m *multiThrottler) Remove(key Key) {
 	logg.Infof("[DEBUG][REMOVE] on key: %s", key)
 
 	namespace, _, _ := cache.SplitMetaNamespaceKey(key)
-	if _, ok := m.running[key]; ok {
-		delete(m.running, key)
-	}
+	delete(m.running, key)
 	m.pending[namespace].remove(key)
 	m.queueThrottled()
 }
