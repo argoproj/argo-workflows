@@ -32,14 +32,14 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
 
     useEffect(() => {
         if ('workflowTemplateRef' in workflowDefinition.spec && isLoading) {
-            setWorkflowFromRefrence(workflowDefinition.spec.workflowTemplateRef.name).then(() => {
-                setError(null);
-                setIsLoading(false);
-            }).catch(err => {
-                const explicitError = new Error(`${err.message}, no workflowTemplateRef "${workflowDefinition.spec.workflowTemplateRef.name}" found in workflowTemplates or clusterWorkflowTemplates`);
-                explicitError.stack = err.stack;
-                setError(explicitError);
-            });
+            setWorkflowFromRefrence(workflowDefinition.spec.workflowTemplateRef.name)
+                .then(() => {
+                    setError(null);
+                    setIsLoading(false);
+                })
+                .catch(err => {
+                    setError(err);
+                });
         } else if ('workflowSpec' in workflowDefinition.spec && isLoading) {
             const convertedCronWorkflow = convertFromCronWorkflow(workflowDefinition as CronWorkflow);
             setWorkflow(convertedCronWorkflow);
@@ -76,22 +76,23 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     );
 
     function setWorkflowFromRefrence(name: string): Promise<void> {
-        try {
-            return services.workflowTemplate.get(name, workflowDefinition.metadata.namespace).then(workflowTemplate => {
+        return services.workflowTemplate
+            .get(name, workflowDefinition.metadata.namespace)
+            .then(workflowTemplate => {
                 setWorkflow(workflowTemplate);
-            }).catch(() => {
+            })
+            .catch(() => {
                 return services.clusterWorkflowTemplate
                     .get(name)
                     .then(clusterWorkflowTemplate => {
                         setWorkflow(clusterWorkflowTemplate);
                     })
                     .catch(err => {
-                        throw err;
+                        const explicitError = new Error(`${err.message}, no workflowTemplateRef "${name}" found in workflowTemplates or clusterWorkflowTemplates`);
+                        explicitError.stack = err.stack;
+                        throw explicitError;
                     });
             });
-        } catch (err) {
-            throw err;
-        }
     }
 
     function convertFromCronWorkflow(cronWorkflow: CronWorkflow): Workflow {
