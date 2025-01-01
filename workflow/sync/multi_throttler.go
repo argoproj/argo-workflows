@@ -2,7 +2,7 @@ package sync
 
 import (
 	"container/heap"
-	"math/rand"
+	"os"
 	"sync"
 	"time"
 
@@ -12,6 +12,16 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
+
+var logg *log.Logger
+
+func init() {
+	logg = log.New()
+	f, err := os.OpenFile("./dump.txt", os.O_WRONLY|os.O_CREATE, 0666)
+	if err == nil {
+		logg.SetOutput(f)
+	}
+}
 
 //go:generate mockery --name=Throttler
 
@@ -26,6 +36,7 @@ type Throttler interface {
 	Admit(key Key) bool
 	// Remove notifies throttler that item processing is no longer needed
 	Remove(key Key)
+	Debug()
 }
 
 type Key = string
@@ -37,7 +48,6 @@ func NewMultiThrottler(parallelism int, namespaceParallelism map[string]int, nam
 		queue:                       queue,
 		namespaceParallelism:        namespaceParallelism,
 		namespaceParallelismDefault: namespaceParallelismDefault,
-		namespaceCounts:             make(map[string]int),
 		totalParallelism:            parallelism,
 		running:                     make(map[Key]bool),
 		pending:                     make(map[string]*priorityQueue),
@@ -49,7 +59,6 @@ type multiThrottler struct {
 	queue                       QueueFunc
 	namespaceParallelism        map[string]int
 	namespaceParallelismDefault int
-	namespaceCounts             map[string]int
 	totalParallelism            int
 	running                     map[Key]bool
 	pending                     map[string]*priorityQueue
@@ -82,7 +91,6 @@ func (m *multiThrottler) Init(wfs []wfv1.Workflow) error {
 
 	for _, pair := range pairs {
 		m.running[pair.key] = true
-		m.namespaceCounts[pair.namespace] = m.namespaceCounts[pair.namespace] + 1
 	}
 	return nil
 }
@@ -93,7 +101,13 @@ func (m *multiThrottler) namespaceCount(namespace string) (int, int) {
 		m.namespaceParallelism[namespace] = m.namespaceParallelismDefault
 		setLimit = m.namespaceParallelismDefault
 	}
-	count := m.namespaceCounts[namespace]
+	count := 0
+	for key := range m.running {
+		ns, _, _ := cache.SplitMetaNamespaceKey(key)
+		if ns == namespace {
+			count++
+		}
+	}
 	return count, setLimit
 }
 
@@ -103,11 +117,9 @@ func (m *multiThrottler) namespaceAllows(namespace string) bool {
 }
 
 func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
-	id := rand.Int63()
-	log.Infof("[DEBUG][ADD] on instance %d", id)
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	defer log.Infof("[DEBUG][ADD]left instance %d", id)
+	logg.Infof("[DEBUG][ADD] on key: %s", key)
 	namespace, _, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return
@@ -122,11 +134,9 @@ func (m *multiThrottler) Add(key Key, priority int32, creationTime time.Time) {
 }
 
 func (m *multiThrottler) Admit(key Key) bool {
-	id := rand.Int63()
-	log.Infof("[DEBUG][ADMIT] on instance %d", id)
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	defer log.Infof("[DEBUG][ADMIT]left instance %d", id)
+	logg.Infof("[DEBUG][ADMIT] on key: %s", key)
 
 	_, ok := m.running[key]
 	if ok {
@@ -139,14 +149,34 @@ func (m *multiThrottler) Admit(key Key) bool {
 func (m *multiThrottler) Remove(key Key) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	logg.Infof("[DEBUG][REMOVE] on key: %s", key)
 
 	namespace, _, _ := cache.SplitMetaNamespaceKey(key)
 	if _, ok := m.running[key]; ok {
 		delete(m.running, key)
-		m.namespaceCounts[namespace] = m.namespaceCounts[namespace] - 1
 	}
 	m.pending[namespace].remove(key)
 	m.queueThrottled()
+}
+
+func (m *multiThrottler) Debug() {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	cnts := make(map[string]int)
+	logg.Infof("[DEBUG][CONSOLE] total parallelism: %d, total count: %d", m.totalParallelism, len(m.running))
+	log.Infof("[DEBUG][CONSOLE] total parallelism: %d, total count: %d", m.totalParallelism, len(m.running))
+
+	for key := range m.running {
+		logg.Infof("[DEBUG][RUNNING] %s", key)
+		log.Infof("[DEBUG][RUNNING] %s", key)
+		namespace, _, _ := cache.SplitMetaNamespaceKey(key)
+		cnts[namespace] = cnts[namespace] + 1
+	}
+
+	for n, cnt := range cnts {
+		logg.Infof("[DEBUG][NAMESPACE] %s\t%d", n, cnt)
+		log.Infof("[DEBUG][NAMESPACE] %s\t%d", n, cnt)
+	}
 }
 
 func (m *multiThrottler) queueThrottled() {
@@ -155,6 +185,13 @@ func (m *multiThrottler) queueThrottled() {
 	}
 	var bestItem *item
 	var oldPq *priorityQueue
+
+	cnts := make(map[string]int)
+
+	for key := range m.running {
+		namespace, _, _ := cache.SplitMetaNamespaceKey(key)
+		cnts[namespace] = cnts[namespace] + 1
+	}
 
 	for _, pq := range m.pending {
 		if len(pq.items) == 0 {
@@ -167,6 +204,7 @@ func (m *multiThrottler) queueThrottled() {
 			return
 		}
 		if !m.namespaceAllows(namespace) {
+			logg.Infof("[DEBUG][queueThrottled] %s was not allowed in namespace %s, count: %d", currItem.key, namespace, cnts[namespace])
 			continue
 		}
 		if bestItem == nil {
@@ -186,8 +224,6 @@ func (m *multiThrottler) queueThrottled() {
 		if sameKey.key != bestItem.key {
 			panic("unreachable code was reached")
 		}
-		namespace, _, _ := cache.SplitMetaNamespaceKey(sameKey.key)
-		m.namespaceCounts[namespace] = m.namespaceCounts[namespace] + 1
 		m.running[bestItem.key] = true
 		m.queue(bestItem.key)
 	}
