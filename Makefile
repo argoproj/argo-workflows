@@ -38,7 +38,7 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 GOTEST                ?= go test -v -p 20
-ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
+ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins,examples
 BENCHMARK_COUNT       ?= 6
 
 # should we build the static files?
@@ -607,10 +607,6 @@ test-cli: ./dist/argo
 
 test-%:
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
-
-.PHONY: test-examples
-test-examples:
-	./hack/test-examples.sh
 
 .PHONY: test-%-sdk
 test-%-sdk:

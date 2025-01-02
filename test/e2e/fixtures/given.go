@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -41,10 +42,19 @@ type Given struct {
 //
 // 1. A file name if it starts with "@"
 // 2. Raw YAML.
-func (g *Given) Workflow(text string) *Given {
+// 3. An already parsed wfv1.Workflow object
+func (g *Given) Workflow(wf interface{}) *Given {
 	g.t.Helper()
-	g.wf = &wfv1.Workflow{}
-	g.readResource(text, g.wf)
+	switch v := wf.(type) {
+	case *wfv1.Workflow:
+		g.wf = v
+		g.checkLabels(v)
+	case string:
+		g.wf = &wfv1.Workflow{}
+		g.readResource(v, g.wf)
+	default:
+		g.t.Fatalf("Unsupported input: %s", reflect.TypeOf(wf).String())
+	}
 	g.checkImages(g.wf)
 	return g
 }
@@ -207,6 +217,11 @@ func (g *Given) Exec(name string, args []string, block func(t *testing.T, output
 	output, err := Exec(name, args...)
 	block(g.t, output, err)
 	return g
+}
+
+func (g *Given) KubectlApply(file string, block func(t *testing.T, output string, err error)) *Given {
+	g.t.Helper()
+	return g.Exec("kubectl", append([]string{"-n", Namespace, "apply", "--server-side", "-f"}, file), block)
 }
 
 func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
