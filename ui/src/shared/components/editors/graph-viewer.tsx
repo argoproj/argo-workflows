@@ -4,7 +4,7 @@ import {useEffect, useState} from 'react';
 import {genres} from '../../../workflows/components/workflow-dag/genres';
 import {WorkflowDagRenderOptions} from '../../../workflows/components/workflow-dag/workflow-dag';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
-import {ClusterWorkflowTemplate, CronWorkflow, DAGTask, Template, Workflow, WorkflowStep, WorkflowTemplate} from '../../models';
+import {ClusterWorkflowTemplate, CronWorkflow, DAGTask, Template, Workflow, WorkflowStep, WorkflowTemplate, WorkflowTemplateRef} from '../../models';
 import {services} from '../../services';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
@@ -32,7 +32,7 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
 
     useEffect(() => {
         if ('workflowTemplateRef' in workflowDefinition.spec && isLoading) {
-            setWorkflowFromRefrence(workflowDefinition.spec.workflowTemplateRef.name)
+            setWorkflowFromRefrence(workflowDefinition.spec.workflowTemplateRef)
                 .then(() => {
                     setError(null);
                     setIsLoading(false);
@@ -75,24 +75,31 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
         />
     );
 
-    function setWorkflowFromRefrence(name: string): Promise<void> {
-        return services.workflowTemplate
-            .get(name, workflowDefinition.metadata.namespace)
-            .then(workflowTemplate => {
-                setWorkflow(workflowTemplate);
-            })
-            .catch(() => {
-                return services.clusterWorkflowTemplate
-                    .get(name)
-                    .then(clusterWorkflowTemplate => {
-                        setWorkflow(clusterWorkflowTemplate);
-                    })
-                    .catch(err => {
-                        const explicitError = new Error(`${err.message}, no workflowTemplateRef "${name}" found in workflowTemplates or clusterWorkflowTemplates`);
-                        explicitError.stack = err.stack;
-                        throw explicitError;
-                    });
-            });
+    function setWorkflowFromRefrence(workflowTemplateRef: WorkflowTemplateRef): Promise<void> {
+        const referenceName = workflowTemplateRef.name;
+        if ('clusterScope' in workflowTemplateRef && workflowTemplateRef.clusterScope == true) {
+            return services.clusterWorkflowTemplate
+                .get(referenceName)
+                .then(clusterWorkflowTemplate => {
+                    setWorkflow(clusterWorkflowTemplate);
+                })
+                .catch(err => {
+                    const explicitError = new Error(`${err.message}, no workflowTemplateRef "${referenceName}" found in clusterWorkflowTemplates`);
+                    explicitError.stack = err.stack;
+                    throw explicitError;
+                });
+        } else {
+            return services.workflowTemplate
+                .get(referenceName, workflowDefinition.metadata.namespace)
+                .then(workflowTemplate => {
+                    setWorkflow(workflowTemplate);
+                })
+                .catch(err => {
+                    const explicitError = new Error(`${err.message}, no workflowTemplateRef "${referenceName}" found in workflowTemplates`);
+                    explicitError.stack = err.stack;
+                    throw explicitError;
+                });
+        }
     }
 
     function convertFromCronWorkflow(cronWorkflow: CronWorkflow): Workflow {
