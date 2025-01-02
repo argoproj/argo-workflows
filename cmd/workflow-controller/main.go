@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"github.com/argoproj/pkg/cli"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -31,6 +31,7 @@ import (
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -72,6 +73,8 @@ func NewRootCommand() *cobra.Command {
 		RunE: func(c *cobra.Command, args []string) error {
 			defer runtimeutil.HandleCrashWithContext(context.Background(), runtimeutil.PanicHandlers...)
 
+			log := logging.NewSlogLogger()
+
 			cli.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)
 			cmdutil.SetLogFormatter(logFormat)
@@ -104,7 +107,7 @@ func NewRootCommand() *cobra.Command {
 			wfclientset := wfclientset.NewForConfigOrDie(config)
 
 			if !namespaced && managedNamespace != "" {
-				log.Warn("ignoring --managed-namespace because --namespaced is false")
+				log.Warn(ctx, "ignoring --managed-namespace because --namespaced is false")
 				managedNamespace = ""
 			}
 			if namespaced && managedNamespace == "" {
@@ -118,15 +121,15 @@ func NewRootCommand() *cobra.Command {
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {
-				log.Info("Leader election is turned off. Running in single-instance mode")
-				log.WithField("id", "single-instance").Info("starting leading")
+				log.Info(ctx, "Leader election is turned off. Running in single-instance mode")
+				log.WithField(ctx, "id", "single-instance").Info(ctx, "starting leading")
 
 				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
 				go wfController.RunPrometheusServer(ctx, false)
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
-					log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+					log.Fatal(ctx, "LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
 				}
 
 				leaderName := "workflow-controller"
@@ -166,13 +169,13 @@ func NewRootCommand() *cobra.Command {
 							}()
 						},
 						OnStoppedLeading: func() {
-							log.WithField("id", nodeID).Info("stopped leading")
+							log.WithField(ctx, "id", nodeID).Info(ctx, "stopped leading")
 							cancel()
 							wg.Wait()
 							go wfController.RunPrometheusServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {
-							log.WithField("leader", identity).Info("new leader")
+							log.WithField(ctx, "leader", identity).Info(ctx, "new leader")
 						},
 					},
 				})
@@ -181,7 +184,7 @@ func NewRootCommand() *cobra.Command {
 			http.HandleFunc("/healthz", wfController.Healthz)
 
 			go func() {
-				log.Println(http.ListenAndServe(":6060", nil))
+				log.Println(ctx, http.ListenAndServe(":6060", nil).Error())
 			}()
 
 			<-ctx.Done()
@@ -234,10 +237,10 @@ func init() {
 }
 
 func initConfig() {
-	log.SetFormatter(&log.TextFormatter{
+	/* log.SetFormatter(&log.TextFormatter{
 		TimestampFormat: "2006-01-02T15:04:05.000Z",
 		FullTimestamp:   true,
-	})
+	}) */
 }
 
 func main() {
