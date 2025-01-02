@@ -31,17 +31,17 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		}
 		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
 		if execute || hookedNode != nil {
-			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running workflow level hooks")
+			woc.log.WithField(ctx, "lifeCycleHook", hookName).WithField(ctx, "node", hookNodeName).Info(ctx, "Running workflow level hooks")
 			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments,
 				&executeTemplateOpts{nodeFlag: &wfv1.NodeFlag{Hooked: true}},
 			)
 			if err != nil {
 				return true, err
 			}
-			woc.addChildNode(woc.wf.Name, hookNodeName)
+			woc.addChildNode(ctx, woc.wf.Name, hookNodeName)
 			hookNodes = append(hookNodes, hookNode)
 			// If the hookNode node is HTTP template, it requires HTTP reconciliation, do it here
-			if hookNode != nil && woc.nodeRequiresTaskSetReconciliation(hookNode.Name) {
+			if hookNode != nil && woc.nodeRequiresTaskSetReconciliation(ctx, hookNode.Name) {
 				woc.taskSetReconciliation(ctx)
 			}
 		}
@@ -78,7 +78,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 			if lastChildNode := woc.possiblyGetRetryChildNode(parentNode); lastChildNode != nil {
 				outputs = lastChildNode.Outputs
 			}
-			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info("Running hooks")
+			woc.log.WithField(ctx, "lifeCycleHook", hookName).WithField(ctx, "node", hookNodeName).WithField(ctx, "hookName", hookName).Info(ctx, "Running hooks")
 			resolvedArgs := hook.Arguments
 			var err error
 			if !resolvedArgs.IsEmpty() && outputs != nil {
@@ -94,7 +94,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 			if err != nil {
 				return false, err
 			}
-			woc.addChildNode(parentNode.Name, hookNodeName)
+			woc.addChildNode(ctx, parentNode.Name, hookNodeName)
 			hookNodes = append(hookNodes, hookNode)
 		}
 	}

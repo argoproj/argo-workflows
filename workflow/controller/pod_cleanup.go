@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"context"
+
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -10,12 +12,12 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
-func (woc *wfOperationCtx) queuePodsForCleanup() {
+func (woc *wfOperationCtx) queuePodsForCleanup(ctx context.Context) {
 	delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
 	podGC := woc.execWf.Spec.PodGC
 	podGCDelay, err := podGC.GetDeleteDelayDuration()
 	if err != nil {
-		woc.log.WithError(err).Warn("failed to parse podGC.deleteDelayDuration")
+		woc.log.WithError(ctx, err).Warn(ctx, "failed to parse podGC.deleteDelayDuration")
 	} else if podGCDelay >= 0 {
 		delay = podGCDelay
 	}
@@ -31,7 +33,7 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 		nodeID := woc.nodeID(pod)
 		nodePhase, err := woc.wf.Status.Nodes.GetPhase(nodeID)
 		if err != nil {
-			woc.log.Errorf("was unable to obtain node for %s", nodeID)
+			woc.log.Errorf(ctx, "was unable to obtain node for %s", nodeID)
 			continue
 		}
 		if !nodePhase.Fulfilled() {
