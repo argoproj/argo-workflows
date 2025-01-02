@@ -148,7 +148,7 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	return nil
 }
 
-var backfillWf = `{
+const backfillWf = `{
    "apiVersion": "argoproj.io/v1alpha1",
    "kind": "Workflow",
    "metadata": {
