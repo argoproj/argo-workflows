@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	log "github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/pkg/sync"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,6 +22,9 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+
+	"github.com/argoproj/argo-workflows/v3/util/logging"
+	log "github.com/argoproj/argo-workflows/v3/util/logging"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
