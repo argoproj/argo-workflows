@@ -242,10 +242,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	f := func(key string) {
-		log.Infof("[DEBUG] queued string %s", key)
-		wfc.wfQueue.Add(key)
-	}
+	f := func(key string) { wfc.wfQueue.Add(key) }
 	return sync.NewMultiThrottler(wfc.Config.Parallelism, make(map[string]int), wfc.Config.NamespaceParallelism, f)
 }
 
