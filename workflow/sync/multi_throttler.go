@@ -55,11 +55,7 @@ func (m *multiThrottler) Init(wfs []wfv1.Workflow) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	type keyNamespacePair struct {
-		key       string
-		namespace string
-	}
-	pairs := []keyNamespacePair{}
+	keys := []Key{}
 	for _, wf := range wfs {
 		if wf.Status.Phase != wfv1.WorkflowRunning {
 			continue
@@ -68,15 +64,11 @@ func (m *multiThrottler) Init(wfs []wfv1.Workflow) error {
 		if err != nil {
 			return err
 		}
-		namespace, _, err := cache.SplitMetaNamespaceKey(key)
-		if err != nil {
-			return err
-		}
-		pairs = append(pairs, keyNamespacePair{key: key, namespace: namespace})
+		keys = append(keys, key)
 	}
 
-	for _, pair := range pairs {
-		m.running[pair.key] = true
+	for _, key := range keys {
+		m.running[key] = true
 	}
 	return nil
 }
