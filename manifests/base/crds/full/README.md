@@ -1,4 +1,4 @@
 # Full CRDs
 
-These CRDs have the full schema.
-As a result, they are large and probably not suitable to be used in your cluster due to [kubernetes/kubernetes#82292](https://github.com/kubernetes/kubernetes/issues/82292).
+These CRDs have the full schema and must be applied using [server-side apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) to avoid hitting size limits.
+See [Full CRDs](https://argo-workflows.readthedocs.io/en/latest/installation/#full-crds) for more details.

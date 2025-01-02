@@ -1,0 +1,41 @@
+# This admission policy (https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/)
+# can be used to block workflows that use string interpolation inside the fields "command",
+# "args", or "source".
+#
+# Interpolating untrusted user input into this fields can lead to command
+# injection vulnerabilities (https://owasp.org/www-community/attacks/Command_Injection).
+#
+# This policy will only work when using the full CRDs (https://argo-workflows.readthedocs.io/en/latest/installation/#full-crds).
+# You must create a ValidatingAdmissionPolicyBinding to use it.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: "argo-dangerous-interpolation-vap"
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   ["argoproj.io"]
+      apiVersions: ["v1alpha1"]
+      operations:  ["CREATE", "UPDATE"]
+      resources:   ["workflows"]
+  validations:
+    - expression: >
+        !object.spec.templates.map(
+          t, has(t.container)
+            ? (
+              (has(t.container.command) ? t.container.command : [])
+              +
+              (has(t.container.args) ? t.container.args : [])
+            )
+            : (
+              has(t.script)
+              ? (
+                (has(t.script.command) ? t.script.command : [])
+                +
+                (has(t.script.source) ? [t.script.source] : [])
+              )
+              : []
+            )
+        ).exists(values, values.exists(value, value.matches('\\{\\{[^\\}]*\\}\\}')))
+      message: "Dangerous interpolation detected"
