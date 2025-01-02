@@ -11335,7 +11335,7 @@ func TestContainerSetWhenPodDeleted(t *testing.T) {
 	assert.Empty(t, pods.Items)
 
 	// reconcile
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	for _, node := range woc.wf.Status.Nodes {
@@ -11396,7 +11396,7 @@ func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	require.NoError(t, err)
@@ -11404,7 +11404,7 @@ func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
 
 	// mark pod Running
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	for _, node := range woc.wf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod {

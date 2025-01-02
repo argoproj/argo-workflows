@@ -109,7 +109,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 
 		sgNode, err := woc.executeStepGroup(ctx, stepGroup.Steps, sgNodeName, &stepsCtx)
 		if err != nil {
-			return woc.markNodeError(sgNodeName, err), nil
+			return woc.markNodeError(ctx, sgNodeName, err), nil
 		}
 		if !sgNode.Fulfilled() {
 			woc.log.Infof(ctx, "Workflow step group node %s not yet completed", sgNode.ID)
