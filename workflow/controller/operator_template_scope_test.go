@@ -80,8 +80,8 @@ func TestTemplateScope(t *testing.T) {
 	cancel, controller := newController(wf, wftmpl1, wftmpl2)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(wf, controller)
 	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	wf = woc.wf
@@ -170,7 +170,7 @@ func TestTemplateScopeWithParam(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -259,7 +259,7 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -361,7 +361,7 @@ func TestTemplateScopeDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -458,7 +458,7 @@ func TestTemplateClusterScope(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)

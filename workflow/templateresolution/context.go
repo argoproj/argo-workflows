@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -73,35 +73,35 @@ type Context struct {
 	tmplBase wfv1.TemplateHolder
 	// workflow is the Workflow where templates will be stored
 	workflow *wfv1.Workflow
-	// log is a logrus entry.
-	log *log.Entry
+	// log is a logging entry.
+	log logging.Logger
 }
 
 // NewContext returns new Context.
-func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter ClusterWorkflowTemplateGetter, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow) *Context {
+func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter ClusterWorkflowTemplateGetter, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow, log logging.Logger) *Context {
 	return &Context{
 		wftmplGetter:  wftmplGetter,
 		cwftmplGetter: cwftmplGetter,
 		tmplBase:      tmplBase,
 		workflow:      workflow,
-		log:           log.WithFields(log.Fields{}),
+		log:           log,
 	}
 }
 
 // NewContextFromClientSet returns new Context.
-func NewContextFromClientSet(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow) *Context {
+func NewContextFromClientSet(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow, log logging.Logger) *Context {
 	return &Context{
 		wftmplGetter:  WrapWorkflowTemplateInterface(wftmplClientset),
 		cwftmplGetter: WrapClusterWorkflowTemplateInterface(clusterWftmplClient),
 		tmplBase:      tmplBase,
 		workflow:      workflow,
-		log:           log.WithFields(log.Fields{}),
+		log:           log,
 	}
 }
 
 // GetTemplateByName returns a template by name in the context.
-func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
-	ctx.log.Debugf("Getting the template by name: %s", name)
+func (ctx *Context) GetTemplateByName(c context.Context, name string) (*wfv1.Template, error) {
+	ctx.log.Debugf(c, "Getting the template by name: %s", name)
 
 	tmpl := ctx.tmplBase.GetTemplateByName(name)
 
@@ -122,8 +122,8 @@ func (ctx *Context) GetTemplateGetterFromRef(tmplRef *wfv1.TemplateRef) (wfv1.Te
 }
 
 // GetTemplateFromRef returns a template found by a given template ref.
-func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
-	ctx.log.Debug("Getting the template from ref")
+func (ctx *Context) GetTemplateFromRef(c context.Context, tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
+	ctx.log.Debug(c, "Getting the template from ref")
 	var template *wfv1.Template
 	var wftmpl wfv1.TemplateHolder
 	var err error
@@ -152,14 +152,14 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 }
 
 // GetTemplate returns a template found by template name or template ref.
-func (ctx *Context) GetTemplate(h wfv1.TemplateReferenceHolder) (*wfv1.Template, error) {
-	ctx.log.Debug("Getting the template")
+func (ctx *Context) GetTemplate(c context.Context, h wfv1.TemplateReferenceHolder) (*wfv1.Template, error) {
+	ctx.log.Debug(c, "Getting the template")
 	if x := h.GetTemplate(); x != nil {
 		return x, nil
 	} else if x := h.GetTemplateRef(); x != nil {
-		return ctx.GetTemplateFromRef(x)
+		return ctx.GetTemplateFromRef(c, x)
 	} else if x := h.GetTemplateName(); x != "" {
-		return ctx.GetTemplateByName(x)
+		return ctx.GetTemplateByName(c, x)
 	}
 	return nil, errors.Errorf(errors.CodeInternal, "failed to get a template")
 }
@@ -175,20 +175,20 @@ func (ctx *Context) GetTemplateScope() string {
 
 // ResolveTemplate digs into referenes and returns a merged template.
 // This method is the public start point of template resolution.
-func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
-	return ctx.resolveTemplateImpl(tmplHolder)
+func (ctx *Context) ResolveTemplate(c context.Context, tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
+	return ctx.resolveTemplateImpl(c, tmplHolder)
 }
 
 // resolveTemplateImpl digs into references and returns a merged template.
 // This method processes inputs and arguments so the inputs of the final
 // resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.
-func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
-	ctx.log = ctx.log.WithFields(log.Fields{
+func (ctx *Context) resolveTemplateImpl(c context.Context, tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
+	ctx.log = ctx.log.WithFields(c, logging.Fields{
 		"base": common.GetTemplateGetterString(ctx.tmplBase),
 		"tmpl": common.GetTemplateHolderString(tmplHolder),
 	})
-	ctx.log.Debug("Resolving the template")
+	ctx.log.Debug(c, "Resolving the template")
 
 	templateStored := false
 	var tmpl *wfv1.Template
@@ -199,10 +199,10 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder)
 		tmpl = ctx.workflow.GetStoredTemplate(scope, resourceName, tmplHolder)
 	}
 	if tmpl != nil {
-		ctx.log.Debug("Found stored template")
+		ctx.log.Debug(c, "Found stored template")
 	} else {
 		// Find newly appeared template.
-		newTmpl, err := ctx.GetTemplate(tmplHolder)
+		newTmpl, err := ctx.GetTemplate(c, tmplHolder)
 		if err != nil {
 			return nil, nil, false, err
 		}
@@ -215,12 +215,12 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder)
 				return nil, nil, false, err
 			}
 			if stored {
-				ctx.log.Debug("Stored the template")
+				ctx.log.Debug(c, "Stored the template")
 				templateStored = true
 			}
 			err = ctx.workflow.SetStoredInlineTemplate(scope, resourceName, newTmpl)
 			if err != nil {
-				ctx.log.Errorf("Failed to store the inline template: %v", err)
+				ctx.log.Errorf(c, "Failed to store the inline template: %v", err)
 			}
 		}
 		tmpl = newTmpl
@@ -255,7 +255,7 @@ func (ctx *Context) WithTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder) 
 
 // WithTemplateBase creates new context with a wfv1.TemplateHolder.
 func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateHolder) *Context {
-	return NewContext(ctx.wftmplGetter, ctx.cwftmplGetter, tmplBase, ctx.workflow)
+	return NewContext(ctx.wftmplGetter, ctx.cwftmplGetter, tmplBase, ctx.workflow, ctx.log)
 }
 
 // WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.

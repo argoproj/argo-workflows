@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,7 @@ import (
 )
 
 func TestNodeRequiresHttpReconciliation(t *testing.T) {
+	ctx := context.Background()
 	woc := &wfOperationCtx{
 		wf: &v1alpha1.Workflow{
 			ObjectMeta: v1.ObjectMeta{
@@ -35,7 +37,7 @@ func TestNodeRequiresHttpReconciliation(t *testing.T) {
 		},
 	}
 
-	assert.False(t, woc.nodeRequiresTaskSetReconciliation("not-needed"))
-	assert.True(t, woc.nodeRequiresTaskSetReconciliation("child-http"))
-	assert.True(t, woc.nodeRequiresTaskSetReconciliation("parent"))
+	assert.False(t, woc.nodeRequiresTaskSetReconciliation(ctx, "not-needed"))
+	assert.True(t, woc.nodeRequiresTaskSetReconciliation(ctx, "child-http"))
+	assert.True(t, woc.nodeRequiresTaskSetReconciliation(ctx, "parent"))
 }

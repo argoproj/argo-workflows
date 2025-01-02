@@ -65,10 +65,10 @@ func TestStepsOnExitTmpl(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	onExitNodeIsPresent := false
 	for _, node := range woc.wf.Status.Nodes {
@@ -133,10 +133,10 @@ func TestDAGOnExitTmpl(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	onExitNodeIsPresent := false
 	for _, node := range woc.wf.Status.Nodes {
@@ -193,7 +193,7 @@ func TestStepsOnExitTmplWithArt(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	for idx, node := range woc.wf.Status.Nodes {
@@ -212,7 +212,7 @@ func TestStepsOnExitTmplWithArt(t *testing.T) {
 			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
-	woc1 := newWorkflowOperationCtx(woc.wf, controller)
+	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc1.operate(ctx)
 	onExitNodeIsPresent := false
 	for _, node := range woc1.wf.Status.Nodes {
@@ -268,7 +268,7 @@ func TestDAGOnExitTmplWithArt(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	for idx, node := range woc.wf.Status.Nodes {
@@ -287,7 +287,7 @@ func TestDAGOnExitTmplWithArt(t *testing.T) {
 			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
-	woc1 := newWorkflowOperationCtx(woc.wf, controller)
+	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc1.operate(ctx)
 	onExitNodeIsPresent := false
 	for _, node := range woc1.wf.Status.Nodes {
@@ -353,11 +353,11 @@ func TestStepsTmplOnExit(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-	woc1 := newWorkflowOperationCtx(woc.wf, controller)
+	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
 	onExitNodeIsPresent := false
@@ -370,7 +370,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 
 	assert.True(t, onExitNodeIsPresent)
 	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
-	woc2 := newWorkflowOperationCtx(woc1.wf, controller)
+	woc2 := newWorkflowOperationCtx(ctx, woc1.wf, controller)
 	woc2.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc2.wf.Status.Phase)
 	makePodsPhase(ctx, woc2, apiv1.PodSucceeded)
@@ -389,7 +389,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 		}
 	}
 
-	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
+	woc3 := newWorkflowOperationCtx(ctx, woc2.wf, controller)
 	woc3.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc3.wf.Status.Phase)
 	onExitNodeIsPresent = false
@@ -458,11 +458,11 @@ func TestDAGOnExit(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-	woc1 := newWorkflowOperationCtx(woc.wf, controller)
+	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
 	onExitNodeIsPresent := false
@@ -475,7 +475,7 @@ func TestDAGOnExit(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 
 	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
-	woc2 := newWorkflowOperationCtx(woc1.wf, controller)
+	woc2 := newWorkflowOperationCtx(ctx, woc1.wf, controller)
 	woc2.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc2.wf.Status.Phase)
 	makePodsPhase(ctx, woc2, apiv1.PodSucceeded)
@@ -493,7 +493,7 @@ func TestDAGOnExit(t *testing.T) {
 			woc.wf.Status.MarkTaskResultComplete(node.ID)
 		}
 	}
-	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
+	woc3 := newWorkflowOperationCtx(ctx, woc2.wf, controller)
 	woc3.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc3.wf.Status.Phase)
 	onExitNodeIsPresent = false
@@ -695,7 +695,7 @@ func TestDagOnExitAndRetryStrategy(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
@@ -747,7 +747,7 @@ func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
 	require.NoError(t, err)
@@ -845,7 +845,7 @@ func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
 	require.NoError(t, err)
@@ -988,7 +988,7 @@ status:
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
 	require.NoError(t, err)
@@ -1037,12 +1037,12 @@ spec:
 	defer cancel()
 
 	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	var hasExitNode bool

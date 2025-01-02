@@ -33,7 +33,7 @@ func TestHTTPTemplate(t *testing.T) {
 
 	t.Run("ExecuteHTTPTemplate", func(t *testing.T) {
 		ctx := context.Background()
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		pod, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
 		require.NoError(t, err)
@@ -72,7 +72,7 @@ func TestHTTPTemplateWithoutServiceAccount(t *testing.T) {
 
 	t.Run("ExecuteHTTPTemplateWithoutServiceAccount", func(t *testing.T) {
 		ctx := context.Background()
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		_, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
 		require.Error(t, err, `pods "%s" not found`, woc.getAgentPodName())

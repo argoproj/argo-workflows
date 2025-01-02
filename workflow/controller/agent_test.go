@@ -46,7 +46,6 @@ spec:
        url: "{{inputs.parameters.url}}"
 
 `)
-	ctx := context.Background()
 	var ts wfv1.WorkflowTaskSet
 	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTaskSet
@@ -91,7 +90,8 @@ status:
 	t.Run("CreateTaskSet", func(t *testing.T) {
 		cancel, controller := newController(wf, ts, defaultServiceAccount)
 		defer cancel()
-		woc := newWorkflowOperationCtx(wf, controller)
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -117,7 +117,8 @@ status:
 		cancel, controller := newController(wf, ts, defaultServiceAccount)
 		defer cancel()
 		controller.Config.InstanceID = "testID"
-		woc := newWorkflowOperationCtx(wf, controller)
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)

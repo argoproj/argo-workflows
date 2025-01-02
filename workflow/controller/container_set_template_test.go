@@ -33,9 +33,9 @@ spec:
 `)
 	cancel, controller := newController(wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
@@ -101,9 +101,9 @@ spec:
 `)
 	cancel, controller := newController(wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
@@ -180,9 +180,9 @@ spec:
 `)
 	cancel, controller := newController(wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)

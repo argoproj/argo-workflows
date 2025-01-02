@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -14,7 +15,7 @@ import (
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending and running pods (except agent pod) when workflow has reached its deadline
-func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
+func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
 	if pod == nil || woc.isAgentPod(pod) {
 		return
 	}
@@ -24,7 +25,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	wfNodesLock.RUnlock()
 	if err != nil {
-		woc.log.Errorf("was unable to obtain node for %s", nodeID)
+		woc.log.Errorf(ctx, "was unable to obtain node for %s", nodeID)
 		return
 	}
 	// node is already completed
@@ -42,12 +43,12 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
-				woc.log.WithField("podName", pod.Name).
-					WithField("shutdownStrategy", woc.GetShutdownStrategy()).
-					Info("Terminating pod as part of workflow shutdown")
-				woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
+				woc.log.WithField(ctx, "podName", pod.Name).
+					WithField(ctx, "shutdownStrategy", woc.GetShutdownStrategy()).
+					Info(ctx, "Terminating pod as part of workflow shutdown")
+				woc.controller.queuePodForCleanup(pod.Namespace, pod.Name, "terminateContainers")
 				msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
-				woc.handleExecutionControlError(nodeID, wfNodesLock, msg)
+				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, msg)
 				return
 			}
 		}
@@ -57,39 +58,39 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			// pods that are part of an onExit handler aren't subject to the deadline
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
-				woc.log.WithField("podName", pod.Name).
-					WithField(" workflowDeadline", woc.workflowDeadline).
-					Info("Terminating pod which has exceeded workflow deadline")
-				woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
-				woc.handleExecutionControlError(nodeID, wfNodesLock, "Step exceeded its deadline")
+				woc.log.WithField(ctx, "podName", pod.Name).
+					WithField(ctx, " workflowDeadline", woc.workflowDeadline).
+					Info(ctx, "Terminating pod which has exceeded workflow deadline")
+				woc.controller.queuePodForCleanup(pod.Namespace, pod.Name, "terminateContainers")
+				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, "Step exceeded its deadline")
 				return
 			}
 		}
 	}
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
-			woc.log.WithField("podName", pod.Name).
-				Info("Terminating on-exit pod")
-			woc.controller.PodController.TerminateContainers(pod.Namespace, pod.Name)
+			woc.log.WithField(ctx, "podName", pod.Name).
+				Info(ctx, "Terminating on-exit pod")
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, "terminateContainers")
 		}
 	}
 }
 
 // handleExecutionControlError marks a node as failed with an error message
-func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLock *sync.RWMutex, errorMsg string) {
+func (woc *wfOperationCtx) handleExecutionControlError(ctx context.Context, nodeID string, wfNodesLock *sync.RWMutex, errorMsg string) {
 	wfNodesLock.Lock()
 	defer wfNodesLock.Unlock()
 
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		woc.log.Errorf("was not abble to obtain node for %s", nodeID)
+		woc.log.Errorf(ctx, "was not abble to obtain node for %s", nodeID)
 		return
 	}
-	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg)
+	woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, errorMsg)
 
 	children, err := woc.wf.Status.Nodes.NestedChildrenStatus(nodeID)
 	if err != nil {
-		woc.log.Errorf("was not able to obtain children: %s", err)
+		woc.log.Errorf(ctx, "was not able to obtain children: %s", err)
 		return
 	}
 
@@ -97,15 +98,15 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 	// then need to fail child nodes so they will not hang in Pending after pod deletion
 	for _, child := range children {
 		if !child.Fulfilled() {
-			woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg)
+			woc.markNodePhase(ctx, child.Name, wfv1.NodeFailed, errorMsg)
 		}
 	}
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
-func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
+func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID string) {
 	if nodeID != "" {
-		woc.log.Debugf("Checking daemoned children of %s", nodeID)
+		woc.log.Debugf(ctx, "Checking daemoned children of %s", nodeID)
 	}
 	for _, childNode := range woc.wf.Status.Nodes {
 		if childNode.BoundaryID != nodeID {

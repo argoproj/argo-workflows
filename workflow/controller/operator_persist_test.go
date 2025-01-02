@@ -60,7 +60,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	require.NoError(t, err)
 
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(fmt.Errorf("not found"), false)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	require.NoError(t, err)
 
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(errors.New("23324", "test"), false)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -101,7 +101,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	require.NoError(t, err)
 
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, true)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -129,7 +129,7 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	require.NoError(t, err)
 
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(errors.New("23324", "test"), true)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
