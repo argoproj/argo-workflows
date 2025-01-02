@@ -30,7 +30,7 @@ func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
 }
 
 func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
-	woc.log.Infof("reconcileAgentPod")
+	woc.log.Info(ctx, "reconcileAgentPod")
 	if len(woc.taskSet) == 0 {
 		return nil
 	}
@@ -40,16 +40,16 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 	}
 	// Check Pod is just created
 	if pod != nil && pod.Status.Phase != "" {
-		woc.updateAgentPodStatus(pod)
+		woc.updateAgentPodStatus(ctx, pod)
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
-	woc.log.Info("updateAgentPodStatus")
+func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
+	woc.log.Info(ctx, "updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(pod)
 	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
-		woc.markTaskSetNodesError(fmt.Errorf(`agent pod failed with reason:"%s"`, message))
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
 	}
 }
 
@@ -110,7 +110,7 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
-	log := woc.log.WithField("podName", podName)
+	log := woc.log.WithField(ctx, "podName", podName)
 
 	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
 	if err != nil {
@@ -242,11 +242,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
-	log.Debug("Creating Agent pod")
+	log.Debugf(ctx, "Creating Agent pod")
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		log.WithError(err).Info("Failed to create Agent pod")
+		log.WithError(ctx, err).Info(ctx, "Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
 			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
@@ -259,7 +259,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}
-	log.Info("Created Agent pod")
+	log.Info(ctx, "Created Agent pod")
 	return created, nil
 }
 

@@ -697,7 +697,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
-		woc := newWorkflowOperationCtx(wf, wfc)
+		woc := newWorkflowOperationCtx(ctx, wf, wfc)
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates(ctx)
 		return true
@@ -711,7 +711,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
-	woc := newWorkflowOperationCtx(wf, wfc)
+	woc := newWorkflowOperationCtx(ctx, wf, wfc)
 
 	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
 		log.WithField("key", key).Info("Workflow processing has been postponed due to max parallelism limit")
@@ -732,7 +732,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {
-		woc.log.Errorf("hydration failed: %v", err)
+		woc.log.Errorf(ctx, "hydration failed: %v", err)
 		woc.markWorkflowError(ctx, err)
 		woc.persistUpdates(ctx)
 		return true
