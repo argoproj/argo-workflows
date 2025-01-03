@@ -45,6 +45,7 @@ type cronWfOperationCtx struct {
 	cronWf          *v1alpha1.CronWorkflow
 	wfClientset     versioned.Interface
 	wfClient        typed.WorkflowInterface
+	wfDefaults      *v1alpha1.Workflow
 	cronWfIf        typed.CronWorkflowInterface
 	wftmplInformer  wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
@@ -54,14 +55,16 @@ type cronWfOperationCtx struct {
 	scheduledTimeFunc ScheduledTimeFunc
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, metrics *metrics.Metrics,
-	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer,
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
+	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
+	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *cronWfOperationCtx {
 	return &cronWfOperationCtx{
 		name:            cronWorkflow.ObjectMeta.Name,
 		cronWf:          cronWorkflow,
 		wfClientset:     wfClientset,
 		wfClient:        wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
+		wfDefaults:      wfDefaults,
 		cronWfIf:        wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
@@ -121,7 +124,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	wf := common.ConvertCronWorkflowToWorkflowWithProperties(woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime), scheduledRuntime)
 
-	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
+	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, woc.wfDefaults, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		// If the workflow already exists (i.e. this is a duplicate submission), do not report an error
 		if errors.IsAlreadyExists(err) {
@@ -140,7 +143,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.ObjectMeta.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
-	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf)
+	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
 	if err != nil {
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {

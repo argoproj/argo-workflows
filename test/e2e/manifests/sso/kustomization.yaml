@@ -3,18 +3,9 @@ kind: Kustomization
 
 resources:
 - ../../../../manifests/quick-start/sso
-- ../mixins/argo-server.service-account-token-secret.yaml
 
-patches:
-- path: ../mixins/argo-server-deployment.yaml
-- path: ../mixins/argo-server-cluster-workflow-template-rbac.yaml
-- path: ../mixins/workflow-controller-configmap.yaml
-- path: ../mixins/workflow-controller-deployment.yaml
-- path: ../mixins/workflow-controller-cluster-workflow-template-rbac.yaml
-- path: ../mixins/minio-deployment.yaml
+components:
+- ../components/base
+- ../components/local-argo
 
-labels:
-- includeSelectors: true
-  pairs:
-    app.kubernetes.io/part-of: argo
 namespace: argo

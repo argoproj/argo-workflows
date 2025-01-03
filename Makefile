@@ -484,10 +484,6 @@ install: githooks
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif
-ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
-endif
 ifeq ($(UI_SECURE)$(PROFILE),truesso)
 	KUBE_NAMESPACE=$(KUBE_NAMESPACE) ./hack/update-sso-redirect-url.sh
 endif
@@ -541,11 +537,7 @@ endif
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
-ifeq ($(API),true)
-start: install controller kit cli
-else
-start: install controller kit
-endif
+start: kit
 else
 start: install kit
 endif

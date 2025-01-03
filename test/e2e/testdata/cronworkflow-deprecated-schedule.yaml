@@ -7,10 +7,10 @@ spec:
     - "* * * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 0
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
   workflowSpec:
-    metadata:
-      labels:
-        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: sleep
