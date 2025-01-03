@@ -56,7 +56,7 @@ metadata:
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
 	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore)
+	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore, nil)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
