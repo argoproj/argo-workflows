@@ -10971,6 +10971,9 @@
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\"",
           "type": "string"
+        },
+        "timeout": {
+          "type": "string"
         }
       }
     },

@@ -10652,6 +10652,8 @@ spec:
                         properties:
                           duration:
                             type: string
+                          timeout:
+                            type: string
                         type: object
                       synchronization:
                         properties:
@@ -19948,6 +19950,8 @@ spec:
                         suspend:
                           properties:
                             duration:
+                              type: string
+                            timeout:
                               type: string
                           type: object
                         synchronization:

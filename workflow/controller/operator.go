@@ -1,10 +1,13 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
 	"os"
 	"reflect"
 	"regexp"
@@ -3429,6 +3432,11 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 	return node, nil
 }
 
+type NodeInfo struct {
+	NodeId            string `json:"nodeId"`
+	WorkflowHistoryId string `json:"workflowHistoryId"`
+}
+
 func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
@@ -3436,6 +3444,41 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		woc.resolveInputFieldsForSuspendNode(node)
 	}
 	woc.log.Infof("node %s suspended", nodeName)
+	if woc.wf.ObjectMeta.Labels["io.opsnow.flops/flops-url"] != "" {
+		url := woc.wf.ObjectMeta.Labels["io.opsnow.flops/flops-url"]
+		port := woc.wf.ObjectMeta.Labels["io.opsnow.flops/flops-url-port"]
+		workflowHistoryId := woc.wf.ObjectMeta.Labels["io.opsnow.flops/workflow-history-id"]
+		var requestUrl string
+
+		if port == "" {
+			requestUrl = "https://" + url + "/api/workflows/suspend/event"
+		} else {
+			requestUrl = "https://" + url + ":" + port + "/api/workflows/suspend/event"
+		}
+		woc.log.Infof("flops url : %s", requestUrl)
+		nodeInfo := NodeInfo{
+			NodeId:            node.ID,
+			WorkflowHistoryId: workflowHistoryId,
+		}
+		reqBody, err := json.Marshal(nodeInfo)
+		if err != nil {
+			reqBody = []byte("{}")
+			woc.log.Warnf("Failed to marshal nodeInfo : %v", err)
+		}
+		woc.log.Infof("request Url : %s", requestUrl)
+		woc.log.Infof("request body : %s", reqBody)
+
+		//Todo(dave) : missing authentication.
+		resp, err := http.Post(requestUrl, "application/json", bytes.NewBuffer(reqBody))
+		if err != nil {
+			woc.log.Warnf("Failed to request nodeInfo : %v", err)
+			resp = &http.Response{
+				StatusCode: http.StatusInternalServerError,
+				Body:       io.NopCloser(strings.NewReader("")),
+			}
+		}
+		defer resp.Body.Close()
+	}
 
 	// If there is either an active workflow deadline, or if this node is suspended with a duration, then the workflow
 	// will need to be requeued after a certain amount of time
@@ -3459,6 +3502,24 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 				return node, err
 			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+			return node, nil
+		}
+	}
+
+	// Handle timeout
+	if tmpl.Suspend.Timeout != "" {
+		timeoutDuration, err := wfv1.ParseStringToDuration(tmpl.Suspend.Timeout)
+		if err != nil {
+			return node, err
+		}
+		timeoutDeadline := node.StartedAt.Add(timeoutDuration)
+		if requeueTime == nil || timeoutDeadline.Before(*requeueTime) {
+			requeueTime = &timeoutDeadline
+		}
+		if time.Now().UTC().After(timeoutDeadline) {
+			// Suspension has timed out
+			woc.log.Infof("timeout exceeded for node %s", nodeName)
+			_ = woc.markNodePhase(nodeName, wfv1.NodeFailed, "suspend timeout exceeded")
 			return node, nil
 		}
 	}

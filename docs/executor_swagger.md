@@ -3666,6 +3666,7 @@ otherwise).
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.</br>Could also be a Duration, e.g.: "2m", "6h" |  |
+| timeout | string| `string` |  | |  |  |
 
 
 
