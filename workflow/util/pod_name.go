@@ -2,11 +2,10 @@ package util
 
 import (
 	"fmt"
-	"hash/fnv"
-	"os"
-
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"hash/fnv"
+	"os"
 )
 
 const (

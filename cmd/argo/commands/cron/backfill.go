@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"math"
 	"os"
-	"strings"
 	"time"
 
 	cron "github.com/robfig/cron/v3"
@@ -23,13 +23,14 @@ import (
 )
 
 type backfillOpts struct {
-	cronWfName string
-	name       string
-	startDate  string
-	endDate    string
-	parallel   bool
-	argName    string
-	dateFormat string
+	cronWfName       string
+	name             string
+	startDate        string
+	endDate          string
+	parallel         bool
+	argName          string
+	dateFormat       string
+	maxWorkflowCount int
 }
 
 func NewBackfillCommand() *cobra.Command {
@@ -62,6 +63,7 @@ func NewBackfillCommand() *cobra.Command {
 	command.Flags().BoolVar(&cliOps.parallel, "parallel", false, "Enabled all backfile workflows run parallel")
 	command.Flags().StringVar(&cliOps.argName, "argname", "cronScheduleTime", "Schedule time argument name for workflow")
 	command.Flags().StringVar(&cliOps.dateFormat, "format", time.RFC1123, "Date format for Schedule time value")
+	command.Flags().IntVar(&cliOps.maxWorkflowCount, "maxworkflowcount", 1000, "Maximum number of generated backfill workflows")
 
 	return command
 }
@@ -111,7 +113,7 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	var scheList []string
 	wf := common.ConvertCronWorkflowToWorkflow(cronWF)
 	paramArg := `{{inputs.parameters.backfillscheduletime}}`
-	wf.GenerateName = cronWF.Name + "-backfill-" + strings.ToLower(cliOps.name) + "-"
+	wf.GenerateName = util.GenerateBackfillWorkflowPrefix(cronWF.Name, cliOps.name) + "-"
 	param := v1alpha1.Parameter{
 		Name:  cliOps.argName,
 		Value: v1alpha1.AnyStringPtr(paramArg),
@@ -197,7 +199,6 @@ const backfillWf = `{
 `
 
 func CreateMonitorWf(ctx context.Context, wf, namespace, cronWFName string, scheTime []string, wfClient workflow.WorkflowServiceClient, cliOps backfillOpts) error {
-	const maxWfCount = 1000
 	var monitorWfObj v1alpha1.Workflow
 	err := json.Unmarshal([]byte(backfillWf), &monitorWfObj)
 	if monitorWfObj.ObjectMeta.Labels == nil {
@@ -208,16 +209,16 @@ func CreateMonitorWf(ctx context.Context, wf, namespace, cronWFName string, sche
 		return err
 	}
 	TotalScheCount := len(scheTime)
-	iterCount := int(float64(len(scheTime)/maxWfCount)) + 1
+	iterCount := int(float64(len(scheTime)/cliOps.maxWorkflowCount)) + 1
 	startIdx := 0
 	var endIdx int
 	var wfNames []string
 	for i := 0; i < iterCount; i++ {
 		tmpl := monitorWfObj.GetTemplateByName("create-workflow")
-		if (TotalScheCount - i*maxWfCount) < maxWfCount {
+		if (TotalScheCount - i*cliOps.maxWorkflowCount) < cliOps.maxWorkflowCount {
 			endIdx = TotalScheCount
 		} else {
-			endIdx = startIdx + maxWfCount
+			endIdx = startIdx + cliOps.maxWorkflowCount
 		}
 		scheTimeByte, err := json.Marshal(scheTime[startIdx:endIdx])
 		startIdx = endIdx
