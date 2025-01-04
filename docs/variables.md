@@ -146,7 +146,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
 | `steps.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
-| `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
+| `steps.<STEPNAME>.outputs.result` | Output result of any previous container, script, or HTTP step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
@@ -163,7 +163,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `tasks.<TASKNAME>.startedAt` | Time-stamp when the task started |
 | `tasks.<TASKNAME>.finishedAt` | Time-stamp when the task finished |
 | `tasks.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
-| `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
+| `tasks.<TASKNAME>.outputs.result` | Output result of any previous container, script, or HTTP task |
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |

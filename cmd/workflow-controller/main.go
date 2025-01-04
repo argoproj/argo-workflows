@@ -70,7 +70,7 @@ func NewRootCommand() *cobra.Command {
 		Use:   CLIName,
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
-			defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+			defer runtimeutil.HandleCrashWithContext(context.Background(), runtimeutil.PanicHandlers...)
 
 			cli.SetLogLevel(logLevel)
 			cmdutil.SetGLogLevel(glogLevel)

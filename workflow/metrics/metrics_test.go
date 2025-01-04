@@ -22,7 +22,7 @@ func TestMetrics(t *testing.T) {
 	m.OperationCompleted(m.Ctx, 5)
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
-	val, err := te.GetFloat64HistogramData(nameOperationDuration, &attribs)
+	val, err := te.GetFloat64HistogramData(telemetry.InstrumentOperationDurationSeconds.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, []float64{5, 10, 15, 20, 25, 30}, val.Bounds)
 	assert.Equal(t, []uint64{1, 0, 0, 0, 0, 0, 0}, val.BucketCounts)
@@ -148,16 +148,16 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	m, te, err := getSharedMetrics()
 	require.NoError(t, err)
 	attribs := attribute.NewSet(attribute.String(telemetry.AttribQueueName, "workflow_queue"))
-	wfQueue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	wfQueue := m.RateLimiterWithBusyWorkers(m.Ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_queue")
 	defer wfQueue.ShutDown()
 
-	assert.NotNil(t, m.AllInstruments[nameWorkersQueueDepth])
-	assert.NotNil(t, m.AllInstruments[nameWorkersQueueLatency])
+	assert.NotNil(t, m.AllInstruments[telemetry.InstrumentQueueDepthGauge.Name()])
+	assert.NotNil(t, m.AllInstruments[telemetry.InstrumentQueueLatency.Name()])
 
 	wfQueue.Add("hello")
 
-	require.NotNil(t, m.AllInstruments[nameWorkersQueueAdds])
-	val, err := te.GetInt64CounterValue(nameWorkersQueueAdds, &attribs)
+	require.NotNil(t, m.AllInstruments[telemetry.InstrumentQueueAddsCount.Name()])
+	val, err := te.GetInt64CounterValue(telemetry.InstrumentQueueAddsCount.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }

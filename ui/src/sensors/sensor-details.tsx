@@ -1,7 +1,7 @@
 import {NotificationType} from 'argo-ui/src/components/notifications/notifications';
 import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {ID} from '../event-flow/id';
@@ -23,6 +23,7 @@ import '../workflows/components/workflow-details/workflow-details.scss';
 
 export function SensorDetails({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
+    const isFirstRender = useRef(true);
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
@@ -30,7 +31,7 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
     const [name] = useState(match.params.name);
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
-    const [sensor, edited, setSensor, resetSensor] = useEditableObject<Sensor>();
+    const {object: sensor, setObject: setSensor, resetObject: resetSensor, serialization, edited, lang, setLang} = useEditableObject<Sensor>();
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
@@ -42,18 +43,20 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('sensors/{namespace}/{name}', {
-                    namespace,
-                    name,
-                    tab,
-                    selectedLogNode
-                })
-            ),
-        [namespace, name, tab, selectedLogNode]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('sensors/{namespace}/{name}', {
+                namespace,
+                name,
+                tab,
+                selectedLogNode
+            })
+        );
+    }, [namespace, name, tab, selectedLogNode]);
 
     useEffect(() => {
         services.sensor
@@ -125,7 +128,20 @@ export function SensorDetails({match, location, history}: RouteComponentProps<an
             }}>
             <>
                 <ErrorNotice error={error} />
-                {!sensor ? <Loading /> : <SensorEditor sensor={sensor} onChange={setSensor} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />}
+                {!sensor ? (
+                    <Loading />
+                ) : (
+                    <SensorEditor
+                        sensor={sensor}
+                        serialization={serialization}
+                        lang={lang}
+                        onChange={setSensor}
+                        onLangChange={setLang}
+                        onError={setError}
+                        selectedTabKey={tab}
+                        onTabSelected={setTab}
+                    />
+                )}
             </>
             {!!selectedLogNode && (
                 <SensorSidePanel

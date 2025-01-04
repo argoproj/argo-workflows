@@ -235,6 +235,30 @@ Tests often fail: that's good. To diagnose failure:
 
 If tests run slowly or time out, factory reset your Kubernetes cluster.
 
+### Database Tooling
+
+The `go run ./hack/db` CLI provides a few useful commands for working with the DB locally:
+
+```console
+$ go run ./hack/db
+CLI for developers to use when working on the DB locally
+
+Usage:
+  db [command]
+
+Available Commands:
+  completion              Generate the autocompletion script for the specified shell
+  fake-archived-workflows Insert randomly-generated workflows into argo_archived_workflows, for testing purposes
+  help                    Help about any command
+  migrate                 Force DB migration for given cluster/table
+
+Flags:
+  -c, --dsn string   DSN connection string. For MySQL, use 'mysql:password@tcp/argo'. (default "postgres://postgres@localhost:5432/postgres")
+  -h, --help         help for db
+
+Use "db [command] --help" for more information about a command.
+```
+
 ### Debugging using Visual Studio Code
 
 When using the Dev Container with VSCode, use the `Attach to argo server` and/or `Attach to workflow controller` launch configurations to attach to the `argo` or `workflow-controller` processes, respectively.

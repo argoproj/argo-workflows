@@ -3,7 +3,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {ID} from '../event-flow/id';
@@ -27,6 +27,7 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
+    const isFirstRender = useRef(true);
     const namespace = match.params.namespace;
     const name = match.params.name;
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
@@ -40,21 +41,23 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('event-sources/{namespace}/{name}', {
-                    namespace,
-                    name,
-                    tab,
-                    selectedNode
-                })
-            ),
-        [namespace, name, tab, selectedNode]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('event-sources/{namespace}/{name}', {
+                namespace,
+                name,
+                tab,
+                selectedNode
+            })
+        );
+    }, [namespace, name, tab, selectedNode]);
 
     const [error, setError] = useState<Error>();
-    const [eventSource, edited, setEventSource, resetEventSource] = useEditableObject<EventSource>();
+    const {object: eventSource, setObject: setEventSource, resetObject: resetEventSource, serialization, edited, lang, setLang} = useEditableObject<EventSource>();
 
     const selected = (() => {
         if (!selectedNode) {
@@ -139,7 +142,16 @@ export function EventSourceDetails({history, location, match}: RouteComponentPro
                 {!eventSource ? (
                     <Loading />
                 ) : (
-                    <EventSourceEditor eventSource={eventSource} onChange={setEventSource} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />
+                    <EventSourceEditor
+                        eventSource={eventSource}
+                        serialization={serialization}
+                        lang={lang}
+                        onChange={setEventSource}
+                        onLangChange={setLang}
+                        onError={setError}
+                        onTabSelected={setTab}
+                        selectedTabKey={tab}
+                    />
                 )}
             </>
             <SlidingPanel isShown={!!selected} onClose={() => setSelectedNode(null)}>

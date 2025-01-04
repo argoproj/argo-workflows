@@ -45,6 +45,15 @@ func waitContainer(ctx context.Context) error {
 		wfExecutor.AddError(err)
 	}
 
+	if wfExecutor.Template.Resource != nil {
+		// Save log artifacts for resource template
+		err = wfExecutor.ReportOutputsLogs(bgCtx)
+		if err != nil {
+			wfExecutor.AddError(err)
+		}
+		return wfExecutor.HasError()
+	}
+
 	// Capture output script result
 	err = wfExecutor.CaptureScriptResult(bgCtx)
 	if err != nil {

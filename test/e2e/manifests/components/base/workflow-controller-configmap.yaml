@@ -8,6 +8,9 @@ data:
       activeDeadlineSeconds: 300
       podSpecPatch: |
         terminationGracePeriodSeconds: 3
+      workflowMetadata:
+        labels:
+          default-label: thisLabelIsFromWorkflowDefaults
   executor: |
     imagePullPolicy: IfNotPresent
     resources:

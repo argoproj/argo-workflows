@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -3432,11 +3433,9 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
-	assert.Equal(t, []string{
-		"/var/run/argo/argoexec", "emissary",
-		"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+	assert.Equal(t, append(append([]string{"/var/run/argo/argoexec", "emissary"}, woc.getExecutorLogOpts()...),
 		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\"",
-	}, pods.Items[0].Spec.Containers[1].Command)
+	), pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -6516,6 +6515,7 @@ status:
   phase: Failed
   nodes:
     my-wf:
+      id: my-wf
       name: my-wf
       phase: Failed
 `)
@@ -11167,15 +11167,15 @@ var wfHasContainerSet = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: lovely-rhino
+  name: wf-has-containerSet
 spec:
+  entrypoint: init
   templates:
     - name: init
       dag:
         tasks:
           - name: A
             template: run
-            arguments: {}
     - name: run
       containerSet:
         containers:
@@ -11186,24 +11186,19 @@ spec:
             args:
               - '-c'
               - sleep 9000
-            resources: {}
           - name: main2
             image: alpine:latest
             command:
               - /bin/sh
             args:
               - '-c'
-              - sleep 9000
-            resources: {}
-  entrypoint: init
-  arguments: {}
-  ttlStrategy:
-    secondsAfterCompletion: 300
-  podGC:
-    strategy: OnPodCompletion`
+              - sleep 9000`
 
-// TestContainerSetDeleteContainerWhenPodDeleted test whether a workflow has ContainerSet error when pod deleted.
-func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
+// TestContainerSetWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet is used.
+func TestContainerSetWhenPodDeleted(t *testing.T) {
+	// use local-scoped env vars in test to avoid long waits
+	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
@@ -11229,9 +11224,91 @@ func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 		}
 	}
 
-	// TODO: Refactor to use local-scoped env vars in test to avoid long wait. See https://github.com/argoproj/argo-workflows/pull/12756#discussion_r1530245007
 	// delete pod
-	time.Sleep(10 * time.Second)
+	deletePods(ctx, woc)
+	pods, err = listPods(woc)
+	require.NoError(t, err)
+	assert.Empty(t, pods.Items)
+
+	// reconcile
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Equal(t, wfv1.NodeError, node.Phase)
+		if node.Type == wfv1.NodeTypePod {
+			assert.Equal(t, "pod deleted", node.Message)
+		}
+		if node.Type == wfv1.NodeTypeContainer {
+			assert.Equal(t, "container deleted", node.Message)
+		}
+	}
+}
+
+var wfHasContainerSetWithDependencies = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-has-containerSet-with-dependencies
+spec:
+  entrypoint: init
+  templates:
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+    - name: run
+      containerSet:
+        containers:
+          - name: main
+            image: alpine:latest
+            command:
+              - /bin/sh
+            args:
+              - '-c'
+              - sleep 9000
+          - name: main2
+            image: alpine:latest
+            command:
+              - /bin/sh
+            args:
+              - '-c'
+              - sleep 9000
+            dependencies:
+              - main`
+
+// TestContainerSetWithDependenciesWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet with dependencies is used.
+func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
+	// use local-scoped env vars in test to avoid long waits
+	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSetWithDependencies)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+
+	// mark pod Running
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			assert.Equal(t, wfv1.NodeRunning, node.Phase)
+		}
+	}
+
+	// delete pod
 	deletePods(ctx, woc)
 	pods, err = listPods(woc)
 	require.NoError(t, err)

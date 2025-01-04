@@ -2384,7 +2384,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true",
+							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -4780,7 +4780,7 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 					},
 					"result": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Result holds the result (stdout) of a script template",
+							Description: "Result holds the result (stdout) of a script or container template, or the response body of an HTTP template",
 							Type:        []string{"string"},
 							Format:      "",
 						},

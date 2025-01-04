@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {uiUrl} from '../shared/base';
@@ -11,6 +11,7 @@ import {services} from '../shared/services';
 import {WorkflowDag} from '../workflows/components/workflow-dag/workflow-dag';
 
 export function WorkflowGraph({history, match}: RouteComponentProps<any>) {
+    const isFirstRender = useRef(true);
     const queryParams = new URLSearchParams(location.search);
     const namespace = match.params.namespace;
     const name = queryParams.get('name');
@@ -20,6 +21,10 @@ export function WorkflowGraph({history, match}: RouteComponentProps<any>) {
     const target = queryParams.get('target') || '_top';
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         history.push(
             historyUrl('widgets/workflow-graphs/{namespace}', {
                 namespace,

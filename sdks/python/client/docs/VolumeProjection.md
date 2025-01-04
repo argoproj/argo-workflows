@@ -1,6 +1,6 @@
 # VolumeProjection
 
-Projection that may be projected along with other supported volume types
+Projection that may be projected along with other supported volume types. Exactly one of these fields must be set.
 
 ## Properties
 Name | Type | Description | Notes

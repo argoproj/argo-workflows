@@ -269,6 +269,12 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 			noop{},
 			ansiSQLChange(`alter table argo_archived_workflows alter column workflow set data type jsonb using workflow::jsonb`),
 		),
+		// change argo_archived_workflows_i4 index to include clustername so MySQL uses it for listing archived workflows. #13601
+		ternary(dbType == MySQL,
+			ansiSQLChange(`drop index argo_archived_workflows_i4 on argo_archived_workflows`),
+			ansiSQLChange(`drop index argo_archived_workflows_i4`),
+		),
+		ansiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (clustername, startedat)`),
 	} {
 		err := m.applyChange(changeSchemaVersion, change)
 		if err != nil {

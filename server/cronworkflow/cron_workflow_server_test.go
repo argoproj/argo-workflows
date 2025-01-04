@@ -13,6 +13,8 @@ import (
 	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -52,7 +54,9 @@ metadata:
 `, &unlabelled)
 
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
-	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"))
+	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
+	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore, nil)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
