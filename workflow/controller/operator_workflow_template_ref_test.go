@@ -694,7 +694,7 @@ func TestWorkflowTemplateWithPodMetadata(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(woc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, len(pods.Items) > 0, "pod was not created successfully")
 	pod := pods.Items[0]
 	assert.Contains(t, pod.Labels, "caller-label")
