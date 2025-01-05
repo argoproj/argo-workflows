@@ -14,7 +14,7 @@ argo cron backfill cronwf [flags]
       --format string    Date format for Schedule time value (default "Mon, 02 Jan 2006 15:04:05 MST")
   -h, --help             help for backfill
       --name string      Backfill name
-      --parallel         Enabled all backfill workflows run parallel
+      --parallel         Enabled all backfile workflows run parallel
       --start string     Start date
 ```
 
