@@ -7,19 +7,13 @@ import (
 )
 
 func AddVersion(ctx context.Context, m *Metrics) error {
-	const nameVersion = `version`
-	err := m.CreateInstrument(Int64Counter,
-		nameVersion,
-		"Build metadata for this Controller",
-		"{unused}",
-		WithAsBuiltIn(),
-	)
+	err := m.CreateBuiltinInstrument(InstrumentVersion)
 	if err != nil {
 		return err
 	}
 
 	version := argo.GetVersion()
-	m.AddInt(ctx, nameVersion, 1, InstAttribs{
+	m.AddInt(ctx, InstrumentVersion.Name(), 1, InstAttribs{
 		{Name: AttribBuildVersion, Value: version.Version},
 		{Name: AttribBuildPlatform, Value: version.Platform},
 		{Name: AttribBuildGoVersion, Value: version.GoVersion},

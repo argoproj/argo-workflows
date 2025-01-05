@@ -48,7 +48,8 @@ type Controller struct {
 	cronWfInformer       informers.GenericInformer
 	wftmplInformer       wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer      wfextvv1alpha1.ClusterWorkflowTemplateInformer
-	cronWfQueue          workqueue.RateLimitingInterface
+	wfDefaults           *v1alpha1.Workflow
+	cronWfQueue          workqueue.TypedRateLimitingInterface[string]
 	dynamicInterface     dynamic.Interface
 	metrics              *metrics.Metrics
 	eventRecorderManager events.EventRecorderManager
@@ -73,7 +74,7 @@ func init() {
 }
 
 func NewCronController(ctx context.Context, wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics,
-	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer) *Controller {
+	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
@@ -82,7 +83,8 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 		cron:                 newCronFacade(),
 		keyLock:              sync.NewKeyLock(),
 		dynamicInterface:     dynamicInterface,
-		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "cron_wf_queue"),
+		wfDefaults:           wfDefaults,
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
 		wftmplInformer:       wftmplInformer,
@@ -92,7 +94,7 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 }
 
 func (cc *Controller) Run(ctx context.Context) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 	defer cc.cronWfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 	if cc.instanceId != "" {
@@ -136,7 +138,7 @@ func (cc *Controller) runCronWorker() {
 }
 
 func (cc *Controller) processNextCronItem(ctx context.Context) bool {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	key, quit := cc.cronWfQueue.Get()
 	if quit {
@@ -144,20 +146,20 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	}
 	defer cc.cronWfQueue.Done(key)
 
-	cc.keyLock.Lock(key.(string))
-	defer cc.keyLock.Unlock(key.(string))
+	cc.keyLock.Lock(key)
+	defer cc.keyLock.Unlock(key)
 
 	logCtx := log.WithField("cronWorkflow", key)
 	logCtx.Infof("Processing %s", key)
 
-	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key.(string))
+	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key)
 	if err != nil {
 		logCtx.WithError(err).Error(fmt.Sprintf("Failed to get CronWorkflow '%s' from informer index", key))
 		return true
 	}
 	if !exists {
 		logCtx.Infof("Deleting '%s'", key)
-		cc.cron.Delete(key.(string))
+		cc.cron.Delete(key)
 		return true
 	}
 
@@ -175,7 +177,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	}
 	ctx = wfctx.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
 
-	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
 
 	err = cronWorkflowOperationCtx.validateCronWorkflow(ctx)
 	if err != nil {
@@ -193,10 +195,10 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	}
 
 	// The job is currently scheduled, remove it and re add it.
-	cc.cron.Delete(key.(string))
+	cc.cron.Delete(key)
 
 	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone(ctx) {
-		lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), schedule, cronWorkflowOperationCtx)
+		lastScheduledTimeFunc, err := cc.cron.AddJob(key, schedule, cronWorkflowOperationCtx)
 		if err != nil {
 			logCtx.WithError(err).Error("could not schedule CronWorkflow")
 			return true
@@ -204,7 +206,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 	}
 
-	logCtx.Infof("CronWorkflow %s added", key.(string))
+	logCtx.Infof("CronWorkflow %s added", key)
 
 	return true
 }
@@ -256,7 +258,7 @@ func isCompleted(wf v1.Object) bool {
 }
 
 func (cc *Controller) syncAll(ctx context.Context) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	log.Debug("Syncing all CronWorkflows")
 
@@ -293,7 +295,7 @@ func (cc *Controller) syncCronWorkflow(ctx context.Context, cronWf *v1alpha1.Cro
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
-	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
+	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
 	err := cwoc.enforceHistoryLimit(ctx, workflows)
 	if err != nil {
 		return err

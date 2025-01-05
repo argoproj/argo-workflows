@@ -6,8 +6,7 @@ import * as nsUtils from './namespaces';
  * Only "truthy" values are put into the query parameters. I.e. "falsey" values include null, undefined, false, "", 0.
  */
 export function historyUrl(path: string, params: {[key: string]: any}) {
-    const queryParams: string[] = [];
-    let extraSearchParams: URLSearchParams;
+    const queryParams = new URLSearchParams();
     Object.entries(params)
         .filter(([, v]) => v !== null)
         .forEach(([k, v]) => {
@@ -15,14 +14,14 @@ export function historyUrl(path: string, params: {[key: string]: any}) {
             if (path.includes(searchValue)) {
                 path = path.replace(searchValue, v != null ? v : '');
             } else if (k === 'extraSearchParams') {
-                extraSearchParams = v;
+                (v as URLSearchParams).forEach((value, key) => queryParams.set(key, value));
             } else if (v) {
-                queryParams.push(k + '=' + v);
+                queryParams.set(k, v);
             }
             if (k === 'namespace') {
                 nsUtils.setCurrentNamespace(v);
             }
         });
-    const extraString = extraSearchParams ? '&' + extraSearchParams.toString() : '';
-    return uiUrl(path.replace(/{[^}]*}/g, '')) + '?' + queryParams.join('&') + extraString;
+
+    return uiUrl(path.replace(/{[^}]*}/g, '')) + '?' + queryParams.toString();
 }
