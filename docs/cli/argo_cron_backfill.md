@@ -9,13 +9,14 @@ argo cron backfill cronwf [flags]
 ### Options
 
 ```
-      --argname string   Schedule time argument name for workflow (default "cronScheduleTime")
-      --end string       End Date
-      --format string    Date format for Schedule time value (default "Mon, 02 Jan 2006 15:04:05 MST")
-  -h, --help             help for backfill
-      --name string      Backfill name
-      --parallel         Enabled all backfile workflows run parallel
-      --start string     Start date
+      --argname string         Schedule time argument name for workflow (default "cronScheduleTime")
+      --end string             End Date
+      --format string          Date format for Schedule time value (default "Mon, 02 Jan 2006 15:04:05 MST")
+  -h, --help                   help for backfill
+      --maxworkflowcount int   Maximum number of generated backfill workflows (default 1000)
+      --name string            Backfill name
+      --parallel               Enabled all backfile workflows run parallel
+      --start string           Start date
 ```
 
 ### Options inherited from parent commands
