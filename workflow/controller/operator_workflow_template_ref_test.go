@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
@@ -21,6 +23,11 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(wfWithTmplRef), controller)
 	woc.operate(ctx)
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+	for _, pod := range pods.Items {
+		assert.Equal(t, "workflow-template-whalesay-template", pod.Labels[common.LabelKeyWorkflowTemplate])
+	}
 	assert.Equal(t, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl).Spec.Templates, woc.execWf.Spec.Templates)
 	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
 	// verify we copy these values
