@@ -2095,6 +2095,42 @@ func (s *ArgoServerSuite) TestRateLimitHeader() {
 	})
 }
 
+func (s *ArgoServerSuite) TestPostgresNullBytes() {
+	// only meaningful for postgres, but shouldn't fail  for mysql.
+	var uid types.UID
+	_ = uid
+
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: archie-
+  labels:
+    foo: 1
+spec:
+  entrypoint: run-archie
+  templates:
+    - name: run-archie
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, "hello \u0000"]`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		})
+
+	j := s.e().GET("/api/v1/archived-workflows/{uid}", uid).
+		Expect().
+		Status(200).
+		JSON()
+	j.
+		Path("$.spec.templates[0].container.args[1]").
+		IsEqual("hello \u0000")
+
+}
+
 func TestArgoServerSuite(t *testing.T) {
 	suite.Run(t, new(ArgoServerSuite))
 }

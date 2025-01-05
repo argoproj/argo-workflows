@@ -1,8 +1,10 @@
 package sqldb
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -20,8 +22,9 @@ import (
 )
 
 const (
-	archiveTableName       = "argo_archived_workflows"
-	archiveLabelsTableName = archiveTableName + "_labels"
+	archiveTableName        = "argo_archived_workflows"
+	archiveLabelsTableName  = archiveTableName + "_labels"
+	postgresNullReplacement = "ARGO_POSTGRES_NULL_REPLACEMENT"
 )
 
 type archivedWorkflowMetadata struct {
@@ -102,6 +105,9 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	workflow, err := json.Marshal(wf)
 	if err != nil {
 		return err
+	}
+	if r.dbType == Postgres {
+		workflow = bytes.ReplaceAll(workflow, []byte("\\u0000"), []byte(postgresNullReplacement))
 	}
 	return r.session.Tx(func(sess db.Session) error {
 		_, err := sess.SQL().
@@ -364,6 +370,9 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 		return nil, err
 	}
 	var wf *wfv1.Workflow
+	if r.dbType == Postgres {
+		archivedWf.Workflow = strings.ReplaceAll(archivedWf.Workflow, postgresNullReplacement, "\\u0000")
+	}
 	err = json.Unmarshal([]byte(archivedWf.Workflow), &wf)
 	if err != nil {
 		return nil, err
