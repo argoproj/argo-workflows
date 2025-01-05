@@ -5740,9 +5740,15 @@ Selects a key from a ConfigMap.
 
 - [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-configmap.yaml)
 
+- [`arguments-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-parameters-from-secret.yaml)
+
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
+
+- [`global-parameters-from-secret-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret-referenced-as-local-variable.yaml)
+
+- [`global-parameters-from-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-secret.yaml)
 </details>
 
 ### Fields
