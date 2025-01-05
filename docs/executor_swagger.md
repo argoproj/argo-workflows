@@ -431,9 +431,9 @@ of a single workflow step, which the executor will use as a default location to 
 | cachingMode | [AzureDataDiskCachingMode](#azure-data-disk-caching-mode)| `AzureDataDiskCachingMode` |  | |  |  |
 | diskName | string| `string` |  | | diskName is the Name of the data disk in the blob storage |  |
 | diskURI | string| `string` |  | | diskURI is the URI of data disk in the blob storage |  |
-| fsType | string| `string` |  | | fsType is Filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>+optional |  |
+| fsType | string| `string` |  | | fsType is Filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>+optional</br>+default="ext4" |  |
 | kind | [AzureDataDiskKind](#azure-data-disk-kind)| `AzureDataDiskKind` |  | |  |  |
-| readOnly | boolean| `bool` |  | | readOnly Defaults to false (read/write). ReadOnly here will force</br>the ReadOnly setting in VolumeMounts.</br>+optional |  |
+| readOnly | boolean| `bool` |  | | readOnly Defaults to false (read/write). ReadOnly here will force</br>the ReadOnly setting in VolumeMounts.</br>+optional</br>+default=false |  |
 
 
 
@@ -1463,6 +1463,7 @@ PDs support ownership management and SELinux relabeling.
 | disableSubmodules | boolean| `bool` |  | | DisableSubmodules disables submodules during git clone |  |
 | fetch | []string| `[]string` |  | | Fetch specifies a number of refs that should be fetched before checkout |  |
 | insecureIgnoreHostKey | boolean| `bool` |  | | InsecureIgnoreHostKey disables SSH strict host key checking during git clone |  |
+| insecureSkipTLS | boolean| `bool` |  | | InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections |  |
 | passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | repo | string| `string` |  | | Repo is the git repository |  |
 | revision | string| `string` |  | | Revision is the git commit, tag, branch to checkout |  |
@@ -1785,12 +1786,28 @@ ISCSI volumes support ownership management and SELinux relabeling.
 | fsType | string| `string` |  | | fsType is the filesystem type of the volume that you want to mount.</br>Tip: Ensure that the filesystem type is supported by the host operating system.</br>Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi</br>TODO: how do we prevent errors in the filesystem from compromising the machine</br>+optional |  |
 | initiatorName | string| `string` |  | | initiatorName is the custom iSCSI Initiator Name.</br>If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface</br><target portal>:<volume name> will be created for the connection.</br>+optional |  |
 | iqn | string| `string` |  | | iqn is the target iSCSI Qualified Name. |  |
-| iscsiInterface | string| `string` |  | | iscsiInterface is the interface Name that uses an iSCSI transport.</br>Defaults to 'default' (tcp).</br>+optional |  |
+| iscsiInterface | string| `string` |  | | iscsiInterface is the interface Name that uses an iSCSI transport.</br>Defaults to 'default' (tcp).</br>+optional</br>+default="default" |  |
 | lun | int32 (formatted integer)| `int32` |  | | lun represents iSCSI Target Lun number. |  |
 | portals | []string| `[]string` |  | | portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port</br>is other than default (typically TCP ports 860 and 3260).</br>+optional</br>+listType=atomic |  |
 | readOnly | boolean| `bool` |  | | readOnly here will force the ReadOnly setting in VolumeMounts.</br>Defaults to false.</br>+optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
 | targetPortal | string| `string` |  | | targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port</br>is other than default (typically TCP ports 860 and 3260). |  |
+
+
+
+### <span id="image-volume-source"></span> ImageVolumeSource
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| pullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
+| reference | string| `string` |  | | Required: Image or artifact reference to be used.</br>Behaves in the same way as pod.spec.containers[*].image.</br>Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 
 
 
@@ -2461,7 +2478,7 @@ save/load the directory appropriately.
 | artifacts | [Artifacts](#artifacts)| `Artifacts` |  | |  |  |
 | exitCode | string| `string` |  | | ExitCode holds the exit code of a script template |  |
 | parameters | [][Parameter](#parameter)| `[]*Parameter` |  | | Parameters holds the list of output parameters produced by a step</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
-| result | string| `string` |  | | Result holds the result (stdout) of a script template |  |
+| result | string| `string` |  | | Result holds the result (stdout) of a script or container template, or the response body of an HTTP template |  |
 
 
 
@@ -2560,7 +2577,7 @@ and allows a Source for provider-specific attributes
 | resources | [VolumeResourceRequirements](#volume-resource-requirements)| `VolumeResourceRequirements` |  | |  |  |
 | selector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
 | storageClassName | string| `string` |  | | storageClassName is the name of the StorageClass required by the claim.</br>More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</br>+optional |  |
-| volumeAttributesClassName | string| `string` |  | | volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.</br>If specified, the CSI driver will create or update the volume with the attributes defined</br>in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,</br>it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass</br>will be applied to the claim but it's not allowed to reset this field to empty string once it is set.</br>If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass</br>will be set by the persistentvolume controller if it exists.</br>If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be</br>set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource</br>exists.</br>More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/</br>(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.</br>+featureGate=VolumeAttributesClass</br>+optional |  |
+| volumeAttributesClassName | string| `string` |  | | volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.</br>If specified, the CSI driver will create or update the volume with the attributes defined</br>in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,</br>it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass</br>will be applied to the claim but it's not allowed to reset this field to empty string once it is set.</br>If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass</br>will be set by the persistentvolume controller if it exists.</br>If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be</br>set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource</br>exists.</br>More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/</br>(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).</br>+featureGate=VolumeAttributesClass</br>+optional |  |
 | volumeMode | [PersistentVolumeMode](#persistent-volume-mode)| `PersistentVolumeMode` |  | |  |  |
 | volumeName | string| `string` |  | | volumeName is the binding reference to the PersistentVolume backing this claim.</br>+optional |  |
 
@@ -2697,8 +2714,8 @@ a pod of the set of pods is running
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | labelSelector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
-| matchLabelKeys | []string| `[]string` |  | | MatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both matchLabelKeys and labelSelector.</br>Also, matchLabelKeys cannot be set when labelSelector isn't set.</br>This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.</br>+listType=atomic</br>+optional |  |
-| mismatchLabelKeys | []string| `[]string` |  | | MismatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.</br>Also, mismatchLabelKeys cannot be set when labelSelector isn't set.</br>This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.</br>+listType=atomic</br>+optional |  |
+| matchLabelKeys | []string| `[]string` |  | | MatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both matchLabelKeys and labelSelector.</br>Also, matchLabelKeys cannot be set when labelSelector isn't set.</br>This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).</br></br>+listType=atomic</br>+optional |  |
+| mismatchLabelKeys | []string| `[]string` |  | | MismatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.</br>Also, mismatchLabelKeys cannot be set when labelSelector isn't set.</br>This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).</br></br>+listType=atomic</br>+optional |  |
 | namespaceSelector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
 | namespaces | []string| `[]string` |  | | namespaces specifies a static list of namespace names that the term applies to.</br>The term is applied to the union of the namespaces listed in this field</br>and the ones selected by namespaceSelector.</br>null or empty namespaces list and null namespaceSelector means "this pod's namespace".</br>+optional</br>+listType=atomic |  |
 | topologyKey | string| `string` |  | | This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching</br>the labelSelector in the specified namespaces, where co-located is defined as running on a node</br>whose value of the label with key topologyKey matches that of any node on which any of the</br>selected pods is running.</br>Empty topologyKey is not allowed. |  |
@@ -2760,7 +2777,8 @@ container.securityContext take precedence over field values of PodSecurityContex
 | runAsUser | int64 (formatted integer)| `int64` |  | | The UID to run the entrypoint of the container process.</br>Defaults to user specified in image metadata if unspecified.</br>May also be set in SecurityContext.  If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence</br>for that container.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
 | seLinuxOptions | [SELinuxOptions](#s-e-linux-options)| `SELinuxOptions` |  | |  |  |
 | seccompProfile | [SeccompProfile](#seccomp-profile)| `SeccompProfile` |  | |  |  |
-| supplementalGroups | []int64 (formatted integer)| `[]int64` |  | | A list of groups applied to the first process run in each container, in addition</br>to the container's primary GID, the fsGroup (if specified), and group memberships</br>defined in the container image for the uid of the container process. If unspecified,</br>no additional groups are added to any container. Note that group memberships</br>defined in the container image for the uid of the container process are still effective,</br>even if they are not included in this list.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional</br>+listType=atomic |  |
+| supplementalGroups | []int64 (formatted integer)| `[]int64` |  | | A list of groups applied to the first process run in each container, in</br>addition to the container's primary GID and fsGroup (if specified).  If</br>the SupplementalGroupsPolicy feature is enabled, the</br>supplementalGroupsPolicy field determines whether these are in addition</br>to or instead of any group memberships defined in the container image.</br>If unspecified, no additional groups are added, though group memberships</br>defined in the container image may still be used, depending on the</br>supplementalGroupsPolicy field.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional</br>+listType=atomic |  |
+| supplementalGroupsPolicy | [SupplementalGroupsPolicy](#supplemental-groups-policy)| `SupplementalGroupsPolicy` |  | |  |  |
 | sysctls | [][Sysctl](#sysctl)| `[]*Sysctl` |  | | Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported</br>sysctls (by the container runtime) might fail to launch.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional</br>+listType=atomic |  |
 | windowsOptions | [WindowsSecurityContextOptions](#windows-security-context-options)| `WindowsSecurityContextOptions` |  | |  |  |
 
@@ -2871,7 +2889,7 @@ alive or ready to receive traffic.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | defaultMode | int32 (formatted integer)| `int32` |  | | defaultMode are the mode bits used to set permissions on created files by default.</br>Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.</br>YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.</br>Directories within the path are not affected by this setting.</br>This might be in conflict with other options that affect the file</br>mode, like fsGroup, and the result can be other mode bits set.</br>+optional |  |
-| sources | [][VolumeProjection](#volume-projection)| `[]*VolumeProjection` |  | | sources is the list of volume projections</br>+optional</br>+listType=atomic |  |
+| sources | [][VolumeProjection](#volume-projection)| `[]*VolumeProjection` |  | | sources is the list of volume projections. Each entry in this list</br>handles one source.</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -3041,12 +3059,12 @@ cause implementors to also use a fixed point implementation.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | fsType | string| `string` |  | | fsType is the filesystem type of the volume that you want to mount.</br>Tip: Ensure that the filesystem type is supported by the host operating system.</br>Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd</br>TODO: how do we prevent errors in the filesystem from compromising the machine</br>+optional |  |
 | image | string| `string` |  | | image is the rados image name.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it |  |
-| keyring | string| `string` |  | | keyring is the path to key ring for RBDUser.</br>Default is /etc/ceph/keyring.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional |  |
+| keyring | string| `string` |  | | keyring is the path to key ring for RBDUser.</br>Default is /etc/ceph/keyring.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional</br>+default="/etc/ceph/keyring" |  |
 | monitors | []string| `[]string` |  | | monitors is a collection of Ceph monitors.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+listType=atomic |  |
-| pool | string| `string` |  | | pool is the rados pool name.</br>Default is rbd.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional |  |
+| pool | string| `string` |  | | pool is the rados pool name.</br>Default is rbd.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional</br>+default="rbd" |  |
 | readOnly | boolean| `bool` |  | | readOnly here will force the ReadOnly setting in VolumeMounts.</br>Defaults to false.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| user | string| `string` |  | | user is the rados user name.</br>Default is admin.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional |  |
+| user | string| `string` |  | | user is the rados user name.</br>Default is admin.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional</br>+default="admin" |  |
 
 
 
@@ -3091,6 +3109,7 @@ cause implementors to also use a fixed point implementation.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | name | string| `string` |  | | Name must match the name of one entry in pod.spec.resourceClaims of</br>the Pod where this field is used. It makes that resource available</br>inside a container. |  |
+| request | string| `string` |  | | Request is the name chosen for a request in the referenced claim.</br>If empty, everything from the claim is made available, otherwise</br>only the result of this request.</br></br>+optional |  |
 
 
 
@@ -3330,13 +3349,13 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | fsType is the filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs".</br>Default is "xfs".</br>+optional |  |
+| fsType | string| `string` |  | | fsType is the filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs".</br>Default is "xfs".</br>+optional</br>+default="xfs" |  |
 | gateway | string| `string` |  | | gateway is the host address of the ScaleIO API Gateway. |  |
 | protectionDomain | string| `string` |  | | protectionDomain is the name of the ScaleIO Protection Domain for the configured storage.</br>+optional |  |
 | readOnly | boolean| `bool` |  | | readOnly Defaults to false (read/write). ReadOnly here will force</br>the ReadOnly setting in VolumeMounts.</br>+optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
 | sslEnabled | boolean| `bool` |  | | sslEnabled Flag enable/disable SSL communication with Gateway, default false</br>+optional |  |
-| storageMode | string| `string` |  | | storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.</br>Default is ThinProvisioned.</br>+optional |  |
+| storageMode | string| `string` |  | | storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.</br>Default is ThinProvisioned.</br>+optional</br>+default="ThinProvisioned" |  |
 | storagePool | string| `string` |  | | storagePool is the ScaleIO Storage Pool associated with the protection domain.</br>+optional |  |
 | system | string| `string` |  | | system is the name of the storage system as configured in ScaleIO. |  |
 | volumeName | string| `string` |  | | volumeName is the name of a volume already created in the ScaleIO system</br>that is associated with this volume source. |  |
@@ -3640,6 +3659,22 @@ otherwise).
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
 | volumeName | string| `string` |  | | volumeName is the human-readable name of the StorageOS volume.  Volume</br>names are only unique within a namespace. |  |
 | volumeNamespace | string| `string` |  | | volumeNamespace specifies the scope of the volume within StorageOS.  If no</br>namespace is specified then the Pod's namespace will be used.  This allows the</br>Kubernetes name scoping to be mirrored within StorageOS for tighter integration.</br>Set VolumeName to any name to override the default behaviour.</br>Set to "default" if you are not using namespaces within StorageOS.</br>Namespaces that do not pre-exist within StorageOS will be created.</br>+optional |  |
+
+
+
+### <span id="supplemental-groups-policy"></span> SupplementalGroupsPolicy
+
+
+> SupplementalGroupsPolicy defines how supplemental groups
+of the first container processes are calculated.
++enum
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| SupplementalGroupsPolicy | string| string | | SupplementalGroupsPolicy defines how supplemental groups</br>of the first container processes are calculated.</br>+enum |  |
 
 
 
@@ -4080,6 +4115,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 | gitRepo | [GitRepoVolumeSource](#git-repo-volume-source)| `GitRepoVolumeSource` |  | |  |  |
 | glusterfs | [GlusterfsVolumeSource](#glusterfs-volume-source)| `GlusterfsVolumeSource` |  | |  |  |
 | hostPath | [HostPathVolumeSource](#host-path-volume-source)| `HostPathVolumeSource` |  | |  |  |
+| image | [ImageVolumeSource](#image-volume-source)| `ImageVolumeSource` |  | |  |  |
 | iscsi | [ISCSIVolumeSource](#i-s-c-s-i-volume-source)| `ISCSIVolumeSource` |  | |  |  |
 | name | string| `string` |  | | name of the volume.</br>Must be a DNS_LABEL and unique within the pod.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names |  |
 | nfs | [NFSVolumeSource](#n-f-s-volume-source)| `NFSVolumeSource` |  | |  |  |
@@ -4136,7 +4172,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 ### <span id="volume-projection"></span> VolumeProjection
 
 
-> Projection that may be projected along with other supported volume types
+> Exactly one of these fields must be set.
   
 
 

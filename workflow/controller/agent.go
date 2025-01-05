@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -39,7 +40,7 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 		return err
 	}
 	// Check Pod is just created
-	if pod.Status.Phase != "" {
+	if pod != nil && pod.Status.Phase != "" {
 		woc.updateAgentPodStatus(pod)
 	}
 	return nil
@@ -190,11 +191,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
 	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = []string{"agent", "init", "--loglevel", getExecutorLogLevel()}
+	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts()...)
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
-	agentMainCtr.Args = []string{"agent", "main", "--loglevel", getExecutorLogLevel()}
+	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts()...)
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -230,7 +231,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	tmpl := &wfv1.Template{}
-	woc.addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
+	woc.addSchedulingConstraints(ctx, pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
 	woc.addMetadata(pod, tmpl)
 	woc.addDNSConfig(pod)
 
@@ -256,6 +257,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
 				return existing, nil
 			}
+		}
+		if errorsutil.IsTransientErr(err) {
+			woc.requeue()
+			return created, nil
 		}
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}

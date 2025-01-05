@@ -148,10 +148,39 @@ You'll have, either:
 * Postgres on <http://localhost:5432>, run `make postgres-cli` to access.
 * MySQL on <http://localhost:3306>, run `make mysql-cli` to access.
 
+To back up the database, use `make postgres-dump` or `make mysql-dump`, which will generate a SQL dump in the `db-dumps/` directory.
+
+```console
+make postgres-dump
+```
+
+To restore the backup, use `make postgres-cli` or `make mysql-cli`, piping in the file from the `db-dumps/` directory.
+
+Note that this is destructive and will delete any data you have stored.
+
+```console
+make postgres-cli < db-dumps/2024-10-16T17:11:58Z.sql
+```
+
 To test SSO integration, use `PROFILE=sso`:
 
 ```bash
 make start UI=true PROFILE=sso
+```
+
+### TLS
+
+By default, `make start` will start Argo in [plain text mode](tls.md#plain-text).
+To simulate a TLS proxy in front of Argo, use `UI_SECURE=true` (which implies `UI=true`):
+
+```bash
+make start UI_SECURE=true
+```
+
+To start Argo in [encrypted mode](tls.md#encrypted), use `SECURE=true`, which can be optionally combined with `UI_SECURE=true`:
+
+```bash
+make start SECURE=true UI_SECURE=true
 ```
 
 ### Running E2E tests locally
@@ -205,6 +234,36 @@ Tests often fail: that's good. To diagnose failure:
   logged at `level=error`?
 
 If tests run slowly or time out, factory reset your Kubernetes cluster.
+
+### Database Tooling
+
+The `go run ./hack/db` CLI provides a few useful commands for working with the DB locally:
+
+```console
+$ go run ./hack/db
+CLI for developers to use when working on the DB locally
+
+Usage:
+  db [command]
+
+Available Commands:
+  completion              Generate the autocompletion script for the specified shell
+  fake-archived-workflows Insert randomly-generated workflows into argo_archived_workflows, for testing purposes
+  help                    Help about any command
+  migrate                 Force DB migration for given cluster/table
+
+Flags:
+  -c, --dsn string   DSN connection string. For MySQL, use 'mysql:password@tcp/argo'. (default "postgres://postgres@localhost:5432/postgres")
+  -h, --help         help for db
+
+Use "db [command] --help" for more information about a command.
+```
+
+### Debugging using Visual Studio Code
+
+When using the Dev Container with VSCode, use the `Attach to argo server` and/or `Attach to workflow controller` launch configurations to attach to the `argo` or `workflow-controller` processes, respectively.
+
+This will allow you to start a debug session, where you can inspect variables and set breakpoints.
 
 ## Committing
 

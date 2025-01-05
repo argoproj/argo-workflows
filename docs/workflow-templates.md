@@ -249,37 +249,6 @@ spec:
               value: "hello world"
 ```
 
-You should **never** reference another template directly on a `template` object (outside of a `steps` or `dag` template).
-This includes both using `template` and `templateRef`.
-This behavior is deprecated, no longer supported, and will be removed in a future version.
-
-Here is an example of a **deprecated** reference that **should not be used**:
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-hello-world-
-spec:
-  entrypoint: hello-world
-  templates:
-  - name: hello-world
-    template:                     # You should NEVER use "template" here. Use it under a "steps" or "dag" template (see above).
-    templateRef:                  # You should NEVER use "templateRef" here. Use it under a "steps" or "dag" template (see above).
-      name: workflow-template-1
-      template: print-message
-    arguments:                    # Arguments here are ignored. Use them under a "steps" or "dag" template (see above).
-      parameters:
-      - name: message
-        value: "hello world"
-```
-
-The reasoning for deprecating this behavior is that a `template` is a "definition": it defines inputs and things to be
-done once instantiated. With this deprecated behavior, the same template object is allowed to be an "instantiator":
-to pass in "live" arguments and reference other templates (those other templates may be "definitions" or "instantiators").
-
-This behavior has been problematic and dangerous. It causes confusion and has design inconsistencies.
-
 ### Create `Workflow` from `WorkflowTemplate` Spec
 
 > v2.9 and after

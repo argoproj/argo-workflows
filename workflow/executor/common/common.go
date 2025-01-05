@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -15,7 +16,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
 const (
@@ -96,7 +96,7 @@ func TerminatePodWithContainerNames(ctx context.Context, c KubernetesClientInter
 		return err
 	}
 	for _, s := range containerStatuses {
-		if !slice.ContainsString(containerNames, s.Name) {
+		if !slices.Contains(containerNames, s.Name) {
 			continue
 		}
 		if s.State.Terminated != nil {

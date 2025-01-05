@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -46,8 +47,8 @@ func (sm *Manager) getWorkflowKey(key string) (string, error) {
 	return fmt.Sprintf("%s/%s", items[0], items[1]), nil
 }
 
-func (sm *Manager) CheckWorkflowExistence() {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	log.Debug("Check the workflow existence")
 	for _, lock := range sm.syncLockMap {
@@ -105,9 +106,9 @@ const (
 // a synchronization exists both at the template level
 // and at the workflow level -> impossible to upgrade correctly
 // due to ambiguity. Currently we just assume workflow level.
-func getWorkflowSyncLevelByName(wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
+func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
 	if wf.Spec.Synchronization != nil {
-		syncItems, err := allSyncItems(wf.Spec.Synchronization)
+		syncItems, err := allSyncItems(ctx, wf.Spec.Synchronization)
 		if err != nil {
 			return ErrorLevel, err
 		}
@@ -126,7 +127,7 @@ func getWorkflowSyncLevelByName(wf *wfv1.Workflow, lockName string) (SyncLevelTy
 	var lastErr error
 	for _, template := range wf.Spec.Templates {
 		if template.Synchronization != nil {
-			syncItems, err := allSyncItems(template.Synchronization)
+			syncItems, err := allSyncItems(ctx, template.Synchronization)
 			if err != nil {
 				return ErrorLevel, err
 			}
@@ -149,7 +150,7 @@ func getWorkflowSyncLevelByName(wf *wfv1.Workflow, lockName string) (SyncLevelTy
 	return ErrorLevel, lastErr
 }
 
-func (sm *Manager) Initialize(wfs []wfv1.Workflow) {
+func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 	for _, wf := range wfs {
 		if wf.Status.Synchronization == nil {
 			continue
@@ -168,7 +169,7 @@ func (sm *Manager) Initialize(wfs []wfv1.Workflow) {
 				}
 
 				for _, holders := range holding.Holders {
-					level, err := getWorkflowSyncLevelByName(&wf, holding.Semaphore)
+					level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Semaphore)
 					if err != nil {
 						log.Warnf("cannot obtain lock level for '%s' : %v", holding.Semaphore, err)
 						continue
@@ -188,7 +189,7 @@ func (sm *Manager) Initialize(wfs []wfv1.Workflow) {
 				if mutex == nil {
 					mutex := sm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
-						level, err := getWorkflowSyncLevelByName(&wf, holding.Mutex)
+						level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Mutex)
 						if err != nil {
 							log.Warnf("cannot obtain lock level for '%s' : %v", holding.Mutex, err)
 							continue
@@ -206,7 +207,7 @@ func (sm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 // TryAcquire tries to acquire the lock from semaphore.
 // It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available, the failed lock, and any error encountered
-func (sm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization) (bool, bool, string, string, error) {
+func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization) (bool, bool, string, string, error) {
 	sm.lock.Lock()
 	defer sm.lock.Unlock()
 
@@ -215,7 +216,7 @@ func (sm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	}
 
 	failedLockName := ""
-	syncItems, err := allSyncItems(syncLockRef)
+	syncItems, err := allSyncItems(ctx, syncLockRef)
 	if err != nil {
 		return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", err)
 	}
@@ -305,7 +306,7 @@ func (sm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	}
 }
 
-func (sm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
+func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
 	if syncRef == nil {
 		return
 	}
@@ -316,7 +317,7 @@ func (sm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 	holderKey := getHolderKey(wf, nodeName)
 	// Ignoring error here is as good as it's going to be, we shouldn't get here as we should
 	// should never have acquired anything if this errored
-	syncItems, _ := allSyncItems(syncRef)
+	syncItems, _ := allSyncItems(ctx, syncRef)
 
 	for _, syncItem := range syncItems {
 		lockName, err := getLockName(syncItem, wf.Namespace)

@@ -344,7 +344,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		syncManager.Initialize(wfList.Items)
+		syncManager.Initialize(ctx, wfList.Items)
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
@@ -356,7 +356,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		syncManager.Initialize(wfList.Items)
+		syncManager.Initialize(ctx, wfList.Items)
 		assert.Empty(t, syncManager.syncLockMap)
 	})
 
@@ -369,7 +369,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
-		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(wf, "", wf.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.Empty(t, failedLockName)
@@ -382,7 +382,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Equal(t, key, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		// Try to acquire again
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf, "", wf.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
@@ -390,7 +390,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.False(t, wfUpdate)
 
 		wf1.Name = "two"
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
@@ -400,7 +400,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf2.Name = "three"
 		wf2.Spec.Priority = ptr.To(int32(5))
 		holderKey2 := getHolderKey(wf2, "")
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
@@ -408,20 +408,20 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf3.Name = "four"
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf3, "", wf3.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf3, "", wf3.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		syncManager.Release(wf, "", wf.Spec.Synchronization)
+		syncManager.Release(ctx, wf, "", wf.Spec.Synchronization)
 		assert.Equal(t, holderKey2, nextKey)
 		require.NotNil(t, wf.Status.Synchronization)
 		assert.Empty(t, wf.Status.Synchronization.Semaphore.Holding[0].Holders)
 
 		// Low priority workflow try to acquire the lock
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
@@ -429,7 +429,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// High Priority workflow acquires the lock
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.Empty(t, failedLockName)
@@ -470,7 +470,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
-		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(wf, "", wf.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.Empty(t, failedLockName)
@@ -482,7 +482,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.Equal(t, key, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		wf1.Name = "two"
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
@@ -490,7 +490,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
@@ -504,7 +504,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		_, err = kube.CoreV1().ConfigMaps("default").Update(ctx, cm, metav1.UpdateOptions{})
 		require.NoError(t, err)
 
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
@@ -515,7 +515,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		key = getHolderKey(wf1, "")
 		assert.Equal(t, key, wf1.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.Empty(t, failedLockName)
@@ -546,7 +546,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
 
-		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.Empty(t, failedLockName)
@@ -558,26 +558,26 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.Equal(t, key, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		// Try to acquire again
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, failedLockName)
 		assert.False(t, wfUpdate)
 		assert.Empty(t, msg)
 
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-1607747183", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/ConfigMap/my-config/template", failedLockName)
 		assert.True(t, wfUpdate)
 		assert.False(t, status)
 
-		syncManager.Release(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
+		syncManager.Release(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NotNil(t, wf.Status.Synchronization)
 		require.NotNil(t, wf.Status.Synchronization.Semaphore)
 		assert.Empty(t, wf.Status.Synchronization.Semaphore.Holding[0].Holders)
 
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-1607747183", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.Empty(t, failedLockName)
@@ -611,7 +611,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 		for i := 0; i < 3; i++ {
 			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 			wf.Name = fmt.Sprintf("%s-%d", "acquired", i)
-			status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(wf, "", wf.Spec.Synchronization)
+			status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 			require.NoError(t, err)
 			assert.Empty(msg)
 			assert.Empty(failedLockName)
@@ -623,21 +623,22 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 		for i := 0; i < 3; i++ {
 			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 			wf.Name = fmt.Sprintf("%s-%d", "wait", i)
-			status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(wf, "", wf.Spec.Synchronization)
+			status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 			require.NoError(t, err)
 			assert.NotEmpty(msg)
 			assert.Equal("default/ConfigMap/my-config/workflow", failedLockName)
 			assert.False(status)
 			assert.True(wfUpdate)
 		}
-		syncManager.Release(&wfs[0], "", wfs[0].Spec.Synchronization)
+		syncManager.Release(ctx, &wfs[0], "", wfs[0].Spec.Synchronization)
 		triggerCount = 0
-		syncManager.Release(&wfs[1], "", wfs[1].Spec.Synchronization)
+		syncManager.Release(ctx, &wfs[1], "", wfs[1].Spec.Synchronization)
 		assert.Equal(2, triggerCount)
 	})
 }
 
 func TestMutexWfLevel(t *testing.T) {
+	ctx := context.Background()
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
@@ -649,7 +650,7 @@ func TestMutexWfLevel(t *testing.T) {
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 
-		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(wf, "", wf.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.Empty(t, failedLockName)
@@ -660,7 +661,7 @@ func TestMutexWfLevel(t *testing.T) {
 		require.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
 
 		wf1.Name = "two"
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/Mutex/my-mutex", failedLockName)
@@ -668,7 +669,7 @@ func TestMutexWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, "default/Mutex/my-mutex", failedLockName)
@@ -709,10 +710,10 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		wfSema := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wfSema1 := wfSema.DeepCopy()
 		wfSema1.Name = "test2"
-		_, _, _, _, _ = syncManager.TryAcquire(wfMutex, "", wfMutex.Spec.Synchronization)
-		_, _, _, _, _ = syncManager.TryAcquire(wfMutex1, "", wfMutex.Spec.Synchronization)
-		_, _, _, _, _ = syncManager.TryAcquire(wfSema, "", wfSema.Spec.Synchronization)
-		_, _, _, _, _ = syncManager.TryAcquire(wfSema1, "", wfSema.Spec.Synchronization)
+		_, _, _, _, _ = syncManager.TryAcquire(ctx, wfMutex, "", wfMutex.Spec.Synchronization)
+		_, _, _, _, _ = syncManager.TryAcquire(ctx, wfMutex1, "", wfMutex.Spec.Synchronization)
+		_, _, _, _, _ = syncManager.TryAcquire(ctx, wfSema, "", wfSema.Spec.Synchronization)
+		_, _, _, _, _ = syncManager.TryAcquire(ctx, wfSema1, "", wfSema.Spec.Synchronization)
 		mutex := syncManager.syncLockMap["default/Mutex/my-mutex"].(*prioritySemaphore)
 		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 
@@ -720,7 +721,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		assert.Len(mutex.getCurrentPending(), 1)
 		assert.Len(semaphore.getCurrentHolders(), 1)
 		assert.Len(semaphore.getCurrentPending(), 1)
-		syncManager.CheckWorkflowExistence()
+		syncManager.CheckWorkflowExistence(ctx)
 		assert.Empty(mutex.getCurrentHolders())
 		assert.Len(mutex.getCurrentPending(), 1)
 		assert.Empty(semaphore.getCurrentHolders())
@@ -872,7 +873,7 @@ status:
 	}, WorkflowExistenceFunc)
 	t.Run("InitializeMutex", func(t *testing.T) {
 		tmpl := wf.Spec.Templates[1]
-		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(wf, "synchronization-tmpl-level-sgg6t-1949670081", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "synchronization-tmpl-level-sgg6t-1949670081", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(msg)
 		assert.Empty(failedLockName)
@@ -883,7 +884,7 @@ status:
 	})
 	t.Run("InitializeSemaphore", func(t *testing.T) {
 		tmpl := wf.Spec.Templates[2]
-		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(wf, "synchronization-tmpl-level-sgg6t-1899337224", tmpl.Synchronization)
+		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "synchronization-tmpl-level-sgg6t-1899337224", tmpl.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(msg)
 		assert.Empty(failedLockName)
@@ -1125,6 +1126,7 @@ status:
 `
 
 func TestMutexMigration(t *testing.T) {
+	ctx := context.Background()
 	assert := assert.New(t)
 	require := require.New(t)
 	kube := fake.NewSimpleClientset()
@@ -1148,9 +1150,9 @@ func TestMutexMigration(t *testing.T) {
 
 		syncMgr.syncLockMap = make(map[string]semaphore)
 		wfs := []wfv1.Workflow{*wfMutex2.DeepCopy()}
-		syncMgr.Initialize(wfs)
+		syncMgr.Initialize(ctx, wfs)
 
-		syncItems, err := allSyncItems(wfMutex2.Spec.Synchronization)
+		syncItems, err := allSyncItems(ctx, wfMutex2.Spec.Synchronization)
 		require.NoError(err)
 		lockName, err := getLockName(syncItems[0], wfMutex2.Namespace)
 		require.NoError(err)
@@ -1165,7 +1167,7 @@ func TestMutexMigration(t *testing.T) {
 		assert.Equal(holderKey, holders[0])
 
 		// We should already have this lock since we acquired it above
-		status, _, _, _, err := syncMgr.TryAcquire(wfMutex2, "", wfMutex.Spec.Synchronization)
+		status, _, _, _, err := syncMgr.TryAcquire(ctx, wfMutex2, "", wfMutex.Spec.Synchronization)
 		require.NoError(err)
 		// BUG NOT PRESENT: https://github.com/argoproj/argo-workflows/issues/8684
 		assert.True(status)
@@ -1191,9 +1193,9 @@ func TestMutexMigration(t *testing.T) {
 		assert.Equal(1, numFound)
 
 		wfs := []wfv1.Workflow{*wfMutex3.DeepCopy()}
-		syncMgr.Initialize(wfs)
+		syncMgr.Initialize(ctx, wfs)
 
-		syncItems, err := allSyncItems(wfMutex3.Spec.Templates[1].Synchronization)
+		syncItems, err := allSyncItems(ctx, wfMutex3.Spec.Templates[1].Synchronization)
 		require.NoError(err)
 		lockName, err := getLockName(syncItems[0], wfMutex3.Namespace)
 		require.NoError(err)
@@ -1209,7 +1211,7 @@ func TestMutexMigration(t *testing.T) {
 		// PROVE: bug absent
 		assert.Equal(holderKey, holders[0])
 
-		status, _, _, _, err := syncMgr.TryAcquire(wfMutex3, foundNodeID, wfMutex.Spec.Synchronization)
+		status, _, _, _, err := syncMgr.TryAcquire(ctx, wfMutex3, foundNodeID, wfMutex.Spec.Synchronization)
 		require.NoError(err)
 		// BUG NOT PRESENT: https://github.com/argoproj/argo-workflows/issues/8684
 		assert.True(status)

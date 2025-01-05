@@ -2,7 +2,7 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
     devenv.url = "github:cachix/devenv";
     nix-filter.url = "github:numtide/nix-filter";
@@ -307,17 +307,6 @@
               doCheck = false;
             };
 
-            staticfiles = pkgs.buildGoPackage rec {
-              name = "staticfiles";
-              src = pkgs.fetchFromGitHub {
-                owner = "bouk";
-                repo = "staticfiles";
-                rev = "827d7f6389cd410d0aa3f3d472a4838557bf53dd";
-                sha256 = "0xarhmsqypl8036w96ssdzjv3k098p2d4mkmw5f6hkp1m3j67j61";
-              };
-
-              goPackagePath = "bou.ke/staticfiles";
-            };
             default = config.packages.${package.name};
           };
 
@@ -338,7 +327,6 @@
                 config.packages.k8sio-tools
                 config.packages.goreman
                 config.packages.stern
-                config.packages.staticfiles
                 config.packages.${package.name}
                 nodePackages.shell.nodeDependencies
                 gopls
@@ -368,7 +356,6 @@
                     config.packages.k8sio-tools
                     config.packages.goreman
                     config.packages.stern
-                    config.packages.staticfiles
                     config.packages.${package.name}
                     nodePackages.shell.nodeDependencies
                     gopls

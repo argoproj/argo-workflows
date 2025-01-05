@@ -6,21 +6,12 @@ resources:
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_eventbus.yaml
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_eventsources.yaml
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_sensors.yaml
-- ../mixins/argo-workflows-agent-ca-certificates.yaml
-- ../mixins/argo-server.service-account-token-secret.yaml
-- ../mixins/argo.service-account-token-secret.yaml
-- ../mixins/get-cm-rbac.yaml
+- argo-workflows-agent-ca-certificates.yaml
+- argo.service-account-token-secret.yaml
+- get-cm-rbac.yaml
 
-patches:
-- path: ../mixins/argo-server-deployment.yaml
-- path: ../mixins/argo-server-cluster-workflow-template-rbac.yaml
-- path: ../mixins/workflow-controller-configmap.yaml
-- path: ../mixins/workflow-controller-deployment.yaml
-- path: ../mixins/workflow-controller-cluster-workflow-template-rbac.yaml
-- path: ../mixins/minio-deployment.yaml
+components:
+- ../components/base
+- ../components/local-argo
 
-labels:
-- includeSelectors: true
-  pairs:
-    app.kubernetes.io/part-of: argo
 namespace: argo

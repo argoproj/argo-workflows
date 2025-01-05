@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1554,11 +1555,12 @@ func TestStepsRetriesVariable(t *testing.T) {
 func TestAssessNodeStatus(t *testing.T) {
 	const templateName = "whalesay"
 	tests := []struct {
-		name   string
-		pod    *apiv1.Pod
-		daemon bool
-		node   *wfv1.NodeStatus
-		want   wfv1.NodePhase
+		name        string
+		pod         *apiv1.Pod
+		daemon      bool
+		node        *wfv1.NodeStatus
+		wantPhase   wfv1.NodePhase
+		wantMessage string
 	}{{
 		name: "pod pending",
 		pod: &apiv1.Pod{
@@ -1566,8 +1568,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodPending,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodePending,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodePending,
+		wantMessage: "",
 	}, {
 		name: "pod succeeded",
 		pod: &apiv1.Pod{
@@ -1575,8 +1578,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodSucceeded,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeSucceeded,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "pod failed - daemoned",
 		pod: &apiv1.Pod{
@@ -1584,9 +1588,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodFailed,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName},
-		want:   wfv1.NodeSucceeded,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
@@ -1594,9 +1599,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeFailed},
-		want:   wfv1.NodeFailed,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeFailed},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "",
 	}, {
 		name: "daemon, pod running, node succeeded",
 		pod: &apiv1.Pod{
@@ -1604,9 +1610,10 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		daemon: true,
-		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
-		want:   wfv1.NodeSucceeded,
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
 	}, {
 		name: "pod failed - not daemoned",
 		pod: &apiv1.Pod{
@@ -1615,8 +1622,20 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
+	}, {
+		name: "pod failed - transition from node pending",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "failed for some reason",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodePending, Message: "failed for some reason"},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
 	}, {
 		name: "pod failed - init container failed",
 		pod: &apiv1.Pod{
@@ -1641,8 +1660,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - init container failed but neither wait nor main containers are finished",
 		pod: &apiv1.Pod{
@@ -1667,8 +1687,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - init container with non-standard init container name failed but neither wait nor main containers are finished",
 		pod: &apiv1.Pod{
@@ -1697,8 +1718,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since init container failed",
 	}, {
 		name: "pod failed - wait container waiting but pod was set failed",
 		pod: &apiv1.Pod{
@@ -1723,8 +1745,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeFailed,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed since wait contain waiting",
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
@@ -1732,13 +1755,15 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeRunning,
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeRunning,
+		wantMessage: "",
 	}, {
-		name: "default",
-		pod:  &apiv1.Pod{},
-		node: &wfv1.NodeStatus{TemplateName: templateName},
-		want: wfv1.NodeError,
+		name:        "default",
+		pod:         &apiv1.Pod{},
+		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		wantPhase:   wfv1.NodeError,
+		wantMessage: "Unexpected pod phase for : ",
 	}}
 
 	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -1755,14 +1780,15 @@ func TestAssessNodeStatus(t *testing.T) {
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			got := woc.assessNodeStatus(context.TODO(), tt.pod, tt.node)
-			assert.Equal(t, tt.want, got.Phase)
+			assert.Equal(t, tt.wantPhase, got.Phase)
+			assert.Equal(t, tt.wantMessage, got.Message)
 		})
 	}
 }
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
 	tmpl := &wfv1.Template{}
-	for _, c := range pod.Spec.Containers {
+	for _, c := range pod.Spec.InitContainers {
 		for _, e := range c.Env {
 			if e.Name == common.EnvVarTemplate {
 				return tmpl, json.Unmarshal([]byte(e.Value), tmpl)
@@ -1792,7 +1818,7 @@ func TestGetPodTemplate(t *testing.T) {
 		name: "missing template",
 		pod: &apiv1.Pod{
 			Spec: apiv1.PodSpec{
-				Containers: []apiv1.Container{
+				InitContainers: []apiv1.Container{
 					{
 						Env: []apiv1.EnvVar{},
 					},
@@ -1804,7 +1830,7 @@ func TestGetPodTemplate(t *testing.T) {
 		name: "empty template",
 		pod: &apiv1.Pod{
 			Spec: apiv1.PodSpec{
-				Containers: []apiv1.Container{
+				InitContainers: []apiv1.Container{
 					{
 						Env: []apiv1.EnvVar{
 							{
@@ -1821,7 +1847,7 @@ func TestGetPodTemplate(t *testing.T) {
 		name: "simple template",
 		pod: &apiv1.Pod{
 			Spec: apiv1.PodSpec{
-				Containers: []apiv1.Container{
+				InitContainers: []apiv1.Container{
 					{
 						Env: []apiv1.EnvVar{
 							{
@@ -3407,11 +3433,9 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, pods.Items, "pod was not created successfully")
 
-	assert.Equal(t, []string{
-		"/var/run/argo/argoexec", "emissary",
-		"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+	assert.Equal(t, append(append([]string{"/var/run/argo/argoexec", "emissary"}, woc.getExecutorLogOpts()...),
 		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\"",
-	}, pods.Items[0].Spec.Containers[1].Command)
+	), pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -6491,6 +6515,7 @@ status:
   phase: Failed
   nodes:
     my-wf:
+      id: my-wf
       name: my-wf
       phase: Failed
 `)
@@ -7285,8 +7310,8 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		ctrs := pods.Items[0].Spec.Containers
 		assert.Len(t, ctrs, 2)
 		envs := ctrs[1].Env
-		assert.Len(t, envs, 8)
-		assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[3])
+		assert.Len(t, envs, 7)
+		assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[2])
 	})
 }
 
@@ -8466,6 +8491,10 @@ metadata:
   namespace: argo
 spec:
   entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: derived-mutex-name
+      value: welcome
   templates:
   - container:
       args:
@@ -8476,7 +8505,7 @@ spec:
     name: whalesay
     synchronization:
       mutex:
-        name: welcome
+        name: "{{ workflow.parameters.derived-mutex-name }}"
   ttlStrategy:
     secondsAfterCompletion: 600
 status:
@@ -8485,7 +8514,6 @@ status:
       displayName: hello-world-mpdht
       finishedAt: null
       id: hello-world-mpdht
-      message: 'Waiting for argo/Mutex/welcome lock. Lock status: 0/1 '
       name: hello-world-mpdht
       phase: Pending
       progress: 0/1
@@ -8512,13 +8540,20 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	ctx := context.Background()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
-	_, _, _, _, err := controller.syncManager.TryAcquire(wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
+
+	// preempt lock
+	_, _, _, _, err := controller.syncManager.TryAcquire(ctx, wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Phase)
+	assert.Equal(t, "Waiting for argo/Mutex/welcome lock. Lock status: 0/1", woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Message)
+
+	woc.controller.syncManager.Release(ctx, wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
+	woc.operate(ctx)
+	assert.Equal(t, "", woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Message)
 }
 
 var wfGlobalArtifactNil = `apiVersion: argoproj.io/v1alpha1
@@ -11132,15 +11167,15 @@ var wfHasContainerSet = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: lovely-rhino
+  name: wf-has-containerSet
 spec:
+  entrypoint: init
   templates:
     - name: init
       dag:
         tasks:
           - name: A
             template: run
-            arguments: {}
     - name: run
       containerSet:
         containers:
@@ -11151,24 +11186,19 @@ spec:
             args:
               - '-c'
               - sleep 9000
-            resources: {}
           - name: main2
             image: alpine:latest
             command:
               - /bin/sh
             args:
               - '-c'
-              - sleep 9000
-            resources: {}
-  entrypoint: init
-  arguments: {}
-  ttlStrategy:
-    secondsAfterCompletion: 300
-  podGC:
-    strategy: OnPodCompletion`
+              - sleep 9000`
 
-// TestContainerSetDeleteContainerWhenPodDeleted test whether a workflow has ContainerSet error when pod deleted.
-func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
+// TestContainerSetWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet is used.
+func TestContainerSetWhenPodDeleted(t *testing.T) {
+	// use local-scoped env vars in test to avoid long waits
+	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
@@ -11194,9 +11224,91 @@ func TestContainerSetDeleteContainerWhenPodDeleted(t *testing.T) {
 		}
 	}
 
-	// TODO: Refactor to use local-scoped env vars in test to avoid long wait. See https://github.com/argoproj/argo-workflows/pull/12756#discussion_r1530245007
 	// delete pod
-	time.Sleep(10 * time.Second)
+	deletePods(ctx, woc)
+	pods, err = listPods(woc)
+	require.NoError(t, err)
+	assert.Empty(t, pods.Items)
+
+	// reconcile
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Equal(t, wfv1.NodeError, node.Phase)
+		if node.Type == wfv1.NodeTypePod {
+			assert.Equal(t, "pod deleted", node.Message)
+		}
+		if node.Type == wfv1.NodeTypeContainer {
+			assert.Equal(t, "container deleted", node.Message)
+		}
+	}
+}
+
+var wfHasContainerSetWithDependencies = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-has-containerSet-with-dependencies
+spec:
+  entrypoint: init
+  templates:
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+    - name: run
+      containerSet:
+        containers:
+          - name: main
+            image: alpine:latest
+            command:
+              - /bin/sh
+            args:
+              - '-c'
+              - sleep 9000
+          - name: main2
+            image: alpine:latest
+            command:
+              - /bin/sh
+            args:
+              - '-c'
+              - sleep 9000
+            dependencies:
+              - main`
+
+// TestContainerSetWithDependenciesWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet with dependencies is used.
+func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
+	// use local-scoped env vars in test to avoid long waits
+	_ = os.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	defer os.Setenv("RECENTLY_STARTED_POD_DURATION", "")
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSetWithDependencies)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+
+	// mark pod Running
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			assert.Equal(t, wfv1.NodeRunning, node.Phase)
+		}
+	}
+
+	// delete pod
 	deletePods(ctx, woc)
 	pods, err = listPods(woc)
 	require.NoError(t, err)

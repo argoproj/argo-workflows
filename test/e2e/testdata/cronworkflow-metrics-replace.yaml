@@ -3,13 +3,14 @@ kind: CronWorkflow
 metadata:
   name: test-cron-metric-replace
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Replace"
   startingDeadlineSeconds: 0
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
   workflowSpec:
-    metadata:
-      labels:
-        workflows.argoproj.io/test: "true"
     podGC:
       strategy: OnPodCompletion
     entrypoint: sleep

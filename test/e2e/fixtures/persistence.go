@@ -10,9 +10,9 @@ import (
 )
 
 type Persistence struct {
+	WorkflowArchive       sqldb.WorkflowArchive
 	session               db.Session
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	workflowArchive       sqldb.WorkflowArchive
 }
 
 func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
@@ -38,9 +38,9 @@ func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *P
 		}
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
 		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
-		return &Persistence{session, offloadNodeStatusRepo, workflowArchive}
+		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
 	} else {
-		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, workflowArchive: sqldb.NullWorkflowArchive}
+		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: sqldb.NullWorkflowArchive}
 	}
 }
 

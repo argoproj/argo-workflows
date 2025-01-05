@@ -94,6 +94,74 @@ func (s *MetricsSuite) TestDAGMetrics() {
 		})
 }
 
+func (s *MetricsSuite) TestDeprecatedCronSchedule() {
+	s.Given().
+		CronWorkflow(`@testdata/cronworkflow-deprecated-schedule.yaml`).
+		When().
+		CreateCronWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Then().
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`deprecated_feature{feature="cronworkflow schedule",namespace="argo"}`) // Count unimportant and unknown
+		})
+}
+
+func (s *MetricsSuite) TestDeprecatedMutex() {
+	s.Given().
+		Workflow(`@testdata/synchronization-deprecated-mutex.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`deprecated_feature{feature="synchronization mutex",namespace="argo"}`) // Count unimportant and unknown
+		})
+}
+
+func (s *MetricsSuite) TestDeprecatedPodPriority() {
+	s.Given().
+		Workflow(`@testdata/workflow-deprecated-podpriority.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored). // Fails as kubernetes we test on do not support this1
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`deprecated_feature{feature="workflow podpriority",namespace="argo"}`) // Count unimportant and unknown
+		})
+}
+
+func (s *MetricsSuite) TestDeprecatedSemaphore() {
+	s.Given().
+		Workflow(`@testdata/synchronization-deprecated-semaphore.yaml`).
+		When().
+		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		DeleteConfigMap("my-config").
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			s.e(s.T()).GET("").
+				Expect().
+				Status(200).
+				Body().
+				Contains(`deprecated_feature{feature="synchronization semaphore",namespace="argo"}`) // Count unimportant and unknown
+		})
+}
+
 func (s *MetricsSuite) TestFailedMetric() {
 	s.Given().
 		Workflow(`@testdata/template-status-failed-conditional-metric.yaml`).
@@ -116,7 +184,8 @@ func (s *MetricsSuite) TestCronCountersForbid() {
 		CronWorkflow(`@testdata/cronworkflow-metrics-forbid.yaml`).
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Wait(time.Minute). // This pattern is used in cron_test.go too
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").
@@ -133,7 +202,8 @@ func (s *MetricsSuite) TestCronCountersReplace() {
 		CronWorkflow(`@testdata/cronworkflow-metrics-replace.yaml`).
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute). // This pattern is used in cron_test.go too
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForNewWorkflow(fixtures.ToBeRunning).
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			s.e(s.T()).GET("").

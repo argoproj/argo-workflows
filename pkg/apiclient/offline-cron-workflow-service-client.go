@@ -19,7 +19,7 @@ type OfflineCronWorkflowServiceClient struct {
 var _ cronworkflow.CronWorkflowServiceClient = &OfflineCronWorkflowServiceClient{}
 
 func (o OfflineCronWorkflowServiceClient) LintCronWorkflow(ctx context.Context, req *cronworkflow.LintCronWorkflowRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
-	err := validate.ValidateCronWorkflow(o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.CronWorkflow)
+	err := validate.ValidateCronWorkflow(ctx, o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.CronWorkflow, nil)
 	if err != nil {
 		return nil, err
 	}

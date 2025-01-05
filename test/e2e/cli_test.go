@@ -757,6 +757,7 @@ func (s *CLISuite) TestWorkflowLint() {
 			RunCli([]string{"lint", "--kinds", "wf", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
 				require.Error(t, err)
 				assert.Contains(t, output, "found nothing to lint in the specified paths, failing...")
+				assert.NotContains(t, output, "Usage:")
 			})
 	})
 	s.Run("All Kinds", func() {
@@ -894,7 +895,7 @@ func (s *CLISuite) TestWorkflowRetryWithRecreatedPVC() {
 			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("print").Phase)
 			// This step is failed intentionally to allow retry. The error message is not related to PVC that is deleted
 			// previously since it is re-created during retry.
-			assert.Equal(t, "Error (exit code 1)", status.Nodes.FindByDisplayName("print").Message)
+			assert.Equal(t, "main: Error (exit code 1)", status.Nodes.FindByDisplayName("print").Message)
 		})
 }
 
@@ -1095,6 +1096,7 @@ func (s *CLISuite) TestTemplateCommands() {
 	s.Run("LintWithoutArgs", func() {
 		s.Given().RunCli([]string{"template", "lint"}, func(t *testing.T, output string, err error) {
 			require.Error(t, err)
+			assert.Contains(t, output, "Error: requires at least 1 arg(s), only received 0")
 			assert.Contains(t, output, "Usage:")
 		})
 	})
@@ -1462,7 +1464,7 @@ func (s *CLISuite) TestCronCommands() {
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"cron", "get", "not-found"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
-			assert.Contains(t, output, `\"not-found\" not found`)
+			assert.Contains(t, output, `"not-found" not found`)
 		}).RunCli([]string{"cron", "get", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
 			assert.Contains(t, output, "Name:")

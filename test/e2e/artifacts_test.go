@@ -307,11 +307,11 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 2,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "first-on-completion-1"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-on-completion-2"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-no-deletion"}, false, false},
-				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "second-on-deletion"}, false, true},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "second-on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "first-on-completion-1"}, true, false},
+				{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-on-completion-2"}, true, false},
+				{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-no-deletion"}, false, false},
+				{s3Location{bucketName: "my-bucket-3", specifiedKey: "second-on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "second-on-completion"}, true, false},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate
@@ -321,8 +321,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate
@@ -332,8 +332,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
@@ -343,8 +343,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
@@ -354,8 +354,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, false},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate which has a Step that references another WorkflowTemplate's template
@@ -365,8 +365,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
@@ -380,12 +380,24 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		},
 		// Workflow fails to write an artifact that's been defined as an Output
 		{
-			workflowFile:                 "@testdata/artifactgc/artgc-artifact-not-written.yaml",
+			workflowFile:                 "@testdata/artifactgc/artgc-non-optional-artifact-not-written.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        false, // artifact not being present causes Workflow to fail
 			expectedGCPodsOnWFCompletion: 0,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "some-artifacts-not-written", artifactName: "present"}}, false, true},
+			},
+		},
+		// Workflow doesn't write an artifact that's been defined as an Output, but it's an Optional artifact, so Workflow succeeds
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-optional-artifact-not-written.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "some-artifacts-not-written", artifactName: "present"}}, false, true},
 			},
 		},
 		// Workflow defined output artifact but execution failed, no artifacts to be gced
@@ -699,6 +711,48 @@ func (s *ArtifactsSuite) TestMainLog() {
 			When().
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeFailed).
+			Then().
+			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+				require.NoError(t, err)
+			})
+	})
+}
+
+func (s *ArtifactsSuite) TestResourceLog() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-tmpl-wf-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        setOwnerReference: true
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: hello-world-
+            labels:
+              workflows.argoproj.io/test: "true"
+          spec:
+            entrypoint: whalesay
+            templates:
+              - name: whalesay
+                container:
+                  image: argoproj/argosay:v2
+                  command: [sh, -c]
+                  args: [echo, ":) Hello Argo!"]
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
 			Then().
 			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
 				require.NoError(t, err)

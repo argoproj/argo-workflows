@@ -102,7 +102,9 @@ PVCs
 Peixuan
 Ploomber
 Postgres
+PriorityClass
 RCs
+Risc-V
 Roadmap
 RoleBinding
 SDKs
@@ -210,6 +212,7 @@ stateful
 stderr
 symlinks
 temporality
+tolerations
 triaged
 un-reconciled
 v1
@@ -246,6 +249,7 @@ v3.4.
 v3.4.4
 v3.5
 v3.6
+v3.7
 validator
 vendored
 versioned
