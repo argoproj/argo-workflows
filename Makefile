@@ -533,7 +533,8 @@ ifeq ($(shell uname),Darwin)
 	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
 	brew install kit
 else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
+	@echo "Downloading Kit"
+	curl -fsL --retry 99 "https://github.com/kitproj/kit/releases/download/v0.1.8/kit_0.1.8_$$(uname)_$$(uname -m | sed 's/aarch64/arm64/').tar.gz" | sudo tar -C /usr/local/bin -xzf - kit
 endif
 endif
 
