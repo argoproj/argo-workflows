@@ -67,6 +67,8 @@ spec:
                     items:
                       type: string
                     type: array
+                  generateName:
+                    type: string
                   labels:
                     additionalProperties:
                       type: string
@@ -12300,6 +12302,8 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                        generateName:
+                                          type: string
                                         labels:
                                           additionalProperties:
                                             type: string
@@ -22970,6 +22974,8 @@ spec:
                                             items:
                                               type: string
                                             type: array
+                                          generateName:
+                                            type: string
                                           labels:
                                             additionalProperties:
                                               type: string
@@ -23608,6 +23614,8 @@ spec:
                               items:
                                 type: string
                               type: array
+                            generateName:
+                              type: string
                             labels:
                               additionalProperties:
                                 type: string
@@ -23986,6 +23994,8 @@ spec:
                                       items:
                                         type: string
                                       type: array
+                                    generateName:
+                                      type: string
                                     labels:
                                       additionalProperties:
                                         type: string

@@ -15,10 +15,14 @@ func (o *obj) RemoveNestedField(fields ...string) {
 	unstructured.RemoveNestedField(*o, fields...)
 }
 
+func (o *obj) SetNestedField(value interface{}, fields ...string) {
+	parentField := nestedFieldNoCopy[map[string]interface{}](o, fields[:len(fields)-1]...)
+	parentField[fields[len(fields)-1]] = value
+}
+
 func (o *obj) CopyNestedField(sourceFields []string, targetFields []string) {
 	value := nestedFieldNoCopy[any](o, sourceFields...)
-	parentField := nestedFieldNoCopy[map[string]interface{}](o, targetFields[:len(targetFields)-1]...)
-	parentField[targetFields[len(targetFields)-1]] = value
+	o.SetNestedField(value, targetFields...)
 }
 
 func (o *obj) Name() string {
