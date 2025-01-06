@@ -40,7 +40,7 @@ func NewBackfillCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "backfill cronwf",
-		Short: "create a cron backfill",
+		Short: "create a cron backfill(new alpha feature)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
