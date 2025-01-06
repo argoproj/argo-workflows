@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -28,23 +27,17 @@ func TestMultiNoParallelismSamePriority(t *testing.T) {
 
 func TestMultiNoParallelismMultipleBuckets(t *testing.T) {
 	throttler := NewMultiThrottler(1, make(map[string]int), 1, func(Key) {})
-	actual := throttler.(*multiThrottler)
 	throttler.Add("a/0", 0, time.Now())
-	throttler.Add("a/1", 0, time.Now())
-	throttler.Add("b/0", 0, time.Now())
-	throttler.Add("b/1", 0, time.Now())
+	throttler.Add("a/1", 0, time.Now().Add(-1*time.Second))
+	throttler.Add("b/0", 0, time.Now().Add(-2*time.Second))
+	throttler.Add("b/1", 0, time.Now().Add(-3*time.Second))
 
 	assert.True(t, throttler.Admit("a/0"))
 	assert.False(t, throttler.Admit("a/1"))
 	assert.False(t, throttler.Admit("b/0"))
+	assert.False(t, throttler.Admit("b/1"))
 	throttler.Remove("a/0")
-	assert.True(t, throttler.Admit("b/0"))
-	if !throttler.Admit("b/0") {
-		fmt.Printf("%+v\n", actual.running)
-		fmt.Printf("%t\n", throttler.Admit("a/1"))
-		fmt.Printf("%t\n", throttler.Admit("b/0"))
-		fmt.Printf("%t\n", throttler.Admit("b/1"))
-	}
+	assert.True(t, throttler.Admit("b/1"))
 }
 
 func TestMultiWithParallelismLimitAndPriority(t *testing.T) {

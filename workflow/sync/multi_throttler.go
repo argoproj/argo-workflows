@@ -136,8 +136,8 @@ func (m *multiThrottler) queueThrottled() {
 	if m.totalParallelism != 0 && len(m.running) >= m.totalParallelism {
 		return
 	}
-	var bestItem *item
-	var oldPq *priorityQueue
+
+	minPq := &priorityQueue{itemByKey: make(map[string]*item)}
 
 	cnts := make(map[string]int)
 
@@ -159,23 +159,13 @@ func (m *multiThrottler) queueThrottled() {
 		if !m.namespaceAllows(namespace) {
 			continue
 		}
-		if bestItem == nil {
-			bestItem = currItem
-			oldPq = pq
-			continue
-		}
 
-		if LessByItem(bestItem, currItem) {
-			bestItem = currItem
-			oldPq = pq
-		}
+		minPq.add(currItem.key, currItem.priority, currItem.creationTime)
 	}
-
-	if bestItem != nil {
-		sameKey := oldPq.pop()
-		if sameKey.key != bestItem.key {
-			panic("unreachable code was reached")
-		}
+	if len(minPq.items) > 0 {
+		bestItem := minPq.pop()
+		bestNamespace, _, _ := cache.SplitMetaNamespaceKey(bestItem.key)
+		m.pending[bestNamespace].pop()
 		m.running[bestItem.key] = true
 		m.queue(bestItem.key)
 	}
@@ -222,14 +212,10 @@ func (pq *priorityQueue) remove(key Key) {
 func (pq priorityQueue) Len() int { return len(pq.items) }
 
 func (pq priorityQueue) Less(i, j int) bool {
-	return LessByItem(pq.items[i], pq.items[j])
-}
-
-func LessByItem(i *item, j *item) bool {
-	if i.priority == j.priority {
-		return i.creationTime.Before(j.creationTime)
+	if pq.items[i].priority == pq.items[j].priority {
+		return pq.items[i].creationTime.Before(pq.items[j].creationTime)
 	}
-	return i.priority > j.priority
+	return pq.items[i].priority > pq.items[j].priority
 }
 
 func (pq priorityQueue) Swap(i, j int) {
