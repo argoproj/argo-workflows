@@ -109,18 +109,18 @@
     display: grid;
     grid-template-columns: auto minmax(50%, 1fr);
 
-    & > * {
+    &>* {
       align-items: center;
       display: flex;
       min-height: 50px;
       padding: 14px 0;
     }
 
-    & > *:nth-child(odd) {
+    &>*:nth-child(odd) {
       padding-right: 4em;
     }
 
-    & > *:not(:nth-last-child(-n+2)) {
+    &>*:not(:nth-last-child(-n+2)) {
       border-bottom: 1px solid $argo-color-gray-3;
     }
 
@@ -148,4 +148,88 @@
   min-width: 2em;
   font-weight: bold;
   min-height: 2em;
+}
+
+.row.header {
+  color: $argo-color-gray-8;
+  background-color: $argo-color-gray-1;
+  border-bottom: 1px solid $argo-color-gray-5;
+  display: flex;
+  line-height: 1.2em;
+  padding: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .columns {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    text-align: left;
+    padding-left: 0;
+
+    &:hover {
+      overflow: visible;
+      white-space: normal;
+
+    }
+  }
+}
+
+
+.hoverable {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+  word-wrap: break-word;
+  word-break: break-all;
+  overflow-wrap: break-word;
+
+  &:hover {
+    overflow: visible;
+    white-space: normal;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.artifact-row {
+  color: $argo-color-gray-8;
+  display: flex;
+  border-bottom: 1px solid $argo-color-gray-5;
+  padding: 8px 0;
+  text-align: left;
+
+  &:hover {
+    background-color: $argo-color-gray-3;
+  }
+
+  .columns {
+    padding-left: 0;
+
+    &.artifact-name {
+      display: flex;
+
+      a {
+        margin-right: 1em;
+        text-decoration: none;
+      }
+
+      .artifact-name-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
 }
