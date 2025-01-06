@@ -54,7 +54,7 @@ argo cron [flags]
 ### SEE ALSO
 
 * [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo cron backfill](argo_cron_backfill.md)	 - create a cron backfill
+* [argo cron backfill](argo_cron_backfill.md)	 - create a cron backfill(new alpha feature)
 * [argo cron create](argo_cron_create.md)	 - create a cron workflow
 * [argo cron delete](argo_cron_delete.md)	 - delete a cron workflow
 * [argo cron get](argo_cron_get.md)	 - display details about a cron workflow

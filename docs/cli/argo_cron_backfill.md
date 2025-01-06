@@ -1,6 +1,6 @@
 ## argo cron backfill
 
-create a cron backfill
+create a cron backfill(new alpha feature)
 
 ```
 argo cron backfill cronwf [flags]
