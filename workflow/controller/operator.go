@@ -3434,6 +3434,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 
 type NodeInfo struct {
 	NodeId            string `json:"nodeId"`
+	DisplayName       string `json:"displayName"`
 	WorkflowHistoryId string `json:"workflowHistoryId"`
 }
 
@@ -3451,13 +3452,14 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		var requestUrl string
 
 		if port == "" {
-			requestUrl = "https://" + url + "/api/workflows/suspend/event"
+			requestUrl = "http://" + url + "/api/workflows/suspend/event"
 		} else {
-			requestUrl = "https://" + url + ":" + port + "/api/workflows/suspend/event"
+			requestUrl = "http://" + url + ":" + port + "/api/workflows/suspend/event"
 		}
 		woc.log.Infof("flops url : %s", requestUrl)
 		nodeInfo := NodeInfo{
 			NodeId:            node.ID,
+			DisplayName:       node.DisplayName,
 			WorkflowHistoryId: workflowHistoryId,
 		}
 		reqBody, err := json.Marshal(nodeInfo)
