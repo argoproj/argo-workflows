@@ -29,11 +29,12 @@ type Key = string
 type QueueFunc func(Key)
 
 // NewMultiThrottler creates a new multi throttler for throttling both namespace and global parallelism, a parallelism value of zero disables throttling
-func NewMultiThrottler(parallelism int, namespaceParallelism map[string]int, namespaceParallelismDefault int, queue QueueFunc) Throttler {
+func NewMultiThrottler(parallelism int, namespaceParallelismLimit int, queue QueueFunc) Throttler {
+	namespaceParallelism := make(map[string]int)
 	return &multiThrottler{
 		queue:                       queue,
 		namespaceParallelism:        namespaceParallelism,
-		namespaceParallelismDefault: namespaceParallelismDefault,
+		namespaceParallelismDefault: namespaceParallelismLimit,
 		totalParallelism:            parallelism,
 		running:                     make(map[Key]bool),
 		pending:                     make(map[string]*priorityQueue),
@@ -78,6 +79,10 @@ func (m *multiThrottler) namespaceCount(namespace string) (int, int) {
 	if !has {
 		m.namespaceParallelism[namespace] = m.namespaceParallelismDefault
 		setLimit = m.namespaceParallelismDefault
+	}
+	if setLimit == 0 {
+		// return count is no longer accurate, but preserves behaviour
+		return 0, 0
 	}
 	count := 0
 	for key := range m.running {
@@ -138,13 +143,6 @@ func (m *multiThrottler) queueThrottled() {
 	}
 
 	minPq := &priorityQueue{itemByKey: make(map[string]*item)}
-
-	cnts := make(map[string]int)
-
-	for key := range m.running {
-		namespace, _, _ := cache.SplitMetaNamespaceKey(key)
-		cnts[namespace] = cnts[namespace] + 1
-	}
 
 	for _, pq := range m.pending {
 		if len(pq.items) == 0 {

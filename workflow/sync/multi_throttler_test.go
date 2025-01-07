@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 )
 
 func TestMultiNoParallelismSamePriority(t *testing.T) {
-	throttler := NewMultiThrottler(0, make(map[string]int), 0, func(Key) {})
+	throttler := NewMultiThrottler(0, 0, func(Key) {})
 
 	throttler.Add("default/c", 0, time.Now().Add(2*time.Hour))
 	throttler.Add("default/b", 0, time.Now().Add(1*time.Hour))
@@ -26,7 +27,7 @@ func TestMultiNoParallelismSamePriority(t *testing.T) {
 }
 
 func TestMultiNoParallelismMultipleBuckets(t *testing.T) {
-	throttler := NewMultiThrottler(1, make(map[string]int), 1, func(Key) {})
+	throttler := NewMultiThrottler(1, 1, func(Key) {})
 	throttler.Add("a/0", 0, time.Now())
 	throttler.Add("a/1", 0, time.Now().Add(-1*time.Second))
 	throttler.Add("b/0", 0, time.Now().Add(-2*time.Second))
@@ -42,7 +43,7 @@ func TestMultiNoParallelismMultipleBuckets(t *testing.T) {
 
 func TestMultiWithParallelismLimitAndPriority(t *testing.T) {
 	queuedKey := ""
-	throttler := NewMultiThrottler(2, make(map[string]int), 2, func(key string) { queuedKey = key })
+	throttler := NewMultiThrottler(2, 0, func(key string) { queuedKey = key })
 
 	throttler.Add("default/a", 1, time.Now())
 	throttler.Add("default/b", 2, time.Now())
@@ -71,7 +72,7 @@ func TestMultiWithParallelismLimitAndPriority(t *testing.T) {
 
 func TestMultiInitWithWorkflows(t *testing.T) {
 	queuedKey := ""
-	throttler := NewMultiThrottler(1, make(map[string]int), 1, func(key string) { queuedKey = key })
+	throttler := NewMultiThrottler(1, 1, func(key string) { queuedKey = key })
 	ctx := context.Background()
 
 	wfclientset := fakewfclientset.NewSimpleClientset(
@@ -148,7 +149,15 @@ func TestTotalAllowNamespaceLimit(t *testing.T) {
 	namespaceLimits := make(map[string]int)
 	namespaceLimits["a"] = 2
 	namespaceLimits["b"] = 1
-	throttler := NewMultiThrottler(4, namespaceLimits, 6, func(k Key) {})
+	throttler := &multiThrottler{
+		queue:                       func(key Key) {},
+		namespaceParallelism:        namespaceLimits,
+		namespaceParallelismDefault: 6,
+		totalParallelism:            4,
+		running:                     make(map[Key]bool),
+		pending:                     make(map[string]*priorityQueue),
+		lock:                        &sync.Mutex{},
+	}
 	throttler.Add("a/0", 1, time.Now())
 	throttler.Add("b/0", 2, time.Now())
 	throttler.Add("a/1", 3, time.Now())
