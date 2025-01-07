@@ -1579,6 +1579,56 @@ func TestNestedTemplateRef(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+var templateRefTargetWithInput = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-target-with-input
+spec:
+  templates:
+  - name: A
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: alpine:3.11
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+`
+
+var nestedTemplateRefWithError = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-ref-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+      - - name: call-A
+          templateRef:
+            name: template-ref-target
+            template: A
+      - - name: call-A-input
+          template: A
+  - name: A
+    steps:
+      - - name: call-B
+          templateRef:
+            name: template-ref-target-with-input
+            template: A
+`
+
+func TestNestedTemplateRefWithError(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(templateRefTarget)
+	require.NoError(t, err)
+	err = createWorkflowTemplateFromSpec(templateRefTargetWithInput)
+	require.NoError(t, err)
+	err = validate(nestedTemplateRefWithError)
+	require.EqualError(t, err, "templates.main.steps[1].call-A-input templates.A.steps[0].call-B templates.A inputs.parameters.message was not supplied")
+}
+
 var undefinedTemplateRef = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
