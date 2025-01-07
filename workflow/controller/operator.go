@@ -1942,6 +1942,27 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		woc.updated = true
 	}
 
+	vols := make([]apiv1.PersistentVolumeClaim, 0)
+	for _, vol := range resolvedTmpl.VolumeClaimTemplates {
+		existed := false
+		for _, existedVol := range woc.execWf.Spec.VolumeClaimTemplates {
+			if existedVol.Name == vol.Name {
+				existed = true
+				break
+			}
+		}
+		if !existed {
+			vols = append(vols, vol)
+		}
+	}
+	if len(vols) > 0 {
+		woc.execWf.Spec.VolumeClaimTemplates = append(woc.execWf.Spec.VolumeClaimTemplates, vols...)
+		if woc.createPVCs(ctx) != nil {
+			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+		}
+		woc.updated = true
+	}
+
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined

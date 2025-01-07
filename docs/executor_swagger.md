@@ -611,6 +611,23 @@ Cinder volumes support ownership management and SELinux relabeling.
 
 
 
+### <span id="claim-resource-status"></span> ClaimResourceStatus
+
+
+> +enum
+When a controller receives persistentvolume claim update with ClaimResourceStatus for a resource
+that it does not recognizes, then it should ignore that update and let other controllers
+handle it.
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ClaimResourceStatus | string| string | | +enum</br>When a controller receives persistentvolume claim update with ClaimResourceStatus for a resource</br>that it does not recognizes, then it should ignore that update and let other controllers</br>handle it. |  |
+
+
+
 ### <span id="client-cert-auth"></span> ClientCertAuth
 
 
@@ -651,6 +668,17 @@ filesystem.
 | optional | boolean| `bool` |  | | If true, don't block pod startup if the referenced ClusterTrustBundle(s)</br>aren't available.  If using name, then the named ClusterTrustBundle is</br>allowed not to exist.  If using signerName, then the combination of</br>signerName and labelSelector is allowed to match zero</br>ClusterTrustBundles.</br>+optional |  |
 | path | string| `string` |  | | Relative path from the volume root to write the bundle. |  |
 | signerName | string| `string` |  | | Select all ClusterTrustBundles that match this signer name.</br>Mutually-exclusive with name.  The contents of all selected</br>ClusterTrustBundles will be unified and deduplicated.</br>+optional |  |
+
+
+
+### <span id="condition-status"></span> ConditionStatus
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ConditionStatus | string| string | |  |  |
 
 
 
@@ -2149,6 +2177,25 @@ that the fieldset applies to.
 
 
 
+### <span id="modify-volume-status"></span> ModifyVolumeStatus
+
+
+> ModifyVolumeStatus represents the status object of ControllerModifyVolume operation
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| status | [PersistentVolumeClaimModifyVolumeStatus](#persistent-volume-claim-modify-volume-status)| `PersistentVolumeClaimModifyVolumeStatus` |  | |  |  |
+| targetVolumeAttributesClassName | string| `string` |  | | targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled |  |
+
+
+
 ### <span id="mount-propagation-mode"></span> MountPropagationMode
 
 
@@ -2553,6 +2600,112 @@ be cluster-scoped, so there is no namespace field.
 
 
 
+### <span id="persistent-volume-claim"></span> PersistentVolumeClaim
+
+
+> PersistentVolumeClaim is a user's request for and claim to a persistent volume
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| annotations | map of string| `map[string]string` |  | | Annotations is an unstructured key value map stored with a resource that may be</br>set by external tools to store and retrieve arbitrary metadata. They are not</br>queryable and should be preserved when modifying objects.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations</br>+optional |  |
+| apiVersion | string| `string` |  | | APIVersion defines the versioned schema of this representation of an object.</br>Servers should convert recognized schemas to the latest internal value, and</br>may reject unrecognized values.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources</br>+optional |  |
+| creationTimestamp | string| `string` |  | | CreationTimestamp is a timestamp representing the server time when this object was</br>created. It is not guaranteed to be set in happens-before order across separate operations.</br>Clients may not set this value. It is represented in RFC3339 form and is in UTC.</br></br>Populated by the system.</br>Read-only.</br>Null for lists.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</br>+optional |  |
+| deletionGracePeriodSeconds | int64 (formatted integer)| `int64` |  | | Number of seconds allowed for this object to gracefully terminate before</br>it will be removed from the system. Only set when deletionTimestamp is also set.</br>May only be shortened.</br>Read-only.</br>+optional |  |
+| deletionTimestamp | string| `string` |  | | DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This</br>field is set by the server when a graceful deletion is requested by the user, and is not</br>directly settable by a client. The resource is expected to be deleted (no longer visible</br>from resource lists, and not reachable by name) after the time in this field, once the</br>finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.</br>Once the deletionTimestamp is set, this value may not be unset or be set further into the</br>future, although it may be shortened or the resource may be deleted prior to this time.</br>For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react</br>by sending a graceful termination signal to the containers in the pod. After that 30 seconds,</br>the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,</br>remove the pod from the API. In the presence of network partitions, this object may still</br>exist after this timestamp, until an administrator or automated process can determine the</br>resource is fully terminated.</br>If not set, graceful deletion of the object has not been requested.</br></br>Populated by the system when a graceful deletion is requested.</br>Read-only.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</br>+optional |  |
+| finalizers | []string| `[]string` |  | | Must be empty before the object is deleted from the registry. Each entry</br>is an identifier for the responsible component that will remove the entry</br>from the list. If the deletionTimestamp of the object is non-nil, entries</br>in this list can only be removed.</br>Finalizers may be processed and removed in any order.  Order is NOT enforced</br>because it introduces significant risk of stuck finalizers.</br>finalizers is a shared field, any actor with permission can reorder it.</br>If the finalizer list is processed in order, then this can lead to a situation</br>in which the component responsible for the first finalizer in the list is</br>waiting for a signal (field value, external system, or other) produced by a</br>component responsible for a finalizer later in the list, resulting in a deadlock.</br>Without enforced ordering finalizers are free to order amongst themselves and</br>are not vulnerable to ordering changes in the list.</br>+optional</br>+patchStrategy=merge</br>+listType=set |  |
+| generateName | string| `string` |  | | GenerateName is an optional prefix, used by the server, to generate a unique</br>name ONLY IF the Name field has not been provided.</br>If this field is used, the name returned to the client will be different</br>than the name passed. This value will also be combined with a unique suffix.</br>The provided value has the same validation rules as the Name field,</br>and may be truncated by the length of the suffix required to make the value</br>unique on the server.</br></br>If this field is specified and the generated name exists, the server will return a 409.</br></br>Applied only if Name is not specified.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency</br>+optional |  |
+| generation | int64 (formatted integer)| `int64` |  | | A sequence number representing a specific generation of the desired state.</br>Populated by the system. Read-only.</br>+optional |  |
+| kind | string| `string` |  | | Kind is a string value representing the REST resource this object represents.</br>Servers may infer this from the endpoint the client submits requests to.</br>Cannot be updated.</br>In CamelCase.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds</br>+optional |  |
+| labels | map of string| `map[string]string` |  | | Map of string keys and values that can be used to organize and categorize</br>(scope and select) objects. May match selectors of replication controllers</br>and services.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels</br>+optional |  |
+| managedFields | [][ManagedFieldsEntry](#managed-fields-entry)| `[]*ManagedFieldsEntry` |  | | ManagedFields maps workflow-id and version to the set of fields</br>that are managed by that workflow. This is mostly for internal</br>housekeeping, and users typically shouldn't need to set or</br>understand this field. A workflow can be the user's name, a</br>controller's name, or the name of a specific apply path like</br>"ci-cd". The set of fields is always in the version that the</br>workflow used when modifying the object.</br></br>+optional</br>+listType=atomic |  |
+| name | string| `string` |  | | Name must be unique within a namespace. Is required when creating resources, although</br>some resources may allow a client to request the generation of an appropriate name</br>automatically. Name is primarily intended for creation idempotence and configuration</br>definition.</br>Cannot be updated.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names</br>+optional |  |
+| namespace | string| `string` |  | | Namespace defines the space within which each name must be unique. An empty namespace is</br>equivalent to the "default" namespace, but "default" is the canonical representation.</br>Not all objects are required to be scoped to a namespace - the value of this field for</br>those objects will be empty.</br></br>Must be a DNS_LABEL.</br>Cannot be updated.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces</br>+optional |  |
+| ownerReferences | [][OwnerReference](#owner-reference)| `[]*OwnerReference` |  | | List of objects depended by this object. If ALL objects in the list have</br>been deleted, this object will be garbage collected. If this object is managed by a controller,</br>then an entry in this list will point to this controller, with the controller field set to true.</br>There cannot be more than one managing controller.</br>+optional</br>+patchMergeKey=uid</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=uid |  |
+| resourceVersion | string| `string` |  | | An opaque value that represents the internal version of this object that can</br>be used by clients to determine when objects have changed. May be used for optimistic</br>concurrency, change detection, and the watch operation on a resource or set of resources.</br>Clients must treat these values as opaque and passed unmodified back to the server.</br>They may only be valid for a particular resource or set of resources.</br></br>Populated by the system.</br>Read-only.</br>Value must be treated as opaque by clients and .</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency</br>+optional |  |
+| selfLink | string| `string` |  | | Deprecated: selfLink is a legacy read-only field that is no longer populated by the system.</br>+optional |  |
+| spec | [PersistentVolumeClaimSpec](#persistent-volume-claim-spec)| `PersistentVolumeClaimSpec` |  | |  |  |
+| status | [PersistentVolumeClaimStatus](#persistent-volume-claim-status)| `PersistentVolumeClaimStatus` |  | |  |  |
+| uid | [UID](#uid)| `UID` |  | |  |  |
+
+
+
+### <span id="persistent-volume-claim-condition"></span> PersistentVolumeClaimCondition
+
+
+> PersistentVolumeClaimCondition contains details about state of pvc
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| lastProbeTime | string| `string` |  | | lastProbeTime is the time we probed the condition.</br>+optional |  |
+| lastTransitionTime | string| `string` |  | | lastTransitionTime is the time the condition transitioned from one status to another.</br>+optional |  |
+| message | string| `string` |  | | message is the human-readable message indicating details about last transition.</br>+optional |  |
+| reason | string| `string` |  | | reason is a unique, this should be a short, machine understandable string that gives the reason</br>for condition's last transition. If it reports "Resizing" that means the underlying</br>persistent volume is being resized.</br>+optional |  |
+| status | [ConditionStatus](#condition-status)| `ConditionStatus` |  | |  |  |
+| type | [PersistentVolumeClaimConditionType](#persistent-volume-claim-condition-type)| `PersistentVolumeClaimConditionType` |  | |  |  |
+
+
+
+### <span id="persistent-volume-claim-condition-type"></span> PersistentVolumeClaimConditionType
+
+
+> If RecoverVolumeExpansionFailure feature gate is enabled, then following additional values can be expected:
+"ControllerResizeError", "NodeResizeError"
+
+If VolumeAttributesClass feature gate is enabled, then following additional values can be expected:
+"ModifyVolumeError", "ModifyingVolume"
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| PersistentVolumeClaimConditionType | string| string | | If RecoverVolumeExpansionFailure feature gate is enabled, then following additional values can be expected:</br>"ControllerResizeError", "NodeResizeError"</br></br>If VolumeAttributesClass feature gate is enabled, then following additional values can be expected:</br>"ModifyVolumeError", "ModifyingVolume" |  |
+
+
+
+### <span id="persistent-volume-claim-modify-volume-status"></span> PersistentVolumeClaimModifyVolumeStatus
+
+
+> +enum
+New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| PersistentVolumeClaimModifyVolumeStatus | string| string | | +enum</br>New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately |  |
+
+
+
+### <span id="persistent-volume-claim-phase"></span> PersistentVolumeClaimPhase
+
+
+> +enum
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| PersistentVolumeClaimPhase | string| string | | +enum |  |
+
+
+
 ### <span id="persistent-volume-claim-spec"></span> PersistentVolumeClaimSpec
 
 
@@ -2577,6 +2730,28 @@ and allows a Source for provider-specific attributes
 | volumeAttributesClassName | string| `string` |  | | volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.</br>If specified, the CSI driver will create or update the volume with the attributes defined</br>in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,</br>it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass</br>will be applied to the claim but it's not allowed to reset this field to empty string once it is set.</br>If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass</br>will be set by the persistentvolume controller if it exists.</br>If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be</br>set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource</br>exists.</br>More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/</br>(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).</br>+featureGate=VolumeAttributesClass</br>+optional |  |
 | volumeMode | [PersistentVolumeMode](#persistent-volume-mode)| `PersistentVolumeMode` |  | |  |  |
 | volumeName | string| `string` |  | | volumeName is the binding reference to the PersistentVolume backing this claim.</br>+optional |  |
+
+
+
+### <span id="persistent-volume-claim-status"></span> PersistentVolumeClaimStatus
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| accessModes | [][PersistentVolumeAccessMode](#persistent-volume-access-mode)| `[]PersistentVolumeAccessMode` |  | | accessModes contains the actual access modes the volume backing the PVC has.</br>More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</br>+optional</br>+listType=atomic |  |
+| allocatedResourceStatuses | map of [ClaimResourceStatus](#claim-resource-status)| `map[string]ClaimResourceStatus` |  | | allocatedResourceStatuses stores status of resource being resized for the given PVC.</br>Key names follow standard Kubernetes label syntax. Valid values are either:</br>Un-prefixed keys:</br>storage - the capacity of the volume.</br>Custom resources must use implementation-defined prefixed names such as "example.com/my-custom-resource"</br>Apart from above values - keys that are unprefixed or have kubernetes.io prefix are considered</br>reserved and hence may not be used.</br></br>ClaimResourceStatus can be in any of following states:</br>ControllerResizeInProgress:</br>State set when resize controller starts resizing the volume in control-plane.</br>ControllerResizeFailed:</br>State set when resize has failed in resize controller with a terminal error.</br>NodeResizePending:</br>State set when resize controller has finished resizing the volume but further resizing of</br>volume is needed on the node.</br>NodeResizeInProgress:</br>State set when kubelet starts resizing the volume.</br>NodeResizeFailed:</br>State set when resizing has failed in kubelet with a terminal error. Transient errors don't set</br>NodeResizeFailed. | `if expanding a PVC for more capacity - this field can be one of the following states:` |
+| allocatedResources | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
+| capacity | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
+| conditions | [][PersistentVolumeClaimCondition](#persistent-volume-claim-condition)| `[]*PersistentVolumeClaimCondition` |  | | conditions is the current Condition of persistent volume claim. If underlying persistent volume is being</br>resized then the Condition will be set to 'Resizing'.</br>+optional</br>+patchMergeKey=type</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=type |  |
+| currentVolumeAttributesClassName | string| `string` |  | | currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.</br>When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim</br>This is a beta field and requires enabling VolumeAttributesClass feature (off by default).</br>+featureGate=VolumeAttributesClass</br>+optional |  |
+| modifyVolumeStatus | [ModifyVolumeStatus](#modify-volume-status)| `ModifyVolumeStatus` |  | |  |  |
+| phase | [PersistentVolumeClaimPhase](#persistent-volume-claim-phase)| `PersistentVolumeClaimPhase` |  | |  |  |
 
 
 
@@ -3844,6 +4019,7 @@ of the first container processes are calculated.
 | synchronization | [Synchronization](#synchronization)| `Synchronization` |  | |  |  |
 | timeout | string| `string` |  | | Timeout allows to set the total node execution timeout duration counting from the node's start time.</br>This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. |  |
 | tolerations | [][Toleration](#toleration)| `[]*Toleration` |  | | Tolerations to apply to workflow pods.</br>+patchStrategy=merge</br>+patchMergeKey=key |  |
+| volumeClaimTemplates | [][PersistentVolumeClaim](#persistent-volume-claim)| `[]*PersistentVolumeClaim` |  | | VolumeClaimTemplates is a list of claims that containers are allowed to reference.</br>The Workflow controller will create the claims at the beginning of the workflow</br>and delete the claims upon completion of the workflow |  |
 | volumes | [][Volume](#volume)| `[]*Volume` |  | | Volumes is a list of volumes that can be mounted by containers in a template.</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
 
 

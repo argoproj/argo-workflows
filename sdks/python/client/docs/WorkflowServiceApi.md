@@ -5568,6 +5568,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             value="value_example",
                         ),
                     ],
+                    volume_claim_templates=[
+                        PersistentVolumeClaim(
+                            api_version="api_version_example",
+                            kind="kind_example",
+                            metadata=ObjectMeta(
+                                annotations={
+                                    "key": "key_example",
+                                },
+                                creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                deletion_grace_period_seconds=1,
+                                deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                finalizers=[
+                                    "finalizers_example",
+                                ],
+                                generate_name="generate_name_example",
+                                generation=1,
+                                labels={
+                                    "key": "key_example",
+                                },
+                                managed_fields=[
+                                    ManagedFieldsEntry(
+                                        api_version="api_version_example",
+                                        fields_type="fields_type_example",
+                                        fields_v1={},
+                                        manager="manager_example",
+                                        operation="operation_example",
+                                        subresource="subresource_example",
+                                        time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    ),
+                                ],
+                                name="name_example",
+                                namespace="namespace_example",
+                                owner_references=[
+                                    OwnerReference(
+                                        api_version="api_version_example",
+                                        block_owner_deletion=True,
+                                        controller=True,
+                                        kind="kind_example",
+                                        name="name_example",
+                                        uid="uid_example",
+                                    ),
+                                ],
+                                resource_version="resource_version_example",
+                                self_link="self_link_example",
+                                uid="uid_example",
+                            ),
+                            spec=PersistentVolumeClaimSpec(
+                                access_modes=[
+                                    "access_modes_example",
+                                ],
+                                data_source=TypedLocalObjectReference(
+                                    api_group="api_group_example",
+                                    kind="kind_example",
+                                    name="name_example",
+                                ),
+                                data_source_ref=TypedObjectReference(
+                                    api_group="api_group_example",
+                                    kind="kind_example",
+                                    name="name_example",
+                                    namespace="namespace_example",
+                                ),
+                                resources=VolumeResourceRequirements(
+                                    limits={
+                                        "key": "key_example",
+                                    },
+                                    requests={
+                                        "key": "key_example",
+                                    },
+                                ),
+                                selector=LabelSelector(
+                                    match_expressions=[
+                                        LabelSelectorRequirement(
+                                            key="key_example",
+                                            operator="operator_example",
+                                            values=[
+                                                "values_example",
+                                            ],
+                                        ),
+                                    ],
+                                    match_labels={
+                                        "key": "key_example",
+                                    },
+                                ),
+                                storage_class_name="storage_class_name_example",
+                                volume_attributes_class_name="volume_attributes_class_name_example",
+                                volume_mode="volume_mode_example",
+                                volume_name="volume_name_example",
+                            ),
+                            status=PersistentVolumeClaimStatus(
+                                access_modes=[
+                                    "access_modes_example",
+                                ],
+                                allocated_resource_statuses={
+                                    "key": "key_example",
+                                },
+                                allocated_resources={
+                                    "key": "key_example",
+                                },
+                                capacity={
+                                    "key": "key_example",
+                                },
+                                conditions=[
+                                    PersistentVolumeClaimCondition(
+                                        last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        message="message_example",
+                                        reason="reason_example",
+                                        status="status_example",
+                                        type="type_example",
+                                    ),
+                                ],
+                                current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                modify_volume_status=ModifyVolumeStatus(
+                                    status="status_example",
+                                    target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                ),
+                                phase="phase_example",
+                            ),
+                        ),
+                    ],
                     volumes=[
                         Volume(
                             aws_elastic_block_store=AWSElasticBlockStoreVolumeSource(
@@ -10391,6 +10511,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 operator="operator_example",
                                 toleration_seconds=1,
                                 value="value_example",
+                            ),
+                        ],
+                        volume_claim_templates=[
+                            PersistentVolumeClaim(
+                                api_version="api_version_example",
+                                kind="kind_example",
+                                metadata=ObjectMeta(
+                                    annotations={
+                                        "key": "key_example",
+                                    },
+                                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    deletion_grace_period_seconds=1,
+                                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    finalizers=[
+                                        "finalizers_example",
+                                    ],
+                                    generate_name="generate_name_example",
+                                    generation=1,
+                                    labels={
+                                        "key": "key_example",
+                                    },
+                                    managed_fields=[
+                                        ManagedFieldsEntry(
+                                            api_version="api_version_example",
+                                            fields_type="fields_type_example",
+                                            fields_v1={},
+                                            manager="manager_example",
+                                            operation="operation_example",
+                                            subresource="subresource_example",
+                                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        ),
+                                    ],
+                                    name="name_example",
+                                    namespace="namespace_example",
+                                    owner_references=[
+                                        OwnerReference(
+                                            api_version="api_version_example",
+                                            block_owner_deletion=True,
+                                            controller=True,
+                                            kind="kind_example",
+                                            name="name_example",
+                                            uid="uid_example",
+                                        ),
+                                    ],
+                                    resource_version="resource_version_example",
+                                    self_link="self_link_example",
+                                    uid="uid_example",
+                                ),
+                                spec=PersistentVolumeClaimSpec(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    data_source=TypedLocalObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                    ),
+                                    data_source_ref=TypedObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                    ),
+                                    resources=VolumeResourceRequirements(
+                                        limits={
+                                            "key": "key_example",
+                                        },
+                                        requests={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    storage_class_name="storage_class_name_example",
+                                    volume_attributes_class_name="volume_attributes_class_name_example",
+                                    volume_mode="volume_mode_example",
+                                    volume_name="volume_name_example",
+                                ),
+                                status=PersistentVolumeClaimStatus(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    allocated_resource_statuses={
+                                        "key": "key_example",
+                                    },
+                                    allocated_resources={
+                                        "key": "key_example",
+                                    },
+                                    capacity={
+                                        "key": "key_example",
+                                    },
+                                    conditions=[
+                                        PersistentVolumeClaimCondition(
+                                            last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            message="message_example",
+                                            reason="reason_example",
+                                            status="status_example",
+                                            type="type_example",
+                                        ),
+                                    ],
+                                    current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                    modify_volume_status=ModifyVolumeStatus(
+                                        status="status_example",
+                                        target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                    ),
+                                    phase="phase_example",
+                                ),
                             ),
                         ],
                         volumes=[
@@ -17216,6 +17456,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                         ],
+                        volume_claim_templates=[
+                            PersistentVolumeClaim(
+                                api_version="api_version_example",
+                                kind="kind_example",
+                                metadata=ObjectMeta(
+                                    annotations={
+                                        "key": "key_example",
+                                    },
+                                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    deletion_grace_period_seconds=1,
+                                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    finalizers=[
+                                        "finalizers_example",
+                                    ],
+                                    generate_name="generate_name_example",
+                                    generation=1,
+                                    labels={
+                                        "key": "key_example",
+                                    },
+                                    managed_fields=[
+                                        ManagedFieldsEntry(
+                                            api_version="api_version_example",
+                                            fields_type="fields_type_example",
+                                            fields_v1={},
+                                            manager="manager_example",
+                                            operation="operation_example",
+                                            subresource="subresource_example",
+                                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        ),
+                                    ],
+                                    name="name_example",
+                                    namespace="namespace_example",
+                                    owner_references=[
+                                        OwnerReference(
+                                            api_version="api_version_example",
+                                            block_owner_deletion=True,
+                                            controller=True,
+                                            kind="kind_example",
+                                            name="name_example",
+                                            uid="uid_example",
+                                        ),
+                                    ],
+                                    resource_version="resource_version_example",
+                                    self_link="self_link_example",
+                                    uid="uid_example",
+                                ),
+                                spec=PersistentVolumeClaimSpec(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    data_source=TypedLocalObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                    ),
+                                    data_source_ref=TypedObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                    ),
+                                    resources=VolumeResourceRequirements(
+                                        limits={
+                                            "key": "key_example",
+                                        },
+                                        requests={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    storage_class_name="storage_class_name_example",
+                                    volume_attributes_class_name="volume_attributes_class_name_example",
+                                    volume_mode="volume_mode_example",
+                                    volume_name="volume_name_example",
+                                ),
+                                status=PersistentVolumeClaimStatus(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    allocated_resource_statuses={
+                                        "key": "key_example",
+                                    },
+                                    allocated_resources={
+                                        "key": "key_example",
+                                    },
+                                    capacity={
+                                        "key": "key_example",
+                                    },
+                                    conditions=[
+                                        PersistentVolumeClaimCondition(
+                                            last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            message="message_example",
+                                            reason="reason_example",
+                                            status="status_example",
+                                            type="type_example",
+                                        ),
+                                    ],
+                                    current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                    modify_volume_status=ModifyVolumeStatus(
+                                        status="status_example",
+                                        target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                    ),
+                                    phase="phase_example",
+                                ),
+                            ),
+                        ],
                         volumes=[
                             Volume(
                                 aws_elastic_block_store=AWSElasticBlockStoreVolumeSource(
@@ -23064,6 +23424,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                         ],
+                        volume_claim_templates=[
+                            PersistentVolumeClaim(
+                                api_version="api_version_example",
+                                kind="kind_example",
+                                metadata=ObjectMeta(
+                                    annotations={
+                                        "key": "key_example",
+                                    },
+                                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    deletion_grace_period_seconds=1,
+                                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    finalizers=[
+                                        "finalizers_example",
+                                    ],
+                                    generate_name="generate_name_example",
+                                    generation=1,
+                                    labels={
+                                        "key": "key_example",
+                                    },
+                                    managed_fields=[
+                                        ManagedFieldsEntry(
+                                            api_version="api_version_example",
+                                            fields_type="fields_type_example",
+                                            fields_v1={},
+                                            manager="manager_example",
+                                            operation="operation_example",
+                                            subresource="subresource_example",
+                                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        ),
+                                    ],
+                                    name="name_example",
+                                    namespace="namespace_example",
+                                    owner_references=[
+                                        OwnerReference(
+                                            api_version="api_version_example",
+                                            block_owner_deletion=True,
+                                            controller=True,
+                                            kind="kind_example",
+                                            name="name_example",
+                                            uid="uid_example",
+                                        ),
+                                    ],
+                                    resource_version="resource_version_example",
+                                    self_link="self_link_example",
+                                    uid="uid_example",
+                                ),
+                                spec=PersistentVolumeClaimSpec(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    data_source=TypedLocalObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                    ),
+                                    data_source_ref=TypedObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                    ),
+                                    resources=VolumeResourceRequirements(
+                                        limits={
+                                            "key": "key_example",
+                                        },
+                                        requests={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    storage_class_name="storage_class_name_example",
+                                    volume_attributes_class_name="volume_attributes_class_name_example",
+                                    volume_mode="volume_mode_example",
+                                    volume_name="volume_name_example",
+                                ),
+                                status=PersistentVolumeClaimStatus(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    allocated_resource_statuses={
+                                        "key": "key_example",
+                                    },
+                                    allocated_resources={
+                                        "key": "key_example",
+                                    },
+                                    capacity={
+                                        "key": "key_example",
+                                    },
+                                    conditions=[
+                                        PersistentVolumeClaimCondition(
+                                            last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            message="message_example",
+                                            reason="reason_example",
+                                            status="status_example",
+                                            type="type_example",
+                                        ),
+                                    ],
+                                    current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                    modify_volume_status=ModifyVolumeStatus(
+                                        status="status_example",
+                                        target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                    ),
+                                    phase="phase_example",
+                                ),
+                            ),
+                        ],
                         volumes=[
                             Volume(
                                 aws_elastic_block_store=AWSElasticBlockStoreVolumeSource(
@@ -27887,6 +28367,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     operator="operator_example",
                                     toleration_seconds=1,
                                     value="value_example",
+                                ),
+                            ],
+                            volume_claim_templates=[
+                                PersistentVolumeClaim(
+                                    api_version="api_version_example",
+                                    kind="kind_example",
+                                    metadata=ObjectMeta(
+                                        annotations={
+                                            "key": "key_example",
+                                        },
+                                        creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        deletion_grace_period_seconds=1,
+                                        deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        finalizers=[
+                                            "finalizers_example",
+                                        ],
+                                        generate_name="generate_name_example",
+                                        generation=1,
+                                        labels={
+                                            "key": "key_example",
+                                        },
+                                        managed_fields=[
+                                            ManagedFieldsEntry(
+                                                api_version="api_version_example",
+                                                fields_type="fields_type_example",
+                                                fields_v1={},
+                                                manager="manager_example",
+                                                operation="operation_example",
+                                                subresource="subresource_example",
+                                                time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            ),
+                                        ],
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                        owner_references=[
+                                            OwnerReference(
+                                                api_version="api_version_example",
+                                                block_owner_deletion=True,
+                                                controller=True,
+                                                kind="kind_example",
+                                                name="name_example",
+                                                uid="uid_example",
+                                            ),
+                                        ],
+                                        resource_version="resource_version_example",
+                                        self_link="self_link_example",
+                                        uid="uid_example",
+                                    ),
+                                    spec=PersistentVolumeClaimSpec(
+                                        access_modes=[
+                                            "access_modes_example",
+                                        ],
+                                        data_source=TypedLocalObjectReference(
+                                            api_group="api_group_example",
+                                            kind="kind_example",
+                                            name="name_example",
+                                        ),
+                                        data_source_ref=TypedObjectReference(
+                                            api_group="api_group_example",
+                                            kind="kind_example",
+                                            name="name_example",
+                                            namespace="namespace_example",
+                                        ),
+                                        resources=VolumeResourceRequirements(
+                                            limits={
+                                                "key": "key_example",
+                                            },
+                                            requests={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        selector=LabelSelector(
+                                            match_expressions=[
+                                                LabelSelectorRequirement(
+                                                    key="key_example",
+                                                    operator="operator_example",
+                                                    values=[
+                                                        "values_example",
+                                                    ],
+                                                ),
+                                            ],
+                                            match_labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        storage_class_name="storage_class_name_example",
+                                        volume_attributes_class_name="volume_attributes_class_name_example",
+                                        volume_mode="volume_mode_example",
+                                        volume_name="volume_name_example",
+                                    ),
+                                    status=PersistentVolumeClaimStatus(
+                                        access_modes=[
+                                            "access_modes_example",
+                                        ],
+                                        allocated_resource_statuses={
+                                            "key": "key_example",
+                                        },
+                                        allocated_resources={
+                                            "key": "key_example",
+                                        },
+                                        capacity={
+                                            "key": "key_example",
+                                        },
+                                        conditions=[
+                                            PersistentVolumeClaimCondition(
+                                                last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                                last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                                message="message_example",
+                                                reason="reason_example",
+                                                status="status_example",
+                                                type="type_example",
+                                            ),
+                                        ],
+                                        current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                        modify_volume_status=ModifyVolumeStatus(
+                                            status="status_example",
+                                            target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                        ),
+                                        phase="phase_example",
+                                    ),
                                 ),
                             ],
                             volumes=[
@@ -34647,6 +35247,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             value="value_example",
                         ),
                     ],
+                    volume_claim_templates=[
+                        PersistentVolumeClaim(
+                            api_version="api_version_example",
+                            kind="kind_example",
+                            metadata=ObjectMeta(
+                                annotations={
+                                    "key": "key_example",
+                                },
+                                creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                deletion_grace_period_seconds=1,
+                                deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                finalizers=[
+                                    "finalizers_example",
+                                ],
+                                generate_name="generate_name_example",
+                                generation=1,
+                                labels={
+                                    "key": "key_example",
+                                },
+                                managed_fields=[
+                                    ManagedFieldsEntry(
+                                        api_version="api_version_example",
+                                        fields_type="fields_type_example",
+                                        fields_v1={},
+                                        manager="manager_example",
+                                        operation="operation_example",
+                                        subresource="subresource_example",
+                                        time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    ),
+                                ],
+                                name="name_example",
+                                namespace="namespace_example",
+                                owner_references=[
+                                    OwnerReference(
+                                        api_version="api_version_example",
+                                        block_owner_deletion=True,
+                                        controller=True,
+                                        kind="kind_example",
+                                        name="name_example",
+                                        uid="uid_example",
+                                    ),
+                                ],
+                                resource_version="resource_version_example",
+                                self_link="self_link_example",
+                                uid="uid_example",
+                            ),
+                            spec=PersistentVolumeClaimSpec(
+                                access_modes=[
+                                    "access_modes_example",
+                                ],
+                                data_source=TypedLocalObjectReference(
+                                    api_group="api_group_example",
+                                    kind="kind_example",
+                                    name="name_example",
+                                ),
+                                data_source_ref=TypedObjectReference(
+                                    api_group="api_group_example",
+                                    kind="kind_example",
+                                    name="name_example",
+                                    namespace="namespace_example",
+                                ),
+                                resources=VolumeResourceRequirements(
+                                    limits={
+                                        "key": "key_example",
+                                    },
+                                    requests={
+                                        "key": "key_example",
+                                    },
+                                ),
+                                selector=LabelSelector(
+                                    match_expressions=[
+                                        LabelSelectorRequirement(
+                                            key="key_example",
+                                            operator="operator_example",
+                                            values=[
+                                                "values_example",
+                                            ],
+                                        ),
+                                    ],
+                                    match_labels={
+                                        "key": "key_example",
+                                    },
+                                ),
+                                storage_class_name="storage_class_name_example",
+                                volume_attributes_class_name="volume_attributes_class_name_example",
+                                volume_mode="volume_mode_example",
+                                volume_name="volume_name_example",
+                            ),
+                            status=PersistentVolumeClaimStatus(
+                                access_modes=[
+                                    "access_modes_example",
+                                ],
+                                allocated_resource_statuses={
+                                    "key": "key_example",
+                                },
+                                allocated_resources={
+                                    "key": "key_example",
+                                },
+                                capacity={
+                                    "key": "key_example",
+                                },
+                                conditions=[
+                                    PersistentVolumeClaimCondition(
+                                        last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        message="message_example",
+                                        reason="reason_example",
+                                        status="status_example",
+                                        type="type_example",
+                                    ),
+                                ],
+                                current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                modify_volume_status=ModifyVolumeStatus(
+                                    status="status_example",
+                                    target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                ),
+                                phase="phase_example",
+                            ),
+                        ),
+                    ],
                     volumes=[
                         Volume(
                             aws_elastic_block_store=AWSElasticBlockStoreVolumeSource(
@@ -39470,6 +40190,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 operator="operator_example",
                                 toleration_seconds=1,
                                 value="value_example",
+                            ),
+                        ],
+                        volume_claim_templates=[
+                            PersistentVolumeClaim(
+                                api_version="api_version_example",
+                                kind="kind_example",
+                                metadata=ObjectMeta(
+                                    annotations={
+                                        "key": "key_example",
+                                    },
+                                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    deletion_grace_period_seconds=1,
+                                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    finalizers=[
+                                        "finalizers_example",
+                                    ],
+                                    generate_name="generate_name_example",
+                                    generation=1,
+                                    labels={
+                                        "key": "key_example",
+                                    },
+                                    managed_fields=[
+                                        ManagedFieldsEntry(
+                                            api_version="api_version_example",
+                                            fields_type="fields_type_example",
+                                            fields_v1={},
+                                            manager="manager_example",
+                                            operation="operation_example",
+                                            subresource="subresource_example",
+                                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        ),
+                                    ],
+                                    name="name_example",
+                                    namespace="namespace_example",
+                                    owner_references=[
+                                        OwnerReference(
+                                            api_version="api_version_example",
+                                            block_owner_deletion=True,
+                                            controller=True,
+                                            kind="kind_example",
+                                            name="name_example",
+                                            uid="uid_example",
+                                        ),
+                                    ],
+                                    resource_version="resource_version_example",
+                                    self_link="self_link_example",
+                                    uid="uid_example",
+                                ),
+                                spec=PersistentVolumeClaimSpec(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    data_source=TypedLocalObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                    ),
+                                    data_source_ref=TypedObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                    ),
+                                    resources=VolumeResourceRequirements(
+                                        limits={
+                                            "key": "key_example",
+                                        },
+                                        requests={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    storage_class_name="storage_class_name_example",
+                                    volume_attributes_class_name="volume_attributes_class_name_example",
+                                    volume_mode="volume_mode_example",
+                                    volume_name="volume_name_example",
+                                ),
+                                status=PersistentVolumeClaimStatus(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    allocated_resource_statuses={
+                                        "key": "key_example",
+                                    },
+                                    allocated_resources={
+                                        "key": "key_example",
+                                    },
+                                    capacity={
+                                        "key": "key_example",
+                                    },
+                                    conditions=[
+                                        PersistentVolumeClaimCondition(
+                                            last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            message="message_example",
+                                            reason="reason_example",
+                                            status="status_example",
+                                            type="type_example",
+                                        ),
+                                    ],
+                                    current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                    modify_volume_status=ModifyVolumeStatus(
+                                        status="status_example",
+                                        target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                    ),
+                                    phase="phase_example",
+                                ),
                             ),
                         ],
                         volumes=[
@@ -46295,6 +47135,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                         ],
+                        volume_claim_templates=[
+                            PersistentVolumeClaim(
+                                api_version="api_version_example",
+                                kind="kind_example",
+                                metadata=ObjectMeta(
+                                    annotations={
+                                        "key": "key_example",
+                                    },
+                                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    deletion_grace_period_seconds=1,
+                                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    finalizers=[
+                                        "finalizers_example",
+                                    ],
+                                    generate_name="generate_name_example",
+                                    generation=1,
+                                    labels={
+                                        "key": "key_example",
+                                    },
+                                    managed_fields=[
+                                        ManagedFieldsEntry(
+                                            api_version="api_version_example",
+                                            fields_type="fields_type_example",
+                                            fields_v1={},
+                                            manager="manager_example",
+                                            operation="operation_example",
+                                            subresource="subresource_example",
+                                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        ),
+                                    ],
+                                    name="name_example",
+                                    namespace="namespace_example",
+                                    owner_references=[
+                                        OwnerReference(
+                                            api_version="api_version_example",
+                                            block_owner_deletion=True,
+                                            controller=True,
+                                            kind="kind_example",
+                                            name="name_example",
+                                            uid="uid_example",
+                                        ),
+                                    ],
+                                    resource_version="resource_version_example",
+                                    self_link="self_link_example",
+                                    uid="uid_example",
+                                ),
+                                spec=PersistentVolumeClaimSpec(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    data_source=TypedLocalObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                    ),
+                                    data_source_ref=TypedObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                    ),
+                                    resources=VolumeResourceRequirements(
+                                        limits={
+                                            "key": "key_example",
+                                        },
+                                        requests={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    storage_class_name="storage_class_name_example",
+                                    volume_attributes_class_name="volume_attributes_class_name_example",
+                                    volume_mode="volume_mode_example",
+                                    volume_name="volume_name_example",
+                                ),
+                                status=PersistentVolumeClaimStatus(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    allocated_resource_statuses={
+                                        "key": "key_example",
+                                    },
+                                    allocated_resources={
+                                        "key": "key_example",
+                                    },
+                                    capacity={
+                                        "key": "key_example",
+                                    },
+                                    conditions=[
+                                        PersistentVolumeClaimCondition(
+                                            last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            message="message_example",
+                                            reason="reason_example",
+                                            status="status_example",
+                                            type="type_example",
+                                        ),
+                                    ],
+                                    current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                    modify_volume_status=ModifyVolumeStatus(
+                                        status="status_example",
+                                        target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                    ),
+                                    phase="phase_example",
+                                ),
+                            ),
+                        ],
                         volumes=[
                             Volume(
                                 aws_elastic_block_store=AWSElasticBlockStoreVolumeSource(
@@ -52143,6 +53103,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                         ],
+                        volume_claim_templates=[
+                            PersistentVolumeClaim(
+                                api_version="api_version_example",
+                                kind="kind_example",
+                                metadata=ObjectMeta(
+                                    annotations={
+                                        "key": "key_example",
+                                    },
+                                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    deletion_grace_period_seconds=1,
+                                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                    finalizers=[
+                                        "finalizers_example",
+                                    ],
+                                    generate_name="generate_name_example",
+                                    generation=1,
+                                    labels={
+                                        "key": "key_example",
+                                    },
+                                    managed_fields=[
+                                        ManagedFieldsEntry(
+                                            api_version="api_version_example",
+                                            fields_type="fields_type_example",
+                                            fields_v1={},
+                                            manager="manager_example",
+                                            operation="operation_example",
+                                            subresource="subresource_example",
+                                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        ),
+                                    ],
+                                    name="name_example",
+                                    namespace="namespace_example",
+                                    owner_references=[
+                                        OwnerReference(
+                                            api_version="api_version_example",
+                                            block_owner_deletion=True,
+                                            controller=True,
+                                            kind="kind_example",
+                                            name="name_example",
+                                            uid="uid_example",
+                                        ),
+                                    ],
+                                    resource_version="resource_version_example",
+                                    self_link="self_link_example",
+                                    uid="uid_example",
+                                ),
+                                spec=PersistentVolumeClaimSpec(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    data_source=TypedLocalObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                    ),
+                                    data_source_ref=TypedObjectReference(
+                                        api_group="api_group_example",
+                                        kind="kind_example",
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                    ),
+                                    resources=VolumeResourceRequirements(
+                                        limits={
+                                            "key": "key_example",
+                                        },
+                                        requests={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    storage_class_name="storage_class_name_example",
+                                    volume_attributes_class_name="volume_attributes_class_name_example",
+                                    volume_mode="volume_mode_example",
+                                    volume_name="volume_name_example",
+                                ),
+                                status=PersistentVolumeClaimStatus(
+                                    access_modes=[
+                                        "access_modes_example",
+                                    ],
+                                    allocated_resource_statuses={
+                                        "key": "key_example",
+                                    },
+                                    allocated_resources={
+                                        "key": "key_example",
+                                    },
+                                    capacity={
+                                        "key": "key_example",
+                                    },
+                                    conditions=[
+                                        PersistentVolumeClaimCondition(
+                                            last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            message="message_example",
+                                            reason="reason_example",
+                                            status="status_example",
+                                            type="type_example",
+                                        ),
+                                    ],
+                                    current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                    modify_volume_status=ModifyVolumeStatus(
+                                        status="status_example",
+                                        target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                    ),
+                                    phase="phase_example",
+                                ),
+                            ),
+                        ],
                         volumes=[
                             Volume(
                                 aws_elastic_block_store=AWSElasticBlockStoreVolumeSource(
@@ -56966,6 +58046,126 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     operator="operator_example",
                                     toleration_seconds=1,
                                     value="value_example",
+                                ),
+                            ],
+                            volume_claim_templates=[
+                                PersistentVolumeClaim(
+                                    api_version="api_version_example",
+                                    kind="kind_example",
+                                    metadata=ObjectMeta(
+                                        annotations={
+                                            "key": "key_example",
+                                        },
+                                        creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        deletion_grace_period_seconds=1,
+                                        deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        finalizers=[
+                                            "finalizers_example",
+                                        ],
+                                        generate_name="generate_name_example",
+                                        generation=1,
+                                        labels={
+                                            "key": "key_example",
+                                        },
+                                        managed_fields=[
+                                            ManagedFieldsEntry(
+                                                api_version="api_version_example",
+                                                fields_type="fields_type_example",
+                                                fields_v1={},
+                                                manager="manager_example",
+                                                operation="operation_example",
+                                                subresource="subresource_example",
+                                                time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            ),
+                                        ],
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                        owner_references=[
+                                            OwnerReference(
+                                                api_version="api_version_example",
+                                                block_owner_deletion=True,
+                                                controller=True,
+                                                kind="kind_example",
+                                                name="name_example",
+                                                uid="uid_example",
+                                            ),
+                                        ],
+                                        resource_version="resource_version_example",
+                                        self_link="self_link_example",
+                                        uid="uid_example",
+                                    ),
+                                    spec=PersistentVolumeClaimSpec(
+                                        access_modes=[
+                                            "access_modes_example",
+                                        ],
+                                        data_source=TypedLocalObjectReference(
+                                            api_group="api_group_example",
+                                            kind="kind_example",
+                                            name="name_example",
+                                        ),
+                                        data_source_ref=TypedObjectReference(
+                                            api_group="api_group_example",
+                                            kind="kind_example",
+                                            name="name_example",
+                                            namespace="namespace_example",
+                                        ),
+                                        resources=VolumeResourceRequirements(
+                                            limits={
+                                                "key": "key_example",
+                                            },
+                                            requests={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        selector=LabelSelector(
+                                            match_expressions=[
+                                                LabelSelectorRequirement(
+                                                    key="key_example",
+                                                    operator="operator_example",
+                                                    values=[
+                                                        "values_example",
+                                                    ],
+                                                ),
+                                            ],
+                                            match_labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        storage_class_name="storage_class_name_example",
+                                        volume_attributes_class_name="volume_attributes_class_name_example",
+                                        volume_mode="volume_mode_example",
+                                        volume_name="volume_name_example",
+                                    ),
+                                    status=PersistentVolumeClaimStatus(
+                                        access_modes=[
+                                            "access_modes_example",
+                                        ],
+                                        allocated_resource_statuses={
+                                            "key": "key_example",
+                                        },
+                                        allocated_resources={
+                                            "key": "key_example",
+                                        },
+                                        capacity={
+                                            "key": "key_example",
+                                        },
+                                        conditions=[
+                                            PersistentVolumeClaimCondition(
+                                                last_probe_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                                last_transition_time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                                message="message_example",
+                                                reason="reason_example",
+                                                status="status_example",
+                                                type="type_example",
+                                            ),
+                                        ],
+                                        current_volume_attributes_class_name="current_volume_attributes_class_name_example",
+                                        modify_volume_status=ModifyVolumeStatus(
+                                            status="status_example",
+                                            target_volume_attributes_class_name="target_volume_attributes_class_name_example",
+                                        ),
+                                        phase="phase_example",
+                                    ),
                                 ),
                             ],
                             volumes=[

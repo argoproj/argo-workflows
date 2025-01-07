@@ -45,6 +45,13 @@ var _ TemplateHolder = &WorkflowTemplate{}
 func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 	for _, t := range wftmpl.Spec.Templates {
 		if t.Name == name {
+			for _, v := range t.GetVolumeMounts() {
+				for _, vp := range wftmpl.Spec.VolumeClaimTemplates {
+					if v.Name == vp.Name {
+						t.VolumeClaimTemplates = append(t.VolumeClaimTemplates, vp)
+					}
+				}
+			}
 			return &t
 		}
 	}

@@ -51,6 +51,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_suspend_template import IoArgoprojWorkflowV1alpha1SuspendTemplate
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_synchronization import IoArgoprojWorkflowV1alpha1Synchronization
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_user_container import IoArgoprojWorkflowV1alpha1UserContainer
+    from argo_workflows.model.persistent_volume_claim import PersistentVolumeClaim
     from argo_workflows.model.pod_security_context import PodSecurityContext
     from argo_workflows.model.toleration import Toleration
     from argo_workflows.model.volume import Volume
@@ -75,6 +76,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1SuspendTemplate'] = IoArgoprojWorkflowV1alpha1SuspendTemplate
     globals()['IoArgoprojWorkflowV1alpha1Synchronization'] = IoArgoprojWorkflowV1alpha1Synchronization
     globals()['IoArgoprojWorkflowV1alpha1UserContainer'] = IoArgoprojWorkflowV1alpha1UserContainer
+    globals()['PersistentVolumeClaim'] = PersistentVolumeClaim
     globals()['PodSecurityContext'] = PodSecurityContext
     globals()['Toleration'] = Toleration
     globals()['Volume'] = Volume
@@ -172,6 +174,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'synchronization': (IoArgoprojWorkflowV1alpha1Synchronization,),  # noqa: E501
             'timeout': (str,),  # noqa: E501
             'tolerations': ([Toleration],),  # noqa: E501
+            'volume_claim_templates': ([PersistentVolumeClaim],),  # noqa: E501
             'volumes': ([Volume],),  # noqa: E501
         }
 
@@ -220,6 +223,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'synchronization': 'synchronization',  # noqa: E501
         'timeout': 'timeout',  # noqa: E501
         'tolerations': 'tolerations',  # noqa: E501
+        'volume_claim_templates': 'volumeClaimTemplates',  # noqa: E501
         'volumes': 'volumes',  # noqa: E501
     }
 
@@ -303,6 +307,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
             timeout (str): Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.. [optional]  # noqa: E501
             tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
+            volume_claim_templates ([PersistentVolumeClaim]): VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow. [optional]  # noqa: E501
             volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a template.. [optional]  # noqa: E501
         """
 
@@ -424,6 +429,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
             timeout (str): Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.. [optional]  # noqa: E501
             tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
+            volume_claim_templates ([PersistentVolumeClaim]): VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow. [optional]  # noqa: E501
             volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a template.. [optional]  # noqa: E501
         """
 

@@ -44,6 +44,7 @@ Name | Type | Description | Notes
 **synchronization** | [**IoArgoprojWorkflowV1alpha1Synchronization**](IoArgoprojWorkflowV1alpha1Synchronization.md) |  | [optional] 
 **timeout** | **str** | Timeout allows to set the total node execution timeout duration counting from the node&#39;s start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. | [optional] 
 **tolerations** | [**[Toleration]**](Toleration.md) | Tolerations to apply to workflow pods. | [optional] 
+**volume_claim_templates** | [**[PersistentVolumeClaim]**](PersistentVolumeClaim.md) | VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow | [optional] 
 **volumes** | [**[Volume]**](Volume.md) | Volumes is a list of volumes that can be mounted by containers in a template. | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

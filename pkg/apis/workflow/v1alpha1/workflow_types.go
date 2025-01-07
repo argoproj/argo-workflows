@@ -676,6 +676,11 @@ type Template struct {
 	// +patchMergeKey=name
 	Volumes []apiv1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,17,opt,name=volumes"`
 
+	// VolumeClaimTemplates is a list of claims that containers are allowed to reference.
+	// The Workflow controller will create the claims at the beginning of the workflow
+	// and delete the claims upon completion of the workflow
+	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" protobuf:"bytes,45,opt,name=volumeClaimTemplates"`
+
 	// InitContainers is a list of containers which run before the main container.
 	// +patchStrategy=merge
 	// +patchMergeKey=name
