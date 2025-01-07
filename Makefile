@@ -480,7 +480,10 @@ install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) \
+		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
+		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
+		| KUBECTL_APPLYSET=true kubectl -n $(KUBE_NAMESPACE) apply --applyset=configmaps/install --server-side --prune -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif
@@ -530,7 +533,8 @@ ifeq ($(shell uname),Darwin)
 	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
 	brew install kit
 else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
+	@echo "Downloading Kit"
+	curl -fsL --retry 99 "https://github.com/kitproj/kit/releases/download/v0.1.8/kit_0.1.8_$$(uname)_$$(uname -m | sed 's/aarch64/arm64/').tar.gz" | sudo tar -C /usr/local/bin -xzf - kit
 endif
 endif
 
