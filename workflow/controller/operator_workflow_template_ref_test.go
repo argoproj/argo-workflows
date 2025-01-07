@@ -633,3 +633,71 @@ func TestWorkflowTemplateWithDynamicRef(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
+
+const wfTemplateWithPodMetadata = `
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: workflow-template
+spec:
+  entrypoint: whalesay-template
+  podMetadata:
+    labels:
+      workflow-template-label: hello
+    annotations:
+      all-pods-should-have-this: value
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]`
+
+const wfWithTemplateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-workflow
+  namespace: argo-workflows-system
+spec:
+  podMetadata:
+    labels:
+      caller-label: hello
+  entrypoint: start
+  templates:
+    - name: start
+      steps:
+        - - name: hello
+            templateRef:
+              name: workflow-template
+              template: whalesay-template
+              clusterScope: true
+            arguments:
+              parameters:
+                - name: message
+                  value: Hello Bug`
+
+func TestWorkflowTemplateWithPodMetadata(t *testing.T) {
+	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), wfv1.MustUnmarshalClusterWorkflowTemplate(wfTemplateWithPodMetadata))
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	pods, err := listPods(woc)
+	require.NoError(t, err)
+	assert.NotEmpty(t, len(pods.Items) > 0, "pod was not created successfully")
+	pod := pods.Items[0]
+	assert.Contains(t, pod.Labels, "caller-label")
+	assert.Contains(t, pod.Labels, "workflow-template-label")
+	assert.Contains(t, pod.Annotations, "all-pods-should-have-this")
+}
