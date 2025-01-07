@@ -17,6 +17,7 @@ You can also limit the total number of parallel workflow executions in a single 
 data:
   namespaceParallelism: "4"
 ```
+When namespace parallelism is enabled, it is plausible for a workflow with a lower priority to be run first if a namespace is at its namespace parallelism limits.
 
 !!! Note
     Workflows that are executing but restricted from running more nodes due to other mechanisms will still count toward parallelism limits.
