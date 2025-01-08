@@ -477,6 +477,21 @@ spec:
                               type: string
                             createBucketIfNotPresent:
                               type: boolean
+                            credentialsConfig:
+                              properties:
+                                oIDCProviderArn:
+                                  type: string
+                                oIDCTokenFilePath:
+                                  type: string
+                                roleArn:
+                                  type: string
+                                roleSessionName:
+                                  type: string
+                                sTSEndpoint:
+                                  type: string
+                                type:
+                                  type: string
+                              type: object
                             endpoint:
                               type: string
                             key:
@@ -1036,6 +1051,21 @@ spec:
                                 type: string
                               createBucketIfNotPresent:
                                 type: boolean
+                              credentialsConfig:
+                                properties:
+                                  oIDCProviderArn:
+                                    type: string
+                                  oIDCTokenFilePath:
+                                    type: string
+                                  roleArn:
+                                    type: string
+                                  roleSessionName:
+                                    type: string
+                                  sTSEndpoint:
+                                    type: string
+                                  type:
+                                    type: string
+                                type: object
                               endpoint:
                                 type: string
                               key:
@@ -1675,6 +1705,21 @@ spec:
                                   type: string
                                 createBucketIfNotPresent:
                                   type: boolean
+                                credentialsConfig:
+                                  properties:
+                                    oIDCProviderArn:
+                                      type: string
+                                    oIDCTokenFilePath:
+                                      type: string
+                                    roleArn:
+                                      type: string
+                                    roleSessionName:
+                                      type: string
+                                    sTSEndpoint:
+                                      type: string
+                                    type:
+                                      type: string
+                                  type: object
                                 endpoint:
                                   type: string
                                 key:
@@ -2402,6 +2447,21 @@ spec:
                           type: string
                         createBucketIfNotPresent:
                           type: boolean
+                        credentialsConfig:
+                          properties:
+                            oIDCProviderArn:
+                              type: string
+                            oIDCTokenFilePath:
+                              type: string
+                            roleArn:
+                              type: string
+                            roleSessionName:
+                              type: string
+                            sTSEndpoint:
+                              type: string
+                            type:
+                              type: string
+                          type: object
                         endpoint:
                           type: string
                         key:

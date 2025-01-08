@@ -238,6 +238,18 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			SecurityToken: art.OSS.SecurityToken,
 			UseSDKCreds:   art.OSS.UseSDKCreds,
 		}
+
+		if art.OSS.UseSDKCreds && art.OSS.CredentialsConfig != nil {
+			driver.Config = &oss.CredentialsConfig{
+				OIDCProviderArn:   art.OSS.CredentialsConfig.OIDCProviderArn,
+				OIDCTokenFilePath: art.OSS.CredentialsConfig.OIDCTokenFilePath,
+				RoleArn:           art.OSS.CredentialsConfig.RoleArn,
+				RoleSessionName:   art.OSS.CredentialsConfig.RoleSessionName,
+				STSEndpoint:       art.OSS.CredentialsConfig.STSEndpoint,
+				Type:              art.OSS.CredentialsConfig.Type,
+			}
+		}
+
 		return &driver, nil
 	}
 
